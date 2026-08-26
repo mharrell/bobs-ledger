@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE
+.idea/
+
+# Vendored dependency — has its own .git (decide: vendor / submodule / keep ignored)
+hearth-coach/python-hslog/
