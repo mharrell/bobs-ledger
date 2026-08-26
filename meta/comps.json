@@ -1,0 +1,10 @@
+{
+  "elementals-unbound-tempest": {
+    "name": "Elementals - Unbound Tempest",
+    "core": ["BG36_352", "BGS_123", "BG_LOE_077", "BGS_104", "BG36_701"],
+    "addons": ["BG34_858", "BG34_500", "BG32_846"],
+    "enablers": ["BG_LOE_077", "BGS_123", "BG36_701"],
+    "how_to_play": "Buff the shop with Nomi or Air Revenant, whichever you find first. Use Brann + Tavern Tempest + Kelp Keeper for economy and elemental generation. Flaming Enforcer stabilizes midgame; Unbound Tempest caps scaling. Cycle premium elementals (Sellemental, Refreshing Anomaly).",
+    "when_to_commit": "Brann + shop buff (Nomi) + Unbound Tempest"
+  }
+}

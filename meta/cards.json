@@ -1,0 +1,12 @@
+{
+  "BG36_352": {"name": "Unbound Tempest", "tier": 6, "tribe": "Elemental", "atk": 3, "health": 12},
+  "BGS_123": {"name": "Tavern Tempest", "tier": 4, "tribe": "Elemental", "atk": 2, "health": 2},
+  "BG_LOE_077": {"name": "Brann Bronzebeard", "tier": 5, "tribe": "Neutral", "atk": 2, "health": 4},
+  "BGS_104": {"name": "Nomi, Kitchen Nightmare", "tier": 5, "tribe": "Elemental", "atk": 6, "health": 6},
+  "BG36_701": {"name": "Kelp Keeper", "tier": 4, "tribe": "Murloc", "atk": 5, "health": 5},
+  "BG34_858": {"name": "Air Revenant", "tier": 5, "tribe": "Elemental", "atk": 3, "health": 6},
+  "BG34_500": {"name": "Flaming Enforcer", "tier": 4, "tribe": "Demon/Elemental", "atk": 4, "health": 5},
+  "BG32_846": {"name": "Unleashed Mana Surge", "tier": 6, "tribe": "Elemental", "atk": 6, "health": 5},
+  "BGS_115": {"name": "Sellemental", "tier": 2, "tribe": "Elemental", "atk": 3, "health": 3},
+  "BGS_116": {"name": "Refreshing Anomaly", "tier": 4, "tribe": "Elemental", "atk": 4, "health": 5}
+}

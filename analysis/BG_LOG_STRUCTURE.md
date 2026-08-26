@@ -79,20 +79,23 @@ log. Three log quirks had to be handled:
    the *previous* entity, corrupting that minion's cardtype.
 
 2. **End-of-game cleanup.** At game end (`PLAYSTATE=WON/LOST`) every minion is
-   moved to `REMOVEDFROMGAME` and re-created as a fresh, high-id entity for the
-   leaderboard display. The re-created entities carry *base* stats, not the
-   buffed stats the minion had in combat.
+   moved to `REMOVEDFROMGAME` and its stats reset to base. The friendly board is
+   then re-created as fresh, high-id entities in PLAY — and *those* carry the
+   buffed stats (e.g. a 6/6 Naga re-created as 82/58). The original entities in
+   REMOVEDFROMGAME are reset to base, so the buffed stats live only on the
+   re-created entities.
 
-3. **Board snapshot + final-stats lookup.** The board is snapshotted (as entity
-   ids) every time a minion enters PLAY, stopping at `PLAYSTATE=WON/LOST`. The
-   final board is the last snapshot, with each minion's stats resolved from its
-   *final* entity state — so buffs (e.g. a 6/6 Naga buffed to 82/58) are
-   included, not the base stats it had when first played.
+3. **Friendly board = re-created entities in PLAY.** The friendly final board is
+   read from the minions in PLAY at game end (the re-created entities), which
+   carry the buffed stats. The opponents' board is read from the last snapshot
+   (taken on each friendly HAND→PLAY), with stats frozen at snapshot time —
+   because the opponents' minions are moved to REMOVEDFROMGAME and reset to base
+   at game end, so their buffed stats are only recoverable mid-game.
 
-The friendly board is fully reconstructable. The opponents' board is only
-recoverable as a combined pool (all 7 share the spectator player number), and
-only while their minions are in PLAY during combat — the last snapshot (taken
-during the friendly shop phase) has no opponent minions.
+The friendly board is fully reconstructable (minions + buffed stats). The
+opponents' board is only recoverable as a combined pool (all 7 share the
+spectator player number), and only the minions that happen to be in PLAY at the
+last friendly play — a partial view, not the full 7×7 board.
 
 ## Deliverable
 

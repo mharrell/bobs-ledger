@@ -25,8 +25,11 @@ from extract_game import (
     HERO_CARD, TIMESTAMP, split_game_chunks, extract_game, _friendly_player,
 )
 
-# A real board minion: BGxx_NNN. Excludes BGS_ spells and BGxx_GS golden spells.
-MINION_ONLY = re.compile(r"^BG\d+_\d+$")
+# A real board minion: BGxx_NNN, BGS_NNN (legacy), or BG_XXX_NNN (reprints of
+# old-set cards, e.g. Brann = BG_LOE_077). BGS_ is used by both minions and
+# spells, so the cardtype filter (not this regex) does the minion/spell split.
+# Excludes enchantments (BGxx_NNNx), golden cards (BGxx_NNN_G), and trinkets.
+MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BGS_\d+|BG_[A-Z]+_\d+)$")
 
 # Boolean combat keywords worth reporting on a board.
 KEYWORDS = ("TAUNT", "DIVINE_SHIELD", "REBORN", "WINDFURY", "POISONOUS",
@@ -114,11 +117,12 @@ class GameState:
         if tag == "ZONE":
             old = self.zone.get(eid)
             self.zone[eid] = value
-            # A minion entering PLAY is a board change; snapshot the board so
-            # the "final board" can be read back before the end-of-game cleanup
-            # (which moves minions to REMOVEDFROMGAME and re-creates them as
-            # enchantments).
-            if value == "PLAY" and old != "PLAY" and not self._game_ended:
+            # A minion played from hand is a board change; snapshot the board so
+            # the "final board" can be read back before the end-of-game cleanup.
+            # Only HAND->PLAY (shop-phase plays) is snapshotted — combat summons
+            # (SETASIDE/GRAVEYARD->PLAY) are transient and would pollute the
+            # board with deathrattle copies that die the same turn.
+            if value == "PLAY" and old == "HAND" and not self._game_ended:
                 if MINION_ONLY.match(self.card.get(eid, "")):
                     self._record_snapshot()
         elif tag == "ZONE_POSITION":
@@ -160,11 +164,12 @@ class GameState:
         }
 
     def _record_snapshot(self):
-        """Record the current board (minion entity ids in PLAY, cardtype=MINION).
+        """Record the current board (minions in PLAY, cardtype=MINION).
 
-        Only entity ids are recorded; stats are looked up at read time so the
-        final board carries the buffed (end-of-game) stats, not the base stats
-        a minion had when it first entered PLAY.
+        Stats are frozen at snapshot time so the opponent board (which is moved
+        to REMOVEDFROMGAME and reset to base at game end) keeps its buffed
+        stats. The friendly board is read from the re-created entities in PLAY
+        at game end instead.
         """
         board = []
         for eid, cid in self.card.items():
@@ -175,27 +180,26 @@ class GameState:
                 continue
             if self.zone.get(eid) != "PLAY":
                 continue
-            board.append(eid)
+            board.append(self._minion(eid, cid))
         self.snapshots.append(board)
 
     def final_board(self, friendly_player):
-        """The last non-empty board snapshot, split friendly vs opponents.
+        """The final board, split friendly vs opponents.
 
-        Snapshots are taken whenever a minion enters PLAY, so the last one is
-        the board as last built (before the end-of-game cleanup). Stats are
-        resolved from the entity's final state, so buffs are included. Falls
-        back to the live board if no snapshot was recorded.
+        Friendly board: minions in PLAY at game end (re-created entities with
+        buffed stats). Opponent board: the last snapshot (during the game),
+        since the opponents' minions are moved to REMOVEDFROMGAME and reset to
+        base at game end.
         """
-        for eids in reversed(self.snapshots):
-            fb = [self._minion(eid, self.card.get(eid, "")) for eid in eids
-                  if self.player.get(eid) == friendly_player]
-            if fb:
-                ob = [self._minion(eid, self.card.get(eid, "")) for eid in eids
-                      if self.player.get(eid) != friendly_player]
-                fb.sort(key=lambda m: (m["pos"] is None, m["pos"] or 0))
+        friendly_board, _ = self.board(friendly_player)
+        opponent_board = []
+        for board in reversed(self.snapshots):
+            ob = [m for m in board if m["player"] != friendly_player]
+            if ob:
                 ob.sort(key=lambda m: m["card"])
-                return fb, ob
-        return self.board(friendly_player)
+                opponent_board = ob
+                break
+        return friendly_board, opponent_board
 
     def board(self, friendly_player):
         """Minions currently in ZONE=PLAY, split friendly vs opponents."""
@@ -205,8 +209,6 @@ class GameState:
                 continue
             ct = self.cardtype.get(eid)
             if ct is not None and ct != "MINION":
-                continue
-            if eid in self._post_game:
                 continue
             if self.zone.get(eid) != "PLAY":
                 continue
@@ -227,8 +229,6 @@ class GameState:
                 continue
             ct = self.cardtype.get(eid)
             if ct is not None and ct != "MINION":
-                continue
-            if eid in self._post_game:
                 continue
             if self.zone.get(eid) != "HAND":
                 continue
