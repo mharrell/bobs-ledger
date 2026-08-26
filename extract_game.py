@@ -29,8 +29,11 @@ ENTITY_TAG = re.compile(
 )
 # Entity=<account> tag=HERO_ENTITY value=<id>  (friendly name -> hero entity)
 NAME_HERO = re.compile(r"Entity=([^ ]+) tag=HERO_ENTITY value=(\d+)")
-# FULL_ENTITY - Creating ID=<id> CardID=<card>
-FULL_ENTITY = re.compile(r"FULL_ENTITY - Creating ID=(\d+) CardID=(\w+)")
+# FULL_ENTITY - Creating ID=<id> CardID=<card>. CardID may be empty (enchantment
+# entities are created with no card id and revealed later via SHOW_ENTITY), so
+# \w* not \w+ — otherwise the block's tag lines get attributed to the previous
+# entity.
+FULL_ENTITY = re.compile(r"FULL_ENTITY - Creating ID=(\d+) CardID=(\w*)")
 # Entity=<id> tag=ZONE value=<zone>  (plain form, no cardId/player)
 ZONE_PLAIN = re.compile(r"Entity=(\d+) tag=ZONE value=(\w+)")
 

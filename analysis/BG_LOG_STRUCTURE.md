@@ -67,6 +67,33 @@ So tier timing is a *necessary* signal, not a *sufficient* one. Board
 composition, hero choice, and combat RNG carry the rest — which is exactly why
 the coach needs the board-state parser (Phase 2), not just the move stream.
 
+## Board-state reconstruction (Phase 2)
+
+`board_state.py` reconstructs the friendly board (minions + stats) from the raw
+log. Three log quirks had to be handled:
+
+1. **Empty-CardID FULL_ENTITY blocks.** Enchantment entities are created with
+   `FULL_ENTITY - Creating ID=<id> CardID=` (empty card id) and revealed later
+   via `SHOW_ENTITY`. The FULL_ENTITY regex must use `\w*` not `\w+`, or the
+   block's tag lines (e.g. `tag=CARDTYPE value=ENCHANTMENT`) get attributed to
+   the *previous* entity, corrupting that minion's cardtype.
+
+2. **End-of-game cleanup.** At game end (`PLAYSTATE=WON/LOST`) every minion is
+   moved to `REMOVEDFROMGAME` and re-created as a fresh, high-id entity for the
+   leaderboard display. The re-created entities carry *base* stats, not the
+   buffed stats the minion had in combat.
+
+3. **Board snapshot + final-stats lookup.** The board is snapshotted (as entity
+   ids) every time a minion enters PLAY, stopping at `PLAYSTATE=WON/LOST`. The
+   final board is the last snapshot, with each minion's stats resolved from its
+   *final* entity state — so buffs (e.g. a 6/6 Naga buffed to 82/58) are
+   included, not the base stats it had when first played.
+
+The friendly board is fully reconstructable. The opponents' board is only
+recoverable as a combined pool (all 7 share the spectator player number), and
+only while their minions are in PLAY during combat — the last snapshot (taken
+during the friendly shop phase) has no opponent minions.
+
 ## Deliverable
 
 `extract_game.py` — stdlib-only, per-game:
@@ -78,3 +105,12 @@ python extract_game.py <Power.log> [--games N] [--moves] [--compare]
 - default: 8 heroes (card, name, placement, tier) + account→hero map.
 - `--moves`: tier timing for all 8 + friendly buys/sells.
 - `--compare`: first-place vs last-place tier timing.
+
+`board_state.py` — stdlib-only, per-game:
+
+```
+python board_state.py <Power.log> [--games N]
+```
+
+- friendly final board (minions + buffed stats) + hand + hero tier/gold/armor.
+- opponents' board as a combined pool (see caveat above).
