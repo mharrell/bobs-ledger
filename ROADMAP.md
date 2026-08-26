@@ -24,9 +24,13 @@ timing is the one clean per-player signal, and it does not always separate
 winner from loser.
 
 ## Phase 2 — Board-state parser (live + replay)
-- Parse `Power.log` into a structured, queryable game-state model.
-- Decide: live from Power.log (authoritative) vs. screen OCR for live play.
-- Add verification of the parsed state (breakoutBot discipline).
+- [x] Parse `Power.log` into a structured, queryable game-state model —
+      `board_state.py` reconstructs the friendly final board (minions + buffed
+      stats) + hand + hero tier/gold/armor. See `analysis/BG_LOG_STRUCTURE.md`
+      for the three log quirks it handles (empty-CardID blocks, end-of-game
+      cleanup, snapshot + final-stats lookup).
+- [ ] Decide: live from Power.log (authoritative) vs. screen OCR for live play.
+- [ ] Add verification of the parsed state (breakoutBot discipline).
 
 ## Phase 3 — Reference-image library
 - Curate meta screenshots (comp tier lists, hero/Champion rankings).
