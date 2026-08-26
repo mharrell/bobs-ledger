@@ -2,22 +2,26 @@
 
 Priorities and concrete next steps.
 
-## Phase 0 — Bootstrap (mostly done)
+## Phase 0 — Bootstrap (done)
 - [x] Create project folder `hearth-coach/`
 - [x] Clone official `python-hslog` parser
 - [x] Write `parse_bg.py` smoke-test parser
 - [x] Document design (DESIGN.md), competitors (COMPETITORS.md), opponent-data
       thesis (OPPONENT_DATA.md), DeepSeek vision status (DEEPSEEK_VISION.md)
-- [ ] **BLOCKED:** install `hslog` deps from PyPI (network down). Also needs
-      `DEEPSEEK_API_KEY` for headless harness runs.
+- [x] Install `hslog` deps from PyPI (network restored).
 
-## Phase 1 — Validate the opponent-data thesis
-1. Get `hslog` installed (network or user terminal).
-2. Run `parse_bg.py` against a real `Power.log`
-   (e.g. `...\Hearthstone_2026_08_24\Power_old.log`).
-3. Confirm per-player hero/placement extraction works.
-4. Build the full opponent-move extractor (purchases, tiers, placement per player).
-5. Print a first-place vs last-place game side-by-side to eyeball data richness.
+## Phase 1 — Validate the opponent-data thesis (done)
+1. [x] Get `hslog` installed.
+2. [x] Run `parse_bg.py` against a real `Power.log`.
+3. [x] Confirm per-player hero/placement extraction works.
+4. [x] Build the full opponent-move extractor — `extract_game.py` (stdlib-only;
+       `hslog` mangles BG's 8-player structure, so we parse the raw log).
+5. [x] Print a first-place vs last-place comparison (`--compare`).
+
+Findings: `analysis/BG_LOG_STRUCTURE.md`. Key caveat — opponents' individual
+buys/sells are not recoverable (they share the spectator player number); tier
+timing is the one clean per-player signal, and it does not always separate
+winner from loser.
 
 ## Phase 2 — Board-state parser (live + replay)
 - Parse `Power.log` into a structured, queryable game-state model.

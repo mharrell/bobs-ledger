@@ -38,40 +38,43 @@ players** (hero, purchases, sells, tavern tiers, final placement). Therefore
 
 ## Parser
 
-Use **`python-hslog`** — the official HearthSim Power.log deserializer (MIT,
-Python), the same library HDT uses under the hood. Cloned into `python-hslog/`.
-It yields per-game `Game` objects (players, entities, tags) and supports a
-`FriendlyPlayerExporter` to identify the human player.
+**`hslog` mangles Battlegrounds.** Its `EntityTreeExporter` is built for
+constructed (2 players) and collapses all 7 opponents into the "spectator"
+player. So we parse the raw log directly with stdlib regex — see
+`extract_game.py` and `analysis/BG_LOG_STRUCTURE.md` for the full structure.
 
-## Validation task (parked / to-do)
+## Validation task — DONE (session 2026-08-25)
 
-Build a per-game split + opponent-move extractor:
-1. Split one `Power.log` into individual games (by `CREATE_GAME`).
-2. Extract each player's hero, tavern tier path, card purchases, and placement.
-3. Print a first-place vs last-place game side-by-side to eyeball data richness.
+`extract_game.py` (stdlib-only) now does the full per-game split + extractor:
 
-Deliverable: `parse_bg.py` (smoke test) + a fuller extractor once `hslog` is
-installed.
+1. Split one `Power.log` into games (by `CREATE_GAME`).
+2. Extract all 8 players' hero, hero name, account name, placement, and tier.
+3. Extract the move stream: tier timing (all 8) + friendly buys/sells.
+4. Print a first-place vs last-place comparison (`--compare`).
 
-## Validated on real data (session 2026-08-25)
+```
+python extract_game.py <Power.log> [--games N] [--moves] [--compare]
+```
 
-Directly extracted from the raw `Power.log` (no `hslog` yet — grep only):
+## Validated on real data (session 2026-08-24)
 
-- **Game 1** (20:43, seed 1336465919): You = **Yogg-Saron** (TB_BaconShop_HERO_35),
-  **5th (LOST)**. Board: pirates/mech hybrid (Gatekeeper Amalgam, Rimescale
-  Priestess, Captain Cookie, Timecap'n Hooktail, Proud Privateer). Opponents seen:
-  Cap'n Hoggarr (8th), Guff Runetotem (7th), Shudderwock (4th).
-- **Game 2** (21:02, seed 1233865749): You = **George the Fallen**
-  (TB_BaconShop_HERO_15), **1st (WON)**. Opponents seen: Arch-Villain Rafaam (2nd),
-  Genn (3rd), Mutanus (4th), Maiev (5th), Lord Barov (6th).
+Extracted from `Hearthstone_2026_08_24\Power_old.log` (2 games):
+
+- **Game 1**: You = **Nightmare Lord Xavius** (BG36_HERO_105), **5th**. Winner:
+  Inge, the Iron Hymn (tier 6); last: Murloc Holmes (tier 4).
+- **Game 2**: You = **Sire Denathrius** (BG24_HERO_100), **8th**. Winner:
+  Shudderwock (tier 5); last: you (tier 5).
 
 Confirmations:
-- Full 8-player visibility (heroes, placements, opponent identities) recoverable.
-- Hero choice + pick reconstructable (offered list -> chosen hero).
-- Board composition + spells/trinkets recoverable per player.
+- Full 8-player visibility (heroes, hero names, account names, placements,
+  tiers) recoverable — all 8 account names resolve in both games.
+- Tier timing recoverable per-hero for all 8 players.
+- Friendly move stream (buys/sells) recoverable; opponents' individual
+  buys/sells are **not** (they share the spectator player number).
 
-Natural first/last contrast: a losing pirates/mech board (5th) vs a winning
-George game (1st) — ideal for the planned comparison.
+Honest note: tier timing alone does not separate the game-2 winner from the
+loser (both hit tier 5 within seconds). Board composition and combat RNG carry
+the rest — see `BG_LOG_STRUCTURE.md`.
 
 ## Honest caveats
 

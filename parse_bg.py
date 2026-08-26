@@ -5,8 +5,12 @@ Usage:
 
 Smoke test: confirm hslog can parse real Battlegrounds logs and that
 per-player data (hero card, placement) is recoverable.
+
+Note: hslog's LogParser shares one PlayerManager across all games, but in
+Battlegrounds the same player name gets a different player_id per lobby, which
+raises InconsistentPlayerIdError. We split the log into games first and parse
+each with a fresh LogParser to avoid that.
 """
-import argparse
 import sys
 
 from hslog.export import EntityTreeExporter
@@ -21,6 +25,23 @@ def _enum_name(enum_cls, value):
         return str(value)
 
 
+def split_game_chunks(lines):
+    """Yield (start, end) line-index ranges, one per game.
+
+    Game boundaries are CREATE_GAME lines from GameState.DebugPrintPower()
+    (the duplicate PowerTaskList entries are ignored).
+    """
+    boundaries = [
+        i for i, line in enumerate(lines)
+        if "CREATE_GAME" in line and "GameState.DebugPrintPower" in line
+    ]
+    if not boundaries:
+        return
+    ends = boundaries[1:] + [len(lines)]
+    for start, end in zip(boundaries, ends):
+        yield start, end
+
+
 def player_final_playstate(game, player):
     """Find the final PLAYSTATE tag across entities controlled by this player."""
     for ent in game.entities:
@@ -31,9 +52,9 @@ def player_final_playstate(game, player):
     return "?"
 
 
-def summarize(game):
+def summarize(game, game_type=None):
     lines = []
-    gtype = _enum_name(GameType, game.tags.get(GameTag.GAMETYPE))
+    gtype = _enum_name(GameType, game_type)
     lines.append(f"  game_type={gtype}")
     for player in game.players:
         hero_id = "?"
@@ -60,16 +81,21 @@ def main():
         limit = int(sys.argv[sys.argv.index("--games") + 1])
 
     print(f"Parsing {log_path} ...", file=sys.stderr)
-    parser = LogParser()
     with open(log_path, encoding="utf-8", errors="replace") as f:
-        parser.read(f)
+        lines = f.readlines()
 
-    trees = parser.games
-    print(f"Total games parsed: {len(trees)}", file=sys.stderr)
+    chunks = list(split_game_chunks(lines))
+    print(f"Games found: {len(chunks)}", file=sys.stderr)
     if limit:
-        trees = trees[:limit]
+        chunks = chunks[:limit]
 
-    for idx, tree in enumerate(trees, 1):
+    for idx, (start, end) in enumerate(chunks, 1):
+        parser = LogParser()
+        parser.read(lines[start:end])
+        if not parser.games:
+            print(f"\n=== Game {idx} === NO GAME PARSED")
+            continue
+        tree = parser.games[0]
         exporter = EntityTreeExporter(tree, parser.player_manager)
         try:
             exporter.export()
@@ -78,7 +104,7 @@ def main():
             print(f"\n=== Game {idx} === EXPORT FAILED: {e!r}")
             continue
         print(f"\n=== Game {idx} ===")
-        print(summarize(game))
+        print(summarize(game, parser.game_meta.get("GameType")))
     return 0
 
 
