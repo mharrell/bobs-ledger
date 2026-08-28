@@ -45,14 +45,14 @@ winner from loser.
       correctly before trusting it (breakoutBot discipline).
 
 ## Phase 4 — Coach agent
-- [x] Lock model choice: **`deepseek-v4-flash`** (1M context), pinned in
-      `coach_llm.py` with prefix-cache discipline (FIXED_BLOCK meta + VARIABLE
-      tail). See DESIGN.md "Model, context & cache strategy".
-- [ ] Wire `DEEPSEEK_API_KEY` (env) and smoke-test `coach_llm.py` against the
-      hosted API; confirm `prompt_cache_hit_tokens` climbs on repeat calls.
+- [ ] **Choose the coach's advice model** (open decision): hosted API vs local
+      vision-capable model. `coach_llm.py` (a DeepSeek v4 flash client) exists
+      but is NOT the intended advice engine at this time. (The deepseek-v4-flash
+      config in `~/.claude/settings.json` is for the Claude Code session, not the
+      coach.)
 - [ ] Build the coach loop: parse board state (`board_state.py`) + family ban
-      (`bans.py`) → filter comps → assemble the FIXED_BLOCK meta + VARIABLE
-      board-state tail → call `coach_llm.py` → emit advice.
+      (`bans.py`) → filter comps → assemble the meta FIXED_BLOCK + board-state
+      VARIABLE tail → call the chosen advice model → emit advice.
 - [x] **Respect the family ban:** exactly 5 tribes allowed / 5 banned per game.
       `bans.py` extracts the 5 allowed tribes from a Power.log (pure-tribe pool
       minions) and `filter_comps_by_available_tribes` filters comps (every core
@@ -82,16 +82,16 @@ winner from loser.
   board-specific, explainable advice; use HSReplay stats (if any) as supplement.
 - Hybrid architecture: live board parse + structured meta + family-ban filter +
   optional stats + reasoning.
-- **Model: `deepseek-v4-flash`** (1M context) with prefix-cache discipline —
-  see DESIGN.md "Model, context & cache strategy" and `coach_llm.py`.
+- **Claude Code session model:** `deepseek-v4-flash` (1M context) with
+  prefix-cache discipline — the harness config for the tool building the coach,
+  NOT the coach's advice model. See DESIGN.md "Model & cache strategy".
 - **Family ban:** exactly 5 tribes allowed / 5 banned per game; comps filtered by
   core-card tribes (`bans.py`).
 
 ## Open decisions
 - Live board source: Power.log vs screen OCR.
-- Vision model: hosted API (if images accepted) vs local vision-capable model
-  (text reasoning is locked to `deepseek-v4-flash`; vision is a separate input
-  path to confirm).
+- **Coach's advice model:** hosted API vs local vision-capable model (undecided;
+  `coach_llm.py` is parked, not the intended engine).
 - Latency/cost budget per decision.
 - Evaluation protocol (sham-control).
 

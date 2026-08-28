@@ -84,24 +84,18 @@ the relevant subset per decision. Self-owned; no dependence on HSReplay's API
 (which is Cloudflare-protected for minions/heroes/dark-gifts — those are captured
 via manual paste).
 
-### Model, context & cache strategy (LOCKED)
-- **Model: `deepseek-v4-flash`** (1M-token context). Pinned in `coach_llm.py`;
-  use the id directly, not the deprecated `deepseek-chat`/`deepseek-reasoner`
-  aliases (they route to v4-flash but share its cache and are deprecated).
-- **Context: exploit the full 1M window.** The *entire* static meta reference
-  (all comps + cards, ~7.5k tokens) fits trivially. No per-decision subsetting
-  for size — load it all into the cached prefix.
-- **Cache: prefix-cache discipline** (see `.claude/skills/cache-in-flight/`).
-  Every request = byte-stable FIXED_BLOCK (system prompt + full meta reference)
-  + per-decision VARIABLE tail (live board state + question). A cache hit is
-  ~50x cheaper input tokens; the per-decision cost collapses to just the small
-  board-state tail. **Never** interleave live state into the fixed block or
-  regenerate the system prompt per call — either busts the whole prefix.
-- **Verify, don't assume:** read `prompt_cache_hit_tokens` vs
-  `prompt_cache_miss_tokens` from each response; if hits are ~0, find the
-  prefix drift before scaling up.
-- **Client:** `coach_llm.py` (uses `requests`, already in the venv; reads
-  `DEEPSEEK_API_KEY` from env). No SDK install needed.
+### Model & cache strategy — two distinct things
+**1. The Claude Code session (the tool building the coach) runs on
+`deepseek-v4-flash`** (1M context) with prefix-cache discipline. That's the
+harness config in `~/.claude/settings.json` — it powers *this* agent, not the
+coach's runtime. Cache discipline: byte-stable FIXED_BLOCK + per-decision
+VARIABLE tail; verify via `prompt_cache_hit_tokens` vs `prompt_cache_miss_tokens`.
+
+**2. The coach's advice model is a separate, OPEN decision** (see ROADMAP
+"Open decisions"). It was never locked. `coach_llm.py` is a DeepSeek v4 flash
+client that exists in the repo (kept) but is **not** the intended advice engine
+at this time. The coach's reasoning model — hosted API vs local vision-capable
+model — is still to be chosen.
 
 ### Domain constraint — family ban (LOCKED)
 Each Battlegrounds game allows **exactly 5 tribes** and bans the other 5
