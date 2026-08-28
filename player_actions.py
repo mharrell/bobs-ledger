@@ -18,9 +18,10 @@ from extract_game import split_game_chunks, extract_game, _friendly_player
 # A real board minion (excludes enchantments, golden _G, trinkets).
 MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BGS_\d+|BG_[A-Z]+_\d+)$")
 
-# Entity=[entityName=X id=N zone=Z zonePos=P cardId=C player=P]
+# [Entity|mainEntity]=[entityName=X id=N zone=Z zonePos=P cardId=C player=P]
+# mainEntity= appears in DebugPrintOptions (shop offers / hand display).
 ENTITY = re.compile(
-    r"Entity=\[entityName=(\S+) id=(\d+) zone=(\w+) zonePos=(\d+) cardId=(\w+) player=(\d+)"
+    r"(?:Entity|mainEntity)=\[entityName=(\S+) id=(\d+) zone=(\w+) zonePos=(\d+) cardId=(\w+) player=(\d+)"
 )
 # The real turn counter is NUM_TURNS_IN_PLAY (TURN is a different, unreliable
 # counter). In Duos the game re-enters MAIN_READY with alternating values, so we
@@ -31,6 +32,8 @@ TRIPLE = re.compile(r"tag=BACON_TRIPLED_BASE_MINION_ID value=(\d+)")
 # acts (buy/sell/refresh/upgrade/hero-power); MAIN_COMBAT is automatic.
 STEP_RE = re.compile(r"Entity=GameEntity tag=STEP value=(\w+)")
 SHOP_STEPS = {"MAIN_ACTION", "MAIN_START", "MAIN_READY", "MAIN_START_TRIGGERS"}
+# A refresh is a BLOCK_START on the Refresh button (TB_BaconShop_8p_Reroll_Button).
+REFRESH = re.compile(r"BLOCK_START BlockType=TRIGGER Entity=\[entityName=Refresh ")
 
 
 def parse_actions(chunk, friendly):
@@ -61,6 +64,11 @@ def parse_actions(chunk, friendly):
             step = m.group(1)
             continue
 
+        m = REFRESH.search(line)
+        if m and cur_turn is not None:
+            turns[-1]["refreshes"] += 1
+            continue
+
         m = ENTITY.search(line)
         if m:
             name, eid, z, pos, cid, p = (
@@ -76,19 +84,14 @@ def parse_actions(chunk, friendly):
             if cur_turn is None:
                 continue
 
-            # BUY: minion enters the friendly player's hand (from the tavern).
-            if p == friendly and z == "HAND" and old_zone != "HAND":
+            # BUY: minion's controller becomes friendly (bought from the tavern)
+            # and it's in HAND.
+            if p == friendly and z == "HAND" and old_player != friendly:
                 turns[-1]["buys"].append(cid)
             # SELL: friendly minion leaves PLAY during the shop phase (not combat).
             elif (p == friendly and old_zone == "PLAY"
                   and z in ("SETASIDE", "GRAVEYARD") and step in SHOP_STEPS):
                 turns[-1]["sells"].append(cid)
-            # REFRESH: tavern minion (not friendly) leaves PLAY during the shop
-            # phase. A refresh swaps the whole tavern, so group by the zone pos
-            # set rather than counting each minion.
-            elif (p != friendly and old_zone == "PLAY" and z != "PLAY"
-                  and step in SHOP_STEPS):
-                turns[-1]["refreshes"] += 1
             continue
 
         m = TRIPLE.search(line)
