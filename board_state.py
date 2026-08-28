@@ -25,11 +25,13 @@ from extract_game import (
     HERO_CARD, TIMESTAMP, split_game_chunks, extract_game, _friendly_player,
 )
 
-# A real board minion: BGxx_NNN, BGS_NNN (legacy), or BG_XXX_NNN (reprints of
-# old-set cards, e.g. Brann = BG_LOE_077). BGS_ is used by both minions and
-# spells, so the cardtype filter (not this regex) does the minion/spell split.
-# Excludes enchantments (BGxx_NNNx), golden cards (BGxx_NNN_G), and trinkets.
-MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BGS_\d+|BG_[A-Z]+_\d+)$")
+# A real board minion: BGxx_NNN, BGxx_SETCODE_NNN (e.g. Drakkari = BG26_ICC_901),
+# BGS_NNN (legacy), or BG_XXX_NNN (reprints, e.g. Brann = BG_LOE_077). BGS_ is
+# used by both minions and spells, so the cardtype filter (not this regex) does
+# the minion/spell split. Excludes enchantments (BGxx_NNNx), golden cards
+# (BGxx_NNN_G), and trinkets. Heroes (HERO) match the set-code branch but are
+# filtered by the cardtype check.
+MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BG\d+_[A-Z]+_\d+|BGS_\d+|BG_[A-Z]+_\d+)$")
 
 # Boolean combat keywords worth reporting on a board.
 KEYWORDS = ("TAUNT", "DIVINE_SHIELD", "REBORN", "WINDFURY", "POISONOUS",
