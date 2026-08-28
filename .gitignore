@@ -9,3 +9,6 @@ venv/
 
 # Vendored dependency — has its own .git (decide: vendor / submodule / keep ignored)
 hearth-coach/python-hslog/
+
+# Scraper cache — downloaded hearthstonejson card list, regenerable
+hearth-coach/.cards_cache.json

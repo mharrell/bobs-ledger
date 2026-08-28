@@ -39,9 +39,13 @@ winner from loser.
 - Per-decision fetch (only the relevant subset).
 
 ## Phase 4 — Coach agent
-- Resolve model choice: vision-capable model or hosted API (confirm image input).
-- Reason over (board state + meta images [+ optional HSReplay stats]).
-- Emit dynamic, board-specific, explainable advice.
+- [x] Lock model choice: **`deepseek-v4-flash`** (1M context), pinned in
+      `coach_llm.py` with prefix-cache discipline (FIXED_BLOCK meta + VARIABLE
+      tail). See DESIGN.md "Model, context & cache strategy".
+- [ ] Wire `DEEPSEEK_API_KEY` (env) and smoke-test `coach_llm.py` against the
+      hosted API; confirm `prompt_cache_hit_tokens` climbs on repeat calls.
+- [ ] Reason over (board state + meta reference [+ optional HSReplay stats]).
+- [ ] Emit dynamic, board-specific, explainable advice.
 
 ## Phase 5 — Overlay / delivery
 - Overlay UI (text / arrow / audio) with a per-decision latency/cost budget.
@@ -63,10 +67,14 @@ winner from loser.
 - Competitive angle: **reasoning over data volume**; lead with dynamic,
   board-specific, explainable advice; use HSReplay stats (if any) as supplement.
 - Hybrid architecture: live board parse + meta images + optional stats + reasoning.
+- **Model: `deepseek-v4-flash`** (1M context) with prefix-cache discipline —
+  see DESIGN.md "Model, context & cache strategy" and `coach_llm.py`.
 
 ## Open decisions
 - Live board source: Power.log vs screen OCR.
-- Vision model: hosted API (if images accepted) vs local vision-capable model.
+- Vision model: hosted API (if images accepted) vs local vision-capable model
+  (text reasoning is locked to `deepseek-v4-flash`; vision is a separate input
+  path to confirm).
 - Latency/cost budget per decision.
 - Evaluation protocol (sham-control).
 

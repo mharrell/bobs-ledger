@@ -1,12 +1,625 @@
 {
-  "BG36_352": {"name": "Unbound Tempest", "tier": 6, "tribe": "Elemental", "atk": 3, "health": 12},
-  "BGS_123": {"name": "Tavern Tempest", "tier": 4, "tribe": "Elemental", "atk": 2, "health": 2},
-  "BG_LOE_077": {"name": "Brann Bronzebeard", "tier": 5, "tribe": "Neutral", "atk": 2, "health": 4},
-  "BGS_104": {"name": "Nomi, Kitchen Nightmare", "tier": 5, "tribe": "Elemental", "atk": 6, "health": 6},
-  "BG36_701": {"name": "Kelp Keeper", "tier": 4, "tribe": "Murloc", "atk": 5, "health": 5},
-  "BG34_858": {"name": "Air Revenant", "tier": 5, "tribe": "Elemental", "atk": 3, "health": 6},
-  "BG34_500": {"name": "Flaming Enforcer", "tier": 4, "tribe": "Demon/Elemental", "atk": 4, "health": 5},
-  "BG32_846": {"name": "Unleashed Mana Surge", "tier": 6, "tribe": "Elemental", "atk": 6, "health": 5},
-  "BGS_115": {"name": "Sellemental", "tier": 2, "tribe": "Elemental", "atk": 3, "health": 3},
-  "BGS_116": {"name": "Refreshing Anomaly", "tier": 4, "tribe": "Elemental", "atk": 4, "health": 5}
+  "BG21_004": {
+    "atk": 4,
+    "health": 6,
+    "name": "Insatiable Ur'zul",
+    "tier": 5,
+    "tribe": "Demon"
+  },
+  "BG23_008": {
+    "atk": 4,
+    "health": 6,
+    "name": "Glowscale",
+    "tier": 5,
+    "tribe": "Naga"
+  },
+  "BG23_017": {
+    "atk": 9,
+    "health": 3,
+    "name": "Sanguine Champion",
+    "tier": 6,
+    "tribe": "Quilboar"
+  },
+  "BG23_318": {
+    "atk": 6,
+    "health": 2,
+    "name": "Leeroy the Reckless",
+    "tier": 5,
+    "tribe": "Neutral"
+  },
+  "BG24_004": {
+    "atk": 12,
+    "health": 4,
+    "name": "Warpwing",
+    "tier": 6,
+    "tribe": "Dragon"
+  },
+  "BG24_500": {
+    "atk": 3,
+    "health": 2,
+    "name": "Amber Guardian",
+    "tier": 3,
+    "tribe": "Dragon"
+  },
+  "BG25_009": {
+    "atk": 8,
+    "health": 1,
+    "name": "Eternal Summoner",
+    "tier": 6,
+    "tribe": "Undead"
+  },
+  "BG25_010": {
+    "atk": 2,
+    "health": 1,
+    "name": "Handless Forsaken",
+    "tier": 3,
+    "tribe": "Undead"
+  },
+  "BG25_016": {
+    "atk": 3,
+    "health": 4,
+    "name": "Sin'dorei Straight Shot",
+    "tier": 4,
+    "tribe": "Neutral"
+  },
+  "BG25_354": {
+    "atk": 1,
+    "health": 7,
+    "name": "Titus Rivendare",
+    "tier": 5,
+    "tribe": "Neutral"
+  },
+  "BG26_148": {
+    "atk": 6,
+    "health": 5,
+    "name": "Scrap Scraper",
+    "tier": 5,
+    "tribe": "Mech"
+  },
+  "BG26_152": {
+    "atk": 4,
+    "health": 6,
+    "name": "Utility Drone",
+    "tier": 6,
+    "tribe": "Mech"
+  },
+  "BG26_174": {
+    "atk": 4,
+    "health": 1,
+    "name": "Soul Rewinder",
+    "tier": 2,
+    "tribe": "Demon"
+  },
+  "BG26_354": {
+    "atk": 6,
+    "health": 6,
+    "name": "Choral Mrrrglr",
+    "tier": 6,
+    "tribe": "Murloc"
+  },
+  "BG26_802": {
+    "atk": 3,
+    "health": 6,
+    "name": "Banana Slamma",
+    "tier": 4,
+    "tribe": "Beast"
+  },
+  "BG26_817": {
+    "atk": 3,
+    "health": 2,
+    "name": "Blade Collector",
+    "tier": 4,
+    "tribe": "Pirate"
+  },
+  "BG26_ICC_901": {
+    "atk": 1,
+    "health": 5,
+    "name": "Drakkari Enchanter",
+    "tier": 5,
+    "tribe": "Neutral"
+  },
+  "BG26_RLK_119": {
+    "atk": 3,
+    "health": 4,
+    "name": "Drakkari Embalmer",
+    "tier": 4,
+    "tribe": "Undead"
+  },
+  "BG27_556": {
+    "atk": 4,
+    "health": 5,
+    "name": "Diremuck Forager",
+    "tier": 3,
+    "tribe": "Murloc"
+  },
+  "BG28_633": {
+    "atk": 2,
+    "health": 6,
+    "name": "Felboar",
+    "tier": 5,
+    "tribe": "Demon/Quilboar"
+  },
+  "BG29_810": {
+    "atk": 2,
+    "health": 3,
+    "name": "Thousandth Paper Drake",
+    "tier": 2,
+    "tribe": "Dragon"
+  },
+  "BG29_813": {
+    "atk": 2,
+    "health": 3,
+    "name": "Persistent Poet",
+    "tier": 4,
+    "tribe": "Dragon"
+  },
+  "BG31_035": {
+    "atk": 6,
+    "health": 4,
+    "name": "Groundbreaker",
+    "tier": 6,
+    "tribe": "Naga"
+  },
+  "BG31_323": {
+    "atk": 5,
+    "health": 7,
+    "name": "Turbo Hogrider",
+    "tier": 6,
+    "tribe": "Quilboar"
+  },
+  "BG31_326": {
+    "atk": 4,
+    "health": 4,
+    "name": "Gem Rat",
+    "tier": 3,
+    "tribe": "Quilboar"
+  },
+  "BG31_327": {
+    "atk": 4,
+    "health": 5,
+    "name": "Thorned Trailblazer",
+    "tier": 4,
+    "tribe": "Quilboar"
+  },
+  "BG31_835": {
+    "atk": 8,
+    "health": 8,
+    "name": "Deathly Striker",
+    "tier": 6,
+    "tribe": "Undead"
+  },
+  "BG31_843": {
+    "atk": 4,
+    "health": 4,
+    "name": "Meteorite Crasher",
+    "tier": 3,
+    "tribe": "Elemental"
+  },
+  "BG31_920": {
+    "atk": 4,
+    "health": 5,
+    "name": "Darkcrest Strategist",
+    "tier": 5,
+    "tribe": "Naga"
+  },
+  "BG32_324": {
+    "atk": 2,
+    "health": 9,
+    "name": "Drustfallen Butcher",
+    "tier": 5,
+    "tribe": "Undead"
+  },
+  "BG32_821": {
+    "atk": 6,
+    "health": 5,
+    "name": "Felfire Conjurer",
+    "tier": 5,
+    "tribe": "Demon/Dragon"
+  },
+  "BG32_822": {
+    "atk": 8,
+    "health": 5,
+    "name": "Fire-forged Evoker",
+    "tier": 6,
+    "tribe": "Dragon"
+  },
+  "BG32_835": {
+    "atk": 3,
+    "health": 8,
+    "name": "Tranquil Meditative",
+    "tier": 5,
+    "tribe": "Naga"
+  },
+  "BG32_837": {
+    "atk": 4,
+    "health": 9,
+    "name": "Fauna Whisperer",
+    "tier": 6,
+    "tribe": "Naga"
+  },
+  "BG32_842": {
+    "atk": 4,
+    "health": 1,
+    "name": "Glowing Cinder",
+    "tier": 4,
+    "tribe": "Elemental"
+  },
+  "BG32_846": {
+    "atk": 6,
+    "health": 5,
+    "name": "Unleashed Mana Surge",
+    "tier": 6,
+    "tribe": "Elemental"
+  },
+  "BG32_873": {
+    "atk": 5,
+    "health": 6,
+    "name": "Ashen Corruptor",
+    "tier": 4,
+    "tribe": "Demon"
+  },
+  "BG32_880": {
+    "atk": 6,
+    "health": 3,
+    "name": "Friendly Geist",
+    "tier": 4,
+    "tribe": "Undead"
+  },
+  "BG33_318": {
+    "atk": 1,
+    "health": 10,
+    "name": "Bile Spitter",
+    "tier": 5,
+    "tribe": "Murloc"
+  },
+  "BG33_823": {
+    "atk": 4,
+    "health": 5,
+    "name": "Sky Admiral Rogers",
+    "tier": 6,
+    "tribe": "Pirate"
+  },
+  "BG33_825": {
+    "atk": 8,
+    "health": 8,
+    "name": "Proud Privateer",
+    "tier": 5,
+    "tribe": "Pirate"
+  },
+  "BG33_885": {
+    "atk": 2,
+    "health": 8,
+    "name": "Sanguine Refiner",
+    "tier": 5,
+    "tribe": "Quilboar"
+  },
+  "BG33_891": {
+    "atk": 4,
+    "health": 8,
+    "name": "Magicfin Mycologist",
+    "tier": 6,
+    "tribe": "Murloc"
+  },
+  "BG34_140": {
+    "atk": 3,
+    "health": 4,
+    "name": "Expert Aviator",
+    "tier": 2,
+    "tribe": "Murloc"
+  },
+  "BG34_500": {
+    "atk": 4,
+    "health": 5,
+    "name": "Flaming Enforcer",
+    "tier": 4,
+    "tribe": "Demon/Elemental"
+  },
+  "BG34_604": {
+    "atk": 1,
+    "health": 10,
+    "name": "Heroic Underdog",
+    "tier": 4,
+    "tribe": "Neutral"
+  },
+  "BG34_684": {
+    "atk": 3,
+    "health": 3,
+    "name": "Trench Fighter",
+    "tier": 3,
+    "tribe": "Quilboar"
+  },
+  "BG34_692": {
+    "atk": 3,
+    "health": 10,
+    "name": "Forsaken Weaver",
+    "tier": 6,
+    "tribe": "Undead"
+  },
+  "BG34_858": {
+    "atk": 3,
+    "health": 6,
+    "name": "Air Revenant",
+    "tier": 5,
+    "tribe": "Elemental"
+  },
+  "BG34_925": {
+    "atk": 3,
+    "health": 5,
+    "name": "Seafloor Recruiter",
+    "tier": 4,
+    "tribe": "Naga"
+  },
+  "BG35_155": {
+    "atk": 8,
+    "health": 8,
+    "name": "Twisted Wrathguard",
+    "tier": 6,
+    "tribe": "Demon"
+  },
+  "BG35_342": {
+    "atk": 4,
+    "health": 2,
+    "name": "Falling Sky Golem",
+    "tier": 6,
+    "tribe": "Mech"
+  },
+  "BG35_602": {
+    "atk": 3,
+    "health": 8,
+    "name": "Lurking Leviathan",
+    "tier": 5,
+    "tribe": "Beast"
+  },
+  "BG35_604": {
+    "atk": 4,
+    "health": 6,
+    "name": "Sewer Lord",
+    "tier": 5,
+    "tribe": "Beast"
+  },
+  "BG35_883": {
+    "atk": 6,
+    "health": 6,
+    "name": "Balinda Stonehearth",
+    "tier": 6,
+    "tribe": "Neutral"
+  },
+  "BG36_201": {
+    "atk": 3,
+    "health": 4,
+    "name": "Lurking Lionfish",
+    "tier": 2,
+    "tribe": "Beast"
+  },
+  "BG36_202": {
+    "atk": 1,
+    "health": 1,
+    "name": "Tasty Lobster",
+    "tier": 3,
+    "tribe": "Beast"
+  },
+  "BG36_204": {
+    "atk": 3,
+    "health": 5,
+    "name": "Headhunter Gryphon",
+    "tier": 4,
+    "tribe": "Beast"
+  },
+  "BG36_208": {
+    "atk": 10,
+    "health": 11,
+    "name": "Deathstrider",
+    "tier": 6,
+    "tribe": "Beast"
+  },
+  "BG36_242": {
+    "atk": 2,
+    "health": 9,
+    "name": "Bronze Timewalker",
+    "tier": 4,
+    "tribe": "Dragon"
+  },
+  "BG36_243": {
+    "atk": 4,
+    "health": 7,
+    "name": "Sky-hatch Runaway",
+    "tier": 4,
+    "tribe": "Dragon"
+  },
+  "BG36_331": {
+    "atk": 3,
+    "health": 6,
+    "name": "Bramble Tunneler",
+    "tier": 4,
+    "tribe": "Quilboar"
+  },
+  "BG36_344": {
+    "atk": 4,
+    "health": 4,
+    "name": "Hooktusk, Master Marauder",
+    "tier": 6,
+    "tribe": "Pirate"
+  },
+  "BG36_351": {
+    "atk": 5,
+    "health": 10,
+    "name": "Moat Custodian",
+    "tier": 6,
+    "tribe": "Elemental"
+  },
+  "BG36_352": {
+    "atk": 3,
+    "health": 12,
+    "name": "Unbound Tempest",
+    "tier": 6,
+    "tribe": "Elemental"
+  },
+  "BG36_506": {
+    "atk": 5,
+    "health": 2,
+    "name": "Drone Duplicator",
+    "tier": 4,
+    "tribe": "Mech"
+  },
+  "BG36_510": {
+    "atk": 3,
+    "health": 5,
+    "name": "Vigilant Bristlemane",
+    "tier": 5,
+    "tribe": "Quilboar"
+  },
+  "BG36_514": {
+    "atk": 7,
+    "health": 7,
+    "name": "Barrier Banshee",
+    "tier": 5,
+    "tribe": "Undead"
+  },
+  "BG36_515": {
+    "atk": 6,
+    "health": 8,
+    "name": "Snazzy Phantom",
+    "tier": 6,
+    "tribe": "Undead"
+  },
+  "BG36_523": {
+    "atk": 6,
+    "health": 6,
+    "name": "Enterprising Escapee",
+    "tier": 5,
+    "tribe": "Pirate"
+  },
+  "BG36_622": {
+    "atk": 6,
+    "health": 3,
+    "name": "Torrential Ruiner",
+    "tier": 6,
+    "tribe": "Naga"
+  },
+  "BG36_640": {
+    "atk": 6,
+    "health": 6,
+    "name": "Gatekeeper Amalgam",
+    "tier": 6,
+    "tribe": "All"
+  },
+  "BG36_701": {
+    "atk": 5,
+    "health": 5,
+    "name": "Kelp Keeper",
+    "tier": 4,
+    "tribe": "Murloc"
+  },
+  "BG36_704": {
+    "atk": 5,
+    "health": 7,
+    "name": "Shamanic Tidecaller",
+    "tier": 5,
+    "tribe": "Murloc"
+  },
+  "BG36_731": {
+    "atk": 4,
+    "health": 2,
+    "name": "Imp-lusionist",
+    "tier": 4,
+    "tribe": "Demon"
+  },
+  "BG36_760": {
+    "atk": 5,
+    "health": 3,
+    "name": "Captain Cookie",
+    "tier": 4,
+    "tribe": "Murloc/Pirate"
+  },
+  "BG36_762": {
+    "atk": 4,
+    "health": 7,
+    "name": "Devilish Distractor",
+    "tier": 5,
+    "tribe": "Demon"
+  },
+  "BG36_851": {
+    "atk": 5,
+    "health": 5,
+    "name": "Spark Snapper",
+    "tier": 5,
+    "tribe": "Mech"
+  },
+  "BG36_853": {
+    "atk": 4,
+    "health": 4,
+    "name": "Glambot",
+    "tier": 4,
+    "tribe": "Mech"
+  },
+  "BG36_854": {
+    "atk": 2,
+    "health": 1,
+    "name": "Rescue Bot",
+    "tier": 3,
+    "tribe": "Mech"
+  },
+  "BGS_012": {
+    "atk": 3,
+    "health": 6,
+    "name": "Kangor's Apprentice",
+    "tier": 5,
+    "tribe": "Neutral"
+  },
+  "BGS_041": {
+    "atk": 4,
+    "health": 12,
+    "name": "Kalecgos, Arcane Aspect",
+    "tier": 5,
+    "tribe": "Dragon"
+  },
+  "BGS_104": {
+    "atk": 6,
+    "health": 6,
+    "name": "Nomi, Kitchen Nightmare",
+    "tier": 5,
+    "tribe": "Elemental"
+  },
+  "BGS_115": {
+    "atk": 3,
+    "health": 3,
+    "name": "Sellemental",
+    "tier": 2,
+    "tribe": "Elemental"
+  },
+  "BGS_116": {
+    "atk": 4,
+    "health": 5,
+    "name": "Refreshing Anomaly",
+    "tier": 4,
+    "tribe": "Elemental"
+  },
+  "BGS_123": {
+    "atk": 2,
+    "health": 2,
+    "name": "Tavern Tempest",
+    "tier": 4,
+    "tribe": "Elemental"
+  },
+  "BGS_127": {
+    "atk": 3,
+    "health": 3,
+    "name": "Molten Rock",
+    "tier": 1,
+    "tribe": "Elemental"
+  },
+  "BGS_131": {
+    "atk": 1,
+    "health": 1,
+    "name": "Deadly Spore",
+    "tier": 3,
+    "tribe": "Neutral"
+  },
+  "BG_LOE_077": {
+    "atk": 2,
+    "health": 4,
+    "name": "Brann Bronzebeard",
+    "tier": 5,
+    "tribe": "Neutral"
+  }
 }

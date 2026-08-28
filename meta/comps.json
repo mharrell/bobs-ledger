@@ -1,10 +1,442 @@
 {
   "elementals-unbound-tempest": {
     "name": "Elementals - Unbound Tempest",
-    "core": ["BG36_352", "BGS_123", "BG_LOE_077", "BGS_104", "BG36_701"],
-    "addons": ["BG34_858", "BG34_500", "BG32_846"],
-    "enablers": ["BG_LOE_077", "BGS_123", "BG36_701"],
-    "how_to_play": "Buff the shop with Nomi or Air Revenant, whichever you find first. Use Brann + Tavern Tempest + Kelp Keeper for economy and elemental generation. Flaming Enforcer stabilizes midgame; Unbound Tempest caps scaling. Cycle premium elementals (Sellemental, Refreshing Anomaly).",
-    "when_to_commit": "Brann + shop buff (Nomi) + Unbound Tempest"
+    "difficulty": "Easy",
+    "meta_tier": "S",
+    "core": [
+      "BG36_352",
+      "BGS_123",
+      "BG_LOE_077",
+      "BGS_104",
+      "BG36_701"
+    ],
+    "how_to_play": "Buff the shop with either [[Nomi, Kitchen Nightmare||63626]] or [[Air Revenant||126173]], whichever method you find first. Use [[Brann Bronzebeard||96786]] + [[Tavern Tempest||64077]] + [[Kelp Keeper||132883]] for massive economy and elemental generation. You may use [[Flaming Enforcer||126924]] to stabilize in the midgame, and [[Unbound Tempest||132983]] to cap out your scaling. With tempest, cycle premium elementals such as [[Sellemental||64038]] and [[Refreshing Anomaly||64042]].",
+    "addons": [
+      "BG34_858",
+      "BG34_500",
+      "BG32_846"
+    ],
+    "summary": "Play elementals to scale from big shop",
+    "when_to_commit": "Brann Bronzebeard + shop buff (Nomi, Kitchen Nightmare) + Unbound Tempest",
+    "common_enablers": "Brann Bronzebeard\nTavern Tempest + Kelp Keeper",
+    "representative_card": "BG36_352",
+    "tribe": "Elementals"
+  },
+  "nagas-end-of-turn-spell-buff": {
+    "name": "Nagas - End Of Turn/Spell Buff",
+    "difficulty": "Medium",
+    "meta_tier": "S",
+    "core": [
+      "BG32_821",
+      "BG26_ICC_901",
+      "BG36_640",
+      "BG32_837",
+      "BG35_883"
+    ],
+    "how_to_play": "[[Felfire Conjurer||120299]] buffs your spell power, while [[Fauna Whisperer||120905]] uses that spell power to buff your board at the end of the turn. Both effects are amplified by [[Drakkari Enchanter||101314]]. The best target to buff with [[Fauna Whisperer||120905]] is [[Gatekeeper Amalgam||133329]] because it is an all tribe which buffs all your tribed units, and also it additionally casts Misplaced Tea Sets which benefit from spell power. Buy cheap targetted spells to use on Amalgam when you have [[Balinda Stonehearth||130298]].",
+    "addons": [
+      "BG36_622",
+      "BG34_500",
+      "BG32_835"
+    ],
+    "summary": "Scale end of turn with spell power",
+    "when_to_commit": "Spell power (Felfire Conjurer) + Fauna Whisperer or Gatekeeper Amalgam",
+    "common_enablers": "Spell power (Felfire Conjurer)\nFauna Whisperer",
+    "representative_card": "BG32_837",
+    "tribe": "Nagas",
+    "guide": "guides/nagas-end-of-turn-spell-buff.md"
+  },
+  "nagas-groundbreaker": {
+    "name": "Nagas - Groundbreaker",
+    "difficulty": "Medium",
+    "meta_tier": "A",
+    "core": [
+      "BG31_035",
+      "BG36_243",
+      "BG35_883",
+      "BG34_925"
+    ],
+    "how_to_play": "First, you must have had a Naga midgame so you casted a lot of spells. Your naga generation setup consists of [[Seafloor Recruiter||126916]] + [[Balinda Stonehearth||130298]] and/or [[Sky-Hatch Runaway||132957]]. After you have at least 2 Groundbreakers, cycle every naga that has a good effect on top of it, such as [[Shell collector||80740]] and [[Darkcrest Strategist||115555]].",
+    "addons": [
+      "BG23_008",
+      "BG31_920"
+    ],
+    "summary": "Play spells and nagas to scale",
+    "when_to_commit": "Seafloor Recruiter plus Groundbreaker",
+    "common_enablers": "Seafloor Recruiter",
+    "representative_card": "BG31_035",
+    "tribe": "Nagas"
+  },
+  "mechs-magnetics-spells": {
+    "name": "Mechs - Magnetics/Spells",
+    "difficulty": "Hard",
+    "meta_tier": "A",
+    "core": [
+      "BG36_853",
+      "BG26_152",
+      "BG35_883"
+    ],
+    "how_to_play": "Put targetted spells on mechs as much as possible with [[Glambot||132893]] on board. [[Balinda Stonehearth||130298]] doubles the effect. Best to have spell generation such as [[Captain Cookie||133075]]. Cycle good gem cards such as [[Fearless Foodie||113154]] and buy good spells such as 3 pointy arrow spell. Eventually, buy [[Utility Drone||98588]] to capitalize on the magnetics you attached with Glambot in the midgame.",
+    "addons": [
+      "BG36_506",
+      "BG36_760",
+      "BG36_854",
+      "BG26_ICC_901"
+    ],
+    "summary": "Cast spells on Mechs",
+    "when_to_commit": "Glambot + Balinda Stonehearth",
+    "common_enablers": "Glambot to stabilize",
+    "representative_card": "BG36_853",
+    "tribe": "Mechs"
+  },
+  "elementals-stat-scaling": {
+    "name": "Elementals - Stat scaling",
+    "difficulty": "Medium",
+    "meta_tier": "A",
+    "core": [
+      "BG32_846",
+      "BG_LOE_077",
+      "BG36_701",
+      "BGS_123",
+      "BG36_351"
+    ],
+    "how_to_play": "Buff your stat scaling through either [[Moat Custodian||132981]] or early [[Glowing Cinder||119951]]. Then, if you have Manasurge, cycle every good elemental ([[Sellemental||64038]], [[Tavern Tempest||64077]], [[Refreshing Anomaly||64042]], [[Sand Swirler||119949]]). It's even better if you cycle those cards with [[Brann Bronzebeard||96786]]. The best elemental engine in the game is [[Kelp Keeper||132883]] + [[Tavern Tempest||64077]] or [[Gentle Djinni||64062]] if Murlocs are in. If your economy is really good you can add [[Unbound Tempest||132983]] while buffing the shop,",
+    "addons": [
+      "BG31_843",
+      "BG32_842",
+      "BGS_127",
+      "BG36_352"
+    ],
+    "summary": "Buff stat scaling on Elementals.",
+    "when_to_commit": "Unleashed Mana Surge + Brann Bronzebeard + Stat scaling (Glowing Cinder)",
+    "common_enablers": "Glowing Cinder + Ele Midgame\nBrann Bronzebeard",
+    "representative_card": "BG32_846",
+    "tribe": "Elementals"
+  },
+  "beasts-tasty-lobstah": {
+    "name": "Beasts - Tasty Lobstah",
+    "difficulty": "Hard",
+    "meta_tier": "A",
+    "core": [
+      "BG36_208",
+      "BG25_354",
+      "BG36_202",
+      "BG36_204"
+    ],
+    "how_to_play": "Trigger [[Tasty Lobster||132796]] deathrattle as many times as possible. This is done with multiple rallies + [[Deathstrider||132808]] and [[Titus Rivendare||97408]], triggering Lobster deathrattle upon every rally. Trigger the lobster deathrattle during shop phase using golden [[Headhunter Gryphon||132800]] and buying every [[Snarky Shark||132804]] and [[Lurking Lionfish||132794]]. Reborn taunt your lobster, and then windfury your Gryphon with [[Sprightly Scarab||108909]].",
+    "addons": [
+      "BG36_201",
+      "BG36_210",
+      "BG25_016"
+    ],
+    "summary": "Trigger Lobster Deathrattle to scale",
+    "when_to_commit": "Headhunter Gryphon + Deathstrider",
+    "common_enablers": "Headhunter Gryphon",
+    "representative_card": "BG36_202",
+    "tribe": "Beasts"
+  },
+  "murlocs-venom-scam": {
+    "name": "Murlocs - Venom Scam",
+    "difficulty": "Hard",
+    "meta_tier": "A",
+    "core": [
+      "BG23_318",
+      "BG33_318",
+      "BG34_140"
+    ],
+    "how_to_play": "Buy all the scam cards and try to preserve placements by killing as many units as possible. Keep your strongest units on the board (that's why you want to concentrate stats!) and fill the rest of the board with units that may be able to trade 1 for 1. Aim to golden [[Expert Aviator||126637]] and give it venom using [[Bile Spitter||122219]]. Then, the Aviator will pull many scam units from your hand. Could give murlocs permanent Venom using [[Sky-hatch Runaway||132957]] as well.",
+    "addons": [
+      "BG36_243",
+      "BG27_556",
+      "BGS_131",
+      "BG34_604"
+    ],
+    "summary": "Buy scam cards and try to preserve placements",
+    "when_to_commit": "When you have no future or are clearly getting outstatted",
+    "common_enablers": "Getting outscaled",
+    "representative_card": "BG33_318",
+    "tribe": "Murlocs"
+  },
+  "murlocs-apm": {
+    "name": "Murlocs - APM",
+    "difficulty": "Medium",
+    "meta_tier": "A",
+    "core": [
+      "BG_LOE_077",
+      "BG27_556",
+      "BG26_354",
+      "BG36_704",
+      "BG35_883",
+      "BG33_891"
+    ],
+    "how_to_play": "First, have a ton of economy, typically starting from golden [[Brann Bronzebeard||96786]] or Brann + [[Magicfin Mycologist||122277]], remembering premium economy spells such as Cloning Conch or Battlecry Discovery. Then, your payoff card for all that economy is [[Shamanic Tidecaller||133026]]. Paired with [[Balinda Stonehearth||130298]], play as many spells on the tidecaller as possible, which could be bloodgems or [[Oozeling Gladiator||103670]] spells. Scale premium murlocs in hand such as [[Bile Spitter||122219]] and [[Expert Aviator||126637]] so you can summon them and also [[Choral Mrrrglr||98948]] can capture all of the stats of the murlocs in your hand.",
+    "addons": [
+      "BG33_318"
+    ],
+    "summary": "Play spells to scale Murlocs.",
+    "when_to_commit": "Brann Bronzebeard + lots of economy + Shamanic Tidecaller",
+    "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
+    "representative_card": "BG36_704",
+    "tribe": "Murlocs"
+  },
+  "pirates-apm-golden": {
+    "name": "Pirates - APM Golden",
+    "difficulty": "Easy",
+    "meta_tier": "A",
+    "core": [
+      "BG33_823",
+      "BG36_344",
+      "BG36_523"
+    ],
+    "how_to_play": "Go infinite with [[Enterprising Escapee||132762]] + [[Sky Admiral Rogers||122516]] + [[Proud Privateer||122520]] setup, [[Brann Bronzebeard||96786]] helps to get the ball rolling. With the escapee, you'll play a lot of goldens and discovers, both of which helps with [[Hooktusk, Master Marauder||132925]]. Scale by being infinite and buying discover effects.  ADVANCED PLAYERS: Pivot higher cap which is demons shop buff comp",
+    "addons": [
+      "BG33_825",
+      "BG_LOE_077",
+      "BG26_817"
+    ],
+    "summary": "Use infinite money to scale pirates",
+    "when_to_commit": "Enterprising Escapee + Infinite gold",
+    "common_enablers": "Enterprising Escapee",
+    "representative_card": "BG36_523",
+    "tribe": "Pirates"
+  },
+  "demons-shop-buff": {
+    "name": "Demons - Shop Buff",
+    "difficulty": "Medium",
+    "meta_tier": "A",
+    "core": [
+      "BG28_633",
+      "BG36_731",
+      "BG36_762",
+      "BG35_883"
+    ],
+    "how_to_play": "Scale your shop with [[Devilish Distractor||132901]], best when paired with [[Balinda Stonehearth||130298]]. Then, your payoff for the buffed shop is most commonly [[Felboar||110664]], but it could also be [[Twisted Wrathguard||130662]] and/or reborn [[Imp-lusionist||132899]]. Use [[Methodical Madness||132903]] spells on shops with Divine shield or Venomous to give these keywords to all your demons.",
+    "addons": [
+      "BG35_155",
+      "BG32_873",
+      "BG21_004",
+      "BG26_174",
+      "BG_LOE_077"
+    ],
+    "summary": "Scale and consume shop",
+    "when_to_commit": "Buffed Shop (Devilish Distractor) + Twisted Wrathguard",
+    "common_enablers": "Brann Bronzebeard\nTwisted Wrathguard",
+    "representative_card": "BG32_873",
+    "tribe": "Demons"
+  },
+  "undead-attack-scaling": {
+    "name": "Undead - Attack Scaling",
+    "difficulty": "Easy",
+    "meta_tier": "A",
+    "core": [
+      "BG25_010",
+      "BG31_835",
+      "BG36_515",
+      "BG32_880",
+      "BG32_324"
+    ],
+    "how_to_play": "Scale the attack of your Undeads and summons with the Butchering spell from [[Drustfallen Butcher||120104]]. Butchering spell improves with spell scaling from [[Friendly Geist||120219]]. Your quality of summons come from [[Handless Forsaken||95265]] and [[Deathly Striker||115610]]. Be sure to reborn as many key undeads as possible, starting with [[Handless Forsaken||95265]]. [[Snazzy Phantom||133083]] provides a ton of attack and health to your right most unit in combat, but also during the shop phase. Start using Butchering spells on your reborn cards with [[Snazzy Phantom||133083]] on board to capture permanent stats.",
+    "addons": [
+      "BG25_354",
+      "BG25_009",
+      "BG36_514"
+    ],
+    "summary": "Summon high attack Undeads",
+    "when_to_commit": "Attack Scaling (Drustfallen Butcher) + summons (Handless Forsaken)",
+    "common_enablers": "Deathly Striker \nFriendly Geist\nUndead midgame (Plaguerunner/Dustbone Devastator)",
+    "representative_card": "BG31_835",
+    "tribe": "Undead"
+  },
+  "mechs-deathrattle": {
+    "name": "Mechs - Deathrattle",
+    "difficulty": "Hard",
+    "meta_tier": "B",
+    "core": [
+      "BG35_342",
+      "BGS_012",
+      "BG25_354"
+    ],
+    "how_to_play": "First, have a deathrattle midgame to have a scaled [[Falling Sky Golem||130798]] already. Taunt reborn it. Resummon it with [[Kangor's apprentice||59935]]. Fill out the rest of your board with scam such as [[Leeroy the Reckless||90425]].",
+    "addons": [
+      "BG23_318"
+    ],
+    "summary": "Summon huge golems",
+    "when_to_commit": "Falling Sky Golem + Kangor's Apprentice",
+    "common_enablers": "Big Falling Sky Golem",
+    "representative_card": "BG35_342",
+    "tribe": "Mechs"
+  },
+  "quilboar-bristlemane": {
+    "name": "Quilboar - Bristlemane",
+    "difficulty": "Medium",
+    "meta_tier": "B",
+    "core": [
+      "BG31_326",
+      "BG35_883",
+      "BG34_684",
+      "BG36_510",
+      "BG33_885"
+    ],
+    "how_to_play": "First, have gems scaled, usually with early [[Gem Rat||116434]]. Then, use [[Vigilant Bristlemane||132320]] to cast gems on the most premium card which is [[Blade Collector||99035]] or any premium dark gifts. Balinda is crucial to double Bristemane's effect. Concentrate all your gems on your juggernaut every turn using your Gem Confiscation from [[Trench Fighter||126671]]. In the endgame, starting filling out your board with ending units such as [[Leeroy the Reckless||90425]].",
+    "addons": [
+      "BG_LOE_077",
+      "BG26_817",
+      "BG23_017"
+    ],
+    "summary": "Cast spells on Quilboar to scale.",
+    "when_to_commit": "Buffed Gems (Gem Rat) + Vigilant Bristlemane",
+    "common_enablers": "Buffed gems (Gem Rat)",
+    "representative_card": "BG36_510",
+    "tribe": "Quilboar"
+  },
+  "beasts-leviathan": {
+    "name": "Beasts - Leviathan",
+    "difficulty": "Hard",
+    "meta_tier": "B",
+    "core": [
+      "BG35_604",
+      "BG35_602",
+      "BG26_802"
+    ],
+    "how_to_play": "Summon as many beasts as possible after you get early [[Lurking Leviathan||130711]]. The best beast summoner is reborned [[Sewer lord||130996]]. Hoarding Hyena summons a taunt summon which is the next best. Then, paired with [[Banana Slamma||98824]], every summon will have a ton of attack.",
+    "addons": [
+      "BG23_008"
+    ],
+    "summary": "Make huge attack summons",
+    "when_to_commit": "Early Lurking Leviathan + Beast summons (Sewer Lord)",
+    "common_enablers": "Beast summons midgame (beetles)",
+    "representative_card": "BG35_602",
+    "tribe": "Beasts"
+  },
+  "pirates-bounty-apm": {
+    "name": "Pirates - Bounty APM",
+    "difficulty": "Easy",
+    "meta_tier": "B",
+    "core": [
+      "BG33_825",
+      "BG33_823",
+      "BG_LOE_077"
+    ],
+    "how_to_play": "[[Sky Admiral Rogers||122516]] combined with [[Proud Privateer||122520]] gives you lots of gold to hit more of your setup.  Cycle [[Tranquil Meditative||119942]], or spell buff Chromadrakes with Brann for spell scaling to make your bounties buff more. You also want to cycle every single free card ([[Refreshing Anomaly||64042]]) so you stay infinite. After you're infinite, think about the highest possible scaling from your spot. Options include [[Fire-forged Evoker||120301]] Pivot with [[Warpwing||92413]] [[Persistent Poet||108463]] or Attack Scaling Undead pivot ([[Forsaken Weaver||126733]]) with [[Handless Forsaken||95265]]",
+    "addons": [
+      "BG32_822",
+      "BG34_692"
+    ],
+    "summary": "Bounties generate gold and stats",
+    "when_to_commit": "Bounty Generation (Sky Admiral Rogers) + Proud Privateer",
+    "common_enablers": "Sky Admiral Rogers",
+    "representative_card": "BG33_823",
+    "tribe": "Pirates"
+  },
+  "quilboar-choose-one": {
+    "name": "Quilboar - Choose One",
+    "difficulty": "Hard",
+    "meta_tier": "B",
+    "core": [
+      "BG34_684",
+      "BG31_326",
+      "BG31_323",
+      "BG33_885"
+    ],
+    "how_to_play": "First, have gem scaling, most commonly through [[Gem rat||116434]] but could be with [[Sanguine Refiner||122566]]. [[Turbo Hogrider||116195]] is the payoff for your gem scaling. It helps to have some choose one generation through [[Gem Rat||116434]] or [[Bramble Tunneler||132632]]. Additionally, cycle every decent choose one card (anything besides [[Intrepid Botanist||120223]] or [[Time Management||117573]]).",
+    "addons": [
+      "BG31_327",
+      "BG36_331",
+      "BG26_ICC_901",
+      "BG23_017",
+      "BG36_510"
+    ],
+    "summary": "Play Choose One cards to scale",
+    "when_to_commit": "Gem rat + Turbo Hogrider",
+    "common_enablers": "Gem Rat",
+    "representative_card": "BG31_323",
+    "tribe": "Quilboar"
+  },
+  "mechs-magnetics": {
+    "name": "Mechs - Magnetics",
+    "difficulty": "Medium",
+    "meta_tier": "B",
+    "core": [
+      "BG26_148",
+      "BG36_851",
+      "BG36_506"
+    ],
+    "how_to_play": "With [[Spark Snapper||132676]], generate as many magnetics as possible so every magnet you play is huge. The best generation is [[Scrap Scraper||98592]]. Then, use [[Drone Duplicator||132312]] to duplicate a big magnetic a turn, preferable [[Accord-o-tron||98576]] for money.",
+    "addons": [
+      "BG26_ICC_901",
+      "BG26_152",
+      "BG36_760",
+      "BG34_925"
+    ],
+    "summary": "Magnetize huge mechs",
+    "when_to_commit": "Magnetic Generation (Scrap Scraper) + Spark Snapper",
+    "common_enablers": "Magnetic Generation (Scrap Scraper)",
+    "representative_card": "BG26_148",
+    "tribe": "Mechs"
+  },
+  "demons-apm-shop-buff": {
+    "name": "Demons - APM Shop Buff",
+    "difficulty": "Easy",
+    "meta_tier": "A",
+    "core": [
+      "BG33_823",
+      "BG33_825",
+      "BG28_633",
+      "BG36_762",
+      "BG35_883",
+      "BG36_523"
+    ],
+    "how_to_play": "You must have an insane amount of economy to go for this comp. This is usually achieved with a turn 9 Brann + Rogers + Privateer. When you have too much economy, you will buy all targeted spells to use on [[Devilish Distractor||132901]] + [[Balinda Stonehearth||130298]] to scale the shop. You may also buff the shop cycling bloom gem buffers and buying every gem barrage card. You'll also generate a ton of spells by being infinite, allowing [[Felboar||110664]] or [[Twisted Wrathguard||130662]] to eat a huge shop over and over again. Brann and Escapee are additional tools to be infinite.",
+    "addons": [
+      "BG_LOE_077",
+      "BG35_155"
+    ],
+    "summary": "Cast spells to consume buffed shop.",
+    "when_to_commit": "Early infinite gold + Felboar",
+    "common_enablers": "Brann Bronzebeard",
+    "representative_card": "BG28_633"
+  },
+  "beasts-summon-beetles": {
+    "name": "Beasts - Summon Beetles",
+    "difficulty": "Hard",
+    "meta_tier": "A",
+    "core": [
+      "BG31_809",
+      "BG26_802",
+      "BG36_209"
+    ],
+    "how_to_play": "With early [[Ravaging Scorpid||132949]] or [[Turquoise Skitterer||119255]], start scaling the stats of beetles. [[Headhunter Gryphon||132800]] can help you generate pieces of the comp with the help of [[Snarky Shark||132804]]. Run as many [[Banana Slamma||98824]] as possible, as they double the attack of your beetles and helps deals with high HP boards.",
+    "addons": [
+      "BG36_204",
+      "BG31_803",
+      "BG35_604",
+      "BG35_602",
+      "BG31_801"
+    ],
+    "summary": "Summon large beetles",
+    "when_to_commit": "Early Ravaging Scorpid or Turquoise Skitterer",
+    "common_enablers": "Headhunter Gryphon",
+    "representative_card": "BG32_204"
+  },
+  "murlocs-family": {
+    "name": "Murlocs - Family",
+    "difficulty": "Medium",
+    "meta_tier": "B",
+    "core": [
+      "BG35_142",
+      "BG_LOE_077",
+      "BG36_701",
+      "BG35_141"
+    ],
+    "how_to_play": "Generate [[Papa Mrrglton||131147]] or [[Mama Mrrglton||131145]] early on with [[Cousin Errgl||131149]]. Use [[Brann Bronzebeard||96786]] to double the effect of all of these battlecries. [[Primalfin Lookout||60028]] is a great battlecry to cycle to generate more Papas and Mamas, and buy every Papa and Mama from shop as well. Leave a golden Mrrglton on your board to proc with [[Kelp Keeper||132883]]. Could choose to buff premium murlocs such as [[Bile Spitter||122219]] or [[Expert Aviator||126637]] that can summon scam units.",
+    "addons": [
+      "BG26_ICC_901",
+      "BG33_318",
+      "BG34_140"
+    ],
+    "summary": "Scale Murlocs with battlecries",
+    "when_to_commit": "Early Cousin Errgl + Brann Bronzebeard",
+    "common_enablers": "Early Cousin Errgl\nBrann Bronzebeard",
+    "representative_card": "BG35_142"
   }
 }
