@@ -1,0 +1,1041 @@
+Tier
+Hero
+Pick Rate
+Best Composition
+Avg. Placement
+Placement Distribution
+
+Nightmare Lord Xavius
+Nightmare Lord Xavius
+Every 4 turns, Discover a minion with a Dark Gift. (3 turns left!)
+84.9%
+—
+—
+Unlock with Tier7
+—
+
+Sire Denathrius
+Sire Denathrius
+At the start of the game, choose one of two Quests.
+71.7%
+—
+—
+Unlock with Tier7
+—
+
+Marin the Manager
+Marin the Manager
+On Turn 5, choose a Lesser Trinket to buy. (4 turns left!)
+66.9%
+—
+—
+Unlock with Tier7
+—
+
+A. F. Kay
+A. F. Kay
+Skip your first two turns, then Discover a minion from Tier 3 and Tier 4.
+65.7%
+—
+—
+Unlock with Tier7
+—
+
+Genn, Worgen King
+Genn, Worgen King
+On Turn 4, Discover two Hero Powers to replace this. (3 turns left!)3On Turn 4, Discover two Hero Powers to replace this. (Done!)
+62.6%
+—
+—
+Unlock with Tier7
+—
+
+Morchie
+Morchie
+On Turn 5, visit the Minor Timewarp. (4 turns left!)
+62.4%
+—
+—
+Unlock with Tier7
+—
+
+Buttons
+Buttons
+On Turn 8, choose a Greater Trinket to buy. (7 turns left!)
+61.7%
+—
+—
+Unlock with Tier7
+—
+
+Master Nguyen
+Master Nguyen
+At the start of every turn, choose from 2 new Hero Powers.
+61.6%
+—
+—
+Unlock with Tier7
+—
+
+Reno Jackson
+Reno Jackson
+Once per game, make a friendly minion Golden.
+60.2%
+—
+—
+Unlock with Tier7
+—
+
+Tras'tath, Soul Parasite
+Tras'tath, Soul Parasite
+At the start of the game, Discover a Tier 5 minion with a Dark Gift. It unlocks on Turn 7. (6 turns left!)
+59.1%
+—
+—
+Unlock with Tier7
+—
+
+Chenvaala
+Chenvaala
+After you play 3 Elementals, reduce the Cost of upgrading the Tavern by (3).
+59.0%
+—
+—
+Unlock with Tier7
+—
+
+Ambassador Faelin
+Ambassador Faelin
+Skip your first turn. Discover minions from Tiers 6, 4, and 2 to get at those Tiers.
+58.1%
+—
+—
+Unlock with Tier7
+—
+
+Forest Lord Cenarius
+Forest Lord Cenarius
+Increase your maximum Gold by 1.
+56.8%
+—
+—
+Unlock with Tier7
+—
+
+Murozond, Unbounded
+Murozond, Unbounded
+On Turn 8, visit the Major Timewarp. (7 turns left!)
+54.6%
+—
+—
+Unlock with Tier7
+—
+
+Sylvanas Windrunner
+Sylvanas Windrunner
+Discover a plain copy of a minion that died last combat. (Unlocks on Turn 3.)
+54.2%
+—
+—
+Unlock with Tier7
+—
+
+Zerek, Master Cloner
+Zerek, Master Cloner
+Once per game, summon an exact copy of a friendly minion.
+53.2%
+—
+—
+Unlock with Tier7
+—
+
+Dinotamer Brann
+Dinotamer Brann
+After you buy 4 Battlecry minions, get a Brann Bronzebeard. (Once per game.)
+51.5%
+—
+—
+Unlock with Tier7
+—
+
+Sir Finley Mrrgglton
+Sir Finley Mrrgglton
+At the start of the game, Discover a Hero Power.
+50.0%
+—
+—
+Unlock with Tier7
+—
+
+Thorim, Stormlord
+Thorim, Stormlord
+Passive:. At the start of the game, Discover a Tier 7 minion to get after you spend 60 Gold. (60 left!)
+49.6%
+—
+—
+Unlock with Tier7
+—
+
+Galakrond
+Galakrond
+Choose a minion in the Tavern. Then choose a higher Tier minion to replace it.
+48.8%
+—
+—
+Unlock with Tier7
+—
+
+Teron Gorefiend
+Teron Gorefiend
+Choose a friendly minion. Start of Combat: Destroy it. When you have space, resummon an exact copy.
+48.5%
+—
+—
+Unlock with Tier7
+—
+
+Snake Eyes
+Snake Eyes
+Roll a 6-sided die. Gain that much Gold. (Cannot be used again for that many turns!)
+45.4%
+—
+—
+Unlock with Tier7
+—
+
+The Lich King
+The Lich King
+Give a minion Reborn until next turn.
+44.3%
+—
+—
+Unlock with Tier7
+—
+
+Queen Azshara
+Queen Azshara
+When your warband reaches 30 total Attack, begin your Naga Conquest.
+43.4%
+—
+—
+Unlock with Tier7
+—
+
+Captain Eudora
+Captain Eudora
+ Dig for a Golden minion! (4 Digs left.)
+42.5%
+—
+—
+Unlock with Tier7
+—
+
+Mister Clocksworth
+Mister Clocksworth
+You only need 2 copies to make minions Golden. They give Tavern Coins instead of Triple Rewards.
+39.6%
+—
+—
+Unlock with Tier7
+—
+
+Forest Warden Omu
+Forest Warden Omu
+After you upgrade the Tavern, gain 2 Gold.
+39.1%
+—
+—
+Unlock with Tier7
+—
+
+Shudderwock
+Shudderwock
+Trigger a friendly minion's Battlecry. (Unlocks on Turn 3.)
+38.1%
+—
+—
+Unlock with Tier7
+—
+
+Trade Prince Gallywix
+Trade Prince Gallywix
+After you sell a minion, gain 1 Gold next turn.
+36.6%
+—
+—
+Unlock with Tier7
+—
+
+Vanndar Stormpike
+Vanndar Stormpike
+When you have space in combat, summon a copy of your highest-Health minion. (Unlocks on Turn 7.)
+36.3%
+—
+—
+Unlock with Tier7
+—
+
+E.T.C., Band Manager
+E.T.C., Band Manager
+Discover a Buddy. (Unlocks at Tier 2.)
+35.9%
+—
+—
+Unlock with Tier7
+—
+
+Tess Greymane
+Tess Greymane
+Refresh the Tavern with plain copies of your last opponent's warband.
+35.4%
+—
+—
+Unlock with Tier7
+—
+
+Lord Jaraxxus
+Lord Jaraxxus
+After friendly minions deal 150 damage, open a portal to the Twisting Nether! (150 left!)
+33.6%
+—
+—
+Unlock with Tier7
+—
+
+Patches the Pirate
+Patches the Pirate
+Get a Pirate. After you buy a Pirate, your next Hero Power costs (1) less.
+33.5%
+—
+—
+Unlock with Tier7
+—
+
+Patchwerk
+Patchwerk
+Start the game with 30 extra Health.
+33.3%
+—
+—
+Unlock with Tier7
+—
+
+Cariel Roame
+Cariel Roame
+Give 1 random friendly minion +1/+1. Passive: After each combat, choose an improvement.
+33.1%
+—
+—
+Unlock with Tier7
+—
+
+Zephrys, the Great
+Zephrys, the Great
+If you have two copies of a minion, find the third. (3 Wishes left!)
+32.9%
+—
+—
+Unlock with Tier7
+—
+
+Cap'n Hoggarr
+Cap'n Hoggarr
+After you buy a Pirate, gain 1 Gold.
+32.7%
+—
+—
+Unlock with Tier7
+—
+
+Yogg-Saron, Hope's End
+Yogg-Saron, Hope's End
+At the start of your turn, cast a random Tavern spell. (Unlocks on Turn 3.)
+32.7%
+—
+—
+Unlock with Tier7
+—
+
+Millificent Manastorm
+Millificent Manastorm
+Discover a Magnetic Mech. (Unlocks at Tier 4.)
+32.4%
+—
+—
+Unlock with Tier7
+—
+
+Tickatus
+Tickatus
+Every 4 turns, Discover a Darkmoon Prize. (3 turns left!)
+31.9%
+—
+—
+Unlock with Tier7
+—
+
+Illidan Stormrage
+Illidan Stormrage
+Start of Combat: Your left- and right-most minions gain +2/+1 and attack immediately.
+31.5%
+—
+—
+Unlock with Tier7
+—
+
+Guff Runetotem
+Guff Runetotem
+After you buy 20 Tiers' worth of cards, get a Triple Reward. (20 left!)
+31.5%
+—
+—
+Unlock with Tier7
+—
+
+Drek'Thar
+Drek'Thar
+When you have space in combat, summon a copy of your highest-Attack minion. (Unlocks on Turn 7.)
+31.3%
+—
+—
+Unlock with Tier7
+—
+
+Infinite Toki
+Infinite Toki
+Refresh the Tavern. Include two minions from a Tier higher than yours.
+31.0%
+—
+—
+Unlock with Tier7
+—
+
+Rock Master Voone
+Rock Master Voone
+At the end of every 3 turns, get a plain copy of the left- most card in your hand. (3 turns left!)
+30.5%
+—
+—
+Unlock with Tier7
+—
+
+Galewing
+Galewing
+Choose a new flightpath. Complete it to get a bonus!
+30.2%
+—
+—
+Unlock with Tier7
+—
+
+Sindragosa
+Sindragosa
+Minions cost (2). The Tavern offers one fewer minion and Freezes at the end of each turn.
+29.7%
+—
+—
+Unlock with Tier7
+—
+
+Inge, the Iron Hymn
+Inge, the Iron Hymn
+Twice per turn, give a minion Attack equal to your Tier. (Swaps to Health next turn!)
+28.9%
+—
+—
+Unlock with Tier7
+—
+
+Al'Akir
+Al'Akir
+Start of Combat: Give your left-most minion Windfury, Divine Shield, and Taunt.
+28.1%
+—
+—
+Unlock with Tier7
+—
+
+Loh, the Living Legend
+Loh, the Living Legend
+After 15 friendly minions attack, get a Triple Reward. (15 left!)
+27.4%
+—
+—
+Unlock with Tier7
+—
+
+Scabbs Cutterbutter
+Scabbs Cutterbutter
+Discover a plain copy of a minion from your next opponent's warband.
+27.1%
+—
+—
+Unlock with Tier7
+—
+
+Lady Vashj
+Lady Vashj
+At the start of each turn, get a random Spellcraft spell.
+26.8%
+—
+—
+Unlock with Tier7
+—
+
+Cookie the Cook
+Cookie the Cook
+Throw a minion in your pot. When you've gathered 3, Discover from their types. (3 left!)
+26.6%
+—
+—
+Unlock with Tier7
+—
+
+Enhance-o Mechano
+Enhance-o Mechano
+After the Tavern is Refreshed, give a random minion in it a random Bonus Keyword, twice.
+26.6%
+—
+—
+Unlock with Tier7
+—
+
+Lord Barov
+Lord Barov
+Guess which player will win their next combat. If you're correct, get 3 Tavern Coins.
+26.5%
+—
+—
+Unlock with Tier7
+—
+
+Greybough
+Greybough
+Give +1/+2 and Taunt to minions you summon during combat.
+26.5%
+—
+—
+Unlock with Tier7
+—
+
+Murloc Holmes
+Murloc Holmes
+Look at 2 minions. Guess which one your next opponent had last combat for a Tavern Coin.
+26.4%
+—
+—
+Unlock with Tier7
+—
+
+Alexstrasza
+Alexstrasza
+Discover a Dragon. (Unlocks at Tier 4.)
+26.3%
+—
+—
+Unlock with Tier7
+—
+
+The Great Akazamzarak
+The Great Akazamzarak
+Choose a Secret. Put it into the battlefield.
+26.1%
+—
+—
+Unlock with Tier7
+—
+
+Mutanus the Devourer
+Mutanus the Devourer
+Sell a friendly minion. Spit its stats onto another.
+25.7%
+—
+—
+Unlock with Tier7
+—
+
+Silas Darkmoon
+Silas Darkmoon
+Darkmoon Tickets are in the Tavern! Get 3 to Discover a minion of your Tier.
+25.1%
+—
+—
+Unlock with Tier7
+—
+
+Varden Dawngrasp
+Varden Dawngrasp
+After the Tavern is Refreshed, copy its highest-Tier minion and Freeze them both.
+25.1%
+—
+—
+Unlock with Tier7
+—
+
+Xyrella
+Xyrella
+Choose a minion in the Tavern. Set its stats to 2 and add it to your hand.
+24.5%
+—
+—
+Unlock with Tier7
+—
+
+Arch-Villain Rafaam
+Arch-Villain Rafaam
+Next combat, get a plain copy of the first minion you kill.
+23.9%
+—
+—
+Unlock with Tier7
+—
+
+Farseer Nobundo
+Farseer Nobundo
+Get a copy of the last Tavern spell you cast. Each turn, your next Hero Power costs (1) less.
+23.9%
+—
+—
+Unlock with Tier7
+—
+
+N'Zoth
+N'Zoth
+Start the game with a 2/2 Fish that gains all your Deathrattles in combat.
+23.7%
+—
+—
+Unlock with Tier7
+—
+
+Tavish Stormpike
+Tavish Stormpike
+Remove a minion in the Tavern. When you have space next combat, fire it at a random enemy minion.
+23.4%
+—
+—
+Unlock with Tier7
+—
+
+The Jailer
+The Jailer
+Destroy a friendly Undead to get a random Undead. (Unlocks at Tier 2.)
+23.3%
+—
+—
+Unlock with Tier7
+—
+
+The Curator
+The Curator
+Start the game with a 2/2 Amalgam with Venomous and all minion types.
+23.0%
+—
+—
+Unlock with Tier7
+—
+
+Skycap'n Kragg
+Skycap'n Kragg
+Gain 2 Gold. Increases by 1 each turn. (Once per game.)
+22.6%
+—
+—
+Unlock with Tier7
+—
+
+Fungalmancer Flurgl
+Fungalmancer Flurgl
+After you sell 5 minions, get a random Murloc. (5 left!)
+22.5%
+—
+—
+Unlock with Tier7
+—
+
+Time Twister Chromie
+Time Twister Chromie
+Refresh the Tavern with Tavern spells.
+22.0%
+—
+—
+Unlock with Tier7
+—
+
+Ini Stormcoil
+Ini Stormcoil
+After 9 friendly minions die, get a random Mech.
+21.7%
+—
+—
+Unlock with Tier7
+—
+
+The Rat King
+The Rat King
+Discover a minion of a specific minion type. Swaps type each turn.
+21.5%
+—
+—
+Unlock with Tier7
+—
+
+George the Fallen
+George the Fallen
+Give a minion Divine Shield.
+21.4%
+—
+—
+Unlock with Tier7
+—
+
+Elise Starseeker
+Elise Starseeker
+Discover a minion from your Tier. Costs (1) more after each use.
+21.0%
+—
+—
+Unlock with Tier7
+—
+
+Nozdormu
+Nozdormu
+At the start of your turn, gain a free Refresh.
+19.9%
+—
+—
+Unlock with Tier7
+—
+
+Sneed
+Sneed
+Start the game with a 2/1 Shredder that summons a minion from your hand and gives it Divine Shield.
+19.8%
+—
+—
+Unlock with Tier7
+—
+
+Captain Hooktusk
+Captain Hooktusk
+Remove a friendly minion. Discover one from a Tier lower to get.
+19.6%
+—
+—
+Unlock with Tier7
+—
+
+Malygos
+Malygos
+Replace a card with a random one of the same Tier. (Twice per turn.)
+19.3%
+—
+—
+Unlock with Tier7
+—
+
+Mr. Bigglesworth
+Mr. Bigglesworth
+After another hero dies, Discover a minion from their warband. It keeps enchantments.
+19.3%
+—
+—
+Unlock with Tier7
+—
+
+Ysera
+Ysera
+The Tavern offers an extra Dragon whenever it is Refreshed.
+18.8%
+—
+—
+Unlock with Tier7
+—
+
+Heistbaron Togwaggle
+Heistbaron Togwaggle
+Steal all cards from the Tavern. Each turn, your next Hero Power costs (1) less.
+18.2%
+—
+—
+Unlock with Tier7
+—
+
+Rakanishu
+Rakanishu
+Your Tavern spells give an extra +1/+1. At the start of every 3 turns, improve this. (3 turns left!)
+17.7%
+—
+—
+Unlock with Tier7
+—
+
+Y'Shaarj
+Y'Shaarj
+Start of Combat: Summon and get a minion of your Tier.
+17.6%
+—
+—
+Unlock with Tier7
+—
+
+Kurtrus Ashfallen
+Kurtrus Ashfallen
+Once per turn, after you buy 3 minions, get a plain copy of one of them. (3 left!)
+16.8%
+—
+—
+Unlock with Tier7
+—
+
+Doctor Holli'dae
+Doctor Holli'dae
+Get a random Tavern spell.
+16.7%
+—
+—
+Unlock with Tier7
+—
+
+Jandice Barov
+Jandice Barov
+Swap a friendly non-Golden minion with a random one in the Tavern.
+16.4%
+—
+—
+Unlock with Tier7
+—
+
+Jim Raynor
+Jim Raynor
+Start the game with a 2/2 Battlecruiser. Whenever the Tavern is Refreshed, add a Battlecruiser Upgrade to it.
+16.3%
+—
+—
+Unlock with Tier7
+—
+
+Dancin' Deryl
+Dancin' Deryl
+When you play a minion, give it a +1/+1 hat that passes to a friendly minion when sold.
+16.1%
+—
+—
+Unlock with Tier7
+—
+
+Overlord Saurfang
+Overlord Saurfang
+Minions in the Tavern have +1/+1. Improves after you buy 3 minions. (3 left!)
+15.9%
+—
+—
+Unlock with Tier7
+—
+
+King Mukla
+King Mukla
+At the start of your turn, get 2 Bananas and give everyone else one.
+15.4%
+—
+—
+Unlock with Tier7
+—
+
+Artanis
+Artanis
+At the start of the game, choose from 2 Protoss minions to get after you buy 14 cards. (14 left!)
+14.6%
+—
+—
+Unlock with Tier7
+—
+
+Maiev Shadowsong
+Maiev Shadowsong
+Choose a card in the Tavern to lock in your hand. After 2 turns, unlock it.
+14.5%
+—
+—
+Unlock with Tier7
+—
+
+Death Speaker Blackthorn
+Death Speaker Blackthorn
+Get 2 Blood Gems. (Twice per turn.)
+14.1%
+—
+—
+Unlock with Tier7
+—
+
+Lich Baz'hial
+Lich Baz'hial
+Steal a card from the Tavern. Take 2 damage.
+13.9%
+—
+—
+Unlock with Tier7
+—
+
+Kael'thas Sunstrider
+Kael'thas Sunstrider
+After you buy 3 minions, get a Tavern Coin.
+13.3%
+—
+—
+Unlock with Tier7
+—
+
+Exarch Othaar
+Exarch Othaar
+The next Tavern spell you buy costs (1) less. (Unlocks on Turn 3.)
+13.2%
+—
+—
+Unlock with Tier7
+—
+
+Millhouse Manastorm
+Millhouse Manastorm
+Minions and Refreshes cost 2 Gold. Upgrading the Tavern costs (1) more.
+13.1%
+—
+—
+Unlock with Tier7
+—
+
+Professor Putricide
+Professor Putricide
+Craft a custom Undead. (3 Creations left!)
+12.8%
+—
+—
+Unlock with Tier7
+—
+
+Vol'jin
+Vol'jin
+Choose 2 minions. They gain each other's Attack until next turn.
+12.6%
+—
+—
+Unlock with Tier7
+—
+
+Bru'kan
+Bru'kan
+Choose an Element. Start of Combat: Call upon that Element.
+12.1%
+—
+—
+Unlock with Tier7
+—
+
+Queen Wagtoggle
+Queen Wagtoggle
+Start of Combat: Give a friendly minion of each type +1/+1. (Improves after you spend 10 Gold!)
+11.9%
+—
+—
+Unlock with Tier7
+—
+
+Onyxia
+Onyxia
+Avenge (4): Summon a 1/1 Whelp that attacks immediately. Improve this by +1/+1.
+11.7%
+—
+—
+Unlock with Tier7
+—
+
+Pyramad
+Pyramad
+Steal a random minion from the Tavern. Double its Health.
+11.5%
+—
+—
+Unlock with Tier7
+—
+
+Tae'thelan Bloodwatcher
+Tae'thelan Bloodwatcher
+Every third Tavern spell you buy costs (0). (2 left!)
+11.4%
+—
+—
+Unlock with Tier7
+—
+
+Tamsin Roame
+Tamsin Roame
+Start of Combat: Give your lowest-Attack minion "Deathrattle: Give your other minions this minion's stats."
+10.2%
+—
+—
+Unlock with Tier7
+—
+
+Ragnaros the Firelord
+Ragnaros the Firelord
+After you buy 12 cards, get Sulfuras. (12 left!)
+9.4%
+—
+—
+Unlock with Tier7
+—
+
+Ozumat
+Ozumat
+When you have space in combat, summon a 2/2 Tentacle with Taunt. (Gains +1/+1 after you sell a minion!)
+8.6%
+—
+—
+Unlock with Tier7
+—
+
+Rokara
+Rokara
+After a friendly minion kills an enemy, give it +1 Attack permanently.
+7.9%
+—
+—
+Unlock with Tier7
+—
+
+C'Thun
+C'Thun
+At end of turn, give a friendly minion +1/+1. Repeat 0 times. (Improves each turn!)
+6.6%
+—
+—
+Unlock with Tier7
+—
+
+Kerrigan, Queen of Blades
+Kerrigan, Queen of Blades
+Unlock Tier 2 Zerg. Costs (1) less each turn. Passive: Start the game with a 2/2 Larva.
+6.6%
+—
+—
+Unlock with Tier7
+—
+
+Deathwing
+Deathwing
+Start of Combat: Give ALL minions +2 Attack permanently.
+6.2%
+—
+—
+Unlock with Tier7
+—
+
+Edwin VanCleef
+Edwin VanCleef
+Give a minion +2/+2. Improves after you buy 4 cards. (4 left!)
+6.1%
+—
+—
+Unlock with Tier7
+—

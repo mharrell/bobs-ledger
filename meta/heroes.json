@@ -1,0 +1,577 @@
+[
+  {
+    "name": "Nightmare Lord Xavius",
+    "hero_power": "Every 4 turns, Discover a minion with a Dark Gift. (3 turns left!)",
+    "pick_rate": 84.9
+  },
+  {
+    "name": "Sire Denathrius",
+    "hero_power": "At the start of the game, choose one of two Quests.",
+    "pick_rate": 71.7
+  },
+  {
+    "name": "Marin the Manager",
+    "hero_power": "On Turn 5, choose a Lesser Trinket to buy. (4 turns left!)",
+    "pick_rate": 66.9
+  },
+  {
+    "name": "A. F. Kay",
+    "hero_power": "Skip your first two turns, then Discover a minion from Tier 3 and Tier 4.",
+    "pick_rate": 65.7
+  },
+  {
+    "name": "Genn, Worgen King",
+    "hero_power": "On Turn 4, Discover two Hero Powers to replace this. (3 turns left!)3On Turn 4, Discover two Hero Powers to replace this. (Done!)",
+    "pick_rate": 62.6
+  },
+  {
+    "name": "Morchie",
+    "hero_power": "On Turn 5, visit the Minor Timewarp. (4 turns left!)",
+    "pick_rate": 62.4
+  },
+  {
+    "name": "Buttons",
+    "hero_power": "On Turn 8, choose a Greater Trinket to buy. (7 turns left!)",
+    "pick_rate": 61.7
+  },
+  {
+    "name": "Master Nguyen",
+    "hero_power": "At the start of every turn, choose from 2 new Hero Powers.",
+    "pick_rate": 61.6
+  },
+  {
+    "name": "Reno Jackson",
+    "hero_power": "Once per game, make a friendly minion Golden.",
+    "pick_rate": 60.2
+  },
+  {
+    "name": "Tras'tath, Soul Parasite",
+    "hero_power": "At the start of the game, Discover a Tier 5 minion with a Dark Gift. It unlocks on Turn 7. (6 turns left!)",
+    "pick_rate": 59.1
+  },
+  {
+    "name": "Chenvaala",
+    "hero_power": "After you play 3 Elementals, reduce the Cost of upgrading the Tavern by (3).",
+    "pick_rate": 59.0
+  },
+  {
+    "name": "Ambassador Faelin",
+    "hero_power": "Skip your first turn. Discover minions from Tiers 6, 4, and 2 to get at those Tiers.",
+    "pick_rate": 58.1
+  },
+  {
+    "name": "Forest Lord Cenarius",
+    "hero_power": "Increase your maximum Gold by 1.",
+    "pick_rate": 56.8
+  },
+  {
+    "name": "Murozond, Unbounded",
+    "hero_power": "On Turn 8, visit the Major Timewarp. (7 turns left!)",
+    "pick_rate": 54.6
+  },
+  {
+    "name": "Sylvanas Windrunner",
+    "hero_power": "Discover a plain copy of a minion that died last combat. (Unlocks on Turn 3.)",
+    "pick_rate": 54.2
+  },
+  {
+    "name": "Zerek, Master Cloner",
+    "hero_power": "Once per game, summon an exact copy of a friendly minion.",
+    "pick_rate": 53.2
+  },
+  {
+    "name": "Dinotamer Brann",
+    "hero_power": "After you buy 4 Battlecry minions, get a Brann Bronzebeard. (Once per game.)",
+    "pick_rate": 51.5
+  },
+  {
+    "name": "Sir Finley Mrrgglton",
+    "hero_power": "At the start of the game, Discover a Hero Power.",
+    "pick_rate": 50.0
+  },
+  {
+    "name": "Thorim, Stormlord",
+    "hero_power": "Passive:. At the start of the game, Discover a Tier 7 minion to get after you spend 60 Gold. (60 left!)",
+    "pick_rate": 49.6
+  },
+  {
+    "name": "Galakrond",
+    "hero_power": "Choose a minion in the Tavern. Then choose a higher Tier minion to replace it.",
+    "pick_rate": 48.8
+  },
+  {
+    "name": "Teron Gorefiend",
+    "hero_power": "Choose a friendly minion. Start of Combat: Destroy it. When you have space, resummon an exact copy.",
+    "pick_rate": 48.5
+  },
+  {
+    "name": "Snake Eyes",
+    "hero_power": "Roll a 6-sided die. Gain that much Gold. (Cannot be used again for that many turns!)",
+    "pick_rate": 45.4
+  },
+  {
+    "name": "The Lich King",
+    "hero_power": "Give a minion Reborn until next turn.",
+    "pick_rate": 44.3
+  },
+  {
+    "name": "Queen Azshara",
+    "hero_power": "When your warband reaches 30 total Attack, begin your Naga Conquest.",
+    "pick_rate": 43.4
+  },
+  {
+    "name": "Captain Eudora",
+    "hero_power": "Dig for a Golden minion! (4 Digs left.)",
+    "pick_rate": 42.5
+  },
+  {
+    "name": "Mister Clocksworth",
+    "hero_power": "You only need 2 copies to make minions Golden. They give Tavern Coins instead of Triple Rewards.",
+    "pick_rate": 39.6
+  },
+  {
+    "name": "Forest Warden Omu",
+    "hero_power": "After you upgrade the Tavern, gain 2 Gold.",
+    "pick_rate": 39.1
+  },
+  {
+    "name": "Shudderwock",
+    "hero_power": "Trigger a friendly minion's Battlecry. (Unlocks on Turn 3.)",
+    "pick_rate": 38.1
+  },
+  {
+    "name": "Trade Prince Gallywix",
+    "hero_power": "After you sell a minion, gain 1 Gold next turn.",
+    "pick_rate": 36.6
+  },
+  {
+    "name": "Vanndar Stormpike",
+    "hero_power": "When you have space in combat, summon a copy of your highest-Health minion. (Unlocks on Turn 7.)",
+    "pick_rate": 36.3
+  },
+  {
+    "name": "E.T.C., Band Manager",
+    "hero_power": "Discover a Buddy. (Unlocks at Tier 2.)",
+    "pick_rate": 35.9
+  },
+  {
+    "name": "Tess Greymane",
+    "hero_power": "Refresh the Tavern with plain copies of your last opponent's warband.",
+    "pick_rate": 35.4
+  },
+  {
+    "name": "Lord Jaraxxus",
+    "hero_power": "After friendly minions deal 150 damage, open a portal to the Twisting Nether! (150 left!)",
+    "pick_rate": 33.6
+  },
+  {
+    "name": "Patches the Pirate",
+    "hero_power": "Get a Pirate. After you buy a Pirate, your next Hero Power costs (1) less.",
+    "pick_rate": 33.5
+  },
+  {
+    "name": "Patchwerk",
+    "hero_power": "Start the game with 30 extra Health.",
+    "pick_rate": 33.3
+  },
+  {
+    "name": "Cariel Roame",
+    "hero_power": "Give 1 random friendly minion +1/+1. Passive: After each combat, choose an improvement.",
+    "pick_rate": 33.1
+  },
+  {
+    "name": "Zephrys, the Great",
+    "hero_power": "If you have two copies of a minion, find the third. (3 Wishes left!)",
+    "pick_rate": 32.9
+  },
+  {
+    "name": "Cap'n Hoggarr",
+    "hero_power": "After you buy a Pirate, gain 1 Gold.",
+    "pick_rate": 32.7
+  },
+  {
+    "name": "Yogg-Saron, Hope's End",
+    "hero_power": "At the start of your turn, cast a random Tavern spell. (Unlocks on Turn 3.)",
+    "pick_rate": 32.7
+  },
+  {
+    "name": "Millificent Manastorm",
+    "hero_power": "Discover a Magnetic Mech. (Unlocks at Tier 4.)",
+    "pick_rate": 32.4
+  },
+  {
+    "name": "Tickatus",
+    "hero_power": "Every 4 turns, Discover a Darkmoon Prize. (3 turns left!)",
+    "pick_rate": 31.9
+  },
+  {
+    "name": "Illidan Stormrage",
+    "hero_power": "Start of Combat: Your left- and right-most minions gain +2/+1 and attack immediately.",
+    "pick_rate": 31.5
+  },
+  {
+    "name": "Guff Runetotem",
+    "hero_power": "After you buy 20 Tiers' worth of cards, get a Triple Reward. (20 left!)",
+    "pick_rate": 31.5
+  },
+  {
+    "name": "Drek'Thar",
+    "hero_power": "When you have space in combat, summon a copy of your highest-Attack minion. (Unlocks on Turn 7.)",
+    "pick_rate": 31.3
+  },
+  {
+    "name": "Infinite Toki",
+    "hero_power": "Refresh the Tavern. Include two minions from a Tier higher than yours.",
+    "pick_rate": 31.0
+  },
+  {
+    "name": "Rock Master Voone",
+    "hero_power": "At the end of every 3 turns, get a plain copy of the left- most card in your hand. (3 turns left!)",
+    "pick_rate": 30.5
+  },
+  {
+    "name": "Galewing",
+    "hero_power": "Choose a new flightpath. Complete it to get a bonus!",
+    "pick_rate": 30.2
+  },
+  {
+    "name": "Sindragosa",
+    "hero_power": "Minions cost (2). The Tavern offers one fewer minion and Freezes at the end of each turn.",
+    "pick_rate": 29.7
+  },
+  {
+    "name": "Inge, the Iron Hymn",
+    "hero_power": "Twice per turn, give a minion Attack equal to your Tier. (Swaps to Health next turn!)",
+    "pick_rate": 28.9
+  },
+  {
+    "name": "Al'Akir",
+    "hero_power": "Start of Combat: Give your left-most minion Windfury, Divine Shield, and Taunt.",
+    "pick_rate": 28.1
+  },
+  {
+    "name": "Loh, the Living Legend",
+    "hero_power": "After 15 friendly minions attack, get a Triple Reward. (15 left!)",
+    "pick_rate": 27.4
+  },
+  {
+    "name": "Scabbs Cutterbutter",
+    "hero_power": "Discover a plain copy of a minion from your next opponent's warband.",
+    "pick_rate": 27.1
+  },
+  {
+    "name": "Lady Vashj",
+    "hero_power": "At the start of each turn, get a random Spellcraft spell.",
+    "pick_rate": 26.8
+  },
+  {
+    "name": "Cookie the Cook",
+    "hero_power": "Throw a minion in your pot. When you've gathered 3, Discover from their types. (3 left!)",
+    "pick_rate": 26.6
+  },
+  {
+    "name": "Enhance-o Mechano",
+    "hero_power": "After the Tavern is Refreshed, give a random minion in it a random Bonus Keyword, twice.",
+    "pick_rate": 26.6
+  },
+  {
+    "name": "Lord Barov",
+    "hero_power": "Guess which player will win their next combat. If you're correct, get 3 Tavern Coins.",
+    "pick_rate": 26.5
+  },
+  {
+    "name": "Greybough",
+    "hero_power": "Give +1/+2 and Taunt to minions you summon during combat.",
+    "pick_rate": 26.5
+  },
+  {
+    "name": "Murloc Holmes",
+    "hero_power": "Look at 2 minions. Guess which one your next opponent had last combat for a Tavern Coin.",
+    "pick_rate": 26.4
+  },
+  {
+    "name": "Alexstrasza",
+    "hero_power": "Discover a Dragon. (Unlocks at Tier 4.)",
+    "pick_rate": 26.3
+  },
+  {
+    "name": "The Great Akazamzarak",
+    "hero_power": "Choose a Secret. Put it into the battlefield.",
+    "pick_rate": 26.1
+  },
+  {
+    "name": "Mutanus the Devourer",
+    "hero_power": "Sell a friendly minion. Spit its stats onto another.",
+    "pick_rate": 25.7
+  },
+  {
+    "name": "Silas Darkmoon",
+    "hero_power": "Darkmoon Tickets are in the Tavern! Get 3 to Discover a minion of your Tier.",
+    "pick_rate": 25.1
+  },
+  {
+    "name": "Varden Dawngrasp",
+    "hero_power": "After the Tavern is Refreshed, copy its highest-Tier minion and Freeze them both.",
+    "pick_rate": 25.1
+  },
+  {
+    "name": "Xyrella",
+    "hero_power": "Choose a minion in the Tavern. Set its stats to 2 and add it to your hand.",
+    "pick_rate": 24.5
+  },
+  {
+    "name": "Arch-Villain Rafaam",
+    "hero_power": "Next combat, get a plain copy of the first minion you kill.",
+    "pick_rate": 23.9
+  },
+  {
+    "name": "Farseer Nobundo",
+    "hero_power": "Get a copy of the last Tavern spell you cast. Each turn, your next Hero Power costs (1) less.",
+    "pick_rate": 23.9
+  },
+  {
+    "name": "N'Zoth",
+    "hero_power": "Start the game with a 2/2 Fish that gains all your Deathrattles in combat.",
+    "pick_rate": 23.7
+  },
+  {
+    "name": "Tavish Stormpike",
+    "hero_power": "Remove a minion in the Tavern. When you have space next combat, fire it at a random enemy minion.",
+    "pick_rate": 23.4
+  },
+  {
+    "name": "The Jailer",
+    "hero_power": "Destroy a friendly Undead to get a random Undead. (Unlocks at Tier 2.)",
+    "pick_rate": 23.3
+  },
+  {
+    "name": "The Curator",
+    "hero_power": "Start the game with a 2/2 Amalgam with Venomous and all minion types.",
+    "pick_rate": 23.0
+  },
+  {
+    "name": "Skycap'n Kragg",
+    "hero_power": "Gain 2 Gold. Increases by 1 each turn. (Once per game.)",
+    "pick_rate": 22.6
+  },
+  {
+    "name": "Fungalmancer Flurgl",
+    "hero_power": "After you sell 5 minions, get a random Murloc. (5 left!)",
+    "pick_rate": 22.5
+  },
+  {
+    "name": "Time Twister Chromie",
+    "hero_power": "Refresh the Tavern with Tavern spells.",
+    "pick_rate": 22.0
+  },
+  {
+    "name": "Ini Stormcoil",
+    "hero_power": "After 9 friendly minions die, get a random Mech.",
+    "pick_rate": 21.7
+  },
+  {
+    "name": "The Rat King",
+    "hero_power": "Discover a minion of a specific minion type. Swaps type each turn.",
+    "pick_rate": 21.5
+  },
+  {
+    "name": "George the Fallen",
+    "hero_power": "Give a minion Divine Shield.",
+    "pick_rate": 21.4
+  },
+  {
+    "name": "Elise Starseeker",
+    "hero_power": "Discover a minion from your Tier. Costs (1) more after each use.",
+    "pick_rate": 21.0
+  },
+  {
+    "name": "Nozdormu",
+    "hero_power": "At the start of your turn, gain a free Refresh.",
+    "pick_rate": 19.9
+  },
+  {
+    "name": "Sneed",
+    "hero_power": "Start the game with a 2/1 Shredder that summons a minion from your hand and gives it Divine Shield.",
+    "pick_rate": 19.8
+  },
+  {
+    "name": "Captain Hooktusk",
+    "hero_power": "Remove a friendly minion. Discover one from a Tier lower to get.",
+    "pick_rate": 19.6
+  },
+  {
+    "name": "Malygos",
+    "hero_power": "Replace a card with a random one of the same Tier. (Twice per turn.)",
+    "pick_rate": 19.3
+  },
+  {
+    "name": "Mr. Bigglesworth",
+    "hero_power": "After another hero dies, Discover a minion from their warband. It keeps enchantments.",
+    "pick_rate": 19.3
+  },
+  {
+    "name": "Ysera",
+    "hero_power": "The Tavern offers an extra Dragon whenever it is Refreshed.",
+    "pick_rate": 18.8
+  },
+  {
+    "name": "Heistbaron Togwaggle",
+    "hero_power": "Steal all cards from the Tavern. Each turn, your next Hero Power costs (1) less.",
+    "pick_rate": 18.2
+  },
+  {
+    "name": "Rakanishu",
+    "hero_power": "Your Tavern spells give an extra +1/+1. At the start of every 3 turns, improve this. (3 turns left!)",
+    "pick_rate": 17.7
+  },
+  {
+    "name": "Y'Shaarj",
+    "hero_power": "Start of Combat: Summon and get a minion of your Tier.",
+    "pick_rate": 17.6
+  },
+  {
+    "name": "Kurtrus Ashfallen",
+    "hero_power": "Once per turn, after you buy 3 minions, get a plain copy of one of them. (3 left!)",
+    "pick_rate": 16.8
+  },
+  {
+    "name": "Doctor Holli'dae",
+    "hero_power": "Get a random Tavern spell.",
+    "pick_rate": 16.7
+  },
+  {
+    "name": "Jandice Barov",
+    "hero_power": "Swap a friendly non-Golden minion with a random one in the Tavern.",
+    "pick_rate": 16.4
+  },
+  {
+    "name": "Jim Raynor",
+    "hero_power": "Start the game with a 2/2 Battlecruiser. Whenever the Tavern is Refreshed, add a Battlecruiser Upgrade to it.",
+    "pick_rate": 16.3
+  },
+  {
+    "name": "Dancin' Deryl",
+    "hero_power": "When you play a minion, give it a +1/+1 hat that passes to a friendly minion when sold.",
+    "pick_rate": 16.1
+  },
+  {
+    "name": "Overlord Saurfang",
+    "hero_power": "Minions in the Tavern have +1/+1. Improves after you buy 3 minions. (3 left!)",
+    "pick_rate": 15.9
+  },
+  {
+    "name": "King Mukla",
+    "hero_power": "At the start of your turn, get 2 Bananas and give everyone else one.",
+    "pick_rate": 15.4
+  },
+  {
+    "name": "Artanis",
+    "hero_power": "At the start of the game, choose from 2 Protoss minions to get after you buy 14 cards. (14 left!)",
+    "pick_rate": 14.6
+  },
+  {
+    "name": "Maiev Shadowsong",
+    "hero_power": "Choose a card in the Tavern to lock in your hand. After 2 turns, unlock it.",
+    "pick_rate": 14.5
+  },
+  {
+    "name": "Death Speaker Blackthorn",
+    "hero_power": "Get 2 Blood Gems. (Twice per turn.)",
+    "pick_rate": 14.1
+  },
+  {
+    "name": "Lich Baz'hial",
+    "hero_power": "Steal a card from the Tavern. Take 2 damage.",
+    "pick_rate": 13.9
+  },
+  {
+    "name": "Kael'thas Sunstrider",
+    "hero_power": "After you buy 3 minions, get a Tavern Coin.",
+    "pick_rate": 13.3
+  },
+  {
+    "name": "Exarch Othaar",
+    "hero_power": "The next Tavern spell you buy costs (1) less. (Unlocks on Turn 3.)",
+    "pick_rate": 13.2
+  },
+  {
+    "name": "Millhouse Manastorm",
+    "hero_power": "Minions and Refreshes cost 2 Gold. Upgrading the Tavern costs (1) more.",
+    "pick_rate": 13.1
+  },
+  {
+    "name": "Professor Putricide",
+    "hero_power": "Craft a custom Undead. (3 Creations left!)",
+    "pick_rate": 12.8
+  },
+  {
+    "name": "Vol'jin",
+    "hero_power": "Choose 2 minions. They gain each other's Attack until next turn.",
+    "pick_rate": 12.6
+  },
+  {
+    "name": "Bru'kan",
+    "hero_power": "Choose an Element. Start of Combat: Call upon that Element.",
+    "pick_rate": 12.1
+  },
+  {
+    "name": "Queen Wagtoggle",
+    "hero_power": "Start of Combat: Give a friendly minion of each type +1/+1. (Improves after you spend 10 Gold!)",
+    "pick_rate": 11.9
+  },
+  {
+    "name": "Onyxia",
+    "hero_power": "Avenge (4): Summon a 1/1 Whelp that attacks immediately. Improve this by +1/+1.",
+    "pick_rate": 11.7
+  },
+  {
+    "name": "Pyramad",
+    "hero_power": "Steal a random minion from the Tavern. Double its Health.",
+    "pick_rate": 11.5
+  },
+  {
+    "name": "Tae'thelan Bloodwatcher",
+    "hero_power": "Every third Tavern spell you buy costs (0). (2 left!)",
+    "pick_rate": 11.4
+  },
+  {
+    "name": "Tamsin Roame",
+    "hero_power": "Start of Combat: Give your lowest-Attack minion \"Deathrattle: Give your other minions this minion's stats.\"",
+    "pick_rate": 10.2
+  },
+  {
+    "name": "Ragnaros the Firelord",
+    "hero_power": "After you buy 12 cards, get Sulfuras. (12 left!)",
+    "pick_rate": 9.4
+  },
+  {
+    "name": "Ozumat",
+    "hero_power": "When you have space in combat, summon a 2/2 Tentacle with Taunt. (Gains +1/+1 after you sell a minion!)",
+    "pick_rate": 8.6
+  },
+  {
+    "name": "Rokara",
+    "hero_power": "After a friendly minion kills an enemy, give it +1 Attack permanently.",
+    "pick_rate": 7.9
+  },
+  {
+    "name": "C'Thun",
+    "hero_power": "At end of turn, give a friendly minion +1/+1. Repeat 0 times. (Improves each turn!)",
+    "pick_rate": 6.6
+  },
+  {
+    "name": "Kerrigan, Queen of Blades",
+    "hero_power": "Unlock Tier 2 Zerg. Costs (1) less each turn. Passive: Start the game with a 2/2 Larva.",
+    "pick_rate": 6.6
+  },
+  {
+    "name": "Deathwing",
+    "hero_power": "Start of Combat: Give ALL minions +2 Attack permanently.",
+    "pick_rate": 6.2
+  },
+  {
+    "name": "Edwin VanCleef",
+    "hero_power": "Give a minion +2/+2. Improves after you buy 4 cards. (4 left!)",
+    "pick_rate": 6.1
+  }
+]
