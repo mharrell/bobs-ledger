@@ -38,8 +38,8 @@ SHOP_STEPS = {"MAIN_ACTION", "MAIN_START", "MAIN_READY", "MAIN_START_TRIGGERS"}
 REFRESH = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Refresh ")
 FREEZE = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Freeze ")
 UPGRADE = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Tavern Tier \d+ ")
-# ZONE_POSITION change (rearranging the board).
-ZONE_POS = re.compile(r"Entity=\[entityName=(\S+) id=(\d+) zone=PLAY zonePos=(\d+) cardId=(\w+) player=(\d+)")
+# Rearranging a minion = a MOVE_MINION block.
+MOVE_MINION = re.compile(r"BLOCK_START BlockType=MOVE_MINION ")
 
 
 def parse_actions(chunk, friendly, friendly_hero=None):
@@ -62,7 +62,7 @@ def parse_actions(chunk, friendly, friendly_hero=None):
     def new_turn(n):
         return {"turn": n, "buys": [], "sells": [], "triples": [], "refreshes": 0,
                 "freezes": 0, "upgrades": 0, "hero_power": 0,
-                "plays": [], "rearranges": []}
+                "plays": [], "rearranges": 0}
 
     for line in chunk:
         m = TURN.search(line)
@@ -99,6 +99,11 @@ def parse_actions(chunk, friendly, friendly_hero=None):
             if m and cur_turn is not None:
                 turns[-1]["hero_power"] += 1
                 continue
+
+        m = MOVE_MINION.search(line)
+        if m and cur_turn is not None:
+            turns[-1]["rearranges"] += 1
+            continue
 
         m = ENTITY.search(line)
         if m:
@@ -170,7 +175,7 @@ def main():
         chunk = lines[start:end]
         game = extract_game(chunk)
         friendly = _friendly_player(game["heroes"])
-        friendly_hero = next((h.get("name") for h in game["heroes"]
+        friendly_hero = next((h.get("hero_name") for h in game["heroes"]
                               if h["player"] == friendly), None)
         print(f"\n=== Game {idx} (friendly player={friendly}, hero={friendly_hero}) ===")
         for t in parse_actions(chunk, friendly, friendly_hero):
@@ -179,7 +184,8 @@ def main():
                      f"sell={[nm(x) for x in t['sells']]}",
                      f"triple={[nmd(x) for x in t['triples']]}",
                      f"refresh={t['refreshes']}", f"freeze={t['freezes']}",
-                     f"upgrade={t['upgrades']}", f"hero={t['hero_power']}"]
+                     f"upgrade={t['upgrades']}", f"hero={t['hero_power']}",
+                     f"rearrange={t['rearranges']}"]
             print(f"  Turn {t['turn']}: " + " ".join(parts))
     return 0
 
