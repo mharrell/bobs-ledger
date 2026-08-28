@@ -79,6 +79,25 @@ The coach reasons over both simultaneously.
 fetches only the *relevant subset* per decision (e.g., hero-rank sheet only on
 hero-select turn). Self-owned; no dependence on HSReplay's API.
 
+### Model, context & cache strategy (LOCKED)
+- **Model: `deepseek-v4-flash`** (1M-token context). Pinned in `coach_llm.py`;
+  use the id directly, not the deprecated `deepseek-chat`/`deepseek-reasoner`
+  aliases (they route to v4-flash but share its cache and are deprecated).
+- **Context: exploit the full 1M window.** The *entire* static meta reference
+  (all comps + cards, ~7.5k tokens) fits trivially. No per-decision subsetting
+  for size — load it all into the cached prefix.
+- **Cache: prefix-cache discipline** (see `.claude/skills/cache-in-flight/`).
+  Every request = byte-stable FIXED_BLOCK (system prompt + full meta reference)
+  + per-decision VARIABLE tail (live board state + question). A cache hit is
+  ~50x cheaper input tokens; the per-decision cost collapses to just the small
+  board-state tail. **Never** interleave live state into the fixed block or
+  regenerate the system prompt per call — either busts the whole prefix.
+- **Verify, don't assume:** read `prompt_cache_hit_tokens` vs
+  `prompt_cache_miss_tokens` from each response; if hits are ~0, find the
+  prefix drift before scaling up.
+- **Client:** `coach_llm.py` (uses `requests`, already in the venv; reads
+  `DEEPSEEK_API_KEY` from env). No SDK install needed.
+
 ---
 
 ## 4. The Data Asset: Opponent Observation from Own Replays
