@@ -12,3 +12,5 @@ hearth-coach/python-hslog/
 
 # Scraper cache — downloaded hearthstonejson card list, regenerable
 hearth-coach/.cards_cache.json
+hearth-coach/.cards_full.json
+hearth-coach/.card_races.json

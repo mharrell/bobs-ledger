@@ -99,12 +99,17 @@ hero-select turn). Self-owned; no dependence on HSReplay's API.
   `DEEPSEEK_API_KEY` from env). No SDK install needed.
 
 ### Domain constraint — family ban (LOCKED)
-Each Battlegrounds game bans **~half the tribes at random**. A comp is playable
-only if every **core** card is in an available tribe — so filter by the tribes of
-the comp's `core` card ids, not the comp's `tribe` field (a non-murloc deck with a
-murloc core card is unavailable when murlocs are banned). Handle `All`/`Neutral`
-tribes as never-banned and compound tribes (e.g. `Demon/Dragon`) as banned if
-either component is. See memory `hearth-family-ban`.
+Each Battlegrounds game allows **exactly 5 tribes** and bans the other 5
+(verified across the user's recent replays). A comp is playable only if **every
+core card has at least one tribe in the allowed set** — so filter by each core
+card's full tribe set, not the comp's `tribe` field (a Demon deck with a Pirate
+core card is unavailable when Pirates are banned). `All`/`Neutral` cards are
+never-banned; compound cards (e.g. `Demon/Quilboar`) are playable if *either*
+tribe is allowed. Detection: the 5 allowed tribes are the **pure single-tribe
+minions** in the tavern pool (`BACON_POOL_MINION`); compound minions appear if
+any tribe is active, so they can't reveal bans. Implemented in `bans.py`
+(`bans_from_log`, `filter_comps_by_available_tribes`). See memory
+`hearth-family-ban`.
 
 ---
 
