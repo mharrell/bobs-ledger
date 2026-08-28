@@ -1,282 +1,3204 @@
 [
   {
     "tier": 1,
-    "minions": [
-      "Aureate Laureate",
-      "Buzzing Vermin",
-      "Cord Puller",
-      "Crackling Cyclone",
-      "Fleeing Fugitive",
-      "Flighty Scout",
-      "Flittering Bat",
-      "Glim Guardian",
-      "Harmless Bonehead",
-      "Lullabot",
-      "Mini-Myrmidon",
-      "Molten Rock",
-      "Ominous Seer",
-      "Razorfen Geomancer",
-      "Risen Rider",
-      "River Skipper",
-      "Scarlet Survivor",
-      "Southsea Busker",
-      "Suspicious Prisonguard",
-      "Tusked Camper",
-      "Wrath Weaver"
-    ]
+    "id": "BG32_236",
+    "name": "Aureate Laureate",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "DIVINE_SHIELD"
+    ],
+    "text": "Divine Shield\nThis minion is always Golden, but doesn't give a Triple Reward."
+  },
+  {
+    "tier": 1,
+    "id": "BG31_803",
+    "name": "Buzzing Vermin",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE",
+      "TAUNT"
+    ],
+    "text": "[x]Taunt\nDeathrattle: Summon a\n2/2 Beetle."
+  },
+  {
+    "tier": 1,
+    "id": "BG29_611",
+    "name": "Cord Puller",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE",
+      "DIVINE_SHIELD"
+    ],
+    "text": "[x]Divine Shield\nDeathrattle: Summon a\n1/1 Microbot."
+  },
+  {
+    "tier": 1,
+    "id": "BGS_119",
+    "name": "Crackling Cyclone",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "WINDFURY"
+    ],
+    "text": "Divine Shield\nWindfury"
+  },
+  {
+    "tier": 1,
+    "id": "BG36_921",
+    "name": "Fleeing Fugitive",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 5,
+    "health": 2,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you cast a spell on this, gain +1 Health."
+  },
+  {
+    "tier": 1,
+    "id": "BG32_330",
+    "name": "Flighty Scout",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Start of Combat: If this\nminion is in your hand,\nsummon a copy of it."
+  },
+  {
+    "tier": 1,
+    "id": "BG36_200",
+    "name": "Flittering Bat",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 1,
+    "health": 4,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Summon a 1/1 Beast."
+  },
+  {
+    "tier": 1,
+    "id": "BG29_888",
+    "name": "Glim Guardian",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 1,
+    "health": 4,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Gain +2 Attack."
+  },
+  {
+    "tier": 1,
+    "id": "BG28_300",
+    "name": "Harmless Bonehead",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Summon\ntwo 1/1 Skeletons."
+  },
+  {
+    "tier": 1,
+    "id": "BG26_146",
+    "name": "Lullabot",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER",
+      "MAGNETIC"
+    ],
+    "text": "[x]Magnetic\nAt the end of your turn,\ngain +1 Health."
+  },
+  {
+    "tier": 1,
+    "id": "BG23_000",
+    "name": "Mini-Myrmidon",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 1,
+    "health": 4,
+    "mechanics": [
+      "BACON_SPELLCRAFT_ID",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Spellcraft: Give a minion +2 Attack until next turn."
+  },
+  {
+    "tier": 1,
+    "id": "BGS_127",
+    "name": "Molten Rock",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you play an\nElemental, gain\n+1 Health."
+  },
+  {
+    "tier": 1,
+    "id": "BG31_330",
+    "name": "Ominous Seer",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: The next\nTavern spell you buy\ncosts (1) less."
+  },
+  {
+    "tier": 1,
+    "id": "BG20_100",
+    "name": "Razorfen Geomancer",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get 2\nBlood Gems."
+  },
+  {
+    "tier": 1,
+    "id": "BG25_001",
+    "name": "Risen Rider",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "REBORN",
+      "TAUNT"
+    ],
+    "text": "Taunt\nReborn"
+  },
+  {
+    "tier": 1,
+    "id": "BG33_140",
+    "name": "River Skipper",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [],
+    "text": "When you sell this, get a random Tier 1 minion."
+  },
+  {
+    "tier": 1,
+    "id": "BG35_814",
+    "name": "Scarlet Survivor",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Once this reaches 6 Attack, gain Divine Shield."
+  },
+  {
+    "tier": 1,
+    "id": "BG26_135",
+    "name": "Southsea Busker",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 3,
+    "health": 1,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Gain\n1 Gold next turn."
+  },
+  {
+    "tier": 1,
+    "id": "BG36_345",
+    "name": "Suspicious Prisonguard",
+    "cost": 0,
+    "tribe": null,
+    "attack": 3,
+    "health": 3,
+    "mechanics": [],
+    "text": "Activate (1): Give another minion +3/+3."
+  },
+  {
+    "tier": 1,
+    "id": "BG33_886",
+    "name": "Tusked Camper",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 2,
+    "health": 3,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "[x]Rally: This plays a Blood\nGem on itself."
+  },
+  {
+    "tier": 1,
+    "id": "BGS_004",
+    "name": "Wrath Weaver",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 1,
+    "health": 3,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After you play a Demon, deal 1 damage to your hero and gain +2/+2."
   },
   {
     "tier": 2,
-    "minions": [
-      "Ancestral Automaton",
-      "Bilgewater Breakout",
-      "Clever Castaway",
-      "Crater Miner",
-      "Decoy Conjurer",
-      "Electric Synthesizer",
-      "Eternal Knight",
-      "Expert Aviator",
-      "Fire Baller",
-      "Forest Rover",
-      "Humming Bird",
-      "Intrepid Botanist",
-      "Laboratory Assistant",
-      "Lava Lurker",
-      "Lurking Lionfish",
-      "Mechagnome Interpreter",
-      "Metallic Hunter",
-      "Mind Muck",
-      "Nerubian Deathswarmer",
-      "Oozeling Gladiator",
-      "Patient Scout",
-      "Prodigious Tusker",
-      "Roadboar",
-      "Scarlet Skull",
-      "Sellemental",
-      "Shell Collector",
-      "Snow Baller",
-      "Soul Rewinder",
-      "Surfing Sylvar",
-      "Tad",
-      "Tarecgosa",
-      "Thaumaturgist",
-      "Thousandth Paper Drake",
-      "Very Hungry Winterfinner"
-    ]
+    "id": "BG_TTN_401",
+    "name": "Ancestral Automaton",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [
+      "AURA"
+    ],
+    "text": "[x]Has +3/+2 for each other\nAncestral Automaton you've\nsummoned this game\n(wherever this is)."
+  },
+  {
+    "tier": 2,
+    "id": "BG36_520",
+    "name": "Bilgewater Breakout",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Get a Lockbox.\nIf you already have one,\nit opens 1 turn sooner\ninstead."
+  },
+  {
+    "tier": 2,
+    "id": "BG36_342",
+    "name": "Clever Castaway",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 2,
+    "health": 3,
+    "mechanics": [],
+    "text": "Activate (2): Discover a Tavern spell."
+  },
+  {
+    "tier": 2,
+    "id": "BG31_320",
+    "name": "Crater Miner",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "CHOOSE_ONE"
+    ],
+    "text": "Choose One - Get 2 Blood Gems; or Get a Gem Day."
+  },
+  {
+    "tier": 2,
+    "id": "BG36_354",
+    "name": "Decoy Conjurer",
+    "cost": 0,
+    "tribe": null,
+    "attack": 3,
+    "health": 4,
+    "mechanics": [],
+    "text": "Activate (2): Steal the highest-Attack minion in the Tavern."
+  },
+  {
+    "tier": 2,
+    "id": "BG26_963",
+    "name": "Electric Synthesizer",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Battlecry and Start of Combat: Give your\nother Dragons +1/+1."
+  },
+  {
+    "tier": 2,
+    "id": "BG25_008",
+    "name": "Eternal Knight",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 4,
+    "health": 2,
+    "mechanics": [
+      "AURA",
+      "InvisibleDeathrattle"
+    ],
+    "text": "[x]Has +4/+2 for each friendly\nEternal Knight that died this\n  game (wherever this is)."
+  },
+  {
+    "tier": 2,
+    "id": "BG34_140",
+    "name": "Expert Aviator",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "[x]Rally: Summon the highest-\nAttack minion from your\n  hand for this combat only."
+  },
+  {
+    "tier": 2,
+    "id": "BG31_816",
+    "name": "Fire Baller",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 4,
+    "health": 3,
+    "mechanics": [],
+    "text": "[x]When you sell this, give\nyour minions +1 Attack.\nImprove your future\nBallers."
+  },
+  {
+    "tier": 2,
+    "id": "BG31_801",
+    "name": "Forest Rover",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Battlecry: Your Beetles\nhave +2/+1 this game.\nDeathrattle: Summon a\n2/2 Beetle."
+  },
+  {
+    "tier": 2,
+    "id": "BG26_805",
+    "name": "Humming Bird",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 1,
+    "health": 4,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Start of Combat: For the rest of this combat, your Beasts have +1 Attack."
+  },
+  {
+    "tier": 2,
+    "id": "BG32_237",
+    "name": "Intrepid Botanist",
+    "cost": 0,
+    "tribe": null,
+    "attack": 3,
+    "health": 4,
+    "mechanics": [
+      "CHOOSE_ONE"
+    ],
+    "text": "[x]Choose One - Your Tavern\nspells give an extra\n+1 Attack this game;\nor +1 Health."
+  },
+  {
+    "tier": 2,
+    "id": "BG35_150",
+    "name": "Laboratory Assistant",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Add a Fodder to your next 3 Refreshes."
+  },
+  {
+    "tier": 2,
+    "id": "BG23_009",
+    "name": "Lava Lurker",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 2,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]The first Spellcraft spell\n played from hand on this\neach turn is permanent.\n(1 left!)"
+  },
+  {
+    "tier": 2,
+    "id": "BG36_201",
+    "name": "Lurking Lionfish",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [],
+    "text": "Activate (2): Choose a card in the Tavern. Replace it with a Fishbait for your left-most Beast to attack."
+  },
+  {
+    "tier": 2,
+    "id": "BG31_177",
+    "name": "Mechagnome Interpreter",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 3,
+    "health": 1,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Whenever you play or\nMagnetize a Mech,\ngive it +3/+1."
+  },
+  {
+    "tier": 2,
+    "id": "BG32_170",
+    "name": "Metallic Hunter",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 4,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Get a\nPointy Arrow."
+  },
+  {
+    "tier": 2,
+    "id": "BG23_357",
+    "name": "Mind Muck",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Choose a friendly\nDemon. It consumes a\nminion in the Tavern\nto gain its stats."
+  },
+  {
+    "tier": 2,
+    "id": "BG25_011",
+    "name": "Nerubian Deathswarmer",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 1,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Your Undead\nhave +1 Attack this game\n(wherever they are)."
+  },
+  {
+    "tier": 2,
+    "id": "BG27_002",
+    "name": "Oozeling Gladiator",
+    "cost": 0,
+    "tribe": null,
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get two Slimy Shields that give\n+1/+1 and Taunt."
+  },
+  {
+    "tier": 2,
+    "id": "BG24_715",
+    "name": "Patient Scout",
+    "cost": 0,
+    "tribe": null,
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]When you sell this,\nDiscover a Tier 1 minion.\n(Improves each turn!)"
+  },
+  {
+    "tier": 2,
+    "id": "BG33_430",
+    "name": "Prodigious Tusker",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 1,
+    "health": 3,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever another friendly minion attacks, this plays a Blood Gem on it."
+  },
+  {
+    "tier": 2,
+    "id": "BG20_101",
+    "name": "Roadboar",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 2,
+    "health": 4,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Get a Blood Gem."
+  },
+  {
+    "tier": 2,
+    "id": "BG25_022",
+    "name": "Scarlet Skull",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE",
+      "REBORN"
+    ],
+    "text": "Reborn\nDeathrattle: Give a friendly Undead +1/+2."
+  },
+  {
+    "tier": 2,
+    "id": "BGS_115",
+    "name": "Sellemental",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [],
+    "text": "[x]When you sell this,\nget a 3/3 Elemental."
+  },
+  {
+    "tier": 2,
+    "id": "BG23_002",
+    "name": "Shell Collector",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 4,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get a Tavern Coin."
+  },
+  {
+    "tier": 2,
+    "id": "BG31_818",
+    "name": "Snow Baller",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [],
+    "text": "[x]When you sell this, give\nyour minions +1 Health.\nImprove your future\nBallers."
+  },
+  {
+    "tier": 2,
+    "id": "BG26_174",
+    "name": "Soul Rewinder",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 4,
+    "health": 1,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After your hero takes damage, rewind it and give this +1 Health."
+  },
+  {
+    "tier": 2,
+    "id": "BG32_235",
+    "name": "Surfing Sylvar",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 1,
+    "health": 2,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn, give\nadjacent minions +1 Attack.\nRepeat for each friendly\nGolden minion."
+  },
+  {
+    "tier": 2,
+    "id": "BG22_202",
+    "name": "Tad",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [],
+    "text": "When you sell this,\nget a random Murloc."
+  },
+  {
+    "tier": 2,
+    "id": "BG21_015",
+    "name": "Tarecgosa",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "This permanently keeps Bonus Keywords and stats gained in combat."
+  },
+  {
+    "tier": 2,
+    "id": "BG31_924",
+    "name": "Thaumaturgist",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 1,
+    "health": 2,
+    "mechanics": [
+      "BACON_SPELLCRAFT_ID",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Spellcraft: Give a minion\n+1/+1 until next turn.\n(Improved by every 3 spells\n        you've cast this game!)"
+  },
+  {
+    "tier": 2,
+    "id": "BG29_810",
+    "name": "Thousandth Paper Drake",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 2,
+    "health": 3,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Start of Combat: Give\nyour left-most Dragon\n+1/+2 and Windfury."
+  },
+  {
+    "tier": 2,
+    "id": "BG29_300",
+    "name": "Very Hungry Winterfinner",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 2,
+    "health": 6,
+    "mechanics": [
+      "TAUNT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Taunt\nWhenever this takes damage, give a minion in your hand +2/+1."
   },
   {
     "tier": 3,
-    "minions": [
-      "Accord-o-Tron",
-      "Amber Guardian",
-      "Annoy-o-Module",
-      "Azsharan Cutlassier",
-      "Blue Whelp",
-      "Breakout Mastermind",
-      "Briarback Drummer",
-      "Cadaver Caretaker",
-      "Cagey Conjurer",
-      "Deadly Spore",
-      "Deep-Sea Angler",
-      "Deflect-o-Bot",
-      "Devout Hellcaller",
-      "Diremuck Forager",
-      "Disguised Graverobber",
-      "Dustbone Devastator",
-      "Fruit Vendor",
-      "Gem Rat",
-      "Handless Forsaken",
-      "Hired Mount",
-      "Locked-up Mutineer",
-      "Malchezaar, Prince of Dance",
-      "Mama Mrrglton",
-      "Meteorite Crasher",
-      "Mummifier",
-      "Papa Mrrglton",
-      "Private Investigator",
-      "Prosthetic Hand",
-      "Rescue Bot",
-      "Roaring Recruiter",
-      "Sand Swirler",
-      "Sly Infiltrator",
-      "Sly Raptor",
-      "Sprightly Scarab",
-      "Tasty Lobster",
-      "Timecap'n Hooktail",
-      "Trapped Clapper",
-      "Treasure Parrot",
-      "Trench Fighter",
-      "Waveling",
-      "Waverider",
-      "Wildfire Elemental",
-      "Wolf Pup"
-    ]
+    "id": "BG26_147",
+    "name": "Accord-o-Tron",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "MAGNETIC",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Magnetic\nAt the start of your turn,\ngain 1 Gold."
+  },
+  {
+    "tier": 3,
+    "id": "BG24_500",
+    "name": "Amber Guardian",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TAUNT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Taunt\nStart of Combat: Give another\n friendly Dragon +2/+2\nand Divine Shield."
+  },
+  {
+    "tier": 3,
+    "id": "BG_BOT_911",
+    "name": "Annoy-o-Module",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 2,
+    "health": 4,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "MAGNETIC",
+      "TAUNT"
+    ],
+    "text": "Magnetic\nDivine Shield\nTaunt"
+  },
+  {
+    "tier": 3,
+    "id": "BG33_830",
+    "name": "Azsharan Cutlassier",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 6,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Your Tavern\nspells give an extra\n+1 Attack this game."
+  },
+  {
+    "tier": 3,
+    "id": "BG33_924",
+    "name": "Blue Whelp",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 1,
+    "health": 5,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Your Tavern spells give an extra +1 Health this game."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_507",
+    "name": "Breakout Mastermind",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [],
+    "text": "Activate (2): Get a random Murloc."
+  },
+  {
+    "tier": 3,
+    "id": "BG34_683",
+    "name": "Briarback Drummer",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 5,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get a Blood Gem Barrage."
+  },
+  {
+    "tier": 3,
+    "id": "BG30_125",
+    "name": "Cadaver Caretaker",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Summon three 1/1 Skeletons."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_508",
+    "name": "Cagey Conjurer",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 5,
+    "health": 3,
+    "mechanics": [],
+    "text": "[x]Activate (1): Cast 2\nrandom Tavern spells\n  (targets this if possible)."
+  },
+  {
+    "tier": 3,
+    "id": "BGS_131",
+    "name": "Deadly Spore",
+    "cost": 0,
+    "tribe": null,
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "VENOMOUS"
+    ],
+    "text": "Venomous"
+  },
+  {
+    "tier": 3,
+    "id": "BG23_004",
+    "name": "Deep-Sea Angler",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 2,
+    "health": 3,
+    "mechanics": [
+      "BACON_SPELLCRAFT_ID",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Spellcraft: Give a minion\n+2/+6 and Taunt\nuntil next turn."
+  },
+  {
+    "tier": 3,
+    "id": "BGS_071",
+    "name": "Deflect-o-Bot",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Divine Shield\nWhenever you summon a Mech\nduring combat, gain +2 Attack\nand Divine Shield."
+  },
+  {
+    "tier": 3,
+    "id": "BG33_155",
+    "name": "Devout Hellcaller",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After another friendly Demon deals damage, gain +1/+2 permanently."
+  },
+  {
+    "tier": 3,
+    "id": "BG27_556",
+    "name": "Diremuck Forager",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Start of Combat: When you have space, summon the highest-Attack Murloc from your hand\nfor this combat only."
+  },
+  {
+    "tier": 3,
+    "id": "BG28_303",
+    "name": "Disguised Graverobber",
+    "cost": 0,
+    "tribe": null,
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Destroy a friendly Undead to get\na plain copy of it."
+  },
+  {
+    "tier": 3,
+    "id": "BG33_323",
+    "name": "Dustbone Devastator",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 2,
+    "health": 6,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Your Undead have\n+1 Attack this game (wherever they are)."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_346",
+    "name": "Fruit Vendor",
+    "cost": 0,
+    "tribe": null,
+    "attack": 3,
+    "health": 6,
+    "mechanics": [],
+    "text": "Activate (1): Get 2\nTavern Dish Bananas."
+  },
+  {
+    "tier": 3,
+    "id": "BG31_326",
+    "name": "Gem Rat",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "At the end of your turn,\nget a Gem Day."
+  },
+  {
+    "tier": 3,
+    "id": "BG25_010",
+    "name": "Handless Forsaken",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Summon a 2/1 Hand with Reborn."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_240",
+    "name": "Hired Mount",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 3,
+    "health": 5,
+    "mechanics": [],
+    "text": "Activate (2): Get a random Chromadrake."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_521",
+    "name": "Locked-up Mutineer",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 6,
+    "health": 3,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Get a Lockbox.\nIf you already have one,\nit opens 1 turn sooner\ninstead."
+  },
+  {
+    "tier": 3,
+    "id": "BG26_524",
+    "name": "Malchezaar, Prince of Dance",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Two Refreshes each turn cost Health instead of Gold. (2 left!)"
+  },
+  {
+    "tier": 3,
+    "id": "BG35_140",
+    "name": "Mama Mrrglton",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 4,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Give your other\nMurlocs +3 Attack.\n(Improved by each Mrrglton\n    you played this game!)"
+  },
+  {
+    "tier": 3,
+    "id": "BG31_843",
+    "name": "Meteorite Crasher",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After you sell an Elemental, gain +4/+4."
+  },
+  {
+    "tier": 3,
+    "id": "BG28_309",
+    "name": "Mummifier",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 5,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Give a different friendly Undead Reborn."
+  },
+  {
+    "tier": 3,
+    "id": "BG35_141",
+    "name": "Papa Mrrglton",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 2,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Give your other\nMurlocs +3 Health.\n(Improved by each Mrrglton\n    you played this game!)"
+  },
+  {
+    "tier": 3,
+    "id": "BG36_509",
+    "name": "Private Investigator",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 2,
+    "health": 4,
+    "mechanics": [],
+    "text": "Activate (1): Gain 3 Gold next turn."
+  },
+  {
+    "tier": 3,
+    "id": "BG_DEEP_015",
+    "name": "Prosthetic Hand",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 3,
+    "health": 1,
+    "mechanics": [
+      "MAGNETIC",
+      "REBORN"
+    ],
+    "text": "Magnetic, Reborn\nCan Magnetize to\nMechs or Undead."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_854",
+    "name": "Rescue Bot",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE",
+      "TAUNT"
+    ],
+    "text": "[x]Taunt\nDeathrattle: Get a\nRepair Job."
+  },
+  {
+    "tier": 3,
+    "id": "BG29_816",
+    "name": "Roaring Recruiter",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 2,
+    "health": 8,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever another friendly Dragon attacks, give it +3/+1."
+  },
+  {
+    "tier": 3,
+    "id": "BG32_841",
+    "name": "Sand Swirler",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Your Elementals\ngive an extra +2 Attack\nthis game."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_330",
+    "name": "Sly Infiltrator",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "CHOOSE_ONE"
+    ],
+    "text": "Choose One - Gain 2 free Refreshes; or Get 3 Blood Gems."
+  },
+  {
+    "tier": 3,
+    "id": "BG25_806",
+    "name": "Sly Raptor",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 1,
+    "health": 3,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Summon a random Beast. Set its stats to 6/6."
+  },
+  {
+    "tier": 3,
+    "id": "BG27_084",
+    "name": "Sprightly Scarab",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 3,
+    "health": 1,
+    "mechanics": [
+      "CHOOSE_ONE"
+    ],
+    "text": "[x]Choose One - Give a Beast\n+1/+1 and Reborn; or\n+4 Attack and Windfury."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_202",
+    "name": "Tasty Lobster",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Give a  random\nfriendly Beast +1/+1.\nImprove your future\nTasty Lobsters."
+  },
+  {
+    "tier": 3,
+    "id": "BG27_005",
+    "name": "Timecap'n Hooktail",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 1,
+    "health": 4,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Whenever you cast a\nTavern spell, give your\nminions +1 Attack."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_730",
+    "name": "Trapped Clapper",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Add a Fodder to your next 3 Refreshes."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_763",
+    "name": "Treasure Parrot",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Once this deals 35 damage,\nget a Golden Touch.\n(35 left!)"
+  },
+  {
+    "tier": 3,
+    "id": "BG34_684",
+    "name": "Trench Fighter",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "At the end of your turn, get a Gem Confiscation."
+  },
+  {
+    "tier": 3,
+    "id": "BG34_856",
+    "name": "Waveling",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 5,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: After the Tavern\nis Refreshed this game,\ngive a random minion\nin it +4/+4."
+  },
+  {
+    "tier": 3,
+    "id": "BG23_007",
+    "name": "Waverider",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 2,
+    "health": 6,
+    "mechanics": [
+      "BACON_SPELLCRAFT_ID",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Spellcraft: Give a minion\n+2/+2. If it's a Naga,\nalso give it Windfury\nuntil next turn."
+  },
+  {
+    "tier": 3,
+    "id": "BGS_126",
+    "name": "Wildfire Elemental",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 6,
+    "health": 3,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After this attacks and\nkills a minion, deal\nexcess damage to an adjacent enemy."
+  },
+  {
+    "tier": 3,
+    "id": "BG36_207",
+    "name": "Wolf Pup",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 3,
+    "health": 6,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Give your other minions +4/+1."
   },
   {
     "tier": 4,
-    "minions": [
-      "Abyssal Bruiser",
-      "Air Baller",
-      "Ashen Corruptor",
-      "Auto Assembler",
-      "Banana Slamma",
-      "Bigwig Bandit",
-      "Blade Collector",
-      "Bonker",
-      "Boom-in-a-Box",
-      "Bramble Tunneler",
-      "Bream Counter",
-      "Bronze Timewalker",
-      "Cage Gnawer",
-      "Captain Cookie",
-      "Clunker Junker",
-      "Dead Bellringer",
-      "Deepwater Chieftain",
-      "Drone Duplicator",
-      "En-Djinn Blazer",
-      "Enchanted Sentinel",
-      "Fearless Foodie",
-      "Flaming Enforcer",
-      "Friendly Geist",
-      "Gearfin",
-      "Glambot",
-      "Glowing Cinder",
-      "Gunpowder Courier",
-      "Headhunter Gryphon",
-      "Heroic Underdog",
-      "Humon'gozz",
-      "Imp-lusionist",
-      "Imposing Percussionist",
-      "Kelp Keeper",
-      "Living Prison",
-      "Lovesick Balladist",
-      "Maritime Extortionist",
-      "Maw Caster",
-      "Motley Phalanx",
-      "Persistent Poet",
-      "Plaguerunner",
-      "Razorfen Flapper",
-      "Refreshing Anomaly",
-      "Rimescale Priestess",
-      "Runic Arcanist",
-      "Seafloor Recruiter",
-      "Sin'dorei Straight Shot",
-      "Sky-hatch Runaway",
-      "Snare Trapper",
-      "Snarky Shark",
-      "Soulkeeping Jailer",
-      "Tavern Tempest",
-      "Thorned Trailblazer",
-      "Tortollan Blue Shell",
-      "Twilight Tidehunter",
-      "Zesty Shaker"
-    ]
+    "id": "BG35_921",
+    "name": "Abyssal Bruiser",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "AURA",
+      "DIVINE_SHIELD"
+    ],
+    "text": "[x]Divine Shield\nHas +2/+1 for each\nTavern spell you've\ncast this game."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_181",
+    "name": "Air Baller",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 6,
+    "health": 6,
+    "mechanics": [],
+    "text": "When you sell this, give\nyour minions +2/+2.\nImprove your future\nBallers."
+  },
+  {
+    "tier": 4,
+    "id": "BG32_873",
+    "name": "Ashen Corruptor",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 5,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After your hero takes\ndamage, rewind it and\ngive minions in the Tavern\n+1/+1 this turn."
+  },
+  {
+    "tier": 4,
+    "id": "BG32_172",
+    "name": "Auto Assembler",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE",
+      "MAGNETIC"
+    ],
+    "text": "[x]Magnetic\nDeathrattle: Summon an\n  Ancestral Automaton."
+  },
+  {
+    "tier": 4,
+    "id": "BG26_802",
+    "name": "Banana Slamma",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 3,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you summon a\nBeast in combat,\ndouble its Attack."
+  },
+  {
+    "tier": 4,
+    "id": "BG33_822",
+    "name": "Bigwig Bandit",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "[x]Rally: Get a random Bounty."
+  },
+  {
+    "tier": 4,
+    "id": "BG26_817",
+    "name": "Blade Collector",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [],
+    "text": "Also damages the enemies next to whomever this attacks."
+  },
+  {
+    "tier": 4,
+    "id": "BG20_104",
+    "name": "Bonker",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 2,
+    "health": 7,
+    "mechanics": [
+      "BACON_RALLY",
+      "WINDFURY"
+    ],
+    "text": "Windfury\nRally: This plays a\nBlood Gem on all your\nother minions."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_620",
+    "name": "Boom-in-a-Box",
+    "cost": 0,
+    "tribe": null,
+    "attack": 5,
+    "health": 10,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TAUNT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Taunt\nStart of Combat: Deal 3 damage to all other minions."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_331",
+    "name": "Bramble Tunneler",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 3,
+    "health": 6,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Get a random Choose One card."
+  },
+  {
+    "tier": 4,
+    "id": "BG26_137",
+    "name": "Bream Counter",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 6,
+    "health": 6,
+    "mechanics": [],
+    "text": "While this is in your hand, after you play a Murloc, gain +6/+6."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_242",
+    "name": "Bronze Timewalker",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 2,
+    "health": 9,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Get a random Chromadrake."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_211",
+    "name": "Cage Gnawer",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 2,
+    "health": 7,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever a friendly Beast attacks, give your Beasts +2/+1."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_760",
+    "name": "Captain Cookie",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 5,
+    "health": 3,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Get a Chef's Choice."
+  },
+  {
+    "tier": 4,
+    "id": "BG29_503",
+    "name": "Clunker Junker",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Choose a friendly Mech. Discover a Mech to Magnetize to it."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_511",
+    "name": "Dead Bellringer",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 3,
+    "health": 6,
+    "mechanics": [],
+    "text": "Activate (1): Give a different friendly Undead Reborn. Then destroy it to gain +4/+4."
+  },
+  {
+    "tier": 4,
+    "id": "BG35_143",
+    "name": "Deepwater Chieftain",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "Battlecry and Deathrattle: Get a Deepwater Clan."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_506",
+    "name": "Drone Duplicator",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 5,
+    "health": 2,
+    "mechanics": [
+      "DIVINE_SHIELD"
+    ],
+    "text": "[x]Divine Shield\nActivate (1): The next\nMagnetization to this minion\nthis turn is doubled."
+  },
+  {
+    "tier": 4,
+    "id": "BG34_865",
+    "name": "En-Djinn Blazer",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: After the Tavern\nis Refreshed this game,\ngive a random minion\nin it +10/+10."
+  },
+  {
+    "tier": 4,
+    "id": "BG35_341",
+    "name": "Enchanted Sentinel",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 3,
+    "health": 5,
+    "mechanics": [
+      "AURA",
+      "MAGNETIC"
+    ],
+    "text": "Magnetic\nYour Tavern spells give\nan extra +1/+1."
+  },
+  {
+    "tier": 4,
+    "id": "BG30_123",
+    "name": "Fearless Foodie",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 2,
+    "health": 4,
+    "mechanics": [
+      "CHOOSE_ONE"
+    ],
+    "text": "Choose One - Your Blood Gems give an extra +1/+1 this game; or Get 4 Blood Gems."
+  },
+  {
+    "tier": 4,
+    "id": "BG34_500",
+    "name": "Flaming Enforcer",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn,\nconsume the highest-Health\nminion in the Tavern to\ngain its stats."
+  },
+  {
+    "tier": 4,
+    "id": "BG32_880",
+    "name": "Friendly Geist",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 6,
+    "health": 3,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Your Tavern\nspells give an extra\n+1 Attack this game."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_764",
+    "name": "Gearfin",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 6,
+    "health": 5,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "At the end of your turn, get two 1-Cost Tavern spells."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_853",
+    "name": "Glambot",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Whenever you cast a spell\non a Mech, Magnetize a\n4/4 Satellite to it."
+  },
+  {
+    "tier": 4,
+    "id": "BG32_842",
+    "name": "Glowing Cinder",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 4,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Your\nElementals give an extra\n+2 Health this game."
+  },
+  {
+    "tier": 4,
+    "id": "BG26_810",
+    "name": "Gunpowder Courier",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 2,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Whenever you spend 5 Gold,\ngive your Pirates +2 Attack.\n(5 Gold left!)"
+  },
+  {
+    "tier": 4,
+    "id": "BG36_204",
+    "name": "Headhunter Gryphon",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 3,
+    "health": 5,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Get a random Beast."
+  },
+  {
+    "tier": 4,
+    "id": "BG34_604",
+    "name": "Heroic Underdog",
+    "cost": 0,
+    "tribe": null,
+    "attack": 1,
+    "health": 10,
+    "mechanics": [
+      "BACON_RALLY",
+      "STEALTH"
+    ],
+    "text": "Stealth\nRally: Gain the target's Attack."
+  },
+  {
+    "tier": 4,
+    "id": "BG32_341",
+    "name": "Humon'gozz",
+    "cost": 0,
+    "tribe": null,
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "AURA",
+      "DIVINE_SHIELD"
+    ],
+    "text": "[x]Divine Shield\nYour Tavern spells give\nan extra +1/+2."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_731",
+    "name": "Imp-lusionist",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 4,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Get a Methodical Madness."
+  },
+  {
+    "tier": 4,
+    "id": "BG26_525",
+    "name": "Imposing Percussionist",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Discover a\nDemon. Deal damage to\n   your hero equal to its Tier."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_701",
+    "name": "Kelp Keeper",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [],
+    "text": "Activate (1): Trigger a friendly minion's Battlecry."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_180",
+    "name": "Living Prison",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [],
+    "text": "Activate (1): Gain the stats of the next minion you buy this turn."
+  },
+  {
+    "tier": 4,
+    "id": "BG26_814",
+    "name": "Lovesick Balladist",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Give a Pirate\n+1 Health. (Improved by\neach Gold you spent\nthis turn!)"
+  },
+  {
+    "tier": 4,
+    "id": "BG36_524",
+    "name": "Maritime Extortionist",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 7,
+    "health": 7,
+    "mechanics": [
+      "AURA"
+    ],
+    "text": "[x]Has +7/+7 for each\nGolden minion you've\nplayed this game\n(wherever this is)."
+  },
+  {
+    "tier": 4,
+    "id": "BG32_340",
+    "name": "Maw Caster",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Destroy a friendly Undead to Discover an Undead."
+  },
+  {
+    "tier": 4,
+    "id": "BG27_080",
+    "name": "Motley Phalanx",
+    "cost": 0,
+    "tribe": "ALL",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "DEATHRATTLE",
+      "TAUNT"
+    ],
+    "text": "[x]Taunt\nDeathrattle: Give a friendly\nminion of each type\n  +3/+3 permanently."
+  },
+  {
+    "tier": 4,
+    "id": "BG29_813",
+    "name": "Persistent Poet",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 2,
+    "health": 3,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Divine Shield. Adjacent\nDragons permanently keep\nBonus Keywords and stats\ngained in combat."
+  },
+  {
+    "tier": 4,
+    "id": "BG34_690",
+    "name": "Plaguerunner",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 4,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Your Undead have\n+2 Attack this game, wherever\nthey are. (+4 if triggered\noutside combat!)"
+  },
+  {
+    "tier": 4,
+    "id": "BG34_682",
+    "name": "Razorfen Flapper",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 6,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Get a Blood Gem Barrage."
+  },
+  {
+    "tier": 4,
+    "id": "BGS_116",
+    "name": "Refreshing Anomaly",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Gain 2\nfree Refreshes."
+  },
+  {
+    "tier": 4,
+    "id": "BG33_319",
+    "name": "Rimescale Priestess",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "BACON_SPELLCRAFT_ID",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Spellcraft: Get a random Tavern spell that gives stats."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_245",
+    "name": "Runic Arcanist",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 2,
+    "health": 4,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Start of Combat: Cast Shiny Ring twice."
+  },
+  {
+    "tier": 4,
+    "id": "BG34_925",
+    "name": "Seafloor Recruiter",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 3,
+    "health": 5,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Cast Chef's Choice on the minion to the right."
+  },
+  {
+    "tier": 4,
+    "id": "BG25_016",
+    "name": "Sin'dorei Straight Shot",
+    "cost": 0,
+    "tribe": null,
+    "attack": 3,
+    "health": 4,
+    "mechanics": [
+      "BACON_RALLY",
+      "DIVINE_SHIELD",
+      "WINDFURY"
+    ],
+    "text": "[x]Divine Shield, Windfury\nRally: Remove Reborn and\n Taunt from the target."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_243",
+    "name": "Sky-hatch Runaway",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 4,
+    "health": 7,
+    "mechanics": [],
+    "text": "Activate (1): Trigger a friendly minion's Rally."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_332",
+    "name": "Snare Trapper",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "CHOOSE_ONE"
+    ],
+    "text": "Choose One - Get a random Quilboar; or Increase your maximum Gold by 1."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_206",
+    "name": "Snarky Shark",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [],
+    "text": "When you sell this, Refresh the Tavern with a Fishbait. Your left-most Beast attacks it."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_503",
+    "name": "Soulkeeping Jailer",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 3,
+    "health": 5,
+    "mechanics": [],
+    "text": "Activate (2): Your Demons each consume a random minion in the Tavern to gain its stats."
+  },
+  {
+    "tier": 4,
+    "id": "BGS_123",
+    "name": "Tavern Tempest",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get a random Elemental."
+  },
+  {
+    "tier": 4,
+    "id": "BG31_327",
+    "name": "Thorned Trailblazer",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "One Choose One card each turn has both effects combined. (1 left!)"
+  },
+  {
+    "tier": 4,
+    "id": "BG24_018",
+    "name": "Tortollan Blue Shell",
+    "cost": 0,
+    "tribe": null,
+    "attack": 3,
+    "health": 6,
+    "mechanics": [],
+    "text": "If you lost your last combat, this minion sells for 5 Gold."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_703",
+    "name": "Twilight Tidehunter",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you cast a spell on this, give the left-most minion in your hand +8/+8."
+  },
+  {
+    "tier": 4,
+    "id": "BG26_505",
+    "name": "Zesty Shaker",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 6,
+    "health": 7,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Once per turn, when a\nSpellcraft spell is played on\n this, get a new copy of it."
   },
   {
     "tier": 5,
-    "minions": [
-      "Air Revenant",
-      "Barrier Banshee",
-      "Bile Spitter",
-      "Brann Bronzebeard",
-      "Cataclysmic Harbinger",
-      "Charging Czarina",
-      "Costume Enthusiast",
-      "Cousin Errgl",
-      "Dancing Barnstormer",
-      "Darkcrest Strategist",
-      "Deft Deserter",
-      "Devilish Distractor",
-      "Draconic Warden",
-      "Drakkari Enchanter",
-      "Drustfallen Butcher",
-      "Dual-Wield Corsair",
-      "Enterprising Escapee",
-      "Felboar",
-      "Felfire Conjurer",
-      "Firescale Hoarder",
-      "Glowscale",
-      "Hoarding Hyena",
-      "Insatiable Ur'zul",
-      "Kalecgos, Arcane Aspect",
-      "Kangor's Apprentice",
-      "Leeroy the Reckless",
-      "Lurking Leviathan",
-      "Nightmare Par-tea Guest",
-      "Nomi, Kitchen Nightmare",
-      "Primalfin Lookout",
-      "Proud Privateer",
-      "Razorfen Vineweaver",
-      "Rodeo Performer",
-      "Sanguine Refiner",
-      "Scrap Scraper",
-      "Sewer Lord",
-      "Shamanic Tidecaller",
-      "Shipwrecked Rascal",
-      "Showy Cyclist",
-      "Spark Snapper",
-      "Tichondrius",
-      "Titus Rivendare",
-      "Tranquil Meditative",
-      "Turquoise Skitterer",
-      "Vigilant Bristlemane",
-      "Void Pup Trainer"
-    ]
+    "id": "BG34_858",
+    "name": "Air Revenant",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 3,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After you spend 7 Gold, cast Easterly Winds.\n(7 left!)"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_514",
+    "name": "Barrier Banshee",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 7,
+    "health": 7,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After a friendly minion is Reborn, gain Divine Shield and +7/+7."
+  },
+  {
+    "tier": 5,
+    "id": "BG33_318",
+    "name": "Bile Spitter",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 1,
+    "health": 10,
+    "mechanics": [
+      "BACON_RALLY",
+      "VENOMOUS"
+    ],
+    "text": "[x]Venomous\nRally: Give another friendly\nMurloc Venomous."
+  },
+  {
+    "tier": 5,
+    "id": "BG_LOE_077",
+    "name": "Brann Bronzebeard",
+    "cost": 3,
+    "tribe": null,
+    "attack": 2,
+    "health": 4,
+    "mechanics": [
+      "AURA"
+    ],
+    "text": "Your Battlecries trigger twice."
+  },
+  {
+    "tier": 5,
+    "id": "BG35_123",
+    "name": "Cataclysmic Harbinger",
+    "cost": 0,
+    "tribe": null,
+    "attack": 6,
+    "health": 10,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn,\nget a copy of the last\nTavern spell you cast."
+  },
+  {
+    "tier": 5,
+    "id": "BG28_741",
+    "name": "Charging Czarina",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 4,
+    "health": 1,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Divine Shield\nWhenever you cast a Tavern\nspell, give your minions with\n   Divine Shield +4 Attack."
+  },
+  {
+    "tier": 5,
+    "id": "BG34_142",
+    "name": "Costume Enthusiast",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Divine Shield\nStart of Combat: Gain the\nAttack of the highest-Attack\nminion in your hand."
+  },
+  {
+    "tier": 5,
+    "id": "BG35_142",
+    "name": "Cousin Errgl",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn,\nget a Mama Mrrglton or a\nPapa Mrrglton."
+  },
+  {
+    "tier": 5,
+    "id": "BG26_162",
+    "name": "Dancing Barnstormer",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Battlecry and Deathrattle:\nGive Elementals in the\nTavern +8/+8 this\ngame."
+  },
+  {
+    "tier": 5,
+    "id": "BG31_920",
+    "name": "Darkcrest Strategist",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER",
+      "BACON_SPELLCRAFT_ID",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Spellcraft: Get a random Tier 1 Naga. (Improves each turn!)"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_621",
+    "name": "Deft Deserter",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [],
+    "text": "Activate (1): Give all minions in the Tavern +8/+8 and Taunt, Divine Shield, or Windfury."
+  },
+  {
+    "tier": 5,
+    "id": "BG36_762",
+    "name": "Devilish Distractor",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 4,
+    "health": 7,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you cast a spell on this, give minions in the Tavern +2/+2 this game."
+  },
+  {
+    "tier": 5,
+    "id": "BG34_633",
+    "name": "Draconic Warden",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 7,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "Battlecry and Deathrattle: Get a random Chromadrake."
+  },
+  {
+    "tier": 5,
+    "id": "BG26_ICC_901",
+    "name": "Drakkari Enchanter",
+    "cost": 5,
+    "tribe": null,
+    "attack": 1,
+    "health": 5,
+    "mechanics": [
+      "AURA"
+    ],
+    "text": "Your end of turn effects trigger twice."
+  },
+  {
+    "tier": 5,
+    "id": "BG32_324",
+    "name": "Drustfallen Butcher",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 2,
+    "health": 9,
+    "mechanics": [
+      "AVENGE"
+    ],
+    "text": "Avenge (4): Get a Butchering."
+  },
+  {
+    "tier": 5,
+    "id": "BG31_824",
+    "name": "Dual-Wield Corsair",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Whenever you spend 5 Gold,\ngive two friendly Pirates\n+4/+5. (5 Gold left!)"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_523",
+    "name": "Enterprising Escapee",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 6,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you spend 5 Gold, get\na Lockbox. If you already have\none, it opens 1 turns sooner\ninstead. (5 Gold left!)"
+  },
+  {
+    "tier": 5,
+    "id": "BG28_633",
+    "name": "Felboar",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 2,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you cast 3 spells,\nconsume a minion in the\nTavern to gain its stats.\n(3 left!)"
+  },
+  {
+    "tier": 5,
+    "id": "BG32_821",
+    "name": "Felfire Conjurer",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 6,
+    "health": 5,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn,\nyour Tavern spells give\nan extra +1/+1\nthis game."
+  },
+  {
+    "tier": 5,
+    "id": "BG32_820",
+    "name": "Firescale Hoarder",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "Battlecry and Deathrattle: Get a Shiny Ring."
+  },
+  {
+    "tier": 5,
+    "id": "BG23_008",
+    "name": "Glowscale",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "BACON_SPELLCRAFT_ID",
+      "TAUNT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Taunt\nSpellcraft: Give a minion Divine Shield until next turn."
+  },
+  {
+    "tier": 5,
+    "id": "BG36_210",
+    "name": "Hoarding Hyena",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 5,
+    "health": 6,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Summon a Tasty Lobster."
+  },
+  {
+    "tier": 5,
+    "id": "BG21_004",
+    "name": "Insatiable Ur'zul",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "TAUNT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Taunt. After you play a\nDemon, consume a random\nminion in the Tavern to gain\nits stats."
+  },
+  {
+    "tier": 5,
+    "id": "BGS_041",
+    "name": "Kalecgos, Arcane Aspect",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 4,
+    "health": 12,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you trigger a Battlecry,\ngive your Dragons +2/+2."
+  },
+  {
+    "tier": 5,
+    "id": "BGS_012",
+    "name": "Kangor's Apprentice",
+    "cost": 0,
+    "tribe": null,
+    "attack": 3,
+    "health": 6,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Summon plain\ncopies of your first 2 Mechs\nthat died this combat."
+  },
+  {
+    "tier": 5,
+    "id": "BG23_318",
+    "name": "Leeroy the Reckless",
+    "cost": 0,
+    "tribe": null,
+    "attack": 6,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Destroy the minion that killed this."
+  },
+  {
+    "tier": 5,
+    "id": "BG35_602",
+    "name": "Lurking Leviathan",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 3,
+    "health": 8,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you summon a Beast, give it +2 Attack and improve this permanently."
+  },
+  {
+    "tier": 5,
+    "id": "BG32_111",
+    "name": "Nightmare Par-tea Guest",
+    "cost": 0,
+    "tribe": "ALL",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "Battlecry and Deathrattle: Get a Misplaced Tea Set."
+  },
+  {
+    "tier": 5,
+    "id": "BGS_104",
+    "name": "Nomi, Kitchen Nightmare",
+    "cost": 0,
+    "tribe": null,
+    "attack": 6,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you play an Elemental,\ngive Elementals in the\nTavern +4/+4 this game."
+  },
+  {
+    "tier": 5,
+    "id": "BGS_020",
+    "name": "Primalfin Lookout",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY",
+      "DISCOVER"
+    ],
+    "text": "Battlecry: If you control another Murloc, Discover a Murloc."
+  },
+  {
+    "tier": 5,
+    "id": "BG33_825",
+    "name": "Proud Privateer",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "AURA"
+    ],
+    "text": "Your Bounties cast twice."
+  },
+  {
+    "tier": 5,
+    "id": "BG33_883",
+    "name": "Razorfen Vineweaver",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: This plays 3 permanent Blood Gems on itself."
+  },
+  {
+    "tier": 5,
+    "id": "BG28_550",
+    "name": "Rodeo Performer",
+    "cost": 0,
+    "tribe": null,
+    "attack": 3,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Discover a Tavern spell."
+  },
+  {
+    "tier": 5,
+    "id": "BG33_885",
+    "name": "Sanguine Refiner",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 2,
+    "health": 8,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "[x]Rally: Your Blood Gems\ngive an extra +1/+1\nthis game."
+  },
+  {
+    "tier": 5,
+    "id": "BG26_148",
+    "name": "Scrap Scraper",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 6,
+    "health": 5,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Get a random Magnetic Mech."
+  },
+  {
+    "tier": 5,
+    "id": "BG35_604",
+    "name": "Sewer Lord",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Summon two\nSewer Rats that summon\n 2/3 Turtles with Taunt."
+  },
+  {
+    "tier": 5,
+    "id": "BG36_704",
+    "name": "Shamanic Tidecaller",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 5,
+    "health": 7,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you cast a spell on a Murloc, give Murlocs in your hand and board +3/+3."
+  },
+  {
+    "tier": 5,
+    "id": "BG33_821",
+    "name": "Shipwrecked Rascal",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 5,
+    "health": 4,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "Battlecry and Deathrattle: Get a random Bounty."
+  },
+  {
+    "tier": 5,
+    "id": "BG31_925",
+    "name": "Showy Cyclist",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 4,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Deathrattle: Give all your\nNaga +2/+1. (Improved\nby every 3 spells you've\ncast this game!)"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_851",
+    "name": "Spark Snapper",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Whenever you play a Mech,\nMagnetize a 2/2\nSatellite to it and\nimprove this."
+  },
+  {
+    "tier": 5,
+    "id": "BG26_523",
+    "name": "Tichondrius",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After your hero takes damage, give your Demons +3/+3."
+  },
+  {
+    "tier": 5,
+    "id": "BG25_354",
+    "name": "Titus Rivendare",
+    "cost": 0,
+    "tribe": null,
+    "attack": 1,
+    "health": 7,
+    "mechanics": [
+      "AURA"
+    ],
+    "text": "Your Deathrattles trigger an extra time."
+  },
+  {
+    "tier": 5,
+    "id": "BG32_835",
+    "name": "Tranquil Meditative",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 3,
+    "health": 8,
+    "mechanics": [
+      "BACON_SPELLCRAFT_ID",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Spellcraft: Your Tavern\nspells give an extra\n+1/+1 this game."
+  },
+  {
+    "tier": 5,
+    "id": "BG31_809",
+    "name": "Turquoise Skitterer",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Deathrattle: Your Beetles\nhave +5/+5 this game.\nSummon a 2/2 Beetle."
+  },
+  {
+    "tier": 5,
+    "id": "BG36_510",
+    "name": "Vigilant Bristlemane",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 3,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Whenever you cast a spell\non this, it plays a Blood Gem\non adjacent minions."
+  },
+  {
+    "tier": 5,
+    "id": "BG35_152",
+    "name": "Void Pup Trainer",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 7,
+    "health": 7,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Give minions in\nthe Tavern from Tier 3\nand below +3/+3\nthis game."
   },
   {
     "tier": 6,
-    "minions": [
-      "Balinda Stonehearth",
-      "Choral Mrrrglr",
-      "Crimson Vindicator",
-      "Deathly Striker",
-      "Deathstrider",
-      "Elemental of Surprise",
-      "Eredar Escapist",
-      "Eternal Summoner",
-      "Falling Sky Golem",
-      "Fauna Whisperer",
-      "Fire-forged Evoker",
-      "Forsaken Weaver",
-      "Gatekeeper Amalgam",
-      "Goldrinn, the Great Wolf",
-      "Groundbreaker",
-      "Hooktusk, Master Marauder",
-      "Ignition Specialist",
-      "Magicfin Mycologist",
-      "Moat Custodian",
-      "Primitive Painter",
-      "Ravaging Scorpid",
-      "Sanguine Champion",
-      "Silent Deliverer",
-      "Sky Admiral Rogers",
-      "Snazzy Phantom",
-      "Torrential Ruiner",
-      "Turbo Hogrider",
-      "Twisted Wrathguard",
-      "Tyrael",
-      "Unbound Tempest",
-      "Unleashed Mana Surge",
-      "Utility Drone",
-      "Veteran Brigand",
-      "Warpwing"
-    ]
+    "id": "BG35_883",
+    "name": "Balinda Stonehearth",
+    "cost": 0,
+    "tribe": null,
+    "attack": 6,
+    "health": 6,
+    "mechanics": [
+      "AURA"
+    ],
+    "text": "[x]Your spells that target\nfriendly minions cast\ntwice."
+  },
+  {
+    "tier": 6,
+    "id": "BG26_354",
+    "name": "Choral Mrrrglr",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 6,
+    "health": 6,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Start of Combat: Gain\nthe stats of all the\nminions in your hand."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_241",
+    "name": "Crimson Vindicator",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 8,
+    "health": 9,
+    "mechanics": [
+      "BACON_RALLY",
+      "DIVINE_SHIELD"
+    ],
+    "text": "Divine Shield\nRally: Cast Mighty Dragonbreath."
+  },
+  {
+    "tier": 6,
+    "id": "BG31_835",
+    "name": "Deathly Striker",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "AVENGE",
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Avenge (4): Get a random\nUndead. Deathrattle:\nSummon it from your hand\nfor this combat only."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_208",
+    "name": "Deathstrider",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 10,
+    "health": 11,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After a friendly Rally\nminion attacks, trigger your\nleft-most Deathrattle."
+  },
+  {
+    "tier": 6,
+    "id": "BG26_175",
+    "name": "Elemental of Surprise",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "DIVINE_SHIELD"
+    ],
+    "text": "Divine Shield\nThis minion can triple with any Elemental."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_733",
+    "name": "Eredar Escapist",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 6,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After your hero takes 3\ndamage, cast Shiny Ring.\n(3 left!)"
+  },
+  {
+    "tier": 6,
+    "id": "BG25_009",
+    "name": "Eternal Summoner",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 8,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE",
+      "REBORN"
+    ],
+    "text": "[x]Reborn. Deathrattle:\nSummon 1 Eternal Knight."
+  },
+  {
+    "tier": 6,
+    "id": "BG35_342",
+    "name": "Falling Sky Golem",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 4,
+    "health": 2,
+    "mechanics": [
+      "AURA",
+      "DIVINE_SHIELD"
+    ],
+    "text": "Divine Shield. Has +4/+2 for each Deathrattle you've triggered this game (wherever this is)."
+  },
+  {
+    "tier": 6,
+    "id": "BG32_837",
+    "name": "Fauna Whisperer",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 4,
+    "health": 9,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn,\ncast Natural Blessing on\nadjacent minions."
+  },
+  {
+    "tier": 6,
+    "id": "BG32_822",
+    "name": "Fire-forged Evoker",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 8,
+    "health": 5,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Start of Combat: Give your\nDragons +2/+1.\nImproves permanently after\n    you cast a Tavern spell."
+  },
+  {
+    "tier": 6,
+    "id": "BG34_692",
+    "name": "Forsaken Weaver",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 3,
+    "health": 10,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you cast a Tavern\nspell, your Undead have\n+2 Attack this game\n(wherever they are)."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_640",
+    "name": "Gatekeeper Amalgam",
+    "cost": 0,
+    "tribe": "ALL",
+    "attack": 6,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you cast a spell on this, it casts Misplaced Tea Set."
+  },
+  {
+    "tier": 6,
+    "id": "BGS_018",
+    "name": "Goldrinn, the Great Wolf",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Your Beasts have +8/+8 until next turn."
+  },
+  {
+    "tier": 6,
+    "id": "BG31_035",
+    "name": "Groundbreaker",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 6,
+    "health": 4,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you play a Naga, gain\n+1/+1. (Improved by\nevery 3 spells you've cast\nthis game!)"
+  },
+  {
+    "tier": 6,
+    "id": "BG36_344",
+    "name": "Hooktusk, Master Marauder",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you Discover a card, give\nyour other Pirates +1/+1.\n(Improved by Golden minions\n   you played this game!)"
+  },
+  {
+    "tier": 6,
+    "id": "BG28_595",
+    "name": "Ignition Specialist",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn, get\n2 random Tavern spells."
+  },
+  {
+    "tier": 6,
+    "id": "BG33_891",
+    "name": "Magicfin Mycologist",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 4,
+    "health": 8,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Once per turn, after you\nbuy a Tavern spell, get a\n1/1 Murloc and teach\nit that spell. (1 left!)"
+  },
+  {
+    "tier": 6,
+    "id": "BG36_351",
+    "name": "Moat Custodian",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 5,
+    "health": 10,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "[x]Rally: Your Elementals\ngive an extra +2/+2\nthis game."
+  },
+  {
+    "tier": 6,
+    "id": "BG33_893",
+    "name": "Primitive Painter",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 3,
+    "health": 8,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After you play a card from Tier 3 or below, give your Murlocs +3/+3."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_209",
+    "name": "Ravaging Scorpid",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 6,
+    "health": 7,
+    "mechanics": [
+      "DEATHRATTLE",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After a friendly minion attacks,\nyour Beetles have +5/+5 this\ngame. Deathrattle: Summon\na 2/2 Beetle."
+  },
+  {
+    "tier": 6,
+    "id": "BG23_017",
+    "name": "Sanguine Champion",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 9,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Battlecry and Deathrattle:\nYour Blood Gems give an\nextra +1/+1 this game."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_343",
+    "name": "Silent Deliverer",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 7,
+    "health": 7,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Get a random\nGolden minion from Tier 4.\nIt doesn’t give a Triple\nReward."
+  },
+  {
+    "tier": 6,
+    "id": "BG33_823",
+    "name": "Sky Admiral Rogers",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you spend\n9 Gold, get a random\nBounty. (9 Gold left!)"
+  },
+  {
+    "tier": 6,
+    "id": "BG36_515",
+    "name": "Snazzy Phantom",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 6,
+    "health": 8,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After a friendly minion is Reborn, give stats equal to its Attack to your right-most Undead."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_622",
+    "name": "Torrential Ruiner",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 6,
+    "health": 3,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you cast a spell on a Naga, give your minions +2/+3."
+  },
+  {
+    "tier": 6,
+    "id": "BG31_323",
+    "name": "Turbo Hogrider",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 5,
+    "health": 7,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you play a Choose One\ncard, this plays a Blood\nGem on all your other\nQuilboar."
+  },
+  {
+    "tier": 6,
+    "id": "BG35_155",
+    "name": "Twisted Wrathguard",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After you sell a minion, add a Fodder to your\nnext Refresh."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_356",
+    "name": "Tyrael",
+    "cost": 0,
+    "tribe": null,
+    "attack": 10,
+    "health": 10,
+    "mechanics": [],
+    "text": "Activate (2): Set another minion's stats to 50/50."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_352",
+    "name": "Unbound Tempest",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 3,
+    "health": 12,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you play 3 Elementals,\ngain the stats of the highest-\nHealth minion in the\nTavern. (3 left!)"
+  },
+  {
+    "tier": 6,
+    "id": "BG32_846",
+    "name": "Unleashed Mana Surge",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 6,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After you play an Elemental, give your Elementals +4/+4."
+  },
+  {
+    "tier": 6,
+    "id": "BG26_152",
+    "name": "Utility Drone",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn,\ngive your minions +4/+4\nfor each Magnetization\nthey have."
+  },
+  {
+    "tier": 6,
+    "id": "BG36_341",
+    "name": "Veteran Brigand",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "CHOOSE_ONE"
+    ],
+    "text": "[x]Choose One - This plays\n3 Blood Gems on all your\nminions; or cast Blood Gem\nBarrage 3 times."
+  },
+  {
+    "tier": 6,
+    "id": "BG24_004",
+    "name": "Warpwing",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 12,
+    "health": 4,
+    "mechanics": [],
+    "text": "Immune while attacking."
   },
   {
     "tier": 7,
-    "minions": [
-      "Captain Sanders",
-      "Champion of Sargeras",
-      "Futurefin",
-      "Highkeeper Ra",
-      "Jailbird Juggernaut",
-      "Obsidian Ravager",
-      "Polarizing Beatboxer",
-      "Sea Witch Zar'jira",
-      "Stalwart Kodo",
-      "Stitched Salvager",
-      "Stone Age Slab",
-      "The Last One Standing"
-    ]
+    "id": "BG25_034",
+    "name": "Captain Sanders",
+    "cost": 0,
+    "tribe": "PIRATE",
+    "attack": 9,
+    "health": 9,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Make a friendly minion from Tier 6 or below Golden."
+  },
+  {
+    "tier": 7,
+    "id": "BG27_016",
+    "name": "Champion of Sargeras",
+    "cost": 0,
+    "tribe": "DEMON",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "[x]Battlecry and Deathrattle:\nGive minions in the Tavern\n+8/+8 this game."
+  },
+  {
+    "tier": 7,
+    "id": "BG34_145",
+    "name": "Futurefin",
+    "cost": 0,
+    "tribe": "MURLOC",
+    "attack": 7,
+    "health": 13,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn,\ngive this minion's stats to\nthe left-most minion in\nyour hand."
+  },
+  {
+    "tier": 7,
+    "id": "BG34_319",
+    "name": "Highkeeper Ra",
+    "cost": 0,
+    "tribe": null,
+    "attack": 6,
+    "health": 6,
+    "mechanics": [
+      "BATTLECRY",
+      "BACON_RALLY",
+      "DEATHRATTLE"
+    ],
+    "text": "Battlecry, Deathrattle, and Rally: Get a random Tier 6 minion."
+  },
+  {
+    "tier": 7,
+    "id": "BG36_333",
+    "name": "Jailbird Juggernaut",
+    "cost": 0,
+    "tribe": "QUILBOAR",
+    "attack": 6,
+    "health": 15,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "[x]Rally: Summon a Golem with\nstats equal to this minion's\nBlood Gems to attack the\ntarget first. (0/0)"
+  },
+  {
+    "tier": 7,
+    "id": "BG27_017",
+    "name": "Obsidian Ravager",
+    "cost": 0,
+    "tribe": "DRAGON",
+    "attack": 7,
+    "health": 7,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "[x]Rally: Deal damage equal\nto this minion's Attack to\nthe target and an adjacent\nminion."
+  },
+  {
+    "tier": 7,
+    "id": "BG26_149",
+    "name": "Polarizing Beatboxer",
+    "cost": 0,
+    "tribe": "MECHANICAL",
+    "attack": 5,
+    "health": 10,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you Magnetize to a different minion, it also Magnetizes to this."
+  },
+  {
+    "tier": 7,
+    "id": "BG27_514",
+    "name": "Sea Witch Zar'jira",
+    "cost": 0,
+    "tribe": "NAGA",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "BACON_SPELLCRAFT_ID",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Spellcraft: Choose a\ndifferent minion in the\n Tavern to get a copy of."
+  },
+  {
+    "tier": 7,
+    "id": "BG34_322",
+    "name": "Stalwart Kodo",
+    "cost": 0,
+    "tribe": "BEAST",
+    "attack": 16,
+    "health": 32,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you summon a minion\nin combat, give it this\nminion's maximum stats.\n(3 times per combat.)"
+  },
+  {
+    "tier": 7,
+    "id": "BG31_999",
+    "name": "Stitched Salvager",
+    "cost": 0,
+    "tribe": "UNDEAD",
+    "attack": 16,
+    "health": 4,
+    "mechanics": [
+      "DEATHRATTLE",
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Start of Combat: Destroy the\nminion to the left. Deathrattle:\nSummon an exact copy of it.\n      (Except Stitched Salvager.)"
+  },
+  {
+    "tier": 7,
+    "id": "BG34_950",
+    "name": "Stone Age Slab",
+    "cost": 0,
+    "tribe": "ELEMENTAL",
+    "attack": 10,
+    "health": 10,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]After you buy a minion, give\nit +20/+20 and double its\nstats. (Once per turn.)"
+  },
+  {
+    "tier": 7,
+    "id": "BG34_320",
+    "name": "The Last One Standing",
+    "cost": 0,
+    "tribe": "ALL",
+    "attack": 15,
+    "health": 15,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Give a friendly minion of each type +15/+15 permanently."
   }
 ]
