@@ -22,8 +22,9 @@ move *for this exact board*, and why."
 - **Live coaching overlay** during a match (dynamic, board-specific, explainable).
 - **Post-game replay analysis** — full opponent purchase/move reconstruction from
   the player's own replay logs.
-- **Meta reference** — curated screenshots (comp tier lists, hero/Champion
-  rankings) the agent consults when advising.
+- **Meta reference** — a structured JSON DB (comps, cards, trinkets, dark gifts,
+  heroes, minions, tavern spells) the agent consults when advising. See
+  `meta/` and the "Meta reference" section below.
 
 ## 3. Why Battlegrounds (vs. Breakout)
 
@@ -52,12 +53,12 @@ No reflex/latency pressure. Coaching is *linguistic* — an LLM strength.
               board state |            meta/context |
                            v                  v
       +----------------+          +-----------------------+
-      | LIVE BOARD      |          |  REFERENCE-IMAGE       |
-      | PARSER          |          |  LIBRARY (curated      |
-      | (from Power.log |          |  screenshots: comp     |
-      |  or screen OCR) |          |  tiers, hero ranks)    |
-      +----------------+          +-----------------------+
-                           ^
+      | LIVE BOARD      |          |  META REFERENCE        |
+      | PARSER          |          |  (structured JSON DB:  |
+      | (from Power.log |          |  comps, cards, trinkets,|
+      |  or screen OCR) |          |  dark gifts, heroes,   |
+      +----------------+          |  minions, tavern spells)|
+                           ^       +-----------------------+
                            | optional
               +-----------------------+
               |  HSReplay public API   |
@@ -68,16 +69,20 @@ No reflex/latency pressure. Coaching is *linguistic* — an LLM strength.
 
 **Two context layers:**
 1. **Live board state** (the "specific situation"): tier, gold, board, rolls,
-   hero, opponents' visible board/tier.
-2. **Meta knowledge (the "general knowledge"):** curated reference screenshots
-   (comp meta, hero rankings), plus optionally live HSReplay aggregate stats.
+   hero, opponents' visible board/tier, and the per-game family ban.
+2. **Meta knowledge (the "general knowledge"):** the structured meta reference
+   (comp meta, card details, trinket/hero/minion/spell data), plus optionally
+   live HSReplay aggregate stats.
 
 The coach reasons over both simultaneously.
 
 ### Design decision — meta reference source (LOCKED)
-**Curated screenshots the user takes**, refreshed manually on patches. The coach
-fetches only the *relevant subset* per decision (e.g., hero-rank sheet only on
-hero-select turn). Self-owned; no dependence on HSReplay's API.
+**A structured JSON DB** in `meta/` (comps, cards, trinkets, dark gifts, heroes,
+minions, tavern spells), built from hsreplay pages + the hearthstonejson card DB
++ the wiki.gg tavern-spell page. Refreshed manually on patches. The coach loads
+the relevant subset per decision. Self-owned; no dependence on HSReplay's API
+(which is Cloudflare-protected for minions/heroes/dark-gifts — those are captured
+via manual paste).
 
 ### Model, context & cache strategy (LOCKED)
 - **Model: `deepseek-v4-flash`** (1M-token context). Pinned in `coach_llm.py`;
@@ -192,23 +197,37 @@ Inspected the installed HDT app (`AppData\Roaming\HearthstoneDeckTracker`):
 
 ---
 
-## 6. Reference-Image Layer (Meta Screenshots) — LOCKED
+## 6. Meta Reference (structured DB) — LOCKED
 
-**Source:** curated screenshots the user takes.
-**Refresh:** manual on patches.
-**Per-decision fetch:** only the relevant subset (e.g., hero-rank sheet only on
-hero-select turn).
+**Source:** a structured JSON DB in `meta/`, built from hsreplay pages + the
+hearthstonejson card DB + the wiki.gg tavern-spell page.
+**Refresh:** manual on patches (re-run the scrapers / re-paste Cloudflare-gated
+data).
+**Per-decision fetch:** the coach loads the relevant subset per decision (e.g.,
+comps filtered by the family ban; the hero-rank list on hero-select).
+
+### The assets (`meta/`)
+| File | Contents |
+|------|----------|
+| `comps.json` | 20 comps (tier, difficulty, core/addon cards, how-to-play, when-to-commit) |
+| `cards.json` | 89 curated cards (name, tier, tribe, atk/health) |
+| `trinkets.json` | 121 Lesser Trinkets (pick rate, avg placement, distribution, guide) |
+| `dark_gifts.json` | 43 dark gifts (name, description) |
+| `heroes.json` | 115 heroes (hero power, pick rate) |
+| `minions.json` | 245 minions by tavern tier, with full card details |
+| `tavern_spells.json` | 72 tavern spells by tier, with cost + text |
+| `guides/` | comp guides mined from commentary transcripts |
 
 ### Honest design notes
-- **Staleness:** screenshots are point-in-time. Treat as refreshable assets, not
-  live data.
-- **Legibility is the real risk.** Meta sheets are dense with small text. A vision
-  model can misread fine print. Mitigation: scale/crop dense text, and pair each
-  image with a short text caption (fallback) so the agent has a reliable signal if
-  the pixels are ambiguous. (breakoutBot discipline: *verify what the model
-  actually reads.*)
-- **Token/cost + latency:** each image eats context. Keep a library on disk; fetch
-  only the relevant subset per decision.
+- **Staleness:** the meta is point-in-time. Treat as refreshable assets, not live
+  data. The comps tier list updates frequently (the newest tier change was ~22h
+  old when last checked); rescrape when the meta moves.
+- **Source access:** hsreplay embeds comps/trinkets data in HTML (scrapable), but
+  minions/heroes/dark-gifts load via a **Cloudflare-protected API** — those are
+  captured via manual paste. The wiki.gg tavern-spell page is accessible and
+  supplies the spell tier grouping.
+- **Token/cost + latency:** the full meta is small (~tens of KB), so it fits in
+  the cached prefix; per-decision subsetting is for relevance, not size.
 - **Complements, not replaces** the live board reasoning.
 
 ### Model vision limitation (current)
@@ -240,20 +259,20 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 - Working dir: `<user dir>\PycharmProjects\visual-game-coach`
   (repo project folder: `hearth-coach/`).
 - Cloned `python-hslog/` (official HearthSim parser).
-- `parse_bg.py` (smoke-test parser) — reads a Power.log, splits into games, prints
-  per-player hero/name/placement. Syntax-validated.
-- `.venv` created.
-- **BLOCKED:** installing `hslog` deps (`aniso8601`, `hearthstone`) from PyPI —
-  network to pypi.org / api.github.com is currently unreachable from the working
-  environment. The venv currently only contains `pip`.
+- `.venv` created; `requests` available (no SDK install needed for the LLM client).
+- **Tools built:**
+  - `parse_bg.py` / `extract_game.py` — Power.log → per-game player/hero/placement.
+  - `board_state.py` — Power.log → friendly final board + hand + hero state.
+  - `bans.py` — Power.log → per-game 5 allowed / 5 banned tribes; comp filter.
+  - `scrape_comps.py` — hsreplay comp pages → `comps.json` (`--top N`, `--prune`).
+  - `coach_llm.py` — DeepSeek v4 flash client with prefix-cache discipline.
+  - `parse_trinkets.py` / `parse_minions.py` — meta raw pastes → JSON.
+- **Meta reference:** complete in `meta/` (see section 6).
 
 ### Network situation
-- PyPI and GitHub have been intermittently unreachable from the agent's pwsh tool
-  (earlier `git clone` succeeded; subsequent direct HTTPS requests to pypi.org,
-  files.pythonhosted.org, api.github.com time out). This is a host network/TLS
-  issue, not harness-specific.
-- To install, either wait for network, or run the install from the user's own
-  terminal once connectivity returns.
+- Network is up (scraping hsreplay/wiki works). hsreplay's minions/heroes/
+  dark-gifts APIs are Cloudflare-protected (403) — those meta assets come from
+  manual paste; the comps/trinkets pages and the wiki are scrapable.
 
 ### Harness / headless notes
 - `dsh --profile headless` is how to run a fresh agent from the CLI.
@@ -279,10 +298,12 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 
 ## 11. Open Questions
 
-- Can we get a public-API / aggregator cleanly, or rely on screenshots + own data?
 - Does the hosted DeepSeek API accept images? If not, use a vision-capable model.
 - How to do the live board parse: from Power.log (authoritative) vs. screen OCR.
 - How to measure coaching effectiveness rigorously (sham-control design).
 - Latency/cost budget per decision point.
+- (Resolved) Meta source: structured JSON DB in `meta/`; hsreplay's
+  minions/heroes/dark-gifts APIs are Cloudflare-protected, so those come from
+  manual paste; the wiki supplies the tavern-spell tier grouping.
 
 ## 12. Next Steps (see ROADMAP.md)
