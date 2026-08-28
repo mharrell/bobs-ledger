@@ -1,0 +1,130 @@
+Dark Gift
+
+Admiration
+Start of Combat: Gain the Attack of the minion to the left.
+
+Affinity
+At the end of every 2 turns, get a random minion of this type.
+
+Amalgamation
+Has all minion types.
+
+Battle Scars
+Has +3/+3 for each Battlecry you've triggered this game. (0)
+
+Battle Scars
+Has +2/+2 for each Battlecry you've triggered this game. (0)
+
+Charisma
+Rally: Get a random minion of your most common type.
+
+Consanguinity
+Rally: Get 2 Blood Gems.
+
+Death's Embrace
+Has +2/+2 for each Deathrattle you've triggered this game. (0)
+
+Death's Embrace
+Has +1/+1 for each Deathrattle you've triggered this game. (0)
+
+Defensive Sacrifice
++10 Health. Deathrattle: Give this minion's max Health to another friendly minion.
+
+Demonology
+Rally: Add a Fodder to your next 3 Refreshes.
+
+Dexterity
+Whenever you play a card, gain +2/+2.
+
+Dexterity
+Whenever you play a card, gain +4/+4.
+
+Double Vision
+Get an extra copy of this.
+
+Echoing Voice
+At the end of your turn, trigger this minion's Battlecries.
+
+Fortitude
++5/+5.
+
+Fresh Perspective
+Deathrattle: Gain 2 free Refreshes.
+
+Furtiveness
+Stealth
+
+Gilding
+This is Golden, but doesn't give a Triple Reward.
+
+Golemancy
+Deathrattle: Summon a Golem with this minion's stats.
+
+Harpy's Talons
+Divine Shield, Windfury
+
+Hostility
+Start of Combat: Double this minion's Attack.
+
+Incubation
++4/+4. In 2 turns, double this minion's stats.
+
+Invulnerability
+Immune while attacking.
+
+Jaws of Death
+Start of Combat: Trigger this minion's Deathrattles.
+
+Mystic Essence
+Deathrattle: Get a random Tavern spell.
+
+Offensive Sacrifice
++10 Attack. Deathrattle: Give this minion's Attack to another friendly minion.
+
+Persisting Horror
+Reborn. Is Reborn with full stats and Bonus Keywords.
+
+Polarization
+At the end of your turn, Magnetize a random Mech to this.
+
+Replication
+At the end of every 2 turns, get a plain copy of this.
+
+Resistance
+Start of Combat: Double this minion's Health.
+
+Sharpened Sword
+Whenever you play a card, gain +3 Attack.
+
+Spell Siphon
+Has +3/+3 for each Tavern spell you've cast this game. (0)
+
+Spell Siphon
+Has +2/+2 for each Tavern spell you've cast this game. (0)
+
+Steady Growth
+At the end of your turn, gain +0/+0.
+
+Sunken Persistence
+This minion's Spellcrafts are permanent.
+
+Tarecgosa's Blessing
+Permanently keeps Bonus Keywords and double stats gained in combat.
+
+Time Turning
+This minion's end of turn effects also trigger at start of turn.
+
+Titanic Strength
++1000 Attack.
+
+Toreth's Blessing
+This minion's Divine Shield takes 3 hits to break.
+
+Toughened Shield
+Whenever you play a card, gain +3 Health.
+
+Toxicity
+Venomous
+
+Transcendence
+Start of Combat: Triple this minion's stats.

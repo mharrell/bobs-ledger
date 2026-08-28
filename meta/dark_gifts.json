@@ -1,0 +1,174 @@
+[
+  {
+    "name": "Admiration",
+    "description": "Start of Combat: Gain the Attack of the minion to the left."
+  },
+  {
+    "name": "Affinity",
+    "description": "At the end of every 2 turns, get a random minion of this type."
+  },
+  {
+    "name": "Amalgamation",
+    "description": "Has all minion types."
+  },
+  {
+    "name": "Battle Scars",
+    "description": "Has +3/+3 for each Battlecry you've triggered this game. (0)"
+  },
+  {
+    "name": "Battle Scars",
+    "description": "Has +2/+2 for each Battlecry you've triggered this game. (0)"
+  },
+  {
+    "name": "Charisma",
+    "description": "Rally: Get a random minion of your most common type."
+  },
+  {
+    "name": "Consanguinity",
+    "description": "Rally: Get 2 Blood Gems."
+  },
+  {
+    "name": "Death's Embrace",
+    "description": "Has +2/+2 for each Deathrattle you've triggered this game. (0)"
+  },
+  {
+    "name": "Death's Embrace",
+    "description": "Has +1/+1 for each Deathrattle you've triggered this game. (0)"
+  },
+  {
+    "name": "Defensive Sacrifice",
+    "description": "+10 Health. Deathrattle: Give this minion's max Health to another friendly minion."
+  },
+  {
+    "name": "Demonology",
+    "description": "Rally: Add a Fodder to your next 3 Refreshes."
+  },
+  {
+    "name": "Dexterity",
+    "description": "Whenever you play a card, gain +2/+2."
+  },
+  {
+    "name": "Dexterity",
+    "description": "Whenever you play a card, gain +4/+4."
+  },
+  {
+    "name": "Double Vision",
+    "description": "Get an extra copy of this."
+  },
+  {
+    "name": "Echoing Voice",
+    "description": "At the end of your turn, trigger this minion's Battlecries."
+  },
+  {
+    "name": "Fortitude",
+    "description": "+5/+5."
+  },
+  {
+    "name": "Fresh Perspective",
+    "description": "Deathrattle: Gain 2 free Refreshes."
+  },
+  {
+    "name": "Furtiveness",
+    "description": "Stealth"
+  },
+  {
+    "name": "Gilding",
+    "description": "This is Golden, but doesn't give a Triple Reward."
+  },
+  {
+    "name": "Golemancy",
+    "description": "Deathrattle: Summon a Golem with this minion's stats."
+  },
+  {
+    "name": "Harpy's Talons",
+    "description": "Divine Shield, Windfury"
+  },
+  {
+    "name": "Hostility",
+    "description": "Start of Combat: Double this minion's Attack."
+  },
+  {
+    "name": "Incubation",
+    "description": "+4/+4. In 2 turns, double this minion's stats."
+  },
+  {
+    "name": "Invulnerability",
+    "description": "Immune while attacking."
+  },
+  {
+    "name": "Jaws of Death",
+    "description": "Start of Combat: Trigger this minion's Deathrattles."
+  },
+  {
+    "name": "Mystic Essence",
+    "description": "Deathrattle: Get a random Tavern spell."
+  },
+  {
+    "name": "Offensive Sacrifice",
+    "description": "+10 Attack. Deathrattle: Give this minion's Attack to another friendly minion."
+  },
+  {
+    "name": "Persisting Horror",
+    "description": "Reborn. Is Reborn with full stats and Bonus Keywords."
+  },
+  {
+    "name": "Polarization",
+    "description": "At the end of your turn, Magnetize a random Mech to this."
+  },
+  {
+    "name": "Replication",
+    "description": "At the end of every 2 turns, get a plain copy of this."
+  },
+  {
+    "name": "Resistance",
+    "description": "Start of Combat: Double this minion's Health."
+  },
+  {
+    "name": "Sharpened Sword",
+    "description": "Whenever you play a card, gain +3 Attack."
+  },
+  {
+    "name": "Spell Siphon",
+    "description": "Has +3/+3 for each Tavern spell you've cast this game. (0)"
+  },
+  {
+    "name": "Spell Siphon",
+    "description": "Has +2/+2 for each Tavern spell you've cast this game. (0)"
+  },
+  {
+    "name": "Steady Growth",
+    "description": "At the end of your turn, gain +0/+0."
+  },
+  {
+    "name": "Sunken Persistence",
+    "description": "This minion's Spellcrafts are permanent."
+  },
+  {
+    "name": "Tarecgosa's Blessing",
+    "description": "Permanently keeps Bonus Keywords and double stats gained in combat."
+  },
+  {
+    "name": "Time Turning",
+    "description": "This minion's end of turn effects also trigger at start of turn."
+  },
+  {
+    "name": "Titanic Strength",
+    "description": "+1000 Attack."
+  },
+  {
+    "name": "Toreth's Blessing",
+    "description": "This minion's Divine Shield takes 3 hits to break."
+  },
+  {
+    "name": "Toughened Shield",
+    "description": "Whenever you play a card, gain +3 Health."
+  },
+  {
+    "name": "Toxicity",
+    "description": "Venomous"
+  },
+  {
+    "name": "Transcendence",
+    "description": "Start of Combat: Triple this minion's stats."
+  }
+]
