@@ -1,0 +1,1402 @@
+[
+  {
+    "id": "BG26_813t",
+    "name": "The Goldenizer",
+    "cost": 0,
+    "school": "UNKNOWN",
+    "text": "Make a friendly minion Golden."
+  },
+  {
+    "id": "BG28_168",
+    "name": "Shiny Ring",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give your minions +1/+1."
+  },
+  {
+    "id": "BG28_169",
+    "name": "Azerite Empowerment",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "Give your minions +2/+2 twice."
+  },
+  {
+    "id": "BG28_500",
+    "name": "Armor Stash",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Set your Armor to 5."
+  },
+  {
+    "id": "BG28_503",
+    "name": "Fortify",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Give a minion\n+3 Health and Taunt."
+  },
+  {
+    "id": "BG28_504",
+    "name": "Recruit a Trainee",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "[x]Get a random\nTier 1 minion."
+  },
+  {
+    "id": "BG28_507",
+    "name": "Sacred Gift",
+    "cost": 0,
+    "school": "TAVERN",
+    "text": "Give a minion\nDivine Shield."
+  },
+  {
+    "id": "BG28_509",
+    "name": "Brann's Blessing",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Your Battlecries trigger twice until next turn."
+  },
+  {
+    "id": "BG28_512",
+    "name": "Enchanted Lasso",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Steal a random minion from the Tavern."
+  },
+  {
+    "id": "BG28_513",
+    "name": "Reckless Investment",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Gain 3 Gold.\nNext turn, lose 2 Gold."
+  },
+  {
+    "id": "BG28_518",
+    "name": "Chef's Choice",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Choose a minion.\nGet a different minion of the same type."
+  },
+  {
+    "id": "BG28_519",
+    "name": "Fleeting Vigor",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Start of Combat: Give your minions +2/+1."
+  },
+  {
+    "id": "BG28_520",
+    "name": "Tricky Trousers",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Give a minion +1/+2 and Taunt. If it already has Taunt, remove it."
+  },
+  {
+    "id": "BG28_521",
+    "name": "Planar Telescope",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "[x]Discover a minion of\nyour most common type."
+  },
+  {
+    "id": "BG28_571",
+    "name": "Hasty Excavation",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Gain 1 Gold.\nThis costs Health to\nbuy instead of Gold."
+  },
+  {
+    "id": "BG28_573",
+    "name": "Upper Hand",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Start of Combat: Set\na random enemy minion's Health to 1."
+  },
+  {
+    "id": "BG28_600",
+    "name": "Scavenge for Parts",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "At the end of your turn, get a random Magnetic minion. Lasts 3 turns."
+  },
+  {
+    "id": "BG28_601",
+    "name": "Cloning Conch",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "Get a random Murloc and a copy of it."
+  },
+  {
+    "id": "BG28_602",
+    "name": "Guzzle the Goop",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "[x]At the end of your turn,\ngive your Dragons +4\nAttack. Lasts 3 turns."
+  },
+  {
+    "id": "BG28_603",
+    "name": "Boon of Beetles",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "[x]When you have space\nin combat, summon two\n2/2 Beetles and give\nthem Taunt. (2 left!)"
+  },
+  {
+    "id": "BG28_604",
+    "name": "Butchering",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Destroy a friendly Undead. Your Undead have +5 Attack this game (wherever they are).5Destroy a friendly Undead. Your Undead have +5/+0 this game (wherever they are)."
+  },
+  {
+    "id": "BG28_606",
+    "name": "Spitescale Special",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Get 3 random Spellcraft spells."
+  },
+  {
+    "id": "BG28_607",
+    "name": "Corrupted Cupcakes",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "Choose a friendly Demon. It consumes 3 random minions in the Tavern to gain their stats."
+  },
+  {
+    "id": "BG28_609",
+    "name": "Plunder Seeker",
+    "cost": 7,
+    "school": "TAVERN",
+    "text": "Steal a random card from the Tavern for each Pirate you control."
+  },
+  {
+    "id": "BG28_612",
+    "name": "Fluidity",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "[x]Swap a friendly\nnon-Golden minion with a\nrandom one in the Tavern."
+  },
+  {
+    "id": "BG28_641",
+    "name": "Toxic Tumbleweed",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Start of Combat: Summon a 1/1 Tumbling Assassin with Venomous.\nIt attacks immediately."
+  },
+  {
+    "id": "BG28_698",
+    "name": "Gem Confiscation",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "[x]This plays 2 Blood\nGems on a minion.\nIt steals all Blood Gems\nfrom its neighbors."
+  },
+  {
+    "id": "BG28_800",
+    "name": "Careful Investment",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Gain 2 Gold next turn."
+  },
+  {
+    "id": "BG28_805",
+    "name": "Strike Oil",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Increase your maximum Gold by 1."
+  },
+  {
+    "id": "BG28_810",
+    "name": "Tavern Coin",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Gain 1 Gold."
+  },
+  {
+    "id": "BG28_812",
+    "name": "Ritual of Growth",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Replace all cards in\nthe Tavern with ones\nof a Tier higher."
+  },
+  {
+    "id": "BG28_814",
+    "name": "Echoing Roar",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Give a friendly minion \"At the end of your turn, gain +2/+2.\""
+  },
+  {
+    "id": "BG28_821",
+    "name": "Top of the Beanstalk",
+    "cost": 5,
+    "school": "TAVERN",
+    "text": "Discover a minion from Tavern Tier 6."
+  },
+  {
+    "id": "BG28_825",
+    "name": "Defender's Rites",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give a minion +7/+7 and Taunt."
+  },
+  {
+    "id": "BG28_827",
+    "name": "Leaf Through the Pages",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Gain 2 free Refreshes."
+  },
+  {
+    "id": "BG28_830",
+    "name": "Golden Touch",
+    "cost": 5,
+    "school": "TAVERN",
+    "text": "Make a random minion in the Tavern Golden."
+  },
+  {
+    "id": "BG28_838",
+    "name": "Perfect Vision",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Set a minion's stats to 20/20."
+  },
+  {
+    "id": "BG28_843",
+    "name": "Titus' Tribute",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Your Deathrattles trigger twice until\nnext turn."
+  },
+  {
+    "id": "BG28_845",
+    "name": "Natural Blessing",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "Choose a minion. Give all minions that share a type with it +3/+3."
+  },
+  {
+    "id": "BG28_849",
+    "name": "Saloon's Finest",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Refresh the Tavern\nwith Tavern spells."
+  },
+  {
+    "id": "BG28_870",
+    "name": "Jaws of Fate",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "Spin the Wheel of Yogg-Saron."
+  },
+  {
+    "id": "BG28_871",
+    "name": "Buddy Up",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Discover a Buddy."
+  },
+  {
+    "id": "BG28_882",
+    "name": "Contracted Corpse",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Discover a\nDeathrattle minion."
+  },
+  {
+    "id": "BG28_883",
+    "name": "Dreamer's Embrace",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Trigger a friendly minion's Battlecry."
+  },
+  {
+    "id": "BG28_884",
+    "name": "Overconfidence",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "If you win your next combat, gain 3 Gold.\nIf you tie, gain 1."
+  },
+  {
+    "id": "BG28_885",
+    "name": "Lantern Light",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Give a minion stats equal to your Tier."
+  },
+  {
+    "id": "BG28_886",
+    "name": "Staff of Enrichment",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give minions in the Tavern +2/+2\nthis game."
+  },
+  {
+    "id": "BG28_888",
+    "name": "Misplaced Tea Set",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Give a friendly minion of each type +4/+4."
+  },
+  {
+    "id": "BG28_897",
+    "name": "Tavern Dish Banana",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Give a minion +2/+2."
+  },
+  {
+    "id": "BG28_955",
+    "name": "Primal Staff",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Your end of turn effects trigger twice this turn."
+  },
+  {
+    "id": "BG28_966",
+    "name": "Them Apples",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Give minions in the Tavern +1/+2."
+  },
+  {
+    "id": "BG28_GIL_836",
+    "name": "Hired Headhunter",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Discover a\nBattlecry minion."
+  },
+  {
+    "id": "BG30_800",
+    "name": "Cry Foul",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Get a plain copy of a random minion from your last opponent's warband."
+  },
+  {
+    "id": "BG30_802",
+    "name": "Knockoff Wisdomball",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "Your next 2 Refreshes are helpful! (2 left!)"
+  },
+  {
+    "id": "BG30_804",
+    "name": "Robust Evolution",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Choose a minion. Transform it into a random minion of a higher Tier. It keeps its stats."
+  },
+  {
+    "id": "BG31_242",
+    "name": "Bargain Bundle",
+    "cost": 5,
+    "school": "TAVERN",
+    "text": "Discover a minion.\nYour teammate gets the other options."
+  },
+  {
+    "id": "BG31_243",
+    "name": "Portal in a Fountain",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Pass a minion in the Tavern."
+  },
+  {
+    "id": "BG31_244",
+    "name": "Portal in a Crystal",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Pass a friendly\nnon-Golden minion."
+  },
+  {
+    "id": "BG31_819",
+    "name": "Temperature Shift",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "Get a Fire Baller and a Snow Baller."
+  },
+  {
+    "id": "BG31_880",
+    "name": "Alliance Flag",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Choose One - Give a minion +3/+1; or\n+1/+3."
+  },
+  {
+    "id": "BG31_881",
+    "name": "Time Management",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "[x]Choose One - Give your\nminions +2/+2; or At the\nstart of your next turn, give\nyour minions +2/+2 twice."
+  },
+  {
+    "id": "BG31_884",
+    "name": "The Road Less Traveled",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "[x]Choose One - Get a\nrandom Tier 6 minion; or\nGet two random Tier 5\nminions."
+  },
+  {
+    "id": "BG31_886",
+    "name": "Forest's Bounty",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Choose One - Give a\nminion +6/+6 twice; or Give your minions +2/+2."
+  },
+  {
+    "id": "BG31_889",
+    "name": "Sharing is Caring",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Start of Combat: Your left-most minion gains stats equal to the nearest enemy minion's."
+  },
+  {
+    "id": "BG31_890",
+    "name": "Boundless Potential",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "[x]Choose One - Discover a\nminion of your Tier; or a\nTavern spell of your Tier."
+  },
+  {
+    "id": "BG31_891",
+    "name": "Marauder's Contract",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Steal a random Pirate from the Tavern."
+  },
+  {
+    "id": "BG31_892",
+    "name": "Fandral's Fortune",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Discover a Choose One card. It has both effects combined."
+  },
+  {
+    "id": "BG31_895",
+    "name": "Blade of Ambition",
+    "cost": 7,
+    "school": "TAVERN",
+    "text": "Choose a friendly minion. Set its Attack and Health to match the highest in your warband."
+  },
+  {
+    "id": "BG31_896",
+    "name": "Hallowed Ritual",
+    "cost": 5,
+    "school": "TAVERN",
+    "text": "Discover a Tier 7 minion."
+  },
+  {
+    "id": "BG31_HERO_801pta",
+    "name": "Hyperflight Rotors",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +6 Attack."
+  },
+  {
+    "id": "BG31_HERO_801pta2",
+    "name": "Hyperflight Rotors",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +8 Attack."
+  },
+  {
+    "id": "BG31_HERO_801pta3",
+    "name": "Hyperflight Rotors",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +11 Attack."
+  },
+  {
+    "id": "BG31_HERO_801pta4",
+    "name": "Hyperflight Rotors",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +15 Attack."
+  },
+  {
+    "id": "BG31_HERO_801pta5",
+    "name": "Hyperflight Rotors",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +20 Attack."
+  },
+  {
+    "id": "BG31_HERO_801pta6",
+    "name": "Hyperflight Rotors",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +28 Attack."
+  },
+  {
+    "id": "BG31_HERO_801pta7",
+    "name": "Hyperflight Rotors",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +40 Attack."
+  },
+  {
+    "id": "BG31_HERO_801ptb",
+    "name": "Smart Servos",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +6 Health."
+  },
+  {
+    "id": "BG31_HERO_801ptb2",
+    "name": "Smart Servos",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +8 Health."
+  },
+  {
+    "id": "BG31_HERO_801ptb3",
+    "name": "Smart Servos",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +11 Health."
+  },
+  {
+    "id": "BG31_HERO_801ptb4",
+    "name": "Smart Servos",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +15 Health."
+  },
+  {
+    "id": "BG31_HERO_801ptb5",
+    "name": "Smart Servos",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +20 Health."
+  },
+  {
+    "id": "BG31_HERO_801ptb6",
+    "name": "Smart Servos",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +28 Health."
+  },
+  {
+    "id": "BG31_HERO_801ptb7",
+    "name": "Smart Servos",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "Give your Battlecruiser +40 Health."
+  },
+  {
+    "id": "BG31_HERO_801ptc",
+    "name": "Yamato Cannon",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Start of Combat: Deal\n3 damage to the highest-\nHealth enemy minion.\""
+  },
+  {
+    "id": "BG31_HERO_801ptc2",
+    "name": "Yamato Cannon",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Start of Combat: Deal\n6 damage to the highest-\nHealth enemy minion.\""
+  },
+  {
+    "id": "BG31_HERO_801ptc3",
+    "name": "Yamato Cannon",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Start of Combat: Deal\n9 damage to the highest-\nHealth enemy minion.\""
+  },
+  {
+    "id": "BG31_HERO_801ptc4",
+    "name": "Yamato Cannon",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Start of Combat: Deal\n18 damage to the highest-\nHealth enemy minion.\""
+  },
+  {
+    "id": "BG31_HERO_801ptc5",
+    "name": "Yamato Cannon",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Start of Combat: Deal\n24 damage to the highest-\nHealth enemy minion.\""
+  },
+  {
+    "id": "BG31_HERO_801ptc6",
+    "name": "Yamato Cannon",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Start of Combat: Deal\n30 damage to the highest-\nHealth enemy minion.\""
+  },
+  {
+    "id": "BG31_HERO_801ptc7",
+    "name": "Yamato Cannon",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Start of Combat: Deal\n40 damage to the highest-\nHealth enemy minion.\""
+  },
+  {
+    "id": "BG31_HERO_801ptd",
+    "name": "Advanced Ballistics",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Rally: Give your other\nminions +2 Attack.\""
+  },
+  {
+    "id": "BG31_HERO_801ptd2",
+    "name": "Advanced Ballistics",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Rally: Give your other\nminions +3 Attack.\""
+  },
+  {
+    "id": "BG31_HERO_801ptd3",
+    "name": "Advanced Ballistics",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Rally: Give your other\nminions +4 Attack.\""
+  },
+  {
+    "id": "BG31_HERO_801ptd4",
+    "name": "Advanced Ballistics",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Rally: Give your other\nminions +5 Attack.\""
+  },
+  {
+    "id": "BG31_HERO_801ptd5",
+    "name": "Advanced Ballistics",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Rally: Give your other\nminions +6 Attack.\""
+  },
+  {
+    "id": "BG31_HERO_801ptd6",
+    "name": "Advanced Ballistics",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Rally: Give your other\nminions +8 Attack.\""
+  },
+  {
+    "id": "BG31_HERO_801ptd7",
+    "name": "Advanced Ballistics",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Rally: Give your other\nminions +10 Attack.\""
+  },
+  {
+    "id": "BG31_HERO_801pte",
+    "name": "Caduceus Reactor",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Deathrattle: Give your\nleft-most minion\n+1/+1.\""
+  },
+  {
+    "id": "BG31_HERO_801pte2",
+    "name": "Caduceus Reactor",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Deathrattle: Give your\nleft-most minion\n+2/+2.\""
+  },
+  {
+    "id": "BG31_HERO_801pte3",
+    "name": "Caduceus Reactor",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Deathrattle: Give your\nleft-most minion\n+4/+4.\""
+  },
+  {
+    "id": "BG31_HERO_801pte4",
+    "name": "Caduceus Reactor",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Deathrattle: Give your\nleft-most minion\n+7/+7.\""
+  },
+  {
+    "id": "BG31_HERO_801pte5",
+    "name": "Caduceus Reactor",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Deathrattle: Give your\nleft-most minion\n+10/+10.\""
+  },
+  {
+    "id": "BG31_HERO_801pte6",
+    "name": "Caduceus Reactor",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Deathrattle: Give your\nleft-most minion\n+15/+15.\""
+  },
+  {
+    "id": "BG31_HERO_801pte7",
+    "name": "Caduceus Reactor",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"Deathrattle: Give your\nleft-most minion\n+25/+25.\""
+  },
+  {
+    "id": "BG31_HERO_801ptf",
+    "name": "Advanced Construction",
+    "cost": 3,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"1 Battlecruiser Upgrade\nyou buy each turn is free.\""
+  },
+  {
+    "id": "BG31_HERO_801ptf2",
+    "name": "Advanced Construction",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"1 Battlecruiser Upgrade\nyou buy each turn is free.\""
+  },
+  {
+    "id": "BG31_HERO_801ptf3",
+    "name": "Advanced Construction",
+    "cost": 1,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"1 Battlecruiser Upgrade\nyou buy each turn is free.\""
+  },
+  {
+    "id": "BG31_HERO_801ptf4",
+    "name": "Advanced Construction",
+    "cost": 0,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"1 Battlecruiser Upgrade\nyou buy each turn is free.\""
+  },
+  {
+    "id": "BG31_HERO_801pth",
+    "name": "Fortified Bunker",
+    "cost": 4,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"At the end of your turn,\nget a random Magnetic\nMech.\""
+  },
+  {
+    "id": "BG31_HERO_801pth2",
+    "name": "Fortified Bunker",
+    "cost": 3,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"At the end of your turn,\nget a random Magnetic\nMech.\""
+  },
+  {
+    "id": "BG31_HERO_801pth3",
+    "name": "Fortified Bunker",
+    "cost": 2,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\n\"At the end of your turn,\nget a random Magnetic\nMech.\""
+  },
+  {
+    "id": "BG31_HERO_801pti",
+    "name": "Missile Pod",
+    "cost": 5,
+    "school": "UPGRADE",
+    "text": "Make your Battlecruiser's Yamato Cannon trigger twice."
+  },
+  {
+    "id": "BG31_HERO_801pti2",
+    "name": "Missile Pod",
+    "cost": 3,
+    "school": "UPGRADE",
+    "text": "Make your Battlecruiser's Yamato Cannon trigger twice."
+  },
+  {
+    "id": "BG31_HERO_801ptj",
+    "name": "Ultra-Capacitor",
+    "cost": 6,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\nReborn and \"This is\nReborn with full Health\nand enchantments.\""
+  },
+  {
+    "id": "BG31_HERO_801ptj2",
+    "name": "Ultra-Capacitor",
+    "cost": 4,
+    "school": "UPGRADE",
+    "text": "[x]Give your Battlecruiser\nReborn and \"This is\nReborn with full Health\nand enchantments.\""
+  },
+  {
+    "id": "BG32_337",
+    "name": "Seafood Stew",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give a minion +1/+1. Repeat for each different Bonus Keyword in your warband."
+  },
+  {
+    "id": "BG32_814",
+    "name": "Align the Elements",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give Elementals in the Tavern +3/+3\nthis game."
+  },
+  {
+    "id": "BG32_815",
+    "name": "Shifting Tide",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "[x]Give a minion +1/+1\ntwice. If it's a Naga,\nrepeat this."
+  },
+  {
+    "id": "BG33_101",
+    "name": "A New Sprout",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Discover a Tier 1 minion."
+  },
+  {
+    "id": "BG33_112",
+    "name": "Haunted Carapace",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Your minions have +3/+1 until next turn."
+  },
+  {
+    "id": "BG33_112t",
+    "name": "Haunted Carapace",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Your minions have +0/+0 until next turn."
+  },
+  {
+    "id": "BG33_248",
+    "name": "Nimble Wingbeat",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give a Dragon +8 Health and Windfury."
+  },
+  {
+    "id": "BG33_811",
+    "name": "Healthy Bounty",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give four friendly minions +4 Health."
+  },
+  {
+    "id": "BG33_812",
+    "name": "Hostile Bounty",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give four friendly minions +4 Attack."
+  },
+  {
+    "id": "BG33_813",
+    "name": "Selfish Bounty",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give your left-most minion +6/+6."
+  },
+  {
+    "id": "BG33_814",
+    "name": "Friendly Bounty",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Get a random minion of your most common type."
+  },
+  {
+    "id": "BG33_815",
+    "name": "Wealthy Bounty",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Gain 2 Gold."
+  },
+  {
+    "id": "BG33_817",
+    "name": "Sanctify",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "[x]Give your minions\nwith Divine Shield\n+6 Attack."
+  },
+  {
+    "id": "BG33_819",
+    "name": "Raptor's Revenge",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "[x]Avenge (4): Get a\nrandom Beast.\nLasts 1 turn."
+  },
+  {
+    "id": "BG33_898",
+    "name": "Murky's Fish",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give a Murloc +1/+1. Repeat for each Murloc you control."
+  },
+  {
+    "id": "BG33_899",
+    "name": "Mounting Avalanche",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "[x]Sell a friendly minion.\n Give its stats to your\nleft-most Elemental."
+  },
+  {
+    "id": "BG34_270",
+    "name": "Time Snap",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Discover a 1-Cost minion from the Major Timewarp."
+  },
+  {
+    "id": "BG34_272",
+    "name": "Menagerie Tableware",
+    "cost": 4,
+    "school": "TAVERN",
+    "text": "Give your minions +3/+3. Repeat for each different friendly minion type."
+  },
+  {
+    "id": "BG34_330",
+    "name": "Search Through Time",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Discover a minion of your Tier. Lock it in your hand for 1 turn."
+  },
+  {
+    "id": "BG34_444",
+    "name": "Easterly Winds",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "[x]After the Tavern\nis Refreshed this game,\ngive a random minion\nin it +8/+8."
+  },
+  {
+    "id": "BG34_689",
+    "name": "Blood Gem Barrage",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "After the Tavern is\n Refreshed this game, give its minions +1/+1 worth of Blood Gems."
+  },
+  {
+    "id": "BG34_888",
+    "name": "Tomb Turning",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "[x]Discover an Undead.\nIt dies if you play it\nthis turn."
+  },
+  {
+    "id": "BG34_889",
+    "name": "Brood of Nozdormu",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Start of Combat: Double your left-most minion's Attack."
+  },
+  {
+    "id": "BG34_990",
+    "name": "Wave of Gold",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give your minions +3/+2. Give Golden ones another +3/+2."
+  },
+  {
+    "id": "BG34_991",
+    "name": "Hand of Deios",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Start of Combat: Trigger a random friendly Battlecry, Deathrattle, and Rally."
+  },
+  {
+    "id": "BG34_BlackMarket_Skip",
+    "name": "Exit the Timewarped Tavern",
+    "cost": 0,
+    "school": "SHADOW",
+    "text": "Casts When Bought.\nSave your Chronum for the next Timewarp!"
+  },
+  {
+    "id": "BG34_HeroPowerSpell_003",
+    "name": "Power of Al'Akir",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Swatting Insects'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_005",
+    "name": "Power of Elise",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Lead Explorer'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_006",
+    "name": "Power of George",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Boon of Light'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_008",
+    "name": "Power of Shudderwock",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Snicker-Snack'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_009",
+    "name": "Power of Teron",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Rapid\nReanimation' your\nsecond Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_010",
+    "name": "Power of the Lich King",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Reborn Rites'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_012",
+    "name": "Power of Zephrys",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Three Wishes'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_015",
+    "name": "Power of Guff",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Natural Balance'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_016",
+    "name": "Power of Flurgl",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Gone Fishing'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_017",
+    "name": "Power of Sylvanas",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Reclaimed Souls'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_018",
+    "name": "Power of Tavish",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Lock and Load'\nyour second Hero Power."
+  },
+  {
+    "id": "BG34_HeroPowerSpell_022",
+    "name": "Power of Rakanishu",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Casts When Bought\nMake 'Tavern\nLighting' your second\nHero Power."
+  },
+  {
+    "id": "BG34_Treasure_300",
+    "name": "Timewarped Investment",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Casts When Bought.\nGain 1 extra Chronum at your next Timewarp."
+  },
+  {
+    "id": "BG34_Treasure_301",
+    "name": "Timewarped Beanstalk",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Discover a 1-Cost card from the Major Timewarp. Lock it in your hand for 1 turn."
+  },
+  {
+    "id": "BG34_Treasure_302",
+    "name": "Timewarped Cloning Device",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Choose a friendly minion. Summon an exact copy of it."
+  },
+  {
+    "id": "BG34_Treasure_606",
+    "name": "Timewarped Big Winner!",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Discover a Tier 3 Darkmoon Prize.\nRepeat at the start of every three turns."
+  },
+  {
+    "id": "BG34_Treasure_607",
+    "name": "Timewarped Trainee",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Get a random minion\neach from Tiers 1, 2,\nand 3."
+  },
+  {
+    "id": "BG34_Treasure_608",
+    "name": "Timewarped Ring",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Get a Shiny Ring. Repeat at the start of each turn."
+  },
+  {
+    "id": "BG34_Treasure_609",
+    "name": "Timewarped Lasso",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Get an Enchanted Lasso. Repeat at the start of each turn."
+  },
+  {
+    "id": "BG34_Treasure_610",
+    "name": "Timewarped Scroll",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Each turn this is in your hand, transform into a random 2-Cost card from the Minor Timewarp."
+  },
+  {
+    "id": "BG34_Treasure_620",
+    "name": "Timewarped Apples",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "After the Tavern is Refreshed this game, cast Them Apples."
+  },
+  {
+    "id": "BG34_Treasure_625",
+    "name": "Timewarped Secrecy",
+    "cost": 3,
+    "school": "UNKNOWN",
+    "text": "[x]Discover a Golden\nTier 7 minion."
+  },
+  {
+    "id": "BG34_Treasure_900",
+    "name": "Timewarped Evolving Tavern",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Get an Evolving Tavern. Repeat at the start of each turn."
+  },
+  {
+    "id": "BG34_Treasure_901",
+    "name": "Gruul Rules",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Give a friendly minion \"At the end of your turn, gain +2/+2.\""
+  },
+  {
+    "id": "BG34_Treasure_902",
+    "name": "Timewarped Master Thief",
+    "cost": 3,
+    "school": "UNKNOWN",
+    "text": "[x]Discover a minion from\nyour warband last game!\nIt keeps its stats and\nBonus Keywords."
+  },
+  {
+    "id": "BG34_Treasure_903",
+    "name": "Timewarped On the House",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Discover 3 minions from your Tier."
+  },
+  {
+    "id": "BG34_Treasure_905",
+    "name": "Timewarped Rat in a Cage",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Give a minion +2/+2,\nthen double its stats."
+  },
+  {
+    "id": "BG34_Treasure_906",
+    "name": "The Bouncer",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Give a friendly minion +6/+6 and Taunt."
+  },
+  {
+    "id": "BG34_Treasure_912",
+    "name": "Timewarped B.A.N.A.N.A.S.",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "[x]Fill your hand with Tavern\nDish Bananas. Your\nTavern spells give an\nextra +3/+3 this game."
+  },
+  {
+    "id": "BG34_Treasure_917",
+    "name": "Timewarped New Recruit",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Give minions in the Tavern +2/+2 this game. The Tavern always has 7 cards this game."
+  },
+  {
+    "id": "BG34_Treasure_919",
+    "name": "Timewarped Ritual",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Discover two Tier 7 minions."
+  },
+  {
+    "id": "BG34_Treasure_930",
+    "name": "Timewarped Enchanted Lasso",
+    "cost": 3,
+    "school": "UNKNOWN",
+    "text": "Steal all minions from the Tavern, then Refresh it."
+  },
+  {
+    "id": "BG34_Treasure_932",
+    "name": "Timewarped Strike Oil",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "Increase your maximum Gold by 4. Gain 4 Gold."
+  },
+  {
+    "id": "BG34_Treasure_933",
+    "name": "Timewarped Evolution",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Choose a minion.\nDiscover a Tier 6 minion\nto transform it into.\nSet its stats to 30/30."
+  },
+  {
+    "id": "BG34_Treasure_934",
+    "name": "Timewarped Armor Stash",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Casts When Bought\nGain 10 Armor."
+  },
+  {
+    "id": "BG34_Treasure_937",
+    "name": "Timewarped Corpse",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Discover a Deathrattle minion from Tier 5 or higher. Give it Reborn."
+  },
+  {
+    "id": "BG34_Treasure_940",
+    "name": "Timewarped Chef's Choice",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Choose a minion. Get a random minion of the same type from Tiers 4, 5, and 6."
+  },
+  {
+    "id": "BG34_Treasure_950",
+    "name": "Timewarped Special",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Fill your hand with random Spellcraft spells."
+  },
+  {
+    "id": "BG34_Treasure_951",
+    "name": "Timewarped Conch",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "Choose a friendly Murloc. Summon an exact copy of it."
+  },
+  {
+    "id": "BG34_Treasure_953",
+    "name": "Timewarped Revelation",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Discover a 1-Cost and\n2-Cost minion from the\nMinor Timewarp."
+  },
+  {
+    "id": "BG34_Treasure_955",
+    "name": "Timewarped Goldenizer",
+    "cost": 2,
+    "school": "UNKNOWN",
+    "text": "[x]Choose a minion.\nMake it Golden."
+  },
+  {
+    "id": "BG34_Treasure_966",
+    "name": "Timewarped Thief",
+    "cost": 1,
+    "school": "UNKNOWN",
+    "text": "[x]Discover a minion from\nyour warband last game!\nSet its stats to 20/20."
+  },
+  {
+    "id": "BG34_Trinket_1st_Spell",
+    "name": "Buy a Lesser Trinket",
+    "cost": 2,
+    "school": "LESSER_TRINKET",
+    "text": "Choose from 4 Lesser Trinkets to buy."
+  },
+  {
+    "id": "BG34_Trinket_2nd_Spell",
+    "name": "Deprecated",
+    "cost": 2,
+    "school": "LESSER_TRINKET",
+    "text": "Deprecated -- Use XXX Trinket  or XXX Trinket2 instead."
+  },
+  {
+    "id": "BG35_149",
+    "name": "Deepwater Clan",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give a minion +2/+2. Give your Murlocs +2/+2."
+  },
+  {
+    "id": "BG35_910",
+    "name": "Conflagration",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give a minion +4/+4. (Improved by each Elemental you played this turn!)"
+  },
+  {
+    "id": "BG35_911",
+    "name": "Arcane Absorption",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "Give a friendly Elemental half the stats of the highest-Health minion in the Tavern."
+  },
+  {
+    "id": "BG35_912",
+    "name": "Eonar's Favor",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Choose a minion. Give minions of its type in the Tavern +3/+3 this game."
+  },
+  {
+    "id": "BG35_922",
+    "name": "Queen's Command",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give your minions +2/+2. Give all your Naga another +2/+2."
+  },
+  {
+    "id": "BG35_951",
+    "name": "Might of Stormwind",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give four random friendly minions +1/+2."
+  },
+  {
+    "id": "BG35_952",
+    "name": "Back to Back",
+    "cost": 1,
+    "school": "TAVERN",
+    "text": "[x]Give a minion +4/+4.\nYour future Back to Backs\ngive an extra +4/+4."
+  },
+  {
+    "id": "BG36_246",
+    "name": "Mighty Dragonbreath",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "[x]Give your minions +2/+1.\nRepeat for your Dragons.\nRepeat for your minions\nwith Divine Shield."
+  },
+  {
+    "id": "BG36_624",
+    "name": "Repair Job",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Give a minion +4/+8."
+  },
+  {
+    "id": "BG36_880",
+    "name": "Methodical Madness",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "[x]Choose a friendly Demon.\nIt consumes 2 random\nTavern minions to gain their\nstats and Bonus Keywords."
+  },
+  {
+    "id": "BG36_883",
+    "name": "Winner's Bread",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "[x]Give a minion +2/+3.\nIf you win your next combat,\ngive it another +4/+6 at\nthe start of your next turn."
+  },
+  {
+    "id": "BG36_884",
+    "name": "Weapons Forge",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "Get 3 Pointy Arrows."
+  },
+  {
+    "id": "BGDUO_113",
+    "name": "Portal in a Bottle",
+    "cost": 3,
+    "school": "TAVERN",
+    "text": "Pass a non-Golden minion."
+  },
+  {
+    "id": "BGDUO_123",
+    "name": "Catch!",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "[x]Give your minions +2\nAttack. (Improves by +2\nAttack after this is\n Passed!)"
+  },
+  {
+    "id": "BGDUO_124",
+    "name": "Recruitment Program",
+    "cost": 2,
+    "school": "TAVERN",
+    "text": "[x]Get a random minion of\nyour teammate's most\ncommon type, then Pass it."
+  }
+]
