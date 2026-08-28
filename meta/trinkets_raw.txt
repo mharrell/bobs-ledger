@@ -1,0 +1,2869 @@
+Tier
+Trinket
+Pick Rate
+Avg. Placement
+Placement Distribution
+
+BG36_MagicItem_3022
+Gold Mallet
+At the end of your turn, give your minions +2/+1. (Improved by Golden minions you've played this game!)
+48.5%
+3.59
+1st Place: 16.65%
+
+2nd Place: 16.42%
+
+3rd Place: 18.56%
+
+4th Place: 17.24%
+
+5th Place: 12.52%
+
+6th Place: 10.29%
+
+7th Place: 5.72%
+
+8th Place: 2.6%
+
+4th8th
+Trinket Guide
+UPDATED
+Pro player JeefHS's photo
+JeefHS
+Top BGs Player
+Youtube
+Twitch
++4/2 a turn is decent on turn 6, +6/3 is amazing. Use tempo to comfortably level to 5.
+
+
+BG32_MagicItem_8940
+Blessing Portrait
+Get a Natural Blessing. At the start of each turn, get another. Your Natural Blessings also affect minions in hand.
+27.7%
+3.61
+1st Place: 12.19%
+
+2nd Place: 21.31%
+
+3rd Place: 21.13%
+
+4th Place: 14.99%
+
+5th Place: 12.29%
+
+6th Place: 8.91%
+
+7th Place: 5.62%
+
+8th Place: 3.56%
+
+4th8th
+
+
+BG35_MagicItem_3003
+Copper Coil
+Whenever you Magnetize a minion, give it +1/+1 and improve this.
+50.6%
+3.62
+1st Place: 30.42%
+
+2nd Place: 13.91%
+
+3rd Place: 9.78%
+
+4th Place: 9.25%
+
+5th Place: 9.17%
+
+6th Place: 9.18%
+
+7th Place: 9.62%
+
+8th Place: 8.67%
+
+4th8th
+
+
+BG30_MagicItem_3016
+Eternal Portrait
+Get an Eternal Knight. Start of Combat: Give your Eternal Knights Taunt and Reborn.
+24.9%
+3.66
+1st Place: 12.02%
+
+2nd Place: 20.06%
+
+3rd Place: 19.37%
+
+4th Place: 17.5%
+
+5th Place: 12.36%
+
+6th Place: 9.67%
+
+7th Place: 5.92%
+
+8th Place: 3.1%
+
+4th8th
+
+
+BG30_MagicItem_4262
+Colorful CompassMurloc
+Get a random 92. At the start of each turn, get another.
+35.4%
+3.72
+1st Place: 15.9%
+
+2nd Place: 20.64%
+
+3rd Place: 16.9%
+
+4th Place: 12.34%
+
+5th Place: 11.16%
+
+6th Place: 8.6%
+
+7th Place: 8.54%
+
+8th Place: 5.92%
+
+4th8th
+
+
+BG35_MagicItem_3055
+Conch Portrait
+Get a Cloning Conch. At the start of every 2 turns, repeat this. (2 turns left!)
+37.1%
+3.75
+1st Place: 15.93%
+
+2nd Place: 19.95%
+
+3rd Place: 16.27%
+
+4th Place: 13.36%
+
+5th Place: 10.62%
+
+6th Place: 9.44%
+
+7th Place: 8.55%
+
+8th Place: 5.88%
+
+4th8th
+
+
+BG36_MagicItem_8202
+Flighty Portrait
+Get a Flighty Scout. After you cast a Tavern spell, give Flighty Scouts in your hand and warband +3/+3.
+28.7%
+3.81
+1st Place: 9.98%
+
+2nd Place: 19.1%
+
+3rd Place: 19.87%
+
+4th Place: 17.11%
+
+5th Place: 13.54%
+
+6th Place: 9.56%
+
+7th Place: 6.89%
+
+8th Place: 3.95%
+
+4th8th
+
+
+BG32_MagicItem_9303
+Archaic Scroll
+After you cast 7 spells, get a random Naga. (7 left!)
+29.8%
+3.86
+1st Place: 21.3%
+
+2nd Place: 16.73%
+
+3rd Place: 12.48%
+
+4th Place: 11.13%
+
+5th Place: 9.92%
+
+6th Place: 9.24%
+
+7th Place: 9.53%
+
+8th Place: 9.67%
+
+4th8th
+
+
+BG30_MagicItem_9171
+Rusty Trident
+Start of Combat: Give your Naga "Deathrattle: Get a random Spellcraft spell."
+26.0%
+3.91
+1st Place: 14.16%
+
+2nd Place: 17.91%
+
+3rd Place: 17.14%
+
+4th Place: 13.79%
+
+5th Place: 11.08%
+
+6th Place: 9.69%
+
+7th Place: 9.07%
+
+8th Place: 7.15%
+
+4th8th
+
+
+BG30_MagicItem_9141
+Nerglish Phrasebook
+After you play a minion, give the left-most minion in your hand +3/+3.
+26.6%
+3.91
+1st Place: 9.59%
+
+2nd Place: 18.55%
+
+3rd Place: 18.96%
+
+4th Place: 16.87%
+
+5th Place: 13.55%
+
+6th Place: 10.35%
+
+7th Place: 7.06%
+
+8th Place: 5.06%
+
+4th8th
+
+
+BG36_MagicItem_3050
+Rune of Transmutation
+After you cast 15 spells, replace this with a random Greater Naga Trinket. (15 left!)
+49.8%
+3.95
+1st Place: 14.67%
+
+2nd Place: 17.4%
+
+3rd Place: 15.99%
+
+4th Place: 13.78%
+
+5th Place: 11.42%
+
+6th Place: 9.63%
+
+7th Place: 9.45%
+
+8th Place: 7.68%
+
+4th8th
+
+
+BG32_MagicItem_9312
+Azsharan Statuette
+Get 3 random Spellcraft spells. At the start of each turn, get 3 more.
+20.5%
+4.00
+1st Place: 16%
+
+2nd Place: 16.03%
+
+3rd Place: 14.4%
+
+4th Place: 13.35%
+
+5th Place: 11.68%
+
+6th Place: 10.77%
+
+7th Place: 9.79%
+
+8th Place: 7.96%
+
+4th8th
+
+
+BG30_MagicItem_4262
+Colorful CompassUndead
+Get a random 92. At the start of each turn, get another.
+30.5%
+4.00
+1st Place: 14.17%
+
+2nd Place: 16.3%
+
+3rd Place: 15.48%
+
+4th Place: 13.83%
+5th Place: 12.95%
+
+6th Place: 10.77%
+
+7th Place: 9.51%
+
+8th Place: 6.99%
+
+4th8th
+
+
+BG32_MagicItem_8932
+Bluegill Flippers
+Whenever you cast a Tavern spell, give the left-most minion in your hand and warband +3/+3.
+20.6%
+4.01
+1st Place: 8.36%
+
+2nd Place: 16.72%
+
+3rd Place: 18.52%
+
+4th Place: 18.98%
+
+5th Place: 13.67%
+
+6th Place: 10.79%
+
+7th Place: 8.61%
+
+8th Place: 4.35%
+
+4th8th
+
+
+BG36_MagicItem_2022
+Warcry Totem
+The first two Battlecry minions you buy each turn are free. (2 left!)
+21.0%
+4.03
+1st Place: 19.74%
+
+2nd Place: 14.94%
+
+3rd Place: 12.32%
+
+4th Place: 11.1%
+
+5th Place: 10.33%
+
+6th Place: 10.72%
+
+7th Place: 10.96%
+
+8th Place: 9.89%
+
+4th8th
+
+
+BG30_MagicItem_4262
+Colorful CompassElemental
+Get a random 92. At the start of each turn, get another.
+46.1%
+4.03
+1st Place: 18.94%
+
+2nd Place: 14.76%
+
+3rd Place: 11.96%
+
+4th Place: 12.28%
+
+5th Place: 10.85%
+
+6th Place: 11.91%
+
+7th Place: 10.34%
+
+8th Place: 8.96%
+
+4th8th
+
+
+BG30_MagicItem_9243
+Booty Bay Brew
+Whenever you spend Gold, give two friendly Pirates +3/+3.
+17.7%
+4.03
+1st Place: 11.63%
+
+2nd Place: 13.95%
+
+3rd Place: 17.21%
+
+4th Place: 16.67%
+
+5th Place: 15.64%
+
+6th Place: 11.47%
+
+7th Place: 9.16%
+
+8th Place: 4.27%
+
+4th8th
+
+
+BG30_MagicItem_4262
+Colorful CompassMech
+Get a random 92. At the start of each turn, get another.
+37.7%
+4.03
+1st Place: 13.28%
+
+2nd Place: 14.81%
+
+3rd Place: 17.46%
+
+4th Place: 14.34%
+
+5th Place: 12.88%
+
+6th Place: 10.99%
+
+7th Place: 9.56%
+
+8th Place: 6.67%
+
+4th8th
+
+
+BG36_MagicItem_2060
+Ominous Stone
+Discover a Tier 4 minion of your most common type with a Dark Gift.
+50.8%
+4.04
+1st Place: 15.57%
+
+2nd Place: 14.84%
+
+3rd Place: 14.39%
+
+4th Place: 13.6%
+
+5th Place: 12.74%
+
+6th Place: 11.74%
+
+7th Place: 9.8%
+
+8th Place: 7.32%
+
+4th8th
+
+
+BG30_MagicItem_4222
+Lorewalker Scroll
+Whenever you cast a spell on a minion, give it +4/+4.
+27.9%
+4.06
+1st Place: 9.65%
+
+2nd Place: 15.22%
+
+3rd Place: 18%
+
+4th Place: 17.04%
+
+5th Place: 15.29%
+
+6th Place: 11.4%
+
+7th Place: 8.59%
+
+8th Place: 4.82%
+
+4th8th
+
+BG30_MagicItem_9001
+Dragonwing Glider
+Whenever you play a card, give a friendly Dragon +4/+4.
+18.8%
+4.07
+1st Place: 8.25%
+
+2nd Place: 15.22%
+
+3rd Place: 17.16%
+
+4th Place: 19.9%
+
+5th Place: 15.56%
+
+6th Place: 11.97%
+
+7th Place: 8.32%
+
+8th Place: 3.63%
+
+4th8th
+
+
+BG35_MagicItem_3014
+Scraper Sticker
+Get a random Magnetic Mech. At the start of each turn, get another.
+39.0%
+4.09
+1st Place: 13.47%
+
+2nd Place: 14.99%
+
+3rd Place: 15.29%
+
+4th Place: 14.77%
+
+5th Place: 12.6%
+
+6th Place: 11.83%
+
+7th Place: 9.74%
+
+8th Place: 7.32%
+
+4th8th
+
+BG32_MagicItem_3604
+Baleful Incense
+Start of Combat: Give your left and right-most Undead Reborn.
+17.1%
+4.09
+1st Place: 7.86%
+
+2nd Place: 15.99%
+
+3rd Place: 19.48%
+
+4th Place: 16.85%
+
+5th Place: 14.85%
+
+6th Place: 11.04%
+
+7th Place: 8.58%
+
+8th Place: 5.36%
+
+4th8th
+
+
+BG32_MagicItem_2761
+Enigmatic Headstone
+At the end of each turn, your Undead have +2 Attack this game (wherever they are).
+18.9%
+4.10
+1st Place: 8.28%
+
+2nd Place: 14.8%
+
+3rd Place: 18.86%
+
+4th Place: 16.81%
+
+5th Place: 15.7%
+
+6th Place: 13.49%
+
+7th Place: 8.08%
+
+8th Place: 3.98%
+
+4th8th
+
+
+BG32_MagicItem_8315
+Sellemental Portrait
+Get a Sellemental. At the start of each turn, get another.
+33.4%
+4.10
+1st Place: 20.39%
+
+2nd Place: 14.33%
+
+3rd Place: 11.06%
+
+4th Place: 10.91%
+
+5th Place: 10.2%
+
+6th Place: 10.1%
+
+7th Place: 11.83%
+
+8th Place: 11.19%
+
+4th8th
+
+
+BG30_MagicItem_4262
+Colorful CompassNaga
+Get a random 92. At the start of each turn, get another.
+29.6%
+4.12
+1st Place: 14.21%
+
+2nd Place: 16.23%
+
+3rd Place: 14.44%
+
+4th Place: 13.24%
+
+5th Place: 11.25%
+
+6th Place: 11.03%
+
+7th Place: 10.68%
+
+8th Place: 8.92%
+
+4th8th
+
+
+BG35_MagicItem_8402
+Chromatic Tear
+Get a random Chromadrake. At the start of each turn, repeat this.
+22.2%
+4.12
+1st Place: 13.52%
+
+2nd Place: 15.45%
+
+3rd Place: 15.23%
+
+4th Place: 13.96%
+
+5th Place: 11.9%
+
+6th Place: 11.3%
+
+7th Place: 10.6%
+
+8th Place: 8.04%
+
+4th8th
+
+
+BG36_MagicItem_2033
+Dragon Skull
+Whenever you trigger a Battlecry, give your left- and right-most minions +5/+5.
+10.1%
+4.12
+1st Place: 10.32%
+
+2nd Place: 15.85%
+
+3rd Place: 16.95%
+
+4th Place: 15.54%
+
+5th Place: 13.78%
+
+6th Place: 11.12%
+
+7th Place: 9.84%
+
+8th Place: 6.6%
+
+4th8th
+
+
+BG35_MagicItem_9200
+Bubble Crown
+Once you cast 12 spells, your Tavern spells give an extra +4/+4. (12 left!)
+14.0%
+4.13
+1st Place: 13.48%
+
+2nd Place: 15.68%
+
+3rd Place: 15.09%
+
+4th Place: 13.29%
+
+5th Place: 12.44%
+
+6th Place: 11.16%
+
+7th Place: 10.15%
+
+8th Place: 8.7%
+
+4th8th
+
+
+BG36_MagicItem_3903
+Baller Portrait
+Get a Fire Baller or a Snow Baller. At the start of each turn, repeat this.
+24.6%
+4.18
+1st Place: 15.36%
+
+2nd Place: 13.84%
+
+3rd Place: 14.01%
+
+4th Place: 13.08%
+
+5th Place: 11.9%
+
+6th Place: 11.12%
+
+7th Place: 11.25%
+
+8th Place: 9.44%
+
+4th8th
+
+
+BG32_MagicItem_8600
+Beetle Band
+Avenge (5): Summon a 2/2 Beetle. Give it Taunt.
+17.6%
+4.18
+1st Place: 14.73%
+
+2nd Place: 14.14%
+
+3rd Place: 13.24%
+
+4th Place: 12.73%
+
+5th Place: 13.48%
+
+6th Place: 12.56%
+
+7th Place: 10.86%
+
+8th Place: 8.26%
+
+4th8th
+
+
+BG36_MagicItem_8102
+Inductive Gyroblade
+At the end of your turn, get a 4/4 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)
+25.4%
+4.21
+1st Place: 9.4%
+
+2nd Place: 14.7%
+
+3rd Place: 16.88%
+
+4th Place: 15.93%
+
+5th Place: 14.03%
+
+6th Place: 12.07%
+
+7th Place: 10.29%
+
+8th Place: 6.69%
+
+4th8th
+
+BG32_MagicItem_2710
+Ornate Clock
+Gain 2 Gold. Buy your Greater Trinket next turn instead of Turn 9.
+20.8%
+4.21
+1st Place: 15.23%
+
+2nd Place: 13.37%
+
+3rd Place: 13.36%
+
+4th Place: 13.31%
+5th Place: 12.45%
+
+6th Place: 11.51%
+
+7th Place: 11.31%
+
+8th Place: 9.46%
+
+4th8th
+
+
+BG32_MagicItem_3502
+Splinter of Aurum
+When you have 15 Gold, get a random Golden Tier 5 minion. (Once per game.)
+19.4%
+4.22
+1st Place: 18.62%
+
+2nd Place: 13.65%
+
+3rd Place: 11.19%
+
+4th Place: 11.05%
+
+5th Place: 10.56%
+
+6th Place: 10.85%
+
+7th Place: 11.79%
+
+8th Place: 12.3%
+
+4th8th
+
+
+BG30_MagicItem_7133
+Bleeding Heart
+After 8 friendly minions die, get a random Undead. (8 left!)
+24.2%
+4.22
+1st Place: 13.49%
+
+2nd Place: 15.09%
+
+3rd Place: 13.91%
+
+4th Place: 12.48%
+
+5th Place: 11.84%
+
+6th Place: 13.02%
+
+7th Place: 11.49%
+
+8th Place: 8.69%
+
+4th8th
+
+
+BG35_MagicItem_8500
+Pocket Cyclone
+Cast Easterly Winds. At the start of each turn, cast it again.
+23.3%
+4.24
+1st Place: 9.55%
+
+2nd Place: 13.7%
+
+3rd Place: 16.34%
+
+4th Place: 16.37%
+
+5th Place: 14.9%
+
+6th Place: 12.45%
+
+7th Place: 10.38%
+
+8th Place: 6.32%
+
+4th8th
+
+
+BG32_MagicItem_4162
+War Drum
+One Battlecry each turn triggers two extra times. (1 left!)
+15.9%
+4.25
+1st Place: 14.23%
+
+2nd Place: 14.01%
+
+3rd Place: 13.7%
+
+4th Place: 12.94%
+
+5th Place: 12.02%
+
+6th Place: 11.85%
+7th Place: 11.41%
+
+8th Place: 9.83%
+
+4th8th
+
+
+BG32_MagicItem_8080
+Bloodbound Earrings
+After you cast 4 spells, this plays a Blood Gem on all your minions. (4 left!)
+31.4%
+4.28
+1st Place: 12.41%
+
+2nd Place: 13.98%
+
+3rd Place: 14.09%
+
+4th Place: 13.35%
+
+5th Place: 13.8%
+
+6th Place: 12.53%
+
+7th Place: 11.35%
+
+8th Place: 8.49%
+
+4th8th
+
+
+BG30_MagicItem_4250
+Azeroth Model Globe
+At the start of every two turns, gain 2 Gold and Discover a Tier 6 minion. (2 turns left!)
+36.7%
+4.29
+1st Place: 15.87%
+
+2nd Place: 12.95%
+
+3rd Place: 12.49%
+
+4th Place: 11.98%
+
+5th Place: 11.89%
+6th Place: 12.23%
+
+7th Place: 12.02%
+
+8th Place: 10.57%
+
+4th8th
+
+
+BG35_MagicItem_8511
+Water Wheel
+After you play an Elemental, get a random Tavern spell. (Twice per turn.)
+16.7%
+4.30
+1st Place: 14.91%
+
+2nd Place: 12.93%
+
+3rd Place: 11.9%
+
+4th Place: 13.19%
+
+5th Place: 12.95%
+
+6th Place: 12.33%
+
+7th Place: 12.53%
+
+8th Place: 9.27%
+
+4th8th
+
+BG30_MagicItem_4262
+Colorful CompassDragon
+Get a random 92. At the start of each turn, get another.
+26.5%
+4.30
+1st Place: 11.27%
+
+2nd Place: 14.92%
+
+3rd Place: 13.46%
+
+4th Place: 14.63%
+
+5th Place: 12.91%
+
+6th Place: 12.66%
+
+7th Place: 11.78%
+
+8th Place: 8.38%
+
+4th8th
+
+
+BG30_MagicItem_9812
+The Eye of Dalaran
+Whenever a friendly minion with no type dies, get a random Tavern spell.
+4.6%
+4.31
+1st Place: 17.28%
+
+2nd Place: 12.35%
+
+3rd Place: 9.88%
+
+4th Place: 11.11%
+
+5th Place: 11.11%
+
+6th Place: 16.05%
+
+7th Place: 14.81%
+
+8th Place: 7.41%
+
+4th8th
+
+
+BG30_MagicItem_4375
+Staff of the Scourge
+Avenge (5): Give a random friendly Undead Reborn.
+25.7%
+4.32
+1st Place: 10.59%
+
+2nd Place: 14.6%
+
+3rd Place: 14.39%
+
+4th Place: 14.66%
+
+5th Place: 13.05%
+
+6th Place: 12.36%
+
+7th Place: 11.61%
+
+8th Place: 8.74%
+
+4th8th
+
+
+BG30_MagicItem_3031
+Automaton Portrait
+Start of Combat: When you have space, summon an Ancestral Automaton.
+13.5%
+4.32
+1st Place: 6.81%
+
+2nd Place: 13.35%
+
+3rd Place: 17.92%
+
+4th Place: 16.52%
+
+5th Place: 15.88%
+
+6th Place: 13.61%
+
+7th Place: 9.34%
+
+8th Place: 6.58%
+
+4th8th
+
+
+BG30_MagicItem_9622
+Training Certificate
+Start of Combat: Double the stats of your two lowest-Attack minions.
+12.1%
+4.33
+1st Place: 13.98%
+
+2nd Place: 13.66%
+
+3rd Place: 12.12%
+
+4th Place: 12.55%
+
+5th Place: 12.94%
+6th Place: 12.87%
+
+7th Place: 12.15%
+
+8th Place: 9.72%
+
+4th8th
+
+
+BG35_MagicItem_1503
+Cursed Crystal
+After the Tavern is Refreshed, give its minions +3/+3 this turn.
+17.5%
+4.33
+1st Place: 7.29%
+
+2nd Place: 12.36%
+
+3rd Place: 18.6%
+
+4th Place: 17.56%
+
+5th Place: 15.09%
+
+6th Place: 11.41%
+
+7th Place: 10.84%
+
+8th Place: 6.85%
+
+4th8th
+
+
+BG35_MagicItem_8012
+Sous Chef Sticker
+You can use your Hero Power an extra time each turn. After you use your Hero Power, gain (1) Gold.
+42.0%
+4.33
+1st Place: 14.59%
+
+2nd Place: 13.31%
+
+3rd Place: 12.16%
+
+4th Place: 11.99%
+
+5th Place: 13.13%
+
+6th Place: 12.3%
+
+7th Place: 12.25%
+
+8th Place: 10.27%
+
+4th8th
+
+BG30_MagicItem_9021
+Holy Mallet
+Start of Combat: Give your left and right-most minions Divine Shield.
+11.8%
+4.34
+1st Place: 11.41%
+
+2nd Place: 13.48%
+
+3rd Place: 14.62%
+
+4th Place: 13.63%
+
+5th Place: 12.92%
+
+6th Place: 13.74%
+
+7th Place: 11.52%
+
+8th Place: 8.68%
+
+4th8th
+
+BG30_MagicItem_7035
+Mystery Cube
+Choose from 2 new Lesser Trinkets to replace this for free. At the start of each turn, repeat this.
+30.1%
+4.35
+1st Place: 16.23%
+
+2nd Place: 12.58%
+
+3rd Place: 11.5%
+
+4th Place: 11.68%
+
+5th Place: 11.37%
+
+6th Place: 12.31%
+
+7th Place: 12.59%
+
+8th Place: 11.73%
+
+4th8th
+
+BG35_MagicItem_3064
+Jailer Sticker
+Spellcraft: Destroy a friendly Undead to get a random Undead.
+29.4%
+4.35
+1st Place: 11.47%
+
+2nd Place: 13.65%
+
+3rd Place: 13.94%
+
+4th Place: 13.81%
+
+5th Place: 13.54%
+
+6th Place: 12.99%
+
+7th Place: 10.89%
+
+8th Place: 9.71%
+
+4th8th
+
+
+BG30_MagicItem_4201
+Book of Medivh
+Discover a Tavern spell. At the start of each turn, Discover another.
+18.8%
+4.36
+1st Place: 14.82%
+
+2nd Place: 12.77%
+
+3rd Place: 11.95%
+
+4th Place: 12.24%
+
+5th Place: 12.63%
+
+6th Place: 12.5%
+
+7th Place: 12.3%
+
+8th Place: 10.77%
+
+4th8th
+
+
+BG36_MagicItem_2201
+Glowing Crystal
+At the start of your turn, gain 1 Gold for each different friendly minion type.
+14.0%
+4.37
+1st Place: 16.77%
+
+2nd Place: 12.55%
+
+3rd Place: 11.6%
+
+4th Place: 10.92%
+
+5th Place: 10.88%
+
+6th Place: 11.5%
+
+7th Place: 12.86%
+
+8th Place: 12.93%
+
+4th8th
+
+
+BG35_MagicItem_8710
+Mama Bear Sticker
+Whenever you summon a Beast, give it +6/+6.
+13.4%
+4.39
+1st Place: 7.19%
+
+2nd Place: 11.21%
+
+3rd Place: 15.27%
+
+4th Place: 18.45%
+
+5th Place: 17.72%
+
+6th Place: 14.62%
+
+7th Place: 10.68%
+
+8th Place: 4.86%
+
+4th8th
+
+
+BG30_MagicItem_5473
+Comfy Coffin
+Whenever you cast a Tavern spell, your Undead have +1 Attack this game (wherever they are).
+17.6%
+4.39
+1st Place: 7.55%
+
+2nd Place: 12.96%
+
+3rd Place: 16.33%
+
+4th Place: 16.07%
+
+5th Place: 15.05%
+
+6th Place: 14.51%
+
+7th Place: 9.99%
+
+8th Place: 7.55%
+
+4th8th
+
+
+BG32_MagicItem_3616
+Portable Factory
+Discover a Tier 4 minion with a type. At the start of each turn, get another copy of it.
+14.2%
+4.40
+1st Place: 14.86%
+
+2nd Place: 13.24%
+
+3rd Place: 12.3%
+
+4th Place: 11.5%
+
+5th Place: 11.2%
+
+6th Place: 11.76%
+
+7th Place: 12.13%
+
+8th Place: 13%
+
+4th8th
+
+BG35_MagicItem_8160
+Orb of the Unknown
+Get a random Lesser Trinket.
+16.5%
+4.41
+1st Place: 14.94%
+
+2nd Place: 12.21%
+
+3rd Place: 11.69%
+
+4th Place: 12.26%
+
+5th Place: 12%
+
+6th Place: 12.65%
+
+7th Place: 12.49%
+
+8th Place: 11.76%
+
+4th8th
+
+BG36_MagicItem_8002
+Demonic Bloodletter
+Whenever you cast a Tavern spell, give minions in the Tavern +1/+1 this game.
+37.4%
+4.41
+1st Place: 11.13%
+
+2nd Place: 11.67%
+
+3rd Place: 14.98%
+
+4th Place: 14.48%
+
+5th Place: 14.04%
+
+6th Place: 12.43%
+
+7th Place: 11.35%
+
+8th Place: 9.92%
+
+4th8th
+
+BG35_MagicItem_3020
+Stormcoil Sticker
+After 8 friendly minions die, get a random Mech. (8 left!)
+17.2%
+4.42
+1st Place: 10.21%
+
+2nd Place: 13.34%
+
+3rd Place: 13.92%
+
+4th Place: 14.37%
+
+5th Place: 14.07%
+
+6th Place: 12.19%
+
+7th Place: 12.83%
+
+8th Place: 9.07%
+
+4th8th
+
+BG30_MagicItem_8911
+Trip Vouchers
+In 2 turns, choose a Greater Trinket to buy and replace this. (2 turns left!)
+40.5%
+4.43
+1st Place: 15.39%
+
+2nd Place: 11.94%
+
+3rd Place: 11.61%
+
+4th Place: 11.57%
+
+5th Place: 11.66%
+
+6th Place: 12.65%
+
+7th Place: 13.26%
+
+8th Place: 11.92%
+
+4th8th
+
+BG35_MagicItem_8180
+Mysterious Orb
+Gain 10 Gold. Your next Trinket is a Lesser Trinket.
+10.2%
+4.43
+1st Place: 13.73%
+
+2nd Place: 13.06%
+
+3rd Place: 11.94%
+
+4th Place: 12.56%
+
+5th Place: 11.71%
+
+6th Place: 12.68%
+
+7th Place: 12.26%
+
+8th Place: 12.05%
+
+4th8th
+
+
+BG36_MagicItem_2110
+Lovely Locket
+After you cast a spell on a friendly minion, this casts it on another friendly minion.
+19.7%
+4.43
+1st Place: 12.88%
+
+2nd Place: 12.24%
+
+3rd Place: 12.44%
+
+4th Place: 13.61%
+
+5th Place: 12.37%
+
+6th Place: 13.29%
+
+7th Place: 12.83%
+
+8th Place: 10.34%
+
+4th8th
+
+BG32_MagicItem_4280
+Worn Treasure Map
+In two turns, gain 10 Gold. (Once per game.)
+23.4%
+4.44
+1st Place: 14.43%
+
+2nd Place: 12.84%
+
+3rd Place: 11.42%
+
+4th Place: 11.46%
+
+5th Place: 12.38%
+
+6th Place: 12.41%
+
+7th Place: 13.02%
+
+8th Place: 12.03%
+
+4th8th
+
+
+BG36_MagicItem_2083
+Floating Candle Set
+Spellcraft: Trigger a friendly minion's Deathrattle.
+23.1%
+4.45
+1st Place: 14.56%
+
+2nd Place: 11.64%
+
+3rd Place: 11.73%
+
+4th Place: 12%
+
+5th Place: 12.43%
+
+6th Place: 13.31%
+
+7th Place: 13.1%
+
+8th Place: 11.23%
+
+4th8th
+
+
+BG35_MagicItem_8152
+Magician's Top Hat
+Get two minions each from Tiers 1, 2, and 3.
+21.1%
+4.45
+1st Place: 12.76%
+
+2nd Place: 12.04%
+
+3rd Place: 12.37%
+
+4th Place: 13.54%
+
+5th Place: 12.62%
+
+6th Place: 13.16%
+
+7th Place: 13.29%
+
+8th Place: 10.22%
+
+4th8th
+
+
+BG36_MagicItem_8122
+Emergency Gearblade
+At the end of your turn, cast Repair Job on your left-most Mech.
+11.3%
+4.46
+1st Place: 6.37%
+
+2nd Place: 11.56%
+
+3rd Place: 16.38%
+
+4th Place: 17.42%
+
+5th Place: 16.83%
+
+6th Place: 13.79%
+
+7th Place: 10.92%
+
+8th Place: 6.73%
+
+4th8th
+
+BG36_MagicItem_8012
+Consuming Claw
+Whenever a friendly Demon consumes a minion, it also gains its Bonus Keywords and +5/+5.
+35.9%
+4.46
+1st Place: 7.09%
+
+2nd Place: 12.39%
+
+3rd Place: 15.64%
+
+4th Place: 16.81%
+
+5th Place: 15.29%
+
+6th Place: 13.93%
+
+7th Place: 11.22%
+
+8th Place: 7.61%
+
+4th8th
+
+
+BG32_MagicItem_8581
+Explorer's Binoculars
+Get three random Tier 4 minions.
+34.4%
+4.46
+1st Place: 12.17%
+
+2nd Place: 12.07%
+
+3rd Place: 12.42%
+
+4th Place: 12.76%
+
+5th Place: 13.96%
+
+6th Place: 14.12%
+
+7th Place: 12.82%
+
+8th Place: 9.68%
+
+4th8th
+
+
+BG35_MagicItem_8140
+Stuffed Coin Purse
+When you reach Tier 6, gain 12 gold.
+20.5%
+4.46
+1st Place: 15.64%
+
+2nd Place: 12.43%
+
+3rd Place: 11.16%
+
+4th Place: 10.34%
+
+5th Place: 11.26%
+
+6th Place: 12.48%
+
+7th Place: 13.8%
+
+8th Place: 12.89%
+
+4th8th
+
+
+BG30_MagicItem_8042
+Ancient Wishbone
+Your Hero Power triggers twice.
+44.6%
+4.47
+1st Place: 16.47%
+
+2nd Place: 11.42%
+
+3rd Place: 10.69%
+
+4th Place: 10.94%
+
+5th Place: 11.17%
+
+6th Place: 12.34%
+
+7th Place: 14.05%
+
+8th Place: 12.92%
+
+4th8th
+
+
+BG36_MagicItem_2052
+Deathwhisper Sticker
+After a friendly minion is Reborn, give your minions +2/+2.
+12.3%
+4.47
+1st Place: 6.6%
+
+2nd Place: 11.27%
+
+3rd Place: 15.5%
+
+4th Place: 16.63%
+
+5th Place: 18%
+
+6th Place: 15.13%
+
+7th Place: 10.9%
+
+8th Place: 5.98%
+
+4th8th
+
+BG30_MagicItem_7073
+Tickatus Sticker
+Discover a Tier 3 Darkmoon Prize. At the start of every three turns, repeat this. (3 turns left!)
+23.6%
+4.47
+1st Place: 15.32%
+
+2nd Place: 11.18%
+
+3rd Place: 11.11%
+
+4th Place: 11.37%
+
+5th Place: 12.54%
+
+6th Place: 13.17%
+
+7th Place: 13.52%
+8th Place: 11.79%
+
+4th8th
+
+BG35_MagicItem_8173
+Lens Case
+Get a Duplicating Lens. At the start of every 2 turns, repeat this. (2 turns left!)
+27.2%
+4.47
+1st Place: 12.9%
+
+2nd Place: 13.31%
+
+3rd Place: 11.74%
+
+4th Place: 12.36%
+
+5th Place: 12.05%
+
+6th Place: 12.45%
+7th Place: 13.26%
+
+8th Place: 11.93%
+
+4th8th
+
+
+BG30_MagicItem_5440
+Nomi Sticker
+After you play an Elemental, give Elementals in the Tavern +2/+2 this game.
+40.6%
+4.49
+1st Place: 9.22%
+
+2nd Place: 11.94%
+
+3rd Place: 14.65%
+
+4th Place: 14.44%
+
+5th Place: 14.73%
+
+6th Place: 13.68%
+
+7th Place: 12.3%
+
+8th Place: 9.03%
+
+4th8th
+
+BG35_MagicItem_9210
+Cowrie Necklace
+Tavern spells that give stats cost (2) less.
+10.8%
+4.49
+1st Place: 10.58%
+
+2nd Place: 12.12%
+
+3rd Place: 13.42%
+
+4th Place: 14.2%
+
+5th Place: 13.46%
+6th Place: 13.46%
+
+7th Place: 12.81%
+
+8th Place: 9.95%
+
+4th8th
+
+
+BG32_MagicItem_9511
+Gold Pendant
+Make a random friendly minion from Tier 4 or below Golden. At the start of each turn, repeat this.
+25.1%
+4.50
+1st Place: 14.27%
+
+2nd Place: 11.6%
+
+3rd Place: 11.38%
+
+4th Place: 11.96%
+
+5th Place: 12.39%
+
+6th Place: 12.66%
+
+7th Place: 13.01%
+
+8th Place: 12.74%
+
+4th8th
+
+
+BG30_MagicItem_7066
+Reflective Pendant
+Get a plain copy of a random friendly minion. At the start of each turn, repeat this.
+24.3%
+4.51
+1st Place: 16.26%
+
+2nd Place: 11.53%
+
+3rd Place: 10.4%
+
+4th Place: 10.75%
+
+5th Place: 11.25%
+
+6th Place: 11.91%
+
+7th Place: 13.85%
+
+8th Place: 14.06%
+
+4th8th
+
+
+BG30_MagicItem_7000
+Deathly Phylactery
+Discover a Deathrattle minion. Your first Deathrattle each combat triggers an extra time.
+27.7%
+4.51
+1st Place: 11.91%
+
+2nd Place: 11.22%
+
+3rd Place: 12.56%
+
+4th Place: 13.08%
+
+5th Place: 14.24%
+
+6th Place: 13.74%
+
+7th Place: 13.18%
+
+8th Place: 10.07%
+
+4th8th
+
+
+BG30_MagicItem_4301
+Rockin' Music Box
+Get a random Battlecry minion. At the start of each turn, get another.
+16.0%
+4.51
+1st Place: 13.33%
+
+2nd Place: 12.3%
+
+3rd Place: 11.61%
+4th Place: 11.98%
+
+5th Place: 12.43%
+
+6th Place: 12.71%
+
+7th Place: 13.17%
+
+8th Place: 12.46%
+
+4th8th
+
+
+BG36_MagicItem_3070
+Wand of Divination
+After you cast 3 spells on minions, gain 1 Gold. (3 left!)
+21.9%
+4.51
+1st Place: 13.43%
+
+2nd Place: 11.82%
+
+3rd Place: 11.66%
+
+4th Place: 12%
+
+5th Place: 12.74%
+
+6th Place: 13.06%
+
+7th Place: 13.32%
+
+8th Place: 11.97%
+
+4th8th
+
+BG30_MagicItem_8471
+Goblin Wallet
+At the end of each turn, increase your maximum Gold by 1.
+42.9%
+4.52
+1st Place: 17.83%
+
+2nd Place: 10.14%
+
+3rd Place: 9.7%
+
+4th Place: 9.96%
+
+5th Place: 10.79%
+
+6th Place: 13.41%
+
+7th Place: 14.46%
+
+8th Place: 13.71%
+
+4th8th
+
+
+BG35_MagicItem_8725
+Ophidian Staff
+Spellcraft: Give a Beast +2/+2 and Reborn.
+21.1%
+4.53
+1st Place: 9.42%
+
+2nd Place: 11.77%
+
+3rd Place: 13.84%
+
+4th Place: 14.06%
+
+5th Place: 14.6%
+
+6th Place: 13.87%
+
+7th Place: 13.13%
+
+8th Place: 9.3%
+
+4th8th
+
+
+BG36_MagicItem_3032
+Glass of Perspective
+Get a random Choose One card. At the start of each turn, get another.
+21.0%
+4.54
+1st Place: 14.58%
+
+2nd Place: 11.4%
+
+3rd Place: 10.69%
+
+4th Place: 11.55%
+
+5th Place: 12.41%
+
+6th Place: 12.68%
+
+7th Place: 13.74%
+
+8th Place: 12.96%
+
+4th8th
+
+BG35_MagicItem_8211
+Kaleidoscope
+Discover a Tier 7 minion. Lock it in your hand for 2 |4 (turn, turns).
+32.8%
+4.54
+1st Place: 12.82%
+
+2nd Place: 11.87%
+
+3rd Place: 11.91%
+
+4th Place: 12.01%
+
+5th Place: 12.58%
+
+6th Place: 13.31%
+
+7th Place: 13.24%
+
+8th Place: 12.26%
+
+4th8th
+
+
+BG30_MagicItem_8411
+Glowing Gauntlet
+Minions in the Tavern have +3/+3. The Tavern always has 7 cards.
+21.0%
+4.55
+1st Place: 9.53%
+
+2nd Place: 10.77%
+
+3rd Place: 13.8%
+
+4th Place: 14.9%
+
+5th Place: 14.93%
+
+6th Place: 13.51%
+
+7th Place: 13.39%
+
+8th Place: 9.17%
+
+4th8th
+
+
+BG30_MagicItem_8880
+Souvenir Stand
+When you buy a Greater Trinket, this transforms into a copy of it.
+41.3%
+4.55
+1st Place: 14.26%
+
+2nd Place: 11.4%
+
+3rd Place: 11.26%
+
+4th Place: 11.23%
+
+5th Place: 11.89%
+
+6th Place: 12.9%
+
+7th Place: 14.19%
+
+8th Place: 12.87%
+
+4th8th
+
+BG35_MagicItem_9312
+Transcribing Typewriter
+Get an extra copy of the next 2 minions you buy. (2 left!)
+21.4%
+4.55
+1st Place: 12.83%
+
+2nd Place: 11.89%
+
+3rd Place: 11.61%
+
+4th Place: 12.06%
+
+5th Place: 12.74%
+
+6th Place: 12.98%
+
+7th Place: 13.44%
+
+8th Place: 12.45%
+
+4th8th
+
+
+BG30_MagicItem_4231
+Innkeeper's Stein
+The Tavern offers an extra minion of a higher Tier whenever it is Refreshed.
+29.3%
+4.55
+1st Place: 15.19%
+
+2nd Place: 11.45%
+
+3rd Place: 10.59%
+
+4th Place: 10.73%
+
+5th Place: 11.68%
+
+6th Place: 12.61%
+7th Place: 13.95%
+
+8th Place: 13.81%
+
+4th8th
+
+
+BG32_MagicItem_8170
+Rendle Sticker
+Steal the highest-Tier card from the Tavern. At the end of each turn, repeat this.
+17.9%
+4.55
+1st Place: 12.75%
+
+2nd Place: 11.49%
+
+3rd Place: 12%
+
+4th Place: 11.96%
+
+5th Place: 12.85%
+
+6th Place: 13.35%
+
+7th Place: 13.56%
+
+8th Place: 12.04%
+
+4th8th
+
+BG30_MagicItem_4350
+Goldenizer Supply
+At the end of every 3 turns, get a Goldenizer. (3 turns left!)3At the end of every 3 turns, get a Goldenizer. (End of this turn!)
+36.6%
+4.55
+1st Place: 17.22%
+
+2nd Place: 10.45%
+
+3rd Place: 9.4%
+
+4th Place: 9.62%
+
+5th Place: 11.43%
+
+6th Place: 13.34%
+
+7th Place: 15.09%
+
+8th Place: 13.45%
+
+4th8th
+
+BG35_MagicItem_8906
+Sunken Anchor
+Get 2 random Bounties. At the start of each turn, repeat this.
+13.5%
+4.56
+1st Place: 10.91%
+
+2nd Place: 11.61%
+
+3rd Place: 12.39%
+
+4th Place: 13.05%
+
+5th Place: 14.4%
+
+6th Place: 13.71%
+
+7th Place: 13.31%
+
+8th Place: 10.62%
+
+4th8th
+
+
+BG32_MagicItem_2782
+Reusable Batteries
+The first time you buy a minion each turn, get a Magnetic Satellite with its stats.
+17.6%
+4.56
+1st Place: 7.45%
+
+2nd Place: 12.14%
+
+3rd Place: 14.67%
+
+4th Place: 15.28%
+
+5th Place: 14.52%
+
+6th Place: 14.03%
+
+7th Place: 12.92%
+
+8th Place: 8.99%
+
+4th8th
+
+BG30_MagicItem_4162
+Token of the Old Gods
+Spellcraft: Choose a minion. Then choose a minion from a Tier higher to transform it into.
+25.8%
+4.57
+1st Place: 13.8%
+
+2nd Place: 11.8%
+
+3rd Place: 11.23%
+
+4th Place: 11.49%
+
+5th Place: 11.81%
+
+6th Place: 12.3%
+
+7th Place: 13.74%
+
+8th Place: 13.84%
+
+4th8th
+
+
+BG30_MagicItem_4262
+Colorful CompassDemon
+Get a random 92. At the start of each turn, get another.
+38.3%
+4.57
+1st Place: 9.38%
+
+2nd Place: 11.57%
+
+3rd Place: 13.27%
+
+4th Place: 15.42%
+
+5th Place: 14.61%
+
+6th Place: 11.8%
+
+7th Place: 12.24%
+
+8th Place: 11.71%
+
+4th8th
+
+
+BG30_MagicItem_9980
+Bob-blehead
+Gain 2 Gold. The Tavern no longer offers cards from Tier 1 or Tier 2.
+21.8%
+4.57
+1st Place: 13.3%
+
+2nd Place: 11.51%
+
+3rd Place: 10.76%
+
+4th Place: 12.07%
+
+5th Place: 12.2%
+
+6th Place: 13.93%
+
+7th Place: 14.1%
+
+8th Place: 12.13%
+
+4th8th
+
+
+BG32_MagicItem_1702
+Spell-powered Wrench
+After you play a Magnetic minion, cast Repair Job on a random friendly Mech.
+20.4%
+4.59
+1st Place: 6.45%
+
+2nd Place: 12.05%
+
+3rd Place: 14.23%
+
+4th Place: 16.18%
+
+5th Place: 14.58%
+
+6th Place: 15.68%
+
+7th Place: 12.85%
+
+8th Place: 7.98%
+
+4th8th
+
+BG30_MagicItem_4343
+Replica Cathedral
+Your first spell each turn casts an extra time.
+12.3%
+4.59
+1st Place: 13.44%
+
+2nd Place: 11.56%
+
+3rd Place: 10.83%
+
+4th Place: 11.51%
+
+5th Place: 12.52%
+
+6th Place: 13.18%
+
+7th Place: 13.53%
+
+8th Place: 13.43%
+
+4th8th
+
+
+BG36_MagicItem_3012
+Lockbox Portrait
+Get a Lockbox. If you already have one, it opens 2 turns sooner instead. At the start of each turn, repeat this.
+32.6%
+4.59
+1st Place: 14.95%
+
+2nd Place: 10.9%
+
+3rd Place: 10.49%
+
+4th Place: 11.03%
+
+5th Place: 11.48%
+
+6th Place: 12.67%
+
+7th Place: 14.43%
+
+8th Place: 14.05%
+
+4th8th
+
+BG32_MagicItem_3002
+Putricide Sticker
+Craft a custom Undead. At the start of every 2 turns, repeat this. (2 turns left!)
+23.6%
+4.60
+1st Place: 8.05%
+
+2nd Place: 11.51%
+
+3rd Place: 14.4%
+
+4th Place: 14.03%
+
+5th Place: 15.1%
+
+6th Place: 14.3%
+
+7th Place: 12.9%
+
+8th Place: 9.71%
+
+4th8th
+
+BG30_MagicItem_8683
+Rewinder Portrait
+Get a Soul Rewinder and a Wrath Weaver. Your Soul Rewinders also gain Attack.
+25.3%
+4.60
+1st Place: 4.96%
+
+2nd Place: 10.47%
+
+3rd Place: 14.78%
+
+4th Place: 18.48%
+
+5th Place: 17.76%
+
+6th Place: 14.55%
+
+7th Place: 12.04%
+
+8th Place: 6.97%
+
+4th8th
+
+
+BG30_MagicItem_7052
+Bartend-o-Tron's Oilcan
+Reduce the Cost of upgrading the Tavern by (3). At the start of each turn, repeat this.
+31.7%
+4.61
+1st Place: 12.61%
+
+2nd Place: 11.85%
+
+3rd Place: 11.12%
+
+4th Place: 11.55%
+
+5th Place: 12.62%
+
+6th Place: 13.08%
+
+7th Place: 14.06%
+
+8th Place: 13.12%
+
+4th8th
+
+BG32_MagicItem_8212
+Pilgrimp Sticker
+One Demon each turn costs Health instead of Gold to buy. (1 left!)
+23.3%
+4.61
+1st Place: 9.33%
+
+2nd Place: 11.37%
+
+3rd Place: 13.13%
+
+4th Place: 14.97%
+
+5th Place: 13.6%
+
+6th Place: 13.32%
+
+7th Place: 12.62%
+8th Place: 11.66%
+
+4th8th
+
+
+BG32_MagicItem_9573
+Grifter Portrait
+Get a Doubloon Grifter. The first Pirate you buy each turn is free.
+43.2%
+4.61
+1st Place: 18.42%
+
+2nd Place: 10.06%
+
+3rd Place: 7.98%
+
+4th Place: 9.05%
+
+5th Place: 10.75%
+
+6th Place: 13.03%
+
+7th Place: 15.5%
+
+8th Place: 15.2%
+
+4th8th
+
+
+BG30_MagicItem_8212
+Fish Portrait
+Get a Fish of N'Zoth.
+21.0%
+4.61
+1st Place: 9.43%
+
+2nd Place: 11.33%
+
+3rd Place: 13.14%
+
+4th Place: 13.4%
+
+5th Place: 14.3%
+
+6th Place: 14.45%
+7th Place: 13.59%
+
+8th Place: 10.34%
+
+4th8th
+
+
+BG35_MagicItem_8231
+Timeworn Candelabra
+Discover a 2-Cost minion from the Minor Timewarp.
+33.3%
+4.63
+1st Place: 12.11%
+
+2nd Place: 11.07%
+
+3rd Place: 11.22%
+
+4th Place: 12.37%
+
+5th Place: 12.98%
+
+6th Place: 13.68%
+
+7th Place: 13.75%
+
+8th Place: 12.82%
+
+4th8th
+
+BG30_MagicItem_9945
+Yogg-Tastic Pastry
+Spin the Wheel of Yogg-Saron. At the start of each turn, spin it again.
+9.8%
+4.63
+1st Place: 11.35%
+
+2nd Place: 11.09%
+
+3rd Place: 11.29%
+
+4th Place: 12.86%
+
+5th Place: 14.15%
+
+6th Place: 13.43%
+7th Place: 13.46%
+
+8th Place: 12.37%
+
+4th8th
+
+BG30_MagicItem_4262
+Colorful CompassBeast
+Get a random 92. At the start of each turn, get another.
+25.6%
+4.64
+1st Place: 11.35%
+
+2nd Place: 9.32%
+
+3rd Place: 10.88%
+
+4th Place: 13.14%
+
+5th Place: 14.92%
+
+6th Place: 17.33%
+
+7th Place: 14.03%
+
+8th Place: 9.04%
+
+4th8th
+
+
+BG32_MagicItem_8220
+Bazaar Sticker
+One Tavern spell each turn costs Health instead of Gold to buy. (1 left!)
+17.5%
+4.65
+1st Place: 10.29%
+
+2nd Place: 9.18%
+
+3rd Place: 13.41%
+
+4th Place: 13.75%
+
+5th Place: 14.56%
+
+6th Place: 14.13%
+
+7th Place: 14.05%
+
+8th Place: 10.63%
+
+4th8th
+
+
+BG35_MagicItem_4340
+Jewelry Box
+Get a Blood Gem that gives a Quilboar Taunt, Divine Shield, or Reborn. At the start of each turn, repeat this.
+21.8%
+4.66
+1st Place: 12.68%
+
+2nd Place: 10.96%
+
+3rd Place: 10.56%
+
+4th Place: 11.02%
+
+5th Place: 13.22%
+
+6th Place: 14.7%
+
+7th Place: 14.04%
+
+8th Place: 12.83%
+
+4th8th
+
+
+BG32_MagicItem_4000
+Shrine of Evolution
+Transform all your minions into random Tier 4 minions.
+25.8%
+4.66
+1st Place: 10.57%
+
+2nd Place: 10.57%
+
+3rd Place: 11%
+
+4th Place: 12.57%
+
+5th Place: 14.86%
+
+6th Place: 15.43%
+
+7th Place: 16.14%
+
+8th Place: 8.86%
+
+4th8th
+
+
+BG30_MagicItem_9880
+Great Boar Sticker
+Get 3 Blood Gems. Your Blood Gems give an extra +2/+1.
+13.5%
+4.67
+1st Place: 8.64%
+
+2nd Place: 9.33%
+
+3rd Place: 12.67%
+
+4th Place: 15.41%
+
+5th Place: 16%
+
+6th Place: 14.87%
+
+7th Place: 13.94%
+
+8th Place: 9.13%
+
+4th8th
+
+
+BG30_MagicItem_9731
+Minion Bait
+The Tavern offers 2 extra 92 whenever it is Refreshed.
+35.4%
+4.67
+1st Place: 11.67%
+
+2nd Place: 11.16%
+
+3rd Place: 11.2%
+
+4th Place: 11.81%
+
+5th Place: 12.93%
+
+6th Place: 13.8%
+
+7th Place: 14.27%
+
+8th Place: 13.16%
+
+4th8th
+
+BG36_MagicItem_2011
+Lionfish Portrait
+Get a Lurking Lionfish. Whenever a friendly Beast attacks, give it +2/+2.
+19.8%
+4.67
+1st Place: 7.94%
+
+2nd Place: 8.61%
+
+3rd Place: 12.06%
+
+4th Place: 15.94%
+
+5th Place: 18.6%
+
+6th Place: 16.3%
+
+7th Place: 12.9%
+
+8th Place: 7.66%
+
+4th8th
+
+BG36_MagicItem_8111
+Defensive Shell
+The first minion you play each turn gains Divine Shield.
+7.3%
+4.68
+1st Place: 9.93%
+
+2nd Place: 11.23%
+
+3rd Place: 12.21%
+
+4th Place: 12.61%
+
+5th Place: 13.59%
+
+6th Place: 14.4%
+
+7th Place: 13.95%
+
+8th Place: 12.07%
+
+4th8th
+
+BG30_MagicItem_4262
+Colorful CompassPirate
+Get a random 92. At the start of each turn, get another.
+20.2%
+4.69
+1st Place: 14.9%
+
+2nd Place: 9.58%
+
+3rd Place: 10.98%
+
+4th Place: 9.84%
+
+5th Place: 11.27%
+
+6th Place: 12.81%
+
+7th Place: 15.16%
+
+8th Place: 15.46%
+
+4th8th
+
+
+BG30_MagicItem_4110
+Hoggy Bank
+Start of Combat: Give your Quilboar "Deathrattle: Get 2 Blood Gems."
+23.0%
+4.73
+1st Place: 10.02%
+
+2nd Place: 10.56%
+
+3rd Place: 11.59%
+
+4th Place: 12.38%
+
+5th Place: 14.46%
+
+6th Place: 13.61%
+
+7th Place: 15.17%
+
+8th Place: 12.21%
+
+4th8th
+
+
+BG30_MagicItem_9311
+Lucky Tabby
+After 7 friendly minions die, get a random Beast. (7 left!)
+19.1%
+4.75
+1st Place: 9.71%
+
+2nd Place: 9.98%
+
+3rd Place: 11.4%
+
+4th Place: 13.06%
+
+5th Place: 14.18%
+
+6th Place: 15.33%
+
+7th Place: 14.95%
+8th Place: 11.4%
+
+4th8th
+
+
+BG36_MagicItem_3000
+Frigid Blossom
+After you Refresh, reduce the cost of upgrading the Tavern by (1).
+18.4%
+4.77
+1st Place: 12.64%
+
+2nd Place: 10.32%
+
+3rd Place: 9.55%
+
+4th Place: 11.15%
+
+5th Place: 12.18%
+
+6th Place: 13.83%
+
+7th Place: 15.85%
+
+8th Place: 14.48%
+
+4th8th
+
+BG36_MagicItem_2001
+Herding Horn
+Whenever a friendly Rally minion attacks, gain a free Refresh.
+18.5%
+4.81
+1st Place: 11.8%
+
+2nd Place: 8.61%
+
+3rd Place: 9.55%
+
+4th Place: 11.61%
+
+5th Place: 13.39%
+
+6th Place: 17.51%
+
+7th Place: 15.26%
+
+8th Place: 12.27%
+
+4th8th
+
+
+BG30_MagicItem_4100
+Quilligraphy Set
+Avenge (3): Your Blood Gems give an extra +1 Health this game.
+18.3%
+4.89
+1st Place: 8.45%
+
+2nd Place: 10.93%
+
+3rd Place: 10.35%
+
+4th Place: 12.25%
+
+5th Place: 13.93%
+
+6th Place: 14.7%
+
+7th Place: 14.88%
+
+8th Place: 14.52%
+
+4th8th
+
+
+BG30_MagicItem_4262
+Colorful CompassQuilboar
+Get a random 92. At the start of each turn, get another.
+30.7%
+4.92
+1st Place: 9.89%
+
+2nd Place: 10.3%
+
+3rd Place: 10.15%
+
+4th Place: 9.99%
+
+5th Place: 12.57%
+
+6th Place: 15.51%
+
+7th Place: 17.52%
+
+8th Place: 14.06%
+
+4th8th
+
+
+BG35_MagicItem_1521
+Demonic Tapestry
+After you Refresh 4 times, the highest-Tier minion in the Tavern costs Health instead of Gold to buy. (4 left!)
+18.3%
+4.94
+1st Place: 8.3%
+
+2nd Place: 9.48%
+
+3rd Place: 10.66%
+
+4th Place: 12.87%
+
+5th Place: 13.43%
+
+6th Place: 15.36%
+
+7th Place: 14.95%
+
+8th Place: 14.95%
+
+4th8th

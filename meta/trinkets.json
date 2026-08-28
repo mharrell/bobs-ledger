@@ -1,0 +1,2180 @@
+[
+  {
+    "id": "BG36_MagicItem_3022",
+    "name": "Gold Mallet",
+    "description": "At the end of your turn, give your minions +2/+1. (Improved by Golden minions you've played this game!)",
+    "pick_rate": 48.5,
+    "avg_placement": 3.59,
+    "placement_distribution": {
+      "1": 16.65,
+      "2": 16.42,
+      "3": 18.56,
+      "4": 17.24,
+      "5": 12.52,
+      "6": 10.29,
+      "7": 5.72,
+      "8": 2.6
+    },
+    "guide": "+4/2 a turn is decent on turn 6, +6/3 is amazing. Use tempo to comfortably level to 5."
+  },
+  {
+    "id": "BG32_MagicItem_8940",
+    "name": "Blessing Portrait",
+    "description": "Get a Natural Blessing. At the start of each turn, get another. Your Natural Blessings also affect minions in hand.",
+    "pick_rate": 27.7,
+    "avg_placement": 3.61,
+    "placement_distribution": {
+      "1": 12.19,
+      "2": 21.31,
+      "3": 21.13,
+      "4": 14.99,
+      "5": 12.29,
+      "6": 8.91,
+      "7": 5.62,
+      "8": 3.56
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_3003",
+    "name": "Copper Coil",
+    "description": "Whenever you Magnetize a minion, give it +1/+1 and improve this.",
+    "pick_rate": 50.6,
+    "avg_placement": 3.62,
+    "placement_distribution": {
+      "1": 30.42,
+      "2": 13.91,
+      "3": 9.78,
+      "4": 9.25,
+      "5": 9.17,
+      "6": 9.18,
+      "7": 9.62,
+      "8": 8.67
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_3016",
+    "name": "Eternal Portrait",
+    "description": "Get an Eternal Knight. Start of Combat: Give your Eternal Knights Taunt and Reborn.",
+    "pick_rate": 24.9,
+    "avg_placement": 3.66,
+    "placement_distribution": {
+      "1": 12.02,
+      "2": 20.06,
+      "3": 19.37,
+      "4": 17.5,
+      "5": 12.36,
+      "6": 9.67,
+      "7": 5.92,
+      "8": 3.1
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassMurloc",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 35.4,
+    "avg_placement": 3.72,
+    "placement_distribution": {
+      "1": 15.9,
+      "2": 20.64,
+      "3": 16.9,
+      "4": 12.34,
+      "5": 11.16,
+      "6": 8.6,
+      "7": 8.54,
+      "8": 5.92
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_3055",
+    "name": "Conch Portrait",
+    "description": "Get a Cloning Conch. At the start of every 2 turns, repeat this. (2 turns left!)",
+    "pick_rate": 37.1,
+    "avg_placement": 3.75,
+    "placement_distribution": {
+      "1": 15.93,
+      "2": 19.95,
+      "3": 16.27,
+      "4": 13.36,
+      "5": 10.62,
+      "6": 9.44,
+      "7": 8.55,
+      "8": 5.88
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_8202",
+    "name": "Flighty Portrait",
+    "description": "Get a Flighty Scout. After you cast a Tavern spell, give Flighty Scouts in your hand and warband +3/+3.",
+    "pick_rate": 28.7,
+    "avg_placement": 3.81,
+    "placement_distribution": {
+      "1": 9.98,
+      "2": 19.1,
+      "3": 19.87,
+      "4": 17.11,
+      "5": 13.54,
+      "6": 9.56,
+      "7": 6.89,
+      "8": 3.95
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_9303",
+    "name": "Archaic Scroll",
+    "description": "After you cast 7 spells, get a random Naga. (7 left!)",
+    "pick_rate": 29.8,
+    "avg_placement": 3.86,
+    "placement_distribution": {
+      "1": 21.3,
+      "2": 16.73,
+      "3": 12.48,
+      "4": 11.13,
+      "5": 9.92,
+      "6": 9.24,
+      "7": 9.53,
+      "8": 9.67
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9171",
+    "name": "Rusty Trident",
+    "description": "Start of Combat: Give your Naga \"Deathrattle: Get a random Spellcraft spell.\"",
+    "pick_rate": 26.0,
+    "avg_placement": 3.91,
+    "placement_distribution": {
+      "1": 14.16,
+      "2": 17.91,
+      "3": 17.14,
+      "4": 13.79,
+      "5": 11.08,
+      "6": 9.69,
+      "7": 9.07,
+      "8": 7.15
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9141",
+    "name": "Nerglish Phrasebook",
+    "description": "After you play a minion, give the left-most minion in your hand +3/+3.",
+    "pick_rate": 26.6,
+    "avg_placement": 3.91,
+    "placement_distribution": {
+      "1": 9.59,
+      "2": 18.55,
+      "3": 18.96,
+      "4": 16.87,
+      "5": 13.55,
+      "6": 10.35,
+      "7": 7.06,
+      "8": 5.06
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_3050",
+    "name": "Rune of Transmutation",
+    "description": "After you cast 15 spells, replace this with a random Greater Naga Trinket. (15 left!)",
+    "pick_rate": 49.8,
+    "avg_placement": 3.95,
+    "placement_distribution": {
+      "1": 14.67,
+      "2": 17.4,
+      "3": 15.99,
+      "4": 13.78,
+      "5": 11.42,
+      "6": 9.63,
+      "7": 9.45,
+      "8": 7.68
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_9312",
+    "name": "Azsharan Statuette",
+    "description": "Get 3 random Spellcraft spells. At the start of each turn, get 3 more.",
+    "pick_rate": 20.5,
+    "avg_placement": 4.0,
+    "placement_distribution": {
+      "1": 16.0,
+      "2": 16.03,
+      "3": 14.4,
+      "4": 13.35,
+      "5": 11.68,
+      "6": 10.77,
+      "7": 9.79,
+      "8": 7.96
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassUndead",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 30.5,
+    "avg_placement": 4.0,
+    "placement_distribution": {
+      "1": 14.17,
+      "2": 16.3,
+      "3": 15.48,
+      "4": 13.83,
+      "5": 12.95,
+      "6": 10.77,
+      "7": 9.51,
+      "8": 6.99
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_8932",
+    "name": "Bluegill Flippers",
+    "description": "Whenever you cast a Tavern spell, give the left-most minion in your hand and warband +3/+3.",
+    "pick_rate": 20.6,
+    "avg_placement": 4.01,
+    "placement_distribution": {
+      "1": 8.36,
+      "2": 16.72,
+      "3": 18.52,
+      "4": 18.98,
+      "5": 13.67,
+      "6": 10.79,
+      "7": 8.61,
+      "8": 4.35
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2022",
+    "name": "Warcry Totem",
+    "description": "The first two Battlecry minions you buy each turn are free. (2 left!)",
+    "pick_rate": 21.0,
+    "avg_placement": 4.03,
+    "placement_distribution": {
+      "1": 19.74,
+      "2": 14.94,
+      "3": 12.32,
+      "4": 11.1,
+      "5": 10.33,
+      "6": 10.72,
+      "7": 10.96,
+      "8": 9.89
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassElemental",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 46.1,
+    "avg_placement": 4.03,
+    "placement_distribution": {
+      "1": 18.94,
+      "2": 14.76,
+      "3": 11.96,
+      "4": 12.28,
+      "5": 10.85,
+      "6": 11.91,
+      "7": 10.34,
+      "8": 8.96
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9243",
+    "name": "Booty Bay Brew",
+    "description": "Whenever you spend Gold, give two friendly Pirates +3/+3.",
+    "pick_rate": 17.7,
+    "avg_placement": 4.03,
+    "placement_distribution": {
+      "1": 11.63,
+      "2": 13.95,
+      "3": 17.21,
+      "4": 16.67,
+      "5": 15.64,
+      "6": 11.47,
+      "7": 9.16,
+      "8": 4.27
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassMech",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 37.7,
+    "avg_placement": 4.03,
+    "placement_distribution": {
+      "1": 13.28,
+      "2": 14.81,
+      "3": 17.46,
+      "4": 14.34,
+      "5": 12.88,
+      "6": 10.99,
+      "7": 9.56,
+      "8": 6.67
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2060",
+    "name": "Ominous Stone",
+    "description": "Discover a Tier 4 minion of your most common type with a Dark Gift.",
+    "pick_rate": 50.8,
+    "avg_placement": 4.04,
+    "placement_distribution": {
+      "1": 15.57,
+      "2": 14.84,
+      "3": 14.39,
+      "4": 13.6,
+      "5": 12.74,
+      "6": 11.74,
+      "7": 9.8,
+      "8": 7.32
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4222",
+    "name": "Lorewalker Scroll",
+    "description": "Whenever you cast a spell on a minion, give it +4/+4.",
+    "pick_rate": 27.9,
+    "avg_placement": 4.06,
+    "placement_distribution": {
+      "1": 9.65,
+      "2": 15.22,
+      "3": 18.0,
+      "4": 17.04,
+      "5": 15.29,
+      "6": 11.4,
+      "7": 8.59,
+      "8": 4.82
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9001",
+    "name": "Dragonwing Glider",
+    "description": "Whenever you play a card, give a friendly Dragon +4/+4.",
+    "pick_rate": 18.8,
+    "avg_placement": 4.07,
+    "placement_distribution": {
+      "1": 8.25,
+      "2": 15.22,
+      "3": 17.16,
+      "4": 19.9,
+      "5": 15.56,
+      "6": 11.97,
+      "7": 8.32,
+      "8": 3.63
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_3014",
+    "name": "Scraper Sticker",
+    "description": "Get a random Magnetic Mech. At the start of each turn, get another.",
+    "pick_rate": 39.0,
+    "avg_placement": 4.09,
+    "placement_distribution": {
+      "1": 13.47,
+      "2": 14.99,
+      "3": 15.29,
+      "4": 14.77,
+      "5": 12.6,
+      "6": 11.83,
+      "7": 9.74,
+      "8": 7.32
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_3604",
+    "name": "Baleful Incense",
+    "description": "Start of Combat: Give your left and right-most Undead Reborn.",
+    "pick_rate": 17.1,
+    "avg_placement": 4.09,
+    "placement_distribution": {
+      "1": 7.86,
+      "2": 15.99,
+      "3": 19.48,
+      "4": 16.85,
+      "5": 14.85,
+      "6": 11.04,
+      "7": 8.58,
+      "8": 5.36
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_2761",
+    "name": "Enigmatic Headstone",
+    "description": "At the end of each turn, your Undead have +2 Attack this game (wherever they are).",
+    "pick_rate": 18.9,
+    "avg_placement": 4.1,
+    "placement_distribution": {
+      "1": 8.28,
+      "2": 14.8,
+      "3": 18.86,
+      "4": 16.81,
+      "5": 15.7,
+      "6": 13.49,
+      "7": 8.08,
+      "8": 3.98
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_8315",
+    "name": "Sellemental Portrait",
+    "description": "Get a Sellemental. At the start of each turn, get another.",
+    "pick_rate": 33.4,
+    "avg_placement": 4.1,
+    "placement_distribution": {
+      "1": 20.39,
+      "2": 14.33,
+      "3": 11.06,
+      "4": 10.91,
+      "5": 10.2,
+      "6": 10.1,
+      "7": 11.83,
+      "8": 11.19
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassNaga",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 29.6,
+    "avg_placement": 4.12,
+    "placement_distribution": {
+      "1": 14.21,
+      "2": 16.23,
+      "3": 14.44,
+      "4": 13.24,
+      "5": 11.25,
+      "6": 11.03,
+      "7": 10.68,
+      "8": 8.92
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8402",
+    "name": "Chromatic Tear",
+    "description": "Get a random Chromadrake. At the start of each turn, repeat this.",
+    "pick_rate": 22.2,
+    "avg_placement": 4.12,
+    "placement_distribution": {
+      "1": 13.52,
+      "2": 15.45,
+      "3": 15.23,
+      "4": 13.96,
+      "5": 11.9,
+      "6": 11.3,
+      "7": 10.6,
+      "8": 8.04
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2033",
+    "name": "Dragon Skull",
+    "description": "Whenever you trigger a Battlecry, give your left- and right-most minions +5/+5.",
+    "pick_rate": 10.1,
+    "avg_placement": 4.12,
+    "placement_distribution": {
+      "1": 10.32,
+      "2": 15.85,
+      "3": 16.95,
+      "4": 15.54,
+      "5": 13.78,
+      "6": 11.12,
+      "7": 9.84,
+      "8": 6.6
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_9200",
+    "name": "Bubble Crown",
+    "description": "Once you cast 12 spells, your Tavern spells give an extra +4/+4. (12 left!)",
+    "pick_rate": 14.0,
+    "avg_placement": 4.13,
+    "placement_distribution": {
+      "1": 13.48,
+      "2": 15.68,
+      "3": 15.09,
+      "4": 13.29,
+      "5": 12.44,
+      "6": 11.16,
+      "7": 10.15,
+      "8": 8.7
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_3903",
+    "name": "Baller Portrait",
+    "description": "Get a Fire Baller or a Snow Baller. At the start of each turn, repeat this.",
+    "pick_rate": 24.6,
+    "avg_placement": 4.18,
+    "placement_distribution": {
+      "1": 15.36,
+      "2": 13.84,
+      "3": 14.01,
+      "4": 13.08,
+      "5": 11.9,
+      "6": 11.12,
+      "7": 11.25,
+      "8": 9.44
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_8600",
+    "name": "Beetle Band",
+    "description": "Avenge (5): Summon a 2/2 Beetle. Give it Taunt.",
+    "pick_rate": 17.6,
+    "avg_placement": 4.18,
+    "placement_distribution": {
+      "1": 14.73,
+      "2": 14.14,
+      "3": 13.24,
+      "4": 12.73,
+      "5": 13.48,
+      "6": 12.56,
+      "7": 10.86,
+      "8": 8.26
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_8102",
+    "name": "Inductive Gyroblade",
+    "description": "At the end of your turn, get a 4/4 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)",
+    "pick_rate": 25.4,
+    "avg_placement": 4.21,
+    "placement_distribution": {
+      "1": 9.4,
+      "2": 14.7,
+      "3": 16.88,
+      "4": 15.93,
+      "5": 14.03,
+      "6": 12.07,
+      "7": 10.29,
+      "8": 6.69
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_2710",
+    "name": "Ornate Clock",
+    "description": "Gain 2 Gold. Buy your Greater Trinket next turn instead of Turn 9.",
+    "pick_rate": 20.8,
+    "avg_placement": 4.21,
+    "placement_distribution": {
+      "1": 15.23,
+      "2": 13.37,
+      "3": 13.36,
+      "4": 13.31,
+      "5": 12.45,
+      "6": 11.51,
+      "7": 11.31,
+      "8": 9.46
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_3502",
+    "name": "Splinter of Aurum",
+    "description": "When you have 15 Gold, get a random Golden Tier 5 minion. (Once per game.)",
+    "pick_rate": 19.4,
+    "avg_placement": 4.22,
+    "placement_distribution": {
+      "1": 18.62,
+      "2": 13.65,
+      "3": 11.19,
+      "4": 11.05,
+      "5": 10.56,
+      "6": 10.85,
+      "7": 11.79,
+      "8": 12.3
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_7133",
+    "name": "Bleeding Heart",
+    "description": "After 8 friendly minions die, get a random Undead. (8 left!)",
+    "pick_rate": 24.2,
+    "avg_placement": 4.22,
+    "placement_distribution": {
+      "1": 13.49,
+      "2": 15.09,
+      "3": 13.91,
+      "4": 12.48,
+      "5": 11.84,
+      "6": 13.02,
+      "7": 11.49,
+      "8": 8.69
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8500",
+    "name": "Pocket Cyclone",
+    "description": "Cast Easterly Winds. At the start of each turn, cast it again.",
+    "pick_rate": 23.3,
+    "avg_placement": 4.24,
+    "placement_distribution": {
+      "1": 9.55,
+      "2": 13.7,
+      "3": 16.34,
+      "4": 16.37,
+      "5": 14.9,
+      "6": 12.45,
+      "7": 10.38,
+      "8": 6.32
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_4162",
+    "name": "War Drum",
+    "description": "One Battlecry each turn triggers two extra times. (1 left!)",
+    "pick_rate": 15.9,
+    "avg_placement": 4.25,
+    "placement_distribution": {
+      "1": 14.23,
+      "2": 14.01,
+      "3": 13.7,
+      "4": 12.94,
+      "5": 12.02,
+      "6": 11.85,
+      "7": 11.41,
+      "8": 9.83
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_8080",
+    "name": "Bloodbound Earrings",
+    "description": "After you cast 4 spells, this plays a Blood Gem on all your minions. (4 left!)",
+    "pick_rate": 31.4,
+    "avg_placement": 4.28,
+    "placement_distribution": {
+      "1": 12.41,
+      "2": 13.98,
+      "3": 14.09,
+      "4": 13.35,
+      "5": 13.8,
+      "6": 12.53,
+      "7": 11.35,
+      "8": 8.49
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4250",
+    "name": "Azeroth Model Globe",
+    "description": "At the start of every two turns, gain 2 Gold and Discover a Tier 6 minion. (2 turns left!)",
+    "pick_rate": 36.7,
+    "avg_placement": 4.29,
+    "placement_distribution": {
+      "1": 15.87,
+      "2": 12.95,
+      "3": 12.49,
+      "4": 11.98,
+      "5": 11.89,
+      "6": 12.23,
+      "7": 12.02,
+      "8": 10.57
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8511",
+    "name": "Water Wheel",
+    "description": "After you play an Elemental, get a random Tavern spell. (Twice per turn.)",
+    "pick_rate": 16.7,
+    "avg_placement": 4.3,
+    "placement_distribution": {
+      "1": 14.91,
+      "2": 12.93,
+      "3": 11.9,
+      "4": 13.19,
+      "5": 12.95,
+      "6": 12.33,
+      "7": 12.53,
+      "8": 9.27
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassDragon",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 26.5,
+    "avg_placement": 4.3,
+    "placement_distribution": {
+      "1": 11.27,
+      "2": 14.92,
+      "3": 13.46,
+      "4": 14.63,
+      "5": 12.91,
+      "6": 12.66,
+      "7": 11.78,
+      "8": 8.38
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9812",
+    "name": "The Eye of Dalaran",
+    "description": "Whenever a friendly minion with no type dies, get a random Tavern spell.",
+    "pick_rate": 4.6,
+    "avg_placement": 4.31,
+    "placement_distribution": {
+      "1": 17.28,
+      "2": 12.35,
+      "3": 9.88,
+      "4": 11.11,
+      "5": 11.11,
+      "6": 16.05,
+      "7": 14.81,
+      "8": 7.41
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4375",
+    "name": "Staff of the Scourge",
+    "description": "Avenge (5): Give a random friendly Undead Reborn.",
+    "pick_rate": 25.7,
+    "avg_placement": 4.32,
+    "placement_distribution": {
+      "1": 10.59,
+      "2": 14.6,
+      "3": 14.39,
+      "4": 14.66,
+      "5": 13.05,
+      "6": 12.36,
+      "7": 11.61,
+      "8": 8.74
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_3031",
+    "name": "Automaton Portrait",
+    "description": "Start of Combat: When you have space, summon an Ancestral Automaton.",
+    "pick_rate": 13.5,
+    "avg_placement": 4.32,
+    "placement_distribution": {
+      "1": 6.81,
+      "2": 13.35,
+      "3": 17.92,
+      "4": 16.52,
+      "5": 15.88,
+      "6": 13.61,
+      "7": 9.34,
+      "8": 6.58
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9622",
+    "name": "Training Certificate",
+    "description": "Start of Combat: Double the stats of your two lowest-Attack minions.",
+    "pick_rate": 12.1,
+    "avg_placement": 4.33,
+    "placement_distribution": {
+      "1": 13.98,
+      "2": 13.66,
+      "3": 12.12,
+      "4": 12.55,
+      "5": 12.94,
+      "6": 12.87,
+      "7": 12.15,
+      "8": 9.72
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_1503",
+    "name": "Cursed Crystal",
+    "description": "After the Tavern is Refreshed, give its minions +3/+3 this turn.",
+    "pick_rate": 17.5,
+    "avg_placement": 4.33,
+    "placement_distribution": {
+      "1": 7.29,
+      "2": 12.36,
+      "3": 18.6,
+      "4": 17.56,
+      "5": 15.09,
+      "6": 11.41,
+      "7": 10.84,
+      "8": 6.85
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8012",
+    "name": "Sous Chef Sticker",
+    "description": "You can use your Hero Power an extra time each turn. After you use your Hero Power, gain (1) Gold.",
+    "pick_rate": 42.0,
+    "avg_placement": 4.33,
+    "placement_distribution": {
+      "1": 14.59,
+      "2": 13.31,
+      "3": 12.16,
+      "4": 11.99,
+      "5": 13.13,
+      "6": 12.3,
+      "7": 12.25,
+      "8": 10.27
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9021",
+    "name": "Holy Mallet",
+    "description": "Start of Combat: Give your left and right-most minions Divine Shield.",
+    "pick_rate": 11.8,
+    "avg_placement": 4.34,
+    "placement_distribution": {
+      "1": 11.41,
+      "2": 13.48,
+      "3": 14.62,
+      "4": 13.63,
+      "5": 12.92,
+      "6": 13.74,
+      "7": 11.52,
+      "8": 8.68
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_7035",
+    "name": "Mystery Cube",
+    "description": "Choose from 2 new Lesser Trinkets to replace this for free. At the start of each turn, repeat this.",
+    "pick_rate": 30.1,
+    "avg_placement": 4.35,
+    "placement_distribution": {
+      "1": 16.23,
+      "2": 12.58,
+      "3": 11.5,
+      "4": 11.68,
+      "5": 11.37,
+      "6": 12.31,
+      "7": 12.59,
+      "8": 11.73
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_3064",
+    "name": "Jailer Sticker",
+    "description": "Spellcraft: Destroy a friendly Undead to get a random Undead.",
+    "pick_rate": 29.4,
+    "avg_placement": 4.35,
+    "placement_distribution": {
+      "1": 11.47,
+      "2": 13.65,
+      "3": 13.94,
+      "4": 13.81,
+      "5": 13.54,
+      "6": 12.99,
+      "7": 10.89,
+      "8": 9.71
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4201",
+    "name": "Book of Medivh",
+    "description": "Discover a Tavern spell. At the start of each turn, Discover another.",
+    "pick_rate": 18.8,
+    "avg_placement": 4.36,
+    "placement_distribution": {
+      "1": 14.82,
+      "2": 12.77,
+      "3": 11.95,
+      "4": 12.24,
+      "5": 12.63,
+      "6": 12.5,
+      "7": 12.3,
+      "8": 10.77
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2201",
+    "name": "Glowing Crystal",
+    "description": "At the start of your turn, gain 1 Gold for each different friendly minion type.",
+    "pick_rate": 14.0,
+    "avg_placement": 4.37,
+    "placement_distribution": {
+      "1": 16.77,
+      "2": 12.55,
+      "3": 11.6,
+      "4": 10.92,
+      "5": 10.88,
+      "6": 11.5,
+      "7": 12.86,
+      "8": 12.93
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8710",
+    "name": "Mama Bear Sticker",
+    "description": "Whenever you summon a Beast, give it +6/+6.",
+    "pick_rate": 13.4,
+    "avg_placement": 4.39,
+    "placement_distribution": {
+      "1": 7.19,
+      "2": 11.21,
+      "3": 15.27,
+      "4": 18.45,
+      "5": 17.72,
+      "6": 14.62,
+      "7": 10.68,
+      "8": 4.86
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_5473",
+    "name": "Comfy Coffin",
+    "description": "Whenever you cast a Tavern spell, your Undead have +1 Attack this game (wherever they are).",
+    "pick_rate": 17.6,
+    "avg_placement": 4.39,
+    "placement_distribution": {
+      "1": 7.55,
+      "2": 12.96,
+      "3": 16.33,
+      "4": 16.07,
+      "5": 15.05,
+      "6": 14.51,
+      "7": 9.99,
+      "8": 7.55
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_3616",
+    "name": "Portable Factory",
+    "description": "Discover a Tier 4 minion with a type. At the start of each turn, get another copy of it.",
+    "pick_rate": 14.2,
+    "avg_placement": 4.4,
+    "placement_distribution": {
+      "1": 14.86,
+      "2": 13.24,
+      "3": 12.3,
+      "4": 11.5,
+      "5": 11.2,
+      "6": 11.76,
+      "7": 12.13,
+      "8": 13.0
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8160",
+    "name": "Orb of the Unknown",
+    "description": "Get a random Lesser Trinket.",
+    "pick_rate": 16.5,
+    "avg_placement": 4.41,
+    "placement_distribution": {
+      "1": 14.94,
+      "2": 12.21,
+      "3": 11.69,
+      "4": 12.26,
+      "5": 12.0,
+      "6": 12.65,
+      "7": 12.49,
+      "8": 11.76
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_8002",
+    "name": "Demonic Bloodletter",
+    "description": "Whenever you cast a Tavern spell, give minions in the Tavern +1/+1 this game.",
+    "pick_rate": 37.4,
+    "avg_placement": 4.41,
+    "placement_distribution": {
+      "1": 11.13,
+      "2": 11.67,
+      "3": 14.98,
+      "4": 14.48,
+      "5": 14.04,
+      "6": 12.43,
+      "7": 11.35,
+      "8": 9.92
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_3020",
+    "name": "Stormcoil Sticker",
+    "description": "After 8 friendly minions die, get a random Mech. (8 left!)",
+    "pick_rate": 17.2,
+    "avg_placement": 4.42,
+    "placement_distribution": {
+      "1": 10.21,
+      "2": 13.34,
+      "3": 13.92,
+      "4": 14.37,
+      "5": 14.07,
+      "6": 12.19,
+      "7": 12.83,
+      "8": 9.07
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_8911",
+    "name": "Trip Vouchers",
+    "description": "In 2 turns, choose a Greater Trinket to buy and replace this. (2 turns left!)",
+    "pick_rate": 40.5,
+    "avg_placement": 4.43,
+    "placement_distribution": {
+      "1": 15.39,
+      "2": 11.94,
+      "3": 11.61,
+      "4": 11.57,
+      "5": 11.66,
+      "6": 12.65,
+      "7": 13.26,
+      "8": 11.92
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8180",
+    "name": "Mysterious Orb",
+    "description": "Gain 10 Gold. Your next Trinket is a Lesser Trinket.",
+    "pick_rate": 10.2,
+    "avg_placement": 4.43,
+    "placement_distribution": {
+      "1": 13.73,
+      "2": 13.06,
+      "3": 11.94,
+      "4": 12.56,
+      "5": 11.71,
+      "6": 12.68,
+      "7": 12.26,
+      "8": 12.05
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2110",
+    "name": "Lovely Locket",
+    "description": "After you cast a spell on a friendly minion, this casts it on another friendly minion.",
+    "pick_rate": 19.7,
+    "avg_placement": 4.43,
+    "placement_distribution": {
+      "1": 12.88,
+      "2": 12.24,
+      "3": 12.44,
+      "4": 13.61,
+      "5": 12.37,
+      "6": 13.29,
+      "7": 12.83,
+      "8": 10.34
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_4280",
+    "name": "Worn Treasure Map",
+    "description": "In two turns, gain 10 Gold. (Once per game.)",
+    "pick_rate": 23.4,
+    "avg_placement": 4.44,
+    "placement_distribution": {
+      "1": 14.43,
+      "2": 12.84,
+      "3": 11.42,
+      "4": 11.46,
+      "5": 12.38,
+      "6": 12.41,
+      "7": 13.02,
+      "8": 12.03
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2083",
+    "name": "Floating Candle Set",
+    "description": "Spellcraft: Trigger a friendly minion's Deathrattle.",
+    "pick_rate": 23.1,
+    "avg_placement": 4.45,
+    "placement_distribution": {
+      "1": 14.56,
+      "2": 11.64,
+      "3": 11.73,
+      "4": 12.0,
+      "5": 12.43,
+      "6": 13.31,
+      "7": 13.1,
+      "8": 11.23
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8152",
+    "name": "Magician's Top Hat",
+    "description": "Get two minions each from Tiers 1, 2, and 3.",
+    "pick_rate": 21.1,
+    "avg_placement": 4.45,
+    "placement_distribution": {
+      "1": 12.76,
+      "2": 12.04,
+      "3": 12.37,
+      "4": 13.54,
+      "5": 12.62,
+      "6": 13.16,
+      "7": 13.29,
+      "8": 10.22
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_8122",
+    "name": "Emergency Gearblade",
+    "description": "At the end of your turn, cast Repair Job on your left-most Mech.",
+    "pick_rate": 11.3,
+    "avg_placement": 4.46,
+    "placement_distribution": {
+      "1": 6.37,
+      "2": 11.56,
+      "3": 16.38,
+      "4": 17.42,
+      "5": 16.83,
+      "6": 13.79,
+      "7": 10.92,
+      "8": 6.73
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_8012",
+    "name": "Consuming Claw",
+    "description": "Whenever a friendly Demon consumes a minion, it also gains its Bonus Keywords and +5/+5.",
+    "pick_rate": 35.9,
+    "avg_placement": 4.46,
+    "placement_distribution": {
+      "1": 7.09,
+      "2": 12.39,
+      "3": 15.64,
+      "4": 16.81,
+      "5": 15.29,
+      "6": 13.93,
+      "7": 11.22,
+      "8": 7.61
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_8581",
+    "name": "Explorer's Binoculars",
+    "description": "Get three random Tier 4 minions.",
+    "pick_rate": 34.4,
+    "avg_placement": 4.46,
+    "placement_distribution": {
+      "1": 12.17,
+      "2": 12.07,
+      "3": 12.42,
+      "4": 12.76,
+      "5": 13.96,
+      "6": 14.12,
+      "7": 12.82,
+      "8": 9.68
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8140",
+    "name": "Stuffed Coin Purse",
+    "description": "When you reach Tier 6, gain 12 gold.",
+    "pick_rate": 20.5,
+    "avg_placement": 4.46,
+    "placement_distribution": {
+      "1": 15.64,
+      "2": 12.43,
+      "3": 11.16,
+      "4": 10.34,
+      "5": 11.26,
+      "6": 12.48,
+      "7": 13.8,
+      "8": 12.89
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_8042",
+    "name": "Ancient Wishbone",
+    "description": "Your Hero Power triggers twice.",
+    "pick_rate": 44.6,
+    "avg_placement": 4.47,
+    "placement_distribution": {
+      "1": 16.47,
+      "2": 11.42,
+      "3": 10.69,
+      "4": 10.94,
+      "5": 11.17,
+      "6": 12.34,
+      "7": 14.05,
+      "8": 12.92
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2052",
+    "name": "Deathwhisper Sticker",
+    "description": "After a friendly minion is Reborn, give your minions +2/+2.",
+    "pick_rate": 12.3,
+    "avg_placement": 4.47,
+    "placement_distribution": {
+      "1": 6.6,
+      "2": 11.27,
+      "3": 15.5,
+      "4": 16.63,
+      "5": 18.0,
+      "6": 15.13,
+      "7": 10.9,
+      "8": 5.98
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_7073",
+    "name": "Tickatus Sticker",
+    "description": "Discover a Tier 3 Darkmoon Prize. At the start of every three turns, repeat this. (3 turns left!)",
+    "pick_rate": 23.6,
+    "avg_placement": 4.47,
+    "placement_distribution": {
+      "1": 15.32,
+      "2": 11.18,
+      "3": 11.11,
+      "4": 11.37,
+      "5": 12.54,
+      "6": 13.17,
+      "7": 13.52,
+      "8": 11.79
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8173",
+    "name": "Lens Case",
+    "description": "Get a Duplicating Lens. At the start of every 2 turns, repeat this. (2 turns left!)",
+    "pick_rate": 27.2,
+    "avg_placement": 4.47,
+    "placement_distribution": {
+      "1": 12.9,
+      "2": 13.31,
+      "3": 11.74,
+      "4": 12.36,
+      "5": 12.05,
+      "6": 12.45,
+      "7": 13.26,
+      "8": 11.93
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_5440",
+    "name": "Nomi Sticker",
+    "description": "After you play an Elemental, give Elementals in the Tavern +2/+2 this game.",
+    "pick_rate": 40.6,
+    "avg_placement": 4.49,
+    "placement_distribution": {
+      "1": 9.22,
+      "2": 11.94,
+      "3": 14.65,
+      "4": 14.44,
+      "5": 14.73,
+      "6": 13.68,
+      "7": 12.3,
+      "8": 9.03
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_9210",
+    "name": "Cowrie Necklace",
+    "description": "Tavern spells that give stats cost (2) less.",
+    "pick_rate": 10.8,
+    "avg_placement": 4.49,
+    "placement_distribution": {
+      "1": 10.58,
+      "2": 12.12,
+      "3": 13.42,
+      "4": 14.2,
+      "5": 13.46,
+      "6": 13.46,
+      "7": 12.81,
+      "8": 9.95
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_9511",
+    "name": "Gold Pendant",
+    "description": "Make a random friendly minion from Tier 4 or below Golden. At the start of each turn, repeat this.",
+    "pick_rate": 25.1,
+    "avg_placement": 4.5,
+    "placement_distribution": {
+      "1": 14.27,
+      "2": 11.6,
+      "3": 11.38,
+      "4": 11.96,
+      "5": 12.39,
+      "6": 12.66,
+      "7": 13.01,
+      "8": 12.74
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_7066",
+    "name": "Reflective Pendant",
+    "description": "Get a plain copy of a random friendly minion. At the start of each turn, repeat this.",
+    "pick_rate": 24.3,
+    "avg_placement": 4.51,
+    "placement_distribution": {
+      "1": 16.26,
+      "2": 11.53,
+      "3": 10.4,
+      "4": 10.75,
+      "5": 11.25,
+      "6": 11.91,
+      "7": 13.85,
+      "8": 14.06
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_7000",
+    "name": "Deathly Phylactery",
+    "description": "Discover a Deathrattle minion. Your first Deathrattle each combat triggers an extra time.",
+    "pick_rate": 27.7,
+    "avg_placement": 4.51,
+    "placement_distribution": {
+      "1": 11.91,
+      "2": 11.22,
+      "3": 12.56,
+      "4": 13.08,
+      "5": 14.24,
+      "6": 13.74,
+      "7": 13.18,
+      "8": 10.07
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4301",
+    "name": "Rockin' Music Box",
+    "description": "Get a random Battlecry minion. At the start of each turn, get another.",
+    "pick_rate": 16.0,
+    "avg_placement": 4.51,
+    "placement_distribution": {
+      "1": 13.33,
+      "2": 12.3,
+      "3": 11.61,
+      "4": 11.98,
+      "5": 12.43,
+      "6": 12.71,
+      "7": 13.17,
+      "8": 12.46
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_3070",
+    "name": "Wand of Divination",
+    "description": "After you cast 3 spells on minions, gain 1 Gold. (3 left!)",
+    "pick_rate": 21.9,
+    "avg_placement": 4.51,
+    "placement_distribution": {
+      "1": 13.43,
+      "2": 11.82,
+      "3": 11.66,
+      "4": 12.0,
+      "5": 12.74,
+      "6": 13.06,
+      "7": 13.32,
+      "8": 11.97
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_8471",
+    "name": "Goblin Wallet",
+    "description": "At the end of each turn, increase your maximum Gold by 1.",
+    "pick_rate": 42.9,
+    "avg_placement": 4.52,
+    "placement_distribution": {
+      "1": 17.83,
+      "2": 10.14,
+      "3": 9.7,
+      "4": 9.96,
+      "5": 10.79,
+      "6": 13.41,
+      "7": 14.46,
+      "8": 13.71
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8725",
+    "name": "Ophidian Staff",
+    "description": "Spellcraft: Give a Beast +2/+2 and Reborn.",
+    "pick_rate": 21.1,
+    "avg_placement": 4.53,
+    "placement_distribution": {
+      "1": 9.42,
+      "2": 11.77,
+      "3": 13.84,
+      "4": 14.06,
+      "5": 14.6,
+      "6": 13.87,
+      "7": 13.13,
+      "8": 9.3
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_3032",
+    "name": "Glass of Perspective",
+    "description": "Get a random Choose One card. At the start of each turn, get another.",
+    "pick_rate": 21.0,
+    "avg_placement": 4.54,
+    "placement_distribution": {
+      "1": 14.58,
+      "2": 11.4,
+      "3": 10.69,
+      "4": 11.55,
+      "5": 12.41,
+      "6": 12.68,
+      "7": 13.74,
+      "8": 12.96
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8211",
+    "name": "Kaleidoscope",
+    "description": "Discover a Tier 7 minion. Lock it in your hand for 2 |4 (turn, turns).",
+    "pick_rate": 32.8,
+    "avg_placement": 4.54,
+    "placement_distribution": {
+      "1": 12.82,
+      "2": 11.87,
+      "3": 11.91,
+      "4": 12.01,
+      "5": 12.58,
+      "6": 13.31,
+      "7": 13.24,
+      "8": 12.26
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_8411",
+    "name": "Glowing Gauntlet",
+    "description": "Minions in the Tavern have +3/+3. The Tavern always has 7 cards.",
+    "pick_rate": 21.0,
+    "avg_placement": 4.55,
+    "placement_distribution": {
+      "1": 9.53,
+      "2": 10.77,
+      "3": 13.8,
+      "4": 14.9,
+      "5": 14.93,
+      "6": 13.51,
+      "7": 13.39,
+      "8": 9.17
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_8880",
+    "name": "Souvenir Stand",
+    "description": "When you buy a Greater Trinket, this transforms into a copy of it.",
+    "pick_rate": 41.3,
+    "avg_placement": 4.55,
+    "placement_distribution": {
+      "1": 14.26,
+      "2": 11.4,
+      "3": 11.26,
+      "4": 11.23,
+      "5": 11.89,
+      "6": 12.9,
+      "7": 14.19,
+      "8": 12.87
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_9312",
+    "name": "Transcribing Typewriter",
+    "description": "Get an extra copy of the next 2 minions you buy. (2 left!)",
+    "pick_rate": 21.4,
+    "avg_placement": 4.55,
+    "placement_distribution": {
+      "1": 12.83,
+      "2": 11.89,
+      "3": 11.61,
+      "4": 12.06,
+      "5": 12.74,
+      "6": 12.98,
+      "7": 13.44,
+      "8": 12.45
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4231",
+    "name": "Innkeeper's Stein",
+    "description": "The Tavern offers an extra minion of a higher Tier whenever it is Refreshed.",
+    "pick_rate": 29.3,
+    "avg_placement": 4.55,
+    "placement_distribution": {
+      "1": 15.19,
+      "2": 11.45,
+      "3": 10.59,
+      "4": 10.73,
+      "5": 11.68,
+      "6": 12.61,
+      "7": 13.95,
+      "8": 13.81
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_8170",
+    "name": "Rendle Sticker",
+    "description": "Steal the highest-Tier card from the Tavern. At the end of each turn, repeat this.",
+    "pick_rate": 17.9,
+    "avg_placement": 4.55,
+    "placement_distribution": {
+      "1": 12.75,
+      "2": 11.49,
+      "3": 12.0,
+      "4": 11.96,
+      "5": 12.85,
+      "6": 13.35,
+      "7": 13.56,
+      "8": 12.04
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4350",
+    "name": "Goldenizer Supply",
+    "description": "At the end of every 3 turns, get a Goldenizer. (3 turns left!)3At the end of every 3 turns, get a Goldenizer. (End of this turn!)",
+    "pick_rate": 36.6,
+    "avg_placement": 4.55,
+    "placement_distribution": {
+      "1": 17.22,
+      "2": 10.45,
+      "3": 9.4,
+      "4": 9.62,
+      "5": 11.43,
+      "6": 13.34,
+      "7": 15.09,
+      "8": 13.45
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8906",
+    "name": "Sunken Anchor",
+    "description": "Get 2 random Bounties. At the start of each turn, repeat this.",
+    "pick_rate": 13.5,
+    "avg_placement": 4.56,
+    "placement_distribution": {
+      "1": 10.91,
+      "2": 11.61,
+      "3": 12.39,
+      "4": 13.05,
+      "5": 14.4,
+      "6": 13.71,
+      "7": 13.31,
+      "8": 10.62
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_2782",
+    "name": "Reusable Batteries",
+    "description": "The first time you buy a minion each turn, get a Magnetic Satellite with its stats.",
+    "pick_rate": 17.6,
+    "avg_placement": 4.56,
+    "placement_distribution": {
+      "1": 7.45,
+      "2": 12.14,
+      "3": 14.67,
+      "4": 15.28,
+      "5": 14.52,
+      "6": 14.03,
+      "7": 12.92,
+      "8": 8.99
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4162",
+    "name": "Token of the Old Gods",
+    "description": "Spellcraft: Choose a minion. Then choose a minion from a Tier higher to transform it into.",
+    "pick_rate": 25.8,
+    "avg_placement": 4.57,
+    "placement_distribution": {
+      "1": 13.8,
+      "2": 11.8,
+      "3": 11.23,
+      "4": 11.49,
+      "5": 11.81,
+      "6": 12.3,
+      "7": 13.74,
+      "8": 13.84
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassDemon",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 38.3,
+    "avg_placement": 4.57,
+    "placement_distribution": {
+      "1": 9.38,
+      "2": 11.57,
+      "3": 13.27,
+      "4": 15.42,
+      "5": 14.61,
+      "6": 11.8,
+      "7": 12.24,
+      "8": 11.71
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9980",
+    "name": "Bob-blehead",
+    "description": "Gain 2 Gold. The Tavern no longer offers cards from Tier 1 or Tier 2.",
+    "pick_rate": 21.8,
+    "avg_placement": 4.57,
+    "placement_distribution": {
+      "1": 13.3,
+      "2": 11.51,
+      "3": 10.76,
+      "4": 12.07,
+      "5": 12.2,
+      "6": 13.93,
+      "7": 14.1,
+      "8": 12.13
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_1702",
+    "name": "Spell-powered Wrench",
+    "description": "After you play a Magnetic minion, cast Repair Job on a random friendly Mech.",
+    "pick_rate": 20.4,
+    "avg_placement": 4.59,
+    "placement_distribution": {
+      "1": 6.45,
+      "2": 12.05,
+      "3": 14.23,
+      "4": 16.18,
+      "5": 14.58,
+      "6": 15.68,
+      "7": 12.85,
+      "8": 7.98
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4343",
+    "name": "Replica Cathedral",
+    "description": "Your first spell each turn casts an extra time.",
+    "pick_rate": 12.3,
+    "avg_placement": 4.59,
+    "placement_distribution": {
+      "1": 13.44,
+      "2": 11.56,
+      "3": 10.83,
+      "4": 11.51,
+      "5": 12.52,
+      "6": 13.18,
+      "7": 13.53,
+      "8": 13.43
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_3012",
+    "name": "Lockbox Portrait",
+    "description": "Get a Lockbox. If you already have one, it opens 2 turns sooner instead. At the start of each turn, repeat this.",
+    "pick_rate": 32.6,
+    "avg_placement": 4.59,
+    "placement_distribution": {
+      "1": 14.95,
+      "2": 10.9,
+      "3": 10.49,
+      "4": 11.03,
+      "5": 11.48,
+      "6": 12.67,
+      "7": 14.43,
+      "8": 14.05
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_3002",
+    "name": "Putricide Sticker",
+    "description": "Craft a custom Undead. At the start of every 2 turns, repeat this. (2 turns left!)",
+    "pick_rate": 23.6,
+    "avg_placement": 4.6,
+    "placement_distribution": {
+      "1": 8.05,
+      "2": 11.51,
+      "3": 14.4,
+      "4": 14.03,
+      "5": 15.1,
+      "6": 14.3,
+      "7": 12.9,
+      "8": 9.71
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_8683",
+    "name": "Rewinder Portrait",
+    "description": "Get a Soul Rewinder and a Wrath Weaver. Your Soul Rewinders also gain Attack.",
+    "pick_rate": 25.3,
+    "avg_placement": 4.6,
+    "placement_distribution": {
+      "1": 4.96,
+      "2": 10.47,
+      "3": 14.78,
+      "4": 18.48,
+      "5": 17.76,
+      "6": 14.55,
+      "7": 12.04,
+      "8": 6.97
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_7052",
+    "name": "Bartend-o-Tron's Oilcan",
+    "description": "Reduce the Cost of upgrading the Tavern by (3). At the start of each turn, repeat this.",
+    "pick_rate": 31.7,
+    "avg_placement": 4.61,
+    "placement_distribution": {
+      "1": 12.61,
+      "2": 11.85,
+      "3": 11.12,
+      "4": 11.55,
+      "5": 12.62,
+      "6": 13.08,
+      "7": 14.06,
+      "8": 13.12
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_8212",
+    "name": "Pilgrimp Sticker",
+    "description": "One Demon each turn costs Health instead of Gold to buy. (1 left!)",
+    "pick_rate": 23.3,
+    "avg_placement": 4.61,
+    "placement_distribution": {
+      "1": 9.33,
+      "2": 11.37,
+      "3": 13.13,
+      "4": 14.97,
+      "5": 13.6,
+      "6": 13.32,
+      "7": 12.62,
+      "8": 11.66
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_9573",
+    "name": "Grifter Portrait",
+    "description": "Get a Doubloon Grifter. The first Pirate you buy each turn is free.",
+    "pick_rate": 43.2,
+    "avg_placement": 4.61,
+    "placement_distribution": {
+      "1": 18.42,
+      "2": 10.06,
+      "3": 7.98,
+      "4": 9.05,
+      "5": 10.75,
+      "6": 13.03,
+      "7": 15.5,
+      "8": 15.2
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_8212",
+    "name": "Fish Portrait",
+    "description": "Get a Fish of N'Zoth.",
+    "pick_rate": 21.0,
+    "avg_placement": 4.61,
+    "placement_distribution": {
+      "1": 9.43,
+      "2": 11.33,
+      "3": 13.14,
+      "4": 13.4,
+      "5": 14.3,
+      "6": 14.45,
+      "7": 13.59,
+      "8": 10.34
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_8231",
+    "name": "Timeworn Candelabra",
+    "description": "Discover a 2-Cost minion from the Minor Timewarp.",
+    "pick_rate": 33.3,
+    "avg_placement": 4.63,
+    "placement_distribution": {
+      "1": 12.11,
+      "2": 11.07,
+      "3": 11.22,
+      "4": 12.37,
+      "5": 12.98,
+      "6": 13.68,
+      "7": 13.75,
+      "8": 12.82
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9945",
+    "name": "Yogg-Tastic Pastry",
+    "description": "Spin the Wheel of Yogg-Saron. At the start of each turn, spin it again.",
+    "pick_rate": 9.8,
+    "avg_placement": 4.63,
+    "placement_distribution": {
+      "1": 11.35,
+      "2": 11.09,
+      "3": 11.29,
+      "4": 12.86,
+      "5": 14.15,
+      "6": 13.43,
+      "7": 13.46,
+      "8": 12.37
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassBeast",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 25.6,
+    "avg_placement": 4.64,
+    "placement_distribution": {
+      "1": 11.35,
+      "2": 9.32,
+      "3": 10.88,
+      "4": 13.14,
+      "5": 14.92,
+      "6": 17.33,
+      "7": 14.03,
+      "8": 9.04
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_8220",
+    "name": "Bazaar Sticker",
+    "description": "One Tavern spell each turn costs Health instead of Gold to buy. (1 left!)",
+    "pick_rate": 17.5,
+    "avg_placement": 4.65,
+    "placement_distribution": {
+      "1": 10.29,
+      "2": 9.18,
+      "3": 13.41,
+      "4": 13.75,
+      "5": 14.56,
+      "6": 14.13,
+      "7": 14.05,
+      "8": 10.63
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_4340",
+    "name": "Jewelry Box",
+    "description": "Get a Blood Gem that gives a Quilboar Taunt, Divine Shield, or Reborn. At the start of each turn, repeat this.",
+    "pick_rate": 21.8,
+    "avg_placement": 4.66,
+    "placement_distribution": {
+      "1": 12.68,
+      "2": 10.96,
+      "3": 10.56,
+      "4": 11.02,
+      "5": 13.22,
+      "6": 14.7,
+      "7": 14.04,
+      "8": 12.83
+    },
+    "guide": null
+  },
+  {
+    "id": "BG32_MagicItem_4000",
+    "name": "Shrine of Evolution",
+    "description": "Transform all your minions into random Tier 4 minions.",
+    "pick_rate": 25.8,
+    "avg_placement": 4.66,
+    "placement_distribution": {
+      "1": 10.57,
+      "2": 10.57,
+      "3": 11.0,
+      "4": 12.57,
+      "5": 14.86,
+      "6": 15.43,
+      "7": 16.14,
+      "8": 8.86
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9880",
+    "name": "Great Boar Sticker",
+    "description": "Get 3 Blood Gems. Your Blood Gems give an extra +2/+1.",
+    "pick_rate": 13.5,
+    "avg_placement": 4.67,
+    "placement_distribution": {
+      "1": 8.64,
+      "2": 9.33,
+      "3": 12.67,
+      "4": 15.41,
+      "5": 16.0,
+      "6": 14.87,
+      "7": 13.94,
+      "8": 9.13
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9731",
+    "name": "Minion Bait",
+    "description": "The Tavern offers 2 extra 92 whenever it is Refreshed.",
+    "pick_rate": 35.4,
+    "avg_placement": 4.67,
+    "placement_distribution": {
+      "1": 11.67,
+      "2": 11.16,
+      "3": 11.2,
+      "4": 11.81,
+      "5": 12.93,
+      "6": 13.8,
+      "7": 14.27,
+      "8": 13.16
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2011",
+    "name": "Lionfish Portrait",
+    "description": "Get a Lurking Lionfish. Whenever a friendly Beast attacks, give it +2/+2.",
+    "pick_rate": 19.8,
+    "avg_placement": 4.67,
+    "placement_distribution": {
+      "1": 7.94,
+      "2": 8.61,
+      "3": 12.06,
+      "4": 15.94,
+      "5": 18.6,
+      "6": 16.3,
+      "7": 12.9,
+      "8": 7.66
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_8111",
+    "name": "Defensive Shell",
+    "description": "The first minion you play each turn gains Divine Shield.",
+    "pick_rate": 7.3,
+    "avg_placement": 4.68,
+    "placement_distribution": {
+      "1": 9.93,
+      "2": 11.23,
+      "3": 12.21,
+      "4": 12.61,
+      "5": 13.59,
+      "6": 14.4,
+      "7": 13.95,
+      "8": 12.07
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassPirate",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 20.2,
+    "avg_placement": 4.69,
+    "placement_distribution": {
+      "1": 14.9,
+      "2": 9.58,
+      "3": 10.98,
+      "4": 9.84,
+      "5": 11.27,
+      "6": 12.81,
+      "7": 15.16,
+      "8": 15.46
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4110",
+    "name": "Hoggy Bank",
+    "description": "Start of Combat: Give your Quilboar \"Deathrattle: Get 2 Blood Gems.\"",
+    "pick_rate": 23.0,
+    "avg_placement": 4.73,
+    "placement_distribution": {
+      "1": 10.02,
+      "2": 10.56,
+      "3": 11.59,
+      "4": 12.38,
+      "5": 14.46,
+      "6": 13.61,
+      "7": 15.17,
+      "8": 12.21
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_9311",
+    "name": "Lucky Tabby",
+    "description": "After 7 friendly minions die, get a random Beast. (7 left!)",
+    "pick_rate": 19.1,
+    "avg_placement": 4.75,
+    "placement_distribution": {
+      "1": 9.71,
+      "2": 9.98,
+      "3": 11.4,
+      "4": 13.06,
+      "5": 14.18,
+      "6": 15.33,
+      "7": 14.95,
+      "8": 11.4
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_3000",
+    "name": "Frigid Blossom",
+    "description": "After you Refresh, reduce the cost of upgrading the Tavern by (1).",
+    "pick_rate": 18.4,
+    "avg_placement": 4.77,
+    "placement_distribution": {
+      "1": 12.64,
+      "2": 10.32,
+      "3": 9.55,
+      "4": 11.15,
+      "5": 12.18,
+      "6": 13.83,
+      "7": 15.85,
+      "8": 14.48
+    },
+    "guide": null
+  },
+  {
+    "id": "BG36_MagicItem_2001",
+    "name": "Herding Horn",
+    "description": "Whenever a friendly Rally minion attacks, gain a free Refresh.",
+    "pick_rate": 18.5,
+    "avg_placement": 4.81,
+    "placement_distribution": {
+      "1": 11.8,
+      "2": 8.61,
+      "3": 9.55,
+      "4": 11.61,
+      "5": 13.39,
+      "6": 17.51,
+      "7": 15.26,
+      "8": 12.27
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4100",
+    "name": "Quilligraphy Set",
+    "description": "Avenge (3): Your Blood Gems give an extra +1 Health this game.",
+    "pick_rate": 18.3,
+    "avg_placement": 4.89,
+    "placement_distribution": {
+      "1": 8.45,
+      "2": 10.93,
+      "3": 10.35,
+      "4": 12.25,
+      "5": 13.93,
+      "6": 14.7,
+      "7": 14.88,
+      "8": 14.52
+    },
+    "guide": null
+  },
+  {
+    "id": "BG30_MagicItem_4262",
+    "name": "Colorful CompassQuilboar",
+    "description": "Get a random 92. At the start of each turn, get another.",
+    "pick_rate": 30.7,
+    "avg_placement": 4.92,
+    "placement_distribution": {
+      "1": 9.89,
+      "2": 10.3,
+      "3": 10.15,
+      "4": 9.99,
+      "5": 12.57,
+      "6": 15.51,
+      "7": 17.52,
+      "8": 14.06
+    },
+    "guide": null
+  },
+  {
+    "id": "BG35_MagicItem_1521",
+    "name": "Demonic Tapestry",
+    "description": "After you Refresh 4 times, the highest-Tier minion in the Tavern costs Health instead of Gold to buy. (4 left!)",
+    "pick_rate": 18.3,
+    "avg_placement": 4.94,
+    "placement_distribution": {
+      "1": 8.3,
+      "2": 9.48,
+      "3": 10.66,
+      "4": 12.87,
+      "5": 13.43,
+      "6": 15.36,
+      "7": 14.95,
+      "8": 14.95
+    },
+    "guide": null
+  }
+]
