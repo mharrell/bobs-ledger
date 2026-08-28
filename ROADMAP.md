@@ -45,6 +45,11 @@ winner from loser.
 - [ ] Wire `DEEPSEEK_API_KEY` (env) and smoke-test `coach_llm.py` against the
       hosted API; confirm `prompt_cache_hit_tokens` climbs on repeat calls.
 - [ ] Reason over (board state + meta reference [+ optional HSReplay stats]).
+- [ ] **Respect the family ban:** ~half of tribes are banned per game at random.
+      Filter comps to those whose `core` cards are all in available tribes
+      (check core-card tribes, not just the comp `tribe`; handle `All`/`Neutral`
+      as never-banned and compound tribes like `Demon/Dragon` as banned if either
+      is). See memory `hearth-family-ban`.
 - [ ] Emit dynamic, board-specific, explainable advice.
 
 ## Phase 5 — Overlay / delivery
