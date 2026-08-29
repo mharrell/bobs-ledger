@@ -42,11 +42,12 @@ UPGRADE = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Tavern Tie
 MOVE_MINION = re.compile(r"BLOCK_START BlockType=MOVE_MINION ")
 
 
-def parse_actions(chunk, friendly, friendly_hero=None):
+def parse_actions(chunk, friendly, friendly_hero_card=None):
     """Return a list of per-turn action dicts for the friendly player.
 
-    `friendly_hero` is the friendly hero's entity name (e.g. "Patchwerk"); when
-    given, a BlockType=PLAY on that entity counts as a hero-power use.
+    `friendly_hero_card` is the friendly hero's card id (e.g. "BG22_HERO_000");
+    the hero power is the same id with a "p" suffix (e.g. "BG22_HERO_000p_Alt"),
+    so a BlockType=PLAY on that card counts as a hero-power use.
     """
     turns = []          # list of {turn, buys, sells, triples, refreshes, ...}
     cur_turn = None
@@ -56,8 +57,8 @@ def parse_actions(chunk, friendly, friendly_hero=None):
     zone = {}           # entity id -> zone
     seen_triples = set()    # (entity, base_id) already counted
     hero_re = re.compile(
-        rf"BLOCK_START BlockType=PLAY Entity=\[entityName={friendly_hero} "
-    ) if friendly_hero else None
+        rf"BLOCK_START BlockType=PLAY Entity=\[entityName=[^]]+ cardId={friendly_hero_card}p"
+    ) if friendly_hero_card else None
 
     def new_turn(n):
         return {"turn": n, "buys": [], "sells": [], "triples": [], "refreshes": 0,
@@ -175,10 +176,12 @@ def main():
         chunk = lines[start:end]
         game = extract_game(chunk)
         friendly = _friendly_player(game["heroes"])
-        friendly_hero = next((h.get("hero_name") for h in game["heroes"]
-                              if h["player"] == friendly), None)
-        print(f"\n=== Game {idx} (friendly player={friendly}, hero={friendly_hero}) ===")
-        for t in parse_actions(chunk, friendly, friendly_hero):
+        friendly_hero_card = next((h.get("card") for h in game["heroes"]
+                                   if h["player"] == friendly), None)
+        friendly_hero_name = next((h.get("hero_name") for h in game["heroes"]
+                                   if h["player"] == friendly), None)
+        print(f"\n=== Game {idx} (friendly player={friendly}, hero={friendly_hero_name}) ===")
+        for t in parse_actions(chunk, friendly, friendly_hero_card):
             parts = [f"buy={[nm(x) for x in t['buys']]}",
                      f"play={[nm(x) for x in t['plays']]}",
                      f"sell={[nm(x) for x in t['sells']]}",
