@@ -36,20 +36,22 @@ STEP_RE = re.compile(r"Entity=GameEntity tag=STEP value=(\w+)")
 SHOP_STEPS = {"MAIN_ACTION", "MAIN_START", "MAIN_READY", "MAIN_START_TRIGGERS"}
 # Player actions are BlockType=PLAY on the relevant button/entity. The
 # BlockType=TRIGGER/ATTACK blocks are the game's automatic effects, not actions.
-REFRESH = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Refresh ")
-FREEZE = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Freeze ")
-UPGRADE = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Tavern Tier \d+ ")
+# Each block is logged twice (GameState + PowerTaskList), so require GameState.
+_GS = r"GameState\.DebugPrintPower\(\) - BLOCK_START "
+REFRESH = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=Refresh ")
+FREEZE = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=Freeze ")
+UPGRADE = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=Tavern Tier \d+ ")
 # Rearranging a minion = a MOVE_MINION block.
-MOVE_MINION = re.compile(r"BLOCK_START BlockType=MOVE_MINION ")
+MOVE_MINION = re.compile(_GS + r"BlockType=MOVE_MINION ")
 # Dark Discovery (dark gift) = a PLAY block on the Dark Discovery button.
-DARK = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Dark Discovery ")
+DARK = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=Dark Discovery ")
 # A discover/trinket pick = SendChoices() with the chosen entity.
 CHOICE = re.compile(
     r"SendChoices\(\) -   m_chosenEntities\[0\]=\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)"
 )
 # A buy = a PLAY block on the "Drag To Buy" button, whose Target is the minion.
 BUY = re.compile(
-    r"BLOCK_START BlockType=PLAY Entity=\[entityName=Drag To Buy .*?Target=\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)"
+    _GS + r"BlockType=PLAY Entity=\[entityName=Drag To Buy .*?Target=\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)"
 )
 
 
@@ -65,12 +67,13 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     step = None
     in_buying_phase = False
     started = False     # skip the first MAIN_ACTION (setup/mulligan phase)
+    played = set()      # entity ids the player played onto the board (HAND->PLAY)
     card = {}           # entity id -> card id
     player = {}         # entity id -> player number
     zone = {}           # entity id -> zone
     seen_triples = set()    # (entity, base_id) already counted
     hero_re = re.compile(
-        rf"BLOCK_START BlockType=PLAY Entity=\[entityName=[^]]+ cardId={friendly_hero_card}p"
+        rf"GameState\.DebugPrintPower\(\) - BLOCK_START BlockType=PLAY Entity=\[entityName=[^]]+ cardId={friendly_hero_card}p"
     ) if friendly_hero_card else None
 
     def new_turn(n):
@@ -155,9 +158,12 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
 
             # PLAY: friendly minion played from hand onto the board.
             if p == friendly and z == "PLAY" and old_zone == "HAND":
+                played.add(eid)
                 turns[-1]["plays"].append(cid)
-            # SELL: friendly minion leaves PLAY during the shop phase (not combat).
-            elif (p == friendly and old_zone == "PLAY"
+            # SELL: a played minion leaves the board during the shop phase. Only
+            # counts minions the player actually played (in `played`) so effect
+            # removals (e.g. Lock & Load removing a tavern minion) aren't sold.
+            elif (p == friendly and eid in played and old_zone == "PLAY"
                   and z in ("SETASIDE", "GRAVEYARD") and step in SHOP_STEPS):
                 turns[-1]["sells"].append(cid)
             continue
