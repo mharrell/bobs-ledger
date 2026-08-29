@@ -21,8 +21,9 @@ MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BGS_\d+|BG_[A-Z]+_\d+)$")
 
 # [Entity|mainEntity]=[entityName=X id=N zone=Z zonePos=P cardId=C player=P]
 # mainEntity= appears in DebugPrintOptions (shop offers / hand display).
+# entityName is non-greedy so multi-word names (e.g. "Tusked Camper") parse.
 ENTITY = re.compile(
-    r"(?:Entity|mainEntity)=\[entityName=(\S+) id=(\d+) zone=(\w+) zonePos=(\d+) cardId=(\w+) player=(\d+)"
+    r"(?:Entity|mainEntity)=\[entityName=(.+?) id=(\d+) zone=(\w+) zonePos=(\d+) cardId=(\w+) player=(\d+)"
 )
 # The real turn counter is NUM_TURNS_IN_PLAY (TURN is a different, unreliable
 # counter). In Duos the game re-enters MAIN_READY with alternating values, so we
@@ -155,10 +156,6 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             # PLAY: friendly minion played from hand onto the board.
             if p == friendly and z == "PLAY" and old_zone == "HAND":
                 turns[-1]["plays"].append(cid)
-            # BUY: minion's controller becomes friendly (bought from the tavern)
-            # and it's in HAND.
-            elif p == friendly and z == "HAND" and old_player != friendly:
-                turns[-1]["buys"].append(cid)
             # SELL: friendly minion leaves PLAY during the shop phase (not combat).
             elif (p == friendly and old_zone == "PLAY"
                   and z in ("SETASIDE", "GRAVEYARD") and step in SHOP_STEPS):
