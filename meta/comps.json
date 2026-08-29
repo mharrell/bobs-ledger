@@ -133,7 +133,8 @@
     "when_to_commit": "Headhunter Gryphon + Deathstrider",
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BG36_202",
-    "tribe": "Beasts"
+    "tribe": "Beasts",
+    "guide": "guides/beasts-tasty-lobstah.md"
   },
   "murlocs-venom-scam": {
     "name": "Murlocs - Venom Scam",
