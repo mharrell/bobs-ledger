@@ -40,6 +40,12 @@ FREEZE = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Freeze ")
 UPGRADE = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Tavern Tier \d+ ")
 # Rearranging a minion = a MOVE_MINION block.
 MOVE_MINION = re.compile(r"BLOCK_START BlockType=MOVE_MINION ")
+# Dark Discovery (dark gift) = a PLAY block on the Dark Discovery button.
+DARK = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Dark Discovery ")
+# A discover/trinket pick = SendChoices() with the chosen entity.
+CHOICE = re.compile(
+    r"SendChoices\(\) -   m_chosenEntities\[0\]=\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)"
+)
 
 
 def parse_actions(chunk, friendly, friendly_hero_card=None):
@@ -63,7 +69,7 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     def new_turn(n):
         return {"turn": n, "buys": [], "sells": [], "triples": [], "refreshes": 0,
                 "freezes": 0, "upgrades": 0, "hero_power": 0,
-                "plays": [], "rearranges": 0}
+                "plays": [], "rearranges": 0, "dark_gifts": 0, "choices": []}
 
     for line in chunk:
         m = TURN.search(line)
@@ -104,6 +110,16 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
         m = MOVE_MINION.search(line)
         if m and cur_turn is not None:
             turns[-1]["rearranges"] += 1
+            continue
+
+        m = DARK.search(line)
+        if m and cur_turn is not None:
+            turns[-1]["dark_gifts"] += 1
+            continue
+
+        m = CHOICE.search(line)
+        if m and cur_turn is not None:
+            turns[-1]["choices"].append(m.group(2))  # card id chosen
             continue
 
         m = ENTITY.search(line)
@@ -188,7 +204,8 @@ def main():
                      f"triple={[nmd(x) for x in t['triples']]}",
                      f"refresh={t['refreshes']}", f"freeze={t['freezes']}",
                      f"upgrade={t['upgrades']}", f"hero={t['hero_power']}",
-                     f"rearrange={t['rearranges']}"]
+                     f"rearrange={t['rearranges']}", f"dark={t['dark_gifts']}",
+                     f"choice={[nm(x) for x in t['choices']]}"]
             print(f"  Turn {t['turn']}: " + " ".join(parts))
     return 0
 
