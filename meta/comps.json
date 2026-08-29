@@ -373,7 +373,8 @@
     "when_to_commit": "Magnetic Generation (Scrap Scraper) + Spark Snapper",
     "common_enablers": "Magnetic Generation (Scrap Scraper)",
     "representative_card": "BG26_148",
-    "tribe": "Mechs"
+    "tribe": "Mechs",
+    "guide": "guides/mechs-magnetics.md"
   },
   "demons-apm-shop-buff": {
     "name": "Demons - APM Shop Buff",
