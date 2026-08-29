@@ -400,7 +400,8 @@
     "summary": "Cast spells to consume buffed shop.",
     "when_to_commit": "Early infinite gold + Felboar",
     "common_enablers": "Brann Bronzebeard",
-    "representative_card": "BG28_633"
+    "representative_card": "BG28_633",
+    "guide": "guides/demons-apm-shop-buff.md"
   },
   "beasts-summon-beetles": {
     "name": "Beasts - Summon Beetles",
