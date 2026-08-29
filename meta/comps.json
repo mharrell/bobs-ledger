@@ -159,7 +159,8 @@
     "when_to_commit": "When you have no future or are clearly getting outstatted",
     "common_enablers": "Getting outscaled",
     "representative_card": "BG33_318",
-    "tribe": "Murlocs"
+    "tribe": "Murlocs",
+    "guide": "guides/murlocs-venom-scam.md"
   },
   "murlocs-apm": {
     "name": "Murlocs - APM",
