@@ -42,11 +42,25 @@ def _last_game_index(path):
     return len(list(split_game_chunks(lines)))
 
 
+_last_board = None  # (card, atk, health) fingerprint of the last advised board
+
+
 def run_coach(path):
-    """Analyze the in-progress (last) game and print the analysis."""
+    """Analyze the in-progress (last) game and print the analysis.
+
+    Skips if the friendly board is unchanged since the last advisory, so the
+    monitor doesn't spam on MAIN_ACTION re-entries within the same turn.
+    """
+    global _last_board
     try:
         gi = _last_game_index(path)
         a = analyze(path, gi)
+        board = a["board"]
+        fingerprint = tuple(sorted((m["card"], m.get("atk"), m.get("health"))
+                                   for m in board))
+        if fingerprint == _last_board:
+            return  # board unchanged -> don't re-advise
+        _last_board = fingerprint
         print("\n" + "=" * 52)
         print(describe(a))
         print("=" * 52 + "\n", flush=True)
