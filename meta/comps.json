@@ -222,7 +222,8 @@
     "when_to_commit": "Buffed Shop (Devilish Distractor) + Twisted Wrathguard",
     "common_enablers": "Brann Bronzebeard\nTwisted Wrathguard",
     "representative_card": "BG32_873",
-    "tribe": "Demons"
+    "tribe": "Demons",
+    "guide": "guides/demons-shop-buff.md"
   },
   "undead-attack-scaling": {
     "name": "Undead - Attack Scaling",
