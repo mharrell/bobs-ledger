@@ -58,6 +58,8 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     turns = []          # list of {turn, buys, sells, triples, refreshes, ...}
     cur_turn = None
     step = None
+    in_buying_phase = False
+    started = False     # skip the first MAIN_ACTION (setup/mulligan phase)
     card = {}           # entity id -> card id
     player = {}         # entity id -> player number
     zone = {}           # entity id -> zone
@@ -72,18 +74,21 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
                 "plays": [], "rearranges": 0, "dark_gifts": 0, "choices": []}
 
     for line in chunk:
-        m = TURN.search(line)
-        if m:
-            n = int(m.group(1))
-            # New turn only when the counter increases (handles Duos alternation).
-            if cur_turn is None or n > cur_turn:
-                cur_turn = n
-                turns.append(new_turn(n))
-            continue
-
         m = STEP_RE.search(line)
         if m:
             step = m.group(1)
+            # A buying phase (MAIN_ACTION) = one turn. MAIN_ACTION re-enters
+            # within a buying phase (after refreshes), so only count the first
+            # MAIN_ACTION after a combat (or the very first one).
+            if step == "MAIN_ACTION" and not in_buying_phase:
+                if not started:
+                    started = True  # skip the setup/mulligan phase
+                else:
+                    cur_turn = (cur_turn or 0) + 1
+                    turns.append(new_turn(cur_turn))
+                in_buying_phase = True
+            elif step == "MAIN_END":  # combat phase ends the buying phase
+                in_buying_phase = False
             continue
 
         m = REFRESH.search(line)
