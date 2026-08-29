@@ -177,7 +177,8 @@
     "when_to_commit": "Brann Bronzebeard + lots of economy + Shamanic Tidecaller",
     "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
     "representative_card": "BG36_704",
-    "tribe": "Murlocs"
+    "tribe": "Murlocs",
+    "guide": "guides/murlocs-apm.md"
   },
   "pirates-apm-golden": {
     "name": "Pirates - APM Golden",
