@@ -112,7 +112,8 @@
     "when_to_commit": "Unleashed Mana Surge + Brann Bronzebeard + Stat scaling (Glowing Cinder)",
     "common_enablers": "Glowing Cinder + Ele Midgame\nBrann Bronzebeard",
     "representative_card": "BG32_846",
-    "tribe": "Elementals"
+    "tribe": "Elementals",
+    "guide": "guides/elementals-stat-scaling.md"
   },
   "beasts-tasty-lobstah": {
     "name": "Beasts - Tasty Lobstah",
