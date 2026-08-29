@@ -46,6 +46,10 @@ DARK = re.compile(r"BLOCK_START BlockType=PLAY Entity=\[entityName=Dark Discover
 CHOICE = re.compile(
     r"SendChoices\(\) -   m_chosenEntities\[0\]=\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)"
 )
+# A buy = a PLAY block on the "Drag To Buy" button, whose Target is the minion.
+BUY = re.compile(
+    r"BLOCK_START BlockType=PLAY Entity=\[entityName=Drag To Buy .*?Target=\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)"
+)
 
 
 def parse_actions(chunk, friendly, friendly_hero_card=None):
@@ -108,7 +112,8 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
 
         if hero_re:
             m = hero_re.search(line)
-            if m and cur_turn is not None:
+            # Only count the buy-phase use (the combat-phase trigger is automatic).
+            if m and cur_turn is not None and step == "MAIN_ACTION":
                 turns[-1]["hero_power"] += 1
                 continue
 
@@ -125,6 +130,11 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
         m = CHOICE.search(line)
         if m and cur_turn is not None:
             turns[-1]["choices"].append(m.group(2))  # card id chosen
+            continue
+
+        m = BUY.search(line)
+        if m and cur_turn is not None:
+            turns[-1]["buys"].append(m.group(2))  # card id bought
             continue
 
         m = ENTITY.search(line)
