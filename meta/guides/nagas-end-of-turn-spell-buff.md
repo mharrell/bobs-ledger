@@ -63,9 +63,26 @@ board. Two distinct engines feed it, and the best games run both:
   on a **Naga** (or the amalgam). Casting on a neutral (e.g. Brann) wastes the
   buff.
 
+## Spell-power scaling (the real engine)
+
+Once you have **spell power** (Felfire Conjurer), the engine is **Fauna + Drakkari
++ Balinda**, and **Ruiner falls off** — it doesn't scale with spell power:
+
+> "Ruiner doesn't increase the scaling… it's plus two plus three per spell cast.
+> You just want more fauna, more drakari, more Belinda cuz you have spell power."
+
+- **Balinda doubles spells** (cast twice; three times when golden) — "with
+  Belinda, he will triple cast."
+- **Drakkari works with Fauna** — "Dari works with fauna. I'm not selling that."
+- **The T-set amalgam (tier 6) is the best Fauna target** once you have spell
+  power — it takes advantage of spell power, so it beats Ruiner as the payoff.
+- **More engine pieces, not more Ruiners:** the cards you're rolling for are
+  more Fauna, more Drakkari, more Balinda — not Ruiner.
+
 ## Scaling ceiling
 
 - Ruiner: fast but "falls off later" — it's the mid-game stabilizer, not the
-  end-game cap.
+  end-game cap. Once you have spell power, it's outclassed by Fauna + the T-set
+  amalgam.
 - Groundbreaker: 20k+ with golden Belinda (every spell ×3).
 - Felboar/demons: the true end-game cap if you survive the transition.
