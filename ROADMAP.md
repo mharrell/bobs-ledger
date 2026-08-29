@@ -29,7 +29,12 @@ winner from loser.
       stats) + hand + hero tier/gold/armor. See `analysis/BG_LOG_STRUCTURE.md`
       for the three log quirks it handles (empty-CardID blocks, end-of-game
       cleanup, snapshot + final-stats lookup).
-- [ ] Decide: live from Power.log (authoritative) vs. screen OCR for live play.
+- [x] **Live source leaning: Power.log tailing** (authoritative, no OCR). The
+      parsers work on partial games; `live.py` tails the active Power.log and
+      runs the coach analysis each buy phase. **First live test: a real game the
+      user won (1st)**. Exposed open issues: engine pieces rank too low (Nomi),
+      combat-time scaling is invisible (Flaming Enforcer), and it over-advises
+      on unchanged boards (needs per-board dedup). See memory `hearth-live-coach`.
 - [ ] Add verification of the parsed state (breakoutBot discipline).
 
 ## Phase 3 — Meta reference (done)
