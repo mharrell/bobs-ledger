@@ -87,7 +87,8 @@
     "when_to_commit": "Glambot + Balinda Stonehearth",
     "common_enablers": "Glambot to stabilize",
     "representative_card": "BG36_853",
-    "tribe": "Mechs"
+    "tribe": "Mechs",
+    "guide": "guides/mechs-magnetics-spells.md"
   },
   "elementals-stat-scaling": {
     "name": "Elementals - Stat scaling",
