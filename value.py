@@ -25,12 +25,21 @@ W_TRIBE = 1.0       # matches the comp's tribe
 W_HERO = 1.5        # synergizes with the hero power
 W_TRINKET = 1.0     # synergizes with a trinket
 W_ENGINE_MULT = 0.05  # per point of scaling-minion stats it amplifies
+W_ENGINE = 8.0      # bonus for the board's engine piece (e.g. Nomi)
+W_COMBAT_SCALE = 4.0  # bonus for combat-time scaling minions (e.g. Flaming Enforcer)
 
 # Keywords/phrases that mark a scaling/engine minion vs a plain body.
 _SCALING_MARKERS = ("end of turn", "whenever you play", "improves", "each",
                     "triggers twice", "reborn", "deathrattle", "battlecry")
 _ENGINE_MARKERS = ("double", "twice", "each turn", "each", "improve",
                    "scales", "compounding")
+# Whole-board/comp scaling engines (buff the whole board or a tribe).
+_ENGINE_TEXT_MARKERS = ("give ", "your ", "play a ", "play an ", "gain +",
+                        "after you buy", "each turn", "whenever you summon",
+                        "scales")
+# Combat-time scaling (invisible to the pre-combat board snapshot).
+_COMBAT_SCALE_MARKERS = ("in combat", "start of combat", "during combat",
+                         "when this attacks", "this gains")
 
 
 def _load_card_db():
@@ -81,13 +90,26 @@ def _is_scaling(card):
     return any(m in text for m in _SCALING_MARKERS)
 
 
+def _is_engine(card):
+    """True if the card is a whole-board/comp scaling engine (e.g. Nomi)."""
+    text = (card or {}).get("text") or ""
+    return any(m in text for m in _ENGINE_TEXT_MARKERS)
+
+
+def _is_combat_scaling(card):
+    """True if the card scales during combat (invisible to the snapshot)."""
+    text = (card or {}).get("text") or ""
+    return any(m in text for m in _COMBAT_SCALE_MARKERS)
+
+
 def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
-                 board_scaling=0):
+                 board_scaling=0, dominant_tribe=None):
     """Score a board minion (higher = more valuable to keep).
 
-    `board_scaling` is the number of scaling minions on the board; an effect
-    multiplier (e.g. Drakkari doubling end-of-turn effects) is worth more the
-    more scaling minions it amplifies.
+    `board_scaling` is the combined stats of scaling minions on the board (an
+    effect multiplier amplifies them). `dominant_tribe` is the board's most
+    common tribe; the board's engine piece is the most valuable card even when
+    its own stats are small.
     """
     atk = minion.get("atk") or 0
     hp = minion.get("health") or 0
@@ -96,6 +118,17 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
     # Engine potential: a multiplier amplifies every scaling minion on the board.
     if board_scaling and _is_multiplier(card):
         score += W_ENGINE_MULT * board_scaling
+
+    # Engine recognition: the board's engine (e.g. Nomi) is worth far more than
+    # its small stats suggest. Match by race OR by the text naming the tribe
+    # (Nomi has race=None but its text scales Elementals).
+    if dominant_tribe and card and _is_engine(card):
+        if (card.get("race") == dominant_tribe
+                or dominant_tribe.lower() in (card.get("text") or "")):
+            score += W_ENGINE
+    # Combat-time scaling is invisible to the pre-combat snapshot; flag as +value.
+    if _is_combat_scaling(card):
+        score += W_COMBAT_SCALE
 
     if card:
         base_atk = card.get("attack") or 0
@@ -149,12 +182,16 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None):
     # Total stats of the scaling minions on the board (a multiplier amplifies this).
     board_scaling = sum((m.get("atk") or 0) + (m.get("health") or 0)
                         for m in board_minions if _is_scaling(card_db.get(m["card"])))
+    # Board's dominant tribe (for engine recognition).
+    from collections import Counter
+    tribes = Counter(m.get("tribe") for m in board_minions if m.get("tribe"))
+    dominant_tribe = tribes.most_common(1)[0][0] if tribes else None
 
     scored = []
     for m in board_minions:
         card = card_db.get(m["card"])
         val = minion_value(m, card, comp, hero_power, trinkets,
-                           board_scaling=board_scaling)
+                           board_scaling=board_scaling, dominant_tribe=dominant_tribe)
         # Banned-tribe minions on the board are worth less (can't grow).
         if allowed_tribes and m.get("tribe") and m["tribe"] not in allowed_tribes:
             val -= 2.0
