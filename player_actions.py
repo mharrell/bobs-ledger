@@ -174,7 +174,18 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             if base != "0" and base not in turns[-1]["triples"]:
                 turns[-1]["triples"].append(base)
 
-    return turns
+    # Skip buying phases with no player actions. The user counts turns as buying
+    # phases they acted in; a phase where they just passed (e.g. a no-gold turn)
+    # feels like a combat-phase construction, not a separate turn.
+    def has_action(t):
+        return (t["buys"] or t["plays"] or t["sells"] or t["triples"]
+                or t["refreshes"] or t["freezes"] or t["upgrades"]
+                or t["hero_power"] or t["rearranges"] or t["dark_gifts"]
+                or t["choices"])
+    kept = [t for t in turns if has_action(t)]
+    for i, t in enumerate(kept):
+        t["turn"] = i + 1  # renumber sequentially after skipping empty phases
+    return kept
 
 
 def main():
