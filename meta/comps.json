@@ -65,7 +65,8 @@
     "when_to_commit": "Seafloor Recruiter plus Groundbreaker",
     "common_enablers": "Seafloor Recruiter",
     "representative_card": "BG31_035",
-    "tribe": "Nagas"
+    "tribe": "Nagas",
+    "guide": "guides/nagas-groundbreaker.md"
   },
   "mechs-magnetics-spells": {
     "name": "Mechs - Magnetics/Spells",
