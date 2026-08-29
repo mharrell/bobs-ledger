@@ -246,7 +246,8 @@
     "when_to_commit": "Attack Scaling (Drustfallen Butcher) + summons (Handless Forsaken)",
     "common_enablers": "Deathly Striker \nFriendly Geist\nUndead midgame (Plaguerunner/Dustbone Devastator)",
     "representative_card": "BG31_835",
-    "tribe": "Undead"
+    "tribe": "Undead",
+    "guide": "guides/undead-attack-scaling.md"
   },
   "mechs-deathrattle": {
     "name": "Mechs - Deathrattle",
