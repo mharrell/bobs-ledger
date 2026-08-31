@@ -278,8 +278,11 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
     card_db = _load_card_db()
     comp = None
     if comps:
+        # Score shop cards against the TARGET comp (what you're building toward),
+        # not the current board's implied comp — so the buy recommendation guides
+        # the pivot/commit rather than just matching the current board.
         if board_minions:
-            comp = _best_comp(board_minions, comps)
+            comp = comp_target(board_minions, comps)
         if comp is None:
             comp = next(iter(comps.values()))
     engine_bonus = _engine_growth_bonus(board_minions, _load_bg_names()) if board_minions else {}
@@ -293,6 +296,13 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
              "health": card.get("health") or 0, "tribe": card.get("race")}
         val = minion_value(m, card, comp,
                            engine_bonus=engine_bonus.get(cid, 0))
+        # Strongly prefer the target comp's core/addon cards, so the buy
+        # recommendation actually guides the build rather than just matching stats.
+        if comp:
+            if cid in comp.get("core", []):
+                val += 10.0
+            elif cid in comp.get("addons", []):
+                val += 5.0
         if allowed_tribes and m.get("tribe") and m["tribe"] not in allowed_tribes:
             val -= 2.0  # banned-tribe minion can't grow
         scored.append((cid, val))
@@ -339,6 +349,41 @@ def _buy_intention(cid, comp, card_db):
     if card and _is_engine(card):
         return "growth engine"
     return "surviving until we can commit"
+
+
+_TIER_SCORE = {"S": 3, "A": 2, "B": 1}
+
+
+def _tier_score(t):
+    return _TIER_SCORE.get((t or "").upper(), 1)
+
+
+def comp_target(board, comps):
+    """The best comp to build toward, given the board and playable comps.
+
+    If you're deep into a comp (>=2 core cards on the board), commit to it. Else
+    pivot to the highest-tier playable comp. Returns the comp dict, or None.
+    """
+    board_cards = {m["card"] for m in board}
+    committed = None
+    for comp in comps.values():
+        overlap = len(set(comp.get("core", [])) & board_cards)
+        if overlap >= 2 and (committed is None or overlap > committed[1]):
+            committed = (comp, overlap)
+    if committed:
+        return committed[0]
+    if not comps:
+        return None
+    return max(comps.values(), key=lambda c: _tier_score(c.get("meta_tier")))
+
+
+def target_state(target, board):
+    """'committing' if the target comp's core cards are on the board, else 'pivot'."""
+    if not target:
+        return None
+    core = set(target.get("core", []))
+    board_cards = {m["card"] for m in board}
+    return "committing" if core & board_cards else "pivot"
 
 
 # Default per-turn trigger counts for the growth simulator when the caller
