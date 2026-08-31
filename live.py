@@ -19,6 +19,7 @@ import sys
 import time
 
 from coach import analyze, describe
+import coach_ui
 
 
 def find_active_log():
@@ -55,6 +56,9 @@ def run_coach(path):
     try:
         gi = _last_game_index(path)
         a = analyze(path, gi)
+        # Push the latest analysis to the UI overlay server (every parse, so gold
+        # / trigger counts update even if the board is unchanged).
+        coach_ui.update_analysis(a)
         board = a["board"]
         fingerprint = tuple(sorted((m["card"], m.get("atk"), m.get("health"))
                                    for m in board))
@@ -104,9 +108,17 @@ def main():
         print("No active Power.log found (Hearthstone not running recently).")
         return 1
     poll = 1.0
+    ui_on = "--no-ui" not in opts
     for o in opts:
         if o.startswith("--poll"):
             poll = float(o.split("=")[1])
+    # Start the overlay server (unless --no-ui); open it in the browser.
+    if ui_on:
+        try:
+            server = coach_ui.start_server()
+            print(f"Coach UI: http://127.0.0.1:{server.server_address[1]}/")
+        except OSError as e:
+            print(f"Coach UI skipped ({e})")
     if "--once" in opts:
         run_coach(path)
         return 0
