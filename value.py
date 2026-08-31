@@ -221,6 +221,39 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
     return [(c, v) for c, v, _ in scored]
 
 
+def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
+    """Rank the shop's tavern minions by value to the best-fit comp.
+
+    `shop_cards`: list of card ids currently offered. `comps`: the playable comps
+    (slug -> comp). `board_minions`: the current board, used to pick the best-fit
+    comp. Returns a list of (card_id, score) sorted most-valuable first, so the
+    coach can headline "Buy this".
+    """
+    card_db = _load_card_db()
+    comp = None
+    if comps:
+        if board_minions:
+            comp = _best_comp(board_minions, comps)
+        if comp is None:
+            comp = next(iter(comps.values()))
+    engine_bonus = _engine_growth_bonus(board_minions, _load_bg_names()) if board_minions else {}
+    scored = []
+    for cid in shop_cards:
+        card = card_db.get(cid)
+        if not card:
+            continue
+        # A shop minion at base stats (un-bought).
+        m = {"card": cid, "atk": card.get("attack") or 0,
+             "health": card.get("health") or 0, "tribe": card.get("race")}
+        val = minion_value(m, card, comp,
+                           engine_bonus=engine_bonus.get(cid, 0))
+        if allowed_tribes and m.get("tribe") and m["tribe"] not in allowed_tribes:
+            val -= 2.0  # banned-tribe minion can't grow
+        scored.append((cid, val))
+    scored.sort(key=lambda x: (-x[1], x[0]))
+    return scored
+
+
 # Default per-turn trigger counts for the growth simulator when the caller
 # doesn't supply a scenario (tunable; ideally from the actual game state).
 _DEFAULT_SCENARIO = {
