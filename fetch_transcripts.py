@@ -20,6 +20,7 @@ from scrape_comps import resolve_comp_id, _headers, YOUTUBE_LINKS_URL
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 COMPS = os.path.join(_HERE, "meta", "comps.json")
+TRANSCRIPTS = os.path.join(_HERE, "meta", "transcripts")
 
 
 def fetch_links(comp_id):
@@ -36,12 +37,13 @@ def fetch_links(comp_id):
 
 
 def download_transcript(video_id):
-    """Download a video's auto-transcript to transcript_<id>.txt. Returns path or None."""
-    out = os.path.join(_HERE, f"transcript_{video_id}.txt")
+    """Download a video's auto-transcript to meta/transcripts/transcript_<id>.txt."""
+    os.makedirs(TRANSCRIPTS, exist_ok=True)
+    out = os.path.join(TRANSCRIPTS, f"transcript_{video_id}.txt")
     if os.path.exists(out):
         return out  # already have it
     import yt_dlp
-    base = os.path.join(_HERE, f"transcript_{video_id}")
+    base = os.path.join(TRANSCRIPTS, f"transcript_{video_id}")
     ydl_opts = {
         "skip_download": True,
         "writeautomaticsub": True,
