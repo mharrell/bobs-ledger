@@ -7,6 +7,9 @@ venv/
 # IDE
 .idea/
 
+# Claude Code worktrees (isolated checkouts)
+.claude/worktrees/
+
 # Vendored dependency — has its own .git (decide: vendor / submodule / keep ignored)
 hearth-coach/python-hslog/
 
