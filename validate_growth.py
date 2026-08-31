@@ -23,7 +23,7 @@ import sys
 
 from board_state import GameState
 from extract_game import split_game_chunks, extract_game, _friendly_player
-from player_actions import parse_actions
+from player_actions import parse_actions, trigger_counts
 from simulate_growth import _load_engines, simulate_growth
 from value import _best_engine, _load_bg_names
 
@@ -84,9 +84,9 @@ def validate_game(path, game_index=1):
                  + (m.get("health") or 0) - base.get(m["card"], (0, 0))[1]
                  for m in final_board)
 
-    # Total trigger count across the game.
+    # Trigger counts across the game (cumulative totals, per-trigger-type).
     actions = parse_actions(chunk, friendly, hero)
-    total_spells = sum(t.get("spells", 0) for t in actions)
+    tc = trigger_counts(actions)
 
     # The engine's peak board: the snapshot with the most engine pieces.
     names = _load_bg_names()
@@ -99,16 +99,19 @@ def validate_game(path, game_index=1):
         nm = names.get(m["card"], m["card"])
         print(f"  {nm}  {m['atk']}/{m['health']}")
     print(f"\nActual total growth (final - base): {actual}")
-    print(f"Total spells cast: {total_spells}")
 
     if not engine:
         print("No modeled engine found on the peak board -> cannot simulate.")
         return 0
+    # Use the engine's real cumulative trigger count (e.g. play_elemental, not
+    # cast_spell), which compounding engines consume.
+    key = engine["trigger"]
+    count = tc.get(key + "_total", tc.get(key, 0))
     print(f"Engine: {engine['name']}  (peak board: {len(peak)} minions, "
-          f"{_engine_pieces(peak, names)} engine pieces)")
+          f"{_engine_pieces(peak, names)} engine pieces)  trigger={key} x{count}")
 
     enriched = [dict(m, name=names.get(m["card"], "")) for m in peak]
-    r = simulate_growth(enriched, {engine["trigger"]: total_spells}, engine)
+    r = simulate_growth(enriched, {key: count, key + "_total": count}, engine)
     sim = r["gain"]["atk"] + r["gain"]["hp"]
     print(f"Simulated growth (total spells on peak board): {sim}")
     if actual:
