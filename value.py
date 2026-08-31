@@ -254,6 +254,28 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
     return scored
 
 
+def top_move(analysis):
+    """A one-line decision call distilled from the analysis (buy / sell / level).
+
+    `analysis` is the coach dict (hero, tier, gold, buy_this, sell_rank, ...).
+    Returns a short actionable line like "Buy Air Baller · sell Surfing Sylvar ·
+    level", or a fallback when there's nothing pressing.
+    """
+    names = _load_bg_names()
+    parts = []
+    if analysis.get("buy_this"):
+        parts.append(f"Buy {names.get(analysis['buy_this'], analysis['buy_this'])}")
+    if analysis.get("sell_rank"):
+        worst = analysis["sell_rank"][0]  # safest to sell
+        if worst[1] < 15:  # a clear filler (low value)
+            parts.append(f"sell {names.get(worst[0], worst[0])}")
+    tier = analysis.get("tier")
+    gold = analysis.get("gold")
+    if tier and tier < 6 and gold is not None and gold >= tier + 1:
+        parts.append("level")
+    return " · ".join(parts) if parts else "stabilize / roll for your comp"
+
+
 # Default per-turn trigger counts for the growth simulator when the caller
 # doesn't supply a scenario (tunable; ideally from the actual game state).
 _DEFAULT_SCENARIO = {

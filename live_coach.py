@@ -22,7 +22,7 @@ from player_actions import (
     STEP_RE, _GS, ENTITY, MINION_ONLY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
 )
-from value import sell_recommendation, shop_ranking
+from value import sell_recommendation, shop_ranking, top_move
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
                  "play_tier3_or_lower", "discover")
@@ -261,7 +261,7 @@ class LiveCoach:
                 seen.add(c)
         shop = shop_ranking(offer_ids, self.playable, board,
                             set(self.allowed)) if offer_ids else []
-        return {
+        result = {
             "hero": self.hero_name,
             "tier": tier,
             "gold": gold,
@@ -273,3 +273,5 @@ class LiveCoach:
             "buy_this": shop[0][0] if shop else None,
             "scenario": scenario,
         }
+        result["top_move"] = top_move(result)
+        return result

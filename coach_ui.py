@@ -41,6 +41,8 @@ _HTML = """<!doctype html>
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:1px 8px; font-size:12px; }
   .level { font-weight:600; }
+  .topmove { font-size:16px; font-weight:700; color:var(--text); line-height:1.3; }
+  .topmove .act { color:var(--gold); }
   .buythis { font-size:15px; font-weight:700; color:var(--gold); }
   .buythis small { color:var(--dim); font-weight:400; }
   .none { color:var(--dim); font-style:italic; }
@@ -80,6 +82,11 @@ function render(a) {
   const app = document.getElementById('app');
   app.innerHTML = '';
   if (!a || !a.board) { app.appendChild(el('div', null, 'No game yet.')); return; }
+
+  // Top move — the one decision call
+  if (a.top_move) {
+    app.appendChild(box('Top move', el('div', 'topmove', a.top_move)));
+  }
 
   // Header / state strip
   const header = box('State', (() => {
