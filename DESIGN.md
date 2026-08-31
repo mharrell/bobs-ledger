@@ -261,6 +261,14 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
   - `scrape_comps.py` — hsreplay comp pages → `comps.json` (`--top N`, `--prune`).
   - `coach_llm.py` — DeepSeek v4 flash client with prefix-cache discipline.
   - `parse_trinkets.py` / `parse_minions.py` — meta raw pastes → JSON.
+  - `value.py` — minion value function (sell ranking, shop ranking, top move).
+  - `simulate_growth.py` — deterministic growth simulator (13 engines in
+    `meta/engines.json`; golden, compounding, tribe-scaling).
+  - `live_coach.py` — incremental live coach (fast per-buy-phase analysis).
+  - `live.py` — live monitor + overlay server.
+  - `coach_ui.py` — V1 overlay (local stdlib HTTP server + HTML page).
+  - `validate_growth.py` — simulator validation against real games.
+  - `replay_stats.py` — deterministic replay-analysis pipeline (corpus stats).
 - **Meta reference:** complete in `meta/` (see section 6).
 
 ### Network situation

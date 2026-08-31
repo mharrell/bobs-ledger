@@ -35,6 +35,10 @@ winner from loser.
       user won (1st)**. Exposed open issues: engine pieces rank too low (Nomi),
       combat-time scaling is invisible (Flaming Enforcer), and it over-advises
       on unchanged boards (needs per-board dedup). See memory `hearth-live-coach`.
+- [x] **Incremental live coach** (`live_coach.py`): feeds lines into a persistent
+      GameState + action tracker as they arrive, so each buy-phase analysis is
+      ~0.002s (was ~2s re-parsing the whole log). Caches per-game data (heroes,
+      bans, comps); auto-switches to a new session; handles end-of-game gracefully.
 - [ ] Add verification of the parsed state (breakoutBot discipline).
 
 ## Phase 3 — Meta reference (done)
@@ -65,9 +69,36 @@ winner from loser.
       cards playable if either tribe is allowed). See memory `hearth-family-ban`.
 - [ ] Emit dynamic, board-specific, explainable advice.
 
+## Phase 4a — Value function & growth simulator (done)
+The "reasoning layer" the coach reasons over — how good each minion/comp is.
+- [x] **Value function** (`value.py`): scores a board minion by stats, buffs, comp
+      synergy (core/addon/tribe), role, engine recognition, and simulated growth.
+      Loads card text from the **BG pool** (`meta/minions.json`), not the
+      Standard-only DB — so it reads real BG abilities (fixed a blindness bug
+      where Ravaging Scorpid's Beetle-scaling was invisible).
+- [x] **Growth simulator** (`simulate_growth.py`): deterministically models a
+      comp's trigger chain (cast spell / play tribe / end of turn / discover /
+      attack) and sums the stat gain. Machine-readable engine model in
+      `meta/engines.json` — **13 engines** (Glambot, Spark Snapper, Mana Surge,
+      Groundbreaker, Ruiner, Tasty Lobster, Painter, Unbound/Nomi, Felboar,
+      Ravaging Scorpid, Hooktusk, Devilish Distractor, Vigilant Bristlemane).
+      Handles golden pieces (2x), compounding shop-eat, and tribe-scaling.
+- [x] **Wired into the coach**: `sell_recommendation` (safe-to-sell → keep),
+      `shop_ranking` (tavern buy ranking), `top_move` (one decision line).
+- [x] **Validated against real games** (`validate_growth.py`): the simulator
+      consistently UNDERESTIMATES actual growth by ~1.6–2x (single-turn model,
+      no multi-turn compounding) — conservative but in the right ballpark.
+- [ ] Tune the simulator's parameters (tavern_base, eat_every, W_*) against the
+      growing replay corpus to close the underestimation.
+
 ## Phase 5 — Overlay / delivery
-- Overlay UI (text / arrow / audio) with a per-decision latency/cost budget.
-- Post-game replay review UI.
+- [x] **V1 coaching UI overlay** (`coach_ui.py`): a local stdlib HTTP server +
+      static HTML page that polls the analysis and renders widgets — top-move
+      headline, state strip, level/roll, per-turn triggers, board (golden marks),
+      sell ranking, tavern buy ranking ("Buy this"), comps, banned tribes.
+      Run `python live.py` → open `http://127.0.0.1:8747/`.
+- [ ] Post-game replay review UI.
+- [ ] Selection ranker (hero/trinket/discover/dark-gift picks).
 
 ## Phase 6 — Evaluation rigor
 - Sham-coach control (a sham coach gives plausible-but-random advice; if players
@@ -76,7 +107,15 @@ winner from loser.
 - Bucketing + outcome tables on the opponent data.
 
 ## Phase 7 — (optional) data flywheel
-- Opt-in replay upload loop to build our own outcome corpus over time.
+- [x] **Replay-analysis pipeline** (`replay_stats.py`): deterministically
+      aggregates outcome data (comp/engine/hero win-rate, card value, board
+      strength) across a corpus of Power.logs — zero LLM tokens per game. Saves
+      to `meta/corpus_stats.json` (`python replay_stats.py --save ...`). This is
+      the foundation for tuning the simulator and weighting comps by actual
+      success. Corpus is ~21 games and growing.
+- [ ] Wire `corpus_stats.json` into the value function (weight comps by actual
+      win-rate at the user's MMR).
+- [ ] Opt-in replay upload loop to build the corpus over time.
 
 ---
 
