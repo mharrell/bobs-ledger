@@ -77,7 +77,7 @@ def _seed_latest(path):
     try:
         gi = _last_game_index(path)
         if gi >= 1:
-            analyze(path, gi)  # run_coach would dedup; analyze+push directly
+            coach_ui.update_analysis(analyze(path, gi))
             print(f"  (seeded overlay with last game #{gi})", flush=True)
     except Exception as e:  # noqa: BLE001
         print(f"  (seed skipped: {e})", flush=True)
