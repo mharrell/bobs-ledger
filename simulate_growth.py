@@ -39,11 +39,17 @@ def _count(board, name):
     return sum(1 for m in board if name.lower() in (m.get("name") or "").lower())
 
 
+def _is_golden(board, name):
+    """True if a golden copy of the named card is on the board."""
+    return any(name.lower() in (m.get("name") or "").lower() and m.get("golden")
+               for m in board)
+
+
 def _multiplier_for(trigger_type, board):
-    """2 if a doubling card for this trigger type is on the board, else 1."""
+    """2 (or 3 if golden) if a doubling card for this trigger type is on the board."""
     for card in _MULTIPLIERS.get(trigger_type, []):
         if _count(board, card):
-            return 2
+            return 3 if _is_golden(board, card) else 2
     return 1
 
 
@@ -92,8 +98,12 @@ def simulate_growth(board, scenario, engine):
                 n *= _multiplier_for(step["multiplier"], board)
             eat_every = step.get("eat_every", 3)
             buff = dict(step["buff_per_play"])
-            if step.get("buff_source") and not _count(board, step["buff_source"]):
-                buff = {"atk": 0, "hp": 0}  # no shop-buff engine -> no compounding
+            if step.get("buff_source"):
+                if _count(board, step["buff_source"]):
+                    if _is_golden(board, step["buff_source"]):
+                        buff = {k: v * 2 for k, v in buff.items()}  # golden Nomi
+                else:
+                    buff = {"atk": 0, "hp": 0}  # no shop-buff engine -> no compounding
             base = step["tavern_base"]
             eats = n // eat_every
             a = h = 0
@@ -125,8 +135,10 @@ def simulate_growth(board, scenario, engine):
             counters[step["counts_as"]] = count
 
         scope = _scope_size(step.get("applies_to", "target"), board, tribe)
-        a = count * step["per_trigger"]["atk"] * scope
-        h = count * step["per_trigger"]["hp"] * scope
+        # A golden source card doubles its per-trigger buff.
+        mult = 2 if _is_golden(board, step["source"]) else 1
+        a = count * step["per_trigger"]["atk"] * scope * mult
+        h = count * step["per_trigger"]["hp"] * scope * mult
         gain["atk"] += a
         gain["hp"] += h
         breakdown[step["source"]] = (a, h)
