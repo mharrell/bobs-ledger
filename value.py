@@ -315,7 +315,10 @@ def top_move(analysis):
     if analysis.get("buy_this"):
         cid = analysis["buy_this"]
         parts.append(f"Buy {names.get(cid, cid)} ({_buy_intention(cid, comp, card_db)})")
-    if analysis.get("sell_rank"):
+    # Only suggest selling to "make room" when the board is full AND we're buying
+    # something that needs the slot. If there's space, selling is unnecessary.
+    if analysis.get("buy_this") and len(analysis.get("board", [])) >= 7 \
+            and analysis.get("sell_rank"):
         worst = analysis["sell_rank"][0]  # safest to sell
         if worst[1] < 15:  # a clear filler (low value)
             parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
