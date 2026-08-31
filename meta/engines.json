@@ -24,7 +24,8 @@
     "tribe": "ELEMENTAL",
     "trigger": "play_elemental",
     "chain": [
-      {"source": "Unleashed Mana Surge", "per_trigger": {"atk": 4, "hp": 4}, "applies_to": "tribe", "count_from": "primary", "note": "After you play an Elemental, give your Elementals +4/+4"}
+      {"source": "Unleashed Mana Surge", "per_trigger": {"atk": 4, "hp": 4}, "applies_to": "tribe", "count_from": "primary", "note": "After you play an Elemental, give your Elementals +4/+4"},
+      {"source": "Flaming Enforcer", "type": "compounding", "cumulative": true, "eat_every": 2, "buff_per_play": {"atk": 4, "hp": 4}, "buff_source": "Nomi, Kitchen Nightmare", "tavern_base": {"atk": 8, "hp": 8}, "note": "End of turn: eat the biggest Tavern minion (buffed by Nomi per Elemental); ~1 eat per 2 plays proxies once per turn"}
     ]
   },
   "nagas-groundbreaker": {
