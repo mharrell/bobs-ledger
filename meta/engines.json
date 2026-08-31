@@ -91,5 +91,21 @@
     "chain": [
       {"source": "Hooktusk, Master Marauder", "type": "tribe_scaling", "buff_per_trigger": {"atk": 1, "hp": 1}, "note": "After you Discover a card, give your other Pirates +1/+1 (improved by Golden minions)"}
     ]
+  },
+  "demons-shop-buff": {
+    "name": "Demons — Shop Buff",
+    "tribe": "DEMON",
+    "trigger": "cast_spell",
+    "chain": [
+      {"source": "Felboar", "type": "compounding", "cumulative": true, "eat_every": 3, "buff_per_play": {"atk": 2, "hp": 2}, "buff_source": "Devilish Distractor", "tavern_base": {"atk": 8, "hp": 8}, "multiplier": "cast_spell", "note": "Devilish Distractor buffs the Tavern +2/+2 per spell; Felboar eats a Tavern minion every 3 spells (Balinda doubles)"}
+    ]
+  },
+  "quilboar-bristlemane": {
+    "name": "Quilboar — Bristlemane",
+    "tribe": "QUILBOAR",
+    "trigger": "cast_spell",
+    "chain": [
+      {"source": "Vigilant Bristlemane", "type": "tribe_scaling", "buff_per_trigger": {"atk": 1, "hp": 1}, "note": "Cast a spell on it -> plays a Blood Gem (+1/+1) on adjacent minions"}
+    ]
   }
 }
