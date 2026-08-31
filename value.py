@@ -343,6 +343,11 @@ def top_move(analysis):
     if len(analysis.get("board", [])) >= 7 \
             and _has_end_of_turn(analysis.get("board", []), card_db):
         return "wait for end of turn — let the engine scale"
+    # Otherwise point at the target comp so the advice stays actionable instead
+    # of going stale ("committing to X" with no next step).
+    target = analysis.get("target_comp")
+    if target:
+        return f"hold — look for {target} core cards"
     return "stabilize / roll for your comp"
 
 
