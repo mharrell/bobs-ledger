@@ -22,6 +22,7 @@ import sys
 from board_state import GameState
 from extract_game import split_game_chunks, extract_game, _friendly_player
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
+from player_actions import parse_actions, trigger_counts
 from value import sell_recommendation, _load_card_db
 
 _HERE = _HERE  # reuse bans' module dir
@@ -69,8 +70,15 @@ def analyze(path, game_index=1):
         comps = json.load(f)
     playable = filter_comps_by_available_tribes(comps, card_races, allowed)
 
+    # Real per-turn trigger counts (spells cast, elementals/mechs/nagas played)
+    # from the player's actions, so the growth simulator uses actual rates
+    # instead of hardcoded defaults.
+    actions = parse_actions(chunk, friendly, friendly_hero["card"] if friendly_hero else None)
+    scenario = trigger_counts(actions)
+
     # Sell recommendation.
-    ranked = sell_recommendation(friendly_board, playable, set(allowed))
+    ranked = sell_recommendation(friendly_board, playable, set(allowed),
+                                 scenario=scenario)
 
     return {
         "hero": friendly_hero["hero_name"] if friendly_hero else "?",
@@ -80,6 +88,7 @@ def analyze(path, game_index=1):
         "banned": _banned(allowed),
         "playable_comps": playable,
         "sell_rank": ranked,
+        "scenario": scenario,
     }
 
 
@@ -103,6 +112,10 @@ def describe(analysis):
         ln.append(f"  {nm}  {m['atk']}/{m['health']}  {m.get('tribe') or ''}")
     ln.append(f"Banned tribes: {', '.join(analysis['banned']) or 'none'}")
     ln.append(f"Playable comps: {', '.join(sorted(analysis['playable_comps'])) or 'none'}")
+    sc = analysis.get("scenario") or {}
+    active = {k: v for k, v in sc.items() if v}
+    if active:
+        ln.append("Per-turn triggers: " + ", ".join(f"{k}={v}" for k, v in active.items()))
     ln.append("Safest to sell -> most valuable:")
     for c, v in analysis["sell_rank"]:
         nm = id2name.get(c, c)
