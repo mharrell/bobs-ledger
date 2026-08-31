@@ -236,16 +236,21 @@ def trigger_counts(actions, bg_pool=None):
     """Convert per-turn actions into per-trigger-type counts for the growth
     simulator.
 
-    Returns {trigger_type: max_count_across_turns} — the player's per-turn
-    ceiling for each trigger, so a single noisy turn doesn't understate the
-    engine. `plays` (minions played) are categorized by tribe/tier from the BG
-    pool; `spells` are the spell casts counted in parse_actions.
+    Returns {trigger_type: max_count_across_turns, trigger_type+"_total": sum}
+    — the player's per-turn ceiling (so a single noisy turn doesn't understate
+    the engine) and the cumulative total (for compounding shop-eat engines whose
+    Tavern buffs accumulate over the game). `plays` (minions played) are
+    categorized by tribe/tier from the BG pool; `spells` are the spell casts
+    counted in parse_actions.
     """
     if bg_pool is None:
         bg_pool = _load_bg_pool()
-    counts = {"cast_spell": 0, "play_elemental": 0, "play_mech": 0,
-              "play_naga": 0, "play_tier3_or_lower": 0}
+    keys = ("cast_spell", "play_elemental", "play_mech", "play_naga",
+            "play_tier3_or_lower")
+    counts = {k: 0 for k in keys}
+    totals = {k: 0 for k in keys}
     for t in actions:
+        totals["cast_spell"] += t.get("spells", 0)
         counts["cast_spell"] = max(counts["cast_spell"], t.get("spells", 0))
         pe = pm = pn = pt = 0
         for cid in t.get("plays", []):
@@ -262,11 +267,19 @@ def trigger_counts(actions, bg_pool=None):
                 pn += 1
             if tier is not None and tier <= 3:
                 pt += 1
+        totals["play_elemental"] += pe
+        totals["play_mech"] += pm
+        totals["play_naga"] += pn
+        totals["play_tier3_or_lower"] += pt
         counts["play_elemental"] = max(counts["play_elemental"], pe)
         counts["play_mech"] = max(counts["play_mech"], pm)
         counts["play_naga"] = max(counts["play_naga"], pn)
         counts["play_tier3_or_lower"] = max(counts["play_tier3_or_lower"], pt)
-    return counts
+    out = {}
+    for k in keys:
+        out[k] = counts[k]
+        out[k + "_total"] = totals[k]
+    return out
 
 
 def main():
