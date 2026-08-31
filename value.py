@@ -301,25 +301,41 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
 
 
 def top_move(analysis):
-    """A one-line decision call distilled from the analysis (buy / sell / level).
+    """A one-line decision call with the *intention* behind each part.
 
     `analysis` is the coach dict (hero, tier, gold, buy_this, sell_rank, ...).
-    Returns a short actionable line like "Buy Air Baller · sell Surfing Sylvar ·
-    level", or a fallback when there's nothing pressing.
+    Returns a short actionable line like "Buy Air Baller (committing to
+    Elementals) · sell Surfing Sylvar (making room) · level (access to tier 5)",
+    or a fallback when there's nothing pressing.
     """
     names = _load_bg_names()
+    card_db = _load_card_db()
+    comp = _best_comp(analysis.get("board", []), analysis.get("playable_comps") or {})
     parts = []
     if analysis.get("buy_this"):
-        parts.append(f"Buy {names.get(analysis['buy_this'], analysis['buy_this'])}")
+        cid = analysis["buy_this"]
+        parts.append(f"Buy {names.get(cid, cid)} ({_buy_intention(cid, comp, card_db)})")
     if analysis.get("sell_rank"):
         worst = analysis["sell_rank"][0]  # safest to sell
         if worst[1] < 15:  # a clear filler (low value)
-            parts.append(f"sell {names.get(worst[0], worst[0])}")
+            parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
     tier = analysis.get("tier")
     gold = analysis.get("gold")
     if tier and tier < 6 and gold is not None and gold >= tier + 1:
-        parts.append("level")
+        parts.append(f"level (access to tier {tier + 1})")
     return " · ".join(parts) if parts else "stabilize / roll for your comp"
+
+
+def _buy_intention(cid, comp, card_db):
+    """Why the coach recommends buying this card (a pre-set intention)."""
+    if comp and cid in comp.get("core", []):
+        return f"committing to {comp.get('tribe') or comp.get('name')}"
+    if comp and cid in comp.get("addons", []):
+        return "part of growth cycle"
+    card = card_db.get(cid)
+    if card and _is_engine(card):
+        return "growth engine"
+    return "surviving until we can commit"
 
 
 # Default per-turn trigger counts for the growth simulator when the caller
