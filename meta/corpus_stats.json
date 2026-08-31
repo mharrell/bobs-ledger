@@ -77,6 +77,69 @@
       "avg_place": 4.0
     }
   },
+  "engines": {
+    "Elementals \u2014 Stat Scaling": {
+      "games": 3,
+      "places": [
+        1,
+        5,
+        1
+      ],
+      "stats": [
+        13348,
+        115,
+        10558
+      ],
+      "avg_place": 2.3333333333333335,
+      "avg_stats": 8007.0
+    },
+    "Mechs \u2014 Magnetics/Spells": {
+      "games": 1,
+      "places": [
+        1
+      ],
+      "stats": [
+        7999
+      ],
+      "avg_place": 1.0,
+      "avg_stats": 7999.0
+    },
+    "Elementals \u2014 Unbound Tempest": {
+      "games": 2,
+      "places": [
+        5,
+        7
+      ],
+      "stats": [
+        2397,
+        193
+      ],
+      "avg_place": 6.0,
+      "avg_stats": 1295.0
+    },
+    "Beasts \u2014 Beetles": {
+      "games": 1,
+      "places": [
+        2
+      ],
+      "stats": [
+        392
+      ],
+      "avg_place": 2.0,
+      "avg_stats": 392.0
+    },
+    "Pirates \u2014 APM Golden": {
+      "games": 1,
+      "places": [
+        4
+      ],
+      "stats": [
+        582
+      ],
+      "avg_place": 4.0,
+      "avg_stats": 582.0
+    }
+  },
   "heroes": {
     "Tavish Stormpike": {
       "games": 1,
