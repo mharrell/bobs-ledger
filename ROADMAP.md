@@ -46,6 +46,13 @@ winner from loser.
       manual paste; tavern-spell tier from the wiki.
 - [x] Family-ban extraction: `bans.py` (5 allowed / 5 banned per game from a
       Power.log) + comp filter.
+- [x] Patch-notes updater: `patch_notes.py <url>` fetches official patch notes,
+      LLM-extracts before/after changes, and (with `--apply`) writes them into
+      `meta/`. Dry-runs by default; new cards flagged for manual entry.
+- [x] Automated check (review-first): `check_patch_notes.py` discovers the
+      latest patch from the Blizzard news page, writes a reviewable report to
+      `patch_reports/`, and toasts — it never edits the meta DB. Register as a
+      weekly Windows Task Scheduler task with `register_patch_check.ps1`.
 - [ ] (optional) Verify the vision model reads any future image-based meta
       correctly before trusting it (breakoutBot discipline).
 
