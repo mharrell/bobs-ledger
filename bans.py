@@ -58,19 +58,22 @@ def _load_card_races(cache_path):
     return card_races
 
 
-def bans_from_log(powerlog_path, card_races=None):
+def bans_from_log(powerlog_path, card_races=None, lines=None):
     """Return a list of per-game dicts: {seed, allowed, banned}.
 
     `allowed`/`banned` are lists of canonical tribe names (e.g. "Mech",
     "Dragon"). Games with no pool minions (non-Battlegrounds) are skipped.
+    `lines` may be passed to avoid re-reading the file (the live coach passes the
+    current game's lines).
     """
     if card_races is None:
         card_races = _load_card_races(DEFAULT_CARD_RACES_CACHE)
 
     games = {}  # seed -> set of pure-tribe pool minions
     cur_seed = None
-    with open(powerlog_path, encoding="utf-8", errors="replace") as f:
-        lines = f.readlines()
+    if lines is None:
+        with open(powerlog_path, encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
 
     i, n = 0, len(lines)
     while i < n:
