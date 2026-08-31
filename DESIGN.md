@@ -196,7 +196,15 @@ Inspected the installed HDT app (`AppData\Roaming\HearthstoneDeckTracker`):
 **Source:** a structured JSON DB in `meta/`, built from hsreplay pages + the
 hearthstonejson card DB + the wiki.gg tavern-spell page.
 **Refresh:** manual on patches (re-run the scrapers / re-paste Cloudflare-gated
-data).
+data). Balance changes can be applied from official patch notes with
+`patch_notes.py <url>` (fetches the page, LLM-extracts before/after changes,
+dry-runs by default; `--apply` writes them). New cards still need manual entry
+(patch notes don't carry internal card IDs).
+**Automated check (review-first):** `check_patch_notes.py` discovers the latest
+patch from the Blizzard news page, writes a reviewable report to
+`patch_reports/`, and toasts — it never edits the meta DB. Register it as a
+weekly Windows Task Scheduler task with `register_patch_check.ps1`. A human
+reviews the report and applies with `patch_notes.py <url> --apply`.
 **Per-decision fetch:** the coach loads the relevant subset per decision (e.g.,
 comps filtered by the family ban; the hero-rank list on hero-select).
 
