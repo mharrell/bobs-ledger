@@ -58,5 +58,21 @@
     "chain": [
       {"source": "Primitive Painter", "per_trigger": {"atk": 3, "hp": 3}, "applies_to": "tribe", "count_from": "primary", "note": "After you play a card from Tier 3 or below, give your Murlocs +3/+3"}
     ]
+  },
+  "elementals-unbound-tempest": {
+    "name": "Elementals — Unbound Tempest",
+    "tribe": "ELEMENTAL",
+    "trigger": "play_elemental",
+    "chain": [
+      {"source": "Unbound Tempest", "type": "compounding", "cumulative": true, "eat_every": 3, "buff_per_play": {"atk": 4, "hp": 4}, "buff_source": "Nomi, Kitchen Nightmare", "tavern_base": {"atk": 8, "hp": 8}, "note": "Nomi buffs the Tavern +4/+4 per Elemental; Unbound eats the biggest Tavern minion every 3 plays"}
+    ]
+  },
+  "demons-apm-shop-buff": {
+    "name": "Demons — APM Shop Buff",
+    "tribe": "DEMON",
+    "trigger": "cast_spell",
+    "chain": [
+      {"source": "Felboar", "type": "compounding", "cumulative": true, "eat_every": 3, "buff_per_play": {"atk": 2, "hp": 2}, "tavern_base": {"atk": 8, "hp": 8}, "multiplier": "cast_spell", "note": "Shop-buff spells buff the Tavern; Felboar eats a Tavern minion every 3 spells (Balinda doubles)"}
+    ]
   }
 }

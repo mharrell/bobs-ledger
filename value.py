@@ -272,35 +272,48 @@ def _best_engine(board_minions, names):
 
 
 def _engine_growth_bonus(board_minions, names, scenario=None):
-    """Run the growth simulator for the board's best-fit engine and return
-    {card_id: value_bonus} for the engine pieces present on the board.
+    """Run the growth simulator for every engine whose core is present on the
+    board and return {card_id: value_bonus} for the engine pieces.
 
     Each engine piece gets a bonus proportional to the total simulated growth the
     engine drives per turn — so a low-stats engine (Nomi, Glambot) ranks high
-    because it's what makes the board grow.
+    because it's what makes the board grow. Crediting all running engines (not
+    just the best-fit one) handles hybrid boards (e.g. Mana Surge + Unbound).
     """
-    engine = _best_engine(board_minions, names)
-    if not engine:
-        return {}
-    sc = scenario or {engine["trigger"]: _DEFAULT_SCENARIO.get(engine["trigger"], 3)}
-    # simulate_growth matches engine pieces by name; board_state minions only
-    # carry card IDs, so enrich the board with names from the BG pool.
-    enriched = [dict(m, name=names.get(m["card"], "")) for m in board_minions]
-    result = simulate_growth(enriched, sc, engine)
-    total = result["gain"]["atk"] + result["gain"]["hp"]
+    engines = _load_engines()
     bonus = {}
-    # Chain source cards (the engine pieces).
-    for step in engine["chain"]:
-        for m in board_minions:
-            if step["source"].lower() in (names.get(m["card"]) or "").lower():
-                bonus[m["card"]] = W_ENGINE_SIM * total
-    # Multiplier cards (Balinda/Drakkari/Brann/Titus) amplify the engine; they're
-    # not chain sources but are just as critical to keep.
-    for cards in _MULTIPLIERS.values():
-        for card_name in cards:
+    for slug, engine in engines.items():
+        if slug.startswith("_"):
+            continue
+        core_steps = [s for s in engine["chain"] if s.get("counts_as")] or engine["chain"]
+        if not any(_has_card(board_minions, s["source"], names) for s in core_steps):
+            continue
+        sc = scenario or {engine["trigger"]: _DEFAULT_SCENARIO.get(engine["trigger"], 3)}
+        # simulate_growth matches engine pieces by name; board_state minions only
+        # carry card IDs, so enrich the board with names from the BG pool.
+        enriched = [dict(m, name=names.get(m["card"], "")) for m in board_minions]
+        result = simulate_growth(enriched, sc, engine)
+        total = result["gain"]["atk"] + result["gain"]["hp"]
+        if total <= 0:
+            continue
+        # Chain source cards (the engine pieces).
+        for step in engine["chain"]:
             for m in board_minions:
-                if card_name.lower() in (names.get(m["card"]) or "").lower():
+                if step["source"].lower() in (names.get(m["card"]) or "").lower():
                     bonus[m["card"]] = W_ENGINE_SIM * total
+            # The shop-buff engine (e.g. Nomi) that makes a compounding step
+            # compound is as critical as the payoff; credit it too.
+            if step.get("buff_source"):
+                for m in board_minions:
+                    if step["buff_source"].lower() in (names.get(m["card"]) or "").lower():
+                        bonus[m["card"]] = W_ENGINE_SIM * total
+        # Multiplier cards (Balinda/Drakkari/Brann/Titus) amplify the engine;
+        # they're not chain sources but are just as critical to keep.
+        for cards in _MULTIPLIERS.values():
+            for card_name in cards:
+                for m in board_minions:
+                    if card_name.lower() in (names.get(m["card"]) or "").lower():
+                        bonus[m["card"]] = W_ENGINE_SIM * total
     return bonus
 
 

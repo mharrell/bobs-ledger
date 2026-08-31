@@ -75,6 +75,37 @@ def simulate_growth(board, scenario, engine):
     tribe = engine.get("tribe")
 
     for step in engine["chain"]:
+        # Compounding shop-eat step (Nomi/Unbound, Felboar): each trigger buffs
+        # the Tavern; every `eat_every` triggers the payoff eats the biggest
+        # Tavern minion, whose stats have compounded (base + buff per play so far).
+        if step.get("type") == "compounding":
+            if not _count(board, step["source"]):
+                continue
+            # The Tavern buffs accumulate over the whole game, so a compounding
+            # step uses the cumulative trigger count (scenario "<trigger>_total"),
+            # not just this turn's count.
+            if step.get("cumulative"):
+                n = scenario.get(engine["trigger"] + "_total", primary_count)
+            else:
+                n = primary_count
+            if step.get("multiplier"):
+                n *= _multiplier_for(step["multiplier"], board)
+            eat_every = step.get("eat_every", 3)
+            buff = dict(step["buff_per_play"])
+            if step.get("buff_source") and not _count(board, step["buff_source"]):
+                buff = {"atk": 0, "hp": 0}  # no shop-buff engine -> no compounding
+            base = step["tavern_base"]
+            eats = n // eat_every
+            a = h = 0
+            for j in range(1, eats + 1):
+                plays = j * eat_every
+                a += base["atk"] + buff["atk"] * plays
+                h += base["hp"] + buff["hp"] * plays
+            gain["atk"] += a
+            gain["hp"] += h
+            breakdown[step["source"]] = (a, h)
+            continue
+
         # A step may require a held trinket (e.g. Copper Coil) rather than a
         # board minion; skip it if the trinket isn't in the scenario.
         if step.get("requires_trinket") and \
