@@ -46,17 +46,23 @@ _COMBAT_SCALE_MARKERS = ("in combat", "start of combat", "during combat",
 
 
 def _load_card_db():
-    """card id -> {name, race, attack, health, mechanics, text} from the full DB."""
-    path = os.path.join(_HERE, ".cards_full.json")
+    """card id -> {name, race, attack, health, mechanics, text} from the BG pool.
+
+    Loads from meta/minions.json (the 245-minion Battlegrounds pool), NOT the
+    full hearthstonejson DB (.cards_full.json) which doesn't carry BG card IDs —
+    the value function was blind to BG card text (e.g. Ravaging Scorpid's Beetle
+    scaling) and underrated them. See VALUE_FUNCTION.md "BG-pool guardrail".
+    """
+    path = os.path.join(_HERE, "meta", "minions.json")
     if not os.path.exists(path):
         return {}
     with open(path, encoding="utf-8") as f:
-        cards = json.load(f)
+        minions = json.load(f)
     out = {}
-    for c in cards:
+    for c in minions:
         out[c.get("id")] = {
             "name": c.get("name"),
-            "race": c.get("race"),
+            "race": c.get("tribe"),  # minions.json uses 'tribe', not 'race'
             "attack": c.get("attack"),
             "health": c.get("health"),
             "mechanics": c.get("mechanics", []),

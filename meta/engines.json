@@ -75,5 +75,13 @@
     "chain": [
       {"source": "Felboar", "type": "compounding", "cumulative": true, "eat_every": 3, "buff_per_play": {"atk": 2, "hp": 2}, "tavern_base": {"atk": 8, "hp": 8}, "multiplier": "cast_spell", "note": "Shop-buff spells buff the Tavern; Felboar eats a Tavern minion every 3 spells (Balinda doubles)"}
     ]
+  },
+  "beasts-beetles": {
+    "name": "Beasts — Beetles",
+    "tribe": "BEAST",
+    "trigger": "attack",
+    "chain": [
+      {"source": "Ravaging Scorpid", "type": "tribe_scaling", "buff_per_trigger": {"atk": 5, "hp": 5}, "note": "After a friendly minion attacks, your Beetles have +5/+5 this game (compounds over the game)"}
+    ]
   }
 }
