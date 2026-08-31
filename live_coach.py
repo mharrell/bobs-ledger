@@ -22,7 +22,7 @@ from player_actions import (
     STEP_RE, _GS, ENTITY, MINION_ONLY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
 )
-from value import sell_recommendation
+from value import sell_recommendation, shop_ranking
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
                  "play_tier3_or_lower", "discover")
@@ -34,6 +34,11 @@ _SEED = re.compile(r"GAME_SEED value=(\d+)")
 _SPELL = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=([^]]+) cardId=(\w+)")
 _SHOP_BUTTON_NAMES = ("Refresh", "Freeze", "Tavern Tier", "Drag To Buy",
                       "Dark Discovery")
+# A tavern offer: a DebugPrintOptions POWER option whose mainEntity is a real
+# minion. Captures cardId and the owning player, so the player's own minions
+# (shown as sell options) are excluded from the shop.
+# e.g. "option 4 type=POWER mainEntity=[entityName=X cardId=BG36_345 .. player=15]"
+_SHOP_OPT = re.compile(r"DebugPrintOptions\(\).*?cardId=(\w+)[^\]]*player=(\d+)")
 _ALL_TRIBES = ["Beast", "Demon", "Dragon", "Elemental", "Mech", "Murloc",
                "Naga", "Pirate", "Quilboar", "Undead"]
 
@@ -162,6 +167,7 @@ class LiveCoach:
         self.gs = GameState()
         self.actions = _LiveActions()
         self.cur_lines = []
+        self.shop_cards = []
         self._reset_meta()
 
     def _reset_meta(self):
@@ -177,11 +183,29 @@ class LiveCoach:
         self.gs = GameState()
         self.actions = _LiveActions()
         self.cur_lines = []
+        self.shop_cards = []
         self._reset_meta()
 
     def feed(self, line):
         if _GAME_START.search(line):
             self._reset()
+        # The shop changes at a new buy phase, on a refresh (re-roll), or on a
+        # buy; reset so the next DebugPrintOptions block rebuilds it from the
+        # current offers. (Only actual PLAY actions for refresh/buy, not the
+        # DebugPrintOptions buttons.)
+        if "tag=STEP value=MAIN_ACTION" in line \
+                or "BlockType=PLAY Entity=[entityName=Refresh " in line \
+                or ("BlockType=PLAY Entity=[entityName=Drag To Buy " in line and "Target=" in line):
+            self.shop_cards = []
+        m = _SHOP_OPT.search(line)
+        if m:
+            cid, p = m.group(1), int(m.group(2))
+            # Keep every minion option (shop offers are owned by the tavern/13;
+            # the friendly player's board/hand minions are filtered in analyze()).
+            if MINION_ONLY.match(cid) and "HERO" not in cid \
+                    and all(cid != c for c, _ in self.shop_cards):
+                self.shop_cards.append((p, cid))
+            return
         self.gs.feed(line)
         self.actions.feed(line)
         self.cur_lines.append(line)
@@ -227,6 +251,16 @@ class LiveCoach:
         scenario = self.actions.scenario()
         ranked = sell_recommendation(board, self.playable, set(self.allowed),
                                      scenario=scenario)
+        # The shop = the DebugPrintOptions offers owned by anyone but the friendly
+        # player (the player's own minions are shown as sell options, not offers).
+        offer_ids = []
+        seen = set()
+        for p, c in self.shop_cards:
+            if p != self.friendly and c not in seen:
+                offer_ids.append(c)
+                seen.add(c)
+        shop = shop_ranking(offer_ids, self.playable, board,
+                            set(self.allowed)) if offer_ids else []
         return {
             "hero": self.hero_name,
             "tier": tier,
@@ -235,5 +269,7 @@ class LiveCoach:
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
             "sell_rank": ranked,
+            "shop_rank": shop,
+            "buy_this": shop[0][0] if shop else None,
             "scenario": scenario,
         }

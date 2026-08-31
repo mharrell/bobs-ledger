@@ -41,6 +41,8 @@ _HTML = """<!doctype html>
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:1px 8px; font-size:12px; }
   .level { font-weight:600; }
+  .buythis { font-size:15px; font-weight:700; color:var(--gold); }
+  .buythis small { color:var(--dim); font-weight:400; }
   .none { color:var(--dim); font-style:italic; }
   #wait { color:var(--dim); }
   .score { color:var(--dim); }
@@ -118,6 +120,25 @@ function render(a) {
   });
   app.appendChild(box('Board', boardBody));
 
+  // Tavern — buy this (the shop's best minion for your comp, then the rest ranked)
+  if (a.shop_rank && a.shop_rank.length) {
+    const top = a.shop_rank[0];
+    app.appendChild(box('Buy this', el('div', 'buythis',
+      top.name + ' <small>score ' + top.score + '</small>')));
+    if (a.shop_rank.length > 1) {
+      const shopBody = el('div');
+      a.shop_rank.slice(1).forEach(s => {
+        const r = el('div', 'row');
+        r.appendChild(el('span', 'l', s.name));
+        r.appendChild(el('span', 'score', s.score.toFixed(0)));
+        shopBody.appendChild(r);
+      });
+      app.appendChild(box('Tavern shop', shopBody));
+    }
+  } else {
+    app.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
+  }
+
   // Sell ranking (safest to sell -> most valuable)
   const sellBody = el('div');
   if (a.sell_rank && a.sell_rank.length) {
@@ -173,6 +194,9 @@ def render_json(analysis):
     a["board"] = [dict(m, name=names.get(m["card"], m["card"])) for m in analysis["board"]]
     a["sell_rank"] = [{"card": c, "name": names.get(c, c), "score": round(v)}
                       for c, v in analysis["sell_rank"]]
+    a["shop_rank"] = [{"card": c, "name": names.get(c, c), "score": round(v)}
+                      for c, v in analysis.get("shop_rank", [])]
+    a["buy_this"] = names.get(analysis["buy_this"], "") if analysis.get("buy_this") else None
     a["comps"] = sorted(analysis.get("playable_comps", {}).keys())
     return a
 
