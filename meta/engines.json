@@ -1,0 +1,62 @@
+{
+  "_comment": "Machine-readable growth engines for simulate_growth.py. Each engine models a deterministic trigger chain: a primary trigger (the action the scenario counts) fires chain steps, each of which adds a stat buff. Multipliers (Balinda/Drakkari/Brann/Titus) double a trigger type when the card is on the board. Derived counters (e.g. 'magnetize') let one step's output feed another. Buff magnitudes come from card text in meta/minions.json and trinkets.json. Engines that are economy/combat/shop-side (River Skipper, Hooktusk, Sargeras, Stitch, Admiration, Felboar, Butchering) are NOT modeled here — they don't fit the per-trigger stat-gain shape.",
+  "mechs-magnetics-spells": {
+    "name": "Mechs — Magnetics/Spells",
+    "tribe": "MECHANICAL",
+    "trigger": "cast_spell",
+    "chain": [
+      {"source": "Glambot", "per_trigger": {"atk": 4, "hp": 4}, "applies_to": "target", "count_from": "primary", "multiplier": "cast_spell", "counts_as": "magnetize", "note": "Magnetize a 4/4 Satellite per spell cast"},
+      {"source": "Copper Coil", "per_trigger": {"atk": 1, "hp": 1}, "applies_to": "target", "count_from": "magnetize", "requires_trinket": "Copper Coil", "note": "Trinket: +1/+1 per Magnetization"},
+      {"source": "Utility Drone", "per_trigger": {"atk": 4, "hp": 4}, "applies_to": "all", "count_from": "magnetize", "multiplier": "end_of_turn", "note": "End of turn: +4/+4 per Magnetization to all minions"}
+    ]
+  },
+  "mechs-magnetics": {
+    "name": "Mechs — Magnetics",
+    "tribe": "MECHANICAL",
+    "trigger": "play_mech",
+    "chain": [
+      {"source": "Spark Snapper", "per_trigger": {"atk": 2, "hp": 2}, "applies_to": "target", "count_from": "primary", "counts_as": "magnetize", "note": "Magnetize a 2/2 Satellite per Mech played"},
+      {"source": "Utility Drone", "per_trigger": {"atk": 4, "hp": 4}, "applies_to": "all", "count_from": "magnetize", "multiplier": "end_of_turn", "note": "End of turn: +4/+4 per Magnetization to all minions"}
+    ]
+  },
+  "elementals-stat-scaling": {
+    "name": "Elementals — Stat Scaling",
+    "tribe": "ELEMENTAL",
+    "trigger": "play_elemental",
+    "chain": [
+      {"source": "Unleashed Mana Surge", "per_trigger": {"atk": 4, "hp": 4}, "applies_to": "tribe", "count_from": "primary", "note": "After you play an Elemental, give your Elementals +4/+4"}
+    ]
+  },
+  "nagas-groundbreaker": {
+    "name": "Nagas — Groundbreaker",
+    "tribe": "NAGA",
+    "trigger": "play_naga",
+    "chain": [
+      {"source": "Groundbreaker", "per_trigger": {"atk": 1, "hp": 1}, "applies_to": "target", "count_from": "primary", "note": "After you play a Naga, gain +1/+1 (improved by every 3 spells cast this game)"}
+    ]
+  },
+  "nagas-end-of-turn-spell-buff": {
+    "name": "Nagas — End of Turn / Spell Buff",
+    "tribe": "NAGA",
+    "trigger": "cast_spell",
+    "chain": [
+      {"source": "Torrential Ruiner", "per_trigger": {"atk": 2, "hp": 3}, "applies_to": "all", "count_from": "primary", "multiplier": "cast_spell", "note": "Whenever you cast a spell on a Naga, give your minions +2/+3"}
+    ]
+  },
+  "beasts-tasty-lobstah": {
+    "name": "Beasts — Tasty Lobstah",
+    "tribe": "BEAST",
+    "trigger": "deathrattle",
+    "chain": [
+      {"source": "Tasty Lobster", "per_trigger": {"atk": 1, "hp": 1}, "applies_to": "tribe", "count_from": "primary", "multiplier": "deathrattle", "note": "Deathrattle: give a random friendly Beast +1/+1 (improves future Lobsters)"}
+    ]
+  },
+  "murlocs-apm": {
+    "name": "Murlocs — APM",
+    "tribe": "MURLOC",
+    "trigger": "play_tier3_or_lower",
+    "chain": [
+      {"source": "Primitive Painter", "per_trigger": {"atk": 3, "hp": 3}, "applies_to": "tribe", "count_from": "primary", "note": "After you play a card from Tier 3 or below, give your Murlocs +3/+3"}
+    ]
+  }
+}

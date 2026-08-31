@@ -5,46 +5,33 @@ answer "if I cast 4 spells, how much do I actually gain?" This module models the
 trigger chain deterministically: count the engine pieces on the board, apply the
 multipliers, propagate the chain, and sum the stat gain.
 
-This is the FIRST hard-coded engine (the Glambot / mechs-magnetics-spells comp)
-to prove the shape before generalizing to a machine-readable engine model
-(see memory `hearth-value-function`). The engine is a plain dict so it can be
-lifted into `meta/engines.json` later.
+The engine model is machine-readable (`meta/engines.json`): each engine declares
+a primary trigger, a chain of steps (source card, buff per trigger, scope), and
+which multiplier doubles each trigger type. Derived counters (e.g. "magnetize")
+let one step's output feed another (Glambot produces magnetizations that Utility
+Drone consumes). See memory `hearth-value-function`.
 
-Design: analysis/VALUE_FUNCTION.md. The numbers come from the card text in
-`meta/minions.json` and the trinket text in `meta/trinkets.json`.
+Design: analysis/VALUE_FUNCTION.md. Buff magnitudes come from card text in
+`meta/minions.json` and `meta/trinkets.json`.
 """
+import json
 import os
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
-# ---------------------------------------------------------------------------
-# The hard-coded engine model (first of many; to be generalized).
-#
-# The chain: cast a spell on a Mech -> Glambot magnetizes a 4/4 Satellite ->
-# Copper Coil improves it -> Utility Drone scales per magnetization at end of
-# turn. Balinda doubles the spell casts.
-# ---------------------------------------------------------------------------
-_GLAMBOT_ENGINE = {
-    "name": "mechs-magnetics-spells",
-    "trigger": "cast_spell_on_mech",   # the action that fires the chain
-    "multipliers": {
-        # Cards that double the trigger count. Balinda doubles spell casts.
-        "spell_cast": {"Balinda": 2},
-    },
-    "chain": [
-        # Each step: {source, per_trigger, applies_to}.
-        # applies_to: "target_mech" (the minion being magnetized) or "all_minions".
-        {"source": "Glambot", "per_trigger": {"atk": 4, "hp": 4},
-         "applies_to": "target_mech",
-         "note": "Magnetize a 4/4 Satellite per spell cast"},
-        {"source": "Copper Coil", "per_trigger": {"atk": 1, "hp": 1},
-         "applies_to": "target_mech",
-         "note": "Trinket: +1/+1 per Magnetization"},
-        {"source": "Utility Drone", "per_trigger": {"atk": 4, "hp": 4},
-         "applies_to": "all_minions",
-         "note": "End of turn: +4/+4 per Magnetization to all minions"},
-    ],
+# Multiplier cards: trigger type -> card names that double it when on the board.
+_MULTIPLIERS = {
+    "cast_spell": ["Balinda Stonehearth"],
+    "end_of_turn": ["Drakkari Enchanter"],
+    "battlecry": ["Brann Bronzebeard"],
+    "deathrattle": ["Titus Rivendare"],
 }
+
+
+def _load_engines():
+    path = os.path.join(_HERE, "meta", "engines.json")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
 
 def _count(board, name):
@@ -52,73 +39,81 @@ def _count(board, name):
     return sum(1 for m in board if name.lower() in (m.get("name") or "").lower())
 
 
-def _has(board, name):
-    return _count(board, name) > 0
+def _multiplier_for(trigger_type, board):
+    """2 if a doubling card for this trigger type is on the board, else 1."""
+    for card in _MULTIPLIERS.get(trigger_type, []):
+        if _count(board, card):
+            return 2
+    return 1
 
 
-def simulate_growth(board, scenario, engine=None):
+def _scope_size(applies_to, board, tribe):
+    """How many minions a step's buff lands on."""
+    if applies_to == "all":
+        return len(board)
+    if applies_to == "tribe" and tribe:
+        return sum(1 for m in board if (m.get("tribe") or "") == tribe)
+    return 1  # "target"
+
+
+def simulate_growth(board, scenario, engine):
     """Deterministically propagate a trigger chain and sum the stat gain.
 
     `board`: list of minions from board_state (each has card, atk, health, tribe,
     and a `name` for engine-piece matching).
-    `scenario`: {"spells_cast": N, "copper_coil": bool} — the input action count
-    and whether the Copper Coil trinket is held.
-    `engine`: the engine model (defaults to the hard-coded Glambot engine).
+    `scenario`: {engine["trigger"]: N} — how many times the primary action fires
+    this turn (e.g. {"cast_spell": 4}).
+    `engine`: the engine model dict from meta/engines.json.
 
     Returns a dict with the total stat gain, a per-source breakdown, and the
     intermediate trigger counts — so the coach can explain *why*.
     """
-    engine = engine or _GLAMBOT_ENGINE
-
-    # 1. Count the engine pieces on the board.
-    glambots = _count(board, "Glambot")
-    balinda = _has(board, "Balinda")
-    drone = _has(board, "Utility Drone")
-    copper_coil = scenario.get("copper_coil", False)
-    board_size = len(board)
-
-    # 2. Trigger count. Each spell cast is doubled by Balinda; each Glambot
-    #    magnetizes once per cast.
-    spells = scenario.get("spells_cast", 0)
-    casts = spells * engine["multipliers"]["spell_cast"].get("Balinda", 1) if balinda \
-        else spells
-    magnetizations = casts * glambots
-
-    # 3. Propagate the chain, summing stat gain per source.
+    primary_count = scenario.get(engine["trigger"], 0)
+    counters = {"primary": primary_count}
     gain = {"atk": 0, "hp": 0}
     breakdown = {}
+    tribe = engine.get("tribe")
+
     for step in engine["chain"]:
-        src = step["source"]
-        if src == "Glambot" and glambots:
-            g = magnetizations * step["per_trigger"]["atk"]
-            gain["atk"] += g
-            gain["hp"] += g
-            breakdown[step["note"]] = (g, g)
-        elif src == "Copper Coil" and copper_coil:
-            c = magnetizations * step["per_trigger"]["atk"]
-            gain["atk"] += c
-            gain["hp"] += c
-            breakdown[step["note"]] = (c, c)
-        elif src == "Utility Drone" and drone:
-            d = magnetizations * step["per_trigger"]["atk"] * board_size
-            gain["atk"] += d
-            gain["hp"] += d
-            breakdown[step["note"]] = (d, d)
+        # A step may require a held trinket (e.g. Copper Coil) rather than a
+        # board minion; skip it if the trinket isn't in the scenario.
+        if step.get("requires_trinket") and \
+                step["requires_trinket"] not in scenario.get("trinkets", []):
+            continue
+        # How many times this step fires: its count source (default the primary
+        # trigger) x how many of the source card are on the board. A trinket is
+        # held once, so its source count is 1, not a board count.
+        base = counters.get(step.get("count_from", "primary"), 0)
+        source_count = 1 if step.get("requires_trinket") else _count(board, step["source"])
+        count = base * source_count
+        # A multiplier (Balinda/Drakkari/Brann/Titus) doubles this step's trigger.
+        if step.get("multiplier"):
+            count *= _multiplier_for(step["multiplier"], board)
+        # This step may produce a derived counter for downstream steps.
+        if step.get("counts_as"):
+            counters[step["counts_as"]] = count
+
+        scope = _scope_size(step.get("applies_to", "target"), board, tribe)
+        a = count * step["per_trigger"]["atk"] * scope
+        h = count * step["per_trigger"]["hp"] * scope
+        gain["atk"] += a
+        gain["hp"] += h
+        breakdown[step["source"]] = (a, h)
 
     return {
         "engine": engine["name"],
-        "spells_cast": spells,
-        "casts": casts,
-        "magnetizations": magnetizations,
+        "trigger": engine["trigger"],
+        "primary_count": primary_count,
+        "counters": counters,
         "gain": gain,
         "breakdown": breakdown,
     }
 
 
 if __name__ == "__main__":
-    # Demo: a synthetic Glambot board. Names are matched by substring, so the
-    # board_state minions need a `name` field (the card DB provides it).
-    board = [
+    engines = _load_engines()
+    # Demo: a synthetic Glambot board (2 Glambots, Balinda, 2 Drones, Drakkari).
+    glambot_board = [
         {"card": "BG36_853", "name": "Glambot", "atk": 4, "health": 4, "tribe": "MECHANICAL"},
         {"card": "BG36_853", "name": "Glambot", "atk": 4, "health": 4, "tribe": "MECHANICAL"},
         {"card": "BG35_883", "name": "Balinda Stonehearth", "atk": 6, "health": 6, "tribe": None},
@@ -128,10 +123,28 @@ if __name__ == "__main__":
         {"card": "BG_LOE_077", "name": "Brann Bronzebeard", "atk": 2, "health": 4, "tribe": None},
     ]
     for n in (1, 4):
-        r = simulate_growth(board, {"spells_cast": n, "copper_coil": True})
-        print(f"\n=== {n} spell(s) cast, Copper Coil held ===")
-        print(f"  casts (Balinda x2): {r['casts']}  magnetizations: {r['magnetizations']}")
+        r = simulate_growth(glambot_board,
+                            {"cast_spell": n, "trinkets": ["Copper Coil"]},
+                            engines["mechs-magnetics-spells"])
+        print(f"\n=== {r['engine']} — {n} spell(s) cast ===")
+        print(f"  magnetizations: {r['counters'].get('magnetize')}")
         for src, (a, h) in r["breakdown"].items():
             print(f"  {src}: +{a}/+{h}")
         print(f"  TOTAL: +{r['gain']['atk']}/+{r['gain']['hp']} "
               f"({r['gain']['atk'] + r['gain']['hp']} stats)")
+
+    # Demo: a Mana Surge Elemental board.
+    ele_board = [
+        {"card": "BG32_846", "name": "Unleashed Mana Surge", "atk": 6, "health": 5, "tribe": "ELEMENTAL"},
+        {"card": "BG36_352", "name": "Unbound Tempest", "atk": 3, "health": 12, "tribe": "ELEMENTAL"},
+        {"card": "BGS_104", "name": "Nomi, Kitchen Nightmare", "atk": 6, "health": 6, "tribe": None},
+        {"card": "BG32_842", "name": "Glowing Cinder", "atk": 4, "health": 1, "tribe": "ELEMENTAL"},
+        {"card": "BG_LOE_077", "name": "Brann Bronzebeard", "atk": 2, "health": 4, "tribe": None},
+    ]
+    r = simulate_growth(ele_board, {"play_elemental": 3},
+                        engines["elementals-stat-scaling"])
+    print(f"\n=== {r['engine']} — 3 Elementals played ===")
+    for src, (a, h) in r["breakdown"].items():
+        print(f"  {src}: +{a}/+{h}")
+    print(f"  TOTAL: +{r['gain']['atk']}/+{r['gain']['hp']} "
+          f"({r['gain']['atk'] + r['gain']['hp']} stats)")
