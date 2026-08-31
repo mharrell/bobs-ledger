@@ -65,7 +65,8 @@
     "when_to_commit": "Seafloor Recruiter plus Groundbreaker",
     "common_enablers": "Seafloor Recruiter",
     "representative_card": "BG31_035",
-    "tribe": "Nagas"
+    "tribe": "Nagas",
+    "guide": "guides/nagas-groundbreaker.md"
   },
   "mechs-magnetics-spells": {
     "name": "Mechs - Magnetics/Spells",
@@ -87,7 +88,8 @@
     "when_to_commit": "Glambot + Balinda Stonehearth",
     "common_enablers": "Glambot to stabilize",
     "representative_card": "BG36_853",
-    "tribe": "Mechs"
+    "tribe": "Mechs",
+    "guide": "guides/mechs-magnetics-spells.md"
   },
   "elementals-stat-scaling": {
     "name": "Elementals - Stat scaling",
@@ -111,7 +113,8 @@
     "when_to_commit": "Unleashed Mana Surge + Brann Bronzebeard + Stat scaling (Glowing Cinder)",
     "common_enablers": "Glowing Cinder + Ele Midgame\nBrann Bronzebeard",
     "representative_card": "BG32_846",
-    "tribe": "Elementals"
+    "tribe": "Elementals",
+    "guide": "guides/elementals-stat-scaling.md"
   },
   "beasts-tasty-lobstah": {
     "name": "Beasts - Tasty Lobstah",
@@ -133,7 +136,8 @@
     "when_to_commit": "Headhunter Gryphon + Deathstrider",
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BG36_202",
-    "tribe": "Beasts"
+    "tribe": "Beasts",
+    "guide": "guides/beasts-tasty-lobstah.md"
   },
   "murlocs-venom-scam": {
     "name": "Murlocs - Venom Scam",
@@ -155,7 +159,8 @@
     "when_to_commit": "When you have no future or are clearly getting outstatted",
     "common_enablers": "Getting outscaled",
     "representative_card": "BG33_318",
-    "tribe": "Murlocs"
+    "tribe": "Murlocs",
+    "guide": "guides/murlocs-venom-scam.md"
   },
   "murlocs-apm": {
     "name": "Murlocs - APM",
@@ -177,7 +182,8 @@
     "when_to_commit": "Brann Bronzebeard + lots of economy + Shamanic Tidecaller",
     "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
     "representative_card": "BG36_704",
-    "tribe": "Murlocs"
+    "tribe": "Murlocs",
+    "guide": "guides/murlocs-apm.md"
   },
   "pirates-apm-golden": {
     "name": "Pirates - APM Golden",
@@ -198,7 +204,8 @@
     "when_to_commit": "Enterprising Escapee + Infinite gold",
     "common_enablers": "Enterprising Escapee",
     "representative_card": "BG36_523",
-    "tribe": "Pirates"
+    "tribe": "Pirates",
+    "guide": "guides/pirates-apm-golden.md"
   },
   "demons-shop-buff": {
     "name": "Demons - Shop Buff",
@@ -222,7 +229,8 @@
     "when_to_commit": "Buffed Shop (Devilish Distractor) + Twisted Wrathguard",
     "common_enablers": "Brann Bronzebeard\nTwisted Wrathguard",
     "representative_card": "BG32_873",
-    "tribe": "Demons"
+    "tribe": "Demons",
+    "guide": "guides/demons-shop-buff.md"
   },
   "undead-attack-scaling": {
     "name": "Undead - Attack Scaling",
@@ -245,7 +253,8 @@
     "when_to_commit": "Attack Scaling (Drustfallen Butcher) + summons (Handless Forsaken)",
     "common_enablers": "Deathly Striker \nFriendly Geist\nUndead midgame (Plaguerunner/Dustbone Devastator)",
     "representative_card": "BG31_835",
-    "tribe": "Undead"
+    "tribe": "Undead",
+    "guide": "guides/undead-attack-scaling.md"
   },
   "mechs-deathrattle": {
     "name": "Mechs - Deathrattle",
@@ -372,7 +381,8 @@
     "when_to_commit": "Magnetic Generation (Scrap Scraper) + Spark Snapper",
     "common_enablers": "Magnetic Generation (Scrap Scraper)",
     "representative_card": "BG26_148",
-    "tribe": "Mechs"
+    "tribe": "Mechs",
+    "guide": "guides/mechs-magnetics.md"
   },
   "demons-apm-shop-buff": {
     "name": "Demons - APM Shop Buff",
@@ -394,7 +404,8 @@
     "summary": "Cast spells to consume buffed shop.",
     "when_to_commit": "Early infinite gold + Felboar",
     "common_enablers": "Brann Bronzebeard",
-    "representative_card": "BG28_633"
+    "representative_card": "BG28_633",
+    "guide": "guides/demons-apm-shop-buff.md"
   },
   "beasts-summon-beetles": {
     "name": "Beasts - Summon Beetles",

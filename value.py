@@ -9,6 +9,7 @@ intended to be tuned against real games.
 """
 import json
 import os
+import re
 
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
 
@@ -27,9 +28,10 @@ W_TRIBE = 1.0       # matches the comp's tribe
 W_HERO = 1.5        # synergizes with the hero power
 W_TRINKET = 1.0     # synergizes with a trinket
 W_ENGINE_MULT = 0.05  # per point of scaling-minion stats it amplifies
-W_ENGINE = 8.0      # bonus for the board's engine piece (e.g. Nomi)
+W_ENGINE = 15.0     # bonus for the board's engine piece (e.g. Nomi, Glambot)
 W_COMBAT_SCALE = 4.0  # bonus for combat-time scaling minions (e.g. Flaming Enforcer)
 W_ENGINE_SIM = 0.05  # per stat of simulated growth the board's engine drives
+W_GROWTH = 2.0      # per point of growth potential (how much a minion can scale)
 
 # Keywords/phrases that mark a scaling/engine minion vs a plain body.
 _SCALING_MARKERS = ("end of turn", "whenever you play", "improves", "each",
@@ -39,7 +41,7 @@ _ENGINE_MARKERS = ("double", "twice", "each turn", "each", "improve",
 # Whole-board/comp scaling engines (buff the whole board or a tribe).
 _ENGINE_TEXT_MARKERS = ("give ", "your ", "play a ", "play an ", "gain +",
                         "after you buy", "each turn", "whenever you summon",
-                        "scales")
+                        "whenever you cast", "whenever you play", "scales")
 # Combat-time scaling (invisible to the pre-combat board snapshot).
 _COMBAT_SCALE_MARKERS = ("in combat", "start of combat", "during combat",
                          "when this attacks", "this gains")
@@ -111,6 +113,41 @@ def _is_combat_scaling(card):
     return any(m in text for m in _COMBAT_SCALE_MARKERS)
 
 
+def growth_potential(card):
+    """Estimate a minion's growth potential from its text.
+
+    The value function sees current stats; this estimates how much a minion can
+    *scale* over the game. It scores the growth mechanism (how often the trigger
+    fires) and the magnitude (the buff size). A 4/4 Glambot that magnetizes a
+    4/4 Satellite per spell has high growth potential even though its stats are
+    small.
+    """
+    text = (card or {}).get("text") or ""
+    score = 0.0
+    # Growth triggers — how often the effect fires.
+    if "end of turn" in text:
+        score += 2.0
+    if "whenever you play" in text or "whenever you summon" in text:
+        score += 3.0
+    if "whenever you cast" in text or "after you cast" in text:
+        score += 4.0  # spell comps cast a lot
+    if "magnetize" in text:
+        score += 4.0
+    if "battlecry" in text:
+        score += 2.0
+    if "deathrattle" in text:
+        score += 2.0
+    if "improve" in text:
+        score += 3.0  # compounding
+    if "gain its stats" in text or "consume" in text:
+        score += 3.0  # eat-growth
+    # Magnitude — the buff size (+N/+N).
+    m = re.search(r"\+(\d+)/\+(\d+)", text)
+    if m:
+        score += (int(m.group(1)) + int(m.group(2))) / 2.0
+    return score
+
+
 def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
                  board_scaling=0, dominant_tribe=None, engine_bonus=0):
     """Score a board minion (higher = more valuable to keep).
@@ -139,6 +176,15 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
     # Combat-time scaling is invisible to the pre-combat snapshot; flag as +value.
     if _is_combat_scaling(card):
         score += W_COMBAT_SCALE
+    # Growth potential: how much the minion can scale (not just current stats).
+    # Engine pieces (core/addon of the comp) grow far more in their comp, so
+    # amplify their growth potential.
+    growth = growth_potential(card)
+    if comp and minion["card"] in comp.get("core", []):
+        growth *= 2.0
+    elif comp and minion["card"] in comp.get("addons", []):
+        growth *= 1.5
+    score += W_GROWTH * growth
 
     if card:
         base_atk = card.get("attack") or 0
