@@ -26,7 +26,7 @@ from value import sell_recommendation
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
                  "play_tier3_or_lower")
-_GAME_START = re.compile(r"CREATE_GAME.*GameState\.DebugPrintPower")
+_GAME_START = re.compile(r"GameState\.DebugPrintPower.*CREATE_GAME")
 _SEED = re.compile(r"GAME_SEED value=(\d+)")
 # A spell cast = a PLAY block on a non-minion card. Captures entityName so shop
 # buttons (Refresh/Freeze/Tavern Tier/Drag To Buy/Dark Discovery) are excluded by
