@@ -28,10 +28,10 @@ from extract_game import (
 # A real board minion: BGxx_NNN, BGxx_SETCODE_NNN (e.g. Drakkari = BG26_ICC_901),
 # BGS_NNN (legacy), or BG_XXX_NNN (reprints, e.g. Brann = BG_LOE_077). BGS_ is
 # used by both minions and spells, so the cardtype filter (not this regex) does
-# the minion/spell split. Excludes enchantments (BGxx_NNNx), golden cards
-# (BGxx_NNN_G), and trinkets. Heroes (HERO) match the set-code branch but are
-# filtered by the cardtype check.
-MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BG\d+_[A-Z]+_\d+|BGS_\d+|BG_[A-Z]+_\d+)$")
+# the minion/spell split. Excludes enchantments (BGxx_NNNx) and trinkets. Golden
+# cards (BGxx_NNN_G) ARE matched; _minion strips the _G and sets a `golden` flag.
+# Heroes (HERO) match the set-code branch but are filtered by the cardtype check.
+MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BG\d+_[A-Z]+_\d+|BGS_\d+|BG_[A-Z]+_\d+)(_G)?$")
 
 # Boolean combat keywords worth reporting on a board.
 KEYWORDS = ("TAUNT", "DIVINE_SHIELD", "REBORN", "WINDFURY", "POISONOUS",
@@ -154,8 +154,12 @@ class GameState:
                 self.keywords[eid].discard(tag)
 
     def _minion(self, eid, cid):
+        golden = cid.endswith("_G")
+        if golden:
+            cid = cid[:-2]  # strip the _G suffix -> base card id
         return {
             "card": cid,
+            "golden": golden,
             "player": self.player.get(eid),
             "atk": self.atk.get(eid),
             "health": self.health.get(eid),

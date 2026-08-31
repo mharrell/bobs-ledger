@@ -247,9 +247,16 @@ def _fmt_tier_timing(hero, tier_reached):
 
 
 def _friendly_player(heroes):
-    """The friendly player number: the one with the fewest heroes (1 vs 7)."""
+    """The friendly player number: the one with the fewest heroes (1 vs 7).
+
+    Returns None if no heroes are parsed yet (e.g. the live coach analyzing a
+    game's very first lines, or end-of-game cleanup) — so callers don't crash on
+    an empty selection.
+    """
     from collections import Counter
     counts = Counter(h["player"] for h in heroes)
+    if not counts:
+        return None
     return min(counts, key=lambda p: counts[p])
 
 

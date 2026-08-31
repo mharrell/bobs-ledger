@@ -53,6 +53,10 @@ CHOICE = re.compile(
 BUY = re.compile(
     _GS + r"BlockType=PLAY Entity=\[entityName=Drag To Buy .*?Target=\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)"
 )
+# A spell cast = a PLAY block on a spell card (e.g. Blood Gem BG20_GEM, tavern
+# spells). The buy button (TB_BaconShop_DragBuy*) is excluded; minions are
+# excluded by checking against the BG minion pool.
+SPELL_PLAY = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=[^]]+ cardId=(\w+)")
 
 
 def parse_actions(chunk, friendly, friendly_hero_card=None):
@@ -79,7 +83,8 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     def new_turn(n):
         return {"turn": n, "buys": [], "sells": [], "triples": [], "refreshes": 0,
                 "freezes": 0, "upgrades": 0, "hero_power": 0,
-                "plays": [], "rearranges": 0, "dark_gifts": 0, "choices": []}
+                "plays": [], "rearranges": 0, "dark_gifts": 0, "choices": [],
+                "spells": 0}
 
     for line in chunk:
         m = STEP_RE.search(line)
@@ -141,6 +146,15 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             turns[-1]["buys"].append(m.group(2))  # card id bought
             continue
 
+        m = SPELL_PLAY.search(line)
+        if m and cur_turn is not None:
+            cid = m.group(1)
+            # A spell cast: a PLAY on a card that isn't a minion and isn't the
+            # buy button. (Hero powers are handled above and continue first.)
+            if cid not in _load_bg_minion_ids() and not cid.startswith("TB_BaconShop_DragBuy"):
+                turns[-1]["spells"] += 1
+                continue
+
         m = ENTITY.search(line)
         if m:
             name, eid, z, pos, cid, p = (
@@ -186,6 +200,90 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     for i, t in enumerate(kept):
         t["turn"] = i + 1  # renumber sequentially after skipping empty phases
     return kept
+
+
+_BG_MINION_IDS = None
+
+
+def _load_bg_minion_ids():
+    """Set of BG minion card ids (meta/minions.json), cached."""
+    global _BG_MINION_IDS
+    if _BG_MINION_IDS is None:
+        import os
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "meta", "minions.json")
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                _BG_MINION_IDS = {m.get("id") for m in json.load(f)}
+        else:
+            _BG_MINION_IDS = set()
+    return _BG_MINION_IDS
+
+
+def _load_bg_pool():
+    """card id -> {tribe, tier} from the BG minion pool."""
+    import os
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "meta", "minions.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return {m.get("id"): {"tribe": m.get("tribe"), "tier": m.get("tier")}
+                for m in json.load(f)}
+
+
+def trigger_counts(actions, bg_pool=None):
+    """Convert per-turn actions into per-trigger-type counts for the growth
+    simulator.
+
+    Returns {trigger_type: max_count_across_turns, trigger_type+"_total": sum}
+    — the player's per-turn ceiling (so a single noisy turn doesn't understate
+    the engine) and the cumulative total (for compounding shop-eat engines whose
+    Tavern buffs accumulate over the game). `plays` (minions played) are
+    categorized by tribe/tier from the BG pool; `spells` are the spell casts
+    counted in parse_actions.
+    """
+    if bg_pool is None:
+        bg_pool = _load_bg_pool()
+    keys = ("cast_spell", "play_elemental", "play_mech", "play_naga",
+            "play_tier3_or_lower", "discover")
+    counts = {k: 0 for k in keys}
+    totals = {k: 0 for k in keys}
+    for t in actions:
+        totals["cast_spell"] += t.get("spells", 0)
+        counts["cast_spell"] = max(counts["cast_spell"], t.get("spells", 0))
+        d = len(t.get("choices", []))
+        totals["discover"] += d
+        counts["discover"] = max(counts["discover"], d)
+        pe = pm = pn = pt = 0
+        for cid in t.get("plays", []):
+            info = bg_pool.get(cid)
+            if not info:
+                continue
+            tribe = info.get("tribe")
+            tier = info.get("tier")
+            if tribe == "ELEMENTAL":
+                pe += 1
+            elif tribe == "MECHANICAL":
+                pm += 1
+            elif tribe == "NAGA":
+                pn += 1
+            if tier is not None and tier <= 3:
+                pt += 1
+        totals["play_elemental"] += pe
+        totals["play_mech"] += pm
+        totals["play_naga"] += pn
+        totals["play_tier3_or_lower"] += pt
+        counts["play_elemental"] = max(counts["play_elemental"], pe)
+        counts["play_mech"] = max(counts["play_mech"], pm)
+        counts["play_naga"] = max(counts["play_naga"], pn)
+        counts["play_tier3_or_lower"] = max(counts["play_tier3_or_lower"], pt)
+    out = {}
+    for k in keys:
+        out[k] = counts[k]
+        out[k + "_total"] = totals[k]
+    out["turns"] = len(actions)
+    return out
 
 
 def main():

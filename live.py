@@ -18,7 +18,9 @@ import os
 import sys
 import time
 
-from coach import analyze, describe
+from coach import describe
+from live_coach import LiveCoach
+import coach_ui
 
 
 def find_active_log():
@@ -35,26 +37,22 @@ def find_active_log():
     return logs[0] if logs else None
 
 
-def _last_game_index(path):
-    from extract_game import split_game_chunks
-    with open(path, encoding="utf-8", errors="replace") as f:
-        lines = f.readlines()
-    return len(list(split_game_chunks(lines)))
-
-
 _last_board = None  # (card, atk, health) fingerprint of the last advised board
 
 
-def run_coach(path):
-    """Analyze the in-progress (last) game and print the analysis.
+def _advise(coach):
+    """Analyze the current incremental state, push to the overlay, and print.
 
-    Skips if the friendly board is unchanged since the last advisory, so the
-    monitor doesn't spam on MAIN_ACTION re-entries within the same turn.
+    Skips the text print if the friendly board is unchanged since the last
+    advisory (so the monitor doesn't spam on MAIN_ACTION re-entries within a
+    turn), but always pushes to the overlay so gold/trigger counts update.
     """
     global _last_board
     try:
-        gi = _last_game_index(path)
-        a = analyze(path, gi)
+        a = coach.analyze()
+        if a is None:
+            return
+        coach_ui.update_analysis(a)
         board = a["board"]
         fingerprint = tuple(sorted((m["card"], m.get("atk"), m.get("health"))
                                    for m in board))
@@ -68,32 +66,62 @@ def run_coach(path):
         print(f"  (coach skipped: {e})", flush=True)
 
 
+def _catch_up(f, coach):
+    """Feed the file's current content into the coach; return the new offset."""
+    f.seek(0)
+    data = f.read().decode("utf-8", errors="replace")
+    for line in data.splitlines():
+        coach.feed(line)
+    return f.tell()
+
+
 def monitor(path, poll=1.0):
     """Tail the log; advise exactly once per buy phase.
 
     A new buy phase is the first MAIN_ACTION of a turn. MAIN_ACTION re-enters
     within a turn (e.g. after a refresh), so we advise only on the transition
     into MAIN_ACTION (in_action False -> True), and reset after MAIN_END
-    (combat) starts the next turn.
+    (combat) starts the next turn. Each tick it re-finds the newest active log
+    and switches to a newly-started session automatically. The parse is
+    maintained incrementally (LiveCoach), so each buy-phase analysis is fast.
     """
-    last_offset = os.path.getsize(path)
-    in_action = False
+    coach = LiveCoach()
     print(f"Live-coaching {path}", flush=True)
-
-    with open(path, "rb") as f:
+    f = open(path, "rb")
+    last_offset = _catch_up(f, coach)
+    _advise(coach)  # seed the overlay with the current (last) game
+    in_action = False
+    try:
         while True:
+            # A new session (Hearthstone_*/Power.log) may appear; switch to it.
+            active = find_active_log()
+            if active and os.path.abspath(active) != os.path.abspath(path):
+                print(f"New session detected: {active}", flush=True)
+                f.close()
+                path = active
+                f = open(path, "rb")
+                coach = LiveCoach()
+                last_offset = _catch_up(f, coach)
+                _advise(coach)
+                in_action = False
+
             f.seek(last_offset)
             data = f.read().decode("utf-8", errors="replace")
             if data:
                 last_offset = f.tell()
                 for line in data.splitlines():
+                    coach.feed(line)
                     if "tag=STEP value=MAIN_ACTION" in line:
                         if not in_action:  # entering the buy phase -> advise once
-                            run_coach(path)
+                            _advise(coach)
                             in_action = True
                     elif "tag=STEP value=MAIN_END" in line:
                         in_action = False  # combat ends the buy phase
             time.sleep(poll)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        f.close()
 
 
 def main():
@@ -104,11 +132,23 @@ def main():
         print("No active Power.log found (Hearthstone not running recently).")
         return 1
     poll = 1.0
+    ui_on = "--no-ui" not in opts
     for o in opts:
         if o.startswith("--poll"):
             poll = float(o.split("=")[1])
+    # Start the overlay server (unless --no-ui); open it in the browser.
+    if ui_on:
+        try:
+            server = coach_ui.start_server()
+            print(f"Coach UI: http://127.0.0.1:{server.server_address[1]}/")
+        except OSError as e:
+            print(f"Coach UI skipped ({e})")
     if "--once" in opts:
-        run_coach(path)
+        coach = LiveCoach()
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                coach.feed(line)
+        _advise(coach)
         return 0
     try:
         monitor(path, poll)
