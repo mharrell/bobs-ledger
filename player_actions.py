@@ -246,12 +246,15 @@ def trigger_counts(actions, bg_pool=None):
     if bg_pool is None:
         bg_pool = _load_bg_pool()
     keys = ("cast_spell", "play_elemental", "play_mech", "play_naga",
-            "play_tier3_or_lower")
+            "play_tier3_or_lower", "discover")
     counts = {k: 0 for k in keys}
     totals = {k: 0 for k in keys}
     for t in actions:
         totals["cast_spell"] += t.get("spells", 0)
         counts["cast_spell"] = max(counts["cast_spell"], t.get("spells", 0))
+        d = len(t.get("choices", []))
+        totals["discover"] += d
+        counts["discover"] = max(counts["discover"], d)
         pe = pm = pn = pt = 0
         for cid in t.get("plays", []):
             info = bg_pool.get(cid)

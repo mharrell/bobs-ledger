@@ -83,5 +83,13 @@
     "chain": [
       {"source": "Ravaging Scorpid", "type": "tribe_scaling", "buff_per_trigger": {"atk": 5, "hp": 5}, "note": "After a friendly minion attacks, your Beetles have +5/+5 this game (compounds over the game)"}
     ]
+  },
+  "pirates-apm-golden": {
+    "name": "Pirates — APM Golden",
+    "tribe": "PIRATE",
+    "trigger": "discover",
+    "chain": [
+      {"source": "Hooktusk, Master Marauder", "type": "tribe_scaling", "buff_per_trigger": {"atk": 1, "hp": 1}, "note": "After you Discover a card, give your other Pirates +1/+1 (improved by Golden minions)"}
+    ]
   }
 }

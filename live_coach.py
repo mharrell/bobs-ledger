@@ -19,13 +19,13 @@ from board_state import GameState
 from extract_game import extract_game, _friendly_player
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
 from player_actions import (
-    STEP_RE, _GS, ENTITY, MINION_ONLY,
+    STEP_RE, _GS, ENTITY, MINION_ONLY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
 )
 from value import sell_recommendation
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
-                 "play_tier3_or_lower")
+                 "play_tier3_or_lower", "discover")
 _GAME_START = re.compile(r"GameState\.DebugPrintPower.*CREATE_GAME")
 _SEED = re.compile(r"GAME_SEED value=(\d+)")
 # A spell cast = a PLAY block on a non-minion card. Captures entityName so shop
@@ -58,10 +58,12 @@ class _LiveActions:
         self.in_buying = False
         self.started = False
         self.spells = 0
+        self.discovers = 0
         self.plays = []  # (player, card) this turn
         self.zone = {}
         self.player = {}
         self.turn_spells = []
+        self.turn_discovers = []
         self.turn_plays = []
 
     def feed(self, line):
@@ -90,6 +92,11 @@ class _LiveActions:
                 self.spells += 1
             return
 
+        m = CHOICE.search(line)
+        if m and self.started:
+            self.discovers += 1  # a Discover pick (Hero/trinket/dark-gift pick)
+            return
+
         m = ENTITY.search(line)
         if m:
             _name, eid, z, _pos, cid, p = m.groups()
@@ -104,16 +111,21 @@ class _LiveActions:
 
     def _end_turn(self):
         self.turn_spells.append(self.spells)
+        self.turn_discovers.append(self.discovers)
         self.turn_plays.append(self.plays)
         self.spells = 0
+        self.discovers = 0
         self.plays = []
 
     def scenario(self):
         maxes = {k: 0 for k in _TRIGGER_KEYS}
         totals = {k: 0 for k in _TRIGGER_KEYS}
-        for spells, plays in zip(self.turn_spells, self.turn_plays):
+        for spells, discovers, plays in zip(self.turn_spells, self.turn_discovers,
+                                            self.turn_plays):
             totals["cast_spell"] += spells
             maxes["cast_spell"] = max(maxes["cast_spell"], spells)
+            totals["discover"] += discovers
+            maxes["discover"] = max(maxes["discover"], discovers)
             pe = pm = pn = pt = 0
             for p, cid in plays:
                 if self.friendly is not None and p != self.friendly:
@@ -175,15 +187,19 @@ class LiveCoach:
         self.cur_lines.append(line)
 
     def _ensure_meta(self):
-        """Compute per-game data once (heroes, bans, comps) and cache it."""
-        if self.meta is not None or not self.cur_lines:
+        """Compute per-game data once heroes are parsed; retry until they are."""
+        if self.friendly is not None or not self.cur_lines:
             return
-        self.meta = extract_game(self.cur_lines)
-        self.friendly = _friendly_player(self.meta["heroes"])
-        hero = next((h for h in self.meta["heroes"] if h["player"] == self.friendly), None)
+        meta = extract_game(self.cur_lines)
+        friendly = _friendly_player(meta["heroes"])
+        if friendly is None:
+            return  # no heroes parsed yet (very early / end-of-game); retry next analyze
+        self.meta = meta
+        self.friendly = friendly
+        hero = next((h for h in meta["heroes"] if h["player"] == friendly), None)
         self.hero_card = hero["card"] if hero else None
         self.hero_name = hero["hero_name"] if hero else None
-        self.account = next((n for n, c in self.meta["account"].items()
+        self.account = next((n for n, c in meta["account"].items()
                              if c == self.hero_card), None)
         self.actions.friendly = self.friendly
 
@@ -203,8 +219,8 @@ class LiveCoach:
     def analyze(self):
         """Fast per-buy-phase analysis from the current incremental state."""
         self._ensure_meta()
-        if self.meta is None:
-            return None
+        if self.friendly is None:
+            return None  # no game/hero yet — nothing to analyze
         board, _ = self.gs.final_board(self.friendly)
         tier = self.gs.hero_meta.get(self.hero_card, {}).get("tier")
         gold = self.gs.gold.get(self.account) if self.account else None
