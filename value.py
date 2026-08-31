@@ -336,7 +336,23 @@ def top_move(analysis):
     gold = analysis.get("gold")
     if tier and tier < 6 and gold is not None and gold >= tier + 1:
         parts.append(f"level (access to tier {tier + 1})")
-    return " · ".join(parts) if parts else "stabilize / roll for your comp"
+    if parts:
+        return " · ".join(parts)
+    # Nothing pressing: if the board is full and has end-of-turn scaling, the
+    # right move is to pass and let the engine grow.
+    if len(analysis.get("board", [])) >= 7 \
+            and _has_end_of_turn(analysis.get("board", []), card_db):
+        return "wait for end of turn — let the engine scale"
+    return "stabilize / roll for your comp"
+
+
+def _has_end_of_turn(board, card_db):
+    """True if any board minion has an end-of-turn scaling effect."""
+    for m in board:
+        text = (card_db.get(m["card"]) or {}).get("text", "")
+        if "end of" in text and "turn" in text:
+            return True
+    return False
 
 
 def _buy_intention(cid, comp, card_db):
