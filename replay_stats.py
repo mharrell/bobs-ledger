@@ -18,7 +18,7 @@ from collections import defaultdict
 
 from extract_game import split_game_chunks, extract_game, _friendly_player
 from board_state import GameState
-from value import _load_bg_names
+from value import _load_bg_names, _best_engine
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -54,10 +54,14 @@ def game_features(chunk):
         gs.feed(line)
     board, _ = gs.final_board(friendly)
     comp = _detect_comp(board, _load_comps())
+    engine = _best_engine(board, _load_bg_names())
+    board_stats = sum((m.get("atk") or 0) + (m.get("health") or 0) for m in board)
     return {
         "hero": hero.get("hero_name"),
         "place": hero.get("place"),
         "comp": comp["name"] if comp else None,
+        "engine": engine["name"] if engine else None,
+        "board_stats": board_stats,
         "tier": gs.hero_meta.get(hero["card"], {}).get("tier"),
         "board": board,
     }
@@ -66,6 +70,7 @@ def game_features(chunk):
 def aggregate(games):
     """Build outcome tables from per-game features."""
     comps = defaultdict(lambda: {"games": 0, "places": [], "wins": 0, "top4": 0})
+    engines = defaultdict(lambda: {"games": 0, "places": [], "stats": []})
     heroes = defaultdict(lambda: {"games": 0, "places": []})
     cards = defaultdict(lambda: {"games": 0, "places": []})
     for g in games:
@@ -78,6 +83,11 @@ def aggregate(games):
             c["places"].append(p)
             c["wins"] += 1 if p == 1 else 0
             c["top4"] += 1 if p <= 4 else 0
+        if g["engine"]:
+            e = engines[g["engine"]]
+            e["games"] += 1
+            e["places"].append(p)
+            e["stats"].append(g["board_stats"])
         h = heroes[g["hero"] or "?"]
         h["games"] += 1
         h["places"].append(p)
@@ -85,14 +95,14 @@ def aggregate(games):
             k = cards[m["card"]]
             k["games"] += 1
             k["places"].append(p)
-    return comps, heroes, cards
+    return comps, engines, heroes, cards
 
 
 def _avg(places):
     return sum(places) / len(places) if places else None
 
 
-def summarize(comps, heroes, cards, names):
+def summarize(comps, engines, heroes, cards, names):
     lines = []
     lines.append("=== Comp win-rate (by avg placement) ===")
     rows = []
@@ -102,6 +112,15 @@ def summarize(comps, heroes, cards, names):
         rows.append((name, c["games"], _avg(c["places"]), c["wins"], c["top4"]))
     for name, games, avg, wins, top4 in sorted(rows, key=lambda r: (r[2] or 99)):
         lines.append(f"  {name:28s} n={games:2d} avg={avg:.2f} wins={wins} top4={top4}")
+
+    lines.append("\n=== Engine win-rate (by avg placement) ===")
+    rows = []
+    for name, e in engines.items():
+        if e["games"] < 1:
+            continue
+        rows.append((name, e["games"], _avg(e["places"]), _avg(e["stats"])))
+    for name, games, avg, stats in sorted(rows, key=lambda r: (r[2] or 99)):
+        lines.append(f"  {name:28s} n={games:2d} avg={avg:.2f} board_stats={stats:.0f}")
 
     lines.append("\n=== Hero win-rate ===")
     for name, h in sorted(heroes.items(), key=lambda kv: (_avg(kv[1]["places"]) or 99)):
@@ -144,9 +163,11 @@ def main():
             lines = f.readlines()
         for start, end in split_game_chunks(lines):
             games.append(game_features(lines[start:end]))
-    comps, heroes, cards = aggregate(games)
+    comps, engines, heroes, cards = aggregate(games)
     out = {
         "comps": {k: {**v, "avg_place": _avg(v["places"])} for k, v in comps.items()},
+        "engines": {k: {**v, "avg_place": _avg(v["places"]), "avg_stats": _avg(v["stats"])}
+                    for k, v in engines.items()},
         "heroes": {k: {**v, "avg_place": _avg(v["places"])} for k, v in heroes.items()},
         "cards": {k: {**v, "avg_place": _avg(v["places"])} for k, v in cards.items()},
     }
@@ -158,7 +179,7 @@ def main():
         print(json.dumps(out, indent=2))
     else:
         print(f"Analyzed {len(games)} games across {len(args)} log(s).\n")
-        print(summarize(comps, heroes, cards, names))
+        print(summarize(comps, engines, heroes, cards, names))
     return 0
 
 
