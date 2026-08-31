@@ -120,8 +120,20 @@ def summarize(comps, heroes, cards, names):
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    as_json = "--json" in sys.argv
+    argv = sys.argv[1:]
+    args = []
+    save_path = None
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a == "--save":
+            save_path = argv[i + 1]
+            i += 2
+            continue
+        if not a.startswith("--"):
+            args.append(a)
+        i += 1
+    as_json = "--json" in argv
     if not args:
         # default: the whole local corpus
         args = sorted(glob.glob(r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"))
@@ -133,12 +145,16 @@ def main():
         for start, end in split_game_chunks(lines):
             games.append(game_features(lines[start:end]))
     comps, heroes, cards = aggregate(games)
+    out = {
+        "comps": {k: {**v, "avg_place": _avg(v["places"])} for k, v in comps.items()},
+        "heroes": {k: {**v, "avg_place": _avg(v["places"])} for k, v in heroes.items()},
+        "cards": {k: {**v, "avg_place": _avg(v["places"])} for k, v in cards.items()},
+    }
+    if save_path:
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(out, f, indent=2)
+        print(f"Saved corpus stats to {save_path} ({len(games)} games).")
     if as_json:
-        out = {
-            "comps": {k: {**v, "avg_place": _avg(v["places"])} for k, v in comps.items()},
-            "heroes": {k: {**v, "avg_place": _avg(v["places"])} for k, v in heroes.items()},
-            "cards": {k: {**v, "avg_place": _avg(v["places"])} for k, v in cards.items()},
-        }
         print(json.dumps(out, indent=2))
     else:
         print(f"Analyzed {len(games)} games across {len(args)} log(s).\n")
