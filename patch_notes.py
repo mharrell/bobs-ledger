@@ -101,6 +101,39 @@ def extract_bg_section(text):
     return rest[:end].strip()
 
 
+def _version_key(title):
+    """Sort key for a patch title like '36.4 Patch Notes' -> (36, 4, 0)."""
+    m = re.search(r"(\d+)\.(\d+)(?:\.(\d+))?", title or "")
+    if not m:
+        return (0, 0, 0)
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3) or 0))
+
+
+def discover_latest():
+    """Find the newest 'Patch Notes' article from the Blizzard news page.
+
+    The news page embeds a `stickyBlogList` JSON array of articles, each with
+    {id, title, slug}. We keep the patch-notes articles and take the highest
+    patch version parsed from the title (the article id is not a reliable
+    recency indicator). Returns (url, article_dict).
+    """
+    r = requests.get("https://hearthstone.blizzard.com/en-us/news", timeout=30,
+                     headers={"User-Agent": "Mozilla/5.0"})
+    r.raise_for_status()
+    m = re.search(r"var stickyBlogList = (\[.*?\]);", r.text, re.S)
+    if not m:
+        raise RuntimeError("Could not find the article list on the news page")
+    articles = json.loads(m.group(1))
+    patches = [a for a in articles
+               if "patch notes" in (a.get("title") or "").lower()]
+    if not patches:
+        raise RuntimeError("No patch-notes article found on the news page")
+    latest = max(patches, key=lambda a: _version_key(a.get("title")))
+    url = (f"https://hearthstone.blizzard.com/en-us/news/"
+           f"{latest['id']}/{latest['slug']}")
+    return url, latest
+
+
 # ---------------------------------------------------------------------------
 # LLM extraction of structured changes
 # ---------------------------------------------------------------------------
@@ -271,14 +304,22 @@ def print_report(report, do_apply):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("url", help="Blizzard patch-notes URL")
+    ap.add_argument("url", nargs="?", default=None,
+                    help="Blizzard patch-notes URL (default: discover the latest)")
     ap.add_argument("--apply", action="store_true",
                     help="write matched changes into meta/ (default: dry-run)")
     ap.add_argument("--no-llm", action="store_true",
                     help="skip LLM extraction; just print the Battlegrounds section")
     args = ap.parse_args(argv)
 
-    text = fetch_text(args.url)
+    if args.url:
+        url = args.url
+    else:
+        url, article = discover_latest()
+        print(f"Discovered latest patch: {article['title']} ({url})")
+        print()
+
+    text = fetch_text(url)
     bg = extract_bg_section(text)
     if bg is None:
         print("No Battlegrounds section found on this page.")
