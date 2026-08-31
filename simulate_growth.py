@@ -116,18 +116,21 @@ def simulate_growth(board, scenario, engine):
             breakdown[step["source"]] = (a, h)
             continue
 
-        # Tribe-scaling step (e.g. Ravaging Scorpid): each trigger (a friendly
-        # minion attacking, ~once per minion per turn) gives +N/+N to all tribe
-        # minions, compounding over the game. Uses the game's turn count.
+        # Tribe-scaling step (Ravaging Scorpid, Hooktusk): each trigger gives
+        # +N/+N to all tribe minions, compounding over the game. Uses the step's
+        # trigger count if the scenario provides it (e.g. discover_total); else
+        # falls back to ~once per minion per turn (the attack proxy).
         if step.get("type") == "tribe_scaling":
             if not _count(board, step["source"]):
                 continue
-            turns = scenario.get("turns", 1)
-            attacks = len(board) * turns  # each minion attacks ~once per turn
+            trigger = step.get("trigger", engine["trigger"])
+            n = scenario.get(trigger + "_total", scenario.get(trigger, 0))
+            if n <= 0:
+                n = len(board) * scenario.get("turns", 1)  # ~once/minion/turn
             buff = step["buff_per_trigger"]
             tribe_count = sum(1 for m in board if (m.get("tribe") or "") == engine.get("tribe"))
-            a = attacks * buff["atk"] * tribe_count
-            h = attacks * buff["hp"] * tribe_count
+            a = n * buff["atk"] * tribe_count
+            h = n * buff["hp"] * tribe_count
             gain["atk"] += a
             gain["hp"] += h
             breakdown[step["source"]] = (a, h)
