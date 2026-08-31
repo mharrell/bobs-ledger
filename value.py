@@ -172,13 +172,15 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
     return score
 
 
-def sell_recommendation(board_minions, comps, allowed_tribes=None):
+def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None):
     """Rank board minions from safest-to-sell to most-valuable.
 
     `board_minions`: list from board_state (each has card, atk, health, tribe).
     `comps`: dict of availabe comps (slug -> comp) already filtered by the ban.
     `allowed_tribes`: set of allowed tribes (for a weak ban penalty on banned-tribe
     minions that somehow remain).
+    `scenario`: {trigger_type: count} real per-turn trigger counts for the growth
+    simulator (from player_actions.trigger_counts); defaults to _DEFAULT_SCENARIO.
     Returns a list of (card_id, score) sorted asecending (best to sell first).
     """
     card_db = _load_card_db()
@@ -196,7 +198,8 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None):
 
     # Growth-aware engine value: run the simulator for the board's best-fit
     # engine and attribute the growth it drives to the engine pieces.
-    engine_bonus = _engine_growth_bonus(board_minions, _load_bg_names())
+    engine_bonus = _engine_growth_bonus(board_minions, _load_bg_names(),
+                                        scenario=scenario)
 
     scored = []
     for m in board_minions:
