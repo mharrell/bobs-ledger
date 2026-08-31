@@ -72,20 +72,44 @@ def run_coach(path):
         print(f"  (coach skipped: {e})", flush=True)
 
 
+def _seed_latest(path):
+    """Seed the overlay with the last finished game so it isn't blank at startup."""
+    try:
+        gi = _last_game_index(path)
+        if gi >= 1:
+            analyze(path, gi)  # run_coach would dedup; analyze+push directly
+            print(f"  (seeded overlay with last game #{gi})", flush=True)
+    except Exception as e:  # noqa: BLE001
+        print(f"  (seed skipped: {e})", flush=True)
+
+
 def monitor(path, poll=1.0):
     """Tail the log; advise exactly once per buy phase.
 
     A new buy phase is the first MAIN_ACTION of a turn. MAIN_ACTION re-enters
     within a turn (e.g. after a refresh), so we advise only on the transition
     into MAIN_ACTION (in_action False -> True), and reset after MAIN_END
-    (combat) starts the next turn.
+    (combat) starts the next turn. Each tick it re-finds the newest active log
+    and switches to a newly-started session automatically.
     """
+    _seed_latest(path)
+    print(f"Live-coaching {path}", flush=True)
+    f = open(path, "rb")
     last_offset = os.path.getsize(path)
     in_action = False
-    print(f"Live-coaching {path}", flush=True)
-
-    with open(path, "rb") as f:
+    try:
         while True:
+            # A new session (Hearthstone_*/Power.log) may appear; switch to it.
+            active = find_active_log()
+            if active and os.path.abspath(active) != os.path.abspath(path):
+                print(f"New session detected: {active}", flush=True)
+                f.close()
+                path = active
+                f = open(path, "rb")
+                last_offset = os.path.getsize(path)
+                in_action = False
+                _seed_latest(path)
+
             f.seek(last_offset)
             data = f.read().decode("utf-8", errors="replace")
             if data:
@@ -98,6 +122,10 @@ def monitor(path, poll=1.0):
                     elif "tag=STEP value=MAIN_END" in line:
                         in_action = False  # combat ends the buy phase
             time.sleep(poll)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        f.close()
 
 
 def main():
