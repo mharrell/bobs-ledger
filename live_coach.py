@@ -139,6 +139,7 @@ class _LiveActions:
         for k in _TRIGGER_KEYS:
             out[k] = maxes[k]
             out[k + "_total"] = totals[k]
+        out["turns"] = self.turn
         return out
 
 

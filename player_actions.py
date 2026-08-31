@@ -279,6 +279,7 @@ def trigger_counts(actions, bg_pool=None):
     for k in keys:
         out[k] = counts[k]
         out[k + "_total"] = totals[k]
+    out["turns"] = len(actions)
     return out
 
 
