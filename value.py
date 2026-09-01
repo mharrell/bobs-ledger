@@ -474,6 +474,14 @@ def top_move(analysis):
     gold = analysis.get("gold")
     parts = []
 
+    # A pending pick (hero / trinket / discover) outranks shop advice — it's a
+    # forced decision the shop doesn't gate. Lead with it.
+    choice = analysis.get("choice")
+    if choice and choice.get("ranked"):
+        best = choice["ranked"][0]
+        why = f" ({best[3]})" if best[3] else ""
+        parts.append(f"PICK {best[0]}{why}")
+
     # Buy: the headline pick, or the best card we can actually afford, or roll.
     shop_rank = analysis.get("shop_rank") or []
     bought = None
