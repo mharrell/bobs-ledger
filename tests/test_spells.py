@@ -130,6 +130,47 @@ class TestTopMoveSpells(unittest.TestCase):
         self.assertIn("roll", line)
 
 
+class TestGrowthCalibration(unittest.TestCase):
+    """One-shot effects are tempo, not growth — a big one-shot battlecry must
+    not outrank real repeating scaling (the 2026-09-01 consistency complaint:
+    off-comp growth cards kept winning the shop ranking)."""
+
+    def test_one_shot_battlecry_discounted(self):
+        # En-Djinn Blazer: battlecry, +10/+10 to a random Tavern minion once.
+        one_shot = value.growth_potential({"text": "battlecry: give a random "
+                                                  "minion +10/+10."})
+        self.assertEqual(one_shot, 1.0 + 10.0 / 4.0)  # trigger + discounted mag
+
+    def test_repeating_trigger_keeps_full_magnitude(self):
+        scaling = value.growth_potential({"text": "at the end of your turn, "
+                                                  "give a minion +4/+4."})
+        self.assertEqual(scaling, 2.0 + 4.0)  # end-of-turn trigger + full mag
+
+    def test_committed_comp_damps_off_tribe_shop_cards(self):
+        """Same off-tribe card, committed vs not committed: delta is exactly
+        the damping."""
+        comps = {"beasts": {"name": "Beasts", "tribe": "Beast",
+                            "core": ["BG33_886"], "addons": []}}
+        committed = [{"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"},
+                     {"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"}]
+        not_yet = [{"card": "BG29_503", "atk": 4, "health": 4, "tribe": "MECHANICAL"}]
+        committed_rank = dict(shop_ranking(["BG29_503"], comps, board_minions=committed))
+        not_yet_rank = dict(shop_ranking(["BG29_503"], comps, board_minions=not_yet))
+        self.assertEqual(committed_rank["BG29_503"] - not_yet_rank["BG29_503"],
+                         value.W_OFF_COMP)
+
+    def test_neutral_cards_not_damped(self):
+        comps = {"beasts": {"name": "Beasts", "tribe": "Beast",
+                            "core": ["BG33_886"], "addons": []}}
+        board = [{"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"},
+                 {"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"}]
+        scored = dict(shop_ranking(["BG33_886", "BG26_ICC_901"], comps,
+                                   board_minions=board))
+        # BG26_ICC_901 (Drakkari, no tribe) is exempt from damping; the comp
+        # core card gets +10, so it outranks the neutral by more than that.
+        self.assertGreater(scored["BG33_886"], scored["BG26_ICC_901"])
+
+
 class TestCompCards(unittest.TestCase):
     """The target-comp shopping list (UI/console box): names + owned flags."""
 

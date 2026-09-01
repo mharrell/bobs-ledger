@@ -138,6 +138,15 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
 - [ ] Tune the simulator's parameters (tavern_base, eat_every, W_*) against the
       growing replay corpus to close the underestimation.
 
+- [x] **Advice consistency pass** (2026-09-01, from the Master Nguyen game):
+      one-shot battlecries/deathrattles had their +N/+N magnitude counted as
+      compounding growth (a +10/+10 one-shot scored 27 and beat real comp
+      engines) — `growth_potential` now discounts one-shot magnitude 4x and
+      fixes the "end of YOUR turn" substring gap; a committed comp (≥2 core on
+      board) damps off-tribe shop minions (`W_OFF_COMP = -2.0`); replay_review
+      settles the options block before ranking (was: one-card rankings from
+      firing on the first option line).
+
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored
 entirely (replay review labelled spell-only turns as such). The spell data was

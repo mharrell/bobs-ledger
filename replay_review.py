@@ -44,21 +44,35 @@ def _phases(chunk):
 
 def _advise_point(lines, phase_lo, phase_hi):
     """Feed from game start; return (analysis, stop_index) at the exact moment
-    live.py advises (shop parsed after MAIN_ACTION)."""
+    live.py advises (shop parsed after MAIN_ACTION).
+
+    The live monitor fires at the end of a ~1s poll batch, by which time the
+    options block has fully arrived. Feeding line-by-line and firing on the
+    first tavern offer instead ranks a PARTIAL shop (one offer) — advice that
+    was never actually shown live (the t9/t15 one-card rankings were this
+    artifact). Fire once the offer set has been stable for a stretch, like the
+    settled state the live loop actually advises on.
+    """
     import live_coach
     coach = live_coach.LiveCoach()
     stop = len(lines)
+    armed = False
+    prev_offers = None
+    last_change = 0
+    SETTLE = 20  # lines without new offers = the options block is complete
     for j in range(0, phase_hi if phase_hi is not None else len(lines)):
         line = lines[j]
-        armed = False
         if j >= phase_lo and "tag=STEP value=MAIN_ACTION" in line:
             armed = True
         coach.feed(line)
-        # Fire like the live loop: once a tavern-owned offer (not the player's
-        # own sell-option minions) has been parsed.
-        if armed and coach.tavern_offers():
-            stop = j + 1
-            break
+        if armed:
+            offers = tuple(coach.tavern_offers())
+            if offers != prev_offers:
+                prev_offers = offers
+                last_change = j
+            elif offers and j - last_change >= SETTLE:
+                stop = j + 1
+                break
     return coach.analyze(), stop
 
 

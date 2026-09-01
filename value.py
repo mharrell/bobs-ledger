@@ -34,6 +34,7 @@ W_COMBAT_SCALE = 4.0  # bonus for combat-time scaling minions (e.g. Flaming Enfo
 W_ENGINE_SIM = 0.05  # per stat of simulated growth the board's engine drives
 W_GROWTH = 2.0      # per point of growth potential (how much a minion can scale)
 W_SPELL_FUEL = 0.3  # per stat of marginal engine growth one spell cast buys
+W_OFF_COMP = -2.0   # shop card whose tribe fights a COMMITTED comp (damping)
 
 # Keywords/phrases that mark a scaling/engine minion vs a plain body.
 _SCALING_MARKERS = ("end of turn", "whenever you play", "improves", "each",
@@ -218,11 +219,16 @@ def growth_potential(card):
     fires) and the magnitude (the buff size). A 4/4 Glambot that magnetizes a
     4/4 Satellite per spell has high growth potential even though its stats are
     small.
+
+    A one-time effect (battlecry, a single deathrattle proc) is TEMPO, not
+    growth: its +N/+N magnitude is discounted 4x, so a +10/+10 battlecry can't
+    outrank a real repeating scaler (this inflated one-shot battlecries like
+    En-Djinn Blazer above genuine comp engines — the 2026-09-01 inconsistency).
     """
     text = (card or {}).get("text") or ""
     score = 0.0
     # Growth triggers — how often the effect fires.
-    if "end of turn" in text:
+    if "end of" in text and "turn" in text:  # "end of YOUR turn" included
         score += 2.0
     if "whenever you play" in text or "whenever you summon" in text:
         score += 3.0
@@ -231,17 +237,23 @@ def growth_potential(card):
     if "magnetize" in text:
         score += 4.0
     if "battlecry" in text:
-        score += 2.0
+        score += 1.0  # one-shot: plays once (was 2.0 — treated as scaling)
     if "deathrattle" in text:
         score += 2.0
     if "improve" in text:
         score += 3.0  # compounding
     if "gain its stats" in text or "consume" in text:
         score += 3.0  # eat-growth
-    # Magnitude — the buff size (+N/+N).
+    # Magnitude — the buff size (+N/+N). Only a REPEATING trigger's magnitude
+    # compounds over the game; one-shot effects don't.
     m = re.search(r"\+(\d+)/\+(\d+)", text)
     if m:
-        score += (int(m.group(1)) + int(m.group(2))) / 2.0
+        mag = (int(m.group(1)) + int(m.group(2))) / 2.0
+        repeating = any(m2 in text for m2 in (
+            "whenever you", "after you", "each turn",
+            "improve", "consume", "gain its stats", "magnetize")) \
+            or ("end of" in text and "turn" in text)
+        score += mag if repeating else mag / 4.0
     return score
 
 
@@ -414,11 +426,24 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                            engine_bonus=engine_bonus.get(cid, 0))
         # Strongly prefer the target comp's core/addon cards, so the buy
         # recommendation actually guides the build rather than just matching stats.
+        comp_card = False
         if comp:
             if cid in comp.get("core", []):
                 val += 10.0
+                comp_card = True
             elif cid in comp.get("addons", []):
                 val += 5.0
+                comp_card = True
+        # Committed to the comp (>=2 core on board): a shop minion whose tribe
+        # fights the comp won't fit the board's growth — damp it so comp cards
+        # and neutral pieces win ties (the player's complaint: off-comp growth
+        # cards recommended over the established comp).
+        if comp and not comp_card and \
+                target_state(comp, board_minions or []) == "committing":
+            ct = normalize(comp.get("tribe"))
+            tribe = normalize(m.get("tribe"))
+            if ct and tribe and tribe not in ct.split("/"):
+                val += W_OFF_COMP
         if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0  # banned-tribe minion can't grow
         scored.append((cid, val))
