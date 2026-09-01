@@ -20,7 +20,7 @@
     "when_to_commit": "Brann Bronzebeard + shop buff (Nomi, Kitchen Nightmare) + Unbound Tempest",
     "common_enablers": "Brann Bronzebeard\nTavern Tempest + Kelp Keeper",
     "representative_card": "BG36_352",
-    "tribe": "Elementals"
+    "tribe": "Elemental"
   },
   "nagas-end-of-turn-spell-buff": {
     "name": "Nagas - End Of Turn/Spell Buff",
@@ -43,7 +43,7 @@
     "when_to_commit": "Spell power (Felfire Conjurer) + Fauna Whisperer or Gatekeeper Amalgam",
     "common_enablers": "Spell power (Felfire Conjurer)\nFauna Whisperer",
     "representative_card": "BG32_837",
-    "tribe": "Nagas",
+    "tribe": "Naga",
     "guide": "guides/nagas-end-of-turn-spell-buff.md"
   },
   "nagas-groundbreaker": {
@@ -65,7 +65,7 @@
     "when_to_commit": "Seafloor Recruiter plus Groundbreaker",
     "common_enablers": "Seafloor Recruiter",
     "representative_card": "BG31_035",
-    "tribe": "Nagas",
+    "tribe": "Naga",
     "guide": "guides/nagas-groundbreaker.md"
   },
   "mechs-magnetics-spells": {
@@ -88,7 +88,7 @@
     "when_to_commit": "Glambot + Balinda Stonehearth",
     "common_enablers": "Glambot to stabilize",
     "representative_card": "BG36_853",
-    "tribe": "Mechs",
+    "tribe": "Mech",
     "guide": "guides/mechs-magnetics-spells.md"
   },
   "elementals-stat-scaling": {
@@ -113,7 +113,7 @@
     "when_to_commit": "Unleashed Mana Surge + Brann Bronzebeard + Stat scaling (Glowing Cinder)",
     "common_enablers": "Glowing Cinder + Ele Midgame\nBrann Bronzebeard",
     "representative_card": "BG32_846",
-    "tribe": "Elementals",
+    "tribe": "Elemental",
     "guide": "guides/elementals-stat-scaling.md"
   },
   "beasts-tasty-lobstah": {
@@ -136,7 +136,7 @@
     "when_to_commit": "Headhunter Gryphon + Deathstrider",
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BG36_202",
-    "tribe": "Beasts",
+    "tribe": "Beast",
     "guide": "guides/beasts-tasty-lobstah.md"
   },
   "murlocs-venom-scam": {
@@ -159,7 +159,7 @@
     "when_to_commit": "When you have no future or are clearly getting outstatted",
     "common_enablers": "Getting outscaled",
     "representative_card": "BG33_318",
-    "tribe": "Murlocs",
+    "tribe": "Murloc",
     "guide": "guides/murlocs-venom-scam.md"
   },
   "murlocs-apm": {
@@ -182,7 +182,7 @@
     "when_to_commit": "Brann Bronzebeard + lots of economy + Shamanic Tidecaller",
     "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
     "representative_card": "BG36_704",
-    "tribe": "Murlocs",
+    "tribe": "Murloc",
     "guide": "guides/murlocs-apm.md"
   },
   "pirates-apm-golden": {
@@ -204,7 +204,7 @@
     "when_to_commit": "Enterprising Escapee + Infinite gold",
     "common_enablers": "Enterprising Escapee",
     "representative_card": "BG36_523",
-    "tribe": "Pirates",
+    "tribe": "Pirate",
     "guide": "guides/pirates-apm-golden.md"
   },
   "demons-shop-buff": {
@@ -229,7 +229,7 @@
     "when_to_commit": "Buffed Shop (Devilish Distractor) + Twisted Wrathguard",
     "common_enablers": "Brann Bronzebeard\nTwisted Wrathguard",
     "representative_card": "BG32_873",
-    "tribe": "Demons",
+    "tribe": "Demon",
     "guide": "guides/demons-shop-buff.md"
   },
   "undead-attack-scaling": {
@@ -273,7 +273,7 @@
     "when_to_commit": "Falling Sky Golem + Kangor's Apprentice",
     "common_enablers": "Big Falling Sky Golem",
     "representative_card": "BG35_342",
-    "tribe": "Mechs"
+    "tribe": "Mech"
   },
   "quilboar-bristlemane": {
     "name": "Quilboar - Bristlemane",
@@ -315,7 +315,7 @@
     "when_to_commit": "Early Lurking Leviathan + Beast summons (Sewer Lord)",
     "common_enablers": "Beast summons midgame (beetles)",
     "representative_card": "BG35_602",
-    "tribe": "Beasts"
+    "tribe": "Beast"
   },
   "pirates-bounty-apm": {
     "name": "Pirates - Bounty APM",
@@ -335,7 +335,7 @@
     "when_to_commit": "Bounty Generation (Sky Admiral Rogers) + Proud Privateer",
     "common_enablers": "Sky Admiral Rogers",
     "representative_card": "BG33_823",
-    "tribe": "Pirates"
+    "tribe": "Pirate"
   },
   "quilboar-choose-one": {
     "name": "Quilboar - Choose One",
@@ -381,7 +381,7 @@
     "when_to_commit": "Magnetic Generation (Scrap Scraper) + Spark Snapper",
     "common_enablers": "Magnetic Generation (Scrap Scraper)",
     "representative_card": "BG26_148",
-    "tribe": "Mechs",
+    "tribe": "Mech",
     "guide": "guides/mechs-magnetics.md"
   },
   "demons-apm-shop-buff": {
@@ -405,7 +405,8 @@
     "when_to_commit": "Early infinite gold + Felboar",
     "common_enablers": "Brann Bronzebeard",
     "representative_card": "BG28_633",
-    "guide": "guides/demons-apm-shop-buff.md"
+    "guide": "guides/demons-apm-shop-buff.md",
+    "tribe": "Demon"
   },
   "beasts-summon-beetles": {
     "name": "Beasts - Summon Beetles",
@@ -427,7 +428,8 @@
     "summary": "Summon large beetles",
     "when_to_commit": "Early Ravaging Scorpid or Turquoise Skitterer",
     "common_enablers": "Headhunter Gryphon",
-    "representative_card": "BG32_204"
+    "representative_card": "BG32_204",
+    "tribe": "Beast"
   },
   "murlocs-family": {
     "name": "Murlocs - Family",
@@ -448,6 +450,7 @@
     "summary": "Scale Murlocs with battlecries",
     "when_to_commit": "Early Cousin Errgl + Brann Bronzebeard",
     "common_enablers": "Early Cousin Errgl\nBrann Bronzebeard",
-    "representative_card": "BG35_142"
+    "representative_card": "BG35_142",
+    "tribe": "Murloc"
   }
 }

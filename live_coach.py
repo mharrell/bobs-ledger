@@ -17,7 +17,10 @@ import re
 
 from board_state import GameState
 from extract_game import extract_game, _friendly_player
+from tribes import normalize
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
+from meta import hero_power as _hero_power_text
+from tribes import DISPLAY_TRIBES, normalize
 from player_actions import (
     STEP_RE, _GS, ENTITY, MINION_ONLY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
@@ -39,12 +42,13 @@ _SHOP_BUTTON_NAMES = ("Refresh", "Freeze", "Tavern Tier", "Drag To Buy",
 # (shown as sell options) are excluded from the shop.
 # e.g. "option 4 type=POWER mainEntity=[entityName=X cardId=BG36_345 .. player=15]"
 _SHOP_OPT = re.compile(r"DebugPrintOptions\(\).*?cardId=(\w+)[^\]]*player=(\d+)")
-_ALL_TRIBES = ["Beast", "Demon", "Dragon", "Elemental", "Mech", "Murloc",
-               "Naga", "Pirate", "Quilboar", "Undead"]
 
 
 def _banned(allowed):
-    return [t for t in _ALL_TRIBES if t not in (allowed or [])]
+    # Unknown ban info (None) shows as no banned tribes, never "all banned".
+    if not allowed:
+        return []
+    return [t for t in DISPLAY_TRIBES if t not in set(allowed)]
 
 
 class _LiveActions:
@@ -61,7 +65,6 @@ class _LiveActions:
         self.friendly = None
         self.turn = 0
         self.in_buying = False
-        self.started = False
         self.spells = 0
         self.discovers = 0
         self.plays = []  # (player, card) this turn
@@ -74,15 +77,17 @@ class _LiveActions:
     def feed(self, line):
         m = STEP_RE.search(line)
         if m:
-            step = m.group(1)
-            if step == "MAIN_ACTION" and not self.in_buying:
-                if not self.started:
-                    self.started = True  # skip the setup/mulligan phase
-                else:
-                    self._end_turn()
-                    self.turn += 1
+            # Both GameState and PowerTaskList log tag=STEP lines; the PTL copy
+            # arrives after GameState's MAIN_END and would spawn a spurious
+            # turn. Only GameState steps delimit turns.
+            if "PowerTaskList" in line:
+                m = None
+            if m and m.group(1) == "MAIN_ACTION" and not self.in_buying:
+                # The first MAIN_ACTION of a game is a real buy phase.
+                self._end_turn()
+                self.turn += 1
                 self.in_buying = True
-            elif step == "MAIN_END":
+            elif m and m.group(1) == "MAIN_END":
                 self.in_buying = False
             return
 
@@ -91,14 +96,14 @@ class _LiveActions:
             ename, cid = m.group(1), m.group(2)
             # A spell cast: a PLAY on a non-minion, non-shop-button, non-hero-power
             # card during the buy phase (matches the batch parser's heuristic).
-            if self.started and self.in_buying and cid not in self.minion_ids \
+            if self.in_buying and cid not in self.minion_ids \
                     and not cid.startswith("TB_BaconShop_DragBuy") and "HERO" not in cid \
                     and not ename.startswith(_SHOP_BUTTON_NAMES):
                 self.spells += 1
             return
 
         m = CHOICE.search(line)
-        if m and self.started:
+        if m:
             self.discovers += 1  # a Discover pick (Hero/trinket/dark-gift pick)
             return
 
@@ -138,13 +143,13 @@ class _LiveActions:
                 info = self.pool.get(cid)
                 if not info:
                     continue
-                tribe = info.get("tribe")
+                tribe = normalize(info.get("tribe"))
                 tier = info.get("tier")
-                if tribe == "ELEMENTAL":
+                if tribe == "Elemental":
                     pe += 1
-                elif tribe == "MECHANICAL":
+                elif tribe == "Mech":
                     pm += 1
-                elif tribe == "NAGA":
+                elif tribe == "Naga":
                     pn += 1
                 if tier is not None and tier <= 3:
                     pt += 1
@@ -230,7 +235,9 @@ class LiveCoach:
         card_races = _load_card_races(os.path.join(_HERE, ".card_races.json"))
         seed_m = _SEED.search("".join(self.cur_lines))
         seed = seed_m.group(1) if seed_m else None
-        allowed = []
+        # No seed match (or no pool minions yet) = no ban info: fail OPEN
+        # (None), never "all tribes banned".
+        allowed = None
         for g in bans_from_log(None, card_races, lines=self.cur_lines):
             if g["seed"] == seed:
                 allowed = g["allowed"]
@@ -249,8 +256,9 @@ class LiveCoach:
         tier = self.gs.hero_meta.get(self.hero_card, {}).get("tier")
         gold = self.gs.gold.get(self.account) if self.account else None
         scenario = self.actions.scenario()
-        ranked = sell_recommendation(board, self.playable, set(self.allowed),
-                                     scenario=scenario)
+        hero_power = _hero_power_text(self.hero_name)
+        ranked = sell_recommendation(board, self.playable, self.allowed,
+                                     scenario=scenario, hero_power=hero_power)
         # The shop = the DebugPrintOptions offers owned by anyone but the friendly
         # player (the player's own minions are shown as sell options, not offers).
         offer_ids = []
@@ -260,7 +268,7 @@ class LiveCoach:
                 offer_ids.append(c)
                 seen.add(c)
         shop = shop_ranking(offer_ids, self.playable, board,
-                            set(self.allowed)) if offer_ids else []
+                            self.allowed, hero_power=hero_power) if offer_ids else []
         target = comp_target(board, self.playable)
         result = {
             "hero": self.hero_name,

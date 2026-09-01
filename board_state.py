@@ -21,8 +21,9 @@ import sys
 from collections import defaultdict
 
 from extract_game import (
-    ENTITY_TAG, FULL_ENTITY, FULL_TAG, NAME_HERO, ZONE_PLAIN,
-    HERO_CARD, TIMESTAMP, split_game_chunks, extract_game, _friendly_player,
+    ENTITY_TAG, FULL_ENTITY, FULL_ENTITY_UPDATING, FULL_TAG, NAME_HERO,
+    ZONE_PLAIN, UPDATING_ENTITY_ID, HERO_CARD, TIMESTAMP, split_game_chunks,
+    extract_game, _friendly_player,
 )
 
 # A real board minion: BGxx_NNN, BGxx_SETCODE_NNN (e.g. Drakkari = BG26_ICC_901),
@@ -102,6 +103,20 @@ class GameState:
             self.card[self.current_entity] = m.group(2)
             if self._game_ended:
                 self._post_game.add(self.current_entity)
+            return
+
+        m = FULL_ENTITY_UPDATING.search(line)
+        if m:
+            # PowerTaskList re-describes an existing entity (same id); retarget
+            # current_entity so its tag lines land on it instead of corrupting
+            # the previous Creating entity.
+            inner = UPDATING_ENTITY_ID.search(m.group(1))
+            if inner:
+                self.current_entity = int(inner.group(1))
+                if m.group(2):
+                    self.card[self.current_entity] = m.group(2)
+                if self._game_ended:
+                    self._post_game.add(self.current_entity)
             return
 
         if "Entity=[" not in line:

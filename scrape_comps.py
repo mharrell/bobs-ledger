@@ -22,7 +22,9 @@ against the live site (2026-08):
 
 The page provides `summary` and `representative_card`; only `tribe` and `guide`
 are hand-added. This script merges into meta/comps.json and preserves those
-hand-added fields, so re-scraping on a patch won't clobber them.
+hand-added fields, so re-scraping on a patch won't clobber them. The hand-added
+`tribe` must be the canonical singular display name (see tribes.py: "Elemental",
+"Mech", ...) — check_meta.py enforces this.
 
 Usage:
   python scrape_comps.py <comp_id_or_slug> [more...] [--youtube] [--cards-cache FILE]

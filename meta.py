@@ -49,3 +49,26 @@ def match_comps(board_ids):
             })
     results.sort(key=lambda r: -r["score"])
     return results
+
+
+_HEROES = None
+
+
+def hero_power(hero_name):
+    """Hero-power text for a hero name, or None.
+
+    Best-effort: exact (case-insensitive) name match against meta/heroes.json.
+    Skin display names that don't match exactly return None.
+    """
+    global _HEROES
+    if _HEROES is None:
+        path = os.path.join(_HERE, "meta", "heroes.json")
+        _HEROES = {}
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                for h in json.load(f):
+                    if h.get("name"):
+                        _HEROES[h["name"].lower()] = h.get("hero_power")
+    if not hero_name:
+        return None
+    return _HEROES.get(hero_name.lower())

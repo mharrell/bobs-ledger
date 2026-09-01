@@ -25,7 +25,7 @@
     "health": 2,
     "name": "Leeroy the Reckless",
     "tier": 5,
-    "tribe": "Neutral"
+    "tribe": null
   },
   "BG24_004": {
     "atk": 12,
@@ -60,14 +60,14 @@
     "health": 4,
     "name": "Sin'dorei Straight Shot",
     "tier": 4,
-    "tribe": "Neutral"
+    "tribe": null
   },
   "BG25_354": {
     "atk": 1,
     "health": 7,
     "name": "Titus Rivendare",
     "tier": 5,
-    "tribe": "Neutral"
+    "tribe": null
   },
   "BG26_148": {
     "atk": 6,
@@ -116,7 +116,7 @@
     "health": 5,
     "name": "Drakkari Enchanter",
     "tier": 5,
-    "tribe": "Neutral"
+    "tribe": null
   },
   "BG26_RLK_119": {
     "atk": 3,
@@ -319,7 +319,7 @@
     "health": 10,
     "name": "Heroic Underdog",
     "tier": 4,
-    "tribe": "Neutral"
+    "tribe": null
   },
   "BG34_684": {
     "atk": 3,
@@ -382,7 +382,7 @@
     "health": 6,
     "name": "Balinda Stonehearth",
     "tier": 6,
-    "tribe": "Neutral"
+    "tribe": null
   },
   "BG36_201": {
     "atk": 3,
@@ -501,7 +501,7 @@
     "health": 6,
     "name": "Gatekeeper Amalgam",
     "tier": 6,
-    "tribe": "All"
+    "tribe": null
   },
   "BG36_701": {
     "atk": 5,
@@ -564,7 +564,7 @@
     "health": 6,
     "name": "Kangor's Apprentice",
     "tier": 5,
-    "tribe": "Neutral"
+    "tribe": null
   },
   "BGS_041": {
     "atk": 4,
@@ -613,13 +613,13 @@
     "health": 1,
     "name": "Deadly Spore",
     "tier": 3,
-    "tribe": "Neutral"
+    "tribe": null
   },
   "BG_LOE_077": {
     "atk": 2,
     "health": 4,
     "name": "Brann Bronzebeard",
     "tier": 5,
-    "tribe": "Neutral"
+    "tribe": null
   }
 }

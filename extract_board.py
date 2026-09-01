@@ -13,7 +13,10 @@ FULL = re.compile(r'Creating ID=(\d+).*?CardID=([A-Za-z0-9_]+)')
 ZONE_ENT = re.compile(r'Entity=\[.*?id=(\d+).*?\] tag=ZONE value=(\w+)')
 ZONE_PLAIN = re.compile(r'Entity=(\d+) tag=ZONE value=(\w+)')
 
-NOISE_TAILS = ('e', 't', 'G', 'd', 'te', 'e2', 'e3', 't2', 't3', 't14', 't18', 't22', 'te2', 'te3')
+# Enchantment/token id tails (BG25_008e, ...e2, BG25_008t...). Golden minions
+# (BG25_008_G, uppercase G) are real board minions, NOT noise — board_state.py's
+# MINION_ONLY regex includes them too.
+NOISE_TAILS = ('e', 't', 'd', 'te', 'e2', 'e3', 't2', 't3', 't14', 't18', 't22', 'te2', 'te3')
 
 
 def is_noise(card):
@@ -24,7 +27,7 @@ def is_noise(card):
     tail = card.split('_')[-1]
     if tail in NOISE_TAILS:
         return True
-    return tail.endswith(('e', 't', 'G'))
+    return tail.endswith(('e', 't'))
 
 
 def main():

@@ -4,7 +4,7 @@
     "id": "BG32_236",
     "name": "Aureate Laureate",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 2,
     "health": 2,
     "mechanics": [
@@ -17,7 +17,7 @@
     "id": "BG31_803",
     "name": "Buzzing Vermin",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 1,
     "health": 1,
     "mechanics": [
@@ -31,7 +31,7 @@
     "id": "BG29_611",
     "name": "Cord Puller",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 1,
     "health": 1,
     "mechanics": [
@@ -45,7 +45,7 @@
     "id": "BGS_119",
     "name": "Crackling Cyclone",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -59,7 +59,7 @@
     "id": "BG36_921",
     "name": "Fleeing Fugitive",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 5,
     "health": 2,
     "mechanics": [
@@ -72,7 +72,7 @@
     "id": "BG32_330",
     "name": "Flighty Scout",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -86,7 +86,7 @@
     "id": "BG36_200",
     "name": "Flittering Bat",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 1,
     "health": 4,
     "mechanics": [
@@ -99,7 +99,7 @@
     "id": "BG29_888",
     "name": "Glim Guardian",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 1,
     "health": 4,
     "mechanics": [
@@ -112,7 +112,7 @@
     "id": "BG28_300",
     "name": "Harmless Bonehead",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 1,
     "health": 1,
     "mechanics": [
@@ -125,7 +125,7 @@
     "id": "BG26_146",
     "name": "Lullabot",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 2,
     "health": 2,
     "mechanics": [
@@ -139,7 +139,7 @@
     "id": "BG23_000",
     "name": "Mini-Myrmidon",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 1,
     "health": 4,
     "mechanics": [
@@ -153,7 +153,7 @@
     "id": "BGS_127",
     "name": "Molten Rock",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -166,7 +166,7 @@
     "id": "BG31_330",
     "name": "Ominous Seer",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -179,7 +179,7 @@
     "id": "BG20_100",
     "name": "Razorfen Geomancer",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -192,7 +192,7 @@
     "id": "BG25_001",
     "name": "Risen Rider",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -206,7 +206,7 @@
     "id": "BG33_140",
     "name": "River Skipper",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 1,
     "health": 1,
     "mechanics": [],
@@ -217,7 +217,7 @@
     "id": "BG35_814",
     "name": "Scarlet Survivor",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -230,7 +230,7 @@
     "id": "BG26_135",
     "name": "Southsea Busker",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 3,
     "health": 1,
     "mechanics": [
@@ -254,7 +254,7 @@
     "id": "BG33_886",
     "name": "Tusked Camper",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 2,
     "health": 3,
     "mechanics": [
@@ -267,7 +267,7 @@
     "id": "BGS_004",
     "name": "Wrath Weaver",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 1,
     "health": 3,
     "mechanics": [
@@ -280,7 +280,7 @@
     "id": "BG_TTN_401",
     "name": "Ancestral Automaton",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 3,
     "health": 4,
     "mechanics": [
@@ -293,7 +293,7 @@
     "id": "BG36_520",
     "name": "Bilgewater Breakout",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 3,
     "health": 2,
     "mechanics": [
@@ -306,7 +306,7 @@
     "id": "BG36_342",
     "name": "Clever Castaway",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 2,
     "health": 3,
     "mechanics": [],
@@ -317,7 +317,7 @@
     "id": "BG31_320",
     "name": "Crater Miner",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 2,
     "health": 2,
     "mechanics": [
@@ -341,7 +341,7 @@
     "id": "BG26_963",
     "name": "Electric Synthesizer",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 3,
     "health": 4,
     "mechanics": [
@@ -355,7 +355,7 @@
     "id": "BG25_008",
     "name": "Eternal Knight",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 4,
     "health": 2,
     "mechanics": [
@@ -369,7 +369,7 @@
     "id": "BG34_140",
     "name": "Expert Aviator",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 3,
     "health": 4,
     "mechanics": [
@@ -382,7 +382,7 @@
     "id": "BG31_816",
     "name": "Fire Baller",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 4,
     "health": 3,
     "mechanics": [],
@@ -393,7 +393,7 @@
     "id": "BG31_801",
     "name": "Forest Rover",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 1,
     "health": 1,
     "mechanics": [
@@ -407,7 +407,7 @@
     "id": "BG26_805",
     "name": "Humming Bird",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 1,
     "health": 4,
     "mechanics": [
@@ -434,7 +434,7 @@
     "id": "BG35_150",
     "name": "Laboratory Assistant",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 3,
     "health": 4,
     "mechanics": [
@@ -447,7 +447,7 @@
     "id": "BG23_009",
     "name": "Lava Lurker",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 2,
     "health": 5,
     "mechanics": [
@@ -460,7 +460,7 @@
     "id": "BG36_201",
     "name": "Lurking Lionfish",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 3,
     "health": 4,
     "mechanics": [],
@@ -471,7 +471,7 @@
     "id": "BG31_177",
     "name": "Mechagnome Interpreter",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 3,
     "health": 1,
     "mechanics": [
@@ -484,7 +484,7 @@
     "id": "BG32_170",
     "name": "Metallic Hunter",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 4,
     "health": 2,
     "mechanics": [
@@ -497,7 +497,7 @@
     "id": "BG23_357",
     "name": "Mind Muck",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 3,
     "health": 2,
     "mechanics": [
@@ -510,7 +510,7 @@
     "id": "BG25_011",
     "name": "Nerubian Deathswarmer",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 1,
     "health": 4,
     "mechanics": [
@@ -549,7 +549,7 @@
     "id": "BG33_430",
     "name": "Prodigious Tusker",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 1,
     "health": 3,
     "mechanics": [
@@ -562,7 +562,7 @@
     "id": "BG20_101",
     "name": "Roadboar",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 2,
     "health": 4,
     "mechanics": [
@@ -575,7 +575,7 @@
     "id": "BG25_022",
     "name": "Scarlet Skull",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -589,7 +589,7 @@
     "id": "BGS_115",
     "name": "Sellemental",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 3,
     "health": 3,
     "mechanics": [],
@@ -600,7 +600,7 @@
     "id": "BG23_002",
     "name": "Shell Collector",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 4,
     "health": 3,
     "mechanics": [
@@ -613,7 +613,7 @@
     "id": "BG31_818",
     "name": "Snow Baller",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 3,
     "health": 4,
     "mechanics": [],
@@ -624,7 +624,7 @@
     "id": "BG26_174",
     "name": "Soul Rewinder",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 4,
     "health": 1,
     "mechanics": [
@@ -637,7 +637,7 @@
     "id": "BG32_235",
     "name": "Surfing Sylvar",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 1,
     "health": 2,
     "mechanics": [
@@ -650,7 +650,7 @@
     "id": "BG22_202",
     "name": "Tad",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 2,
     "health": 2,
     "mechanics": [],
@@ -661,7 +661,7 @@
     "id": "BG21_015",
     "name": "Tarecgosa",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 4,
     "health": 4,
     "mechanics": [
@@ -674,7 +674,7 @@
     "id": "BG31_924",
     "name": "Thaumaturgist",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 1,
     "health": 2,
     "mechanics": [
@@ -688,7 +688,7 @@
     "id": "BG29_810",
     "name": "Thousandth Paper Drake",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 2,
     "health": 3,
     "mechanics": [
@@ -702,7 +702,7 @@
     "id": "BG29_300",
     "name": "Very Hungry Winterfinner",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 2,
     "health": 6,
     "mechanics": [
@@ -716,7 +716,7 @@
     "id": "BG26_147",
     "name": "Accord-o-Tron",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -730,7 +730,7 @@
     "id": "BG24_500",
     "name": "Amber Guardian",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 3,
     "health": 2,
     "mechanics": [
@@ -745,7 +745,7 @@
     "id": "BG_BOT_911",
     "name": "Annoy-o-Module",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 2,
     "health": 4,
     "mechanics": [
@@ -760,7 +760,7 @@
     "id": "BG33_830",
     "name": "Azsharan Cutlassier",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 6,
     "health": 4,
     "mechanics": [
@@ -773,7 +773,7 @@
     "id": "BG33_924",
     "name": "Blue Whelp",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 1,
     "health": 5,
     "mechanics": [
@@ -786,7 +786,7 @@
     "id": "BG36_507",
     "name": "Breakout Mastermind",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 5,
     "health": 5,
     "mechanics": [],
@@ -797,7 +797,7 @@
     "id": "BG34_683",
     "name": "Briarback Drummer",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 5,
     "health": 3,
     "mechanics": [
@@ -810,7 +810,7 @@
     "id": "BG30_125",
     "name": "Cadaver Caretaker",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -823,7 +823,7 @@
     "id": "BG36_508",
     "name": "Cagey Conjurer",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 5,
     "health": 3,
     "mechanics": [],
@@ -847,7 +847,7 @@
     "id": "BG23_004",
     "name": "Deep-Sea Angler",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 2,
     "health": 3,
     "mechanics": [
@@ -861,7 +861,7 @@
     "id": "BGS_071",
     "name": "Deflect-o-Bot",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 3,
     "health": 2,
     "mechanics": [
@@ -875,7 +875,7 @@
     "id": "BG33_155",
     "name": "Devout Hellcaller",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 2,
     "health": 2,
     "mechanics": [
@@ -888,7 +888,7 @@
     "id": "BG27_556",
     "name": "Diremuck Forager",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -914,7 +914,7 @@
     "id": "BG33_323",
     "name": "Dustbone Devastator",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 2,
     "health": 6,
     "mechanics": [
@@ -938,7 +938,7 @@
     "id": "BG31_326",
     "name": "Gem Rat",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 4,
     "health": 4,
     "mechanics": [
@@ -951,7 +951,7 @@
     "id": "BG25_010",
     "name": "Handless Forsaken",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -964,7 +964,7 @@
     "id": "BG36_240",
     "name": "Hired Mount",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 3,
     "health": 5,
     "mechanics": [],
@@ -975,7 +975,7 @@
     "id": "BG36_521",
     "name": "Locked-up Mutineer",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 6,
     "health": 3,
     "mechanics": [
@@ -988,7 +988,7 @@
     "id": "BG26_524",
     "name": "Malchezaar, Prince of Dance",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -1001,7 +1001,7 @@
     "id": "BG35_140",
     "name": "Mama Mrrglton",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 4,
     "health": 2,
     "mechanics": [
@@ -1014,7 +1014,7 @@
     "id": "BG31_843",
     "name": "Meteorite Crasher",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 4,
     "health": 4,
     "mechanics": [
@@ -1027,7 +1027,7 @@
     "id": "BG28_309",
     "name": "Mummifier",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 5,
     "health": 2,
     "mechanics": [
@@ -1040,7 +1040,7 @@
     "id": "BG35_141",
     "name": "Papa Mrrglton",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 2,
     "health": 4,
     "mechanics": [
@@ -1053,7 +1053,7 @@
     "id": "BG36_509",
     "name": "Private Investigator",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 2,
     "health": 4,
     "mechanics": [],
@@ -1064,7 +1064,7 @@
     "id": "BG_DEEP_015",
     "name": "Prosthetic Hand",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 3,
     "health": 1,
     "mechanics": [
@@ -1078,7 +1078,7 @@
     "id": "BG36_854",
     "name": "Rescue Bot",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -1092,7 +1092,7 @@
     "id": "BG29_816",
     "name": "Roaring Recruiter",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 2,
     "health": 8,
     "mechanics": [
@@ -1105,7 +1105,7 @@
     "id": "BG32_841",
     "name": "Sand Swirler",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 3,
     "health": 2,
     "mechanics": [
@@ -1118,7 +1118,7 @@
     "id": "BG36_330",
     "name": "Sly Infiltrator",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -1131,7 +1131,7 @@
     "id": "BG25_806",
     "name": "Sly Raptor",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 1,
     "health": 3,
     "mechanics": [
@@ -1144,7 +1144,7 @@
     "id": "BG27_084",
     "name": "Sprightly Scarab",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 3,
     "health": 1,
     "mechanics": [
@@ -1157,7 +1157,7 @@
     "id": "BG36_202",
     "name": "Tasty Lobster",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 1,
     "health": 1,
     "mechanics": [
@@ -1170,7 +1170,7 @@
     "id": "BG27_005",
     "name": "Timecap'n Hooktail",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 1,
     "health": 4,
     "mechanics": [
@@ -1183,7 +1183,7 @@
     "id": "BG36_730",
     "name": "Trapped Clapper",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 2,
     "health": 2,
     "mechanics": [
@@ -1196,7 +1196,7 @@
     "id": "BG36_763",
     "name": "Treasure Parrot",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 5,
     "health": 5,
     "mechanics": [
@@ -1209,7 +1209,7 @@
     "id": "BG34_684",
     "name": "Trench Fighter",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -1222,7 +1222,7 @@
     "id": "BG34_856",
     "name": "Waveling",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 5,
     "health": 1,
     "mechanics": [
@@ -1235,7 +1235,7 @@
     "id": "BG23_007",
     "name": "Waverider",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 2,
     "health": 6,
     "mechanics": [
@@ -1249,7 +1249,7 @@
     "id": "BGS_126",
     "name": "Wildfire Elemental",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 6,
     "health": 3,
     "mechanics": [
@@ -1262,7 +1262,7 @@
     "id": "BG36_207",
     "name": "Wolf Pup",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 3,
     "health": 6,
     "mechanics": [
@@ -1275,7 +1275,7 @@
     "id": "BG35_921",
     "name": "Abyssal Bruiser",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 2,
     "health": 1,
     "mechanics": [
@@ -1289,7 +1289,7 @@
     "id": "BG36_181",
     "name": "Air Baller",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 6,
     "health": 6,
     "mechanics": [],
@@ -1300,7 +1300,7 @@
     "id": "BG32_873",
     "name": "Ashen Corruptor",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 5,
     "health": 6,
     "mechanics": [
@@ -1313,7 +1313,7 @@
     "id": "BG32_172",
     "name": "Auto Assembler",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 2,
     "health": 2,
     "mechanics": [
@@ -1327,7 +1327,7 @@
     "id": "BG26_802",
     "name": "Banana Slamma",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 3,
     "health": 6,
     "mechanics": [
@@ -1340,7 +1340,7 @@
     "id": "BG33_822",
     "name": "Bigwig Bandit",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 4,
     "health": 6,
     "mechanics": [
@@ -1353,7 +1353,7 @@
     "id": "BG26_817",
     "name": "Blade Collector",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 3,
     "health": 2,
     "mechanics": [],
@@ -1364,7 +1364,7 @@
     "id": "BG20_104",
     "name": "Bonker",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 2,
     "health": 7,
     "mechanics": [
@@ -1393,7 +1393,7 @@
     "id": "BG36_331",
     "name": "Bramble Tunneler",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 3,
     "health": 6,
     "mechanics": [
@@ -1406,7 +1406,7 @@
     "id": "BG26_137",
     "name": "Bream Counter",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 6,
     "health": 6,
     "mechanics": [],
@@ -1417,7 +1417,7 @@
     "id": "BG36_242",
     "name": "Bronze Timewalker",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 2,
     "health": 9,
     "mechanics": [
@@ -1430,7 +1430,7 @@
     "id": "BG36_211",
     "name": "Cage Gnawer",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 2,
     "health": 7,
     "mechanics": [
@@ -1443,7 +1443,7 @@
     "id": "BG36_760",
     "name": "Captain Cookie",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 5,
     "health": 3,
     "mechanics": [
@@ -1456,7 +1456,7 @@
     "id": "BG29_503",
     "name": "Clunker Junker",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 3,
     "health": 4,
     "mechanics": [
@@ -1469,7 +1469,7 @@
     "id": "BG36_511",
     "name": "Dead Bellringer",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 3,
     "health": 6,
     "mechanics": [],
@@ -1480,7 +1480,7 @@
     "id": "BG35_143",
     "name": "Deepwater Chieftain",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 3,
     "health": 2,
     "mechanics": [
@@ -1494,7 +1494,7 @@
     "id": "BG36_506",
     "name": "Drone Duplicator",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 5,
     "health": 2,
     "mechanics": [
@@ -1507,7 +1507,7 @@
     "id": "BG34_865",
     "name": "En-Djinn Blazer",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 5,
     "health": 5,
     "mechanics": [
@@ -1520,7 +1520,7 @@
     "id": "BG35_341",
     "name": "Enchanted Sentinel",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 3,
     "health": 5,
     "mechanics": [
@@ -1534,7 +1534,7 @@
     "id": "BG30_123",
     "name": "Fearless Foodie",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 2,
     "health": 4,
     "mechanics": [
@@ -1547,7 +1547,7 @@
     "id": "BG34_500",
     "name": "Flaming Enforcer",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -1560,7 +1560,7 @@
     "id": "BG32_880",
     "name": "Friendly Geist",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 6,
     "health": 3,
     "mechanics": [
@@ -1573,7 +1573,7 @@
     "id": "BG36_764",
     "name": "Gearfin",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 6,
     "health": 5,
     "mechanics": [
@@ -1586,7 +1586,7 @@
     "id": "BG36_853",
     "name": "Glambot",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 4,
     "health": 4,
     "mechanics": [
@@ -1599,7 +1599,7 @@
     "id": "BG32_842",
     "name": "Glowing Cinder",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 4,
     "health": 1,
     "mechanics": [
@@ -1612,7 +1612,7 @@
     "id": "BG26_810",
     "name": "Gunpowder Courier",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 2,
     "health": 6,
     "mechanics": [
@@ -1625,7 +1625,7 @@
     "id": "BG36_204",
     "name": "Headhunter Gryphon",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 3,
     "health": 5,
     "mechanics": [
@@ -1666,7 +1666,7 @@
     "id": "BG36_731",
     "name": "Imp-lusionist",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 4,
     "health": 2,
     "mechanics": [
@@ -1679,7 +1679,7 @@
     "id": "BG26_525",
     "name": "Imposing Percussionist",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 4,
     "health": 4,
     "mechanics": [
@@ -1692,7 +1692,7 @@
     "id": "BG36_701",
     "name": "Kelp Keeper",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 5,
     "health": 5,
     "mechanics": [],
@@ -1703,7 +1703,7 @@
     "id": "BG36_180",
     "name": "Living Prison",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 4,
     "health": 5,
     "mechanics": [],
@@ -1714,7 +1714,7 @@
     "id": "BG26_814",
     "name": "Lovesick Balladist",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 3,
     "health": 2,
     "mechanics": [
@@ -1727,7 +1727,7 @@
     "id": "BG36_524",
     "name": "Maritime Extortionist",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 7,
     "health": 7,
     "mechanics": [
@@ -1740,7 +1740,7 @@
     "id": "BG32_340",
     "name": "Maw Caster",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -1753,7 +1753,7 @@
     "id": "BG27_080",
     "name": "Motley Phalanx",
     "cost": 3,
-    "tribe": "ALL",
+    "tribe": null,
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -1767,7 +1767,7 @@
     "id": "BG29_813",
     "name": "Persistent Poet",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 2,
     "health": 3,
     "mechanics": [
@@ -1781,7 +1781,7 @@
     "id": "BG34_690",
     "name": "Plaguerunner",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 4,
     "health": 2,
     "mechanics": [
@@ -1794,7 +1794,7 @@
     "id": "BG34_682",
     "name": "Razorfen Flapper",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 6,
     "health": 2,
     "mechanics": [
@@ -1807,7 +1807,7 @@
     "id": "BGS_116",
     "name": "Refreshing Anomaly",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -1820,7 +1820,7 @@
     "id": "BG33_319",
     "name": "Rimescale Priestess",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -1834,7 +1834,7 @@
     "id": "BG36_245",
     "name": "Runic Arcanist",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 2,
     "health": 4,
     "mechanics": [
@@ -1848,7 +1848,7 @@
     "id": "BG34_925",
     "name": "Seafloor Recruiter",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 3,
     "health": 5,
     "mechanics": [
@@ -1876,7 +1876,7 @@
     "id": "BG36_243",
     "name": "Sky-hatch Runaway",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 4,
     "health": 7,
     "mechanics": [],
@@ -1887,7 +1887,7 @@
     "id": "BG36_332",
     "name": "Snare Trapper",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 4,
     "health": 4,
     "mechanics": [
@@ -1900,7 +1900,7 @@
     "id": "BG36_206",
     "name": "Snarky Shark",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 4,
     "health": 5,
     "mechanics": [],
@@ -1911,7 +1911,7 @@
     "id": "BG36_503",
     "name": "Soulkeeping Jailer",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 3,
     "health": 5,
     "mechanics": [],
@@ -1922,7 +1922,7 @@
     "id": "BGS_123",
     "name": "Tavern Tempest",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 2,
     "health": 2,
     "mechanics": [
@@ -1935,7 +1935,7 @@
     "id": "BG31_327",
     "name": "Thorned Trailblazer",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -1959,7 +1959,7 @@
     "id": "BG36_703",
     "name": "Twilight Tidehunter",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 4,
     "health": 6,
     "mechanics": [
@@ -1972,7 +1972,7 @@
     "id": "BG26_505",
     "name": "Zesty Shaker",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 6,
     "health": 7,
     "mechanics": [
@@ -1985,7 +1985,7 @@
     "id": "BG34_858",
     "name": "Air Revenant",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 3,
     "health": 6,
     "mechanics": [
@@ -1998,7 +1998,7 @@
     "id": "BG36_514",
     "name": "Barrier Banshee",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 7,
     "health": 7,
     "mechanics": [
@@ -2011,7 +2011,7 @@
     "id": "BG33_318",
     "name": "Bile Spitter",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 1,
     "health": 10,
     "mechanics": [
@@ -2051,7 +2051,7 @@
     "id": "BG28_741",
     "name": "Charging Czarina",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 4,
     "health": 1,
     "mechanics": [
@@ -2065,7 +2065,7 @@
     "id": "BG34_142",
     "name": "Costume Enthusiast",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -2080,7 +2080,7 @@
     "id": "BG35_142",
     "name": "Cousin Errgl",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 5,
     "health": 5,
     "mechanics": [
@@ -2093,7 +2093,7 @@
     "id": "BG26_162",
     "name": "Dancing Barnstormer",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 4,
     "health": 4,
     "mechanics": [
@@ -2107,7 +2107,7 @@
     "id": "BG31_920",
     "name": "Darkcrest Strategist",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -2122,7 +2122,7 @@
     "id": "BG36_621",
     "name": "Deft Deserter",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 8,
     "health": 8,
     "mechanics": [],
@@ -2133,7 +2133,7 @@
     "id": "BG36_762",
     "name": "Devilish Distractor",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 4,
     "health": 7,
     "mechanics": [
@@ -2146,7 +2146,7 @@
     "id": "BG34_633",
     "name": "Draconic Warden",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 7,
     "health": 4,
     "mechanics": [
@@ -2173,7 +2173,7 @@
     "id": "BG32_324",
     "name": "Drustfallen Butcher",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 2,
     "health": 9,
     "mechanics": [
@@ -2186,7 +2186,7 @@
     "id": "BG31_824",
     "name": "Dual-Wield Corsair",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -2199,7 +2199,7 @@
     "id": "BG36_523",
     "name": "Enterprising Escapee",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 6,
     "health": 6,
     "mechanics": [
@@ -2212,7 +2212,7 @@
     "id": "BG28_633",
     "name": "Felboar",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 2,
     "health": 6,
     "mechanics": [
@@ -2225,7 +2225,7 @@
     "id": "BG32_821",
     "name": "Felfire Conjurer",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 6,
     "health": 5,
     "mechanics": [
@@ -2238,7 +2238,7 @@
     "id": "BG32_820",
     "name": "Firescale Hoarder",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 5,
     "health": 5,
     "mechanics": [
@@ -2252,7 +2252,7 @@
     "id": "BG23_008",
     "name": "Glowscale",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 4,
     "health": 6,
     "mechanics": [
@@ -2267,7 +2267,7 @@
     "id": "BG36_210",
     "name": "Hoarding Hyena",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 5,
     "health": 6,
     "mechanics": [
@@ -2280,7 +2280,7 @@
     "id": "BG21_004",
     "name": "Insatiable Ur'zul",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 4,
     "health": 6,
     "mechanics": [
@@ -2294,7 +2294,7 @@
     "id": "BGS_041",
     "name": "Kalecgos, Arcane Aspect",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 4,
     "health": 12,
     "mechanics": [
@@ -2333,7 +2333,7 @@
     "id": "BG35_602",
     "name": "Lurking Leviathan",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 3,
     "health": 8,
     "mechanics": [
@@ -2346,7 +2346,7 @@
     "id": "BG32_111",
     "name": "Nightmare Par-tea Guest",
     "cost": 3,
-    "tribe": "ALL",
+    "tribe": null,
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -2373,7 +2373,7 @@
     "id": "BGS_020",
     "name": "Primalfin Lookout",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 3,
     "health": 2,
     "mechanics": [
@@ -2387,7 +2387,7 @@
     "id": "BG33_825",
     "name": "Proud Privateer",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 8,
     "health": 8,
     "mechanics": [
@@ -2400,7 +2400,7 @@
     "id": "BG33_883",
     "name": "Razorfen Vineweaver",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 5,
     "health": 5,
     "mechanics": [
@@ -2426,7 +2426,7 @@
     "id": "BG33_885",
     "name": "Sanguine Refiner",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 2,
     "health": 8,
     "mechanics": [
@@ -2439,7 +2439,7 @@
     "id": "BG26_148",
     "name": "Scrap Scraper",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 6,
     "health": 5,
     "mechanics": [
@@ -2452,7 +2452,7 @@
     "id": "BG35_604",
     "name": "Sewer Lord",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 4,
     "health": 6,
     "mechanics": [
@@ -2465,7 +2465,7 @@
     "id": "BG36_704",
     "name": "Shamanic Tidecaller",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 5,
     "health": 7,
     "mechanics": [
@@ -2478,7 +2478,7 @@
     "id": "BG33_821",
     "name": "Shipwrecked Rascal",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 5,
     "health": 4,
     "mechanics": [
@@ -2492,7 +2492,7 @@
     "id": "BG31_925",
     "name": "Showy Cyclist",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 4,
     "health": 2,
     "mechanics": [
@@ -2506,7 +2506,7 @@
     "id": "BG36_851",
     "name": "Spark Snapper",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 5,
     "health": 5,
     "mechanics": [
@@ -2519,7 +2519,7 @@
     "id": "BG26_523",
     "name": "Tichondrius",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 3,
     "health": 3,
     "mechanics": [
@@ -2545,7 +2545,7 @@
     "id": "BG32_835",
     "name": "Tranquil Meditative",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 3,
     "health": 8,
     "mechanics": [
@@ -2559,7 +2559,7 @@
     "id": "BG31_809",
     "name": "Turquoise Skitterer",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 5,
     "health": 5,
     "mechanics": [
@@ -2572,7 +2572,7 @@
     "id": "BG36_510",
     "name": "Vigilant Bristlemane",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 3,
     "health": 5,
     "mechanics": [
@@ -2585,7 +2585,7 @@
     "id": "BG35_152",
     "name": "Void Pup Trainer",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 7,
     "health": 7,
     "mechanics": [
@@ -2611,7 +2611,7 @@
     "id": "BG26_354",
     "name": "Choral Mrrrglr",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 6,
     "health": 6,
     "mechanics": [
@@ -2625,7 +2625,7 @@
     "id": "BG36_241",
     "name": "Crimson Vindicator",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 8,
     "health": 9,
     "mechanics": [
@@ -2639,7 +2639,7 @@
     "id": "BG31_835",
     "name": "Deathly Striker",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 8,
     "health": 8,
     "mechanics": [
@@ -2653,7 +2653,7 @@
     "id": "BG36_208",
     "name": "Deathstrider",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 10,
     "health": 11,
     "mechanics": [
@@ -2666,7 +2666,7 @@
     "id": "BG26_175",
     "name": "Elemental of Surprise",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 8,
     "health": 8,
     "mechanics": [
@@ -2679,7 +2679,7 @@
     "id": "BG36_733",
     "name": "Eredar Escapist",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 6,
     "health": 6,
     "mechanics": [
@@ -2692,7 +2692,7 @@
     "id": "BG25_009",
     "name": "Eternal Summoner",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 8,
     "health": 1,
     "mechanics": [
@@ -2706,7 +2706,7 @@
     "id": "BG35_342",
     "name": "Falling Sky Golem",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 4,
     "health": 2,
     "mechanics": [
@@ -2720,7 +2720,7 @@
     "id": "BG32_837",
     "name": "Fauna Whisperer",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 4,
     "health": 9,
     "mechanics": [
@@ -2733,7 +2733,7 @@
     "id": "BG32_822",
     "name": "Fire-forged Evoker",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 8,
     "health": 5,
     "mechanics": [
@@ -2747,7 +2747,7 @@
     "id": "BG34_692",
     "name": "Forsaken Weaver",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 3,
     "health": 10,
     "mechanics": [
@@ -2760,7 +2760,7 @@
     "id": "BG36_640",
     "name": "Gatekeeper Amalgam",
     "cost": 3,
-    "tribe": "ALL",
+    "tribe": null,
     "attack": 6,
     "health": 6,
     "mechanics": [
@@ -2773,7 +2773,7 @@
     "id": "BGS_018",
     "name": "Goldrinn, the Great Wolf",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 8,
     "health": 8,
     "mechanics": [
@@ -2786,7 +2786,7 @@
     "id": "BG31_035",
     "name": "Groundbreaker",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 6,
     "health": 4,
     "mechanics": [
@@ -2799,7 +2799,7 @@
     "id": "BG36_344",
     "name": "Hooktusk, Master Marauder",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 4,
     "health": 4,
     "mechanics": [
@@ -2812,7 +2812,7 @@
     "id": "BG28_595",
     "name": "Ignition Specialist",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 8,
     "health": 8,
     "mechanics": [
@@ -2825,7 +2825,7 @@
     "id": "BG33_891",
     "name": "Magicfin Mycologist",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 4,
     "health": 8,
     "mechanics": [
@@ -2838,7 +2838,7 @@
     "id": "BG36_351",
     "name": "Moat Custodian",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 5,
     "health": 10,
     "mechanics": [
@@ -2851,7 +2851,7 @@
     "id": "BG33_893",
     "name": "Primitive Painter",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 3,
     "health": 8,
     "mechanics": [
@@ -2864,7 +2864,7 @@
     "id": "BG36_209",
     "name": "Ravaging Scorpid",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 6,
     "health": 7,
     "mechanics": [
@@ -2878,7 +2878,7 @@
     "id": "BG23_017",
     "name": "Sanguine Champion",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 9,
     "health": 3,
     "mechanics": [
@@ -2892,7 +2892,7 @@
     "id": "BG36_343",
     "name": "Silent Deliverer",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 7,
     "health": 7,
     "mechanics": [
@@ -2905,7 +2905,7 @@
     "id": "BG33_823",
     "name": "Sky Admiral Rogers",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -2918,7 +2918,7 @@
     "id": "BG36_515",
     "name": "Snazzy Phantom",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 6,
     "health": 8,
     "mechanics": [
@@ -2931,7 +2931,7 @@
     "id": "BG36_622",
     "name": "Torrential Ruiner",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 6,
     "health": 3,
     "mechanics": [
@@ -2944,7 +2944,7 @@
     "id": "BG31_323",
     "name": "Turbo Hogrider",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 5,
     "health": 7,
     "mechanics": [
@@ -2957,7 +2957,7 @@
     "id": "BG35_155",
     "name": "Twisted Wrathguard",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 8,
     "health": 8,
     "mechanics": [
@@ -2981,7 +2981,7 @@
     "id": "BG36_352",
     "name": "Unbound Tempest",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 3,
     "health": 12,
     "mechanics": [
@@ -2994,7 +2994,7 @@
     "id": "BG32_846",
     "name": "Unleashed Mana Surge",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 6,
     "health": 5,
     "mechanics": [
@@ -3007,7 +3007,7 @@
     "id": "BG26_152",
     "name": "Utility Drone",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 4,
     "health": 6,
     "mechanics": [
@@ -3020,7 +3020,7 @@
     "id": "BG36_341",
     "name": "Veteran Brigand",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 8,
     "health": 8,
     "mechanics": [
@@ -3033,7 +3033,7 @@
     "id": "BG24_004",
     "name": "Warpwing",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 12,
     "health": 4,
     "mechanics": [],
@@ -3044,7 +3044,7 @@
     "id": "BG25_034",
     "name": "Captain Sanders",
     "cost": 3,
-    "tribe": "PIRATE",
+    "tribe": "Pirate",
     "attack": 9,
     "health": 9,
     "mechanics": [
@@ -3057,7 +3057,7 @@
     "id": "BG27_016",
     "name": "Champion of Sargeras",
     "cost": 3,
-    "tribe": "DEMON",
+    "tribe": "Demon",
     "attack": 8,
     "health": 8,
     "mechanics": [
@@ -3071,7 +3071,7 @@
     "id": "BG34_145",
     "name": "Futurefin",
     "cost": 3,
-    "tribe": "MURLOC",
+    "tribe": "Murloc",
     "attack": 7,
     "health": 13,
     "mechanics": [
@@ -3099,7 +3099,7 @@
     "id": "BG36_333",
     "name": "Jailbird Juggernaut",
     "cost": 3,
-    "tribe": "QUILBOAR",
+    "tribe": "Quilboar",
     "attack": 6,
     "health": 15,
     "mechanics": [
@@ -3112,7 +3112,7 @@
     "id": "BG27_017",
     "name": "Obsidian Ravager",
     "cost": 3,
-    "tribe": "DRAGON",
+    "tribe": "Dragon",
     "attack": 7,
     "health": 7,
     "mechanics": [
@@ -3125,7 +3125,7 @@
     "id": "BG26_149",
     "name": "Polarizing Beatboxer",
     "cost": 3,
-    "tribe": "MECHANICAL",
+    "tribe": "Mech",
     "attack": 5,
     "health": 10,
     "mechanics": [
@@ -3138,7 +3138,7 @@
     "id": "BG27_514",
     "name": "Sea Witch Zar'jira",
     "cost": 3,
-    "tribe": "NAGA",
+    "tribe": "Naga",
     "attack": 4,
     "health": 5,
     "mechanics": [
@@ -3152,7 +3152,7 @@
     "id": "BG34_322",
     "name": "Stalwart Kodo",
     "cost": 3,
-    "tribe": "BEAST",
+    "tribe": "Beast",
     "attack": 16,
     "health": 32,
     "mechanics": [
@@ -3165,7 +3165,7 @@
     "id": "BG31_999",
     "name": "Stitched Salvager",
     "cost": 3,
-    "tribe": "UNDEAD",
+    "tribe": "Undead",
     "attack": 16,
     "health": 4,
     "mechanics": [
@@ -3180,7 +3180,7 @@
     "id": "BG34_950",
     "name": "Stone Age Slab",
     "cost": 3,
-    "tribe": "ELEMENTAL",
+    "tribe": "Elemental",
     "attack": 10,
     "health": 10,
     "mechanics": [
@@ -3193,7 +3193,7 @@
     "id": "BG34_320",
     "name": "The Last One Standing",
     "cost": 3,
-    "tribe": "ALL",
+    "tribe": null,
     "attack": 15,
     "health": 15,
     "mechanics": [

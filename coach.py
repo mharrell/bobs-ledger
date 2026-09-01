@@ -24,6 +24,8 @@ from extract_game import split_game_chunks, extract_game, _friendly_player
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
 from player_actions import parse_actions, trigger_counts
 from value import sell_recommendation, _load_card_db
+import meta
+from tribes import DISPLAY_TRIBES, normalize
 
 _HERE = _HERE  # reuse bans' module dir
 
@@ -58,10 +60,11 @@ def analyze(path, game_index=1):
     tier = gs.hero_meta.get(friendly_hero["card"], {}).get("tier")
     gold = gs.gold.get(friendly_account) if friendly_account else None
 
-    # Family ban -> allowed tribes + playable comps.
+    # Family ban -> allowed tribes + playable comps. No seed match (or no pool
+    # minions parsed yet) = no ban info: fail OPEN (None), never "all banned".
     card_races = _load_card_races(os.path.join(_HERE, ".card_races.json"))
     seed = _game_seed(chunk)
-    allowed = []
+    allowed = None
     for g in bans_from_log(path, card_races):
         if g["seed"] == seed:
             allowed = g["allowed"]
@@ -76,9 +79,11 @@ def analyze(path, game_index=1):
     actions = parse_actions(chunk, friendly, friendly_hero["card"] if friendly_hero else None)
     scenario = trigger_counts(actions)
 
-    # Sell recommendation.
-    ranked = sell_recommendation(friendly_board, playable, set(allowed),
-                                 scenario=scenario)
+    # Sell recommendation (hero power text feeds the W_HERO synergy term when
+    # the hero is in meta/heroes.json).
+    hero_power = meta.hero_power(friendly_hero["hero_name"]) if friendly_hero else None
+    ranked = sell_recommendation(friendly_board, playable, allowed,
+                                 scenario=scenario, hero_power=hero_power)
 
     return {
         "hero": friendly_hero["hero_name"] if friendly_hero else "?",
@@ -93,9 +98,10 @@ def analyze(path, game_index=1):
 
 
 def _banned(allowed):
-    all_tribes = ["Beast", "Demon", "Dragon", "Elemental", "Mech", "Murloc",
-                  "Naga", "Pirate", "Quilboar", "Undead"]
-    return [t for t in all_tribes if t not in allowed]
+    # Unknown ban info (None) shows as no banned tribes, never "all banned".
+    if not allowed:
+        return []
+    return [t for t in DISPLAY_TRIBES if t not in set(allowed)]
 
 
 def describe(analysis):
@@ -109,7 +115,7 @@ def describe(analysis):
                if info.get("name")}
     for m in b:
         nm = id2name.get(m["card"], m["card"])
-        ln.append(f"  {nm}  {m['atk']}/{m['health']}  {m.get('tribe') or ''}")
+        ln.append(f"  {nm}  {m['atk']}/{m['health']}  {normalize(m.get('tribe')) or ''}")
     ln.append(f"Banned tribes: {', '.join(analysis['banned']) or 'none'}")
     ln.append(f"Playable comps: {', '.join(sorted(analysis['playable_comps'])) or 'none'}")
     sc = analysis.get("scenario") or {}

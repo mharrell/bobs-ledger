@@ -15,6 +15,7 @@ import re
 import sys
 
 from extract_game import split_game_chunks, extract_game, _friendly_player
+from tribes import normalize
 
 # A real board minion (excludes enchantments, golden _G, trinkets).
 MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BGS_\d+|BG_[A-Z]+_\d+)$")
@@ -70,7 +71,6 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     cur_turn = None
     step = None
     in_buying_phase = False
-    started = False     # skip the first MAIN_ACTION (setup/mulligan phase)
     played = set()      # entity ids the player played onto the board (HAND->PLAY)
     card = {}           # entity id -> card id
     player = {}         # entity id -> player number
@@ -89,16 +89,20 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     for line in chunk:
         m = STEP_RE.search(line)
         if m:
+            # Both GameState and PowerTaskList log tag=STEP lines; the PTL copy
+            # arrives after GameState's MAIN_END and would spawn a spurious
+            # turn. Only GameState steps delimit turns (PTL lines still matter
+            # below for play/sell zone detection).
+            if "PowerTaskList" in line:
+                continue
             step = m.group(1)
             # A buying phase (MAIN_ACTION) = one turn. MAIN_ACTION re-enters
             # within a buying phase (after refreshes), so only count the first
-            # MAIN_ACTION after a combat (or the very first one).
+            # MAIN_ACTION after a combat. The first MAIN_ACTION of a game is a
+            # real buy phase in Battlegrounds (full shop, buys allowed).
             if step == "MAIN_ACTION" and not in_buying_phase:
-                if not started:
-                    started = True  # skip the setup/mulligan phase
-                else:
-                    cur_turn = (cur_turn or 0) + 1
-                    turns.append(new_turn(cur_turn))
+                cur_turn = (cur_turn or 0) + 1
+                turns.append(new_turn(cur_turn))
                 in_buying_phase = True
             elif step == "MAIN_END":  # combat phase ends the buying phase
                 in_buying_phase = False
@@ -260,13 +264,13 @@ def trigger_counts(actions, bg_pool=None):
             info = bg_pool.get(cid)
             if not info:
                 continue
-            tribe = info.get("tribe")
+            tribe = normalize(info.get("tribe"))
             tier = info.get("tier")
-            if tribe == "ELEMENTAL":
+            if tribe == "Elemental":
                 pe += 1
-            elif tribe == "MECHANICAL":
+            elif tribe == "Mech":
                 pm += 1
-            elif tribe == "NAGA":
+            elif tribe == "Naga":
                 pn += 1
             if tier is not None and tier <= 3:
                 pt += 1
