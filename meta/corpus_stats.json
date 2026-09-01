@@ -1,44 +1,15 @@
 {
   "comps": {
-    "Murlocs - Venom Scam": {
-      "games": 1,
-      "places": [
-        2
-      ],
-      "wins": 0,
-      "top4": 1,
-      "avg_place": 2.0
-    },
     "Elementals - Unbound Tempest": {
-      "games": 5,
+      "games": 3,
       "places": [
-        1,
-        5,
         6,
         5,
         7
       ],
-      "wins": 1,
-      "top4": 1,
-      "avg_place": 4.8
-    },
-    "Mechs - Magnetics/Spells": {
-      "games": 1,
-      "places": [
-        1
-      ],
-      "wins": 1,
-      "top4": 1,
-      "avg_place": 1.0
-    },
-    "Quilboar - Choose One": {
-      "games": 1,
-      "places": [
-        7
-      ],
       "wins": 0,
       "top4": 0,
-      "avg_place": 7.0
+      "avg_place": 6.0
     },
     "Quilboar - Bristlemane": {
       "games": 1,
@@ -75,35 +46,18 @@
       "wins": 0,
       "top4": 1,
       "avg_place": 4.0
+    },
+    "Murlocs - Venom Scam": {
+      "games": 1,
+      "places": [
+        5
+      ],
+      "wins": 0,
+      "top4": 0,
+      "avg_place": 5.0
     }
   },
   "engines": {
-    "Elementals \u2014 Stat Scaling": {
-      "games": 3,
-      "places": [
-        1,
-        5,
-        1
-      ],
-      "stats": [
-        13348,
-        115,
-        10558
-      ],
-      "avg_place": 2.3333333333333335,
-      "avg_stats": 8007.0
-    },
-    "Mechs \u2014 Magnetics/Spells": {
-      "games": 1,
-      "places": [
-        1
-      ],
-      "stats": [
-        7999
-      ],
-      "avg_place": 1.0,
-      "avg_stats": 7999.0
-    },
     "Elementals \u2014 Unbound Tempest": {
       "games": 2,
       "places": [
@@ -117,16 +71,27 @@
       "avg_place": 6.0,
       "avg_stats": 1295.0
     },
+    "Elementals \u2014 Stat Scaling": {
+      "games": 1,
+      "places": [
+        1
+      ],
+      "stats": [
+        10558
+      ],
+      "avg_place": 1.0,
+      "avg_stats": 10558.0
+    },
     "Beasts \u2014 Beetles": {
       "games": 1,
       "places": [
         2
       ],
       "stats": [
-        392
+        400
       ],
       "avg_place": 2.0,
-      "avg_stats": 392.0
+      "avg_stats": 400.0
     },
     "Pirates \u2014 APM Golden": {
       "games": 1,
@@ -141,42 +106,6 @@
     }
   },
   "heroes": {
-    "Tavish Stormpike": {
-      "games": 1,
-      "places": [
-        2
-      ],
-      "avg_place": 2.0
-    },
-    "Yogg-Saron, Hope's End": {
-      "games": 2,
-      "places": [
-        1,
-        2
-      ],
-      "avg_place": 1.5
-    },
-    "Snake Eyes": {
-      "games": 1,
-      "places": [
-        1
-      ],
-      "avg_place": 1.0
-    },
-    "Death's Head Blackthorn": {
-      "games": 1,
-      "places": [
-        7
-      ],
-      "avg_place": 7.0
-    },
-    "Time Twister Chromie": {
-      "games": 1,
-      "places": [
-        5
-      ],
-      "avg_place": 5.0
-    },
     "A. F. Kay": {
       "games": 1,
       "places": [
@@ -212,226 +141,46 @@
       ],
       "avg_place": 1.0
     },
+    "Yogg-Saron, Hope's End": {
+      "games": 1,
+      "places": [
+        2
+      ],
+      "avg_place": 2.0
+    },
     "Cap'n Hoggarr": {
       "games": 1,
       "places": [
         4
       ],
       "avg_place": 4.0
+    },
+    "Patchwerk": {
+      "games": 1,
+      "places": [
+        5
+      ],
+      "avg_place": 5.0
     }
   },
   "cards": {
-    "BG23_318": {
-      "games": 1,
-      "places": [
-        2
-      ],
-      "avg_place": 2.0
-    },
-    "BG33_318": {
-      "games": 1,
-      "places": [
-        2
-      ],
-      "avg_place": 2.0
-    },
     "BG35_143": {
       "games": 2,
       "places": [
-        2,
-        6
-      ],
-      "avg_place": 4.0
-    },
-    "BG32_837": {
-      "games": 2,
-      "places": [
-        2,
-        2
-      ],
-      "avg_place": 2.0
-    },
-    "BG36_507": {
-      "games": 2,
-      "places": [
-        2,
-        6
-      ],
-      "avg_place": 4.0
-    },
-    "BG35_142": {
-      "games": 1,
-      "places": [
-        2
-      ],
-      "avg_place": 2.0
-    },
-    "BG36_352": {
-      "games": 3,
-      "places": [
-        1,
-        5,
-        7
-      ],
-      "avg_place": 4.333333333333333
-    },
-    "BGS_119": {
-      "games": 2,
-      "places": [
-        1,
-        5
-      ],
-      "avg_place": 3.0
-    },
-    "BG34_500": {
-      "games": 3,
-      "places": [
-        1,
-        5,
-        1
-      ],
-      "avg_place": 2.3333333333333335
-    },
-    "BG31_843": {
-      "games": 2,
-      "places": [
-        1,
-        5
-      ],
-      "avg_place": 3.0
-    },
-    "BGS_104": {
-      "games": 1,
-      "places": [
-        1
-      ],
-      "avg_place": 1.0
-    },
-    "BG32_846": {
-      "games": 3,
-      "places": [
-        1,
-        1,
-        1
-      ],
-      "avg_place": 1.0
-    },
-    "BG_TTN_401": {
-      "games": 2,
-      "places": [
-        1,
-        1
-      ],
-      "avg_place": 1.0
-    },
-    "BG26_152": {
-      "games": 2,
-      "places": [
-        1,
-        1
-      ],
-      "avg_place": 1.0
-    },
-    "BG36_853": {
-      "games": 1,
-      "places": [
-        1
-      ],
-      "avg_place": 1.0
-    },
-    "BG26_ICC_901": {
-      "games": 1,
-      "places": [
-        1
-      ],
-      "avg_place": 1.0
-    },
-    "BG35_883": {
-      "games": 1,
-      "places": [
-        1
-      ],
-      "avg_place": 1.0
-    },
-    "BG36_331": {
-      "games": 2,
-      "places": [
-        7,
-        7
-      ],
-      "avg_place": 7.0
-    },
-    "BG33_883": {
-      "games": 1,
-      "places": [
-        7
-      ],
-      "avg_place": 7.0
-    },
-    "BG31_327": {
-      "games": 2,
-      "places": [
-        7,
-        7
-      ],
-      "avg_place": 7.0
-    },
-    "BG31_326": {
-      "games": 1,
-      "places": [
-        7
-      ],
-      "avg_place": 7.0
-    },
-    "BG_LOE_077": {
-      "games": 4,
-      "places": [
-        7,
         6,
-        6,
-        1
-      ],
-      "avg_place": 5.0
-    },
-    "BG31_323": {
-      "games": 1,
-      "places": [
-        7
-      ],
-      "avg_place": 7.0
-    },
-    "BG34_858": {
-      "games": 2,
-      "places": [
-        5,
         5
       ],
-      "avg_place": 5.0
-    },
-    "BGS_127": {
-      "games": 1,
-      "places": [
-        5
-      ],
-      "avg_place": 5.0
-    },
-    "BGS_123": {
-      "games": 3,
-      "places": [
-        5,
-        1,
-        1
-      ],
-      "avg_place": 2.3333333333333335
-    },
-    "BG31_818": {
-      "games": 1,
-      "places": [
-        5
-      ],
-      "avg_place": 5.0
+      "avg_place": 5.5
     },
     "BG36_703": {
+      "games": 2,
+      "places": [
+        6,
+        5
+      ],
+      "avg_place": 5.5
+    },
+    "BG36_507": {
       "games": 1,
       "places": [
         6
@@ -439,19 +188,45 @@
       "avg_place": 6.0
     },
     "BG36_701": {
+      "games": 3,
+      "places": [
+        6,
+        1,
+        5
+      ],
+      "avg_place": 4.0
+    },
+    "BG34_140": {
       "games": 2,
       "places": [
         6,
+        5
+      ],
+      "avg_place": 5.5
+    },
+    "BG_LOE_077": {
+      "games": 3,
+      "places": [
+        6,
+        6,
         1
       ],
-      "avg_place": 3.5
+      "avg_place": 4.333333333333333
     },
-    "BG34_140": {
-      "games": 1,
+    "BG36_352": {
+      "games": 2,
       "places": [
-        6
+        5,
+        7
       ],
       "avg_place": 6.0
+    },
+    "BG31_843": {
+      "games": 1,
+      "places": [
+        5
+      ],
+      "avg_place": 5.0
     },
     "BG34_865": {
       "games": 2,
@@ -483,6 +258,13 @@
       ],
       "avg_place": 6.0
     },
+    "BG36_331": {
+      "games": 1,
+      "places": [
+        7
+      ],
+      "avg_place": 7.0
+    },
     "BG34_684": {
       "games": 1,
       "places": [
@@ -499,6 +281,13 @@
       "avg_place": 7.0
     },
     "BG33_430": {
+      "games": 1,
+      "places": [
+        7
+      ],
+      "avg_place": 7.0
+    },
+    "BG31_327": {
       "games": 1,
       "places": [
         7
@@ -535,6 +324,28 @@
       ],
       "avg_place": 7.0
     },
+    "BG34_500": {
+      "games": 1,
+      "places": [
+        1
+      ],
+      "avg_place": 1.0
+    },
+    "BG32_846": {
+      "games": 1,
+      "places": [
+        1
+      ],
+      "avg_place": 1.0
+    },
+    "BGS_123": {
+      "games": 2,
+      "places": [
+        1,
+        1
+      ],
+      "avg_place": 1.0
+    },
     "BG31_809": {
       "games": 1,
       "places": [
@@ -553,6 +364,13 @@
       "games": 2,
       "places": [
         2,
+        2
+      ],
+      "avg_place": 2.0
+    },
+    "BG25_354": {
+      "games": 1,
+      "places": [
         2
       ],
       "avg_place": 2.0
@@ -599,6 +417,20 @@
         4
       ],
       "avg_place": 4.0
+    },
+    "BG33_318": {
+      "games": 1,
+      "places": [
+        5
+      ],
+      "avg_place": 5.0
+    },
+    "BG27_513": {
+      "games": 1,
+      "places": [
+        5
+      ],
+      "avg_place": 5.0
     }
   }
 }
