@@ -248,17 +248,49 @@ def apply_changes(changes, do_apply):
 
         filename, aliases = ENTITY_FILES[et]
         container = load_meta(filename)
-        idx = {norm(e.get("name")): (k, e) for k, e in iter_entities(container)}
-        hit = idx.get(norm(name))
-        if not hit:
+        # Homonymous entities exist (e.g. Battle Scars x2, one per dark-gift
+        # tier). Collect ALL of them; never let the last dict entry silently
+        # win, or a patch edits the wrong record.
+        by_name = {}
+        for k, e in iter_entities(container):
+            by_name.setdefault(norm(e.get("name")), []).append((k, e))
+        hits = by_name.get(norm(name), [])
+        if not hits:
             report.append({
                 "status": "unmatched",
                 "reason": "no entity by that name (new card? needs manual entry)",
                 **ch,
             })
             continue
+        if len(hits) > 1:
+            # Disambiguate by tier when the change carries one.
+            tier = ch.get("tier")
+            tiered = [
+                (k, e) for k, e in hits
+                if e.get("tier") is not None and str(e.get("tier")) == str(tier)
+            ] if tier is not None else []
+            if len(tiered) != 1:
+                # Show whatever distinguishes the duplicates: tier when the
+                # entities have one, else a description fragment (dark gifts
+                # carry no tier field, only differing text).
+                if any(e.get("tier") is not None for _, e in hits):
+                    markers = ", ".join(
+                        f"tier {e.get('tier')}" for _, e in hits)
+                else:
+                    markers = "; ".join(
+                        (e.get("description") or "?")[:40] for _, e in hits)
+                report.append({
+                    "status": "ambiguous",
+                    "reason": (
+                        f"{len(hits)} entities named {name!r} "
+                        + (f", none/no unique match at tier {tier!r} " if tier is not None else "")
+                        + f"({markers}) — resolve manually"),
+                    **ch,
+                })
+                continue
+            hits = tiered
 
-        k, entity = hit
+        k, entity = hits[0]
         if field == "removed":
             if isinstance(container, dict):
                 del container[k]
