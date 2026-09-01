@@ -278,8 +278,11 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
     card_db = _load_card_db()
     comp = None
     if comps:
+        # Score shop cards against the TARGET comp (what you're building toward),
+        # not the current board's implied comp — so the buy recommendation guides
+        # the pivot/commit rather than just matching the current board.
         if board_minions:
-            comp = _best_comp(board_minions, comps)
+            comp = comp_target(board_minions, comps)
         if comp is None:
             comp = next(iter(comps.values()))
     engine_bonus = _engine_growth_bonus(board_minions, _load_bg_names()) if board_minions else {}
@@ -293,6 +296,13 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
              "health": card.get("health") or 0, "tribe": card.get("race")}
         val = minion_value(m, card, comp,
                            engine_bonus=engine_bonus.get(cid, 0))
+        # Strongly prefer the target comp's core/addon cards, so the buy
+        # recommendation actually guides the build rather than just matching stats.
+        if comp:
+            if cid in comp.get("core", []):
+                val += 10.0
+            elif cid in comp.get("addons", []):
+                val += 5.0
         if allowed_tribes and m.get("tribe") and m["tribe"] not in allowed_tribes:
             val -= 2.0  # banned-tribe minion can't grow
         scored.append((cid, val))
@@ -301,25 +311,100 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
 
 
 def top_move(analysis):
-    """A one-line decision call distilled from the analysis (buy / sell / level).
+    """A one-line decision call with the *intention* behind each part.
 
     `analysis` is the coach dict (hero, tier, gold, buy_this, sell_rank, ...).
-    Returns a short actionable line like "Buy Air Baller · sell Surfing Sylvar ·
-    level", or a fallback when there's nothing pressing.
+    Returns a short actionable line like "Buy Air Baller (committing to
+    Elementals) · sell Surfing Sylvar (making room) · level (access to tier 5)",
+    or a fallback when there's nothing pressing.
     """
     names = _load_bg_names()
+    card_db = _load_card_db()
+    comp = _best_comp(analysis.get("board", []), analysis.get("playable_comps") or {})
     parts = []
     if analysis.get("buy_this"):
-        parts.append(f"Buy {names.get(analysis['buy_this'], analysis['buy_this'])}")
-    if analysis.get("sell_rank"):
+        cid = analysis["buy_this"]
+        parts.append(f"Buy {names.get(cid, cid)} ({_buy_intention(cid, comp, card_db)})")
+    # Only suggest selling to "make room" when the board is full AND we're buying
+    # something that needs the slot. If there's space, selling is unnecessary.
+    if analysis.get("buy_this") and len(analysis.get("board", [])) >= 7 \
+            and analysis.get("sell_rank"):
         worst = analysis["sell_rank"][0]  # safest to sell
         if worst[1] < 15:  # a clear filler (low value)
-            parts.append(f"sell {names.get(worst[0], worst[0])}")
+            parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
     tier = analysis.get("tier")
     gold = analysis.get("gold")
     if tier and tier < 6 and gold is not None and gold >= tier + 1:
-        parts.append("level")
-    return " · ".join(parts) if parts else "stabilize / roll for your comp"
+        parts.append(f"level (access to tier {tier + 1})")
+    if parts:
+        return " · ".join(parts)
+    # Nothing pressing: if the board is full and has end-of-turn scaling, the
+    # right move is to pass and let the engine grow.
+    if len(analysis.get("board", [])) >= 7 \
+            and _has_end_of_turn(analysis.get("board", []), card_db):
+        return "wait for end of turn — let the engine scale"
+    # Otherwise point at the target comp so the advice stays actionable instead
+    # of going stale ("committing to X" with no next step).
+    target = analysis.get("target_comp")
+    if target:
+        return f"hold — look for {target} core cards"
+    return "stabilize / roll for your comp"
+
+
+def _has_end_of_turn(board, card_db):
+    """True if any board minion has an end-of-turn scaling effect."""
+    for m in board:
+        text = (card_db.get(m["card"]) or {}).get("text", "")
+        if "end of" in text and "turn" in text:
+            return True
+    return False
+
+
+def _buy_intention(cid, comp, card_db):
+    """Why the coach recommends buying this card (a pre-set intention)."""
+    if comp and cid in comp.get("core", []):
+        return f"committing to {comp.get('tribe') or comp.get('name')}"
+    if comp and cid in comp.get("addons", []):
+        return "part of growth cycle"
+    card = card_db.get(cid)
+    if card and _is_engine(card):
+        return "growth engine"
+    return "surviving until we can commit"
+
+
+_TIER_SCORE = {"S": 3, "A": 2, "B": 1}
+
+
+def _tier_score(t):
+    return _TIER_SCORE.get((t or "").upper(), 1)
+
+
+def comp_target(board, comps):
+    """The best comp to build toward, given the board and playable comps.
+
+    If you're deep into a comp (>=2 core cards on the board), commit to it. Else
+    pivot to the highest-tier playable comp. Returns the comp dict, or None.
+    """
+    board_cards = {m["card"] for m in board}
+    committed = None
+    for comp in comps.values():
+        overlap = len(set(comp.get("core", [])) & board_cards)
+        if overlap >= 2 and (committed is None or overlap > committed[1]):
+            committed = (comp, overlap)
+    if committed:
+        return committed[0]
+    if not comps:
+        return None
+    return max(comps.values(), key=lambda c: _tier_score(c.get("meta_tier")))
+
+
+def target_state(target, board):
+    """'committing' if the target comp's core cards are on the board, else 'pivot'."""
+    if not target:
+        return None
+    core = set(target.get("core", []))
+    board_cards = {m["card"] for m in board}
+    return "committing" if core & board_cards else "pivot"
 
 
 # Default per-turn trigger counts for the growth simulator when the caller

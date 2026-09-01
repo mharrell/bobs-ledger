@@ -92,6 +92,16 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       Handles golden pieces (2x), compounding shop-eat, and tribe-scaling.
 - [x] **Wired into the coach**: `sell_recommendation` (safe-to-sell → keep),
       `shop_ranking` (tavern buy ranking), `top_move` (one decision line).
+- [x] **Comp-targeting layer** (`comp_target`): identifies the best comp to build
+      toward — commit if you're deep into one (≥2 core cards), else pivot to the
+      highest-tier playable comp. The buy ranking scores shop cards against the
+      TARGET comp (with a bonus for its core/addon cards), so the buy
+      recommendation guides the build rather than just matching the current board.
+- [x] **Intentions (the "why")**: the top-move states why behind each move —
+      "committing to <tribe>", "part of growth cycle", "surviving until we can
+      commit", "making room", "leveling for access". Plus "wait for end of turn"
+      when the board is full with end-of-turn scaling, and a late-game fallback
+      ("hold — look for <target> core cards") so the advice doesn't go stale.
 - [x] **Validated against real games** (`validate_growth.py`): the simulator
       consistently UNDERESTIMATES actual growth by ~1.6–2x (single-turn model,
       no multi-turn compounding) — conservative but in the right ballpark.
@@ -101,11 +111,14 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
 ## Phase 5 — Overlay / delivery
 - [x] **V1 coaching UI overlay** (`coach_ui.py`): a local stdlib HTTP server +
       static HTML page that polls the analysis and renders widgets — top-move
-      headline, state strip, level/roll, per-turn triggers, board (golden marks),
-      sell ranking, tavern buy ranking ("Buy this"), comps, banned tribes.
+      headline (with intentions), target comp (pivot to / committing to), state
+      strip, level/roll, per-turn triggers, board (golden marks), sell ranking,
+      tavern buy ranking ("Buy this"), comps, banned tribes.
       Run `python live.py` → open `http://127.0.0.1:8747/`.
 - [ ] Post-game replay review UI.
 - [ ] Selection ranker (hero/trinket/discover/dark-gift picks).
+- [ ] Persist live game data so a log rotation / coach restart doesn't lose the
+      tail of a game (surfaced when the A. F. Kay game was lost to rotation).
 
 ## Phase 6 — Evaluation rigor
 - Sham-coach control (a sham coach gives plausible-but-random advice; if players
