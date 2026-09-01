@@ -18,20 +18,11 @@ import sys
 
 import requests
 
+from tribes import ALL_TRIBES, canon, normalize  # noqa: F401 (re-exported)
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CARD_RACES_CACHE = os.path.join(_HERE, ".card_races.json")
 HEARTHSTONEJSON_URL = "https://api.hearthstonejson.com/v1/latest/enUS/cards.json"
-
-ALL_TRIBES = [
-    "BEAST", "DEMON", "DRAGON", "ELEMENTAL", "MECHANICAL",
-    "MURLOC", "NAGA", "PIRATE", "QUILBOAR", "UNDEAD",
-]
-CANON = {"MECHANICAL": "Mech"}
-
-
-def canon(tribe):
-    """Raw log tribe name -> canonical display name (MECHANICAL -> Mech)."""
-    return CANON.get(tribe, tribe.title())
 
 
 def _load_card_races(cache_path):
@@ -119,7 +110,12 @@ def filter_comps_by_available_tribes(comps, card_races, allowed_tribes):
     ELEMENTAL/DEMON) are playable if *either* tribe is allowed. Cards with
     unknown tribes are treated as playable (fail-open) so a comp is never
     wrongly excluded.
+
+    `allowed_tribes` None or empty = no ban info — fail OPEN and keep every
+    comp (an unknown ban must not look like "all tribes banned").
     """
+    if not allowed_tribes:
+        return dict(comps)
     allowed = set(allowed_tribes)
     playable = {}
     for slug, comp in comps.items():

@@ -54,7 +54,7 @@ def _advise(coach):
             return
         coach_ui.update_analysis(a)
         board = a["board"]
-        fingerprint = tuple(sorted((m["card"], m.get("atk"), m.get("health"))
+        fingerprint = tuple(sorted((m["card"], m.get("atk") or 0, m.get("health") or 0)
                                    for m in board))
         if fingerprint == _last_board:
             return  # board unchanged -> don't re-advise
@@ -91,6 +91,7 @@ def monitor(path, poll=1.0):
     last_offset = _catch_up(f, coach)
     _advise(coach)  # seed the overlay with the current (last) game
     in_action = False
+    pending_advise = False
     try:
         while True:
             # A new session (Hearthstone_*/Power.log) may appear; switch to it.
@@ -104,6 +105,7 @@ def monitor(path, poll=1.0):
                 last_offset = _catch_up(f, coach)
                 _advise(coach)
                 in_action = False
+                pending_advise = False
 
             f.seek(last_offset)
             data = f.read().decode("utf-8", errors="replace")
@@ -112,11 +114,19 @@ def monitor(path, poll=1.0):
                 for line in data.splitlines():
                     coach.feed(line)
                     if "tag=STEP value=MAIN_ACTION" in line:
-                        if not in_action:  # entering the buy phase -> advise once
-                            _advise(coach)
+                        # Entering the buy phase: the shop offers land ~6ms
+                        # later (DebugPrintOptions), so arm pending_advise and
+                        # fire it once the shop is actually parsed — advising
+                        # here always reported an empty shop.
+                        if not in_action:
                             in_action = True
+                            pending_advise = coach.shop_cards == []
                     elif "tag=STEP value=MAIN_END" in line:
                         in_action = False  # combat ends the buy phase
+                        pending_advise = False
+                    if pending_advise and coach.shop_cards:
+                        _advise(coach)
+                        pending_advise = False
             time.sleep(poll)
     except KeyboardInterrupt:
         pass

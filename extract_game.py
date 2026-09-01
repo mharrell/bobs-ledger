@@ -34,6 +34,16 @@ NAME_HERO = re.compile(r"Entity=([^ ]+) tag=HERO_ENTITY value=(\d+)")
 # \w* not \w+ — otherwise the block's tag lines get attributed to the previous
 # entity.
 FULL_ENTITY = re.compile(r"FULL_ENTITY - Creating ID=(\d+) CardID=(\w*)")
+# PowerTaskList re-describes already-created entities as
+# "FULL_ENTITY - Updating [entityName=X id=N ...] CardID=Y". The block's tag
+# lines (tag=ATK/HEALTH/ZONE/...) belong to entity N — if this form isn't
+# matched, those tags fall through to FULL_TAG and are applied to the *previous*
+# Creating entity, silently corrupting it. CardID may be empty (unknown
+# placeholders), and the bracket may contain nested brackets
+# ([entityName=UNKNOWN ENTITY [cardType=INVALID] ...]), so parse id out of the
+# captured content rather than matching it in the pattern.
+FULL_ENTITY_UPDATING = re.compile(r"FULL_ENTITY - Updating \[(.*)\] CardID=(\w*)")
+UPDATING_ENTITY_ID = re.compile(r"\bid=(\d+)")
 # Entity=<id> tag=ZONE value=<zone>  (plain form, no cardId/player)
 ZONE_PLAIN = re.compile(r"Entity=(\d+) tag=ZONE value=(\w+)")
 

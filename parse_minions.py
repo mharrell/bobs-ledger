@@ -13,6 +13,8 @@ import json
 import os
 import re
 
+from tribes import normalize
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(_HERE, "meta", "minions_raw.txt")
 OUT = os.path.join(_HERE, "meta", "minions.json")
@@ -57,7 +59,9 @@ def parse(raw_text, card_map):
             "id": card.get("id"),
             "name": card.get("name"),
             "cost": card.get("cost"),
-            "tribe": races[0] if races else None,
+            # Canonical singular display name via tribes.normalize (raw
+            # CARDRACE values like MECHANICAL -> "Mech"; All/Neutral -> None).
+            "tribe": normalize(races[0]) if races else None,
             "attack": card.get("attack"),
             "health": card.get("health"),
             "mechanics": card.get("mechanics", []),

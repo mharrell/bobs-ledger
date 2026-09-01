@@ -12,6 +12,7 @@ import os
 import re
 
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
+from tribes import is_banned, normalize
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -170,7 +171,7 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
     # its small stats suggest. Match by race OR by the text naming the tribe
     # (Nomi has race=None but its text scales Elementals).
     if dominant_tribe and card and _is_engine(card):
-        if (card.get("race") == dominant_tribe
+        if (normalize(card.get("race")) == normalize(dominant_tribe)
                 or dominant_tribe.lower() in (card.get("text") or "")):
             score += W_ENGINE
     # Combat-time scaling is invisible to the pre-combat snapshot; flag as +value.
@@ -197,7 +198,8 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
             score += W_CORE
         elif minion["card"] in comp.get("addons", []):
             score += W_ADDON
-        if comp.get("tribe") and minion.get("tribe") == comp["tribe"]:
+        if normalize(comp.get("tribe")) and \
+                normalize(minion.get("tribe")) == normalize(comp.get("tribe")):
             score += W_TRIBE
 
     # Role (scaling engine > utility > filler).
@@ -206,7 +208,8 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
     # Hero power synergy (best-effort: shared tribe/keyword).
     if hero_power and card:
         hp_text = hero_power.lower()
-        if card.get("race") and card["race"].lower() in hp_text:
+        race = normalize(card.get("race")) or card.get("race")
+        if race and race.lower() in hp_text:
             score += W_HERO
         for k in ("taunt", "divine shield", "reborn", "venomous"):
             if k in hp_text and k.replace(" ", "_").upper() in (card.get("mechanics") or []):
@@ -215,7 +218,8 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
     # Trinket synergy (best-effort: trinket mentions the tribe).
     if trinkets and card:
         for t in trinkets:
-            if card.get("race") and card["race"].lower() in t.lower():
+            race = normalize(card.get("race")) or card.get("race")
+            if race and race.lower() in t.lower():
                 score += W_TRINKET
 
     # Growth-aware engine value: how much the board's engine grows per turn.
@@ -224,28 +228,32 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
     return score
 
 
-def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None):
+def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None,
+                        hero_power=None, trinkets=None):
     """Rank board minions from safest-to-sell to most-valuable.
 
     `board_minions`: list from board_state (each has card, atk, health, tribe).
     `comps`: dict of availabe comps (slug -> comp) already filtered by the ban.
-    `allowed_tribes`: set of allowed tribes (for a weak ban penalty on banned-tribe
-    minions that somehow remain).
+    `allowed_tribes`: canonical allowed tribes, or None when the ban is unknown
+    (no penalty is then applied).
     `scenario`: {trigger_type: count} real per-turn trigger counts for the growth
     simulator (from player_actions.trigger_counts); defaults to _DEFAULT_SCENARIO.
+    `hero_power`: the friendly hero's hero-power TEXT (meta.hero_power), feeding
+    the W_HERO synergy term.
+    `trinkets`: list of trinket texts/descriptions (W_TRINKET), when known.
     Returns a list of (card_id, score) sorted asecending (best to sell first).
     """
     card_db = _load_card_db()
     # Pick the comp whose tribe most overlaps the board (a crude comp fit).
     comp = _best_comp(board_minions, comps)
-    hero_power = None
-    trinkets = []
+    trinkets = trinkets or []
     # Total stats of the scaling minions on the board (a multiplier amplifies this).
     board_scaling = sum((m.get("atk") or 0) + (m.get("health") or 0)
                         for m in board_minions if _is_scaling(card_db.get(m["card"])))
     # Board's dominant tribe (for engine recognition).
     from collections import Counter
-    tribes = Counter(m.get("tribe") for m in board_minions if m.get("tribe"))
+    tribes = Counter(normalize(m.get("tribe")) for m in board_minions
+                     if normalize(m.get("tribe")))
     dominant_tribe = tribes.most_common(1)[0][0] if tribes else None
 
     # Growth-aware engine value: run the simulator for the board's best-fit
@@ -260,19 +268,22 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
                            board_scaling=board_scaling, dominant_tribe=dominant_tribe,
                            engine_bonus=engine_bonus.get(m["card"], 0))
         # Banned-tribe minions on the board are worth less (can't grow).
-        if allowed_tribes and m.get("tribe") and m["tribe"] not in allowed_tribes:
+        if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0
         scored.append((m["card"], val, comp))
     scored.sort(key=lambda x: (x[1], x[0]))
     return [(c, v) for c, v, _ in scored]
 
 
-def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
+def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
+                 hero_power=None, trinkets=None):
     """Rank the shop's tavern minions by value to the best-fit comp.
 
     `shop_cards`: list of card ids currently offered. `comps`: the playable comps
     (slug -> comp). `board_minions`: the current board, used to pick the best-fit
-    comp. Returns a list of (card_id, score) sorted most-valuable first, so the
+    comp. `allowed_tribes`: canonical allowed tribes, or None when unknown (no
+    penalty). `hero_power`/`trinkets`: the W_HERO / W_TRINKET synergy inputs.
+    Returns a list of (card_id, score) sorted most-valuable first, so the
     coach can headline "Buy this".
     """
     card_db = _load_card_db()
@@ -294,7 +305,7 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
         # A shop minion at base stats (un-bought).
         m = {"card": cid, "atk": card.get("attack") or 0,
              "health": card.get("health") or 0, "tribe": card.get("race")}
-        val = minion_value(m, card, comp,
+        val = minion_value(m, card, comp, hero_power, trinkets,
                            engine_bonus=engine_bonus.get(cid, 0))
         # Strongly prefer the target comp's core/addon cards, so the buy
         # recommendation actually guides the build rather than just matching stats.
@@ -303,7 +314,7 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None):
                 val += 10.0
             elif cid in comp.get("addons", []):
                 val += 5.0
-        if allowed_tribes and m.get("tribe") and m["tribe"] not in allowed_tribes:
+        if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0  # banned-tribe minion can't grow
         scored.append((cid, val))
     scored.sort(key=lambda x: (-x[1], x[0]))
@@ -515,14 +526,18 @@ def _best_comp(board_minions, comps):
         return None
     tribes = {}
     for m in board_minions:
-        t = m.get("tribe")
+        t = normalize(m.get("tribe"))
         if t:
-            tribes[t] = tribes.get(t, 0) + 1
+            for part in t.split("/"):
+                tribes[part] = tribes.get(part, 0) + 1
     best = None
-    best_score = -1
+    best_score = 0
     for slug, comp in comps.items():
-        ct = comp.get("tribe")
-        fit = tribes.get(ct, 0)
+        ct = normalize(comp.get("tribe"))
+        if not ct:
+            continue
+        # Compound comps (Demon/Dragon) fit if either half matches.
+        fit = max(tribes.get(part, 0) for part in ct.split("/"))
         if fit > best_score:
             best_score = fit
             best = comp

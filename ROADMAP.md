@@ -39,7 +39,37 @@ winner from loser.
       GameState + action tracker as they arrive, so each buy-phase analysis is
       ~0.002s (was ~2s re-parsing the whole log). Caches per-game data (heroes,
       bans, comps); auto-switches to a new session; handles end-of-game gracefully.
-- [ ] Add verification of the parsed state (breakoutBot discipline).
+- [x] **Verification of the parsed state (breakoutBot discipline) — started**:
+      a stdlib-unittest golden-test suite in `tests/` (hand-built log excerpts
+      reproducing the real session log's quirks, plus a skip-if-absent
+      integration test on the newest real Power.log). Run
+      `python -m unittest discover -s tests` from `hearth-coach/`.
+- [x] **Hardening pass 1 (2026-08-31)**, after a full-project review:
+      - Tribe canonicalization: `tribes.py` is now the single vocabulary
+        (canonical singular display names; see "Key decisions"). `comps.json`
+        / `minions.json` / `cards.json` migrated (all-tribe/neutral -> null);
+        every tribe comparison in `value.py` / `live_coach.py` /
+        `player_actions.py` normalizes through it. This fixed three silent
+        bugs: the W_TRIBE bonus never fired, the banned-tribe penalty applied
+        to EVERY minion in every game, and `_best_comp` always returned the
+        first comp in the file.
+      - `check_meta.py`: validator asserting one canonical tribe vocabulary
+        (comp-vs-minion vocabulary intersection) + comps schema + duplicate
+        names in meta JSON.
+      - Parser fixes: `FULL_ENTITY - Updating` blocks (PowerTaskList
+        re-renders) now retarget the current entity instead of corrupting the
+        previous Creating entity; PowerTaskList `tag=STEP` duplicates no
+        longer spawn spurious turns (~60% turn-count inflation, live coach
+        reported 16 turns for ~10 buy phases); the first `MAIN_ACTION` is a
+        real buy phase (turn-1 buys no longer dropped); golden minions no
+        longer filtered as noise in `extract_board.py`.
+      - Live-loop fixes: advise fires only after the shop offers are parsed
+        (was: always an empty shop on the first advise of each turn); missing
+        ban seed fails OPEN (`allowed=None` -> all comps playable, no
+        banned-tribe penalty, overlay shows no banned tribes) instead of
+        "all tribes banned"; None-safe board fingerprint; the friendly hero
+        power (text from `meta/heroes.json` via `meta.hero_power`) now feeds
+        the W_HERO synergy term in sell/shop rankings.
 
 ## Phase 3 — Meta reference (done)
 - [x] Build the structured meta DB in `meta/`: comps (20), cards (89), trinkets
@@ -140,6 +170,10 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
 ---
 
 ## Key decisions locked so far
+- **Canonical tribe representation (2026-08-31):** singular display names
+  ("Elemental", "Mech", ...) owned by `tribes.py`; meta JSON and code compare
+  through `tribes.normalize()`; All/Neutral tribe fields are `null`. Enforced
+  by `check_meta.py`.
 - Meta references: **structured JSON DB** in `meta/` (comps, cards, trinkets,
   dark gifts, heroes, minions, tavern spells), refreshed on patches.
 - Competitive angle: **reasoning over data volume**; lead with dynamic,
