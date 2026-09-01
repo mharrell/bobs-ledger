@@ -102,40 +102,70 @@ def _avg(places):
     return sum(places) / len(places) if places else None
 
 
+def _shrunk(avg, n, shrink_k=3):
+    """Sample-shrunk placement strength (4.5 - avg_place) * n/(n+k) — the same
+    statistic the value function consumes. Half weight at n=3, ~0 at n=1."""
+    if avg is None:
+        return 0.0
+    return (4.5 - avg) * n / (n + shrink_k)
+
+
+LOW_SAMPLE = 3  # below this, a row is descriptive, not a signal
+
+
 def summarize(comps, engines, heroes, cards, names):
     lines = []
-    lines.append("=== Comp win-rate (by avg placement) ===")
+    lines.append("=== Comp placement (observational — placement is confounded) ===")
+    lines.append(f"  [low] = n<{LOW_SAMPLE}: descriptive only, NOT a signal. "
+                 f"str = shrunk placement strength (4.5-avg, n/(n+3)).")
     rows = []
     for name, c in comps.items():
         if c["games"] < 1:
             continue
-        rows.append((name, c["games"], _avg(c["places"]), c["wins"], c["top4"]))
-    for name, games, avg, wins, top4 in sorted(rows, key=lambda r: (r[2] or 99)):
-        lines.append(f"  {name:28s} n={games:2d} avg={avg:.2f} wins={wins} top4={top4}")
+        rows.append((name, c["games"], _avg(c["places"]), c["wins"], c["top4"],
+                     _shrunk(_avg(c["places"]), c["games"])))
+    for name, games, avg, wins, top4, strg in sorted(rows, key=lambda r: (-r[5])):
+        low = " [low]" if games < LOW_SAMPLE else ""
+        lines.append(f"  {name:28s} n={games:2d} avg={avg:.2f} wins={wins} "
+                     f"top4={top4} str={strg:+.2f}{low}")
 
-    lines.append("\n=== Engine win-rate (by avg placement) ===")
+    lines.append("\n=== Engine placement (same caveats) ===")
     rows = []
     for name, e in engines.items():
         if e["games"] < 1:
             continue
-        rows.append((name, e["games"], _avg(e["places"]), _avg(e["stats"])))
-    for name, games, avg, stats in sorted(rows, key=lambda r: (r[2] or 99)):
-        lines.append(f"  {name:28s} n={games:2d} avg={avg:.2f} board_stats={stats:.0f}")
+        rows.append((name, e["games"], _avg(e["places"]), _avg(e["stats"]),
+                     _shrunk(_avg(e["places"]), e["games"])))
+    for name, games, avg, stats, strg in sorted(rows, key=lambda r: (-r[4])):
+        low = " [low]" if games < LOW_SAMPLE else ""
+        lines.append(f"  {name:28s} n={games:2d} avg={avg:.2f} "
+                     f"board_stats={stats:.0f} str={strg:+.2f}{low}")
 
-    lines.append("\n=== Hero win-rate ===")
+    lines.append("\n=== Hero placement ===")
     for name, h in sorted(heroes.items(), key=lambda kv: (_avg(kv[1]["places"]) or 99)):
         if h["games"] >= 1:
-            lines.append(f"  {name:24s} n={h['games']:2d} avg={_avg(h['places']):.2f}")
+            low = " [low]" if h["games"] < LOW_SAMPLE else ""
+            lines.append(f"  {name:24s} n={h['games']:2d} avg={_avg(h['places']):.2f}{low}")
 
-    lines.append("\n=== Card value (avg placement of boards it's on) ===")
+    lines.append("\n=== Card placement (boards it ended on — CONFOUNDED: no")
+    lines.append("      tenure/role weighting; treat as a lookup, not a signal) ===")
     rows = []
     for cid, c in cards.items():
-        if c["games"] < 2:
+        if c["games"] < LOW_SAMPLE:
             continue
         rows.append((names.get(cid, cid), c["games"], _avg(c["places"])))
     for name, games, avg in sorted(rows, key=lambda r: (r[2] or 99))[:20]:
         lines.append(f"  {name:28s} n={games:2d} avg={avg:.2f}")
     return "\n".join(lines)
+
+
+def _game_seed(lines):
+    import re
+    for line in lines:
+        m = re.search(r"GAME_SEED value=(\d+)", line)
+        if m:
+            return m.group(1)
+    return None
 
 
 def main():
@@ -158,11 +188,23 @@ def main():
         args = sorted(glob.glob(r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"))
     names = _load_bg_names()
     games = []
+    seen_seeds = set()
+    dupes = 0
     for path in args:
         with open(path, encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
         for start, end in split_game_chunks(lines):
+            # The same game appears in rotated logs (Power.log + Power_old.log);
+            # GAME_SEED dedups so a game is only counted once.
+            seed = _game_seed(lines[start:end])
+            if seed is not None:
+                if seed in seen_seeds:
+                    dupes += 1
+                    continue
+                seen_seeds.add(seed)
             games.append(game_features(lines[start:end]))
+    if dupes:
+        print(f"(skipped {dupes} duplicate game(s) already seen in another log)")
     comps, engines, heroes, cards = aggregate(games)
     out = {
         "comps": {k: {**v, "avg_place": _avg(v["places"])} for k, v in comps.items()},
