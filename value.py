@@ -622,6 +622,30 @@ def target_state(target, board):
     return "committing" if core & board_cards else "pivot"
 
 
+def comp_cards(target, board):
+    """The target comp's cards, named and flagged by board presence.
+
+    Returns {"name", "core": [...], "addons": [...]} where each card is
+    {card, name, owned} — so the UI/console can show the comp's shopping list
+    without opening comps.json, and the player sees at a glance which pieces
+    they already have.
+    """
+    if not target:
+        return None
+    board_ids = {m["card"] for m in board}
+    names = _load_bg_names()
+
+    def rows(ids):
+        return [{"card": cid, "name": names.get(cid, cid), "owned": cid in board_ids}
+                for cid in ids]
+
+    return {
+        "name": target.get("name"),
+        "core": rows(target.get("core", [])),
+        "addons": rows(target.get("addons", [])),
+    }
+
+
 # Default per-turn trigger counts for the growth simulator when the caller
 # doesn't supply a scenario (tunable; ideally from the actual game state).
 _DEFAULT_SCENARIO = {

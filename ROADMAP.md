@@ -178,6 +178,13 @@ tavern-owned) — shop_ranking just silently dropped them.
       gap right after a buy can't fire (`tavern_offers()` empty until the game
       re-prints options); the console dedups on the same fingerprint and now
       leads with the top move (`describe` includes it).
+- [x] **Comp-cards box** (2026-09-01): the analysis carries `target_cards`
+      (`value.comp_cards`) — the target comp's core/addon cards with display
+      names and an owned flag — so the player doesn't open comps.json to see
+      what belongs to the comp. Console `describe` renders a TARGET COMP
+      shopping list ("[have]" markers), tags shop entries CORE/addon/spell,
+      and restructured the whole output into compact labeled sections; the
+      overlay's Target comp widget lists the cards as owned/missing chips.
 - [ ] Post-game replay review UI.
 - [ ] Selection ranker (hero/trinket/discover/dark-gift picks).
 - [ ] Persist live game data so a log rotation / coach restart doesn't lose the

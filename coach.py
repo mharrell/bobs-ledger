@@ -23,7 +23,7 @@ from board_state import GameState
 from extract_game import split_game_chunks, extract_game, _friendly_player
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
 from player_actions import parse_actions, trigger_counts
-from value import sell_recommendation, _load_card_db
+from value import sell_recommendation, _load_card_db, _load_bg_names, _load_spell_db
 import meta
 from tribes import DISPLAY_TRIBES, normalize
 
@@ -105,29 +105,69 @@ def _banned(allowed):
 
 
 def describe(analysis):
-    """Render a readable situation analysis from the analyze() dict."""
-    ln = []
+    """Render a readable situation analysis from the analyze() dict.
+
+    Compact labeled sections so the whole situation reads at a glance:
+    hero line, top move, the target comp's shopping list (which cards belong
+    to it, which you already have), shop ranking with comp tags, board,
+    triggers, banned tribes, sell ranking.
+    """
+    names = _load_bg_names()
     b = analysis["board"]
-    ln.append(f"Hero: {analysis['hero'] or '?'}  Tier: {analysis['tier'] or '?'}  "
-              f"Gold: {analysis['gold'] or '?'}")
-    ln.append(f"Board ({len(b)} minions):")
-    id2name = {cid: info.get("name") for cid, info in _load_card_db().items()
-               if info.get("name")}
-    for m in b:
-        nm = id2name.get(m["card"], m["card"])
-        ln.append(f"  {nm}  {m['atk']}/{m['health']}  {normalize(m.get('tribe')) or ''}")
-    ln.append(f"Banned tribes: {', '.join(analysis['banned']) or 'none'}")
-    ln.append(f"Playable comps: {', '.join(sorted(analysis['playable_comps'])) or 'none'}")
+    ln = []
+    ln.append(f"{analysis['hero'] or '?'}  ·  tier {analysis['tier'] or '?'}  ·  "
+              f"gold {analysis['gold'] if analysis['gold'] is not None else '?'}  ·  "
+              f"board {len(b)}/7")
     if analysis.get("top_move"):
-        ln.append(f"Top move: {analysis['top_move']}")
+        ln.append(f">> {analysis['top_move']}")
+
+    # Target comp — the shopping list (cards that belong to the comp, and
+    # which pieces are already on the board).
+    tc = analysis.get("target_cards")
+    if tc and (tc.get("core") or tc.get("addons")):
+        state = analysis.get("target_state") or "pivot"
+        ln.append("")
+        ln.append(f"TARGET COMP: {tc['name']} ({state})")
+        for label, key in (("core  ", "core"), ("addons", "addons")):
+            cards = tc.get(key) or []
+            if cards:
+                cards_s = " · ".join(
+                    f"{c['name']}{' [have]' if c['owned'] else ''}" for c in cards)
+                ln.append(f"  {label}: {cards_s}")
+
+    # Shop ranking, tagged by comp membership (core/addon/spell).
+    shop = analysis.get("shop_rank") or []
+    if shop:
+        core = {c["card"] for c in (tc or {}).get("core", [])} if tc else set()
+        addons = {c["card"] for c in (tc or {}).get("addons", [])} if tc else set()
+        spells = set(_load_spell_db())
+        ln.append("")
+        ln.append("SHOP (best first):")
+        for c, v in shop:
+            tag = ""
+            if c in core:
+                tag = " CORE"
+            elif c in addons:
+                tag = " addon"
+            elif c in spells:
+                tag = " spell"
+            ln.append(f"  {names.get(c, c)} ({v:.0f}){tag}")
+
+    ln.append("")
+    ln.append(f"BOARD ({len(b)}/7): " + (" · ".join(
+        f"{names.get(m['card'], m['card'])} {m['atk']}/{m['health']}"
+        + (f" {normalize(m.get('tribe'))}" if m.get('tribe') else "")
+        + (" (golden)" if m.get("golden") else "")
+        for m in b) or "empty"))
     sc = analysis.get("scenario") or {}
-    active = {k: v for k, v in sc.items() if v}
+    active = {k: v for k, v in sc.items() if v and not k.endswith("_total")}
     if active:
-        ln.append("Per-turn triggers: " + ", ".join(f"{k}={v}" for k, v in active.items()))
-    ln.append("Safest to sell -> most valuable:")
-    for c, v in analysis["sell_rank"]:
-        nm = id2name.get(c, c)
-        ln.append(f"  {nm} ({v:.0f})")
+        ln.append("TRIGGERS: " + ", ".join(f"{k}={v}" for k, v in active.items()))
+    if analysis.get("banned"):
+        ln.append("BANNED: " + ", ".join(analysis["banned"]))
+    if analysis.get("sell_rank"):
+        ln.append("SELL (safe -> keep): " + " · ".join(
+            f"{names.get(c, c)} ({v:.0f})" for c, v in analysis["sell_rank"][:3]))
     return "\n".join(ln)
 
 
