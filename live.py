@@ -40,25 +40,28 @@ def find_active_log():
 _last_board = None  # (card, atk, health) fingerprint of the last advised board
 
 
-def _advise(coach):
+_last_state = None  # last fingerprint the console was advised on
+
+
+def _advise(coach, force=False):
     """Analyze the current incremental state, push to the overlay, and print.
 
-    Skips the text print if the friendly board is unchanged since the last
-    advisory (so the monitor doesn't spam on MAIN_ACTION re-entries within a
-    turn), but always pushes to the overlay so gold/trigger counts update.
+    Skips the text print if the decision state (gold, tier, board, shop) is
+    unchanged since the last advisory, but always pushes to the overlay. The
+    state fingerprint — not just the board — is the dedup key, so a mid-turn
+    buy/roll (gold down, shop changed) re-advices with the new affordability
+    and remaining offers, while unrelated log chatter doesn't re-print.
     """
-    global _last_board
+    global _last_state
     try:
         a = coach.analyze()
         if a is None:
             return
         coach_ui.update_analysis(a)
-        board = a["board"]
-        fingerprint = tuple(sorted((m["card"], m.get("atk") or 0, m.get("health") or 0)
-                                   for m in board))
-        if fingerprint == _last_board:
-            return  # board unchanged -> don't re-advise
-        _last_board = fingerprint
+        fingerprint = coach.state_fingerprint()
+        if fingerprint == _last_state and not force:
+            return  # nothing the advice depends on has changed
+        _last_state = fingerprint
         print("\n" + "=" * 52)
         print(describe(a))
         print("=" * 52 + "\n", flush=True)
@@ -76,22 +79,25 @@ def _catch_up(f, coach):
 
 
 def monitor(path, poll=1.0):
-    """Tail the log; advise exactly once per buy phase.
+    """Tail the log; advise on every decision-state change during a buy phase.
 
     A new buy phase is the first MAIN_ACTION of a turn. MAIN_ACTION re-enters
-    within a turn (e.g. after a refresh), so we advise only on the transition
-    into MAIN_ACTION (in_action False -> True), and reset after MAIN_END
-    (combat) starts the next turn. Each tick it re-finds the newest active log
-    and switches to a newly-started session automatically. The parse is
-    maintained incrementally (LiveCoach), so each buy-phase analysis is fast.
+    within a turn (e.g. after a refresh); only GameState STEP lines delimit it
+    (the PowerTaskList copies re-arm mid-turn on a stale shop). While in the
+    buy phase, the coach re-advises whenever the decision state changes — a
+    buy (gold down, shop loses an offer), a roll, a play, a sell — so the
+    advice tracks the turn instead of firing once and going stale. Each tick
+    it re-finds the newest active log and switches to a newly-started session
+    automatically. The parse is maintained incrementally (LiveCoach), so each
+    analysis is fast (~ms).
     """
     coach = LiveCoach()
     print(f"Live-coaching {path}", flush=True)
     f = open(path, "rb")
     last_offset = _catch_up(f, coach)
-    _advise(coach)  # seed the overlay with the current (last) game
+    _advise(coach, force=True)  # seed the overlay with the current (last) game
     in_action = False
-    pending_advise = False
+    last_state = None
     try:
         while True:
             # A new session (Hearthstone_*/Power.log) may appear; switch to it.
@@ -103,9 +109,9 @@ def monitor(path, poll=1.0):
                 f = open(path, "rb")
                 coach = LiveCoach()
                 last_offset = _catch_up(f, coach)
-                _advise(coach)
+                _advise(coach, force=True)
                 in_action = False
-                pending_advise = False
+                last_state = None
 
             f.seek(last_offset)
             data = f.read().decode("utf-8", errors="replace")
@@ -114,25 +120,24 @@ def monitor(path, poll=1.0):
                 for line in data.splitlines():
                     coach.feed(line)
                     # Only GameState STEP lines delimit the buy phase — the
-                    # PowerTaskList copies re-arm mid-turn (they arrive after
-                    # MAIN_END) and would advise on a stale shop.
+                    # PowerTaskList copies arrive after MAIN_END and would
+                    # re-arm mid-turn on a stale shop.
                     is_gs = "GameState." in line
                     if is_gs and "tag=STEP value=MAIN_ACTION" in line:
-                        # Entering the buy phase: the shop offers land ~6ms
-                        # later (DebugPrintOptions), so arm pending_advise.
-                        # Fire at END of this poll batch, when the options
-                        # block has fully arrived — firing per-line advises
-                        # on the player's own sell-option minions (the first
-                        # minion options in the block) with no shop parsed.
-                        if not in_action:
-                            in_action = True
-                            pending_advise = True
+                        in_action = True
                     elif is_gs and "tag=STEP value=MAIN_END" in line:
                         in_action = False  # combat ends the buy phase
-                        pending_advise = False
-                if pending_advise and coach.tavern_offers():
-                    _advise(coach)
-                    pending_advise = False
+                        last_state = None  # force a fresh advisory next phase
+                # Advise while the shop is parsed and the decision state has
+                # changed: the first MAIN_ACTION of a turn (last_state None),
+                # then again on every mid-turn change (buy, roll, play, sell).
+                # The empty-shop gap right after a buy (before the game
+                # re-prints the options) can't fire — tavern_offers() is empty.
+                if in_action and coach.tavern_offers():
+                    state = coach.state_fingerprint()
+                    if state != last_state:
+                        last_state = state
+                        _advise(coach)
             time.sleep(poll)
     except KeyboardInterrupt:
         pass

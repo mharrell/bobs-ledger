@@ -266,6 +266,25 @@ class LiveCoach:
         return [c for p, c in self.shop_cards
                 if self.friendly is None or p != self.friendly]
 
+    def state_fingerprint(self):
+        """A cheap fingerprint of everything the advice depends on.
+
+        (gold, tier, board, tavern offers) — the monitor re-advises whenever
+        this changes during a buy phase, so buys/rolls/plays/sells mid-turn
+        update the advice instead of waiting for the next buy phase. None
+        before the hero is parsed (nothing to fingerprint yet).
+        """
+        if self.friendly is None:
+            return None
+        board, _ = self.gs.final_board(self.friendly)
+        return (
+            self.gs.gold.get(self.account) if self.account else None,
+            self.gs.hero_meta.get(self.hero_card, {}).get("tier"),
+            tuple(sorted((m["card"], m.get("atk") or 0, m.get("health") or 0,
+                          m.get("golden") or False) for m in board)),
+            tuple(self.tavern_offers()),
+        )
+
     def analyze(self):
         """Fast per-buy-phase analysis from the current incremental state."""
         self._ensure_meta()

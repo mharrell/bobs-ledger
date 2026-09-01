@@ -118,6 +118,8 @@ def describe(analysis):
         ln.append(f"  {nm}  {m['atk']}/{m['health']}  {normalize(m.get('tribe')) or ''}")
     ln.append(f"Banned tribes: {', '.join(analysis['banned']) or 'none'}")
     ln.append(f"Playable comps: {', '.join(sorted(analysis['playable_comps'])) or 'none'}")
+    if analysis.get("top_move"):
+        ln.append(f"Top move: {analysis['top_move']}")
     sc = analysis.get("scenario") or {}
     active = {k: v for k, v in sc.items() if v}
     if active:
