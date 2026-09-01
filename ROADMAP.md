@@ -158,14 +158,29 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
 
 ## Phase 7 — (optional) data flywheel
 - [x] **Replay-analysis pipeline** (`replay_stats.py`): deterministically
-      aggregates outcome data (comp/engine/hero win-rate, card value, board
+      aggregates outcome data (comp/engine/hero placement, card value, board
       strength) across a corpus of Power.logs — zero LLM tokens per game. Saves
       to `meta/corpus_stats.json` (`python replay_stats.py --save ...`). This is
       the foundation for tuning the simulator and weighting comps by actual
-      success. Corpus is ~21 games and growing.
-- [ ] Wire `corpus_stats.json` into the value function (weight comps by actual
-      win-rate at the user's MMR).
+      success. Corpus ~17 games and growing.
+- [x] **Corpus wired into the value function** (2026-08-31): `comp_target`
+      pivots by meta tier + sample-shrunk placement strength
+      (`(4.5 - avg_place) * n/(n+3)`) from `meta/corpus_stats.json` — a comp
+      placing 1.0 on a large personal sample is S-tier-equivalent; n=1 can't
+      flip a tier decision.
+- [x] **replay_stats rigor** (2026-08-31): rows below n=3 marked `[low]`
+      (descriptive, not a signal); comp/engine tables sorted by the same shrunk
+      statistic; games deduped across rotated logs by GAME_SEED; the card table
+      states its confound (final-board placement, no tenure weighting).
+- [x] **Replay review** (`replay_review.py`, 2026-08-31): reconstructs each buy
+      phase through the exact live path and prints recommendation vs actual
+      actions — the per-turn coach-vs-player diff that feeds honing. First
+      finding: the coach buried the (correct) tempo-level line under a generic
+      buy pick that was never taken; top_move now leads with an affordable
+      level.
 - [ ] Opt-in replay upload loop to build the corpus over time.
+- [ ] Phase 6 sham-control: matched advice-vs-sham-coach games (the only
+      causal test that coaching helps placement).
 
 ---
 
