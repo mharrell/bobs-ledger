@@ -53,7 +53,9 @@ def _advise_point(lines, phase_lo, phase_hi):
         if j >= phase_lo and "tag=STEP value=MAIN_ACTION" in line:
             armed = True
         coach.feed(line)
-        if armed and coach.shop_cards:
+        # Fire like the live loop: once a tavern-owned offer (not the player's
+        # own sell-option minions) has been parsed.
+        if armed and coach.tavern_offers():
             stop = j + 1
             break
     return coach.analyze(), stop
