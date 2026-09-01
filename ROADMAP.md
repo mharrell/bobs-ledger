@@ -169,6 +169,15 @@ tavern-owned) — shop_ranking just silently dropped them.
       strip, level/roll, per-turn triggers, board (golden marks), sell ranking,
       tavern buy ranking ("Buy this"), comps, banned tribes.
       Run `python live.py` → open `http://127.0.0.1:8747/`.
+- [x] **Mid-turn updates** (2026-09-01): the monitor used to advise exactly once
+      per buy phase and go stale for the rest of the turn. `LiveCoach.
+      state_fingerprint()` (gold, tier, board, tavern offers) + a fingerprint
+      re-advise loop in `live.py`: while in a buy phase, any decision-state
+      change (buy, roll, play, sell — gold and offers shift) re-advises within
+      one poll (~1s, ~6ms per analyze), instead of once per phase. The empty-shop
+      gap right after a buy can't fire (`tavern_offers()` empty until the game
+      re-prints options); the console dedups on the same fingerprint and now
+      leads with the top move (`describe` includes it).
 - [ ] Post-game replay review UI.
 - [ ] Selection ranker (hero/trinket/discover/dark-gift picks).
 - [ ] Persist live game data so a log rotation / coach restart doesn't lose the
