@@ -93,3 +93,46 @@ class TestBannedPenalty(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestCorpusBonus(unittest.TestCase):
+    def _with_corpus(self, stats):
+        import json
+        import tempfile
+        old_path, old_cache = value._CORPUS_PATH, value._CORPUS
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+        json.dump({"comps": stats}, tmp)
+        tmp.close()
+        value._CORPUS_PATH = tmp.name
+        value._CORPUS = None
+        return lambda: (setattr(value, "_CORPUS_PATH", old_path),
+                        setattr(value, "_CORPUS", old_cache),
+                        os.unlink(tmp.name))
+
+    def test_large_sample_can_beat_meta_tier(self):
+        comps = {"weak": {"name": "Weak", "meta_tier": "B", "core": [], "addons": []},
+                 "meta": {"name": "Meta", "meta_tier": "A", "core": [], "addons": []}}
+        undo = self._with_corpus({"Weak": {"games": 20, "avg_place": 2.0},
+                                  "Meta": {"games": 20, "avg_place": 6.0}})
+        try:
+            self.assertIs(value.comp_target([], comps), comps["weak"])
+        finally:
+            undo()
+
+    def test_single_game_barely_moves_the_pick(self):
+        """n=1 must not flip a tier decision — shrinkage n/(n+3)."""
+        comps = {"a": {"name": "A", "meta_tier": "A", "core": [], "addons": []},
+                 "b": {"name": "B", "meta_tier": "B", "core": [], "addons": []}}
+        undo = self._with_corpus({"B": {"games": 1, "avg_place": 1.0}})
+        try:
+            self.assertIs(value.comp_target([], comps), comps["a"])
+        finally:
+            undo()
+
+    def test_missing_corpus_is_neutral(self):
+        comps = {"a": {"name": "A", "meta_tier": "A", "core": [], "addons": []},
+                 "b": {"name": "B", "meta_tier": "B", "core": [], "addons": []}}
+        undo = self._with_corpus({})
+        try:
+            self.assertIs(value.comp_target([], comps), comps["a"])
+        finally:
+            undo()
