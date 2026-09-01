@@ -120,6 +120,13 @@ def describe(analysis):
               f"board {len(b)}/7")
     if analysis.get("top_move"):
         ln.append(f">> {analysis['top_move']}")
+    choice = analysis.get("choice")
+    if choice and choice.get("ranked"):
+        ln.append("")
+        ln.append(f"PICK ({choice['kind']}):")
+        for n, c, s, why in choice["ranked"]:
+            mark = " <-- " if (n, c, s, why) == choice["ranked"][0] else "  "
+            ln.append(f"  {mark}{n}" + (f"  [{s:.1f} {why}]" if s is not None and why else ""))
 
     # Target comp — the shopping list (cards that belong to the comp, and
     # which pieces are already on the board).

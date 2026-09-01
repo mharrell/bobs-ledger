@@ -90,6 +90,22 @@ function render(a) {
   app.innerHTML = '';
   if (!a || !a.board) { app.appendChild(el('div', null, 'No game yet.')); return; }
 
+  // Pending pick (hero / trinket / discover) — a forced decision, top box
+  if (a.choice && a.choice.ranked && a.choice.ranked.length) {
+    const pickBody = el('div', 'pickbody');
+    const [name, cid, score, why] = a.choice.ranked[0];
+    pickBody.appendChild(el('div', 'topmove', 'PICK ' + name));
+    if (why) pickBody.appendChild(el('div', 'none', why));
+    const rest = el('div', 'chips');
+    a.choice.ranked.forEach(([n, c, s, w]) => {
+      const chip = el('span', 'chip', n + (s != null ? ' (' + (w || s.toFixed(1)) + ')' : ''));
+      if (n === name) chip.classList.add('owned');
+      rest.appendChild(chip);
+    });
+    pickBody.appendChild(rest);
+    app.appendChild(box('Choose 1 (' + a.choice.kind + ')', pickBody));
+  }
+
   // Top move — the one decision call
   if (a.top_move) {
     app.appendChild(box('Top move', el('div', 'topmove', a.top_move)));

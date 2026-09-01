@@ -25,6 +25,7 @@ from player_actions import (
     STEP_RE, _GS, ENTITY, MINION_ONLY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
 )
+from choices import _CHOICE_HEADER, _CHOICE_OPT, _CHOICE_SOURCE, _CHOSEN, choice_kind, rank_choices
 from value import (
     comp_cards, sell_recommendation, shop_ranking, top_move, comp_target,
     target_state,
@@ -181,6 +182,7 @@ class LiveCoach:
         self.actions = _LiveActions()
         self.cur_lines = []
         self.shop_cards = []
+        self.choice = None  # pending pick (hero/trinket/discover) or None
         self._reset_meta()
 
     def _reset_meta(self):
@@ -197,11 +199,47 @@ class LiveCoach:
         self.actions = _LiveActions()
         self.cur_lines = []
         self.shop_cards = []
+        self.choice = None  # pending pick: {'kind','source','options','picked'}
         self._reset_meta()
 
     def feed(self, line):
         if _GAME_START.search(line):
             self._reset()
+        # The shop changes at a new buy phase, on a refresh (re-roll), or on a
+        # buy; reset so the next DebugPrintOptions block rebuilds it from the
+        # current offers. (Only actual PLAY actions for refresh/buy, not the
+        # DebugPrintOptions buttons.)
+        if "tag=STEP value=MAIN_ACTION" in line \
+                or "BlockType=PLAY Entity=[entityName=Refresh " in line \
+                or ("BlockType=PLAY Entity=[entityName=Drag To Buy " in line and "Target=" in line):
+            self.shop_cards = []
+        # The game re-prints ALL options after every event; each new options
+        # block starts with "DebugPrintOptions() - id=N". Treat the shop as the
+        # most recent block: reset on block start so stale generations
+        # (including discover choices) don't accumulate in the ranking.
+        if _OPTIONS_HEADER.search(line):
+            self.shop_cards = []
+        # The pending pick (hero / trinket / discover): a choice block opens,
+        # then the player's SendChoices resolves it. Track but fall through —
+        # actions.feed counts SendChoices for the discover trigger counts.
+        if "GameState.DebugPrintEntityChoices" in line:
+            m = _CHOICE_HEADER.search(line)
+            if m:
+                self.choice = {"ctype": m.group(3), "source": None,
+                               "options": [], "picked": None}
+            elif self.choice is not None:
+                ms = _CHOICE_SOURCE.search(line)
+                if ms:
+                    self.choice["source"] = ms.group(1)
+                else:
+                    mo = _CHOICE_OPT.search(line)
+                    if mo and all(mo.group(2) != c
+                                  for _n, c in self.choice["options"]):
+                        self.choice["options"].append((mo.group(1), mo.group(2)))
+        m = _CHOSEN.search(line)
+        if m and self.choice is not None:
+            self.choice["picked"] = m.group(1)
+        m = _SHOP_OPT.search(line)
         # The shop changes at a new buy phase, on a refresh (re-roll), or on a
         # buy; reset so the next DebugPrintOptions block rebuilds it from the
         # current offers. (Only actual PLAY actions for refresh/buy, not the
@@ -312,6 +350,15 @@ class LiveCoach:
                             self.allowed, hero_power=hero_power,
                             scenario=scenario) if offer_ids else []
         target = comp_target(board, self.playable)
+        # The pending pick (hero / trinket / discover), ranked against the
+        # current board and comp.
+        choice_advice = None
+        c = self.choice
+        if c and c["picked"] is None and c["options"]:
+            kind = choice_kind(c["ctype"], c["source"], c["options"])
+            ranked = rank_choices(kind, c["options"], board, self.playable)
+            choice_advice = {"kind": kind, "source": c["source"],
+                             "ranked": ranked}
         result = {
             "hero": self.hero_name,
             "tier": tier,
@@ -322,6 +369,7 @@ class LiveCoach:
             "sell_rank": ranked,
             "shop_rank": shop,
             "buy_this": shop[0][0] if shop else None,
+            "choice": choice_advice,
             "target_comp": target["name"] if target else None,
             "target_state": target_state(target, board),
             "target_cards": comp_cards(target, board),

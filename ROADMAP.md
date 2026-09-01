@@ -195,7 +195,21 @@ tavern-owned) — shop_ranking just silently dropped them.
       and restructured the whole output into compact labeled sections; the
       overlay's Target comp widget lists the cards as owned/missing chips.
 - [ ] Post-game replay review UI.
-- [ ] Selection ranker (hero/trinket/discover/dark-gift picks).
+- [x] **Selection ranker** (`choices.py`, 2026-09-01): the coach now advises on
+      the picks it could only count before — hero (1 of 4), trinkets (Lesser/
+      Greater), and minion discovers. Parses `DebugPrintEntityChoices` blocks
+      (GameState only — PowerTaskList re-prints; options deduped for the
+      hero-selection screen re-print), classified hero/trinket/discover/
+      unknown. Ranking: heroes and trinkets by NAME against meta/heroes.json
+      and meta/trinkets.json (log ids are patch-drifted; names match 100%) —
+      hsreplay pick_rate + avg_placement + board-tribe synergy for trinkets;
+      minion discovers rank through `shop_ranking` (comp-targeted). Tracked
+      incrementally in `live_coach` (SendChoices resolves; lines fall through
+      so discover trigger counts are unaffected), surfaces as a "Pick this"
+      overlay box, a PICK lead in `top_move`, and a console section. Hero-power
+      shift choices (17/game with Master Nguyen) remain unranked — no data.
+- [ ] Persist live game data so a log rotation / coach restart doesn't lose the
+      tail of a game (surfaced when the A. F. Kay game was lost to rotation).
 - [ ] Persist live game data so a log rotation / coach restart doesn't lose the
       tail of a game (surfaced when the A. F. Kay game was lost to rotation).
 
