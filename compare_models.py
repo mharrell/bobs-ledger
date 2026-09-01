@@ -10,11 +10,12 @@ Usage:
     python compare_models.py run [--repeats N] [--prompts prompts.json]
     python compare_models.py report [--results results.csv]
 
-`run`    executes the prompt set through both models and writes results.csv,
-         leaving quality_score blank for you to fill in by hand.
-`report` reads results.csv (after you've filled quality_score) and prints the
-         computed metrics: cost per correct-quality, p50/p95 latency, token
-         variance, cache-hit rate, and the usage-weighted composite.
+`run`    executes the prompt set through both models and writes results.csv
+         (identity + metrics) and score_sheet.csv (responses only, shuffled,
+         NO model column — score it blind).
+`report` joins the blind sheet to results.csv by row_id and prints the
+         metrics: cost per correct-quality, p50/p95 latency, token variance,
+         cache-hit rate, usage-weighted composite, and a paired sign test.
 
 Env:
     DEEPSEEK_API_KEY   (already used by coach_llm.py)
@@ -152,6 +153,7 @@ def load_prompts(path):
 # ---------------------------------------------------------------------------
 
 def run(prompts_path, repeats, temperature, max_tokens, reasoning_effort):
+    import random
     prompts = load_prompts(prompts_path)
     print(f"Running {len(prompts)} prompts x {repeats} repeat(s) x 2 models "
           f"(temp={temperature}, max_tokens={max_tokens}, "
@@ -168,12 +170,16 @@ def run(prompts_path, repeats, temperature, max_tokens, reasoning_effort):
         return glm_complete(tail, fixed_block=glm_fb, temperature=temperature,
                             max_tokens=max_tokens, reasoning_effort=reasoning_effort)
 
-    rows = []
+    rows, sheet = [], []
+    rid = 0
     for p in prompts:
         for rep in range(repeats):
             for model in ("deepseek-v4-flash", "glm-5.3-flash"):
-                row = {"model": model, "prompt_id": p["id"],
-                       "call_type": p["call_type"], "quality_score": ""}
+                rid += 1
+                row_id = f"r{rid:03d}"
+                response = ""
+                row = {"row_id": row_id, "model": model, "rep": rep,
+                       "prompt_id": p["id"], "call_type": p["call_type"]}
                 t0 = time.perf_counter()
                 try:
                     out = call(model, p["tail"])
@@ -185,23 +191,38 @@ def run(prompts_path, repeats, temperature, max_tokens, reasoning_effort):
                         "cost": round(cost_for(model, pt, ct, ot), 6),
                         "error": "",
                     })
+                    response = out["text"]
                 except Exception as e:  # noqa: BLE001 - record, don't kill the run
                     row.update({"prompt_tokens": "", "cached_tokens": "",
                                 "output_tokens": "", "latency_ms": "",
                                 "cost": "", "error": str(e)})
+                    response = ""
                 rows.append(row)
+                # The blind sheet: response text WITHOUT the model column, in
+                # random order, so quality scoring can't be biased by identity.
+                sheet.append({"row_id": row_id, "prompt_id": p["id"],
+                              "call_type": p["call_type"], "response": response,
+                              "quality_score": ""})
                 print(f"  {model:16s} {p['id']:6s} "
                       f"{'OK' if not row['error'] else 'ERR: ' + row['error']}")
 
-    out_path = "results.csv"
-    with open(out_path, "w", newline="", encoding="utf-8") as f:
+    with open("results.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=[
-            "model", "prompt_id", "call_type", "prompt_tokens", "cached_tokens",
-            "output_tokens", "latency_ms", "cost", "quality_score", "error"])
+            "row_id", "model", "rep", "prompt_id", "call_type",
+            "prompt_tokens", "cached_tokens", "output_tokens", "latency_ms",
+            "cost", "error"])
         w.writeheader()
         w.writerows(rows)
-    print(f"\nWrote {len(rows)} rows to {out_path}. "
-          f"Fill in quality_score (1-5) by hand, then run `report`.")
+    random.shuffle(sheet)
+    with open("score_sheet.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["row_id", "prompt_id", "call_type",
+                                          "response", "quality_score"])
+        w.writeheader()
+        w.writerows(sheet)
+    print(f"\nWrote {len(rows)} rows to results.csv (identity + metrics, model "
+          f"names included) and score_sheet.csv (blind: responses only, "
+          f"shuffled). Score quality_score 1-5 in score_sheet.csv WITHOUT "
+          f"opening results.csv, then run `report`.")
 
 
 # ---------------------------------------------------------------------------
@@ -222,9 +243,39 @@ def _pct(xs, q):
     return s[lo] + (s[hi] - s[lo]) * (k - lo)
 
 
-def report(results_path):
+def _sign_test_p(diffs):
+    """Two-sided sign-test p-value for paired score differences (deepseek minus
+    GLM): 2 * P(X >= max(k, n-k)) under binomial(n, 0.5), capped at 1."""
+    import math
+    nonzero = [d for d in diffs if d != 0]
+    n = len(nonzero)
+    if n == 0:
+        return None
+    k = sum(1 for d in nonzero if d > 0)
+    extreme = max(k, n - k)
+    tail = sum(math.comb(n, i) for i in range(extreme, n + 1)) / 2 ** n
+    return min(2 * tail, 1.0)
+
+
+def report(results_path, sheet_path="score_sheet.csv"):
     with open(results_path, encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
+    # Scores live in the blind sheet (the scorer never saw model identities);
+    # join by row_id here.
+    if not os.path.exists(sheet_path):
+        print(f"ERROR: {sheet_path} not found — fill quality_score (1-5) in it "
+              f"first, then re-run report.")
+        return 1
+    with open(sheet_path, encoding="utf-8") as f:
+        sheet = list(csv.DictReader(f))
+    scores = {r["row_id"]: r for r in sheet}
+    unscored = [r for r in sheet if not (r.get("quality_score") or "").strip()]
+    for r in rows:
+        r["quality_score"] = (scores.get(r["row_id"], {}).get("quality_score")
+                              or "").strip()
+    if unscored:
+        print(f"WARNING: {len(unscored)} row(s) in {sheet_path} unscored — "
+              f"metrics cover scored rows only.\n")
 
     models = ["deepseek-v4-flash", "glm-5.3-flash"]
     print(f"\n=== LLM comparison report ({len(rows)} rows) ===\n")
@@ -287,6 +338,26 @@ def report(results_path):
           "that is the prefix-cache finding from proposal section 7 - "
           "the cost comparison is then not apples-to-apples.")
 
+    # Paired quality comparison (per prompt_id+rep, both models scored).
+    by_pair = {}
+    for r in rows:
+        if r.get("error") or not r.get("quality_score", "").strip():
+            continue
+        by_pair.setdefault((r["prompt_id"], r["rep"]), {})[r["model"]] = \
+            int(r["quality_score"])
+    diffs = [pair["deepseek-v4-flash"] - pair["glm-5.3-flash"]
+             for pair in by_pair.values()
+             if len(pair) == 2]
+    if diffs:
+        p = _sign_test_p(diffs)
+        print(f"\nPaired quality: {len(diffs)} pairs, "
+              f"deepseek wins {sum(1 for d in diffs if d > 0)}, "
+              f"GLM wins {sum(1 for d in diffs if d < 0)}, "
+              f"ties {sum(1 for d in diffs if d == 0)}; "
+              f"sign-test p={p if p is None else round(p, 3)} "
+              f"(n is tiny unless repeats were run — not decision-grade below "
+              f"~10 pairs).")
+
 
 # ---------------------------------------------------------------------------
 
@@ -303,15 +374,16 @@ def main():
     r.add_argument("--reasoning-effort", default=None,
                    help="low/high/max — hold constant across both models")
 
-    s = sub.add_parser("report", help="print metrics from a scored results.csv")
+    s = sub.add_parser("report", help="print metrics from a scored score_sheet.csv")
     s.add_argument("--results", default="results.csv")
+    s.add_argument("--sheet", default="score_sheet.csv")
 
     args = ap.parse_args()
     if args.cmd == "run":
         run(args.prompts, args.repeats, args.temperature, args.max_tokens,
             args.reasoning_effort)
     else:
-        report(args.results)
+        sys.exit(report(args.results, args.sheet))
     return 0
 
 
