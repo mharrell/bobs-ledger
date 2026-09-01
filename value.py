@@ -328,25 +328,61 @@ def top_move(analysis):
     Returns a short actionable line like "Buy Air Baller (committing to
     Elementals) · sell Surfing Sylvar (making room) · level (access to tier 5)",
     or a fallback when there's nothing pressing.
+
+    Every suggestion is affordability-aware: a "level" you can't pay for is
+    replaced by the save/next-step version, and "buy this" falls back down the
+    shop ranking to the first card actually affordable this turn.
     """
     names = _load_bg_names()
     card_db = _load_card_db()
     comp = _best_comp(analysis.get("board", []), analysis.get("playable_comps") or {})
+    tier = analysis.get("tier")
+    gold = analysis.get("gold")
     parts = []
+
+    # Buy: the headline pick, or the best card we can actually afford, or roll.
+    shop_rank = analysis.get("shop_rank") or []
+    bought = None
     if analysis.get("buy_this"):
         cid = analysis["buy_this"]
-        parts.append(f"Buy {names.get(cid, cid)} ({_buy_intention(cid, comp, card_db)})")
+        cost = (card_db.get(cid) or {}).get("cost")
+        if gold is not None and cost is not None and gold < cost:
+            # Can't afford the headline pick — walk the ranking for one we can.
+            fallback = None
+            for alt, _v in shop_rank:
+                alt_cost = (card_db.get(alt) or {}).get("cost")
+                if alt_cost is None or gold >= alt_cost:
+                    fallback = alt
+                    break
+            if fallback is None:
+                parts.append(f"roll — {names.get(cid, cid)} costs {cost}, "
+                             f"you have {gold}")
+            else:
+                cid = fallback
+        bought = cid
+        parts.append(f"Buy {names.get(cid, cid)} "
+                     f"({_buy_intention(cid, comp, card_db)})")
     # Only suggest selling to "make room" when the board is full AND we're buying
     # something that needs the slot. If there's space, selling is unnecessary.
-    if analysis.get("buy_this") and len(analysis.get("board", [])) >= 7 \
+    if bought is not None and len(analysis.get("board", [])) >= 7 \
             and analysis.get("sell_rank"):
         worst = analysis["sell_rank"][0]  # safest to sell
         if worst[1] < 15:  # a clear filler (low value)
             parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
-    tier = analysis.get("tier")
-    gold = analysis.get("gold")
-    if tier and tier < 6 and gold is not None and gold >= tier + 1:
-        parts.append(f"level (access to tier {tier + 1})")
+    # Level: only when affordable; otherwise say WHAT's missing and what to do
+    # with the gold meanwhile (the old bare "level" repeated uselessly for
+    # turns when the player couldn't pay).
+    if tier and tier < 6:
+        level_cost = tier + 1  # BG upgrade cost approximation
+        if gold is None:
+            parts.append(f"level (access to tier {tier + 1})")
+        elif gold >= level_cost:
+            spare = gold - level_cost
+            parts.append(f"level (access to tier {tier + 1})"
+                         + (f" — {spare} left for a buy/roll" if spare else ""))
+        else:
+            parts.append(f"level NEXT turn — {level_cost - gold} short; "
+                         f"spend the rest on buys/rolls")
     if parts:
         return " · ".join(parts)
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
@@ -354,6 +390,9 @@ def top_move(analysis):
     if len(analysis.get("board", [])) >= 7 \
             and _has_end_of_turn(analysis.get("board", []), card_db):
         return "wait for end of turn — let the engine scale"
+    # Nothing affordable and nothing to level: roll unless there's no gold at all.
+    if gold is not None and gold >= 1:
+        return "roll — nothing in the shop beats your gold; level needs saving"
     # Otherwise point at the target comp so the advice stays actionable instead
     # of going stale ("committing to X" with no next step).
     target = analysis.get("target_comp")
