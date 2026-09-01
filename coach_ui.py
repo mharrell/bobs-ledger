@@ -43,6 +43,8 @@ _HTML = """<!doctype html>
   .level { font-weight:600; }
   .topmove { font-size:16px; font-weight:700; color:var(--text); line-height:1.3; }
   .topmove .act { color:var(--gold); }
+  .target { font-size:14px; font-weight:600; color:var(--gold); }
+  .target .pivot { color:var(--warn); }
   .buythis { font-size:15px; font-weight:700; color:var(--gold); }
   .buythis small { color:var(--dim); font-weight:400; }
   .none { color:var(--dim); font-style:italic; }
@@ -86,6 +88,13 @@ function render(a) {
   // Top move — the one decision call
   if (a.top_move) {
     app.appendChild(box('Top move', el('div', 'topmove', a.top_move)));
+  }
+
+  // Target comp — what to build toward
+  if (a.target_comp) {
+    const pivot = a.target_state === 'pivot';
+    app.appendChild(box('Target comp', el('div', 'target',
+      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp)));
   }
 
   // Header / state strip
