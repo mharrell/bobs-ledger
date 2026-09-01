@@ -433,6 +433,39 @@ def _buy_intention(cid, comp, card_db):
 
 _TIER_SCORE = {"S": 3, "A": 2, "B": 1}
 
+_CORPUS_PATH = os.path.join(_HERE, "meta", "corpus_stats.json")
+_CORPUS = None
+
+
+def _corpus_scores():
+    """comp name -> shrunk placement strength from the player's own replays.
+
+    strength = (4.5 - avg_place) — BG mean placement on a 1..8 board is ~4.5 —
+    shrunk toward 0 by sample size (n/(n+3)) so a lucky single game barely
+    moves the needle. Missing corpus file or comp -> 0.0. Observational data
+    (placement is confounded); see DESIGN.md "Honest caveats".
+    """
+    global _CORPUS
+    if _CORPUS is None:
+        scores = {}
+        if os.path.exists(_CORPUS_PATH):
+            with open(_CORPUS_PATH, encoding="utf-8") as f:
+                stats = json.load(f)
+            for name, s in (stats.get("comps") or {}).items():
+                n = s.get("games") or 0
+                if n <= 0 or s.get("avg_place") is None:
+                    continue
+                strength = 4.5 - s["avg_place"]
+                scores[name] = strength * n / (n + 3)
+        _CORPUS = scores
+    return _CORPUS
+
+
+def _corpus_bonus(comp_name, weight=0.5):
+    """Corpus placement bonus for a comp name (sample-shrunk, tier-equivalents).
+    A comp placing 1.0 on a large sample scores +1.5, i.e. S-tier-equivalent."""
+    return weight * _corpus_scores().get(comp_name, 0.0)
+
 
 def _tier_score(t):
     return _TIER_SCORE.get((t or "").upper(), 1)
@@ -442,7 +475,8 @@ def comp_target(board, comps):
     """The best comp to build toward, given the board and playable comps.
 
     If you're deep into a comp (>=2 core cards on the board), commit to it. Else
-    pivot to the highest-tier playable comp. Returns the comp dict, or None.
+    pivot to the best comp by meta tier + the comp's placement in the player's
+    own replay corpus (sample-shrunk; see _corpus_scores). Returns comp or None.
     """
     board_cards = {m["card"] for m in board}
     committed = None
@@ -454,7 +488,8 @@ def comp_target(board, comps):
         return committed[0]
     if not comps:
         return None
-    return max(comps.values(), key=lambda c: _tier_score(c.get("meta_tier")))
+    return max(comps.values(), key=lambda c: _tier_score(c.get("meta_tier"))
+               + _corpus_bonus(c.get("name")))
 
 
 def target_state(target, board):
