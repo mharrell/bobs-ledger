@@ -5,7 +5,9 @@ during Hearthstone Battlegrounds. Competes with HSReplay/Firestone stat overlays
 on *reasoning and dynamic, board-specific, explainable advice* rather than raw
 aggregate data volume.
 
-**Status:** Design & bootstrap phase. No live coach yet.
+**Status:** Live coach running (Phase 5 V1 overlay; see ROADMAP.md for phase
+status). The advice model is still a deterministic value function; the LLM
+reasoning layer (Phase 4) is the open build.
 
 ---
 
@@ -112,7 +114,7 @@ any tribe is active, so they can't reveal bans. Implemented in `bans.py`
 
 ---
 
-## 4. The Data Asset: Opponent Observation from Own Replays
+## 5. The Data Asset: Opponent Observation from Own Replays
 
 ### Thesis
 Each Hearthstone `Power.log` game contains the **full move stream of all 8
@@ -157,7 +159,7 @@ placement, purchases, tiers). Confirms the opponent-data thesis. See
 
 ---
 
-## 5. Market / Competitor Landscape
+## 5b. Market / Competitor Landscape
 
 ### How HSReplay & Vicious Syndicate get their data
 **Crowdsourced from opt-in users, not mined from Blizzard.**
@@ -240,7 +242,7 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 
 ---
 
-## 8. DeepSeek Vision / Model capability (current knowledge)
+## 7. DeepSeek Vision / Model capability (current knowledge)
 
 - Open-source vision model: [DeepSeek-VL](https://github.com/deepseek-ai/deepseek-vl)
   (and paper https://arxiv.org/html/2403.05525v2). Current V-series line includes
@@ -256,7 +258,7 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 
 ---
 
-## 9. Setup & Infrastructure Status
+## 8b. Setup & Infrastructure Status
 
 - Working dir: `<user dir>\PycharmProjects\visual-game-coach`
   (repo project folder: `hearth-coach/`).
@@ -309,9 +311,13 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 ## 11. Open Questions
 
 - Does the hosted DeepSeek API accept images? If not, use a vision-capable model.
-- How to do the live board parse: from Power.log (authoritative) vs. screen OCR.
-- How to measure coaching effectiveness rigorously (sham-control design).
+- (Resolved) Live board source: **Power.log tailing** (authoritative, no OCR) —
+  implemented and validated in `live.py` / `live_coach.py`.
+- How to measure coaching effectiveness rigorously (sham-control design;
+  Phase 6 — `replay_review.py` is the first data-collection tool).
 - Latency/cost budget per decision point.
+- Coach's advice model: hosted API vs local vision-capable model (the
+  deterministic value function is the interim advice layer).
 - (Resolved) Meta source: structured JSON DB in `meta/`; hsreplay's
   minions/heroes/dark-gifts APIs are Cloudflare-protected, so those come from
   manual paste; the wiki supplies the tavern-spell tier grouping.
