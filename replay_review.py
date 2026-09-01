@@ -69,8 +69,8 @@ def _known_minion_ids():
 
 
 def _spell_names():
-    """id -> name for tavern spells (buy advice covers minions only; spell
-    purchases are reported as such, not as 'passed')."""
+    """id -> name for tavern spells (shop advice ranks spells too since
+    spell-buy advice; spell purchases are reported as such, not as 'passed')."""
     try:
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                "meta", "tavern_spells.json"), encoding="utf-8") as f:
@@ -146,7 +146,7 @@ def main():
             elif buys_raw and all(c in spell_names for c in buys_raw):
                 print("     buy match: spells only "
                       f"({', '.join(spell_names.get(c, c) for c in buys_raw)}) "
-                      f"— coach shop advice covers minions, not spells")
+                      f"— not among the coach's ranked picks this phase")
             else:
                 print(f"     buy match: passed "
                       f"(coach pick: {names.get(picks[0], picks[0])})")
