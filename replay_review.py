@@ -13,6 +13,7 @@ Usage:
   python replay_review.py --latest
 """
 import glob
+import json
 import os
 import re
 import sys
@@ -61,6 +62,26 @@ def _advise_point(lines, phase_lo, phase_hi):
     return coach.analyze(), stop
 
 
+def _known_minion_ids():
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "meta", "minions.json"), encoding="utf-8") as f:
+        return {m.get("id") for m in json.load(f)}
+
+
+def _spell_names():
+    """id -> name for tavern spells (buy advice covers minions only; spell
+    purchases are reported as such, not as 'passed')."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "meta", "tavern_spells.json"), encoding="utf-8") as f:
+            data = json.load(f)
+        items = data if isinstance(data, list) else list(data.values())
+        return {s.get("id"): s.get("name") for s in items
+                if isinstance(s, dict) and s.get("id")}
+    except OSError:
+        return {}
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     latest = "--latest" in sys.argv[1:]
@@ -92,6 +113,8 @@ def main():
           f"game {game_index}/{len(chunks)}, hero={hero['hero_name'] if hero else '?'}")
 
     phases = _phases(chunk)
+    spell_names = _spell_names()
+    minion_ids = _known_minion_ids()
     print(f"{len(phases)} buy phases\n")
     for t, (lo, hi) in enumerate(phases, 1):
         hi_eff = hi if hi is not None else None
@@ -104,18 +127,29 @@ def main():
             print(f"     actual: {_actual(actual, names)}")
             continue
         rec = a.get("top_move") or "-"
-        sold = actual.get("sells") or []
         buys = [names.get(c, c) for c in (actual.get("buys") or [])]
         board_n = len(a.get("board") or [])
         print(f"t{t}  tier {a.get('tier')}  gold {a.get('gold')}  board {board_n}")
         print(f"     coach: {rec}")
         print(f"     actual: {_actual(actual, names)}")
-        # Was the headline buy taken?
-        buy_rec = a.get('buy_this')
-        if buy_rec:
-            got = "TAKEN" if any(names.get(c, c) == names.get(buy_rec, buy_rec)
-                                 for c in (actual.get("buys") or [])) else "passed"
-            print(f"     buy match: {got}")
+        # Was a coach pick taken? Compare card IDS (names can be missing from
+        # the pool; ids are the parse-level truth). Headline buy plus the next
+        # two ranked offers count.
+        buys_raw = actual.get("buys") or []
+        spell_buys = [c for c in buys_raw if c not in minion_ids]
+        picks = [a.get("buy_this")] + [c for c, _ in (a.get("shop_rank") or [])[:3]]
+        picks = [p for p in picks if p]
+        if picks:
+            if buys_raw and set(buys_raw) & set(picks):
+                hit = next(c for c in buys_raw if c in picks)
+                print(f"     buy match: TAKEN ({names.get(hit, hit)})")
+            elif buys_raw and all(c in spell_names for c in buys_raw):
+                print("     buy match: spells only "
+                      f"({', '.join(spell_names.get(c, c) for c in buys_raw)}) "
+                      f"— coach shop advice covers minions, not spells")
+            else:
+                print(f"     buy match: passed "
+                      f"(coach pick: {names.get(picks[0], picks[0])})")
     return 0
 
 
