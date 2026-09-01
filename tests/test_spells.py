@@ -130,5 +130,24 @@ class TestTopMoveSpells(unittest.TestCase):
         self.assertIn("roll", line)
 
 
+class TestCompCards(unittest.TestCase):
+    """The target-comp shopping list (UI/console box): names + owned flags."""
+
+    def test_owned_flags_and_names(self):
+        target = {"name": "Test Comp", "tribe": "Beast",
+                  "core": ["BG33_886", "NOT_IN_ANY_DB"], "addons": ["BG33_140"]}
+        board = [{"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"}]
+        tc = value.comp_cards(target, board)
+        self.assertEqual(tc["name"], "Test Comp")
+        core = {c["card"]: c for c in tc["core"]}
+        self.assertTrue(core["BG33_886"]["owned"])
+        self.assertEqual(core["BG33_886"]["name"], "Tusked Camper")  # BG-pool name
+        self.assertFalse(core["NOT_IN_ANY_DB"]["owned"])
+        self.assertEqual(core["NOT_IN_ANY_DB"]["name"], "NOT_IN_ANY_DB")  # id fallback
+
+    def test_no_target_returns_none(self):
+        self.assertIsNone(value.comp_cards(None, []))
+
+
 if __name__ == "__main__":
     unittest.main()

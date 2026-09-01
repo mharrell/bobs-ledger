@@ -14,7 +14,7 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from value import _load_bg_names
+from value import _load_bg_names, _load_spell_db
 
 DEFAULT_PORT = 8747
 
@@ -45,6 +45,11 @@ _HTML = """<!doctype html>
   .topmove .act { color:var(--gold); }
   .target { font-size:14px; font-weight:600; color:var(--gold); }
   .target .pivot { color:var(--warn); }
+  .compgroup { display:flex; align-items:baseline; gap:6px; margin-top:5px; }
+  .compgroup .grouplabel { color:var(--dim); font-size:11px; width:44px; flex:none; }
+  .compgroup .chips { flex:1; }
+  .chip.owned { border:1px solid var(--good); color:var(--good); }
+  .chip.missing { border:1px dashed var(--dim); color:var(--dim); }
   .buythis { font-size:15px; font-weight:700; color:var(--gold); }
   .buythis small { color:var(--dim); font-weight:400; }
   .none { color:var(--dim); font-style:italic; }
@@ -90,11 +95,24 @@ function render(a) {
     app.appendChild(box('Top move', el('div', 'topmove', a.top_move)));
   }
 
-  // Target comp — what to build toward
+  // Target comp — what to build toward, with its shopping list
   if (a.target_comp) {
     const pivot = a.target_state === 'pivot';
-    app.appendChild(box('Target comp', el('div', 'target',
-      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp)));
+    const body = el('div', 'target',
+      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp);
+    const tc = a.target_cards || {};
+    [['core  ', 'core'], ['addons', 'addons']].forEach(([label, key]) => {
+      const cards = tc[key] || [];
+      if (!cards.length) return;
+      const g = el('div', 'compgroup');
+      g.appendChild(el('span', 'grouplabel', label));
+      const chips = el('div', 'chips');
+      cards.forEach(c => chips.appendChild(
+        el('span', 'chip ' + (c.owned ? 'owned' : 'missing'), c.name)));
+      g.appendChild(chips);
+      body.appendChild(g);
+    });
+    app.appendChild(box('Target comp', body));
   }
 
   // Header / state strip
@@ -146,7 +164,7 @@ function render(a) {
       const shopBody = el('div');
       a.shop_rank.slice(1).forEach(s => {
         const r = el('div', 'row');
-        r.appendChild(el('span', 'l', s.name));
+        r.appendChild(el('span', 'l', s.name + (s.tag ? ' [' + s.tag + ']' : '')));
         r.appendChild(el('span', 'score', s.score.toFixed(0)));
         shopBody.appendChild(r);
       });
@@ -211,10 +229,18 @@ def render_json(analysis):
     a["board"] = [dict(m, name=names.get(m["card"], m["card"])) for m in analysis["board"]]
     a["sell_rank"] = [{"card": c, "name": names.get(c, c), "score": round(v)}
                       for c, v in analysis["sell_rank"]]
-    a["shop_rank"] = [{"card": c, "name": names.get(c, c), "score": round(v)}
+    # Tag shop entries by comp membership (core/addon) or kind (spell), so the
+    # shop list shows why each card matters without opening the comp DB.
+    tc = analysis.get("target_cards") or {}
+    core = {c["card"] for c in tc.get("core", [])}
+    addons = {c["card"] for c in tc.get("addons", [])}
+    spells = set(_load_spell_db())
+    a["shop_rank"] = [dict(card=c, name=names.get(c, c), score=round(v),
+                           tag=("core" if c in core else
+                                "addon" if c in addons else
+                                "spell" if c in spells else None))
                       for c, v in analysis.get("shop_rank", [])]
-    a["buy_this"] = names.get(analysis["buy_this"], "") if analysis.get("buy_this") else None
-    a["comps"] = sorted(analysis.get("playable_comps", {}).keys())
+    a["target_cards"] = analysis.get("target_cards")
     return a
 
 
