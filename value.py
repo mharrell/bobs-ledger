@@ -370,20 +370,29 @@ def top_move(analysis):
         if worst[1] < 15:  # a clear filler (low value)
             parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
     # Level: only when affordable; otherwise say WHAT's missing and what to do
-    # with the gold meanwhile (the old bare "level" repeated uselessly for
-    # turns when the player couldn't pay).
+    # with the gold meanwhile. When affordable it LEADS the line — replay
+    # review showed the player's real leveling tempo was the winning move the
+    # coach kept demoting below a generic buy pick.
+    level_lead = None
     if tier and tier < 6:
         level_cost = tier + 1  # BG upgrade cost approximation
         if gold is None:
-            parts.append(f"level (access to tier {tier + 1})")
+            level_lead = f"level (access to tier {tier + 1})"
         elif gold >= level_cost:
             spare = gold - level_cost
-            parts.append(f"level (access to tier {tier + 1})"
-                         + (f" — {spare} left for a buy/roll" if spare else ""))
+            level_lead = (f"level (access to tier {tier + 1})"
+                          + (f" — {spare} left for a buy/roll" if spare else ""))
         else:
-            parts.append(f"level NEXT turn — {level_cost - gold} short; "
-                         f"spend the rest on buys/rolls")
+            level_lead = (f"level NEXT turn — {level_cost - gold} short; "
+                          f"spend the rest on buys/rolls")
+    if level_lead and not level_lead.startswith("level NEXT"):
+        if parts:
+            lead = level_lead.split(" — ")[0]  # the "· Buy X" parts say it
+            return lead + " · " + " · ".join(parts)
+        return level_lead
     if parts:
+        if level_lead:
+            parts.append(level_lead)
         return " · ".join(parts)
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
     # right move is to pass and let the engine grow.
