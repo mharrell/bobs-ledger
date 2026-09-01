@@ -113,20 +113,26 @@ def monitor(path, poll=1.0):
                 last_offset = f.tell()
                 for line in data.splitlines():
                     coach.feed(line)
-                    if "tag=STEP value=MAIN_ACTION" in line:
+                    # Only GameState STEP lines delimit the buy phase — the
+                    # PowerTaskList copies re-arm mid-turn (they arrive after
+                    # MAIN_END) and would advise on a stale shop.
+                    is_gs = "GameState." in line
+                    if is_gs and "tag=STEP value=MAIN_ACTION" in line:
                         # Entering the buy phase: the shop offers land ~6ms
-                        # later (DebugPrintOptions), so arm pending_advise and
-                        # fire it once the shop is actually parsed — advising
-                        # here always reported an empty shop.
+                        # later (DebugPrintOptions), so arm pending_advise.
+                        # Fire at END of this poll batch, when the options
+                        # block has fully arrived — firing per-line advises
+                        # on the player's own sell-option minions (the first
+                        # minion options in the block) with no shop parsed.
                         if not in_action:
                             in_action = True
-                            pending_advise = coach.shop_cards == []
-                    elif "tag=STEP value=MAIN_END" in line:
+                            pending_advise = True
+                    elif is_gs and "tag=STEP value=MAIN_END" in line:
                         in_action = False  # combat ends the buy phase
                         pending_advise = False
-                    if pending_advise and coach.shop_cards:
-                        _advise(coach)
-                        pending_advise = False
+                if pending_advise and coach.tavern_offers():
+                    _advise(coach)
+                    pending_advise = False
             time.sleep(poll)
     except KeyboardInterrupt:
         pass

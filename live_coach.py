@@ -42,6 +42,9 @@ _SHOP_BUTTON_NAMES = ("Refresh", "Freeze", "Tavern Tier", "Drag To Buy",
 # (shown as sell options) are excluded from the shop.
 # e.g. "option 4 type=POWER mainEntity=[entityName=X cardId=BG36_345 .. player=15]"
 _SHOP_OPT = re.compile(r"DebugPrintOptions\(\).*?cardId=(\w+)[^\]]*player=(\d+)")
+# A new options block starts (GameState). Options re-print after every game
+# event; each block is the authoritative current shop.
+_OPTIONS_HEADER = re.compile(r"GameState\.DebugPrintOptions\(\) -\s+id=\d+")
 
 
 def _banned(allowed):
@@ -202,11 +205,18 @@ class LiveCoach:
                 or "BlockType=PLAY Entity=[entityName=Refresh " in line \
                 or ("BlockType=PLAY Entity=[entityName=Drag To Buy " in line and "Target=" in line):
             self.shop_cards = []
+        # The game re-prints ALL options after every event; each new options
+        # block starts with "DebugPrintOptions() - id=N". Treat the shop as the
+        # most recent block: reset on block start so stale generations
+        # (including discover choices) don't accumulate in the ranking.
+        if _OPTIONS_HEADER.search(line):
+            self.shop_cards = []
         m = _SHOP_OPT.search(line)
         if m:
             cid, p = m.group(1), int(m.group(2))
-            # Keep every minion option (shop offers are owned by the tavern/13;
-            # the friendly player's board/hand minions are filtered in analyze()).
+            # Keep every minion option (shop offers are owned by the tavern
+            # player; the friendly player's board/hand minions are filtered in
+            # analyze()).
             if MINION_ONLY.match(cid) and "HERO" not in cid \
                     and all(cid != c for c, _ in self.shop_cards):
                 self.shop_cards.append((p, cid))
@@ -246,6 +256,13 @@ class LiveCoach:
         with open(os.path.join(_HERE, "meta", "comps.json"), encoding="utf-8") as f:
             comps = json.load(f)
         self.playable = filter_comps_by_available_tribes(comps, card_races, allowed)
+
+    def tavern_offers(self):
+        """Minion card ids offered by the tavern right now — excludes the
+        friendly player's own minions, which DebugPrintOptions lists as sell
+        options (they arrive BEFORE the actual shop offers)."""
+        return [c for p, c in self.shop_cards
+                if self.friendly is None or p != self.friendly]
 
     def analyze(self):
         """Fast per-buy-phase analysis from the current incremental state."""
