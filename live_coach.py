@@ -38,8 +38,10 @@ _SPELL = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=([^]]+) cardId=(\
 _SHOP_BUTTON_NAMES = ("Refresh", "Freeze", "Tavern Tier", "Drag To Buy",
                       "Dark Discovery")
 # A tavern offer: a DebugPrintOptions POWER option whose mainEntity is a real
-# minion. Captures cardId and the owning player, so the player's own minions
-# (shown as sell options) are excluded from the shop.
+# card — minion or tavern spell (BG/BGS spell ids match MINION_ONLY too; the
+# minion/spell split happens in shop_ranking, which has the spell DB). Captures
+# cardId and the owning player, so the player's own minions (shown as sell
+# options) are excluded from the shop.
 # e.g. "option 4 type=POWER mainEntity=[entityName=X cardId=BG36_345 .. player=15]"
 _SHOP_OPT = re.compile(r"DebugPrintOptions\(\).*?cardId=(\w+)[^\]]*player=(\d+)")
 # A new options block starts (GameState). Options re-print after every game
@@ -214,9 +216,9 @@ class LiveCoach:
         m = _SHOP_OPT.search(line)
         if m:
             cid, p = m.group(1), int(m.group(2))
-            # Keep every minion option (shop offers are owned by the tavern
-            # player; the friendly player's board/hand minions are filtered in
-            # analyze()).
+            # Keep every card option, minions and tavern spells (shop offers are
+            # owned by the tavern player; the friendly player's own board/hand
+            # minions — and the spells they cast — are filtered in analyze()).
             if MINION_ONLY.match(cid) and "HERO" not in cid \
                     and all(cid != c for c, _ in self.shop_cards):
                 self.shop_cards.append((p, cid))
@@ -285,7 +287,8 @@ class LiveCoach:
                 offer_ids.append(c)
                 seen.add(c)
         shop = shop_ranking(offer_ids, self.playable, board,
-                            self.allowed, hero_power=hero_power) if offer_ids else []
+                            self.allowed, hero_power=hero_power,
+                            scenario=scenario) if offer_ids else []
         target = comp_target(board, self.playable)
         result = {
             "hero": self.hero_name,

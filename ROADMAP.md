@@ -138,6 +138,30 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
 - [ ] Tune the simulator's parameters (tavern_base, eat_every, W_*) against the
       growing replay corpus to close the underestimation.
 
+## Phase 4b — Spell buy advice (done)
+Most of the player's actual buys are tavern SPELLS, which shop advice ignored
+entirely (replay review labelled spell-only turns as such). The spell data was
+already in `meta/tavern_spells.json` (72 spells, tier/cost/text); the live shop
+parse already captured spell options (their ids match the minion-option regex,
+tavern-owned) — shop_ranking just silently dropped them.
+- [x] **Spell scoring** (`value.py`): `_load_spell_db()` + `_spell_score()` —
+      direct effect per gold from card text (stat grants; Choose One takes the
+      best branch, not the sum; whole-board scope scales by board size; utility
+      effects get flat points), plus a **cast-spell engine fuel** term:
+      `_spell_fuel_bonus()` runs the growth simulator at the current per-turn
+      cast count and +1, and credits the spell with the delta — the marginal
+      growth one bought spell buys on a running Glambot/Nomi/Felboar engine.
+      `W_SPELL_FUEL = 0.3` (tunable, like every other weight).
+- [x] **Wired into the coach**: `shop_ranking` ranks minions AND spells in one
+      list (spells scored per-gold, not by the minion value function);
+      `top_move` affordability uses the spell cost; buy intentions say why
+      ("part of growth cycle" / "utility" / "tempo" / "spare gold into value");
+      the live loop passes the real per-turn trigger scenario in, so the fuel
+      term reflects actual cast counts. Display names resolve through
+      `_load_bg_names` (now includes spells) for the UI and replay review.
+- [x] replay_review: spell buys now compare against the ranked picks (which
+      include spells) instead of always reporting "coach doesn't cover spells".
+
 ## Phase 5 — Overlay / delivery
 - [x] **V1 coaching UI overlay** (`coach_ui.py`): a local stdlib HTTP server +
       static HTML page that polls the analysis and renders widgets — top-move

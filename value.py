@@ -33,6 +33,7 @@ W_ENGINE = 15.0     # bonus for the board's engine piece (e.g. Nomi, Glambot)
 W_COMBAT_SCALE = 4.0  # bonus for combat-time scaling minions (e.g. Flaming Enforcer)
 W_ENGINE_SIM = 0.05  # per stat of simulated growth the board's engine drives
 W_GROWTH = 2.0      # per point of growth potential (how much a minion can scale)
+W_SPELL_FUEL = 0.3  # per stat of marginal engine growth one spell cast buys
 
 # Keywords/phrases that mark a scaling/engine minion vs a plain body.
 _SCALING_MARKERS = ("end of turn", "whenever you play", "improves", "each",
@@ -46,6 +47,15 @@ _ENGINE_TEXT_MARKERS = ("give ", "your ", "play a ", "play an ", "gain +",
 # Combat-time scaling (invisible to the pre-combat board snapshot).
 _COMBAT_SCALE_MARKERS = ("in combat", "start of combat", "during combat",
                          "when this attacks", "this gains")
+
+# Spell-scope markers: the effect hits every board minion, not one target.
+_SPELL_SCOPE_ALL = ("your minions", "all minions", "give minions", "all friendly")
+# One-shot utility effects the stat-grant parse can't see (rough point values).
+_SPELL_UTILITY = (("discover", 2.0), ("summon", 2.0), ("triple", 3.0),
+                  ("steal", 2.0), ("copy of", 2.0), ("freeze", 1.0))
+# Spell text markers for a value that repeats over the game (scaling spells).
+_SPELL_SCALING_MARKERS = ("each turn", "end of turn", "this game",
+                          "whenever you", "after you")
 
 
 def _load_card_db():
@@ -72,6 +82,92 @@ def _load_card_db():
             "text": (c.get("text") or "").lower(),
         }
     return out
+
+
+def _load_spell_db():
+    """card id -> {name, tier, cost, text} from meta/tavern_spells.json."""
+    path = os.path.join(_HERE, "meta", "tavern_spells.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    items = data if isinstance(data, list) else list(data.values())
+    return {s.get("id"): s for s in items
+            if isinstance(s, dict) and s.get("id")}
+
+
+def _spell_effect(spell, board_size=0):
+    """Rough direct-effect points of a tavern spell from its text.
+
+    +N/+N (and bare +N) grants count their stat points; a whole-board scope
+    multiplies by the current board size (capped at 7). Recurring/scaling
+    text doubles the value; one-shot utility effects the stat parse can't see
+    (discover, summon, triple, steal) add flat amounts. Rough by design —
+    the terms get honed against the replay corpus like every other weight.
+    """
+    text = (spell.get("text") or "").lower()
+    scope_all = any(p in text for p in _SPELL_SCOPE_ALL)
+    n_targets = min(max(board_size, 1), 7) if scope_all else 1
+    pairs = [(int(m.group(1)) + int(m.group(2)))
+             for m in re.finditer(r"\+(\d+)/\+(\d+)", text)]
+    # Bare "+N" grants (one-sided buffs, gold) count half — no stat pairing.
+    bares = [int(m.group(1)) * 0.5 for m in
+             re.finditer(r"\+(\d+)", re.sub(r"\+\d+/\+\d+", "", text))]
+    # A Choose One spell resolves ONE branch — take the best, not the sum.
+    if "choose one" in text:
+        points = max(pairs + bares, default=0.0) * 1.0
+    else:
+        points = sum(pairs) + sum(bares)
+    points *= n_targets
+    # The effect repeats or improves over the game ("end of YOUR turn" included).
+    if "end of" in text and "turn" in text:
+        points *= 2.0
+    elif any(m in text for m in _SPELL_SCALING_MARKERS):
+        points *= 2.0
+    for kw, v in _SPELL_UTILITY:
+        if kw in text:
+            points += v
+    return points
+
+
+def _spell_fuel_bonus(board_minions, names, scenario=None):
+    """Marginal growth one extra spell cast buys on the board's cast-spell engines.
+
+    For each running engine whose trigger is cast_spell, run the simulator at
+    the current per-turn cast count and at +1; the delta is exactly what one
+    bought spell is worth as engine fuel. Returns the best single-engine delta
+    (one gold buys one cast — spells don't stack).
+    """
+    if not board_minions:
+        return 0.0
+    sc = dict(scenario or _DEFAULT_SCENARIO)
+    n = sc.get("cast_spell", 0)
+    best = 0.0
+    for slug, engine in _load_engines().items():
+        if slug.startswith("_") or engine.get("trigger") != "cast_spell":
+            continue
+        core_steps = [s for s in engine["chain"] if s.get("counts_as")] or engine["chain"]
+        if not any(_has_card(board_minions, s["source"], names) for s in core_steps):
+            continue
+        enriched = [dict(m, name=names.get(m["card"], "")) for m in board_minions]
+        base = simulate_growth(enriched, dict(sc, cast_spell=n), engine)["gain"]
+        plus = simulate_growth(enriched, dict(sc, cast_spell=n + 1), engine)["gain"]
+        delta = (plus["atk"] + plus["hp"]) - (base["atk"] + base["hp"])
+        best = max(best, delta)
+    return best
+
+
+def _spell_score(spell, board_minions, names, scenario=None):
+    """Value of buying a tavern spell now — comparable to minion shop scores.
+
+    Direct effect per gold (a 1-cost +3/+1 competes with a tier-1 body), plus
+    the engine-fuel bonus when the board runs a cast-spell engine: the spell
+    converts spare gold into the engine's per-cast growth.
+    """
+    cost = spell.get("cost") or 1
+    points = _spell_effect(spell, len(board_minions or []))
+    fuel = _spell_fuel_bonus(board_minions, names, scenario)
+    return points / max(cost, 1) + W_SPELL_FUEL * fuel
 
 
 def _detect_role(minion, card):
@@ -276,17 +372,20 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
 
 
 def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
-                 hero_power=None, trinkets=None):
-    """Rank the shop's tavern minions by value to the best-fit comp.
+                 hero_power=None, trinkets=None, scenario=None):
+    """Rank the shop's tavern cards (minions AND spells) by value.
 
     `shop_cards`: list of card ids currently offered. `comps`: the playable comps
     (slug -> comp). `board_minions`: the current board, used to pick the best-fit
     comp. `allowed_tribes`: canonical allowed tribes, or None when unknown (no
     penalty). `hero_power`/`trinkets`: the W_HERO / W_TRINKET synergy inputs.
+    `scenario`: real per-turn trigger counts (feeds the spell fuel term).
     Returns a list of (card_id, score) sorted most-valuable first, so the
     coach can headline "Buy this".
     """
     card_db = _load_card_db()
+    spell_db = _load_spell_db()
+    names = _load_bg_names()
     comp = None
     if comps:
         # Score shop cards against the TARGET comp (what you're building toward),
@@ -296,9 +395,15 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
             comp = comp_target(board_minions, comps)
         if comp is None:
             comp = next(iter(comps.values()))
-    engine_bonus = _engine_growth_bonus(board_minions, _load_bg_names()) if board_minions else {}
+    engine_bonus = _engine_growth_bonus(board_minions, names) if board_minions else {}
     scored = []
     for cid in shop_cards:
+        if cid in spell_db:
+            # A tavern spell: effect-per-gold + cast-spell engine fuel, not the
+            # minion value function (spells have no stats, comp role, or tribe).
+            scored.append((cid, _spell_score(spell_db[cid], board_minions,
+                                             names, scenario)))
+            continue
         card = card_db.get(cid)
         if not card:
             continue
@@ -335,6 +440,10 @@ def top_move(analysis):
     """
     names = _load_bg_names()
     card_db = _load_card_db()
+    spell_db = _load_spell_db()
+    # Buy costs come from either pool (minions and tavern spells carry `cost`).
+    costs = {**{c: (v or {}).get("cost") for c, v in card_db.items()},
+             **{c: (v or {}).get("cost") for c, v in spell_db.items()}}
     comp = _best_comp(analysis.get("board", []), analysis.get("playable_comps") or {})
     tier = analysis.get("tier")
     gold = analysis.get("gold")
@@ -345,23 +454,25 @@ def top_move(analysis):
     bought = None
     if analysis.get("buy_this"):
         cid = analysis["buy_this"]
-        cost = (card_db.get(cid) or {}).get("cost")
+        cost = costs.get(cid)
         if gold is not None and cost is not None and gold < cost:
             # Can't afford the headline pick — walk the ranking for one we can.
             fallback = None
             for alt, _v in shop_rank:
-                alt_cost = (card_db.get(alt) or {}).get("cost")
+                alt_cost = costs.get(alt)
                 if alt_cost is None or gold >= alt_cost:
                     fallback = alt
                     break
             if fallback is None:
                 parts.append(f"roll — {names.get(cid, cid)} costs {cost}, "
                              f"you have {gold}")
+                cid = None  # nothing affordable — don't also say "Buy X"
             else:
                 cid = fallback
-        bought = cid
-        parts.append(f"Buy {names.get(cid, cid)} "
-                     f"({_buy_intention(cid, comp, card_db)})")
+        if cid is not None:
+            bought = cid
+            parts.append(f"Buy {names.get(cid, cid)} "
+                         f"({_buy_intention(cid, comp, card_db, spell_db)})")
     # Only suggest selling to "make room" when the board is full AND we're buying
     # something that needs the slot. If there's space, selling is unnecessary.
     if bought is not None and len(analysis.get("board", [])) >= 7 \
@@ -419,7 +530,7 @@ def _has_end_of_turn(board, card_db):
     return False
 
 
-def _buy_intention(cid, comp, card_db):
+def _buy_intention(cid, comp, card_db, spell_db=None):
     """Why the coach recommends buying this card (a pre-set intention)."""
     if comp and cid in comp.get("core", []):
         return f"committing to {comp.get('tribe') or comp.get('name')}"
@@ -428,6 +539,16 @@ def _buy_intention(cid, comp, card_db):
     card = card_db.get(cid)
     if card and _is_engine(card):
         return "growth engine"
+    spell = (spell_db or {}).get(cid)
+    if spell:
+        text = (spell.get("text") or "").lower()
+        if any(m in text for m in _SPELL_SCALING_MARKERS):
+            return "part of growth cycle"
+        if any(kw in text for kw, _v in _SPELL_UTILITY):
+            return "utility"
+        if re.search(r"\+\d+/\+\d+", text):
+            return "tempo"
+        return "spare gold into value"
     return "surviving until we can commit"
 
 
@@ -514,17 +635,21 @@ _DEFAULT_SCENARIO = {
 
 
 def _load_bg_names():
-    """card id -> name from the BG minion pool (meta/minions.json).
+    """card id -> name from the BG pools (meta/minions.json + tavern_spells.json).
 
     The engine matching needs BG card names; `.cards_full.json` (the full
-    hearthstonejson DB) doesn't carry the BG card IDs.
+    hearthstonejson DB) doesn't carry the BG card IDs. Spell names are included
+    so shop/buy advice can display tavern spells (their ids never collide with
+    minion ids).
     """
     path = os.path.join(_HERE, "meta", "minions.json")
-    if not os.path.exists(path):
-        return {}
-    with open(path, encoding="utf-8") as f:
-        minions = json.load(f)
-    return {m.get("id"): m.get("name") for m in minions}
+    names = {}
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            minions = json.load(f)
+        names = {m.get("id"): m.get("name") for m in minions}
+    names.update({sid: s.get("name") for sid, s in _load_spell_db().items()})
+    return names
 
 
 def _has_card(board_minions, source, names):

@@ -136,7 +136,8 @@ function render(a) {
   });
   app.appendChild(box('Board', boardBody));
 
-  // Tavern — buy this (the shop's best minion for your comp, then the rest ranked)
+  // Tavern — buy this (the shop's best card for your comp — minion or spell —
+  // then the rest ranked)
   if (a.shop_rank && a.shop_rank.length) {
     const top = a.shop_rank[0];
     app.appendChild(box('Buy this', el('div', 'buythis',
@@ -149,7 +150,7 @@ function render(a) {
         r.appendChild(el('span', 'score', s.score.toFixed(0)));
         shopBody.appendChild(r);
       });
-      app.appendChild(box('Tavern shop', shopBody));
+      app.appendChild(box('Tavern shop (minions + spells)', shopBody));
     }
   } else {
     app.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
