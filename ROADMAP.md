@@ -146,6 +146,19 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       board) damps off-tribe shop minions (`W_OFF_COMP = -2.0`); replay_review
       settles the options block before ranking (was: one-card rankings from
       firing on the first option line).
+- [x] **Affordability + priority UX** (2026-09-01 evening, from the
+      Heistbaron Togwaggle game): top_move priced buys at the card's mana
+      `cost` — but a BG minion's buy price is its TIER, and the 18
+      auto-added pool minions had neither, so the affordability check was
+      skipped entirely (unaffordable suggestions). Fixes: `extend_pool.py`
+      heals tier from hearthstonejson `techLevel` (backfilled all 18);
+      `top_move` prices minions at tier / spells at cost; when leveling
+      leads, buys are budgeted from the LEFTOVER gold; the line is now
+      NUMBERED priority steps (1. LEVEL → 2. PICK → 3. Buy → 4. sell), the
+      overlay's buy box reads "Then buy (after leveling)" when a level leads,
+      the live poll dropped to 0.3s (advice is ~5ms — the 1s poll was the
+      perceived slowness), and output is cp1252-safe (Unicode arrows crash
+      Windows consoles).
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored

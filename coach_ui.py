@@ -170,11 +170,10 @@ function render(a) {
   });
   app.appendChild(box('Board', boardBody));
 
-  // Tavern — buy this (the shop's best card for your comp — minion or spell —
-  // then the rest ranked)
+  // Tavern — the shop's best card (minion or spell), labeled by priority
   if (a.shop_rank && a.shop_rank.length) {
     const top = a.shop_rank[0];
-    app.appendChild(box('Buy this', el('div', 'buythis',
+    app.appendChild(box(a.buy_label || 'Buy this', el('div', 'buythis',
       top.name + ' <small>score ' + top.score + '</small>')));
     if (a.shop_rank.length > 1) {
       const shopBody = el('div');
@@ -257,6 +256,11 @@ def render_json(analysis):
                                 "spell" if c in spells else None))
                       for c, v in analysis.get("shop_rank", [])]
     a["target_cards"] = analysis.get("target_cards")
+    # When leveling leads the top move, the buy is what you do with the
+    # leftover — label it that way so the priorities read in order.
+    a["buy_label"] = ("Then buy (after leveling)"
+                      if (analysis.get("top_move") or "").startswith("1. LEVEL")
+                      else "Buy this")
     return a
 
 

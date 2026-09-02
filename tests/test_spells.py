@@ -171,6 +171,43 @@ class TestGrowthCalibration(unittest.TestCase):
         self.assertGreater(scored["BG33_886"], scored["BG26_ICC_901"])
 
 
+class TestTopMovePriority(unittest.TestCase):
+    """Buy prices are tavern prices (minion = TIER, not mana cost) and are
+    budgeted from the leftover after leveling; steps are numbered and the
+    level leads."""
+
+    def _analysis(self, tier, gold, buy_this, shop_rank):
+        return {"board": [], "playable_comps": {}, "tier": tier,
+                "gold": gold, "buy_this": buy_this, "shop_rank": shop_rank,
+                "sell_rank": []}
+
+    def test_steps_are_numbered_and_level_leads(self):
+        line = top_move(self._analysis(2, 5, None, []))
+        self.assertTrue(line.startswith("1. LEVEL"))
+
+    def test_minion_priced_by_tier_not_mana_cost(self):
+        """A minion whose TIER exceeds gold must not be suggested even if its
+        (irrelevant) mana cost fits — the 2026-09-01 evening complaint."""
+        # Shadow Rager: mana cost 3, tavern tier 4.
+        cid = next(c for c, v in value._load_card_db().items()
+                   if v.get("name") == "Shadow Rager")
+        line = top_move(self._analysis(5, 3, cid, [(cid, 9.0)]))
+        self.assertNotIn("Buy Shadow Rager", line)
+        self.assertIn("roll", line)
+
+    def test_buy_budgeted_from_leftover_after_leveling(self):
+        """When leveling leads, buys must fit the LEFTOVER gold, not the purse:
+        tier 5 (level costs 6) with 7 gold leaves 1 — a tier-2 minion doesn't
+        fit; a tier-1 one does."""
+        card_db = value._load_card_db()
+        t1 = next(c for c, v in card_db.items() if v.get("tier") == 1)
+        t2 = next(c for c, v in card_db.items() if v.get("tier") == 2)
+        line = top_move(self._analysis(5, 7, t2, [(t2, 9.0), (t1, 5.0)]))
+        self.assertIn(f"1. LEVEL to tier 6 — 1 left", line)
+        self.assertNotIn(f"Buy {value._load_bg_names().get(t2, t2)} (", line)
+        self.assertIn(f"Buy {value._load_bg_names().get(t1, t1)}", line)
+
+
 class TestCompCards(unittest.TestCase):
     """The target-comp shopping list (UI/console box): names + owned flags."""
 

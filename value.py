@@ -79,6 +79,7 @@ def _load_card_db():
             "race": c.get("tribe"),  # minions.json uses 'tribe', not 'race'
             "attack": c.get("attack"),
             "health": c.get("health"),
+            "tier": c.get("tier"),  # the tavern tier = the BUY price
             "mechanics": c.get("mechanics", []),
             "text": (c.get("text") or "").lower(),
         }
@@ -452,53 +453,77 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
 
 
 def top_move(analysis):
-    """A one-line decision call with the *intention* behind each part.
+    """A one-line decision call as numbered priority steps.
 
     `analysis` is the coach dict (hero, tier, gold, buy_this, sell_rank, ...).
-    Returns a short actionable line like "Buy Air Baller (committing to
-    Elementals) · sell Surfing Sylvar (making room) · level (access to tier 5)",
-    or a fallback when there's nothing pressing.
+    Returns a line like "1. LEVEL to tier 5 — 3 left · 2. PICK Baller
+    Portrait (pick 25%) · 3. Buy Glambot (committing to Mech)" — the
+    highest-priority move is step 1. (ASCII-safe: Windows consoles are
+    cp1252, so no Unicode arrows.)
 
-    Every suggestion is affordability-aware: a "level" you can't pay for is
-    replaced by the save/next-step version, and "buy this" falls back down the
-    shop ranking to the first card actually affordable this turn.
+    Priority order: LEVEL (the tavern tier gates everything; when affordable,
+    buys are budgeted from the LEFTOVER gold, not the full purse), then a
+    forced PICK, then buys/sells. Every buy is priced at what the card
+    actually costs in the tavern: a minion costs its TIER (the card's `cost`
+    field is mana — using it made the coach suggest cards the player couldn't
+    afford, the 2026-09-01 evening complaint), a spell costs `cost`.
     """
     names = _load_bg_names()
     card_db = _load_card_db()
     spell_db = _load_spell_db()
-    # Buy costs come from either pool (minions and tavern spells carry `cost`).
-    costs = {**{c: (v or {}).get("cost") for c, v in card_db.items()},
-             **{c: (v or {}).get("cost") for c, v in spell_db.items()}}
+    # Tavern prices: minion = its tier, spell = its cost. Prefer a KNOWN
+    # price — an unpriceable card can't be promised as affordable.
+    costs = {c: (v or {}).get("tier") for c, v in card_db.items()}
+    costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
     comp = _best_comp(analysis.get("board", []), analysis.get("playable_comps") or {})
     tier = analysis.get("tier")
     gold = analysis.get("gold")
     parts = []
 
-    # A pending pick (hero / trinket / discover) outranks shop advice — it's a
-    # forced decision the shop doesn't gate. Lead with it.
+    # 1. LEVEL — the tier gates the whole shop, so it leads whenever relevant.
+    level_lead = None
+    budget = gold
+    if tier and tier < 6:
+        level_cost = tier + 1  # BG upgrade cost approximation
+        if gold is None:
+            level_lead = f"LEVEL (access to tier {tier + 1})"
+        elif gold >= level_cost:
+            spare = gold - level_cost
+            level_lead = (f"LEVEL to tier {tier + 1}"
+                          + (f" — {spare} left" if spare else ""))
+            budget = spare  # buys come out of the leftover, not the purse
+        else:
+            level_lead = (f"LEVEL next turn — {level_cost - gold} short; "
+                          f"buy cheap / roll meanwhile")
+    if level_lead:
+        parts.append(level_lead)
+
+    # 2. The forced pick (hero / trinket / discover) — the shop doesn't gate it.
     choice = analysis.get("choice")
     if choice and choice.get("ranked"):
         best = choice["ranked"][0]
         why = f" ({best[3]})" if best[3] else ""
         parts.append(f"PICK {best[0]}{why}")
 
-    # Buy: the headline pick, or the best card we can actually afford, or roll.
+    # 3. Buy: the headline pick if the budget covers it, else the best card
+    # that does, else roll.
     shop_rank = analysis.get("shop_rank") or []
     bought = None
     if analysis.get("buy_this"):
         cid = analysis["buy_this"]
         cost = costs.get(cid)
-        if gold is not None and cost is not None and gold < cost:
-            # Can't afford the headline pick — walk the ranking for one we can.
+        if budget is not None and cost is not None and budget < cost:
+            # Can't afford the headline pick — walk the ranking for one the
+            # budget covers (known prices only; unknown = can't promise).
             fallback = None
             for alt, _v in shop_rank:
                 alt_cost = costs.get(alt)
-                if alt_cost is None or gold >= alt_cost:
+                if alt_cost is not None and budget >= alt_cost:
                     fallback = alt
                     break
             if fallback is None:
                 parts.append(f"roll — {names.get(cid, cid)} costs {cost}, "
-                             f"you have {gold}")
+                             f"{budget} left")
                 cid = None  # nothing affordable — don't also say "Buy X"
             else:
                 cid = fallback
@@ -506,38 +531,15 @@ def top_move(analysis):
             bought = cid
             parts.append(f"Buy {names.get(cid, cid)} "
                          f"({_buy_intention(cid, comp, card_db, spell_db)})")
-    # Only suggest selling to "make room" when the board is full AND we're buying
-    # something that needs the slot. If there's space, selling is unnecessary.
+    # 4. Sell only to make room: board full AND buying something that needs
+    # the slot. If there's space, selling is unnecessary.
     if bought is not None and len(analysis.get("board", [])) >= 7 \
             and analysis.get("sell_rank"):
         worst = analysis["sell_rank"][0]  # safest to sell
         if worst[1] < 15:  # a clear filler (low value)
             parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
-    # Level: only when affordable; otherwise say WHAT's missing and what to do
-    # with the gold meanwhile. When affordable it LEADS the line — replay
-    # review showed the player's real leveling tempo was the winning move the
-    # coach kept demoting below a generic buy pick.
-    level_lead = None
-    if tier and tier < 6:
-        level_cost = tier + 1  # BG upgrade cost approximation
-        if gold is None:
-            level_lead = f"level (access to tier {tier + 1})"
-        elif gold >= level_cost:
-            spare = gold - level_cost
-            level_lead = (f"level (access to tier {tier + 1})"
-                          + (f" — {spare} left for a buy/roll" if spare else ""))
-        else:
-            level_lead = (f"level NEXT turn — {level_cost - gold} short; "
-                          f"spend the rest on buys/rolls")
-    if level_lead and not level_lead.startswith("level NEXT"):
-        if parts:
-            lead = level_lead.split(" — ")[0]  # the "· Buy X" parts say it
-            return lead + " · " + " · ".join(parts)
-        return level_lead
     if parts:
-        if level_lead:
-            parts.append(level_lead)
-        return " · ".join(parts)
+        return " · ".join(f"{i}. {p}" for i, p in enumerate(parts, 1))
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
     # right move is to pass and let the engine grow.
     if len(analysis.get("board", [])) >= 7 \

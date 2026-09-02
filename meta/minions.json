@@ -3202,7 +3202,7 @@
     "text": "Rally: Give a friendly minion of each type +15/+15 permanently."
   },
   {
-    "tier": null,
+    "tier": 2,
     "id": "BG19_010",
     "name": "Sewer Rat",
     "cost": 0,
@@ -3213,10 +3213,10 @@
       "DEATHRATTLE"
     ],
     "text": "[x]Deathrattle: Summon a\n2/3 Turtle with Taunt.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 3,
     "id": "BG25_003",
     "name": "Relentless Sentry",
     "cost": 0,
@@ -3227,10 +3227,10 @@
       "AVENGE"
     ],
     "text": "Avenge (4): Gain Taunt\nand Reborn.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 3,
     "id": "BG25_005",
     "name": "Jelly Belly",
     "cost": 0,
@@ -3241,10 +3241,10 @@
       "TRIGGER_VISUAL"
     ],
     "text": "After a friendly minion is Reborn, gain +2/+3 permanently.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 4,
     "id": "BG26_361",
     "name": "Plagued Tidewalker",
     "cost": 0,
@@ -3255,10 +3255,10 @@
       "VENOMOUS"
     ],
     "text": "Venomous",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 5,
     "id": "BG26_537",
     "name": "Flourishing Frostling",
     "cost": 0,
@@ -3269,10 +3269,10 @@
       "AURA"
     ],
     "text": "[x]Has +2/+1 for each\nElemental you played this\n   game (wherever this is).",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 4,
     "id": "BG26_CFM_636",
     "name": "Shadow Rager",
     "cost": 3,
@@ -3283,10 +3283,10 @@
       "STEALTH"
     ],
     "text": "Stealth",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 3,
     "id": "BG26_ICC_026",
     "name": "Grim Necromancer",
     "cost": 4,
@@ -3297,10 +3297,10 @@
       "BATTLECRY"
     ],
     "text": "Battlecry: Summon two 1/1 Skeletons.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 2,
     "id": "BG26_OG_248",
     "name": "Am'gam Rager",
     "cost": 3,
@@ -3309,10 +3309,10 @@
     "health": 5,
     "mechanics": [],
     "text": "",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 7,
     "id": "BG27_513",
     "name": "Tide Oracle Morgl",
     "cost": 0,
@@ -3323,10 +3323,10 @@
       "POISONOUS"
     ],
     "text": "[x]Poisonous. When this\nattacks and kills a minion,\ngive its maximum stats to a\nminion in your hand.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 4,
     "id": "BG28_306",
     "name": "Steadfast Spirit",
     "cost": 0,
@@ -3338,10 +3338,10 @@
       "REBORN"
     ],
     "text": "Reborn. Deathrattle: Give your minions +1/+1.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 4,
     "id": "BG31_826",
     "name": "Doubloon Grifter",
     "cost": 0,
@@ -3352,10 +3352,10 @@
       "TRIGGER_VISUAL"
     ],
     "text": "Whenever you get 4 Pirates, increase your maximum Gold by 1. (4 left!)",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 4,
     "id": "BG33_113",
     "name": "Campfire Shadow",
     "cost": 0,
@@ -3366,10 +3366,10 @@
       "BACON_RALLY"
     ],
     "text": "Rally: Get a plain copy of a random enemy minion.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 5,
     "id": "BG34_694",
     "name": "Wintergrasp Ghoul",
     "cost": 0,
@@ -3380,10 +3380,10 @@
       "DEATHRATTLE"
     ],
     "text": "Deathrattle: Get a Tomb Turning.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 2,
     "id": "BG34_697",
     "name": "Ghostly Ymirjar",
     "cost": 0,
@@ -3394,10 +3394,10 @@
       "AVENGE"
     ],
     "text": "Avenge (4): Gain a free Refresh.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 2,
     "id": "BG36_205",
     "name": "Fishbait",
     "cost": 0,
@@ -3408,10 +3408,10 @@
       "DEATHRATTLE"
     ],
     "text": "[x]This can't gain stats.\nDeathrattle: Give the minion\nthat killed this +5/+5.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 1,
     "id": "BG_ICC_094",
     "name": "Fallen Sun Cleric",
     "cost": 2,
@@ -3422,10 +3422,10 @@
       "BATTLECRY"
     ],
     "text": "Battlecry: Give a friendly minion +1/+1.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 1,
     "id": "BG_RLK_957",
     "name": "Wailing Banshee",
     "cost": 1,
@@ -3436,10 +3436,10 @@
       "DEATHRATTLE"
     ],
     "text": "Deathrattle: Give a random friendly Undead +2/+1.",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   },
   {
-    "tier": null,
+    "tier": 3,
     "id": "BG_ULD_275",
     "name": "Bone Wraith",
     "cost": 4,
@@ -3451,6 +3451,6 @@
       "TAUNT"
     ],
     "text": "Taunt\nReborn",
-    "auto_added": "from session logs (extend_pool.py); tier unknown"
+    "auto_added": "from session logs (extend_pool.py)"
   }
 ]
