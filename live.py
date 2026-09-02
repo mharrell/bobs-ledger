@@ -18,6 +18,7 @@ import os
 import sys
 import time
 
+from choices import choice_kind, rank_choices
 from coach import describe
 from live_coach import LiveCoach
 import coach_ui
@@ -41,6 +42,44 @@ _last_board = None  # (card, atk, health) fingerprint of the last advised board
 
 
 _last_state = None  # last fingerprint the console was advised on
+
+
+def _advise_pick(coach):
+    """A pending pick with no shop yet (hero selection) — rank it directly.
+
+    The buy-phase loop can't fire here: hero selection has no tavern offers
+    and the full analysis returns None until the hero locks in, so without
+    this path the hero pick (the most consequential pick of the game) never
+    showed. Pushes a minimal analysis (the "Choose 1" overlay box) and prints
+    the ranked options.
+    """
+    global _last_state
+    c = coach.choice
+    if not c or c.get("picked") is not None or not c.get("options"):
+        return
+    kind = choice_kind(c["ctype"], c["source"], c["options"])
+    ranked = rank_choices(kind, c["options"], [], None)
+    if not ranked:
+        return
+    best = ranked[0]
+    a = {
+        "hero": None, "tier": None, "gold": None, "board": [], "banned": [],
+        "sell_rank": [], "shop_rank": [], "scenario": {},
+        "target_cards": None, "comps": [],
+        "choice": {"kind": kind, "source": c["source"], "ranked": ranked},
+        "top_move": "1. PICK " + best[0] + (f" ({best[3]})" if best[3] else ""),
+    }
+    state = ("pick", c.get("source"), tuple(c["options"]))
+    if state == _last_state:
+        return
+    _last_state = state
+    coach_ui.update_analysis(a)
+    print("\n" + "=" * 52)
+    print(f"CHOOSE 1 ({kind}) — pick {best[0]}")
+    for n, _cid, s, why in ranked:
+        mark = " <-- " if n == best[0] else "     "
+        print(f"  {mark}{n}" + (f"  [{s:.1f} {why}]" if s is not None and why else ""))
+    print("=" * 52 + "\n", flush=True)
 
 
 def _advise(coach, force=False):
@@ -138,6 +177,11 @@ def monitor(path, poll=1.0):
                     if state != last_state:
                         last_state = state
                         _advise(coach)
+                # A pending pick outside the buy phase (hero selection has no
+                # tavern offers and the full analysis isn't ready yet) still
+                # gets its Choose-1 advice.
+                else:
+                    _advise_pick(coach)
             time.sleep(poll)
     except KeyboardInterrupt:
         pass
