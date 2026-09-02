@@ -152,7 +152,7 @@ def main():
     if not path or not os.path.exists(path):
         print("No active Power.log found (Hearthstone not running recently).")
         return 1
-    poll = 1.0
+    poll = 0.3  # fast tail cadence — analysis is ~5ms, so sub-second updates
     ui_on = "--no-ui" not in opts
     for o in opts:
         if o.startswith("--poll"):

@@ -6,8 +6,8 @@ or for older reprints, real board/shop minions can be missing from it — and
 the value function silently scores unknown cards as worthless (shop_ranking
 skips them outright). This heals the drift: any BG minion id observed in a
 local Power.log but absent from the pool is added from the hearthstonejson
-card DB (.cards_full.json), with tier=null (tier grouping needs the manual
-hsreplay paste — re-run parse_minions.py after the next paste).
+card DB (.cards_full.json) with tier=techLevel (the tavern tier — which IS
+the buy price; card `cost` is the mana cost and is NOT the buy price).
 
 Usage:
   python extend_pool.py            # scan newest session logs, print additions
@@ -44,6 +44,12 @@ def minion_ids_in_logs(limit=5):
     return ids
 
 
+def cards_full():
+    """id -> card dict from the hearthstonejson cache."""
+    with open(CARDS, encoding="utf-8") as f:
+        return {c.get("id"): c for c in json.load(f)}
+
+
 def main():
     do_apply = "--apply" in sys.argv[1:]
     with open(POOL, encoding="utf-8") as f:
@@ -51,11 +57,28 @@ def main():
     known = {m.get("id") for m in pool}
     seen = minion_ids_in_logs()
     missing = sorted(seen - known)
+    # Heal tier drift too: pool minions added before techLevel was filled in
+    # carry tier=null, which breaks buy-price affordability (tier IS the price).
+    healed = 0
+    for m in pool:
+        if m.get("tier") is None:
+            card = cards_full().get(m.get("id"))
+            if card and card.get("techLevel") is not None:
+                m["tier"] = card["techLevel"]
+                m["auto_added"] = "from session logs (extend_pool.py)"
+                healed += 1
+    if healed:
+        print(f"tier healed for {healed} minion(s) from .cards_full.json")
     if not missing:
-        print("pool is complete for recent logs — nothing to add")
+        if do_apply and healed:
+            with open(POOL, "w", encoding="utf-8") as f:
+                json.dump(pool, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+            print(f"Applied tier healing -> {POOL}")
+        else:
+            print("pool is complete for recent logs — nothing to add")
         return 0
-    with open(os.path.join(_HERE, ".cards_full.json"), encoding="utf-8") as f:
-        cards = {c.get("id"): c for c in json.load(f)}
+    cards = cards_full()
     additions = []
     for cid in missing:
         card = cards.get(cid)
@@ -63,8 +86,7 @@ def main():
             continue  # enchantment/token shape we don't track
         races = card.get("races") or ([card["race"]] if card.get("race") else [])
         additions.append({
-            # tier unknown — needs the manual hsreplay paste (parse_minions.py)
-            "tier": None,
+            "tier": card.get("techLevel"),
             "id": cid,
             "name": card.get("name"),
             "cost": card.get("cost"),
@@ -73,19 +95,22 @@ def main():
             "health": card.get("health"),
             "mechanics": card.get("mechanics", []),
             "text": re.sub(r"<[^>]+>", "", card.get("text") or "").strip(),
-            "auto_added": "from session logs (extend_pool.py); tier unknown",
+            "auto_added": "from session logs (extend_pool.py)",
         })
     for a in additions:
-        print(f"  + {a['id']}  {a['name']}  ({a['tribe']})")
+        print(f"  + {a['id']}  {a['name']}  (t{a['tier']} {a['tribe']})")
     if do_apply:
         pool.extend(additions)
         with open(POOL, "w", encoding="utf-8") as f:
             json.dump(pool, f, indent=2, ensure_ascii=False)
             f.write("\n")
-        print(f"Applied: {len(additions)} added -> {POOL}")
+        print(f"Applied: {len(additions)} added"
+              + (f", {healed} tiers healed" if healed else "")
+              + f" -> {POOL}")
     else:
-        print(f"Dry run: {len(additions)} minion(s) would be added "
-              f"(--apply to write).")
+        print(f"Dry run: {len(additions)} minion(s) would be added"
+              + (f", {healed} tiers healed" if healed else "")
+              + " (--apply to write).")
     return 0
 
 
