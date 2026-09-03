@@ -484,7 +484,9 @@ def top_move(analysis):
     level_lead = None
     budget = gold
     if tier and tier < 6:
-        level_cost = tier + 1  # BG upgrade cost approximation
+        # Real upgrade price: the live TechUp button COST (tier+3 base,
+        # dropping 1 per turn you wait) — tier+1 was the old wrong model.
+        level_cost = analysis.get("level_cost") or tier + 1
         if gold is None:
             level_lead = f"LEVEL (access to tier {tier + 1})"
         elif gold >= level_cost:

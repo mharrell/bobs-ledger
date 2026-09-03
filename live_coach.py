@@ -51,6 +51,15 @@ _SHOP_OPT = re.compile(r"DebugPrintOptions\(\).*?cardId=(\w+)[^\]]*player=(\d+)"
 # A new options block starts (GameState). Options re-print after every game
 # event; each block is the authoritative current shop.
 _OPTIONS_HEADER = re.compile(r"GameState\.DebugPrintOptions\(\) -\s+id=\d+")
+# The tavern upgrade button: "Tavern Tier N" (TechUp0N = upgrade TO tier N).
+# Its COST tag is the REAL upgrade price this turn — BG prices start at
+# (target+3) gold and drop 1 at the start of each round you wait, so the old
+# tier+1 model was wrong every turn (2026-09-03: turn-1 "level + buy" with 3
+# gold is impossible; the turn-1 button costs 5).
+# e.g. "TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 ...
+#       cardId=TB_BaconShopTechUp03_Button player=7] tag=COST value=6"
+_TECHUP = re.compile(r"entityName=Tavern Tier (\d+) id=(\d+)[^\]]*player=(\d+)")
+_TECHUP_TAG = re.compile(r"tag=(ZONE|COST|TECH_LEVEL) value=(\S+)")
 
 
 def _banned(allowed):
@@ -183,6 +192,9 @@ class LiveCoach:
         self.cur_lines = []
         self.shop_cards = []
         self.choice = None  # pending pick (hero/trinket/discover) or None
+        self.techup = {}    # TechUp button id -> {tier, player, cost, zone}
+        self._last_tier = None
+        self._tier_seen_turn = None  # turn the current tier was reached
         self._reset_meta()
 
     def _reset_meta(self):
@@ -200,6 +212,9 @@ class LiveCoach:
         self.cur_lines = []
         self.shop_cards = []
         self.choice = None  # pending pick: {'kind','source','options','picked'}
+        self.techup = {}
+        self._last_tier = None
+        self._tier_seen_turn = None
         self._reset_meta()
 
     def feed(self, line):
@@ -264,9 +279,44 @@ class LiveCoach:
                     and all(cid != c for c, _ in self.shop_cards):
                 self.shop_cards.append((p, cid))
             return
+        # The tavern upgrade button's live price (see _TECHUP above). GameState
+        # lines only: the PowerTaskList copies carry the same values, and the
+        # end-of-turn teardown writes (COST 0 / prices after ZONE left PLAY)
+        # must not pollute the record.
+        if "TechUp" in line and "GameState" in line:
+            self._feed_techup(line)
         self.gs.feed(line)
         self.actions.feed(line)
         self.cur_lines.append(line)
+        # Track when the friendly's tier changed, for the upgrade-price
+        # fallback (the price drops 1 per turn you stay at a tier).
+        if self.hero_card:
+            tier = self.gs.hero_meta.get(self.hero_card, {}).get("tier")
+            if tier and tier != self._last_tier:
+                if self._last_tier is not None:
+                    self._tier_seen_turn = self.actions.turn
+                self._last_tier = tier
+
+    def _feed_techup(self, line):
+        """Track the tavern upgrade button's live cost (see _TECHUP above)."""
+        m = _TECHUP.search(line)
+        if not m:
+            return
+        tgt, eid, p = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        rec = self.techup.setdefault(eid, {"tier": tgt, "player": p,
+                                           "cost": None, "zone": "PLAY"})
+        rec["tier"], rec["player"] = tgt, p
+        tm = _TECHUP_TAG.search(line)
+        if not tm:
+            return
+        tag, value = tm.group(1), tm.group(2)
+        if tag == "COST":
+            # Death/teardown writes cost 0 or land after the button left PLAY;
+            # only a positive cost on a live button is the real price.
+            if rec["zone"] == "PLAY" and value.isdigit() and int(value) > 0:
+                rec["cost"] = int(value)
+        elif tag == "ZONE":
+            rec["zone"] = value
 
     def _ensure_meta(self):
         """Compute per-game data once heroes are parsed; retry until they are."""
@@ -284,6 +334,11 @@ class LiveCoach:
         self.account = next((n for n, c in meta["account"].items()
                              if c == self.hero_card), None)
         self.actions.friendly = self.friendly
+        # The current tier was set at game setup (before turn 1) — the
+        # upgrade-price fallback counts turns at the tier from there.
+        if self._last_tier is None:
+            self._last_tier = self.gs.hero_meta.get(self.hero_card, {}).get("tier")
+            self._tier_seen_turn = 0
 
         card_races = _load_card_races(os.path.join(_HERE, ".card_races.json"))
         seed_m = _SEED.search("".join(self.cur_lines))
@@ -319,6 +374,30 @@ class LiveCoach:
         return [c for p, c in self.shop_cards
                 if self.friendly is None or p != self.friendly]
 
+    def level_cost(self):
+        """The real tavern upgrade price right now (None if not applicable).
+
+        Primary: the TechUp button's COST tag (GameState, live button) — the
+        game prints the true price every turn. Fallback: the wiki rule — the
+        upgrade starts at (target+3) gold and drops 1 at the start of each
+        round you stay at your tier, i.e. cost = tier + 5 - turns_at_tier
+        (verified against the log: turn 1 tier-2 button costs 5, turn 2 4,
+        tier-3 6 then 5, tier-4 7). Unknown history (mid-game catch-up) uses
+        the first-available price, tier + 4.
+        """
+        tier = self.gs.hero_meta.get(self.hero_card, {}).get("tier") \
+            if self.hero_card else None
+        if not tier or tier >= 6:
+            return None
+        for rec in self.techup.values():
+            if (rec["player"] == self.friendly and rec["tier"] == tier + 1
+                    and rec["zone"] == "PLAY" and rec["cost"]):
+                return rec["cost"]
+        if self._tier_seen_turn is not None:
+            turns_at_tier = max(1, self.actions.turn - self._tier_seen_turn)
+            return max(2, tier + 5 - turns_at_tier)
+        return tier + 4
+
     def state_fingerprint(self):
         """A cheap fingerprint of everything the advice depends on.
 
@@ -333,6 +412,7 @@ class LiveCoach:
         return (
             self.gs.gold.get(self.account) if self.account else None,
             self.gs.hero_meta.get(self.hero_card, {}).get("tier"),
+            self.level_cost(),
             tuple(sorted((m["card"], m.get("atk") or 0, m.get("health") or 0,
                           m.get("golden") or False) for m in board)),
             tuple(self.tavern_offers()),
@@ -375,6 +455,7 @@ class LiveCoach:
             "hero": self.hero_name,
             "tier": tier,
             "gold": gold,
+            "level_cost": self.level_cost(),
             "board": board,
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
