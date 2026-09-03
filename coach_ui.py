@@ -33,7 +33,9 @@ _HTML = """<!doctype html>
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
          font:15px/1.5 "Segoe UI", system-ui, sans-serif; padding:8px; }
-  #app { max-width:520px; display:flex; flex-direction:column; gap:8px; }
+  #app { max-width:780px; display:grid; grid-template-columns:1fr 1fr;
+         gap:8px; align-items:start; }
+  .col { display:flex; flex-direction:column; gap:8px; min-width:0; }
   .box { background:var(--panel); border:1px solid #2c2f36; border-radius:6px; padding:9px 11px; }
   .box h3 { margin:0 0 6px; font-size:12px; letter-spacing:.06em; text-transform:uppercase;
             color:var(--dim); }
@@ -50,7 +52,13 @@ _HTML = """<!doctype html>
      left edge), z-index floats it above the other boxes. */
   .thumb:hover { transform:scale(4); transform-origin:left center;
                  position:relative; z-index:5; }
+  .thumb.golden { box-shadow:0 0 0 2px #ffd97a; }
   .thumbrow { display:flex; align-items:center; gap:8px; }
+  /* Target-comp shopping list: what you're hunting is fully opaque; pieces
+     already on the board fade back */
+  .comprow { opacity:.45; }
+  .comprow.missing { opacity:1; }
+  .comprow .l { font-size:14px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:2px 9px; font-size:14px; }
   .level { font-weight:600; }
@@ -66,8 +74,12 @@ _HTML = """<!doctype html>
   .compgroup .chips { flex:1; }
   .chip.owned { border:1px solid var(--good); color:var(--good); }
   .chip.missing { border:1px dashed var(--dim); color:var(--dim); }
-  .buythis { font-size:17px; font-weight:700; color:var(--gold); }
+  .buythis { display:flex; align-items:center; gap:10px; font-size:17px;
+             font-weight:700; color:var(--gold); }
   .buythis small { color:var(--dim); font-weight:400; }
+  .tag-core { color:var(--gold); }
+  .tag-spell { color:#7ab8f0; }
+  .tag-addon { color:var(--warn); }
   .none { color:var(--dim); font-style:italic; }
   #wait { color:var(--dim); }
   .score { color:var(--dim); flex:none; }
@@ -125,7 +137,11 @@ function render(a) {
   app.innerHTML = '';
   if (!a || !a.board) { app.appendChild(el('div', null, 'No game yet.')); return; }
 
-  // Pending pick (hero / trinket / discover) — a forced decision, top box
+  // Two columns: what to DO on the left, what to KNOW on the right.
+  const acts = el('div', 'col');
+  const info = el('div', 'col');
+
+  // ACTIONS — the pending pick (hero / trinket / discover), top of the column
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
     const pickBody = el('div', 'pickbody');
     const [name, cid, score, why] = a.choice.ranked[0];
@@ -142,10 +158,10 @@ function render(a) {
       rest.appendChild(thumbRow(c, n + (s != null ? '  (' + (w || s.toFixed(1)) + ')' : '')));
     });
     pickBody.appendChild(rest);
-    app.appendChild(box('Choose 1 (' + a.choice.kind + ')', pickBody));
+    acts.appendChild(box('Choose 1 (' + a.choice.kind + ')', pickBody));
   }
 
-  // Top move — each numbered priority step on its own line
+  // ACTIONS — top move: each numbered priority step on its own line
   if (a.top_move) {
     const body = el('div', 'steps');
     a.top_move.split(' · ').forEach(step => {
@@ -159,92 +175,45 @@ function render(a) {
       }
       body.appendChild(line);
     });
-    app.appendChild(box('Top move', body));
+    acts.appendChild(box('Top move', body));
   }
 
-  // Target comp — what to build toward, with its shopping list
-  if (a.target_comp) {
-    const pivot = a.target_state === 'pivot';
-    const body = el('div', 'target',
-      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp);
-    const tc = a.target_cards || {};
-    [['core  ', 'core'], ['addons', 'addons']].forEach(([label, key]) => {
-      const cards = tc[key] || [];
-      if (!cards.length) return;
-      const g = el('div', 'compgroup');
-      g.appendChild(el('span', 'grouplabel', label));
-      const chips = el('div', 'chips');
-      cards.forEach(c => chips.appendChild(
-        el('span', 'chip ' + (c.owned ? 'owned' : 'missing'), c.name)));
-      g.appendChild(chips);
-      body.appendChild(g);
-    });
-    app.appendChild(box('Target comp', body));
-  }
-
-  // Header / state strip
-  const header = box('State', (() => {
-    const c = el('div'); c.style.display='flex'; c.style.gap='10px'; c.style.flexWrap='wrap';
-    c.appendChild(el('span', null, 'Hero: ' + (a.hero || '?')));
-    c.appendChild(el('span', 'gold', 'Gold: ' + (a.gold ?? '?')));
-    c.appendChild(el('span', null, 'Tier: ' + (a.tier ?? '?')));
-    return c;
-  })());
-  app.appendChild(header);
-
-  // Refresh-vs-level call
-  if (a.tier && a.tier < 6) {
-    const cost = a.tier + 1;
-    const lvl = box('Level / Roll', el('div', 'level',
-      a.gold !== null && a.gold >= cost
-        ? 'Can afford to level (tier ' + a.tier + ' → ' + (a.tier + 1) + ', ~' + cost + 'g)'
-        : 'Low gold — stabilize / roll for your comp'));
-    app.appendChild(lvl);
-  }
-
-  // Real per-turn triggers
-  const triggers = (a.scenario || {});
-  const active = Object.entries(triggers).filter(([k, v]) => v && !k.endsWith('_total'));
-  if (active.length) {
-    const chips = el('div', 'chips');
-    active.forEach(([k, v]) => chips.appendChild(el('span', 'chip', k.replace('play_','') + ' ' + v)));
-    app.appendChild(box('Per-turn triggers', chips));
-  }
-
-  // Board
-  const boardBody = el('div');
-  (a.board || []).forEach(m => {
-    const r = thumbRow(m.card, (m.name || m.card) + ' ' + m.atk + '/' + m.health);
-    if (m.golden) r.querySelector('.l').classList.add('golden');
-    r.appendChild(el('span', null, m.tribe || ''));
-    boardBody.appendChild(r);
-  });
-  app.appendChild(box('Board', boardBody));
-
-  // Tavern — the shop's best card (minion or spell), labeled by priority
+  // ACTIONS — the shop's best card, labeled by priority
   if (a.shop_rank && a.shop_rank.length) {
     const top = a.shop_rank[0];
     const buyBox = el('div', 'buythis');
     buyBox.appendChild(thumb(top.card));
-    const lbl = el('span', null, top.name + ' <small>score ' + top.score + '</small>');
+    const lbl = el('span', null, top.name + '  ');
     buyBox.appendChild(lbl);
-    app.appendChild(box(a.buy_label || 'Buy this', buyBox));
+    buyBox.appendChild(el('small', null, 'score ' + top.score));
+    acts.appendChild(box(a.buy_label || 'Buy this', buyBox));
     if (a.shop_rank.length > 1) {
       const shopBody = el('div');
       a.shop_rank.slice(1).forEach(s => {
         const r = el('div', 'row thumbrow');
         r.appendChild(thumb(s.card));
-        r.appendChild(el('span', 'l', s.name + (s.tag ? ' [' + s.tag + ']' : '')));
+        const tagCls = s.tag ? ' tag-' + s.tag : '';
+        r.appendChild(el('span', 'l' + tagCls,
+          s.name + (s.tag ? '  [' + s.tag + ']' : '')));
         r.appendChild(el('span', 'score', s.score.toFixed(0)));
         shopBody.appendChild(r);
       });
-      app.appendChild(box('Tavern shop (minions + spells)', shopBody));
+      acts.appendChild(box('Tavern shop (minions + spells)', shopBody));
     }
   } else {
-    app.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
+    acts.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
 
-  // Sell ranking (safest to sell -> most valuable)
+  // ACTIONS — refresh-vs-level call
+  if (a.tier && a.tier < 6) {
+    const cost = a.tier + 1;
+    acts.appendChild(box('Level / Roll', el('div', 'level',
+      a.gold !== null && a.gold >= cost
+        ? 'Can afford to level (tier ' + a.tier + ' → ' + (a.tier + 1) + ', ~' + cost + 'g)'
+        : 'Low gold — stabilize / roll for your comp')));
+  }
+
+  // ACTIONS — sell ranking (safest to sell -> most valuable)
   const sellBody = el('div');
   if (a.sell_rank && a.sell_rank.length) {
     a.sell_rank.forEach((s, i) => {
@@ -257,9 +226,64 @@ function render(a) {
   } else {
     sellBody.appendChild(el('div', 'none', '—'));
   }
-  app.appendChild(box('Sell ranking (safe → keep)', sellBody));
+  acts.appendChild(box('Sell ranking (safe → keep)', sellBody));
 
-  // Playable comps
+  // INFORMATION — state strip
+  const header = box('State', (() => {
+    const c = el('div'); c.style.display='flex'; c.style.gap='10px'; c.style.flexWrap='wrap';
+    c.appendChild(el('span', null, 'Hero: ' + (a.hero || '?')));
+    c.appendChild(el('span', 'gold', 'Gold: ' + (a.gold ?? '?')));
+    c.appendChild(el('span', null, 'Tier: ' + (a.tier ?? '?')));
+    return c;
+  })());
+  info.appendChild(header);
+
+  // INFORMATION — target comp: card art per piece. What you're hunting is
+  // fully opaque; pieces already on the board fade back.
+  if (a.target_comp) {
+    const pivot = a.target_state === 'pivot';
+    const body = el('div', 'target',
+      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp);
+    const tc = a.target_cards || {};
+    [['core', 'core'], ['addons', 'addons']].forEach(([label, key]) => {
+      const cards = tc[key] || [];
+      if (!cards.length) return;
+      const g = el('div', 'compgroup');
+      g.appendChild(el('span', 'grouplabel', label));
+      cards.forEach(c => {
+        const r = thumbRow(c.card, c.name + (c.owned ? '  [have]' : ''));
+        r.classList.add('comprow', c.owned ? 'owned' : 'missing');
+        g.appendChild(r);
+      });
+      body.appendChild(g);
+    });
+    info.appendChild(box('Target comp', body));
+  }
+
+  // INFORMATION — board (golden thumbs get a gold ring)
+  const boardBody = el('div');
+  (a.board || []).forEach(m => {
+    const r = thumbRow(m.card, (m.name || m.card) + ' ' + m.atk + '/' + m.health);
+    if (m.golden) {
+      r.querySelector('.l').classList.add('golden');
+      const img = r.querySelector('img');
+      if (img) img.classList.add('golden');
+    }
+    r.appendChild(el('span', null, m.tribe || ''));
+    boardBody.appendChild(r);
+  });
+  info.appendChild(box('Board', boardBody));
+
+  // INFORMATION — real per-turn triggers
+  const triggers = (a.scenario || {});
+  const active = Object.entries(triggers).filter(([k, v]) => v && !k.endsWith('_total'));
+  if (active.length) {
+    const chips = el('div', 'chips');
+    active.forEach(([k, v]) => chips.appendChild(el('span', 'chip', k.replace('play_','') + ' ' + v)));
+    info.appendChild(box('Per-turn triggers', chips));
+  }
+
+  // INFORMATION — playable comps
   const compsBody = el('div');
   if (a.comps && a.comps.length) {
     const chips = el('div', 'chips');
@@ -268,9 +292,9 @@ function render(a) {
   } else {
     compsBody.appendChild(el('div', 'none', '—'));
   }
-  app.appendChild(box('Playable comps', compsBody));
+  info.appendChild(box('Playable comps', compsBody));
 
-  // Banned tribes
+  // INFORMATION — banned tribes
   const bannedBody = el('div');
   if (a.banned && a.banned.length) {
     const chips = el('div', 'chips');
@@ -279,7 +303,10 @@ function render(a) {
   } else {
     bannedBody.appendChild(el('div', 'none', 'none'));
   }
-  app.appendChild(box('Banned tribes', bannedBody));
+  info.appendChild(box('Banned tribes', bannedBody));
+
+  app.appendChild(acts);
+  app.appendChild(info);
 }
 setInterval(poll, 1000);
 poll();
