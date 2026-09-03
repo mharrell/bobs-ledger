@@ -82,73 +82,91 @@ _HTML = """<!doctype html>
           --dim:#9aa0a8; --good:#5fd97a; --warn:#f0b04a; --bad:#e86a5a; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
-         font:15px/1.5 "Segoe UI", system-ui, sans-serif; padding:8px; }
-  #app { max-width:780px; display:grid; grid-template-columns:1fr 1fr;
-         gap:8px; align-items:start; }
+         font:14px/1.45 "Segoe UI", system-ui, sans-serif; padding:8px; }
+  #wrap { max-width:1600px; margin:0 auto; }
+  /* State strip spans the whole width; the boxes flow in three columns on a
+     wide window (the old 780px panel left two-thirds of the screen empty). */
+  #statebar { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+              background:var(--panel); border:1px solid #2c2f36;
+              border-radius:6px; padding:6px 12px; margin-bottom:8px;
+              font-size:15px; font-weight:600; }
+  #statebar .lbl { color:var(--dim); font-weight:400; font-size:12px; }
+  #statebar .banned { color:var(--dim); font-weight:400; font-size:12px; }
+  #app { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;
+         align-items:start; }
+  @media (max-width:1250px) { #app { grid-template-columns:1fr 1fr; } }
+  @media (max-width:840px)  { #app { grid-template-columns:1fr; } }
   .col { display:flex; flex-direction:column; gap:8px; min-width:0; }
-  .box { background:var(--panel); border:1px solid #2c2f36; border-radius:6px; padding:9px 11px; }
-  .box h3 { margin:0 0 6px; font-size:12px; letter-spacing:.06em; text-transform:uppercase;
-            color:var(--dim); }
-  .row { display:flex; justify-content:space-between; gap:8px; padding:2px 0; }
-  .row .l { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .box { background:var(--panel); border:1px solid #2c2f36; border-radius:6px;
+         padding:7px 9px; }
+  .box h3 { margin:0 0 4px; font-size:11px; letter-spacing:.06em;
+            text-transform:uppercase; color:var(--dim); }
+  /* Rows: thumb, then the name snug against it (flex:1 — the old
+     space-between floated the middle child to the panel's center), score
+     pinned right. */
+  .row { display:flex; align-items:center; gap:7px; padding:1px 0; }
+  .row .l { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;
+            white-space:nowrap; }
   .row .r { flex:none; }
   .gold { color:#ffd97a; }
   .golden::after { content:" ◆"; color:#ffd97a; }
   .safest { color:var(--good); } .valuable { color:var(--bad); }
-  .thumb { width:64px; height:64px; border-radius:6px; object-fit:cover; flex:none;
+  .thumb { width:44px; height:44px; border-radius:5px; object-fit:cover; flex:none;
            cursor:zoom-in; transition:transform .12s ease-out; }
   /* No art cached for this card: a same-size placeholder keeps every row
      aligned (missing art used to collapse the row and shift names). */
   .thumb.ph { display:inline-flex; align-items:center; justify-content:center;
               color:var(--dim); background:var(--panel2);
-              border:1px solid #2c2f36; font-size:22px; cursor:default; }
-  /* Hover zoom: cached renders are 256x256, so scale(4) shows them at full
-     size; origin left keeps the popup on-panel (thumbs sit at the row's
-     left edge), z-index floats it above the other boxes. Scoped to real
-     images — a placeholder has nothing to zoom. */
-  img.thumb:hover { transform:scale(4); transform-origin:left center;
+              border:1px solid #2c2f36; font-size:18px; cursor:default; }
+  /* Hover zoom: art is 256x256, so scale(5) on a 44px thumb shows it near
+     full size; origin left keeps the popup on-panel (thumbs sit at the
+     row's left edge), z-index floats it above the other boxes. Scoped to
+     real images — a placeholder has nothing to zoom. */
+  img.thumb:hover { transform:scale(5); transform-origin:left center;
                     position:relative; z-index:5; }
   .thumb.golden { box-shadow:0 0 0 2px #ffd97a; }
-  .thumbrow { display:flex; align-items:center; gap:8px; }
+  .thumbrow { display:flex; align-items:center; gap:7px; }
   /* The Buy box mirrors the top move's actual buy; its card is highlighted
      in the ranked shop list too. */
   .buynow .l { color:var(--gold); font-weight:700; }
   img.thumb.buynowart { box-shadow:0 0 0 2px var(--gold); }
   /* Target-comp shopping list: what you're hunting is fully opaque; pieces
-     already on the board fade back. Rows stack under the group label
-     (they used to sit side by side — the scattered one-line mess). */
+     already on the board fade back. Rows stack under the group label. */
   .comprow { opacity:.45; }
   .comprow.missing { opacity:1; }
-  .comprow .l { font-size:14px; }
   .compgroup { display:flex; align-items:flex-start; gap:6px; margin-top:5px; }
-  .compgroup .grouplabel { color:var(--dim); font-size:13px; width:48px; flex:none;
-                           padding-top:22px; }
-  .complist { display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+  .compgroup .grouplabel { color:var(--dim); font-size:12px; width:44px; flex:none;
+                           padding-top:16px; }
+  .complist { display:flex; flex-direction:column; gap:1px; flex:1; min-width:0; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
-  .chip { background:var(--panel2); border-radius:10px; padding:2px 9px; font-size:14px; }
+  .chip { background:var(--panel2); border-radius:10px; padding:1px 8px;
+          font-size:13px; }
   .level { font-weight:600; }
   /* Top move: each numbered priority step on its own line */
-  .step { font-size:17px; font-weight:700; line-height:1.45; padding:1px 0; }
+  .step { font-size:16px; font-weight:700; line-height:1.4; padding:1px 0; }
   .stepnum { color:var(--gold); margin-right:7px; }
-  .topmove { font-size:17px; font-weight:700; color:var(--text); line-height:1.4; }
+  .topmove { font-size:16px; font-weight:700; color:var(--text); line-height:1.4; }
   .topmove .act { color:var(--gold); }
-  .target { font-size:15px; font-weight:600; color:var(--gold); }
+  .target { font-size:14px; font-weight:600; color:var(--gold); }
   .target .pivot { color:var(--warn); }
   .chip.owned { border:1px solid var(--good); color:var(--good); }
   .chip.missing { border:1px dashed var(--dim); color:var(--dim); }
-  .buythis { display:flex; align-items:center; gap:10px; font-size:17px;
+  .buythis { display:flex; align-items:center; gap:9px; font-size:16px;
              font-weight:700; color:var(--gold); }
   .buythis small { color:var(--dim); font-weight:400; }
   .tag-core { color:var(--gold); }
   .tag-spell { color:#7ab8f0; }
   .tag-addon { color:var(--warn); }
   .none { color:var(--dim); font-style:italic; }
-  #wait { color:var(--dim); }
   .score { color:var(--dim); flex:none; }
+  .xcount { color:var(--dim); font-weight:400; }
 </style>
 </head>
 <body>
-<div id="app"><div id="wait">Waiting for live.py analysis…</div></div>
+<div id="wrap">
+<div id="statebar">Waiting for live.py analysis…</div>
+<div id="app"></div>
+</div>
 <script>
 let _lastPayload = null;
 async function poll() {
@@ -203,14 +221,37 @@ function rankRow(name, score, isTop) {
 }
 function render(a) {
   const app = document.getElementById('app');
+  const statebar = document.getElementById('statebar');
   app.innerHTML = '';
-  if (!a || !a.board) { app.appendChild(el('div', null, 'No game yet.')); return; }
+  statebar.innerHTML = '';
+  if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
 
-  // Two columns: what to DO on the left, what to KNOW on the right.
-  const acts = el('div', 'col');
-  const info = el('div', 'col');
+  // Three columns: DECIDE (what to do), BUILD (what you're making), MARKET
+  // (what's on offer). State + banned tribes live in the strip above.
+  const decide = el('div', 'col');
+  const build = el('div', 'col');
+  const market = el('div', 'col');
 
-  // ACTIONS — the pending pick (hero / trinket / discover), top of the column
+  // STATE STRIP — hero / gold / tier / turn / banned tribes
+  statebar.appendChild(el('span', null, a.hero || '?'));
+  const gold = el('span', null); gold.appendChild(el('span', 'lbl', 'Gold '));
+  gold.appendChild(el('span', 'gold', String(a.gold ?? '?')));
+  statebar.appendChild(gold);
+  const tier = el('span', null); tier.appendChild(el('span', 'lbl', 'Tier '));
+  tier.appendChild(el('span', null, String(a.tier ?? '?')));
+  statebar.appendChild(tier);
+  const turns = (a.scenario || {}).turns;
+  if (turns) {
+    const t = el('span', null); t.appendChild(el('span', 'lbl', 'Turn '));
+    t.appendChild(el('span', null, String(turns)));
+    statebar.appendChild(t);
+  }
+  if (a.banned && a.banned.length) {
+    statebar.appendChild(el('span', 'lbl', 'Banned:'));
+    a.banned.forEach(t => statebar.appendChild(el('span', 'banned', t)));
+  }
+
+  // DECIDE — the pending pick (hero / trinket / discover), top of the column
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
     const pickBody = el('div', 'pickbody');
     const [name, cid, score, why] = a.choice.ranked[0];
@@ -227,10 +268,10 @@ function render(a) {
       rest.appendChild(thumbRow(c, n + (s != null ? '  (' + (w || s.toFixed(1)) + ')' : '')));
     });
     pickBody.appendChild(rest);
-    acts.appendChild(box('Choose 1 (' + a.choice.kind + ')', pickBody));
+    decide.appendChild(box('Choose 1 (' + a.choice.kind + ')', pickBody));
   }
 
-  // ACTIONS — top move: each numbered priority step on its own line
+  // DECIDE — top move: each numbered priority step on its own line
   if (a.top_move) {
     const body = el('div', 'steps');
     a.top_move.split(' · ').forEach(step => {
@@ -244,25 +285,36 @@ function render(a) {
       }
       body.appendChild(line);
     });
-    acts.appendChild(box('Top move', body));
+    decide.appendChild(box('Top move', body));
   }
 
-  // ACTIONS — the Buy box mirrors the top move's actual buy/roll step (the
-  // plan's affordability walk may demote the shop's #1); the card is also
-  // highlighted in the full ranked list below.
-  if (a.shop_rank && a.shop_rank.length) {
-    const stepCard = a.buy_step_card || (a.buy_roll_text ? null : a.shop_rank[0].card);
+  // DECIDE — the Buy box mirrors the top move's actual buy. When the plan
+  // says roll, the Top move already says exactly that — a Buy box repeating
+  // it was dead real estate.
+  const stepCard = (a.shop_rank && a.shop_rank.length)
+    ? (a.buy_step_card || (a.buy_roll_text ? null : a.shop_rank[0].card))
+    : null;
+  if (stepCard) {
+    const s = a.shop_rank.find(x => x.card === stepCard);
+    const stepName = s ? s.name : stepCard;
     const buyBox = el('div', 'buythis');
-    if (stepCard) {
-      const s = a.shop_rank.find(x => x.card === stepCard);
-      const stepName = s ? s.name : stepCard;
-      buyBox.appendChild(thumb(stepCard, stepName));
-      buyBox.appendChild(el('span', null, stepName + '  '));
-      if (s) buyBox.appendChild(el('small', null, 'score ' + s.score));
-    } else {
-      buyBox.appendChild(el('span', null, a.buy_roll_text || '—'));
-    }
-    acts.appendChild(box(a.buy_label || 'Buy this', buyBox));
+    buyBox.appendChild(thumb(stepCard, stepName));
+    buyBox.appendChild(el('span', null, stepName + '  '));
+    if (s) buyBox.appendChild(el('small', null, 'score ' + s.score));
+    decide.appendChild(box(a.buy_label || 'Buy this', buyBox));
+  }
+
+  // DECIDE — refresh-vs-level call (the button's real price, not tier+1)
+  if (a.tier && a.tier < 6) {
+    const cost = (a.level_cost != null) ? a.level_cost : a.tier + 1;
+    decide.appendChild(box('Level / Roll', el('div', 'level',
+      a.gold !== null && a.gold >= cost
+        ? 'Can afford to level (tier ' + a.tier + ' → ' + (a.tier + 1) + ', ' + cost + 'g)'
+        : 'Level costs ' + cost + 'g — ' + Math.max(0, cost - (a.gold ?? 0)) + ' short; stabilize / roll')));
+  }
+
+  // MARKET — the full ranked tavern (the plan's buy is highlighted)
+  if (a.shop_rank && a.shop_rank.length) {
     const shopBody = el('div');
     a.shop_rank.forEach(s => {
       const r = el('div', 'row thumbrow');
@@ -276,49 +328,44 @@ function render(a) {
       r.appendChild(el('span', 'score', s.score.toFixed(0)));
       shopBody.appendChild(r);
     });
-    acts.appendChild(box('Tavern shop (minions + spells)', shopBody));
+    market.appendChild(box('Tavern shop (minions + spells)', shopBody));
   } else {
-    acts.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
+    market.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
 
-  // ACTIONS — refresh-vs-level call (the button's real price, not tier+1)
-  if (a.tier && a.tier < 6) {
-    const cost = (a.level_cost != null) ? a.level_cost : a.tier + 1;
-    acts.appendChild(box('Level / Roll', el('div', 'level',
-      a.gold !== null && a.gold >= cost
-        ? 'Can afford to level (tier ' + a.tier + ' → ' + (a.tier + 1) + ', ' + cost + 'g)'
-        : 'Level costs ' + cost + 'g — ' + Math.max(0, cost - (a.gold ?? 0)) + ' short; stabilize / roll')));
-  }
-
-  // ACTIONS — sell ranking (safest to sell -> most valuable)
+  // MARKET — sell ranking (safest to sell -> most valuable); duplicates
+  // grouped with a ×N badge (score = the instance you'd sell first)
   const sellBody = el('div');
   if (a.sell_rank && a.sell_rank.length) {
     a.sell_rank.forEach((s, i) => {
       const r = el('div', 'row thumbrow');
       r.appendChild(thumb(s.card, s.name));
-      r.appendChild(el('span', 'l ' + (i < 2 ? 'safest' : 'valuable'), s.name));
+      const lbl = el('span', 'l ' + (i < 2 ? 'safest' : 'valuable'), s.name);
+      if (s.n > 1) {
+        lbl.appendChild(el('span', 'xcount', '  ×' + s.n));
+      }
+      r.appendChild(lbl);
       r.appendChild(el('span', 'score', s.score.toFixed(0)));
       sellBody.appendChild(r);
     });
   } else {
     sellBody.appendChild(el('div', 'none', '—'));
   }
-  acts.appendChild(box('Sell ranking (safe → keep)', sellBody));
+  market.appendChild(box('Sell ranking (safe → keep)', sellBody));
 
-  // INFORMATION — state strip
-  const header = box('State', (() => {
-    const c = el('div'); c.style.display='flex'; c.style.gap='10px'; c.style.flexWrap='wrap';
-    c.appendChild(el('span', null, 'Hero: ' + (a.hero || '?')));
-    c.appendChild(el('span', 'gold', 'Gold: ' + (a.gold ?? '?')));
-    c.appendChild(el('span', null, 'Tier: ' + (a.tier ?? '?')));
-    const turns = (a.scenario || {}).turns;
-    if (turns) c.appendChild(el('span', null, 'Turn: ' + turns));
-    return c;
-  })());
-  info.appendChild(header);
+  // MARKET — playable comps
+  const compsBody = el('div');
+  if (a.comps && a.comps.length) {
+    const chips = el('div', 'chips');
+    a.comps.forEach(c => chips.appendChild(el('span', 'chip', c)));
+    compsBody.appendChild(chips);
+  } else {
+    compsBody.appendChild(el('div', 'none', '—'));
+  }
+  market.appendChild(box('Playable comps', compsBody));
 
-  // INFORMATION — target comp: card art per piece. What you're hunting is
-  // fully opaque; pieces already on the board fade back.
+  // BUILD — target comp: what you're hunting is fully opaque; pieces already
+  // on the board fade back.
   if (a.target_comp) {
     const pivot = a.target_state === 'pivot';
     const body = el('div', 'target',
@@ -338,10 +385,10 @@ function render(a) {
       g.appendChild(list);
       body.appendChild(g);
     });
-    info.appendChild(box('Target comp', body));
+    build.appendChild(box('Target comp', body));
   }
 
-  // INFORMATION — board (golden thumbs get a gold ring)
+  // BUILD — board (golden thumbs get a gold ring)
   const boardBody = el('div');
   (a.board || []).forEach(m => {
     const r = thumbRow(m.card, (m.name || m.card) + ' ' + m.atk + '/' + m.health);
@@ -353,43 +400,21 @@ function render(a) {
     r.appendChild(el('span', null, m.tribe || ''));
     boardBody.appendChild(r);
   });
-  info.appendChild(box('Board', boardBody));
+  build.appendChild(box('Board', boardBody));
 
-  // INFORMATION — real per-turn triggers ("turns" is game state, shown in
-  // State, not a trigger)
+  // BUILD — real per-turn triggers ("turns" is game state, in the strip)
   const triggers = (a.scenario || {});
   const active = Object.entries(triggers)
     .filter(([k, v]) => v && !k.endsWith('_total') && k !== 'turns');
   if (active.length) {
     const chips = el('div', 'chips');
     active.forEach(([k, v]) => chips.appendChild(el('span', 'chip', k.replace('play_','') + ' ' + v)));
-    info.appendChild(box('Per-turn triggers', chips));
+    build.appendChild(box('Per-turn triggers', chips));
   }
 
-  // INFORMATION — playable comps
-  const compsBody = el('div');
-  if (a.comps && a.comps.length) {
-    const chips = el('div', 'chips');
-    a.comps.forEach(c => chips.appendChild(el('span', 'chip', c)));
-    compsBody.appendChild(chips);
-  } else {
-    compsBody.appendChild(el('div', 'none', '—'));
-  }
-  info.appendChild(box('Playable comps', compsBody));
-
-  // INFORMATION — banned tribes
-  const bannedBody = el('div');
-  if (a.banned && a.banned.length) {
-    const chips = el('div', 'chips');
-    a.banned.forEach(t => chips.appendChild(el('span', 'chip', t)));
-    bannedBody.appendChild(chips);
-  } else {
-    bannedBody.appendChild(el('div', 'none', 'none'));
-  }
-  info.appendChild(box('Banned tribes', bannedBody));
-
-  app.appendChild(acts);
-  app.appendChild(info);
+  app.appendChild(decide);
+  app.appendChild(build);
+  app.appendChild(market);
 }
 setInterval(poll, 1000);
 poll();
@@ -413,8 +438,22 @@ def render_json(analysis):
     names = _load_bg_names()
     a = dict(analysis)
     a["board"] = [dict(m, name=names.get(m["card"], m["card"])) for m in analysis["board"]]
-    a["sell_rank"] = [{"card": c, "name": names.get(c, c), "score": round(v)}
-                      for c, v in analysis["sell_rank"]]
+    # Group duplicate board minions (Fauna Whisperer ×2 with different stats
+    # used to show as two confusing rows); score = the instance you'd sell
+    # first, so the safe→keep order still reads right.
+    grouped = {}
+    sell = []
+    for c, v in analysis["sell_rank"]:
+        g = grouped.get(c)
+        if g is None:
+            g = {"card": c, "name": names.get(c, c), "score": round(v), "n": 1}
+            grouped[c] = g
+            sell.append(g)
+        else:
+            g["n"] += 1
+            g["score"] = min(g["score"], round(v))
+    sell.sort(key=lambda g: g["score"])
+    a["sell_rank"] = sell
     # Tag shop entries by comp membership (core/addon) or kind (spell), so the
     # shop list shows why each card matters without opening the comp DB.
     tc = analysis.get("target_cards") or {}
