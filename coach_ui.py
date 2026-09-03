@@ -121,6 +121,9 @@ function render(a) {
     head.appendChild(el('div', 'topmove', 'PICK ' + name));
     pickBody.appendChild(head);
     if (why) pickBody.appendChild(el('div', 'none', why));
+    if (a.choice.kind === 'hero' && a.choice.ranked.length > 1) {
+      pickBody.appendChild(el('div', 'none', 'if locked, pick ' + a.choice.ranked[1][0]));
+    }
     const rest = el('div', null);
     a.choice.ranked.forEach(([n, c, s, w]) => {
       rest.appendChild(thumbRow(c, n + (s != null ? '  (' + (w || s.toFixed(1)) + ')' : '')));

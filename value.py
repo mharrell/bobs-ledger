@@ -499,11 +499,16 @@ def top_move(analysis):
         parts.append(level_lead)
 
     # 2. The forced pick (hero / trinket / discover) — the shop doesn't gate it.
+    # Hero picks carry a fallback: the log doesn't expose ownership, so the
+    # top pick might be season-pass locked — name the next-best too.
     choice = analysis.get("choice")
     if choice and choice.get("ranked"):
         best = choice["ranked"][0]
         why = f" ({best[3]})" if best[3] else ""
-        parts.append(f"PICK {best[0]}{why}")
+        pick = f"PICK {best[0]}{why}"
+        if choice.get("kind") == "hero" and len(choice["ranked"]) > 1:
+            pick += f" — if locked, {choice['ranked'][1][0]}"
+        parts.append(pick)
 
     # 3. Buy: the headline pick if the budget covers it, else the best card
     # that does, else roll.
