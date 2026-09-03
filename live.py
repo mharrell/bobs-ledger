@@ -67,15 +67,19 @@ def _advise_pick(coach):
         "sell_rank": [], "shop_rank": [], "scenario": {},
         "target_cards": None, "comps": [],
         "choice": {"kind": kind, "source": c["source"], "ranked": ranked},
-        "top_move": "1. PICK " + best[0] + (f" ({best[3]})" if best[3] else ""),
+        "top_move": ("1. PICK " + best[0]
+                     + (f" ({best[3]})" if best[3] else "")
+                     + (f" — if locked, {ranked[1][0]}"
+                        if kind == "hero" and len(ranked) > 1 else "")),
     }
     state = ("pick", c.get("source"), tuple(c["options"]))
     if state == _last_state:
         return
     _last_state = state
     coach_ui.update_analysis(a)
+    fallback = f" (or {ranked[1][0]} if locked)" if (kind == "hero" and len(ranked) > 1) else ""
     print("\n" + "=" * 52)
-    print(f"CHOOSE 1 ({kind}) — pick {best[0]}")
+    print(f"CHOOSE 1 ({kind}) — pick {best[0]}{fallback}")
     for n, _cid, s, why in ranked:
         mark = " <-- " if n == best[0] else "     "
         print(f"  {mark}{n}" + (f"  [{s:.1f} {why}]" if s is not None and why else ""))
