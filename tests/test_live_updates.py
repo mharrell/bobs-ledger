@@ -171,5 +171,86 @@ class TestBoardFallback(unittest.TestCase):
         self.assertEqual([m["card"] for m in a["board"]], ["BG33_886"])
 
 
+class TestBuyStep(unittest.TestCase):
+    def _analysis(self, gold, budget_card_first=True):
+        from value import top_move, _load_card_db
+        db = _load_card_db()
+        priced = [(cid, v["tier"]) for cid, v in db.items() if v.get("tier")]
+        hi = next(cid for cid, t in priced if t >= 3)
+        lo = next(cid for cid, t in priced if t == 1)
+        a = {"tier": 2, "gold": gold, "level_cost": 5, "board": [],
+             "shop_rank": [(hi, 9.0), (lo, 4.0)], "buy_this": hi,
+             "playable_comps": {}, "choice": None, "target_comp": None,
+             "sell_rank": []}
+        return a, hi, lo, top_move
+
+    def test_unaffordable_headline_walks_down(self):
+        """Gold 6, level 5, headline costs 3: the plan buys the affordable
+        card, and buy_step_card says so (the UI's Buy box must agree)."""
+        a, hi, lo, top_move = self._analysis(6)
+        tm = top_move(a)
+        self.assertEqual(a["buy_step_card"], lo)
+        self.assertIn("Buy", tm)
+        self.assertNotIn("roll —", tm)
+
+    def test_nothing_affordable_records_roll(self):
+        """Gold 5, level 5 (budget 0): the plan rolls, and buy_step_roll
+        carries the roll text with buy_step_card cleared."""
+        a, hi, lo, top_move = self._analysis(5)
+        tm = top_move(a)
+        self.assertIsNone(a["buy_step_card"])
+        self.assertTrue(a["buy_step_roll"].startswith("roll — "))
+        self.assertIn("roll —", tm)
+
+
+class TestBanGate(unittest.TestCase):
+    def test_partial_pool_reveal_fails_open(self):
+        """One tribe's pool minions seen (allowed=[Beast]) is NOT ban info —
+        the old code froze 9 banned tribes in the UI for a whole game."""
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {}
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        fake = [{"seed": "1", "allowed": ["Beast"], "banned": [
+            "Demon", "Dragon", "Elemental", "Mech", "Murloc", "Naga",
+            "Pirate", "Quilboar", "Undead"]}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertIsNone(c.allowed)
+        self.assertFalse(c._bans_ready)  # keeps retrying on later analyzes
+
+    def test_complete_ban_set_locks(self):
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {}
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
+        fake = [{"seed": "1", "allowed": allowed, "banned": ["x"] * 5}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertEqual(c.allowed, allowed)
+        self.assertTrue(c._bans_ready)
+
+
+class TestRenderJsonComps(unittest.TestCase):
+    def test_playable_comps_dict_becomes_name_list(self):
+        """The analysis carries a slug->comp dict; the UI reads a["comps"] as
+        a name list — the box sat on "—" forever without this mapping."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "playable_comps": {
+                        "beasts-x": {"name": "Beasts - X", "meta_tier": "A"},
+                        "mechs-y": {"name": "Mechs - Y", "meta_tier": "S"}}}
+        a = render_json(analysis)
+        self.assertEqual(a["comps"], ["Mechs - Y", "Beasts - X"])
+        self.assertEqual(a["buy_step_card"], None)
+
+
 if __name__ == "__main__":
     unittest.main()

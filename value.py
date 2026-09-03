@@ -513,9 +513,13 @@ def top_move(analysis):
         parts.append(pick)
 
     # 3. Buy: the headline pick if the budget covers it, else the best card
-    # that does, else roll.
+    # that does, else roll. The resolved card is written back into the
+    # analysis (buy_step_card / buy_step_roll) so the UI's Buy box shows the
+    # plan's actual buy instead of the raw shop #1 (they differ whenever the
+    # headline pick doesn't fit the post-level budget).
     shop_rank = analysis.get("shop_rank") or []
     bought = None
+    analysis["buy_step_card"] = None
     if analysis.get("buy_this"):
         cid = analysis["buy_this"]
         cost = costs.get(cid)
@@ -529,13 +533,16 @@ def top_move(analysis):
                     fallback = alt
                     break
             if fallback is None:
-                parts.append(f"roll — {names.get(cid, cid)} costs {cost}, "
-                             f"{budget} left")
+                roll = (f"roll — {names.get(cid, cid)} costs {cost}, "
+                        f"{budget} left")
+                parts.append(roll)
+                analysis["buy_step_roll"] = roll
                 cid = None  # nothing affordable — don't also say "Buy X"
             else:
                 cid = fallback
         if cid is not None:
             bought = cid
+            analysis["buy_step_card"] = cid
             parts.append(f"Buy {names.get(cid, cid)} "
                          f"({_buy_intention(cid, comp, card_db, spell_db)})")
     # 4. Sell only to make room: board full AND buying something that needs
@@ -551,16 +558,21 @@ def top_move(analysis):
     # right move is to pass and let the engine grow.
     if len(analysis.get("board", [])) >= 7 \
             and _has_end_of_turn(analysis.get("board", []), card_db):
-        return "wait for end of turn — let the engine scale"
+        msg = "wait for end of turn — let the engine scale"
+        analysis["buy_step_roll"] = msg  # the Buy box mirrors the plan
+        return msg
     # Nothing affordable and nothing to level: roll unless there's no gold at all.
     if gold is not None and gold >= 1:
-        return "roll — nothing in the shop beats your gold; level needs saving"
+        msg = "roll — nothing in the shop beats your gold; level needs saving"
+        analysis["buy_step_roll"] = msg
+        return msg
     # Otherwise point at the target comp so the advice stays actionable instead
     # of going stale ("committing to X" with no next step).
     target = analysis.get("target_comp")
-    if target:
-        return f"hold — look for {target} core cards"
-    return "stabilize / roll for your comp"
+    msg = f"hold — look for {target} core cards" if target \
+        else "stabilize / roll for your comp"
+    analysis["buy_step_roll"] = msg
+    return msg
 
 
 def _has_end_of_turn(board, card_db):
