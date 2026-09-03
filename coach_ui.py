@@ -66,11 +66,14 @@ _HTML = """<!doctype html>
 <body>
 <div id="app"><div id="wait">Waiting for live.py analysis…</div></div>
 <script>
+let _lastPayload = null;
 async function poll() {
   try {
     const r = await fetch('/analysis');
-    const a = await r.json();
-    render(a);
+    const raw = await r.text();
+    if (raw === _lastPayload) return;  // nothing changed — don't rebuild the
+    _lastPayload = raw;                // DOM (rebuilding every second made
+    render(JSON.parse(raw));           // thumbnails flicker)
   } catch (e) { /* keep last frame */ }
 }
 function el(tag, cls, text) {
