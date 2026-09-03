@@ -251,6 +251,19 @@ class TestRenderJsonComps(unittest.TestCase):
         self.assertEqual(a["comps"], ["Mechs - Y", "Beasts - X"])
         self.assertEqual(a["buy_step_card"], None)
 
+    def test_sell_rank_groups_duplicates(self):
+        """Two board copies of one card showed as two confusing rows; they
+        group with a ×N badge and the sell-first instance's score."""
+        from coach_ui import render_json
+        analysis = {"board": [], "shop_rank": [], "playable_comps": {},
+                    "sell_rank": [("BG33_140", 5.0), ("BG33_886", 9.0),
+                                  ("BG33_140", 2.0)]}
+        a = render_json(analysis)
+        rows = a["sell_rank"]
+        self.assertEqual([r["card"] for r in rows], ["BG33_140", "BG33_886"])
+        self.assertEqual(rows[0]["n"], 2)
+        self.assertEqual(rows[0]["score"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()
