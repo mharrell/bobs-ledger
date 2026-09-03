@@ -14,13 +14,63 @@ import json
 import os
 import re
 import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import time
+import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from value import _load_bg_names, _load_spell_db
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_PORT = 8747
+
+# On-demand card art. HearthstoneJSON's render build lags the current patch —
+# returning minions (old ids) and most heroes render, but brand-new minions,
+# the newest heroes, and ALL trinkets 404 upstream (and the wiki is
+# Cloudflare-blocked), so those stay as UI placeholders.
+RENDER_URL = "https://art.hearthstonejson.com/v1/render/latest/enUS/256x/{}.png"
+MISS_TTL = 3600.0  # seconds before re-attempting a card id that 404'd
+
+_art_lock = threading.Lock()
+_art_miss_path = os.path.join(_HERE, ".art_miss.json")
+os.makedirs(os.path.join(_HERE, "img_cache"), exist_ok=True)
+try:
+    with open(_art_miss_path, encoding="utf-8") as _f:
+        _art_miss = json.load(_f)
+except (OSError, ValueError):
+    _art_miss = {}
+
+
+def _remember_miss(cid):
+    with _art_lock:
+        _art_miss[cid] = time.time()
+        try:
+            with open(_art_miss_path, "w", encoding="utf-8") as f:
+                json.dump(_art_miss, f)
+        except OSError:
+            pass
+
+
+def _can_retry(cid):
+    return time.time() - _art_miss.get(cid, 0) > MISS_TTL
+
+
+def _fetch_render(cid):
+    """Download the HearthstoneJSON render for cid into img_cache. True on
+    success. The browser re-requests images on every DOM rebuild, so a miss
+    is remembered for MISS_TTL — repeated polls must not re-hammer upstream.
+    """
+    try:
+        req = urllib.request.Request(RENDER_URL.format(cid),
+                                     headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            data = r.read()
+        with open(os.path.join(_HERE, "img_cache", f"{cid}.png"), "wb") as f:
+            f.write(data)
+        return True
+    except Exception:
+        _remember_miss(cid)
+        return False
 
 _HTML = """<!doctype html>
 <html lang="en">
@@ -124,23 +174,24 @@ function box(title, body) {
 }
 // Card art thumbnail (img_cache/ via /img/<id>.png, fetched by fetch_art.py).
 // Hides itself gracefully when no art is cached (current-set BG-only cards).
-function thumb(cid) {
+function thumb(cid, name) {
   const img = document.createElement('img');
   img.className = 'thumb';
   img.src = '/img/' + cid + '.png';
   img.alt = '';
   img.onerror = () => {
-    // No art cached: a same-size placeholder keeps the row aligned.
+    // No art available (render build lags the patch; trinkets have none
+    // upstream): a same-size placeholder keeps every row aligned.
     const ph = document.createElement('span');
     ph.className = 'thumb ph';
-    ph.textContent = '·';
+    ph.textContent = (name || '?').trim().charAt(0).toUpperCase();
     img.replaceWith(ph);
   };
   return img;
 }
 function thumbRow(cid, name) {
   const r = el('div', 'row thumbrow');
-  r.appendChild(thumb(cid));
+  r.appendChild(thumb(cid, name));
   r.appendChild(el('span', 'l', name));
   return r;
 }
@@ -164,7 +215,7 @@ function render(a) {
     const pickBody = el('div', 'pickbody');
     const [name, cid, score, why] = a.choice.ranked[0];
     const head = el('div', 'thumbrow');
-    head.appendChild(thumb(cid));
+    head.appendChild(thumb(cid, name));
     head.appendChild(el('div', 'topmove', 'PICK ' + name));
     pickBody.appendChild(head);
     if (why) pickBody.appendChild(el('div', 'none', why));
@@ -204,8 +255,9 @@ function render(a) {
     const buyBox = el('div', 'buythis');
     if (stepCard) {
       const s = a.shop_rank.find(x => x.card === stepCard);
-      buyBox.appendChild(thumb(stepCard));
-      buyBox.appendChild(el('span', null, (s ? s.name : stepCard) + '  '));
+      const stepName = s ? s.name : stepCard;
+      buyBox.appendChild(thumb(stepCard, stepName));
+      buyBox.appendChild(el('span', null, stepName + '  '));
       if (s) buyBox.appendChild(el('small', null, 'score ' + s.score));
     } else {
       buyBox.appendChild(el('span', null, a.buy_roll_text || '—'));
@@ -215,7 +267,7 @@ function render(a) {
     a.shop_rank.forEach(s => {
       const r = el('div', 'row thumbrow');
       if (s.card === stepCard) r.classList.add('buynow');
-      const t = thumb(s.card);
+      const t = thumb(s.card, s.name);
       if (s.card === stepCard) t.classList.add('buynowart');
       r.appendChild(t);
       const tagCls = s.tag ? ' tag-' + s.tag : '';
@@ -243,7 +295,7 @@ function render(a) {
   if (a.sell_rank && a.sell_rank.length) {
     a.sell_rank.forEach((s, i) => {
       const r = el('div', 'row thumbrow');
-      r.appendChild(thumb(s.card));
+      r.appendChild(thumb(s.card, s.name));
       r.appendChild(el('span', 'l ' + (i < 2 ? 'safest' : 'valuable'), s.name));
       r.appendChild(el('span', 'score', s.score.toFixed(0)));
       sellBody.appendChild(r);
@@ -417,7 +469,12 @@ class _Handler(BaseHTTPRequestHandler):
         else:
             m = re.match(r"^/img/([A-Za-z0-9_]+)\.png$", self.path)
             if m:
-                path = os.path.join(_HERE, "img_cache", f"{m.group(1)}.png")
+                cid = m.group(1)
+                path = os.path.join(_HERE, "img_cache", f"{cid}.png")
+                if not os.path.exists(path) and _can_retry(cid):
+                    # On-demand: fetch the render now so the hero/trinket/
+                    # minion art appears on the next UI poll instead of never.
+                    _fetch_render(cid)
                 if os.path.exists(path):
                     with open(path, "rb") as f:
                         self._send(200, "image/png", f.read())
@@ -438,8 +495,13 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def start_server(port=DEFAULT_PORT):
-    """Start the overlay server in a background thread; returns the server."""
-    server = HTTPServer(("127.0.0.1", port), _Handler)
+    """Start the overlay server in a background thread; returns the server.
+
+    Threading: an on-demand art fetch blocks that request for up to ~5s —
+    on the single-threaded server it would stall /analysis polling.
+    """
+    server = ThreadingHTTPServer(("127.0.0.1", port), _Handler)
+    server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server
 
