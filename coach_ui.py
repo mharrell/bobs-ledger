@@ -204,13 +204,13 @@ function render(a) {
     acts.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
 
-  // ACTIONS — refresh-vs-level call
+  // ACTIONS — refresh-vs-level call (the button's real price, not tier+1)
   if (a.tier && a.tier < 6) {
-    const cost = a.tier + 1;
+    const cost = (a.level_cost != null) ? a.level_cost : a.tier + 1;
     acts.appendChild(box('Level / Roll', el('div', 'level',
       a.gold !== null && a.gold >= cost
-        ? 'Can afford to level (tier ' + a.tier + ' → ' + (a.tier + 1) + ', ~' + cost + 'g)'
-        : 'Low gold — stabilize / roll for your comp')));
+        ? 'Can afford to level (tier ' + a.tier + ' → ' + (a.tier + 1) + ', ' + cost + 'g)'
+        : 'Level costs ' + cost + 'g — ' + Math.max(0, cost - (a.gold ?? 0)) + ' short; stabilize / roll')));
   }
 
   // ACTIONS — sell ranking (safest to sell -> most valuable)

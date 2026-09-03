@@ -60,5 +60,81 @@ class TestStateFingerprint(unittest.TestCase):
         return c
 
 
+class TestGoldSpending(unittest.TestCase):
+    def test_spent_gold_is_subtracted(self):
+        """Gold = RESOURCES - RESOURCES_USED. The purse alone made mid-turn
+        advice judge affordability against gold the player already spent."""
+        c = LiveCoach()
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES value=5")
+        self.assertEqual(c.gs.gold.get("TestAccount"), 5)
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES_USED value=3")
+        self.assertEqual(c.gs.gold.get("TestAccount"), 2)
+
+    def test_fingerprint_notices_spending(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.account = "TestAccount"
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES value=5")
+        before = c.state_fingerprint()
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES_USED value=3")
+        self.assertNotEqual(before, c.state_fingerprint())
+
+
+class TestLevelCost(unittest.TestCase):
+    def _coach(self, tier):
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = tier
+        return c
+
+    def test_live_button_cost_wins(self):
+        """The TechUp button's COST tag is the authoritative upgrade price."""
+        c = self._coach(2)
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 "
+               f"cardId=TB_BaconShopTechUp03_Button player=7] tag=COST value=6")
+        self.assertEqual(c.level_cost(), 6)
+
+    def test_death_writes_and_zero_costs_ignored(self):
+        """Teardown writes (COST 0, or after the button left PLAY) must not
+        pollute the live price."""
+        c = self._coach(2)
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 "
+               f"cardId=TB_BaconShopTechUp03_Button player=7] tag=COST value=6")
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 "
+               f"cardId=TB_BaconShopTechUp03_Button player=7] tag=ZONE "
+               f"value=REMOVEDFROMGAME")
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 "
+               f"cardId=TB_BaconShopTechUp03_Button player=7] tag=COST value=7")
+        self.assertEqual(c.level_cost(), 6)
+
+    def test_turn1_button_costs_5(self):
+        """Turn 1: the tier-2 button costs 5 (3 gold cannot level — the old
+        tier+1 model said 2 and advised an impossible level-then-buy)."""
+        c = self._coach(1)
+        c._tier_seen_turn = 0
+        c.actions.turn = 1
+        self.assertEqual(c.level_cost(), 5)
+
+    def test_price_drops_per_turn_at_tier(self):
+        """Wiki rule: tier+5 minus turns at the tier (2nd turn: 4)."""
+        c = self._coach(1)
+        c._tier_seen_turn = 0
+        c.actions.turn = 2
+        self.assertEqual(c.level_cost(), 4)
+
+    def test_top_move_uses_real_cost(self):
+        """Turn 1 (gold 3, button 5): 'next turn — 2 short', never the
+        impossible level-then-buy."""
+        from value import top_move
+        a = {"tier": 1, "gold": 3, "level_cost": 5, "board": [],
+             "shop_rank": [], "buy_this": None, "playable_comps": {},
+             "choice": None, "target_comp": None, "sell_rank": []}
+        tm = top_move(a)
+        self.assertIn("LEVEL next turn — 2 short", tm)
+        self.assertNotIn("LEVEL to tier 2", tm)
+
+
 if __name__ == "__main__":
     unittest.main()

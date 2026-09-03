@@ -59,12 +59,30 @@ class GameState:
         self.tribe = {}         # entity id -> CARDRACE
         self.tier = {}          # entity id -> TECH_LEVEL (minion tier)
         self.keywords = defaultdict(set)  # entity id -> set of keywords
-        self.gold = {}          # account name -> RESOURCES (gold)
+        self.gold_max = {}      # account -> RESOURCES (this turn's purse)
+        self.gold_used = {}     # account -> RESOURCES_USED (spent this turn)
+        self.gold_temp = {}     # account -> TEMP_RESOURCES (hero-power gold)
+        self.gold = {}          # account -> available gold (purse - spent)
         self.hero_meta = defaultdict(dict)  # hero card -> {tier, armor}
         self.snapshots = []     # board snapshots, one per minion entering PLAY
         self.current_entity = None
         self._game_ended = False  # set on PLAYSTATE=WON/LOST; stops snapshots
         self._post_game = set()   # entity ids created after game end (re-created)
+
+    def _set_gold(self, name):
+        """Available gold = this turn's purse minus what's already spent.
+
+        RESOURCES alone is the full allotment and never changes mid-turn; the
+        game tracks spending in RESOURCES_USED. Subtracting it is what makes
+        mid-turn advice judge affordability against gold the player actually
+        has (the 2026-09-03 "coach doesn't understand gold" complaint).
+        """
+        self.gold[name] = max(
+            0,
+            (self.gold_max.get(name) or 0)
+            + (self.gold_temp.get(name) or 0)
+            - (self.gold_used.get(name) or 0),
+        )
 
     def feed(self, line):
         m = ENTITY_TAG.search(line)
@@ -85,7 +103,15 @@ class GameState:
         if m:
             name, tag, value = m.groups()
             if tag == "RESOURCES":
-                self.gold[name] = int(value)
+                self.gold_max[name] = int(value)
+                self._set_gold(name)
+            elif tag == "RESOURCES_USED":
+                self.gold_used[name] = int(value)
+                self._set_gold(name)
+            elif tag == "TEMP_RESOURCES":
+                # Hero powers grant temp gold this turn; it is spendable.
+                self.gold_temp[name] = int(value)
+                self._set_gold(name)
             elif tag == "PLAYSTATE" and value in ("WON", "LOST"):
                 # Game over: the end-of-game cleanup re-creates minions as
                 # enchantments for the leaderboard, so stop snapshotting here.
