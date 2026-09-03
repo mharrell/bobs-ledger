@@ -47,18 +47,33 @@ _HTML = """<!doctype html>
   .safest { color:var(--good); } .valuable { color:var(--bad); }
   .thumb { width:64px; height:64px; border-radius:6px; object-fit:cover; flex:none;
            cursor:zoom-in; transition:transform .12s ease-out; }
+  /* No art cached for this card: a same-size placeholder keeps every row
+     aligned (missing art used to collapse the row and shift names). */
+  .thumb.ph { display:inline-flex; align-items:center; justify-content:center;
+              color:var(--dim); background:var(--panel2);
+              border:1px solid #2c2f36; font-size:22px; cursor:default; }
   /* Hover zoom: cached renders are 256x256, so scale(4) shows them at full
      size; origin left keeps the popup on-panel (thumbs sit at the row's
-     left edge), z-index floats it above the other boxes. */
-  .thumb:hover { transform:scale(4); transform-origin:left center;
-                 position:relative; z-index:5; }
+     left edge), z-index floats it above the other boxes. Scoped to real
+     images — a placeholder has nothing to zoom. */
+  img.thumb:hover { transform:scale(4); transform-origin:left center;
+                    position:relative; z-index:5; }
   .thumb.golden { box-shadow:0 0 0 2px #ffd97a; }
   .thumbrow { display:flex; align-items:center; gap:8px; }
+  /* The Buy box mirrors the top move's actual buy; its card is highlighted
+     in the ranked shop list too. */
+  .buynow .l { color:var(--gold); font-weight:700; }
+  img.thumb.buynowart { box-shadow:0 0 0 2px var(--gold); }
   /* Target-comp shopping list: what you're hunting is fully opaque; pieces
-     already on the board fade back */
+     already on the board fade back. Rows stack under the group label
+     (they used to sit side by side — the scattered one-line mess). */
   .comprow { opacity:.45; }
   .comprow.missing { opacity:1; }
   .comprow .l { font-size:14px; }
+  .compgroup { display:flex; align-items:flex-start; gap:6px; margin-top:5px; }
+  .compgroup .grouplabel { color:var(--dim); font-size:13px; width:48px; flex:none;
+                           padding-top:22px; }
+  .complist { display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:2px 9px; font-size:14px; }
   .level { font-weight:600; }
@@ -69,9 +84,6 @@ _HTML = """<!doctype html>
   .topmove .act { color:var(--gold); }
   .target { font-size:15px; font-weight:600; color:var(--gold); }
   .target .pivot { color:var(--warn); }
-  .compgroup { display:flex; align-items:baseline; gap:6px; margin-top:5px; }
-  .compgroup .grouplabel { color:var(--dim); font-size:13px; width:48px; flex:none; }
-  .compgroup .chips { flex:1; }
   .chip.owned { border:1px solid var(--good); color:var(--good); }
   .chip.missing { border:1px dashed var(--dim); color:var(--dim); }
   .buythis { display:flex; align-items:center; gap:10px; font-size:17px;
@@ -117,7 +129,13 @@ function thumb(cid) {
   img.className = 'thumb';
   img.src = '/img/' + cid + '.png';
   img.alt = '';
-  img.onerror = () => { img.remove(); };
+  img.onerror = () => {
+    // No art cached: a same-size placeholder keeps the row aligned.
+    const ph = document.createElement('span');
+    ph.className = 'thumb ph';
+    ph.textContent = '·';
+    img.replaceWith(ph);
+  };
   return img;
 }
 function thumbRow(cid, name) {
@@ -178,28 +196,35 @@ function render(a) {
     acts.appendChild(box('Top move', body));
   }
 
-  // ACTIONS — the shop's best card, labeled by priority
+  // ACTIONS — the Buy box mirrors the top move's actual buy/roll step (the
+  // plan's affordability walk may demote the shop's #1); the card is also
+  // highlighted in the full ranked list below.
   if (a.shop_rank && a.shop_rank.length) {
-    const top = a.shop_rank[0];
+    const stepCard = a.buy_step_card || (a.buy_roll_text ? null : a.shop_rank[0].card);
     const buyBox = el('div', 'buythis');
-    buyBox.appendChild(thumb(top.card));
-    const lbl = el('span', null, top.name + '  ');
-    buyBox.appendChild(lbl);
-    buyBox.appendChild(el('small', null, 'score ' + top.score));
-    acts.appendChild(box(a.buy_label || 'Buy this', buyBox));
-    if (a.shop_rank.length > 1) {
-      const shopBody = el('div');
-      a.shop_rank.slice(1).forEach(s => {
-        const r = el('div', 'row thumbrow');
-        r.appendChild(thumb(s.card));
-        const tagCls = s.tag ? ' tag-' + s.tag : '';
-        r.appendChild(el('span', 'l' + tagCls,
-          s.name + (s.tag ? '  [' + s.tag + ']' : '')));
-        r.appendChild(el('span', 'score', s.score.toFixed(0)));
-        shopBody.appendChild(r);
-      });
-      acts.appendChild(box('Tavern shop (minions + spells)', shopBody));
+    if (stepCard) {
+      const s = a.shop_rank.find(x => x.card === stepCard);
+      buyBox.appendChild(thumb(stepCard));
+      buyBox.appendChild(el('span', null, (s ? s.name : stepCard) + '  '));
+      if (s) buyBox.appendChild(el('small', null, 'score ' + s.score));
+    } else {
+      buyBox.appendChild(el('span', null, a.buy_roll_text || '—'));
     }
+    acts.appendChild(box(a.buy_label || 'Buy this', buyBox));
+    const shopBody = el('div');
+    a.shop_rank.forEach(s => {
+      const r = el('div', 'row thumbrow');
+      if (s.card === stepCard) r.classList.add('buynow');
+      const t = thumb(s.card);
+      if (s.card === stepCard) t.classList.add('buynowart');
+      r.appendChild(t);
+      const tagCls = s.tag ? ' tag-' + s.tag : '';
+      r.appendChild(el('span', 'l' + tagCls,
+        s.name + (s.tag ? '  [' + s.tag + ']' : '')));
+      r.appendChild(el('span', 'score', s.score.toFixed(0)));
+      shopBody.appendChild(r);
+    });
+    acts.appendChild(box('Tavern shop (minions + spells)', shopBody));
   } else {
     acts.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
@@ -234,6 +259,8 @@ function render(a) {
     c.appendChild(el('span', null, 'Hero: ' + (a.hero || '?')));
     c.appendChild(el('span', 'gold', 'Gold: ' + (a.gold ?? '?')));
     c.appendChild(el('span', null, 'Tier: ' + (a.tier ?? '?')));
+    const turns = (a.scenario || {}).turns;
+    if (turns) c.appendChild(el('span', null, 'Turn: ' + turns));
     return c;
   })());
   info.appendChild(header);
@@ -250,11 +277,13 @@ function render(a) {
       if (!cards.length) return;
       const g = el('div', 'compgroup');
       g.appendChild(el('span', 'grouplabel', label));
+      const list = el('div', 'complist');
       cards.forEach(c => {
         const r = thumbRow(c.card, c.name + (c.owned ? '  [have]' : ''));
         r.classList.add('comprow', c.owned ? 'owned' : 'missing');
-        g.appendChild(r);
+        list.appendChild(r);
       });
+      g.appendChild(list);
       body.appendChild(g);
     });
     info.appendChild(box('Target comp', body));
@@ -274,9 +303,11 @@ function render(a) {
   });
   info.appendChild(box('Board', boardBody));
 
-  // INFORMATION — real per-turn triggers
+  // INFORMATION — real per-turn triggers ("turns" is game state, shown in
+  // State, not a trigger)
   const triggers = (a.scenario || {});
-  const active = Object.entries(triggers).filter(([k, v]) => v && !k.endsWith('_total'));
+  const active = Object.entries(triggers)
+    .filter(([k, v]) => v && !k.endsWith('_total') && k !== 'turns');
   if (active.length) {
     const chips = el('div', 'chips');
     active.forEach(([k, v]) => chips.appendChild(el('span', 'chip', k.replace('play_','') + ' ' + v)));
@@ -344,6 +375,20 @@ def render_json(analysis):
                                 "spell" if c in spells else None))
                       for c, v in analysis.get("shop_rank", [])]
     a["target_cards"] = analysis.get("target_cards")
+    # Playable comps: the analysis carries a slug->comp dict, the UI wants a
+    # name list (meta-tier order). (The box read a["comps"], which the
+    # analysis never provided — it sat on "—" forever.)
+    pc = analysis.get("playable_comps") or {}
+    comps = list(pc.values()) if isinstance(pc, dict) else list(pc or [])
+    comps = [c for c in comps if isinstance(c, dict) and c.get("name")]
+    tier_rank = {"S": 0, "A": 1, "B": 2}
+    comps.sort(key=lambda c: (tier_rank.get(c.get("meta_tier"), 3),
+                              c.get("name") or ""))
+    a["comps"] = [c["name"] for c in comps]
+    # The Buy box mirrors the top move's actual buy/roll step (buy_step_card /
+    # buy_step_roll are written by value.top_move), so the two can't disagree.
+    a["buy_step_card"] = analysis.get("buy_step_card")
+    a["buy_roll_text"] = analysis.get("buy_step_roll")
     # When leveling leads the top move, the buy is what you do with the
     # leftover — label it that way so the priorities read in order.
     a["buy_label"] = ("Then buy (after leveling)"

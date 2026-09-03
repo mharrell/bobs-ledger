@@ -195,6 +195,10 @@ class LiveCoach:
         self.techup = {}    # TechUp button id -> {tier, player, cost, zone}
         self._last_tier = None
         self._tier_seen_turn = None  # turn the current tier was reached
+        self._bans_ready = False
+        self._card_races = None
+        self._seed = None
+        self._comps = None
         self._reset_meta()
 
     def _reset_meta(self):
@@ -215,6 +219,10 @@ class LiveCoach:
         self.techup = {}
         self._last_tier = None
         self._tier_seen_turn = None
+        self._bans_ready = False
+        self._card_races = None
+        self._seed = None
+        self._comps = None
         self._reset_meta()
 
     def feed(self, line):
@@ -341,19 +349,44 @@ class LiveCoach:
             self._tier_seen_turn = 0
 
         card_races = _load_card_races(os.path.join(_HERE, ".card_races.json"))
+        self._card_races = card_races
         seed_m = _SEED.search("".join(self.cur_lines))
-        seed = seed_m.group(1) if seed_m else None
-        # No seed match (or no pool minions yet) = no ban info: fail OPEN
-        # (None), never "all tribes banned".
-        allowed = None
-        for g in bans_from_log(None, card_races, lines=self.cur_lines):
-            if g["seed"] == seed:
-                allowed = g["allowed"]
-                break
-        self.allowed = allowed
+        self._seed = seed_m.group(1) if seed_m else None
         with open(os.path.join(_HERE, "meta", "comps.json"), encoding="utf-8") as f:
-            comps = json.load(f)
-        self.playable = filter_comps_by_available_tribes(comps, card_races, allowed)
+            self._comps = json.load(f)
+        self._refresh_bans()
+
+    def _refresh_bans(self):
+        """Family-ban info, retried until the pool reveal is complete.
+
+        bans_from_log derives allowed tribes from pool minions SEEN so far,
+        and the pool streams over the game's first seconds — a partial set
+        (one tribe's minions) once froze 9 banned tribes in the UI for a whole
+        game (2026-09-03 screenshot). The real family ban is 5 allowed / 5
+        banned, so only a 5-tribe set is accepted; until then allowed stays
+        None (fail OPEN — no bans shown, every comp playable) and this
+        re-runs on each analyze. More than 5 seen = not a 5/5 ban mode —
+        fail open permanently.
+        """
+        if self._bans_ready or self._comps is None or not self.cur_lines:
+            return
+        allowed = None
+        if self._seed is not None:
+            for g in bans_from_log(None, self._card_races,
+                                   lines=self.cur_lines):
+                if g["seed"] == self._seed:
+                    allowed = g["allowed"]
+                    break
+        if allowed is not None and len(allowed) > 5:
+            self.allowed = None  # not a 5/5 ban mode
+            self._bans_ready = True
+        elif allowed and len(allowed) == 5:
+            self.allowed = allowed
+            self._bans_ready = True
+        else:
+            self.allowed = None  # still streaming — retry next analyze
+        self.playable = filter_comps_by_available_tribes(
+            self._comps, self._card_races, self.allowed)
 
     def ensure_meta(self):
         """Retry the hero parse from outside analyze().
