@@ -43,7 +43,13 @@ _HTML = """<!doctype html>
   .gold { color:#ffd97a; }
   .golden::after { content:" ◆"; color:#ffd97a; }
   .safest { color:var(--good); } .valuable { color:var(--bad); }
-  .thumb { width:44px; height:44px; border-radius:5px; object-fit:cover; flex:none; }
+  .thumb { width:64px; height:64px; border-radius:6px; object-fit:cover; flex:none;
+           cursor:zoom-in; transition:transform .12s ease-out; }
+  /* Hover zoom: cached renders are 256x256, so scale(4) shows them at full
+     size; origin left keeps the popup on-panel (thumbs sit at the row's
+     left edge), z-index floats it above the other boxes. */
+  .thumb:hover { transform:scale(4); transform-origin:left center;
+                 position:relative; z-index:5; }
   .thumbrow { display:flex; align-items:center; gap:8px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:2px 9px; font-size:14px; }
