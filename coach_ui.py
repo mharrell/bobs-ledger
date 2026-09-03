@@ -32,35 +32,39 @@ _HTML = """<!doctype html>
           --dim:#9aa0a8; --good:#5fd97a; --warn:#f0b04a; --bad:#e86a5a; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
-         font:13px/1.45 "Segoe UI", system-ui, sans-serif; padding:8px; }
-  #app { max-width:340px; display:flex; flex-direction:column; gap:8px; }
-  .box { background:var(--panel); border:1px solid #2c2f36; border-radius:6px; padding:8px 10px; }
-  .box h3 { margin:0 0 6px; font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+         font:15px/1.5 "Segoe UI", system-ui, sans-serif; padding:8px; }
+  #app { max-width:520px; display:flex; flex-direction:column; gap:8px; }
+  .box { background:var(--panel); border:1px solid #2c2f36; border-radius:6px; padding:9px 11px; }
+  .box h3 { margin:0 0 6px; font-size:12px; letter-spacing:.06em; text-transform:uppercase;
             color:var(--dim); }
   .row { display:flex; justify-content:space-between; gap:8px; padding:2px 0; }
   .row .l { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .row .r { flex:none; }
   .gold { color:#ffd97a; }
   .golden::after { content:" ◆"; color:#ffd97a; }
   .safest { color:var(--good); } .valuable { color:var(--bad); }
-  .thumb { width:36px; height:36px; border-radius:5px; object-fit:cover; flex:none; }
-  .thumbrow { display:flex; align-items:center; gap:6px; }
+  .thumb { width:44px; height:44px; border-radius:5px; object-fit:cover; flex:none; }
+  .thumbrow { display:flex; align-items:center; gap:8px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
-  .chip { background:var(--panel2); border-radius:10px; padding:1px 8px; font-size:12px; }
+  .chip { background:var(--panel2); border-radius:10px; padding:2px 9px; font-size:14px; }
   .level { font-weight:600; }
-  .topmove { font-size:16px; font-weight:700; color:var(--text); line-height:1.3; }
+  /* Top move: each numbered priority step on its own line */
+  .step { font-size:17px; font-weight:700; line-height:1.45; padding:1px 0; }
+  .stepnum { color:var(--gold); margin-right:7px; }
+  .topmove { font-size:17px; font-weight:700; color:var(--text); line-height:1.4; }
   .topmove .act { color:var(--gold); }
-  .target { font-size:14px; font-weight:600; color:var(--gold); }
+  .target { font-size:15px; font-weight:600; color:var(--gold); }
   .target .pivot { color:var(--warn); }
   .compgroup { display:flex; align-items:baseline; gap:6px; margin-top:5px; }
-  .compgroup .grouplabel { color:var(--dim); font-size:11px; width:44px; flex:none; }
+  .compgroup .grouplabel { color:var(--dim); font-size:13px; width:48px; flex:none; }
   .compgroup .chips { flex:1; }
   .chip.owned { border:1px solid var(--good); color:var(--good); }
   .chip.missing { border:1px dashed var(--dim); color:var(--dim); }
-  .buythis { font-size:15px; font-weight:700; color:var(--gold); }
+  .buythis { font-size:17px; font-weight:700; color:var(--gold); }
   .buythis small { color:var(--dim); font-weight:400; }
   .none { color:var(--dim); font-style:italic; }
   #wait { color:var(--dim); }
-  .score { color:var(--dim); }
+  .score { color:var(--dim); flex:none; }
 </style>
 </head>
 <body>
@@ -135,9 +139,21 @@ function render(a) {
     app.appendChild(box('Choose 1 (' + a.choice.kind + ')', pickBody));
   }
 
-  // Top move — the one decision call
+  // Top move — each numbered priority step on its own line
   if (a.top_move) {
-    app.appendChild(box('Top move', el('div', 'topmove', a.top_move)));
+    const body = el('div', 'steps');
+    a.top_move.split(' · ').forEach(step => {
+      const m = step.match(/^(\d+)\. (.*)$/);
+      const line = el('div', 'step');
+      if (m) {
+        line.appendChild(el('span', 'stepnum', m[1]));
+        line.appendChild(el('span', null, m[2]));
+      } else {
+        line.textContent = step;
+      }
+      body.appendChild(line);
+    });
+    app.appendChild(box('Top move', body));
   }
 
   // Target comp — what to build toward, with its shopping list
