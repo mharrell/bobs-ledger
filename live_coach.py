@@ -300,6 +300,18 @@ class LiveCoach:
             comps = json.load(f)
         self.playable = filter_comps_by_available_tribes(comps, card_races, allowed)
 
+    def ensure_meta(self):
+        """Retry the hero parse from outside analyze().
+
+        The monitor's fingerprint gate can't fire while friendly is None
+        (None == None), and analyze() — which does this parse — is only called
+        on a fingerprint change, so a game that starts with the monitor already
+        running would deadlock at None forever. Calling this each tick breaks
+        the cycle: the parse lands, the fingerprint becomes non-None, and the
+        next tick differs from the last state and advises.
+        """
+        self._ensure_meta()
+
     def tavern_offers(self):
         """Minion card ids offered by the tavern right now — excludes the
         friendly player's own minions, which DebugPrintOptions lists as sell
