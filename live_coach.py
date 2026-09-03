@@ -424,6 +424,14 @@ class LiveCoach:
         if self.friendly is None:
             return None  # no game/hero yet — nothing to analyze
         board, _ = self.gs.final_board(self.friendly)
+        if not board and self.gs.snapshots:
+            # A full-board turn's combat teardown removes the tavern board and
+            # the game re-adds it only AFTER the next shop's options print
+            # (2026-09-03 games: the coach saw board 0 for one phase). Until
+            # the real board lands — the fingerprint re-advises when it does —
+            # estimate from the last snapshot instead of advising blind.
+            board = [m for m in self.gs.snapshots[-1]
+                     if m["player"] == self.friendly]
         tier = self.gs.hero_meta.get(self.hero_card, {}).get("tier")
         gold = self.gs.gold.get(self.account) if self.account else None
         scenario = self.actions.scenario()

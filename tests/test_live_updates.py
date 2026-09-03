@@ -136,5 +136,40 @@ class TestLevelCost(unittest.TestCase):
         self.assertNotIn("LEVEL to tier 2", tm)
 
 
+class TestBoardFallback(unittest.TestCase):
+    def test_empty_board_falls_back_to_snapshot(self):
+        """A full-board turn's combat teardown leaves the log's PLAY board
+        empty until after the shop prints (2026-09-03: one phase per game
+        advised on board 0). analyze must estimate from the last snapshot."""
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = 3
+        c.account = "TestAccount"
+        c.playable = {}
+        c.gs.snapshots.append([
+            {"card": "BG33_140", "player": 7, "atk": 2, "health": 2},
+            {"card": "BG33_886", "player": 15, "atk": 3, "health": 3},
+        ])
+        a = c.analyze()
+        self.assertEqual([m["card"] for m in a["board"]], ["BG33_140"])
+
+    def test_real_board_beats_snapshot(self):
+        """When the live PLAY board exists it is used (no snapshot ghosting)."""
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = 3
+        c.account = "TestAccount"
+        c.playable = {}
+        c.gs.snapshots.append([{"card": "BG33_140", "player": 7,
+                                "atk": 2, "health": 2}])
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=X id=99 zone=PLAY "
+               f"zonePos=1 cardId=BG33_886 player=7] tag=ZONE value=PLAY")
+        c.gs.cardtype[99] = "MINION"
+        a = c.analyze()
+        self.assertEqual([m["card"] for m in a["board"]], ["BG33_886"])
+
+
 if __name__ == "__main__":
     unittest.main()

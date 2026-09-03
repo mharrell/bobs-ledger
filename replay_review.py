@@ -123,8 +123,10 @@ def main():
     friendly = _friendly_player(game["heroes"])
     hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
     names = _load_bg_names()
+    place = (hero or {}).get("place")
     print(f"replay review — {os.path.basename(os.path.dirname(path))} "
-          f"game {game_index}/{len(chunks)}, hero={hero['hero_name'] if hero else '?'}")
+          f"game {game_index}/{len(chunks)}, hero={hero['hero_name'] if hero else '?'}"
+          + (f", placement {place}" if place else ""))
 
     phases = _phases(chunk)
     spell_names = _spell_names()
