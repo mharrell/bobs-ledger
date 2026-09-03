@@ -88,6 +88,15 @@ class TestRanking(unittest.TestCase):
         self.assertIsNone(ranked[0][2])
         self.assertEqual(ranked[0][0], "Brand New Hero")
 
+    def test_locked_heroes_filtered_out(self):
+        """Season-pass-locked heroes (the player's list) never get recommended
+        — the log doesn't expose ownership, so the list is maintained in
+        meta/locked_heroes.json."""
+        ranked = rank_choices("hero", [
+            ("Forest Warden Omu", "TB_BaconShop_HERO_23"),
+            ("Reno Jackson", "TB_BaconShop_HERO_41")])
+        self.assertEqual([r[0] for r in ranked], ["Reno Jackson"])
+
     def test_trinkets_ranked_by_meta(self):
         ranked = rank_choices("trinket", [
             ("Stuffed Coin Purse", "BG35_MagicItem_814"),

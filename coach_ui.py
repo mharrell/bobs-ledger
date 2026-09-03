@@ -11,10 +11,14 @@ Usage:
     python coach_ui.py [--port N]     # run the server standalone (empty state)
 """
 import json
+import os
+import re
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from value import _load_bg_names, _load_spell_db
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_PORT = 8747
 
@@ -38,6 +42,8 @@ _HTML = """<!doctype html>
   .gold { color:#ffd97a; }
   .golden::after { content:" ◆"; color:#ffd97a; }
   .safest { color:var(--good); } .valuable { color:var(--bad); }
+  .thumb { width:36px; height:36px; border-radius:5px; object-fit:cover; flex:none; }
+  .thumbrow { display:flex; align-items:center; gap:6px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:1px 8px; font-size:12px; }
   .level { font-weight:600; }
@@ -79,6 +85,22 @@ function box(title, body) {
   if (body) b.appendChild(body);
   return b;
 }
+// Card art thumbnail (img_cache/ via /img/<id>.png, fetched by fetch_art.py).
+// Hides itself gracefully when no art is cached (current-set BG-only cards).
+function thumb(cid) {
+  const img = document.createElement('img');
+  img.className = 'thumb';
+  img.src = '/img/' + cid + '.png';
+  img.alt = '';
+  img.onerror = () => { img.remove(); };
+  return img;
+}
+function thumbRow(cid, name) {
+  const r = el('div', 'row thumbrow');
+  r.appendChild(thumb(cid));
+  r.appendChild(el('span', 'l', name));
+  return r;
+}
 function rankRow(name, score, isTop) {
   const r = el('div', 'row');
   r.appendChild(el('span', 'l ' + (isTop ? 'safest' : 'valuable'), name));
@@ -94,13 +116,14 @@ function render(a) {
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
     const pickBody = el('div', 'pickbody');
     const [name, cid, score, why] = a.choice.ranked[0];
-    pickBody.appendChild(el('div', 'topmove', 'PICK ' + name));
+    const head = el('div', 'thumbrow');
+    head.appendChild(thumb(cid));
+    head.appendChild(el('div', 'topmove', 'PICK ' + name));
+    pickBody.appendChild(head);
     if (why) pickBody.appendChild(el('div', 'none', why));
-    const rest = el('div', 'chips');
+    const rest = el('div', null);
     a.choice.ranked.forEach(([n, c, s, w]) => {
-      const chip = el('span', 'chip', n + (s != null ? ' (' + (w || s.toFixed(1)) + ')' : ''));
-      if (n === name) chip.classList.add('owned');
-      rest.appendChild(chip);
+      rest.appendChild(thumbRow(c, n + (s != null ? '  (' + (w || s.toFixed(1)) + ')' : '')));
     });
     pickBody.appendChild(rest);
     app.appendChild(box('Choose 1 (' + a.choice.kind + ')', pickBody));
@@ -163,8 +186,8 @@ function render(a) {
   // Board
   const boardBody = el('div');
   (a.board || []).forEach(m => {
-    const r = el('div', 'row');
-    r.appendChild(el('span', 'l' + (m.golden ? ' golden' : ''), (m.name || m.card) + ' ' + m.atk + '/' + m.health));
+    const r = thumbRow(m.card, (m.name || m.card) + ' ' + m.atk + '/' + m.health);
+    if (m.golden) r.querySelector('.l').classList.add('golden');
     r.appendChild(el('span', null, m.tribe || ''));
     boardBody.appendChild(r);
   });
@@ -173,12 +196,16 @@ function render(a) {
   // Tavern — the shop's best card (minion or spell), labeled by priority
   if (a.shop_rank && a.shop_rank.length) {
     const top = a.shop_rank[0];
-    app.appendChild(box(a.buy_label || 'Buy this', el('div', 'buythis',
-      top.name + ' <small>score ' + top.score + '</small>')));
+    const buyBox = el('div', 'buythis');
+    buyBox.appendChild(thumb(top.card));
+    const lbl = el('span', null, top.name + ' <small>score ' + top.score + '</small>');
+    buyBox.appendChild(lbl);
+    app.appendChild(box(a.buy_label || 'Buy this', buyBox));
     if (a.shop_rank.length > 1) {
       const shopBody = el('div');
       a.shop_rank.slice(1).forEach(s => {
-        const r = el('div', 'row');
+        const r = el('div', 'row thumbrow');
+        r.appendChild(thumb(s.card));
         r.appendChild(el('span', 'l', s.name + (s.tag ? ' [' + s.tag + ']' : '')));
         r.appendChild(el('span', 'score', s.score.toFixed(0)));
         shopBody.appendChild(r);
@@ -192,7 +219,13 @@ function render(a) {
   // Sell ranking (safest to sell -> most valuable)
   const sellBody = el('div');
   if (a.sell_rank && a.sell_rank.length) {
-    a.sell_rank.forEach((s, i) => sellBody.appendChild(rankRow(s.name, s.score, i < 2)));
+    a.sell_rank.forEach((s, i) => {
+      const r = el('div', 'row thumbrow');
+      r.appendChild(thumb(s.card));
+      r.appendChild(el('span', 'l ' + (i < 2 ? 'safest' : 'valuable'), s.name));
+      r.appendChild(el('span', 'score', s.score.toFixed(0)));
+      sellBody.appendChild(r);
+    });
   } else {
     sellBody.appendChild(el('div', 'none', '—'));
   }
@@ -282,6 +315,15 @@ class _Handler(BaseHTTPRequestHandler):
                 data = json.dumps(_state.analysis) if _state.analysis else "{}"
             self._send(200, "application/json", data.encode())
         else:
+            m = re.match(r"^/img/([A-Za-z0-9_]+)\.png$", self.path)
+            if m:
+                path = os.path.join(_HERE, "img_cache", f"{m.group(1)}.png")
+                if os.path.exists(path):
+                    with open(path, "rb") as f:
+                        self._send(200, "image/png", f.read())
+                    return
+                self._send(404, "text/plain", b"no art cached")
+                return
             self._send(200, "text/html; charset=utf-8", _HTML.encode())
 
     def _send(self, code, ctype, body):

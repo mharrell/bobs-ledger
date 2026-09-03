@@ -86,14 +86,36 @@ def _load_hero_db():
     return {h.get("name"): h for h in items if isinstance(h, dict) and h.get("name")}
 
 
+def _locked_heroes():
+    """Hero names the player cannot pick (season-pass locked).
+
+    Power.log does NOT expose hero ownership — every offered hero carries the
+    same tags — so the player maintains this list once; locked heroes are
+    filtered out of the hero ranking (a recommendation you can't act on is
+    worse than none). Edit meta/locked_heroes.json to add more.
+    """
+    path = os.path.join(_HERE, "meta", "locked_heroes.json")
+    if not os.path.exists(path):
+        return set()
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return {str(n) for n in (data if isinstance(data, list)
+                                 else data.get("locked", []))}
+    except (OSError, json.JSONDecodeError):
+        return set()
+
+
 def rank_choices(kind, options, board=None, comps=None):
     """Rank a pending choice's options. Returns [(name, card_id, score, why)].
 
     `options`: [(entity_name, card_id)] from the choice block. `board`/`comps`
-    feed the synergy terms (dominant tribe, comp fit).
+    feed the synergy terms (dominant tribe, comp fit). Locked heroes (the
+    player's list) are filtered out of hero rankings.
     """
     if kind == "hero":
-        return _rank_heroes(options)
+        locked = _locked_heroes()
+        return _rank_heroes([o for o in options if o[0] not in locked])
     if kind == "trinket":
         return _rank_trinkets(options, board)
     if kind == "discover":
