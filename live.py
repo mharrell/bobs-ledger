@@ -176,9 +176,14 @@ def monitor(path, poll=1.0):
                 # then again on every mid-turn change (buy, roll, play, sell).
                 # The empty-shop gap right after a buy (before the game
                 # re-prints the options) can't fire — tavern_offers() is empty.
+                # A None fingerprint (new game, hero not yet parsed) can't
+                # differ from a None last_state, so retry the hero parse each
+                # tick until it lands — otherwise the game never advises.
                 if in_action and coach.tavern_offers():
                     state = coach.state_fingerprint()
-                    if state != last_state:
+                    if state is None:
+                        coach.ensure_meta()
+                    elif state != last_state:
                         last_state = state
                         _advise(coach)
                 # A pending pick outside the buy phase (hero selection has no

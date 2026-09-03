@@ -26,6 +26,40 @@ class TestRealLog(unittest.TestCase):
         if not self.log:
             self.skipTest("no Hearthstone session log found")
 
+    def test_turn_one_advises_when_monitor_started_before_game(self):
+        """Regression: a game that starts while live.py is already running
+        deadlocked at turn 1. The monitor only calls analyze() (which parses
+        the hero) when the fingerprint CHANGES, but a fresh game's fingerprint
+        is None and the previous state was also None — so the parse never ran
+        and no turn ever advised (only the hero pick showed, which ranks
+        without the hero). ensure_meta() must flip None -> parseable.
+        """
+        with open(self.log, encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+        starts = [i for i, l in enumerate(lines)
+                  if "CREATE_GAME" in l and "GameState" in l]
+        if not starts:
+            self.skipTest(f"{self.log} contains no Battlegrounds game")
+        coach = live_coach.LiveCoach()
+        for line in lines[starts[0]:]:
+            coach.feed(line)
+            # Stop at the first shop offers of turn 1 — the exact moment the
+            # monitor's fingerprint gate first sees a buy phase.
+            if (coach.actions.in_buying and coach.shop_cards
+                    and coach.state_fingerprint() is None):
+                break
+        else:
+            self.skipTest(f"{self.log} never reaches a turn-1 shop "
+                          f"(short/mid-loading session)")
+        # Deadlock precondition: feeding alone never parses the hero, so the
+        # fingerprint is still None here (monitor-side: state == last_state).
+        self.assertIsNone(coach.state_fingerprint())
+        coach.ensure_meta()  # the fix: the monitor retries this each tick
+        self.assertIsNotNone(coach.state_fingerprint(),
+                             "ensure_meta did not parse the hero from "
+                             "lines already fed")
+        self.assertIsNotNone(coach.analyze())
+
     def test_turns_and_board_are_plausible(self):
         with open(self.log, encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
