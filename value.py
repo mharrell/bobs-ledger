@@ -192,7 +192,7 @@ def _spell_score(spell, board_minions, names, scenario=None):
     the engine-fuel bonus when the board runs a cast-spell engine: the spell
     converts spare gold into the engine's per-cast growth.
     """
-    cost = spell.get("cost") or 1
+    cost = spell.get("cost") or spell.get("tier") or 1
     points = _spell_effect(spell, len(board_minions or []))
     fuel = _spell_fuel_bonus(board_minions, names, scenario,
                              extra_casts=_extra_casts(spell))
@@ -548,8 +548,9 @@ def top_move(analysis):
                               + (f" — {spare} left" if spare else ""))
                 budget = spare  # buys come out of the leftover, not the purse
         else:
+            tail = "buy cheap / roll meanwhile" if gold > 0 else "roll meanwhile"
             level_lead = (f"LEVEL next turn — {level_cost - gold} short; "
-                          f"buy cheap / roll meanwhile")
+                          f"{tail}")
     if level_lead:
         parts.append(level_lead)
 

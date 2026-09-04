@@ -18,7 +18,7 @@ import time
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from value import _load_bg_names, _load_spell_db
+from value import _load_bg_names, _load_card_db, _load_spell_db
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -307,7 +307,8 @@ function render(a) {
     const buyBox = el('div', 'buythis');
     buyBox.appendChild(thumb(stepCard, stepName));
     buyBox.appendChild(el('span', null, stepName + '  '));
-    if (s) buyBox.appendChild(el('small', null, 'score ' + s.score));
+    if (s) buyBox.appendChild(el('small', null,
+      'score ' + s.score + (s.price != null ? ' · ' + s.price + 'g' : '')));
     decide.appendChild(box(a.buy_label || 'Buy this', buyBox));
   }
 
@@ -332,7 +333,9 @@ function render(a) {
       const tagCls = s.tag ? ' tag-' + s.tag : '';
       r.appendChild(el('span', 'l' + tagCls,
         s.name + (s.tag ? '  [' + s.tag + ']' : '')));
-      r.appendChild(el('span', 'score', s.score.toFixed(0)));
+      const sc = el('span', 'score',
+        (s.price != null ? s.price + 'g · ' : '') + s.score.toFixed(0));
+      r.appendChild(sc);
       shopBody.appendChild(r);
     });
     market.appendChild(box('Tavern shop (minions + spells)', shopBody));
@@ -463,11 +466,18 @@ def render_json(analysis):
     a["sell_rank"] = sell
     # Tag shop entries by comp membership (core/addon) or kind (spell), so the
     # shop list shows why each card matters without opening the comp DB.
+    # Each row also carries its tavern price (minion = tier, spell = cost) —
+    # the price model is otherwise invisible, and a wrong one ("thinks
+    # minions cost 1 gold") becomes instantly diagnosable.
     tc = analysis.get("target_cards") or {}
     core = {c["card"] for c in tc.get("core", [])}
     addons = {c["card"] for c in tc.get("addons", [])}
-    spells = set(_load_spell_db())
+    spell_db = _load_spell_db()
+    spells = set(spell_db)
+    prices = {c: (v or {}).get("tier") for c, v in _load_card_db().items()}
+    prices.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
     a["shop_rank"] = [dict(card=c, name=names.get(c, c), score=round(v),
+                           price=prices.get(c),
                            tag=("core" if c in core else
                                 "addon" if c in addons else
                                 "spell" if c in spells else None))
