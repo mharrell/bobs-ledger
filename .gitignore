@@ -24,6 +24,9 @@ hearth-coach/.art_miss.json
 # Per-user advisory telemetry (the beta corpus pairs these with Power.logs)
 hearth-coach/decision_logs/
 
+# Packaged corpus bundles awaiting upload
+hearth-coach/corpus_out/
+
 # Generated patch-check artifacts (review reports + last-seen state)
 hearth-coach/patch_reports/
 hearth-coach/meta/.patch_state.json
