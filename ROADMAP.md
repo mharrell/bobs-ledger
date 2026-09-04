@@ -221,6 +221,26 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       from the full purse. Every level step now carries its reason.
       Remaining gates (curve baseline, opponent estimate) tracked in the
       spec.
+- [x] **Level decision gates 3+4** (2026-09-04, same model — the scout):
+      (3) **Turn baseline**: `build_baseline.py` mines the local corpus
+      (14 games at build time) into `meta/turn_baseline.json` — the
+      median friendly-board and fought-opponent-board stat totals per
+      turn, the "what does a board at turn N look like" prior. Re-run
+      it as the corpus grows. (4) **Opponent estimate**: the log carries
+      `NEXT_OPPONENT_PLAYER_ID` (announced each buy phase on the friendly
+      hero/account entity), and every combat we fight logs the
+      opponent-side board under a fixed id (real per-player ids are not
+      recoverable from combat entities — they share the opponent-side
+      container). The pairing maps each fought board to its announced
+      opponent, so the announced next opponent's LAST-KNOWN board is
+      exactly the buy-phase preview the player sees. Analysis exposes
+      `board_stats` / `opp_stats` (exact) / `lobby_opp` (median of every
+      board we've fought) / `baseline_opp` (corpus prior); the state
+      strip shows "you X stats · ~Y theirs" and the level gates' reasons
+      carry the comparison ("your 7 vs their ~16"). Shadybunny's Q0 is
+      now data-grounded: ≥1.5x their board and not losing → the level
+      reason says "you're strong — convert it into a tier". Next:
+      a real combat forecast (positioning/keywords) to ground gate 5.
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored

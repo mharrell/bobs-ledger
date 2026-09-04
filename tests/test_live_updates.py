@@ -260,6 +260,22 @@ class TestLevelGates(unittest.TestCase):
         tm = top_move(a)
         self.assertTrue(tm.startswith("1. LEVEL "), tm)
 
+    def test_flip_reason_carries_scout_numbers(self):
+        a, top_move = self._analysis(damage_last=8, loss_streak=2, tier=3)
+        a["board_stats"] = 27
+        a["opp_stats"] = 90
+        tm = top_move(a)
+        self.assertIn("your 27 vs their 90", tm)
+
+    def test_strong_board_converts_to_level(self):
+        """Shadybunny's Q0: already winning — strength converts into a
+        tier, not into more tempo."""
+        a, top_move = self._analysis()
+        a["board_stats"] = 300
+        a["opp_stats"] = 90
+        tm = top_move(a)
+        self.assertIn("you're strong — convert it into a tier", tm)
+
     def test_token_loss_does_not_flip(self):
         """A 2-damage combat is a won fight, not a tempo alarm."""
         a, top_move = self._analysis(damage_last=2, loss_streak=0)
@@ -316,6 +332,71 @@ class TestArmorFlow(unittest.TestCase):
         a = c.analyze()
         self.assertIsNone(a["damage_last"])  # armor went UP: not a loss
         self.assertEqual(a["loss_streak"], 0)
+
+
+class TestOpponentScout(unittest.TestCase):
+    """Gates 3+4 (analysis/LEVELING_MODEL.md): every fight logs the
+    opponent-side board (fixed id 11) under the announced NEXT_OPPONENT id;
+    the buy-phase preview of the next opponent is that player's last-known
+    board; lobby median falls back for never-fought opponents."""
+
+    HERO = ("Entity=[entityName=H id=9 zone=PLAY zonePos=1 "
+            "cardId=BG30_HERO_100 player=3]")
+    OPP = "Entity=[entityName=A id=50 zone=PLAY zonePos=1 cardId=BG33_886 player=11]"
+
+    def _coach(self):
+        c = LiveCoach()
+        c.friendly = 3
+        c.hero_card = "BG30_HERO_100"
+        c.account = "TestAccount"
+        c.playable = {}
+        return c
+
+    def test_combat_board_mapped_to_announced_opponent(self):
+        c = self._coach()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 1; pairing takes over
+        c.gs.cardtype[50] = "MINION"
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")  # played
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        a = c.analyze()
+        self.assertEqual(c._opp_boards.get(4, {}).get("stats"), 8)
+        self.assertEqual(a["last_opp_stats"], 8)
+        self.assertEqual(c.next_opponent, 4)
+        self.assertEqual(a["opp_stats"], 8)
+        self.assertEqual(a["board_stats"], 0)
+        self.assertEqual(a["lobby_opp"], 8)
+
+    def test_unfought_next_opponent_falls_back(self):
+        c = self._coach()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=6")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        a = c.analyze()
+        self.assertEqual(c.next_opponent, 6)
+        self.assertIsNone(a["opp_stats"])  # player 6 never fought
+        self.assertIsNone(a["last_opp_stats"])
+
+    def test_survivors_not_starting_board(self):
+        """The captured board is the opponent's POST-combat board (exactly
+        what the buy-phase preview shows): a minion leaving PLAY updates it."""
+        c = self._coach()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")
+        c.gs.cardtype[50] = "MINION"
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=REMOVEDFROMGAME")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        a = c.analyze()
+        self.assertIsNone(a["last_opp_stats"])  # board wiped: no survivors
 
 
 class TestBoardFallback(unittest.TestCase):

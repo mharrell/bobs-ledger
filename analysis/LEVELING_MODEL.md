@@ -81,12 +81,29 @@ target comp + shopping list, hero + trinket, armor delta (loss streak —
 needs tracking per phase).
 
 Need (build order):
-1. **Armor-flow tracking** (per-phase armor delta) — cheapest, unlocks
-   Q0 and gate 2.
-2. **Shopping-list tier filter** — comps.json already carries core/
-   addon tiers; filter by tier+1 vs owned.
-3. **Turn baseline** — per-turn expected board stats from our corpus
-   (replay_stats can emit "median stat total by turn").
-4. **Opponent estimate** — parse next/last opponent board from the log;
-   "your ~47 vs their ~90" grounds Q0/Q2 and gate 5. The strongest
-   single input; the data asset the whole pattern is built on.
+1. **Armor-flow tracking** (per-phase armor delta) — DONE 2026-09-04
+   (gates 1+2): `damage_last` + `loss_streak`; two straight losses or
+   one ≥10 hit at tier ≥3 defer the level with a stated reason.
+2. **Shopping-list tier filter** — DONE 2026-09-04 (gates 1+2):
+   `_comp_needs_by_tier` splits the comp's unowned pieces by tier;
+   pieces only on the current tier → stay and buy, stated.
+3. **Turn baseline** — DONE 2026-09-04 (gate 3): `build_baseline.py`
+   mines the local corpus into `meta/turn_baseline.json` (median
+   friendly + fought-opponent board stats per turn); the coach falls
+   back down the turn ladder when a turn has no samples.
+4. **Opponent estimate** — DONE 2026-09-04 (gate 4): the log carries
+   `NEXT_OPPONENT_PLAYER_ID` (announced each buy phase on the friendly
+   hero/account), and every combat WE fight logs the opponent-side
+   board (fixed player id 11 — real ids are not recoverable). The
+   pairing maps each combat board to its announced opponent, so the
+   announced next opponent's LAST-KNOWN board is exactly the buy-phase
+   preview the player sees; never-fought opponents fall back to the
+   lobby median, then the corpus baseline. Live: analysis exposes
+   `board_stats`, `opp_stats` (exact, last-known), `lobby_opp`,
+   `baseline_opp`; the state strip shows "you X stats · ~Y theirs",
+   and the level gates' reasons carry the comparison ("your 7 vs
+   their ~16"). Shadybunny's Q0 uses it: already ≥1.5x their board and
+   not losing → "you're strong — convert it into a tier".
+5. **Next: combat forecast** — a real "will I win the next fight"
+   estimate (positioning, keywords, deathrattles) would ground gate 5
+   properly; the stat-total comparison is the v1 proxy.
