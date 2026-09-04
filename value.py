@@ -520,6 +520,7 @@ def top_move(analysis):
     level_lead = None
     budget = gold
     level_next = None  # a LEVEL step that trails the buy instead of leading
+    level_next_note = None  # can't afford it this turn — a plan, not an action
     if tier and tier < 6:
         # Real upgrade price: the live TechUp button COST (tier+3 base,
         # dropping 1 per turn you wait) — tier+1 was the old wrong model.
@@ -548,9 +549,10 @@ def top_move(analysis):
                               + (f" — {spare} left" if spare else ""))
                 budget = spare  # buys come out of the leftover, not the purse
         else:
-            tail = "buy cheap / roll meanwhile" if gold > 0 else "roll meanwhile"
-            level_lead = (f"LEVEL next turn — {level_cost - gold} short; "
-                          f"{tail}")
+            # Not affordable this turn: a next-turn plan, not an action. It
+            # must NOT headline the numbered list (2026-09-04: the Buy the
+            # player can actually do now must read as step 1) — it trails.
+            level_next_note = f"LEVEL next turn — {level_cost - gold} short"
     if level_lead:
         parts.append(level_lead)
 
@@ -616,6 +618,16 @@ def top_move(analysis):
         worst = analysis["sell_rank"][0]  # safest to sell
         if worst[1] < 15:  # a clear filler (low value)
             parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
+    # The deferred level trails every this-turn action. The spare-gold tail
+    # depends on what was already listed: after a concrete buy or roll,
+    # leftover gold just rolls; with nothing actionable, buying cheap first
+    # is still the move.
+    if level_next_note:
+        spent = bool(analysis.get("buy_step_card")
+                     or analysis.get("buy_step_roll"))
+        tail = "roll meanwhile" if spent or not gold \
+            else "buy cheap / roll meanwhile"
+        parts.append(f"{level_next_note}; {tail}")
     if parts:
         return " · ".join(f"{i}. {p}" for i, p in enumerate(parts, 1))
     # Nothing pressing: if the board is full and has end-of-turn scaling, the

@@ -247,6 +247,17 @@ class TestBuyStep(unittest.TestCase):
         self.assertTrue(a["buy_step_roll"].startswith("roll — "))
         self.assertIn("roll —", tm)
 
+    def test_deferred_level_trails_the_buy(self):
+        """Gold 6 with the level costing 7: 'LEVEL next turn' is a plan, not
+        an action — the affordable Buy must read as step 1 (2026-09-04: the
+        plan led with the upgrade and buried the buy as step 2)."""
+        a, hi, lo, top_move = self._analysis(6)
+        a["level_cost"] = 7
+        tm = top_move(a)
+        self.assertTrue(tm.startswith(f"1. Buy "), tm)
+        self.assertLess(tm.index("Buy"), tm.index("LEVEL next turn"))
+        self.assertTrue(tm.rstrip().endswith("roll meanwhile"), tm)
+
 
 class TestBanGate(unittest.TestCase):
     def test_partial_pool_reveal_fails_open(self):
