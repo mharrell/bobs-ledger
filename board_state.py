@@ -64,6 +64,7 @@ class GameState:
         self.gold_temp = {}     # account -> TEMP_RESOURCES (hero-power gold)
         self.gold = {}          # account -> available gold (purse - spent)
         self.hero_meta = defaultdict(dict)  # hero card -> {tier, armor}
+        self.hero_stat_log = []  # (card, tag, value) hero ARMOR/HEALTH writes
         self.snapshots = []     # board snapshots, one per minion entering PLAY
         self.current_entity = None
         self._game_ended = False  # set on PLAYSTATE=WON/LOST; stops snapshots
@@ -180,6 +181,7 @@ class GameState:
             if HERO_CARD.match(cid):
                 # The friendly hero's health — the dying-vs-leveling signal.
                 self.hero_meta[cid]["health"] = int(value)
+                self.hero_stat_log.append((cid, "HEALTH", int(value)))
         elif tag == "CARDRACE":
             self.tribe[eid] = value
         elif tag == "TECH_LEVEL":
@@ -192,6 +194,7 @@ class GameState:
             cid = self.card.get(eid, "")
             if HERO_CARD.match(cid):
                 self.hero_meta[cid]["armor"] = int(value)
+                self.hero_stat_log.append((cid, "ARMOR", int(value)))
         elif tag in KEYWORDS:
             if value == "1":
                 self.keywords[eid].add(tag)

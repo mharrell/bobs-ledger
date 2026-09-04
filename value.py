@@ -512,14 +512,21 @@ def top_move(analysis):
     parts = []
 
     # 1. LEVEL — the tier gates the whole shop, so it leads whenever relevant.
-    #    EXCEPT when leveling would cost the board: dying (health + armor
-    #    low) or missing the shop's top card when it's a target-comp core
-    #    ("we can't upgrade the board if we're going to die / miss important
-    #    minions as a result" — 2026-09-03). Then the BUY leads and the level
-    #    follows from what's left.
+    #    The gates and their reasons follow analysis/LEVELING_MODEL.md:
+    #    Q0 flow (armor/HP dropped last combat = losing, stabilize first),
+    #    Q1 payoff (the shopping list filtered by tier — leveling LOWERS the
+    #    odds of finding the current tier's cards, so staying is a decision,
+    #    not an omission), Q2 stock (effective health), and the curve prior
+    #    as the default. EXCEPT when leveling would cost the board (dying,
+    #    loss streak, or the shop's top card is a comp core and both don't
+    #    fit — "we can't upgrade the board if we're going to die / miss
+    #    important minions as a result", 2026-09-03), the BUY leads and the
+    #    level trails with its reason.
     level_lead = None
     budget = gold
-    level_next = None  # a LEVEL step that trails the buy instead of leading
+    level_next = None      # a LEVEL step that trails the buy instead of leading
+    level_flip_why = None  # the stated reason the level deferred to the buy
+    stay_note = None       # staying ON this tier is itself a decision (Q1)
     if tier and tier < 6:
         # Real upgrade price: the live TechUp button COST (tier+3 base,
         # dropping 1 per turn you wait) — tier+1 was the old wrong model.
@@ -530,7 +537,10 @@ def top_move(analysis):
             spare = gold - level_cost
             health = analysis.get("health")
             armor = analysis.get("armor") or 0
-            dying = health is not None and health + armor <= 12
+            eff = health + armor if health is not None else None
+            dying = eff is not None and eff <= 12
+            damage_last = analysis.get("damage_last")
+            loss_streak = analysis.get("loss_streak") or 0
             headline = analysis.get("buy_this")
             h_cost = costs.get(headline) if headline else None
             core_ids = {c.get("card")
@@ -540,11 +550,33 @@ def top_move(analysis):
             # Can't have both the level and the shop's top card.
             locked_out = (h_cost is not None and gold >= h_cost
                           and spare < h_cost)
-            if (dying or core_pick) and locked_out:
+            # Q1 payoff: unowned pieces of the target comp, split by which
+            # tavern tier holds them (copies of what we own don't count).
+            needs_next, needs_here = _comp_needs_by_tier(analysis, card_db)
+            # Q0 flow: armor/HP drops are the loss streak. Early-game losses
+            # (tiers 1-2) are normal — the flow gate is a tier-3+ (mid-game)
+            # concept, matching the shop-driven vs board-driven split.
+            flip_why = None
+            if dying:
+                flip_why = "too fragile to level first"
+            elif tier >= 3 and loss_streak >= 2:
+                flip_why = (f"lost {loss_streak} straight fights — "
+                            f"stabilize first")
+            elif tier >= 3 and damage_last and damage_last >= 10:
+                flip_why = f"took {damage_last} last fight — stabilize first"
+            if (flip_why or core_pick) and locked_out:
                 budget = gold  # the buy comes first, from the full purse
                 level_next = True
+                level_flip_why = flip_why or "the shop's top card is a comp core"
+            elif needs_here and not needs_next:
+                # Q1: what the comp needs is ON this tier — leveling would
+                # lower the odds of finding it. Stay and buy.
+                budget = gold
+                stay_note = True
             else:
-                level_lead = (f"LEVEL to tier {tier + 1}"
+                why = ("the comp's next pieces live there" if needs_next
+                       else "standard curve")
+                level_lead = (f"LEVEL to tier {tier + 1} ({why})"
                               + (f" — {spare} left" if spare else ""))
                 budget = spare  # buys come out of the leftover, not the purse
         # else: the level is out of reach this turn. It stays OUT of the
@@ -608,9 +640,11 @@ def top_move(analysis):
                     parts.append(f"LEVEL to tier {tier + 1} — "
                                  f"{leftover - level_cost} left after")
                 else:
-                    parts.append(f"LEVEL next turn — "
-                                 f"{level_cost - leftover} short after the buy; "
-                                 f"roll meanwhile")
+                    short = f"{level_cost - leftover} short after the buy"
+                    parts.append((f"LEVEL next turn ({level_flip_why}) — "
+                                  f"{short}; roll meanwhile")
+                                 if level_flip_why else
+                                 f"LEVEL next turn — {short}; roll meanwhile")
     # 4. Sell only to make room: board full AND buying something that needs
     # the slot. If there's space, selling is unnecessary.
     if bought is not None and len(analysis.get("board", [])) >= 7 \
@@ -618,6 +652,11 @@ def top_move(analysis):
         worst = analysis["sell_rank"][0]  # safest to sell
         if worst[1] < 15:  # a clear filler (low value)
             parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
+    # The stay decision (Q1) trails the buys: what the comp needs is ON this
+    # tier, and the player should know the level was declined on purpose.
+    if stay_note and tier:
+        parts.append(f"stay on tier {tier} — your comp's missing pieces are "
+                     f"on this tier; leveling would lower the odds")
     if parts:
         return " · ".join(f"{i}. {p}" for i, p in enumerate(parts, 1))
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
@@ -714,6 +753,30 @@ def _corpus_bonus(comp_name, weight=0.5):
 
 def _tier_score(t):
     return _TIER_SCORE.get((t or "").upper(), 1)
+
+
+def _comp_needs_by_tier(analysis, card_db):
+    """Unowned pieces of the target comp, split by which tavern tier holds
+    them relative to the current tier: (needs_next, needs_here) (Q1,
+    analysis/LEVELING_MODEL.md — leveling lowers the odds of finding the
+    CURRENT tier's cards, so where the missing pieces live decides)."""
+    tc = analysis.get("target_cards")
+    tier = analysis.get("tier")
+    if not tc or tier is None:
+        return 0, 0
+    nxt = here = 0
+    for section in ("core", "addons"):
+        for row in tc.get(section) or []:
+            if row.get("owned"):
+                continue
+            t = (card_db.get(row.get("card")) or {}).get("tier")
+            if t is None:
+                continue
+            if t == tier + 1:
+                nxt += 1
+            elif t == tier:
+                here += 1
+    return nxt, here
 
 
 def comp_target(board, comps, recent_cards=None):

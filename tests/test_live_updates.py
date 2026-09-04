@@ -181,6 +181,143 @@ class TestLevelVsBoard(unittest.TestCase):
         self.assertTrue(tm.startswith("1. LEVEL "), tm)
 
 
+class TestLevelGates(unittest.TestCase):
+    """The leveling gates of analysis/LEVELING_MODEL.md, each with a stated
+    reason: armor flow (Q0), the shopping-list tier filter (Q1), and the
+    curve prior as the default."""
+
+    def _analysis(self, gold=6, level_cost=5, health=40, armor=0,
+                  damage_last=None, loss_streak=0, next_pieces=(),
+                  here_pieces=(), tier=2):
+        from value import top_move, _load_card_db
+        db = _load_card_db()
+
+        def cid_of(t, exclude=()):
+            return next(c for c, v in db.items()
+                        if v.get("tier") == t and c not in exclude)
+
+        t1 = cid_of(1)   # shop headline the budget can cover after a level
+        t2 = cid_of(2, exclude=(t1,))
+        t3 = cid_of(3, exclude=(t1, t2))
+        t4 = cid_of(4, exclude=(t1, t2, t3))
+
+        def row(cid):
+            return {"card": cid, "name": cid, "owned": False}
+
+        a = {"tier": tier, "gold": gold, "level_cost": level_cost,
+             "health": health, "armor": armor, "turn": 7,
+             "damage_last": damage_last, "loss_streak": loss_streak,
+             "board": [], "shop_rank": [(t4, 9.0), (t1, 4.0)],
+             "buy_this": t4, "playable_comps": {}, "choice": None,
+             "target_comp": "Test", "sell_rank": [],
+             "target_cards": {"name": "Test",
+                              "core": [row(c) for c in next_pieces],
+                              "addons": [row(c) for c in here_pieces]}}
+        return a, top_move
+
+    def test_payoff_next_tier_reason(self):
+        """A comp piece the player needs sits at tier+1: the level states
+        the payoff as its reason."""
+        a, top_move = self._analysis(next_pieces=("TIER3X",))
+        # point the comp piece at a real tier-3 card
+        from value import _load_card_db
+        t3 = next(c for c, v in _load_card_db().items() if v.get("tier") == 3)
+        a["target_cards"]["core"] = [{"card": t3, "name": t3, "owned": False}]
+        tm = top_move(a)
+        self.assertTrue(tm.startswith(
+            "1. LEVEL to tier 3 (the comp's next pieces live there)"), tm)
+
+    def test_needs_here_stays_and_buys(self):
+        """The comp's missing pieces are ON the current tier: leveling would
+        LOWER the odds of finding them — stay is stated, buy leads."""
+        from value import _load_card_db
+        db = _load_card_db()
+        t2 = next(c for c, v in db.items() if v.get("tier") == 2)
+        a, top_move = self._analysis(here_pieces=(t2,))
+        tm = top_move(a)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIn("stay on tier 2", tm)
+        self.assertIn("lower the odds", tm)
+
+    def test_loss_streak_defers_level_with_reason(self):
+        """Two straight real losses and the level + top card can't both fit:
+        buy tempo, level trails with the reason stated."""
+        a, top_move = self._analysis(damage_last=8, loss_streak=2, tier=3)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("lost 2 straight fights", tm)
+        self.assertIn("LEVEL next turn", tm)
+
+    def test_single_real_loss_defers_with_reason(self):
+        a, top_move = self._analysis(damage_last=12, loss_streak=1, tier=3)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("took 12 last fight", tm)
+
+    def test_early_game_losses_do_not_flip(self):
+        """Tiers 1-2 are shop-driven (Jeef): early losses don't gate levels."""
+        a, top_move = self._analysis(damage_last=4, loss_streak=3, tier=2)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. LEVEL "), tm)
+
+    def test_token_loss_does_not_flip(self):
+        """A 2-damage combat is a won fight, not a tempo alarm."""
+        a, top_move = self._analysis(damage_last=2, loss_streak=0)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. LEVEL "), tm)
+
+    def test_curve_prior_names_itself(self):
+        a, top_move = self._analysis()
+        tm = top_move(a)
+        self.assertIn("LEVEL to tier 3 (standard curve)", tm)
+
+
+class TestArmorFlow(unittest.TestCase):
+    """Armor/HP drops between buy phases are the loss-streak signal (Q0,
+    analysis/LEVELING_MODEL.md): 'took N last fight' / 'lost N straight'."""
+
+    HERO = ("Entity=[entityName=H id=9 zone=PLAY zonePos=1 "
+            "cardId=BG30_HERO_100 player=7]")
+
+    def test_damage_last_and_streak(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "BG30_HERO_100"
+        c.account = "TestAccount"
+        c.playable = {}
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=HEALTH value=30")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=20")
+        c.actions.turn = 1
+        a = c.analyze()
+        self.assertIsNone(a["damage_last"])  # no prior phase to compare
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=12")
+        c.actions.turn = 2
+        a = c.analyze()
+        self.assertEqual(a["damage_last"], 8)
+        self.assertEqual(a["loss_streak"], 1)
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=4")
+        c.actions.turn = 3
+        a = c.analyze()
+        self.assertEqual(a["damage_last"], 8)
+        self.assertEqual(a["loss_streak"], 2)  # two consecutive real losses
+
+    def test_armor_gain_is_not_a_loss(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "BG30_HERO_100"
+        c.account = "TestAccount"
+        c.playable = {}
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=HEALTH value=30")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=4")
+        c.actions.turn = 1
+        c.analyze()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=8")
+        c.actions.turn = 2
+        a = c.analyze()
+        self.assertIsNone(a["damage_last"])  # armor went UP: not a loss
+        self.assertEqual(a["loss_streak"], 0)
+
+
 class TestBoardFallback(unittest.TestCase):
     def test_empty_board_falls_back_to_snapshot(self):
         """A full-board turn's combat teardown leaves the log's PLAY board
