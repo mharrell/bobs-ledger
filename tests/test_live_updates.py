@@ -382,21 +382,25 @@ class TestOpponentScout(unittest.TestCase):
         self.assertIsNone(a["opp_stats"])  # player 6 never fought
         self.assertIsNone(a["last_opp_stats"])
 
-    def test_survivors_not_starting_board(self):
-        """The captured board is the opponent's POST-combat board (exactly
-        what the buy-phase preview shows): a minion leaving PLAY updates it."""
+    def test_deaths_snapshot_the_fought_board(self):
+        """The fullest view of the board we faced wins: combat deaths
+        snapshot the board too (the opponent's minions often enter from
+        SETASIDE, which never fired a snapshot — the Holmes game captured
+        nothing without this), and a minion that died mid-fight still
+        counts as part of the board we faced."""
         c = self._coach()
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
-        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")
         c.gs.cardtype[50] = "MINION"
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=REMOVEDFROMGAME")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
         a = c.analyze()
-        self.assertIsNone(a["last_opp_stats"])  # board wiped: no survivors
+        self.assertEqual(a["last_opp_stats"], 8)
 
 
 class TestBoardFallback(unittest.TestCase):

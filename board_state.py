@@ -169,8 +169,23 @@ class GameState:
             if value == "PLAY" and old == "HAND" and not self._game_ended:
                 if MINION_ONLY.match(self.card.get(eid, "")):
                     self._record_snapshot()
+            # A minion LEAVING PLAY also snapshots: combat deaths are the
+            # first reliable point where BOTH boards are fully set (the
+            # opponent's combat minions often enter from SETASIDE, which
+            # never snapshotting would miss them entirely — the scout's
+            # per-turn capture depends on this, 2026-09-04 Holmes game).
+            elif (old == "PLAY" and value != "PLAY"
+                  and not self._game_ended
+                  and MINION_ONLY.match(self.card.get(eid, ""))):
+                self._record_snapshot()
         elif tag == "ZONE_POSITION":
             self.zone_pos[eid] = int(value)
+        elif tag in ("CONTROLLER", "PLAYER"):
+            # FULL_ENTITY blocks assign ownership via CONTROLLER (a
+            # TAG_CHANGE carries it in the Entity=[...player=N] header) —
+            # without this, combat-created minions have player None and the
+            # friendly/opponent split (and the scout) can't tell sides.
+            self.player[eid] = int(value)
         elif tag == "CARDTYPE":
             self.cardtype[eid] = value
         elif tag == "ATK":
