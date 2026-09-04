@@ -497,6 +497,8 @@ class LiveCoach:
             "tier": tier,
             "gold": gold,
             "level_cost": self.level_cost(),
+            "health": self.gs.hero_meta.get(self.hero_card, {}).get("health"),
+            "armor": self.gs.hero_meta.get(self.hero_card, {}).get("armor"),
             "board": board,
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,

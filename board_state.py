@@ -176,6 +176,10 @@ class GameState:
             self.atk[eid] = int(value)
         elif tag == "HEALTH":
             self.health[eid] = int(value)
+            cid = self.card.get(eid, "")
+            if HERO_CARD.match(cid):
+                # The friendly hero's health — the dying-vs-leveling signal.
+                self.hero_meta[cid]["health"] = int(value)
         elif tag == "CARDRACE":
             self.tribe[eid] = value
         elif tag == "TECH_LEVEL":

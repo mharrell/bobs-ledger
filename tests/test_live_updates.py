@@ -136,6 +136,51 @@ class TestLevelCost(unittest.TestCase):
         self.assertNotIn("LEVEL to tier 2", tm)
 
 
+class TestLevelVsBoard(unittest.TestCase):
+    """Leveling that costs the board must not lead: when dying, or when the
+    leftover couldn't buy the shop's top card and it's a target-comp core,
+    the buy comes first (2026-09-03: "we can't upgrade the board if we're
+    going to die / miss important minions as a result")."""
+
+    def _analysis(self, gold=6, level_cost=5, health=None, core_pick=False):
+        from value import top_move, _load_card_db
+        db = _load_card_db()
+        hi = next(cid for cid, v in db.items()
+                  if v.get("tier") == 4)   # costs 4 > spare 1
+        a = {"tier": 2, "gold": gold, "level_cost": level_cost,
+             "health": health, "armor": 0, "board": [],
+             "shop_rank": [(hi, 9.0)], "buy_this": hi,
+             "playable_comps": {}, "choice": None, "target_comp": None,
+             "sell_rank": [],
+             "target_cards": {"core": [{"card": hi}] if core_pick else []}}
+        return a, top_move
+
+    def test_dying_hero_buys_instead_of_levels(self):
+        a, top_move = self._analysis(health=8)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("LEVEL next turn", tm)
+
+    def test_core_card_beats_level(self):
+        a, top_move = self._analysis(health=40, core_pick=True)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("LEVEL next turn", tm)
+
+    def test_level_still_leads_when_both_fit(self):
+        """Healthy, no core pick, and the leftover covers the top card:
+        level-first is unchanged."""
+        a, top_move = self._analysis(gold=10)  # spare 5 >= cost 4
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. LEVEL "), tm)
+        self.assertIn("Buy", tm)
+
+    def test_level_leads_when_healthy_and_no_core(self):
+        a, top_move = self._analysis()  # spare 1 < 4, but nothing important
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. LEVEL "), tm)
+
+
 class TestBoardFallback(unittest.TestCase):
     def test_empty_board_falls_back_to_snapshot(self):
         """A full-board turn's combat teardown leaves the log's PLAY board

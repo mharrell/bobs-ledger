@@ -462,11 +462,15 @@ def top_move(analysis):
     cp1252, so no Unicode arrows.)
 
     Priority order: LEVEL (the tavern tier gates everything; when affordable,
-    buys are budgeted from the LEFTOVER gold, not the full purse), then a
-    forced PICK, then buys/sells. Every buy is priced at what the card
-    actually costs in the tavern: a minion costs its TIER (the card's `cost`
-    field is mana — using it made the coach suggest cards the player couldn't
-    afford, the 2026-09-01 evening complaint), a spell costs `cost`.
+    buys are budgeted from the LEFTOVER gold, not the full purse) — unless
+    taking the level would cost the player the board: when effective health
+    is dying-low, or when the leftover couldn't buy the shop's top card and
+    that card is a core piece of the target comp, the BUY leads and the
+    level follows (or waits a turn). Then a forced PICK, then buys/sells.
+    Every buy is priced at what the card actually costs in the tavern: a
+    minion costs its TIER (the card's `cost` field is mana — using it made
+    the coach suggest cards the player couldn't afford, the 2026-09-01
+    evening complaint), a spell costs `cost`.
     """
     names = _load_bg_names()
     card_db = _load_card_db()
@@ -481,8 +485,14 @@ def top_move(analysis):
     parts = []
 
     # 1. LEVEL — the tier gates the whole shop, so it leads whenever relevant.
+    #    EXCEPT when leveling would cost the board: dying (health + armor
+    #    low) or missing the shop's top card when it's a target-comp core
+    #    ("we can't upgrade the board if we're going to die / miss important
+    #    minions as a result" — 2026-09-03). Then the BUY leads and the level
+    #    follows from what's left.
     level_lead = None
     budget = gold
+    level_next = None  # a LEVEL step that trails the buy instead of leading
     if tier and tier < 6:
         # Real upgrade price: the live TechUp button COST (tier+3 base,
         # dropping 1 per turn you wait) — tier+1 was the old wrong model.
@@ -491,9 +501,25 @@ def top_move(analysis):
             level_lead = f"LEVEL (access to tier {tier + 1})"
         elif gold >= level_cost:
             spare = gold - level_cost
-            level_lead = (f"LEVEL to tier {tier + 1}"
-                          + (f" — {spare} left" if spare else ""))
-            budget = spare  # buys come out of the leftover, not the purse
+            health = analysis.get("health")
+            armor = analysis.get("armor") or 0
+            dying = health is not None and health + armor <= 12
+            headline = analysis.get("buy_this")
+            h_cost = costs.get(headline) if headline else None
+            core_ids = {c.get("card")
+                        for c in ((analysis.get("target_cards") or {})
+                                  .get("core") or [])}
+            core_pick = bool(headline and headline in core_ids)
+            # Can't have both the level and the shop's top card.
+            locked_out = (h_cost is not None and gold >= h_cost
+                          and spare < h_cost)
+            if (dying or core_pick) and locked_out:
+                budget = gold  # the buy comes first, from the full purse
+                level_next = True
+            else:
+                level_lead = (f"LEVEL to tier {tier + 1}"
+                              + (f" — {spare} left" if spare else ""))
+                budget = spare  # buys come out of the leftover, not the purse
         else:
             level_lead = (f"LEVEL next turn — {level_cost - gold} short; "
                           f"buy cheap / roll meanwhile")
@@ -545,6 +571,16 @@ def top_move(analysis):
             analysis["buy_step_card"] = cid
             parts.append(f"Buy {names.get(cid, cid)} "
                          f"({_buy_intention(cid, comp, card_db, spell_db)})")
+            if level_next and tier:
+                level_cost = analysis.get("level_cost") or tier + 1
+                leftover = (gold or 0) - (costs.get(cid) or 0)
+                if leftover >= level_cost:
+                    parts.append(f"LEVEL to tier {tier + 1} — "
+                                 f"{leftover - level_cost} left after")
+                else:
+                    parts.append(f"LEVEL next turn — "
+                                 f"{level_cost - leftover} short after the buy; "
+                                 f"roll meanwhile")
     # 4. Sell only to make room: board full AND buying something that needs
     # the slot. If there's space, selling is unnecessary.
     if bought is not None and len(analysis.get("board", [])) >= 7 \

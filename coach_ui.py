@@ -240,6 +240,13 @@ function render(a) {
   const tier = el('span', null); tier.appendChild(el('span', 'lbl', 'Tier '));
   tier.appendChild(el('span', null, String(a.tier ?? '?')));
   statebar.appendChild(tier);
+  if (a.health != null) {
+    const dying = a.health + (a.armor || 0) <= 12;
+    const hp = el('span', null); hp.appendChild(el('span', 'lbl', 'HP '));
+    hp.appendChild(el('span', dying ? 'bad' : null,
+      a.health + (a.armor ? '+' + a.armor : '')));
+    statebar.appendChild(hp);
+  }
   const turns = (a.scenario || {}).turns;
   if (turns) {
     const t = el('span', null); t.appendChild(el('span', 'lbl', 'Turn '));
