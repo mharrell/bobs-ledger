@@ -12,7 +12,8 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import value
-from value import _spell_effect, _spell_fuel_bonus, _spell_score, shop_ranking, top_move
+from value import (_extra_casts, _spell_effect, _spell_fuel_bonus,
+                   _spell_score, shop_ranking, top_move)
 
 NAMES = value._load_bg_names()
 SPELLS = value._load_spell_db()
@@ -52,6 +53,46 @@ class TestSpellEffect(unittest.TestCase):
         cheap = _spell_score(_spell("Give a minion +3/+1.", cost=1), [], NAMES)
         pricey = _spell_score(_spell("Give a minion +3/+1.", cost=5), [], NAMES)
         self.assertAlmostEqual(cheap, pricey * 5.0)
+
+
+class TestCastGeneratingSpells(unittest.TestCase):
+    """Spells that GENERATE cast events (Spellcraft grants) must credit their
+    engine fuel for every generated cast, not just themselves — the Naga
+    losing-game report: Spitescale Special triggered the per-cast buff 4
+    times, not 1, and that was the difference between dying and surviving."""
+
+    def test_spitescale_generates_three_casts(self):
+        spitescale = _spell("Get 3 random Spellcraft spells.", cost=2,
+                            name="Spitescale Special")
+        self.assertEqual(_extra_casts(spitescale), 3)
+
+    def test_word_number_parsed(self):
+        self.assertEqual(_extra_casts(_spell(
+            "Get two random Spellcraft spells.")), 2)
+
+    def test_plain_spell_generates_nothing(self):
+        self.assertEqual(_extra_casts(_spell("Give a minion +2/+2.")), 0)
+
+    def test_fuel_counts_generated_casts(self):
+        """With a running cast engine, the spellcraft spell's fuel delta is
+        measured at +1+3 casts — strictly bigger than a plain spell's +1."""
+        assert GLAMBOT_ID
+        board = [{"card": GLAMBOT_ID, "atk": 4, "health": 4,
+                  "tribe": "MECHANICAL"}]
+        plain = _spell_fuel_bonus(board, NAMES, {"cast_spell": 4})
+        gen = _spell_fuel_bonus(board, NAMES, {"cast_spell": 4}, extra_casts=3)
+        self.assertGreater(gen, plain)
+
+    def test_generated_fuel_lifts_the_score(self):
+        assert GLAMBOT_ID
+        board = [{"card": GLAMBOT_ID, "atk": 4, "health": 4,
+                  "tribe": "MECHANICAL"}]
+        gen_spell = _spell("Get 3 random Spellcraft spells.", cost=2,
+                           name="Spitescale Special")
+        plain = _spell("Give a minion +2/+2.", cost=2)
+        gen_score = _spell_score(gen_spell, board, NAMES, {"cast_spell": 4})
+        plain_score = _spell_score(plain, board, NAMES, {"cast_spell": 4})
+        self.assertGreater(gen_score, plain_score)
 
 
 @unittest.skipUnless(GLAMBOT_ID, "Glambot missing from the BG pool")
