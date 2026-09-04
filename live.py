@@ -22,6 +22,7 @@ from choices import choice_kind, rank_choices
 from coach import describe
 from live_coach import LiveCoach
 import coach_ui
+import decision_log
 
 
 def find_active_log():
@@ -44,7 +45,7 @@ _last_board = None  # (card, atk, health) fingerprint of the last advised board
 _last_state = None  # last fingerprint the console was advised on
 
 
-def _advise_pick(coach):
+def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     """A pending pick with no shop yet (hero selection) — rank it directly.
 
     The buy-phase loop can't fire here: hero selection has no tavern offers
@@ -77,6 +78,8 @@ def _advise_pick(coach):
         return
     _last_state = state
     coach_ui.update_analysis(a)
+    decision_log.record(a, log_path=log_path, log_offset=log_offset,
+                        game_no=game_no)
     fallback = f" (or {ranked[1][0]} if locked)" if (kind == "hero" and len(ranked) > 1) else ""
     print("\n" + "=" * 52)
     print(f"CHOOSE 1 ({kind}) — pick {best[0]}{fallback}")
@@ -86,7 +89,7 @@ def _advise_pick(coach):
     print("=" * 52 + "\n", flush=True)
 
 
-def _advise(coach, force=False):
+def _advise(coach, force=False, log_path=None, log_offset=None, game_no=None):
     """Analyze the current incremental state, push to the overlay, and print.
 
     Skips the text print if the decision state (gold, tier, board, shop) is
@@ -94,6 +97,8 @@ def _advise(coach, force=False):
     state fingerprint — not just the board — is the dedup key, so a mid-turn
     buy/roll (gold down, shop changed) re-advices with the new affordability
     and remaining offers, while unrelated log chatter doesn't re-print.
+    Each NEW advisory is also recorded to the decision log (log basename +
+    byte offset are the join keys with the Power.log in the beta corpus).
     """
     global _last_state
     try:
@@ -105,6 +110,8 @@ def _advise(coach, force=False):
         if fingerprint == _last_state and not force:
             return  # nothing the advice depends on has changed
         _last_state = fingerprint
+        decision_log.record(a, log_path=log_path, log_offset=log_offset,
+                            game_no=game_no)
         print("\n" + "=" * 52)
         print(describe(a))
         print("=" * 52 + "\n", flush=True)
@@ -185,12 +192,14 @@ def monitor(path, poll=1.0):
                         coach.ensure_meta()
                     elif state != last_state:
                         last_state = state
-                        _advise(coach)
+                        _advise(coach, log_path=path, log_offset=last_offset,
+                                game_no=coach.game_no)
                 # A pending pick outside the buy phase (hero selection has no
                 # tavern offers and the full analysis isn't ready yet) still
                 # gets its Choose-1 advice.
                 else:
-                    _advise_pick(coach)
+                    _advise_pick(coach, log_path=path, log_offset=last_offset,
+                                 game_no=coach.game_no)
             time.sleep(poll)
     except KeyboardInterrupt:
         pass

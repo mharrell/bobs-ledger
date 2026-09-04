@@ -192,6 +192,7 @@ class LiveCoach:
         self.cur_lines = []
         self.shop_cards = []
         self.choice = None  # pending pick (hero/trinket/discover) or None
+        self.game_no = 0    # bumped by _reset() on each CREATE_GAME
         self.techup = {}    # TechUp button id -> {tier, player, cost, zone}
         self._last_tier = None
         self._tier_seen_turn = None  # turn the current tier was reached
@@ -216,6 +217,7 @@ class LiveCoach:
         self.cur_lines = []
         self.shop_cards = []
         self.choice = None  # pending pick: {'kind','source','options','picked'}
+        self.game_no += 1
         self.techup = {}
         self._last_tier = None
         self._tier_seen_turn = None

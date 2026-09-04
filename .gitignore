@@ -21,6 +21,9 @@ hearth-coach/.card_races.json
 # On-demand art fetch failures (coach_ui), regenerable
 hearth-coach/.art_miss.json
 
+# Per-user advisory telemetry (the beta corpus pairs these with Power.logs)
+hearth-coach/decision_logs/
+
 # Generated patch-check artifacts (review reports + last-seen state)
 hearth-coach/patch_reports/
 hearth-coach/meta/.patch_state.json
