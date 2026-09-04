@@ -132,13 +132,16 @@ def _spell_effect(spell, board_size=0):
     return points
 
 
-def _spell_fuel_bonus(board_minions, names, scenario=None):
+def _spell_fuel_bonus(board_minions, names, scenario=None, extra_casts=0):
     """Marginal growth one extra spell cast buys on the board's cast-spell engines.
 
     For each running engine whose trigger is cast_spell, run the simulator at
     the current per-turn cast count and at +1; the delta is exactly what one
     bought spell is worth as engine fuel. Returns the best single-engine delta
-    (one gold buys one cast — spells don't stack).
+    (one gold buys one cast — spells don't stack). `extra_casts`: spells that
+    GENERATE cast events (Spellcraft grants) add their k to the +1 — the Naga
+    losing-game report: Spitescale Special (Get 3 random Spellcraft spells)
+    produced 4 triggers, not 1, which is what kept the board alive.
     """
     if not board_minions:
         return 0.0
@@ -153,10 +156,33 @@ def _spell_fuel_bonus(board_minions, names, scenario=None):
             continue
         enriched = [dict(m, name=names.get(m["card"], "")) for m in board_minions]
         base = simulate_growth(enriched, dict(sc, cast_spell=n), engine)["gain"]
-        plus = simulate_growth(enriched, dict(sc, cast_spell=n + 1), engine)["gain"]
+        plus = simulate_growth(
+            enriched, dict(sc, cast_spell=n + 1 + extra_casts), engine)["gain"]
         delta = (plus["atk"] + plus["hp"]) - (base["atk"] + base["hp"])
         best = max(best, delta)
     return best
+
+
+_WORD_NUM = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6}
+
+
+def _extra_casts(spell):
+    """How many extra cast events this spell generates beyond itself.
+
+    Parsed from text: Spellcraft grants ("Get 3 random Spellcraft spells") and
+    explicit extra-cast phrasing. Each generated cast feeds cast-spell engines
+    exactly like another bought spell.
+    """
+    text = (spell or {}).get("text") or ""
+    text = text.lower()
+    k = 0
+    m = re.search(r"get (\d+|\w+) random spellcraft", text)
+    if m:
+        w = m.group(1)
+        k += _WORD_NUM.get(w) or (int(w) if w.isdigit() else 1)
+    if "extra cast" in text or "additional cast" in text:
+        k += 1
+    return k
 
 
 def _spell_score(spell, board_minions, names, scenario=None):
@@ -168,7 +194,8 @@ def _spell_score(spell, board_minions, names, scenario=None):
     """
     cost = spell.get("cost") or 1
     points = _spell_effect(spell, len(board_minions or []))
-    fuel = _spell_fuel_bonus(board_minions, names, scenario)
+    fuel = _spell_fuel_bonus(board_minions, names, scenario,
+                             extra_casts=_extra_casts(spell))
     return points / max(cost, 1) + W_SPELL_FUEL * fuel
 
 
