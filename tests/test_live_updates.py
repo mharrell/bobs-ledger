@@ -309,6 +309,27 @@ class TestRenderJsonComps(unittest.TestCase):
         self.assertEqual(rows[0]["n"], 2)
         self.assertEqual(rows[0]["score"], 2)
 
+    def test_shop_rows_carry_tavern_prices(self):
+        """Prices are invisible in the UI, so a wrong one ("thinks minions
+        cost 1 gold") was undiagnosable. Minion = tier, spell = cost."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "playable_comps": {},
+                    "shop_rank": [("BG30_123", 5.0), ("BG28_504", 3.0)]}
+        a = render_json(analysis)
+        by_card = {r["card"]: r for r in a["shop_rank"]}
+        # BG30_123 Fearless Foodie = tier-3 minion (healed from the log's
+        # TECH_LEVEL after a patch moved it); BG28_504 Recruit a Trainee =
+        # 2g spell (spell DB, not the minion pool)
+        self.assertEqual(by_card["BG30_123"]["price"], 3)
+        self.assertEqual(by_card["BG28_504"]["price"], 2)
+
+    def test_unpriced_cards_carry_no_price(self):
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "playable_comps": {},
+                    "shop_rank": [("NOT_IN_ANY_DB", 1.0)]}
+        a = render_json(analysis)
+        self.assertIsNone(a["shop_rank"][0]["price"])
+
 
 if __name__ == "__main__":
     unittest.main()
