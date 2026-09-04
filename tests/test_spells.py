@@ -171,6 +171,32 @@ class TestTopMoveSpells(unittest.TestCase):
         self.assertNotIn("roll —", line)  # no phantom roll with 0 gold
         self.assertIn("pass — out of gold", line)
 
+    def test_turn1_prefers_affordable_minion_over_spell(self):
+        """2026-09-04 live note: turn 1 recommended a spell over a minion —
+        early game buys a MINION when one fits the budget (board presence
+        beats spell value while the board is being born)."""
+        db = value._load_card_db()
+        t1 = next(c for c, v in db.items() if v.get("tier") == 1)
+        a = self._analysis(gold=5)
+        a["tier"] = 6  # no level step in the way
+        a["shop_rank"] = [(FLAG_ID, 9.0), (t1, 4.0)]
+        a["turn"] = 1
+        line = top_move(a)
+        self.assertIn(f"Buy {value._load_bg_names().get(t1, t1)}", line)
+        self.assertNotIn("Buy Alliance Flag", line)
+
+    def test_spell_still_wins_after_turn2(self):
+        """The early-game rule is scoped to turns 1-2: after that the ranked
+        spell wins as before."""
+        db = value._load_card_db()
+        t1 = next(c for c, v in db.items() if v.get("tier") == 1)
+        a = self._analysis(gold=5)
+        a["tier"] = 6
+        a["shop_rank"] = [(FLAG_ID, 9.0), (t1, 4.0)]
+        a["turn"] = 3
+        line = top_move(a)
+        self.assertIn("Buy Alliance Flag", line)
+
 
 class TestGrowthCalibration(unittest.TestCase):
     """One-shot effects are tempo, not growth — a big one-shot battlecry must
