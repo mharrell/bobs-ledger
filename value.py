@@ -629,6 +629,18 @@ def top_move(analysis):
     analysis["buy_step_roll"] = None
     if analysis.get("buy_this"):
         cid = analysis["buy_this"]
+        # Early game (turns 1-2) buys a MINION when one is affordable —
+        # board presence beats spell value while the board is being born
+        # (2026-09-04 live note: "turn 1 recommended a spell over a
+        # minion... no."). The usual ranking still applies when no minion
+        # fits the budget.
+        if (analysis.get("turn") or 99) <= 2 and cid in spell_db:
+            for alt, _v in shop_rank:
+                alt_cost = costs.get(alt)
+                if (alt not in spell_db and alt_cost is not None
+                        and (budget is None or budget >= alt_cost)):
+                    cid = alt
+                    break
         cost = costs.get(cid)
         if budget is not None and cost is not None and budget < cost:
             # Can't afford the headline pick — walk the ranking for one the
@@ -735,46 +747,6 @@ def _buy_intention(cid, comp, card_db, spell_db=None):
     return "surviving until we can commit"
 
 
-_TIER_SCORE = {"S": 3, "A": 2, "B": 1}
-
-_CORPUS_PATH = os.path.join(_HERE, "meta", "corpus_stats.json")
-_CORPUS = None
-
-
-def _corpus_scores():
-    """comp name -> shrunk placement strength from the player's own replays.
-
-    strength = (4.5 - avg_place) — BG mean placement on a 1..8 board is ~4.5 —
-    shrunk toward 0 by sample size (n/(n+3)) so a lucky single game barely
-    moves the needle. Missing corpus file or comp -> 0.0. Observational data
-    (placement is confounded); see DESIGN.md "Honest caveats".
-    """
-    global _CORPUS
-    if _CORPUS is None:
-        scores = {}
-        if os.path.exists(_CORPUS_PATH):
-            with open(_CORPUS_PATH, encoding="utf-8") as f:
-                stats = json.load(f)
-            for name, s in (stats.get("comps") or {}).items():
-                n = s.get("games") or 0
-                if n <= 0 or s.get("avg_place") is None:
-                    continue
-                strength = 4.5 - s["avg_place"]
-                scores[name] = strength * n / (n + 3)
-        _CORPUS = scores
-    return _CORPUS
-
-
-def _corpus_bonus(comp_name, weight=0.5):
-    """Corpus placement bonus for a comp name (sample-shrunk, tier-equivalents).
-    A comp placing 1.0 on a large sample scores +1.5, i.e. S-tier-equivalent."""
-    return weight * _corpus_scores().get(comp_name, 0.0)
-
-
-def _tier_score(t):
-    return _TIER_SCORE.get((t or "").upper(), 1)
-
-
 def opp_note(board_stats, their, approx):
     """The scout comparison, or '' when either side is unknown (gates 3+4,
     analysis/LEVELING_MODEL.md): 'your 47 vs their ~90'."""
@@ -808,21 +780,24 @@ def _comp_needs_by_tier(analysis, card_db):
 
 
 def comp_target(board, comps, recent_cards=None):
-    """The best comp to build toward, given the board and playable comps.
+    """The comp to build toward, given evidence only.
 
-    If you're deep into a comp (>=2 core cards on the board), commit to it —
-    UNLESS you're pivoting: >=2 core cards of a DIFFERENT comp among the last
-    turn or two of acquisitions overrides the board's old commit (the board
-    is backward-looking; what the player is buying right now is the truth —
-    the 2026-09-04 Varden game pushed LEVEL for five straight phases because
-    the tracker stayed on Nagas while the player built Demons). Else pivot to
-    the best comp by meta tier + the comp's placement in the player's own
-    replay corpus (sample-shrunk; see _corpus_scores). Returns comp or None.
+    Commit requires EVIDENCE (2026-09-04 live note: "already has a
+    recommended comp listed from the beginning of the game, which is
+    unrealistic" — a checklist comp picked from nothing is exactly what
+    Shadybunny warns against: build a strong board, not a comp):
+    >=2 core cards on the board, or >=2 core cards among the last turn or
+    two of acquisitions (copies count — a pivot is often 3x one core; the
+    board alone is backward-looking, the 2026-09-04 Varden game pushed
+    LEVEL for five phases while the player built Demons). A recent-hits
+    override beats a board commit from a DIFFERENT comp. Returns comp or
+    None — None is meaningful ("no direction yet").
     """
-    board_cards = {m["card"] for m in board}
     committed = None
     for comp in comps.values():
-        overlap = len(set(comp.get("core", [])) & board_cards)
+        # Copies count (a commit is often 2x/3x one core, same as a pivot)
+        cores = set(comp.get("core", []))
+        overlap = sum(1 for m in board if m["card"] in cores)
         if overlap >= 2 and (committed is None or overlap > committed[1]):
             committed = (comp, overlap)
     if recent_cards:
@@ -839,10 +814,7 @@ def comp_target(board, comps, recent_cards=None):
             return best_recent[0]
     if committed:
         return committed[0]
-    if not comps:
-        return None
-    return max(comps.values(), key=lambda c: _tier_score(c.get("meta_tier"))
-               + _corpus_bonus(c.get("name")))
+    return None  # no evidence yet — "no direction" beats a made-up pick
 
 
 def target_state(target, board):

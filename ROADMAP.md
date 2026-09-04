@@ -241,6 +241,20 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       now data-grounded: ≥1.5x their board and not losing → the level
       reason says "you're strong — convert it into a tier". Next:
       a real combat forecast (positioning/keywords) to ground gate 5.
+- [x] **Early-game realism fixes** (2026-09-04, from the Murloc Holmes
+      live session — decision-log forensics pinned all three):
+      (1) **Turns 1-2 buy a minion** when one is affordable — the ranked
+      spell over an affordable minion was wrong while the board is being
+      born ("turn 1 recommended a spell over a minion... no").
+      (2) **The Buy box goes quiet when the plan has no buy step** — it
+      used to show the raw shop #1 under "Then buy (after leveling)"
+      when the level consumed the whole purse, reading as "level then
+      buy" (a move the player can't make). (3) **A target comp requires
+      evidence**: `comp_target` no longer picks the "best meta comp"
+      from nothing — no board commit and no recent core buys → None
+      ("no direction yet"; the checklist-comp-from-turn-1 anti-pattern
+      Shadybunny warns against). Board copies now count toward a commit
+      (2x one core commits, same as a pivot).
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored

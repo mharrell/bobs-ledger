@@ -300,10 +300,12 @@ function render(a) {
 
   // DECIDE — the Buy box mirrors the top move's actual buy. When the plan
   // says roll, the Top move already says exactly that — a Buy box repeating
-  // it was dead real estate.
-  const stepCard = (a.shop_rank && a.shop_rank.length)
-    ? (a.buy_step_card || (a.buy_roll_text ? null : a.shop_rank[0].card))
-    : null;
+  // it was dead real estate. And when the plan has NO buy step at all
+  // (nothing affordable, e.g. the level took the whole purse), showing the
+  // raw shop #1 read as "level then buy this" — a move the player can't
+  // make (2026-09-05 live note) — so the box goes quiet instead.
+  const stepCard = a.buy_step_card
+    || (a.buy_roll_text ? null : null);
   if (stepCard) {
     const s = a.shop_rank.find(x => x.card === stepCard);
     const stepName = s ? s.name : stepCard;
