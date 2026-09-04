@@ -484,7 +484,14 @@ class LiveCoach:
         shop = shop_ranking(offer_ids, self.playable, board,
                             self.allowed, hero_power=hero_power,
                             scenario=scenario) if offer_ids else []
-        target = comp_target(board, self.playable)
+        # Recent acquisitions (this turn's plays + the last completed turn's)
+        # feed the pivot override — the board alone lags an actual pivot.
+        friendly = self.friendly
+        recent = [cid for p, cid in self.actions.plays if p == friendly]
+        if self.actions.turn_plays:
+            recent += [cid for p, cid in self.actions.turn_plays[-1]
+                       if p == friendly]
+        target = comp_target(board, self.playable, recent_cards=recent)
         # The pending pick (hero / trinket / discover), ranked against the
         # current board and comp.
         choice_advice = None
