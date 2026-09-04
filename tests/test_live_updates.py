@@ -125,15 +125,15 @@ class TestLevelCost(unittest.TestCase):
         self.assertEqual(c.level_cost(), 4)
 
     def test_top_move_uses_real_cost(self):
-        """Turn 1 (gold 3, button 5): 'next turn — 2 short', never the
-        impossible level-then-buy."""
+        """Turn 1 (gold 3, button 5): no impossible LEVEL step at all — an
+        upgrade the player can't make this turn isn't advice (2026-09-04)."""
         from value import top_move
         a = {"tier": 1, "gold": 3, "level_cost": 5, "board": [],
              "shop_rank": [], "buy_this": None, "playable_comps": {},
              "choice": None, "target_comp": None, "sell_rank": []}
         tm = top_move(a)
-        self.assertIn("LEVEL next turn — 2 short", tm)
-        self.assertNotIn("LEVEL to tier 2", tm)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIn("roll", tm)
 
 
 class TestLevelVsBoard(unittest.TestCase):
@@ -238,25 +238,35 @@ class TestBuyStep(unittest.TestCase):
         self.assertIn("Buy", tm)
         self.assertNotIn("roll —", tm)
 
-    def test_nothing_affordable_records_roll(self):
-        """Gold 5, level 5 (budget 0): the plan rolls, and buy_step_roll
-        carries the roll text with buy_step_card cleared."""
+    def test_nothing_affordable_after_level_is_silence(self):
+        """Gold 5, level 5 (budget 0): the level spent everything — no
+        phantom "roll" with 0 gold (a roll costs 1 too)."""
         a, hi, lo, top_move = self._analysis(5)
         tm = top_move(a)
         self.assertIsNone(a["buy_step_card"])
-        self.assertTrue(a["buy_step_roll"].startswith("roll — "))
-        self.assertIn("roll —", tm)
+        self.assertIsNone(a["buy_step_roll"])
+        self.assertNotIn("roll", tm)
+        self.assertTrue(tm.startswith("1. LEVEL"), tm)
 
-    def test_deferred_level_trails_the_buy(self):
-        """Gold 6 with the level costing 7: 'LEVEL next turn' is a plan, not
-        an action — the affordable Buy must read as step 1 (2026-09-04: the
-        plan led with the upgrade and buried the buy as step 2)."""
+    def test_impossible_level_not_recommended(self):
+        """Gold 6 with the level costing 7: the upgrade is out of reach this
+        turn, so it is not in the plan at all (2026-09-04: the plan led with
+        the upgrade and buried the buy as step 2)."""
         a, hi, lo, top_move = self._analysis(6)
         a["level_cost"] = 7
         tm = top_move(a)
         self.assertTrue(tm.startswith(f"1. Buy "), tm)
-        self.assertLess(tm.index("Buy"), tm.index("LEVEL next turn"))
-        self.assertTrue(tm.rstrip().endswith("roll meanwhile"), tm)
+        self.assertNotIn("LEVEL", tm)
+
+    def test_zero_gold_passes(self):
+        """Gold 0, nothing affordable, level out of reach: pass, not a
+        phantom roll or an impossible upgrade."""
+        a, hi, lo, top_move = self._analysis(0)
+        tm = top_move(a)
+        self.assertIn("pass — out of gold", tm)
+        self.assertNotIn("roll", tm)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIsNone(a["buy_step_card"])
 
 
 class TestBanGate(unittest.TestCase):
