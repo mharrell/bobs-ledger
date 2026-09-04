@@ -710,12 +710,17 @@ def _tier_score(t):
     return _TIER_SCORE.get((t or "").upper(), 1)
 
 
-def comp_target(board, comps):
+def comp_target(board, comps, recent_cards=None):
     """The best comp to build toward, given the board and playable comps.
 
-    If you're deep into a comp (>=2 core cards on the board), commit to it. Else
-    pivot to the best comp by meta tier + the comp's placement in the player's
-    own replay corpus (sample-shrunk; see _corpus_scores). Returns comp or None.
+    If you're deep into a comp (>=2 core cards on the board), commit to it —
+    UNLESS you're pivoting: >=2 core cards of a DIFFERENT comp among the last
+    turn or two of acquisitions overrides the board's old commit (the board
+    is backward-looking; what the player is buying right now is the truth —
+    the 2026-09-04 Varden game pushed LEVEL for five straight phases because
+    the tracker stayed on Nagas while the player built Demons). Else pivot to
+    the best comp by meta tier + the comp's placement in the player's own
+    replay corpus (sample-shrunk; see _corpus_scores). Returns comp or None.
     """
     board_cards = {m["card"] for m in board}
     committed = None
@@ -723,6 +728,18 @@ def comp_target(board, comps):
         overlap = len(set(comp.get("core", [])) & board_cards)
         if overlap >= 2 and (committed is None or overlap > committed[1]):
             committed = (comp, overlap)
+    if recent_cards:
+        rc = list(recent_cards)  # copies count: a pivot is often 3x one core
+        best_recent = None
+        for comp in comps.values():
+            if committed and comp is committed[0]:
+                continue  # more of the same comp is not a pivot
+            cores = set(comp.get("core", []))
+            hits = sum(1 for c in rc if c in cores)
+            if hits >= 2 and (best_recent is None or hits > best_recent[1]):
+                best_recent = (comp, hits)
+        if best_recent:
+            return best_recent[0]
     if committed:
         return committed[0]
     if not comps:

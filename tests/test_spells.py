@@ -252,6 +252,44 @@ class TestTopMovePriority(unittest.TestCase):
 class TestCompCards(unittest.TestCase):
     """The target-comp shopping list (UI/console box): names + owned flags."""
 
+    COMPS = {
+        "nagas": {"name": "Nagas", "tribe": "Naga",
+                  "core": ["BG33_140"], "addons": []},
+        "demons": {"name": "Demons", "tribe": "Demon",
+                   "core": ["BG34_500"], "addons": []},
+    }
+
+    def test_pivot_override_follows_recent_buys(self):
+        """The board is backward-looking: two old Naga cores on the board
+        kept the tracker 'committed to Nagas' for five straight LEVEL-first
+        advisories in the 2026-09-04 Varden game while the player built
+        Demons. Recent acquisitions of a different comp must win."""
+        board = [{"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"},
+                 {"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"}]
+        recent = ["BG34_500", "BG34_500"]  # demon cores bought this turn
+        target = value.comp_target(board, self.COMPS, recent_cards=recent)
+        self.assertEqual(target["name"], "Demons")
+
+    def test_no_pivot_on_one_recent_core(self):
+        board = [{"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"},
+                 {"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"}]
+        target = value.comp_target(board, self.COMPS, recent_cards=["BG34_500"])
+        self.assertEqual(target["name"], "Nagas")
+
+    def test_same_comp_recent_buys_not_a_pivot(self):
+        """Buying more Naga cores stays committed to Nagas (no flip-flop)."""
+        board = [{"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"},
+                 {"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"}]
+        target = value.comp_target(board, self.COMPS,
+                                   recent_cards=["BG33_140"])
+        self.assertEqual(target["name"], "Nagas")
+
+    def test_no_board_commit_uses_recent_buys(self):
+        """An empty board pivots to whatever the player just bought, too."""
+        target = value.comp_target([], self.COMPS,
+                                   recent_cards=["BG34_500", "BG34_500"])
+        self.assertEqual(target["name"], "Demons")
+
     def test_owned_flags_and_names(self):
         target = {"name": "Test Comp", "tribe": "Beast",
                   "core": ["BG33_886", "NOT_IN_ANY_DB"], "addons": ["BG33_140"]}
