@@ -253,6 +253,9 @@ function render(a) {
     t.appendChild(el('span', null, String(turns)));
     statebar.appendChild(t);
   }
+  if (a.scout) {
+    statebar.appendChild(el('span', 'lbl', a.scout));
+  }
   if (a.banned && a.banned.length) {
     statebar.appendChild(el('span', 'lbl', 'Banned:'));
     a.banned.forEach(t => statebar.appendChild(el('span', 'banned', t)));
@@ -497,6 +500,19 @@ def render_json(analysis):
     # buy_step_roll are written by value.top_move), so the two can't disagree.
     a["buy_step_card"] = analysis.get("buy_step_card")
     a["buy_roll_text"] = analysis.get("buy_step_roll")
+    # Scout strip (gates 3+4): our stat total vs the next opponent's
+    # last-known board (exact — we fought them), else the lobby median /
+    # corpus baseline (~ estimate).
+    bs = analysis.get("board_stats")
+    their = analysis.get("opp_stats")
+    approx = their is None
+    if their is None:
+        their = analysis.get("lobby_opp")
+    if their is None:
+        their = analysis.get("baseline_opp")
+    a["scout"] = (f"you {bs} stats · "
+                  f"{'~' if approx else ''}{int(their)} theirs"
+                  if bs is not None and their else None)
     # When leveling leads the top move, the buy is what you do with the
     # leftover — label it that way so the priorities read in order.
     a["buy_label"] = ("Then buy (after leveling)"

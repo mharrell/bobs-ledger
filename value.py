@@ -553,6 +553,20 @@ def top_move(analysis):
             # Q1 payoff: unowned pieces of the target comp, split by which
             # tavern tier holds them (copies of what we own don't count).
             needs_next, needs_here = _comp_needs_by_tier(analysis, card_db)
+            # Scout (gates 3+4): "their" = the next opponent's last-known
+            # board when we've fought them (the exact buy-phase preview),
+            # else the lobby median, else the corpus baseline. The "~" marks
+            # an estimate; the exact number is a last-known board.
+            board_stats = analysis.get("board_stats")
+            their = analysis.get("opp_stats")
+            approx = their is None
+            if their is None:
+                their = analysis.get("lobby_opp")
+            if their is None:
+                their = analysis.get("baseline_opp")
+            strong = (board_stats is not None and their
+                      and board_stats >= 1.5 * their
+                      and not damage_last and not loss_streak)
             # Q0 flow: armor/HP drops are the loss streak. Early-game losses
             # (tiers 1-2) are normal — the flow gate is a tier-3+ (mid-game)
             # concept, matching the shop-driven vs board-driven split.
@@ -564,6 +578,8 @@ def top_move(analysis):
                             f"stabilize first")
             elif tier >= 3 and damage_last and damage_last >= 10:
                 flip_why = f"took {damage_last} last fight — stabilize first"
+            if flip_why and opp_note(board_stats, their, approx):
+                flip_why += f"; {opp_note(board_stats, their, approx)}"
             if (flip_why or core_pick) and locked_out:
                 budget = gold  # the buy comes first, from the full purse
                 level_next = True
@@ -574,8 +590,12 @@ def top_move(analysis):
                 budget = gold
                 stay_note = True
             else:
-                why = ("the comp's next pieces live there" if needs_next
-                       else "standard curve")
+                if needs_next:
+                    why = "the comp's next pieces live there"
+                elif strong:
+                    why = "you're strong — convert it into a tier"
+                else:
+                    why = "standard curve"
                 level_lead = (f"LEVEL to tier {tier + 1} ({why})"
                               + (f" — {spare} left" if spare else ""))
                 budget = spare  # buys come out of the leftover, not the purse
@@ -753,6 +773,14 @@ def _corpus_bonus(comp_name, weight=0.5):
 
 def _tier_score(t):
     return _TIER_SCORE.get((t or "").upper(), 1)
+
+
+def opp_note(board_stats, their, approx):
+    """The scout comparison, or '' when either side is unknown (gates 3+4,
+    analysis/LEVELING_MODEL.md): 'your 47 vs their ~90'."""
+    if board_stats is None or not their:
+        return ""
+    return f"your {board_stats} vs their {'~' if approx else ''}{int(their)}"
 
 
 def _comp_needs_by_tier(analysis, card_db):

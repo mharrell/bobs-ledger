@@ -60,13 +60,58 @@ _OPTIONS_HEADER = re.compile(r"GameState\.DebugPrintOptions\(\) -\s+id=\d+")
 #       cardId=TB_BaconShopTechUp03_Button player=7] tag=COST value=6"
 _TECHUP = re.compile(r"entityName=Tavern Tier (\d+) id=(\d+)[^\]]*player=(\d+)")
 _TECHUP_TAG = re.compile(r"tag=(ZONE|COST|TECH_LEVEL) value=(\S+)")
+# The buy-phase scout: the pairing announced on the friendly hero (or the
+# account entity) names the player of the fight after this shopping phase.
+# e.g. "TAG_CHANGE Entity=[entityName=Guff Runetotem id=117 zone=PLAY
+#       zonePos=0 cardId=BG20_HERO_242 player=3] tag=NEXT_OPPONENT_PLAYER_ID value=4"
+# and the bare form "TAG_CHANGE Entity=<account> tag=NEXT_OPPONENT_PLAYER_ID value=1"
+_NEXT_OPP = re.compile(
+    r"TAG_CHANGE Entity=(?:\[entityName=[^\]]*? cardId=(\S+)"
+    r"[^\]]*?player=(\d+)\]|(\S+)) tag=NEXT_OPPONENT_PLAYER_ID value=(\d+)")
 
 
 def _banned(allowed):
     # Unknown ban info (None) shows as no banned tribes, never "all banned".
-    if not allowed:
-        return []
-    return [t for t in DISPLAY_TRIBES if t not in set(allowed)]
+    return [t for t in DISPLAY_TRIBES if t not in set(allowed or [])]
+
+
+def _median(values):
+    if not values:
+        return None
+    s = sorted(values)
+    n = len(s)
+    mid = n // 2
+    return s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2
+
+
+_BASELINE = None
+
+
+def _load_baseline():
+    """meta/turn_baseline.json — corpus median board stats by turn
+    (built by build_baseline.py from our own Power.log corpus)."""
+    global _BASELINE
+    if _BASELINE is None:
+        try:
+            with open(os.path.join(_HERE, "meta", "turn_baseline.json"),
+                      encoding="utf-8") as f:
+                _BASELINE = json.load(f)
+        except OSError:
+            _BASELINE = {}
+    return _BASELINE
+
+
+def _baseline_opp(turn):
+    """Corpus median of the opponent boards fought at this turn (gate 3) —
+    the "what does a board at turn N look like" prior."""
+    data = (_load_baseline().get("opp") or {})
+    if not data:
+        return None
+    for t in range(turn, -1, -1):
+        rec = data.get(str(t)) or data.get(t)
+        if rec:
+            return rec.get("med")
+    return None
 
 
 class _LiveActions:
@@ -199,6 +244,12 @@ class LiveCoach:
         self._armor_hist = {}  # turn -> {af, al, hf, hl} first/last armor+HP
         self._stat_seen = 0    # hero_stat_log entries already drained
         self._stat_pending = []  # (turn, cid, tag, value) before hero parse
+        self.next_opponent = None  # announced NEXT_OPPONENT_PLAYER_ID
+        self._combat_opp = None  # the id announced for the combat in progress
+        self._combat_board = None  # (stats, n, turn) last snapshot w/ opponent
+        self._opp_boards = {}  # player id -> {"stats", "n", "turn"} last-known
+        self._lobby_stats = []  # stats of every opponent board we fought
+        self._snap_seen = 0    # snapshots already scanned for opponent boards
         self._bans_ready = False
         self._card_races = None
         self._seed = None
@@ -227,6 +278,12 @@ class LiveCoach:
         self._armor_hist = {}
         self._stat_seen = 0
         self._stat_pending = []
+        self.next_opponent = None
+        self._combat_opp = None
+        self._combat_board = None
+        self._opp_boards = {}
+        self._lobby_stats = []
+        self._snap_seen = 0
         self._bans_ready = False
         self._card_races = None
         self._seed = None
@@ -302,8 +359,29 @@ class LiveCoach:
         if "TechUp" in line and "GameState" in line:
             self._feed_techup(line)
         self.gs.feed(line)
+        prev_turn = self.actions.turn
         self.actions.feed(line)
         self.cur_lines.append(line)
+        # A turn boundary closes the previous combat: its board (captured
+        # from the combat snapshots) belongs to the opponent announced while
+        # that buy phase was open, then the next pairing takes over.
+        if self.actions.turn != prev_turn:
+            if self._combat_board is not None:
+                stats, n, turn = self._combat_board
+                rec = {"stats": stats, "n": n, "turn": turn}
+                if self._combat_opp is not None:
+                    self._opp_boards[self._combat_opp] = rec
+                self._lobby_stats.append(rec)
+                self._combat_board = None
+            self._combat_opp = self.next_opponent
+        # The buy-phase preview: NEXT_OPPONENT_PLAYER_ID on the friendly
+        # hero (or the account entity) names the player of the fight after
+        # this shopping phase.
+        m = _NEXT_OPP.search(line)
+        if m and (m.group(2) == str(self.friendly)
+                  or m.group(1) == self.hero_card
+                  or m.group(3) == self.account):
+            self.next_opponent = int(m.group(4)) or None
         # Armor flow (Q0): stamp every friendly-hero ARMOR/HEALTH write with
         # the turn it arrived in, keeping first/last per turn — combat
         # damage = first minus last (the buy-phase state vs post-combat).
@@ -315,6 +393,17 @@ class LiveCoach:
                 self._drain_stats(new)
             else:
                 self._stat_pending.extend(new)  # drained once the hero parses
+        # Scout: combat snapshots contain the opponent-side board (fixed
+        # player id 11); keep the last one per turn as the fought board.
+        if len(self.gs.snapshots) > self._snap_seen:
+            snap = self.gs.snapshots[-1]
+            self._snap_seen = len(self.gs.snapshots)
+            if self.friendly is not None:
+                opp = [m for m in snap if m["player"] not in (self.friendly, None)]
+                if opp:
+                    self._combat_board = (
+                        sum((m.get("atk") or 0) + (m.get("health") or 0)
+                            for m in opp), len(opp), self.actions.turn)
         # Track when the friendly's tier changed, for the upgrade-price
         # fallback (the price drops 1 per turn you stay at a tier).
         if self.hero_card:
@@ -591,6 +680,19 @@ class LiveCoach:
             "damage_last": damage_last,
             "loss_streak": loss_streak,
             "board": board,
+            # Scout (gates 3+4, analysis/LEVELING_MODEL.md): our board's
+            # stat total; the announced next opponent's LAST-KNOWN board
+            # (the buy-phase preview, from a fight we were in); the median
+            # of every opponent board we've fought (lobby); and the corpus
+            # baseline for this turn.
+            "board_stats": sum((m.get("atk") or 0) + (m.get("health") or 0)
+                               for m in board),
+            "opp_stats": (self._opp_boards.get(self.next_opponent) or {})
+            .get("stats"),
+            "last_opp_stats": (self._lobby_stats[-1] or {}).get("stats")
+            if self._lobby_stats else None,
+            "lobby_opp": _median([r["stats"] for r in self._lobby_stats]),
+            "baseline_opp": _baseline_opp(turn),
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
             "sell_rank": ranked,
