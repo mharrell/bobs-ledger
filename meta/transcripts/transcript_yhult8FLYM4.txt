@@ -1,0 +1,534 @@
+Greetings, traveler.
+>> There are five skills in Hearthstone
+Battlegrounds that are more important
+than any others. You get the 8,000 MMR
+in no time by focusing on them instead
+of everything at the same time. This
+will not be generic advice, such as
+watch players better than you. You
+receive specific knowledge you can apply
+to immediately improve your results.
+I've been coaching battlegrounds for
+years now, and that experience has
+taught me what to focus on to get the
+most amount of impact in the shortest
+amount of time. We'll be going through
+these five skills one by one, leaving
+the best one for last. Starting with
+curve with your shops. A big mistake a
+lot of players make is deciding which
+curve to play before they've even seen
+your shop. It's okay to always play the
+same curve when you're just starting
+out. If you want to reach 8,000 MMR and
+beyond, you'll have to start curving
+with your shops. Chief's mantra is don't
+buy trash. Simply put, you were to spend
+your gold buying subpar minions instead
+of leveling, you've already lost. If you
+choose to level instead, you might get
+unlucky again, but at least now you have
+a chance to get good minions to recover.
+Let's look at where this commonly takes
+place. Turns three and four. On turn
+three, your next actions will depend on
+what your shop and board look like. You
+should almost always double buy whenever
+you have recruit, lasso, chef's choice,
+or cry foul. Alternatively, look for
+economy units that can generate minions
+or gold like scout, elemental, tad, and
+shell collector. These allow you to buy
+two minions without having to sell your
+starter unit. This way, you'll have a
+bigger board and more gold to spend
+later. If you started with an economy
+unit such as Busker that you played on
+turn two or Alleycat, you can use that
+spare gold to buy two strong units from
+the shop, such as a pair of eternal
+knights, party elemental plus cyclone
+combo, or even more economy to set you
+up for the mid game. You almost never
+want to roll on turn three. The only
+exception to that rule is if you have a
+great one-cost spell such as careful
+investment or coin, and you really don't
+want to sell your starter unit. So, what
+if your shop doesn't have any of these
+options? This is where you repeat the
+mantra, don't buy trash, and you level
+to tier three instead. This is known as
+going three on three, and unless you
+started with an economy unit, your board
+will be empty because you'll have to
+sell your starter unit to get the six
+gold. It's a scary curve, but it must be
+part of your toolbox because if you were
+to buy the bad options on tier 2, you
+are still losing fights, but now you
+have very little hope of recovering from
+the bad start. On turn four, you'll have
+similar options based on your shops. If
+you're blessed by Bob and your tier 2
+shop has two great units again, you can
+spend your six gold to buy them. If your
+tier 2 shop doesn't have these minions,
+it's better to level to tier three on
+turn four. Because you'll have one gold
+left over with this curve, it's great to
+have a one-cost spell in your shop to
+spend all of your gold. You could also
+sell your worst minion to cast a
+two-cost spell. If you went three on
+three without an economy minion, you'll
+have to double buy this turn, which is
+why this curve is riskier. A lot will
+depend on your first tier three shop.
+However, if you did have an economy
+unit, there is one last resort available
+to you. Four on four. This is where you
+sell your only minion and level again.
+You should only do this if your tier
+three shop is horrible. Four on four is
+a very risky curve. You'll have seven
+gold next turn, which means that you can
+roll one time to find two great four
+drops. If you don't, you won't stabilize
+in time and get in eighth place.
+However, just as with the threeon-ree
+curve, it is still better to make this
+play than to buy horrible minions on
+tier three. So, how do you know which
+are the best minions for you to buy? Our
+sponsor, HS Replay, has all this data
+available on their website. For this
+tier three example, you simply go to the
+minions tab and filter for tier three
+minions on turns four and five. This
+way, you'll see which minions have the
+highest play impact, meaning that you're
+more likely to win the game if you
+bought them on those turns. This feature
+is for tier 7 subscribers only, but they
+have amazing data available for free as
+well. On the comps tab, you can see
+which strategies are the strongest in
+the current meta. We'll come back to
+this later for our final skill.
+>> I'll be back.
+>> Now that you know how to tackle turns
+three and four, let's look at when to
+level the five. This is the most
+difficult leveling decision in almost
+all of your games. That's because one to
+four has a lot more structure to it.
+Once you're on tier four, you could
+technically level to five on the very
+next turn or spend a few turns
+stabilizing.
+There were even strategies in previous
+metas where you never level to five.
+There are three things you need to take
+into consideration to make this decision
+a lot easier for you. Number one, will I
+go below 15 health if I level to five
+this turn? Protecting your damage cap is
+incredibly important. If you want to
+climb, placing seventh or eighth will
+set you back a lot, costing you a ton of
+MMR. Losing your damage cap early is a
+huge risk. Even if you successfully
+stabilize on tier five afterwards, you
+can always get an unlucky combat or face
+a high roller and get knocked out.
+Consider having more than 15 health, bad
+RNG insurance. If it's turn seven,
+you'll need 26 health or more because
+you can only take 10 damage that turn.
+This means that if you take the full
+damage cap later on, you'll still have
+at least one health remaining. From turn
+eight and beyond, 31 health is
+preferable, giving you at least two
+turns to stabilize. You should also take
+a look at your opponent's profile. Have
+they been winning a lot? Do they have
+triples? They leveled this turn as well.
+And lastly, check your own board. Are
+your minions strong? Do you even have
+seven minions on your board yet?
+Number two, which minions can you hit on
+tier four? If you have Soul Winder on
+the board, this enables you to hit cards
+such as Imposing Percussionist and
+Melkazar. These are great to make your
+board stronger and will make leveling to
+five a lot safer. Rickety Repairbot,
+Marquee Ticker, or Grease Bots are all
+excellent options to get stronger on
+tier four. Make sure you check which
+minion types are in before you start
+rolling. Number three, could I take a
+triple straight into a six drop? Are
+there good six drops this game? Great
+early tier six minions are economy
+generators. Examples are ignition
+specialist and Silivos. In the past,
+we've had cards such as Neon Agent and
+Orgazoa. These are great early triples
+because they give you more resources,
+making your next turns more impactful
+than those of your opponents. Strong
+combat minions such as Arid Atrocity or
+Party Guest are great as well because
+you're very likely to win your next few
+fights, saving you a ton of health.
+There are many more things we could
+consider, but the goal is to give you a
+manageable checklist that will help you
+make the right decision more than 90% of
+the time, which is why we focus on these
+three important questions. Going to tier
+six, on the other hand, is not as
+important of a decision in my
+experience. Once you're on tier five,
+you can now triple into six drops,
+giving you access to every minion in the
+game. I'll generally go to tier six
+early if I'm absolutely dominating the
+game due to a lucky start. Other than
+that, I'll check my deck tracker to see
+which minions are on tier six for the
+composition I'm playing. Now that you're
+leveling correctly, you'll be faced with
+a new problem. How do I get the best
+result once I'm in the top four? The
+damage cap is now gone, and you could be
+knocked out of the game in any fight.
+For these fights, you should be going
+into them as strong as possible. In
+order to do this, you must scout the
+lobby and know what your opponents are
+playing. Generally speaking, you'll face
+three types of boards and they'll have a
+rock paper scissors balance to them. Big
+stats. This is the most common type of
+board. Usually, this will be your
+elementals, quillbour, pirates, nagas,
+demons, and caligos dragons. If you're
+playing this, you must scout and be wary
+of murlocs. They can use venom to trade
+very efficiently versus your board and
+take your win away. Use combos such as
+blaster, selfless titus to protect your
+best minions. This will destroy enemy
+Leroys and shields while simultaneously
+shielding your own board, protecting you
+from venom. Ironically, one of the best
+Merurloc scam counters is your own
+Merurloc scam. Run your own golden base
+skill and put Belchure and Atrocity in
+your hand to soak up the opponent's
+venom minions. If most of your opponents
+in the top four are playing big stats
+themselves, you should aim to keep a few
+strong minions on your board and replace
+the rest with minions such as Leroy,
+base kill plus belure combo, or
+whichever scam card is currently in your
+game. It's incredibly likely that a
+random 100 minion will be less efficient
+than one of these cards versus a big
+stat board. For this reason, it's
+important that you concentrate your
+stats on three to four minions. This
+way, you can easily sell or mutinous
+weaker minions and replace them for the
+endgame fights. Big stats are a counter
+to our next strategy, namely token
+strategies. Usually, this will be undead
+and beasts versus these strategies.
+Poison scam cards will be useless.
+Instead, focus on having a lot of health
+to tank their tokens. You can also
+employ combos such as hawk rider plus
+blaster and titus to destroy their
+minions if they didn't succeed in
+buffing their board out of range.
+Sindori is usually a good bet as well,
+seeing as they often run a taunt plus
+reborn minion. If you're playing the
+token comp, start countering their
+counter. Use cards such as Azerite
+empowerment to AoE buff your board out
+of range of the blaster tech. If you
+know they run a Sindor, consider putting
+your taunt reborn minion in position
+number one to hopefully get the reborn
+value by attacking first. Token
+strategies are really strong versus the
+next type, which is poison scam. The
+best way to protect yourself versus
+poison scam, is to add a ton of sokers
+to your board. These are usually death
+rattle minions, which can absorb the
+venom charges or Leroys if they're not
+buffed out of range. Examples would be
+atrocity, mount, or base skill. Bonus
+points if the summons are big enough to
+take the vouchers or Leroys out in one
+hit. You'll usually want to put your
+huge minions all the way in the back to
+prevent them from being dumb and face
+planting into the vamps. The exception
+to this rule is if you know they have a
+taunted brand or a similar weak cart. In
+that case, position one is the safest
+place for them. Don't do this more than
+one fight in a row because your opponent
+might adapt and taunt a venomous minion
+instead. If the opponent's board is
+unbuffed, blaster is a great way to
+destroy multiple venoms or Leroys in one
+hit. as well. If you're playing the
+poison scam, well, strictly
+hypothetically speaking, of course, not
+like you'd actually resort to such a
+thing, you'll want to buff your venom
+minions and Leroys out of blaster range.
+Use cards such as Azerat empowerment
+again or murloc buffs to keep them safe.
+He's like, what?
+Scam everywhere. So much scam. I can't
+see.
+A higher level adaptation is to move
+some of your own venoms to the back to
+make sure they don't die before the
+opponent's big minions get to attack.
+You can add your own atrocity and filler
+cards to trade with theirs. Poison scam
+does get destroyed by our last strategy,
+mechs. Mechs don't fit the rock paper
+scissors analogy perfectly. They do well
+versus most big stat comps due to their
+high damage. They're quite resilient
+versus poison scam as well due to their
+shields. Most mech boards, however, will
+struggle versus token comps. Seeing as
+the divine shields get much less value
+in these fights. The two things you need
+to be aware of both as the mech player
+and against are blaster. If you're
+versus mech, this is a great counter as
+it will catch a lot of mech players
+offguard. If you're the mech player and
+you suspect the blaster or you know they
+have it from last fight, consider
+putting your defletobot second. This way
+you can reset the shields right after
+the blaster's effect and save your
+defleto. Deadliest counter in my
+experience, however, are taunted Leroys.
+Two of them can take out both
+defletobots, especially if the Leroys
+have been buffed enough to survive small
+tokens such as a reborn defletobot or
+automaton death rattle. I often times
+prefer this over blaster because you can
+still get quite unlucky. The opponent
+can go first, destroy your blaster, and
+you then destroy a mech, resetting the
+shields on the defletobots, effectively
+getting very little value out of your
+blaster. Haunted Leroys often result in
+such a big win that the match is over on
+the spot and there is no opportunity for
+your opponent to play around this. It is
+for this reason that I often put one of
+my weaker mechs first if I suspect the
+Leroy to be their only win condition.
+You now know how to handle the top four,
+but how do you improve your placement
+even more? Your goal at the start of
+most games should be to get first place.
+The exception is if you're playing a
+mid-range hero and you have fewer tools
+available to go for a big spike early.
+Examples would be heroes such as Edwin
+or Drectar. These guys can save health
+in the early and the midame, but they
+fall off later because they're bad at
+generating early triples or power
+leveling. Examples of heroes that are
+great at going for first place would be
+Snake Eyes or Senarius. Both of these
+heroes are more fragile. Snake Eyes only
+has five armor and Senarius takes a lot
+of damage early, but they get additional
+gold in return. This gold allows you to
+level faster than the mid-range heroes,
+thus giving you access to more powerful
+scaling minions earlier in the game. As
+the game progresses, you'll receive more
+and more information as to what kind of
+game you're playing and if it makes
+sense to continue pushing for first
+place. Did you hit a triple? Was a
+triple reward useful. Did you get good
+or bad matchups early? Were you able to
+save a lot of health? Did this allow you
+to go to five early, or did you have to
+stay a few turns on tier four to
+stabilize? What are the winning
+strategies in this lobby? Did you hit
+any of their key pieces? All of this
+information gives you a better idea of
+your position in the lobby. There is a
+point at which it's too late to scale.
+You can learn to identify this with
+experience. Think back of games where
+you easily won the lobby. Is your
+current situation similar to that or are
+you quite far behind? Chances are that
+other people in the lobby have already
+hit their scaling cards and are ahead of
+you in the stat race. Once you've passed
+this point, it is much better to start
+focusing on the next fight. Buy the
+Leroy earlier. Get armor so you can
+survive longer. Buy the blaster versus
+mech. These investments will make your
+long-term scaling weaker. If you've
+already missed the window to compete
+with the high rollers in the lobby, it
+doesn't matter. A board of 100s is
+better than 50/50s, but they both get
+destroyed by a board of 300s. Leroy and
+Venoms, on the other hand, give you a
+chance to win. I or at the very least
+take less damage to improve your final
+standing in the lobby. I've had so many
+second places in a lobby where my board
+was the fourth strongest at best simply
+because I identified my position early
+and started conserving health. The
+biggest high roller then did me a favor
+and knocked all the other players out
+while I managed to survive my fight
+versus him because I had scam pieces and
+enough health. On the other hand, when
+you do have things going your way, you
+should be pressing your advantage. If
+you're on 31 health and your board is
+decent, do not stay an extra turn on
+tier 4. Grab high tier economy
+generators to snowball your advantage
+even further, especially when I'm on 31
+health. I'll sometimes take a super
+greedy turn setting up a bunch of
+economy and scaling while selling my
+random 4040 unit, which was the biggest
+minion on my board. I then take 15
+damage, but because I sold the random
+stuff and kept the economy and scaling
+minions, my next turn is so good that my
+board is now much better, which allows
+me to stabilize on 16 health with a
+great board, often winning me the lobby
+without losing another fight. You can
+think about it this way. You'll get
+unlucky and lose some games where you
+had fairly little control over the
+outcome. In order to climb, you must
+take advantage of the games where luck
+is on your side. If you get this aspect
+of the game right, you'll consistently
+gain MMR. The most important skill,
+however, is don't choose your strategy
+in the early game. This advice alone can
+get you to 6,000 and more. It is by far
+the most important skill in Hearthstone
+Battlegrounds. At the start of the game,
+you'll want to see which types are in
+and which strategies are available to
+you. You can use a deck tracker in game
+or check the HS replay website to know
+what the strongest strategies are in
+this game and which minions are corded
+at strategy. These core cards are
+incredibly important. Until you've
+secured them, you are not playing that
+type. If you have two party elementals
+on the board, you are not playing
+elementals yet. You'll need to secure
+brand and mana surge for the scaling.
+Same thing for every other early game
+strategy. It is true that if you triple
+into the mana surge, it is better to
+already have party elementals on your
+board. But if you commit super early,
+say turn four, you can now only hit one
+of the types available to you in this
+lobby. This makes it much less likely to
+hit a good composition. When you watch
+highle players, it looks like they're
+always getting lucky getting a good
+composition. That is because they're
+incredibly flexible. They could have the
+two party elementals and then triple
+into an electron and start playing mechs
+for an early pokey and move towards
+coolboard. That is because the core
+pieces are what make or break your comp.
+Without them, your board will simply not
+scale anywhere near a board that does
+have these. So give yourself the maximum
+chance to hit a good board by staying
+flexible on what you want to play. This
+way, you've now opened up the other 80%
+of types previously locked out for you.
+It is true that there are usually
+stronger types in any meta. However, it
+is much better to play a strategy where
+you have all the core cards rather than
+forcing the theoretical strongest type
+with much less support. Let's say that
+demons are A tier and pirates are B or
+even C tier. If you have a great pirate
+setup, you can still beat a mediocre
+demon setup. And even if you're not
+going to win the lobby versus the person
+that did hit a gray demon board, you'll
+still take a comfortable second place
+rather than a seventh by forcing demons
+and blaming Bob for not giving you the
+cards you needed. This means that your
+early game buys could be type
+synergistic, but they don't have to be.
+If we continue on the two-party
+elemental example, you should still be
+thrilled to pick up a marquee taker pair
+on tier 4. They'll give you free spells
+and enable mech strategies should you
+hit the core pieces later on. And even
+if you don't, the extra spells give you
+additional resources to hit the core
+cards of any of the five types available
+to you in this game. All of these skills
+work super well together. Because you
+don't commit to a strategy early on,
+you'll curve at your shops and not waste
+gold. Now, you'll be able to level to
+tier five earlier, more often because
+your board and economy are better. This
+means you'll hit the high tier core
+cards more easily. You'll know what kind
+of game you're playing by now, depending
+on if you hit your scaling cards early
+enough or not. If you didn't, you'll
+know how to counter the various boards
+from your opponents and do much better
+in the top four despite not high
+rolling. Now, go out there and gain some
+MMR.
