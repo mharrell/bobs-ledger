@@ -246,10 +246,12 @@ class LiveCoach:
         self._stat_pending = []  # (turn, cid, tag, value) before hero parse
         self.next_opponent = None  # announced NEXT_OPPONENT_PLAYER_ID
         self._combat_opp = None  # the id announced for the combat in progress
-        self._combat_board = None  # (stats, n, turn) last snapshot w/ opponent
+        self._pairing = {}     # turn -> opponent id announced for its fight
+        self._snap_by_turn = {}  # turn -> [(player, stat_total), ...] snapshot
+        self._resolved = set()  # turns already committed to the lobby stats
         self._opp_boards = {}  # player id -> {"stats", "n", "turn"} last-known
         self._lobby_stats = []  # stats of every opponent board we fought
-        self._snap_seen = 0    # snapshots already scanned for opponent boards
+        self._snap_seen = 0    # snapshots already buffered
         self._bans_ready = False
         self._card_races = None
         self._seed = None
@@ -280,7 +282,9 @@ class LiveCoach:
         self._stat_pending = []
         self.next_opponent = None
         self._combat_opp = None
-        self._combat_board = None
+        self._pairing = {}
+        self._snap_by_turn = {}
+        self._resolved = set()
         self._opp_boards = {}
         self._lobby_stats = []
         self._snap_seen = 0
@@ -362,17 +366,15 @@ class LiveCoach:
         prev_turn = self.actions.turn
         self.actions.feed(line)
         self.cur_lines.append(line)
-        # A turn boundary closes the previous combat: its board (captured
-        # from the combat snapshots) belongs to the opponent announced while
-        # that buy phase was open, then the next pairing takes over.
+        # A turn boundary closes the previous combat: record the pairing in
+        # force during that turn (the fight belongs to the opponent
+        # announced while that buy phase was open), then the next pairing
+        # takes over. The BOARDS resolve lazily in _resolve_boards — the
+        # friendly player id is only known once the hero parses, which may
+        # be after the combat snapshots arrived (the 2026-09-04 Holmes
+        # game captured nothing live for exactly this reason).
         if self.actions.turn != prev_turn:
-            if self._combat_board is not None:
-                stats, n, turn = self._combat_board
-                rec = {"stats": stats, "n": n, "turn": turn}
-                if self._combat_opp is not None:
-                    self._opp_boards[self._combat_opp] = rec
-                self._lobby_stats.append(rec)
-                self._combat_board = None
+            self._pairing[prev_turn] = self._combat_opp
             self._combat_opp = self.next_opponent
         # The buy-phase preview: NEXT_OPPONENT_PLAYER_ID on the friendly
         # hero (or the account entity) names the player of the fight after
@@ -393,17 +395,19 @@ class LiveCoach:
                 self._drain_stats(new)
             else:
                 self._stat_pending.extend(new)  # drained once the hero parses
-        # Scout: combat snapshots contain the opponent-side board (fixed
-        # player id 11); keep the last one per turn as the fought board.
+        # Scout: buffer the board snapshots PER TURN (player id + stat
+        # totals; the opponent-side id is DYNAMIC per game — 11 in one game,
+        # 13 in another — so the != friendly filter at resolve time is what
+        # identifies it). Snapshots fire on plays AND combat deaths, so a
+        # turn accumulates several; the resolver keeps the fullest view.
         if len(self.gs.snapshots) > self._snap_seen:
-            snap = self.gs.snapshots[-1]
+            new = self.gs.snapshots[self._snap_seen:]
             self._snap_seen = len(self.gs.snapshots)
-            if self.friendly is not None:
-                opp = [m for m in snap if m["player"] not in (self.friendly, None)]
-                if opp:
-                    self._combat_board = (
-                        sum((m.get("atk") or 0) + (m.get("health") or 0)
-                            for m in opp), len(opp), self.actions.turn)
+            for snap in new:
+                self._snap_by_turn.setdefault(self.actions.turn, []).append(
+                    [(m["player"],
+                      (m.get("atk") or 0) + (m.get("health") or 0))
+                     for m in snap])
         # Track when the friendly's tier changed, for the upgrade-price
         # fallback (the price drops 1 per turn you stay at a tier).
         if self.hero_card:
@@ -429,6 +433,40 @@ class LiveCoach:
                 rec["hl"] = rec["hf"]
                 self._armor_hist[turn] = rec
             rec["al" if tag == "ARMOR" else "hl"] = v  # last write wins
+
+    def _resolve_boards(self):
+        """Commit buffered combat snapshots to the lobby scout (gates 3+4).
+
+        Deferred until the friendly player id is known. Per turn, the
+        snapshot with the MOST opponent presence is the board we fought —
+        combat reveals their board progressively and deaths empty it
+        toward the end, so the fullest view is the honest estimate.
+        Credited to the pairing announced for that turn."""
+        if self.friendly is None:
+            return
+        for t in sorted(self._snap_by_turn):
+            if t < 1 or t in self._resolved:
+                continue
+            self._resolved.add(t)
+            best = None
+            for snap in self._snap_by_turn[t]:
+                opp = [(p, s) for p, s in snap
+                       if p not in (self.friendly, None)]
+                stats = sum(s for _p, s in opp)
+                if best is None or stats > best[0]:
+                    best = (stats, len(opp))
+            pid = self._pairing.get(t)
+            if best and best[0] > 0 and pid is not None:
+                rec = {"stats": best[0], "n": best[1], "turn": t}
+                self._opp_boards[pid] = rec
+                self._lobby_stats.append(rec)
+
+    def _fresh_opp_stats(self, turn):
+        """The next opponent's last-known board stats, if fresh enough."""
+        rec = self._opp_boards.get(self.next_opponent)
+        if rec and rec.get("turn", -99) >= turn - 2:
+            return rec.get("stats")
+        return None
 
     def _feed_techup(self, line):
         """Track the tavern upgrade button's live cost (see _TECHUP above)."""
@@ -584,6 +622,7 @@ class LiveCoach:
         self._ensure_meta()
         if self.friendly is None:
             return None  # no game/hero yet — nothing to analyze
+        self._resolve_boards()
         board, _ = self.gs.final_board(self.friendly)
         if not board and self.gs.snapshots:
             # A full-board turn's combat teardown removes the tavern board and
@@ -687,11 +726,20 @@ class LiveCoach:
             # baseline for this turn.
             "board_stats": sum((m.get("atk") or 0) + (m.get("health") or 0)
                                for m in board),
-            "opp_stats": (self._opp_boards.get(self.next_opponent) or {})
-            .get("stats"),
+            # The next opponent's last-known board is the buy-phase preview
+            # — but only while it's FRESH: a rematch against a player whose
+            # stored board is rounds old reads as far weaker than the board
+            # they'll actually bring (the Holmes t9 rematch vs a turn-1
+            # board). Older than 2 rounds -> unknown, lobby median instead.
+            "opp_stats": self._fresh_opp_stats(turn),
             "last_opp_stats": (self._lobby_stats[-1] or {}).get("stats")
             if self._lobby_stats else None,
-            "lobby_opp": _median([r["stats"] for r in self._lobby_stats]),
+            # The lobby scales fast; a median over every fight ever fought
+            # lags it badly by the late game (37 vs boards of 141/229 in the
+            # Holmes t9). The last 3 fights are the honest "what boards look
+            # like right now".
+            "lobby_opp": _median([r["stats"]
+                                  for r in self._lobby_stats[-3:]]),
             "baseline_opp": _baseline_opp(turn),
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
