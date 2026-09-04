@@ -168,7 +168,8 @@ class TestTopMoveSpells(unittest.TestCase):
     def test_cannot_afford_spell_falls_back(self):
         line = top_move(self._analysis(gold=0))
         self.assertNotIn("Buy Alliance Flag", line)
-        self.assertIn("roll", line)
+        self.assertNotIn("roll —", line)  # no phantom roll with 0 gold
+        self.assertIn("pass — out of gold", line)
 
 
 class TestGrowthCalibration(unittest.TestCase):

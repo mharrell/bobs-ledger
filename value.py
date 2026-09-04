@@ -520,7 +520,6 @@ def top_move(analysis):
     level_lead = None
     budget = gold
     level_next = None  # a LEVEL step that trails the buy instead of leading
-    level_next_note = None  # can't afford it this turn — a plan, not an action
     if tier and tier < 6:
         # Real upgrade price: the live TechUp button COST (tier+3 base,
         # dropping 1 per turn you wait) — tier+1 was the old wrong model.
@@ -548,11 +547,10 @@ def top_move(analysis):
                 level_lead = (f"LEVEL to tier {tier + 1}"
                               + (f" — {spare} left" if spare else ""))
                 budget = spare  # buys come out of the leftover, not the purse
-        else:
-            # Not affordable this turn: a next-turn plan, not an action. It
-            # must NOT headline the numbered list (2026-09-04: the Buy the
-            # player can actually do now must read as step 1) — it trails.
-            level_next_note = f"LEVEL next turn — {level_cost - gold} short"
+        # else: the level is out of reach this turn. It stays OUT of the
+        # numbered list — an upgrade the player can't make is not advice
+        # (2026-09-04: "shouldn't be recommending I upgrade if it's
+        # impossible"); the tier gap is already visible in the Build column.
     if level_lead:
         parts.append(level_lead)
 
@@ -576,6 +574,7 @@ def top_move(analysis):
     shop_rank = analysis.get("shop_rank") or []
     bought = None
     analysis["buy_step_card"] = None
+    analysis["buy_step_roll"] = None
     if analysis.get("buy_this"):
         cid = analysis["buy_this"]
         cost = costs.get(cid)
@@ -589,10 +588,11 @@ def top_move(analysis):
                     fallback = alt
                     break
             if fallback is None:
-                roll = (f"roll — {names.get(cid, cid)} costs {cost}, "
-                        f"{budget} left")
-                parts.append(roll)
-                analysis["buy_step_roll"] = roll
+                if budget:  # a roll costs 1 — with nothing left it isn't advice
+                    roll = (f"roll — {names.get(cid, cid)} costs {cost}, "
+                            f"{budget} left")
+                    parts.append(roll)
+                    analysis["buy_step_roll"] = roll
                 cid = None  # nothing affordable — don't also say "Buy X"
             else:
                 cid = fallback
@@ -618,16 +618,6 @@ def top_move(analysis):
         worst = analysis["sell_rank"][0]  # safest to sell
         if worst[1] < 15:  # a clear filler (low value)
             parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
-    # The deferred level trails every this-turn action. The spare-gold tail
-    # depends on what was already listed: after a concrete buy or roll,
-    # leftover gold just rolls; with nothing actionable, buying cheap first
-    # is still the move.
-    if level_next_note:
-        spent = bool(analysis.get("buy_step_card")
-                     or analysis.get("buy_step_roll"))
-        tail = "roll meanwhile" if spent or not gold \
-            else "buy cheap / roll meanwhile"
-        parts.append(f"{level_next_note}; {tail}")
     if parts:
         return " · ".join(f"{i}. {p}" for i, p in enumerate(parts, 1))
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
@@ -645,8 +635,12 @@ def top_move(analysis):
     # Otherwise point at the target comp so the advice stays actionable instead
     # of going stale ("committing to X" with no next step).
     target = analysis.get("target_comp")
-    msg = f"hold — look for {target} core cards" if target \
-        else "stabilize / roll for your comp"
+    if target:
+        msg = f"hold — look for {target} core cards"
+    elif gold == 0:
+        msg = "pass — out of gold"
+    else:
+        msg = "stabilize / roll for your comp"
     analysis["buy_step_roll"] = msg
     return msg
 
