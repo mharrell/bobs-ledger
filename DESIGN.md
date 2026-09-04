@@ -266,25 +266,38 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 - `.venv` created; `requests` available (no SDK install needed for the LLM client).
 - **Tools built:**
   - `parse_bg.py` / `extract_game.py` — Power.log → per-game player/hero/placement.
-  - `board_state.py` — Power.log → friendly final board + hand + hero state.
-  - `bans.py` — Power.log → per-game 5 allowed / 5 banned tribes; comp filter.
+  - `board_state.py` — Power.log → friendly final board + hand + hero state
+    (spending-aware gold).
+  - `bans.py` — Power.log → per-game 5 allowed / 5 banned tribes; comp filter
+    (partial pool reveals fail open and retry).
   - `scrape_comps.py` — hsreplay comp pages → `comps.json` (`--top N`, `--prune`).
   - `coach_llm.py` — DeepSeek v4 flash client with prefix-cache discipline.
   - `parse_trinkets.py` / `parse_minions.py` — meta raw pastes → JSON.
-  - `value.py` — minion value function (sell ranking, shop ranking, top move).
-  - `simulate_growth.py` — deterministic growth simulator (13 engines in
+  - `value.py` — minion value function (sell ranking, shop ranking, top move;
+    real upgrade button prices, level-vs-board rule, comp-pivot tracking).
+  - `choices.py` — hero / trinket / discover pick ranking.
+  - `simulate_growth.py` — deterministic growth simulator (engine model in
     `meta/engines.json`; golden, compounding, tribe-scaling).
   - `live_coach.py` — incremental live coach (fast per-buy-phase analysis).
   - `live.py` — live monitor + overlay server.
-  - `coach_ui.py` — V1 overlay (local stdlib HTTP server + HTML page).
+  - `coach_ui.py` — overlay (three-column Decide/Build/Market layout, prices,
+    card art).
   - `validate_growth.py` — simulator validation against real games.
   - `replay_stats.py` — deterministic replay-analysis pipeline (corpus stats).
+  - `replay_review.py` — per-phase coach-recommendation vs player-actions diff.
+  - `hearth_art_extract.py` — UnityPy card-art extraction from the local
+    client (GUID-addressed; 100% coverage).
+  - `sanitize_log.py` / `decision_log.py` / `package_corpus.py` /
+    `upload_corpus.py` — the beta corpus loop → private repo
+    `mharrell/hearth-telemetry`.
 - **Meta reference:** complete in `meta/` (see section 6).
 
 ### Network situation
-- Network is up (scraping hsreplay/wiki works). hsreplay's minions/heroes/
-  dark-gifts APIs are Cloudflare-protected (403) — those meta assets come from
-  manual paste; the comps/trinkets pages and the wiki are scrapable.
+- hsreplay's minions/heroes/dark-gifts APIs are Cloudflare-protected (403) —
+  those meta assets come from manual paste; the comps/trinkets pages are
+  scrapable. The wiki (hearthstone.wiki.gg) is now Cloudflare-blocked too
+  (2026-09-03) — card art comes from the local client via `hearth_art_extract.py`
+  instead.
 
 ### Harness / headless notes
 - `dsh --profile headless` is how to run a fresh agent from the CLI.
