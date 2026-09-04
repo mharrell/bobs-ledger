@@ -199,6 +199,28 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       overrides the board commit when the last turn or two of acquisitions
       contain ≥2 core hits of a DIFFERENT comp (copies count — a pivot is
       often 3x one core).
+- [x] **Level decision gates 1+2** (2026-09-04, from the Guff replay + the
+      Jeef/Shadybunny leveling transcripts — model in
+      `analysis/LEVELING_MODEL.md`): the coach leveled while it was losing —
+      the Guff game took 4 straight combat losses absorbed by armor
+      (12→0) while HP stayed 30, invisible to the static HP+armor rule.
+      (1) **Armor flow**: `GameState.hero_stat_log` records every hero
+      ARMOR/HP write; `LiveCoach` stamps each with its turn (first/last per
+      turn — combat damage = first minus last, quiet turns carry forward),
+      exposing `damage_last` and `loss_streak` (real loss = ≥3, 1-2 is a
+      close fight). Two straight losses or one ≥10 hit at tier ≥3 defer the
+      level behind the buy: "LEVEL next turn (lost 2 straight fights —
+      stabilize first)". Early-game losses (tiers 1-2) don't gate levels —
+      that part of the game is shop-driven, not board-driven.
+      (2) **Shopping-list tier filter** (Q1): `_comp_needs_by_tier` splits
+      the target comp's unowned pieces by which tavern tier holds them.
+      Pieces at tier+1 → the level states its payoff ("the comp's next
+      pieces live there"); pieces ONLY on the current tier → the level is
+      declined on purpose ("stay on tier N — your comp's missing pieces
+      are on this tier; leveling would lower the odds"), and the buy comes
+      from the full purse. Every level step now carries its reason.
+      Remaining gates (curve baseline, opponent estimate) tracked in the
+      spec.
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored

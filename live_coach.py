@@ -196,6 +196,9 @@ class LiveCoach:
         self.techup = {}    # TechUp button id -> {tier, player, cost, zone}
         self._last_tier = None
         self._tier_seen_turn = None  # turn the current tier was reached
+        self._armor_hist = {}  # turn -> {af, al, hf, hl} first/last armor+HP
+        self._stat_seen = 0    # hero_stat_log entries already drained
+        self._stat_pending = []  # (turn, cid, tag, value) before hero parse
         self._bans_ready = False
         self._card_races = None
         self._seed = None
@@ -221,6 +224,9 @@ class LiveCoach:
         self.techup = {}
         self._last_tier = None
         self._tier_seen_turn = None
+        self._armor_hist = {}
+        self._stat_seen = 0
+        self._stat_pending = []
         self._bans_ready = False
         self._card_races = None
         self._seed = None
@@ -298,6 +304,17 @@ class LiveCoach:
         self.gs.feed(line)
         self.actions.feed(line)
         self.cur_lines.append(line)
+        # Armor flow (Q0): stamp every friendly-hero ARMOR/HEALTH write with
+        # the turn it arrived in, keeping first/last per turn — combat
+        # damage = first minus last (the buy-phase state vs post-combat).
+        if len(self.gs.hero_stat_log) > self._stat_seen:
+            new = [(self.actions.turn, cid, tag, val)
+                   for cid, tag, val in self.gs.hero_stat_log[self._stat_seen:]]
+            self._stat_seen = len(self.gs.hero_stat_log)
+            if self.hero_card:
+                self._drain_stats(new)
+            else:
+                self._stat_pending.extend(new)  # drained once the hero parses
         # Track when the friendly's tier changed, for the upgrade-price
         # fallback (the price drops 1 per turn you stay at a tier).
         if self.hero_card:
@@ -306,6 +323,23 @@ class LiveCoach:
                 if self._last_tier is not None:
                     self._tier_seen_turn = self.actions.turn
                 self._last_tier = tier
+
+    def _drain_stats(self, entries):
+        """Record hero ARMOR/HEALTH writes into the per-turn first/last
+        history. A turn's record starts seeded with the previous turn's
+        ending values (an armor-only combat still knows the health)."""
+        for turn, cid, tag, value in entries:
+            if self.hero_card and cid != self.hero_card:
+                continue
+            v = int(value)
+            rec = self._armor_hist.get(turn)
+            if rec is None:
+                prev = self._armor_hist.get(turn - 1) or {}
+                rec = {"af": prev.get("al"), "hf": prev.get("hl")}
+                rec["al"] = rec["af"]
+                rec["hl"] = rec["hf"]
+                self._armor_hist[turn] = rec
+            rec["al" if tag == "ARMOR" else "hl"] = v  # last write wins
 
     def _feed_techup(self, line):
         """Track the tavern upgrade button's live cost (see _TECHUP above)."""
@@ -344,6 +378,9 @@ class LiveCoach:
         self.account = next((n for n, c in meta["account"].items()
                              if c == self.hero_card), None)
         self.actions.friendly = self.friendly
+        if self._stat_pending:
+            self._drain_stats(self._stat_pending)
+            self._stat_pending = []
         # The current tier was set at game setup (before turn 1) — the
         # upgrade-price fallback counts turns at the tier from there.
         if self._last_tier is None:
@@ -492,6 +529,48 @@ class LiveCoach:
             recent += [cid for p, cid in self.actions.turn_plays[-1]
                        if p == friendly]
         target = comp_target(board, self.playable, recent_cards=recent)
+        # Armor flow (loss-streak signal, analysis/LEVELING_MODEL.md Q0):
+        # the per-turn record's LAST armor/HP write is the end-of-turn
+        # effective health; quiet turns (won combats — no writes) carry the
+        # last known values forward. The combat that ends turn t costs
+        # series[t-1] - series[t], readable at the NEXT buy phase. A real
+        # loss is >= 3 (1-2 is a close fight).
+        health = self.gs.hero_meta.get(self.hero_card, {}).get("health")
+        armor = self.gs.hero_meta.get(self.hero_card, {}).get("armor")
+        turn = self.actions.turn
+
+        series = {}
+        last = {}
+        if self._armor_hist:
+            for t in range(max(self._armor_hist) + 1):
+                rec = self._armor_hist.get(t)
+                if rec:
+                    for k in ("al", "hl"):
+                        if rec.get(k) is not None:
+                            last[k] = rec[k]
+                if last.get("al") is not None and last.get("hl") is not None:
+                    series[t] = last["al"] + last["hl"]
+
+        def _combat_damage(t):
+            if t < 0 or t - 1 not in series or t not in series:
+                return None
+            return series[t - 1] - series[t]
+
+        damage_last = None
+        loss_streak = 0
+        d = _combat_damage(turn - 1)
+        if d is not None:
+            damage_last = d if d > 0 else None
+            if damage_last and damage_last >= 3:
+                loss_streak = 1
+                t = turn - 2
+                while t >= 1:
+                    pd = _combat_damage(t)
+                    if pd is not None and pd >= 3:
+                        loss_streak += 1
+                        t -= 1
+                    else:
+                        break
         # The pending pick (hero / trinket / discover), ranked against the
         # current board and comp.
         choice_advice = None
@@ -504,10 +583,13 @@ class LiveCoach:
         result = {
             "hero": self.hero_name,
             "tier": tier,
+            "turn": turn,
             "gold": gold,
             "level_cost": self.level_cost(),
-            "health": self.gs.hero_meta.get(self.hero_card, {}).get("health"),
-            "armor": self.gs.hero_meta.get(self.hero_card, {}).get("armor"),
+            "health": health,
+            "armor": armor,
+            "damage_last": damage_last,
+            "loss_streak": loss_streak,
             "board": board,
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,

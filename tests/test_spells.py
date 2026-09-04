@@ -245,7 +245,7 @@ class TestTopMovePriority(unittest.TestCase):
         t1 = next(c for c, v in card_db.items() if v.get("tier") == 1)
         t2 = next(c for c, v in card_db.items() if v.get("tier") == 2)
         line = top_move(self._analysis(5, 7, t2, [(t2, 9.0), (t1, 5.0)]))
-        self.assertIn(f"1. LEVEL to tier 6 — 1 left", line)
+        self.assertIn(f"1. LEVEL to tier 6 (standard curve) — 1 left", line)
         self.assertNotIn(f"Buy {value._load_bg_names().get(t2, t2)} (", line)
         self.assertIn(f"Buy {value._load_bg_names().get(t1, t1)}", line)
 
