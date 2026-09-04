@@ -159,6 +159,46 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       the live poll dropped to 0.3s (advice is ~5ms — the 1s poll was the
       perceived slowness), and output is cp1252-safe (Unicode arrows crash
       Windows consoles).
+- [x] **Real upgrade prices + spending-aware gold** (2026-09-03, from the
+      Voone game): two "coach doesn't understand gold" bugs. (1) The
+      level-cost model was tier+1, but BG upgrade prices start at
+      (target+3) gold and DROP 1 at the start of each round you wait — the
+      coach now reads the TechUp button's live COST tag from the log
+      (teardown-write-proof), with the wiki-rule formula as fallback.
+      Turn-1 leveling at 3 gold is genuinely impossible (the button costs
+      5). (2) `board_state` stored only RESOURCES (the turn's purse) and
+      never RESOURCES_USED — after a buy the coach still showed the full
+      purse. Gold is now RESOURCES + TEMP_RESOURCES − RESOURCES_USED, and
+      the fingerprint notices spending.
+- [x] **Level-vs-board rule** (2026-09-03 evening, from the replay review:
+      level advice overridden 5x in 2 games): the friendly hero's HEALTH tag
+      is now parsed alongside armor, and `top_move` flips to BUY-first when
+      the level and the shop's top card can't both be afforded AND either
+      effective health (HP+armor) ≤ 12 (dying) or the shop's top card is a
+      core piece of the target comp; the level then trails the buy. The
+      state strip shows HP, red when dying.
+- [x] **Cast-generating spells** (2026-09-03 evening, from the Naga
+      losing-game report): Spitescale Special (Get 3 random Spellcraft
+      spells) triggered the per-cast buff 4 times, not 1 — `_extra_casts()`
+      parses cast generation from text and `_spell_fuel_bonus` measures the
+      marginal growth at n + 1 + k casts, so spellcraft spells rank by their
+      real multiplied engine value.
+- [x] **Empty-board buy-phase window** (2026-09-03): after a full-board
+      turn, the log tears the tavern board down at combat end and re-adds it
+      only AFTER the next shop print — the coach advised one phase per game
+      on board 0. `analyze()` now estimates from the last board snapshot
+      until the real board lands.
+- [x] **Ban gate** (2026-09-03): `bans_from_log` derives allowed tribes
+      from pool minions seen so far, and a partial reveal once froze 9
+      banned tribes in the UI for a whole game. Only a complete
+      5-allowed set is accepted; incomplete sets fail open and retry.
+- [x] **Target-comp pivot override** (2026-09-04, from the Varden replay):
+      the tracker committed from board overlap alone — backward-looking, so
+      "LEVEL to tier 6" was pushed for five consecutive phases while the
+      player pivoted. `comp_target(board, comps, recent_cards)` now
+      overrides the board commit when the last turn or two of acquisitions
+      contain ≥2 core hits of a DIFFERENT comp (copies count — a pivot is
+      often 3x one core).
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored
@@ -221,10 +261,31 @@ tavern-owned) — shop_ranking just silently dropped them.
       so discover trigger counts are unaffected), surfaces as a "Pick this"
       overlay box, a PICK lead in `top_move`, and a console section. Hero-power
       shift choices (17/game with Master Nguyen) remain unranked — no data.
+      Locked heroes (season pass): the log doesn't expose ownership, so the
+      top pick carries an "if locked, <next-best>" fallback.
 - [ ] Persist live game data so a log rotation / coach restart doesn't lose the
       tail of a game (surfaced when the A. F. Kay game was lost to rotation).
-- [ ] Persist live game data so a log rotation / coach restart doesn't lose the
-      tail of a game (surfaced when the A. F. Kay game was lost to rotation).
+- [x] **Overlay real-estate rework** (2026-09-03/04, from the overlay
+      screenshots): full-width three-column layout — DECIDE (Choose 1, Top
+      move, Buy, Level/Roll), BUILD (Target comp, Board, triggers), MARKET
+      (Tavern shop, Sell ranking, Playable comps) — with the state strip
+      (hero/gold/tier/turn/HP/banned) across the top; responsive (3/2/1
+      columns). 44px art with hover zoom; art placeholders (initial letter,
+      fixed slot) keep every row aligned with or without art. The Buy box
+      mirrors the top move's actual buy (buy_step_card written by top_move) —
+      they used to disagree (shop #1 vs the plan's affordable card). Shop
+      rows show each card's tavern price. Playable comps (was permanently
+      "—" on a key mismatch), stacked comp rows, duplicate sell entries
+      grouped with ×N badges.
+- [x] **Card art: 100% coverage** (2026-09-03): HearthstoneJSON renders lag
+      the patch and skip trinkets entirely, and the wiki is Cloudflare-blocked
+      — so `hearth_art_extract.py` reads the local client's Unity bundles:
+      carddef objects map card id -> portrait GUID (asset names differ between
+      content generations, so GUIDs are the stable address), then every
+      Data/Win bundle is container-scanned for those GUIDs and the texture
+      exported at 256px (+497 art files: 91 trinkets, 92 heroes, 382
+      current-season). `/img/<id>.png` also fetches renders on demand (1h
+      negative cache, ThreadingHTTPServer so a fetch can't stall /analysis).
 
 ## Phase 6 — Evaluation rigor
 - Sham-coach control (a sham coach gives plausible-but-random advice; if players
@@ -254,7 +315,17 @@ tavern-owned) — shop_ranking just silently dropped them.
       finding: the coach buried the (correct) tempo-level line under a generic
       buy pick that was never taken; top_move now leads with an affordable
       level.
-- [ ] Opt-in replay upload loop to build the corpus over time.
+- [x] **Beta corpus pipeline** (2026-09-03/04): HSReplay confirmed they do
+      NOT make replay data available, so we gather our own. `decision_log.py`
+      records every advisory alongside the Power.log (log basename + byte
+      offset join keys, coach git version — advice is only re-derivable from
+      a log under the exact code that produced it); `sanitize_log.py` redacts
+      BattleTags (the log's ONLY personal data — a ~1M-line pattern scan
+      found no IPs, emails, paths, or account IDs); `package_corpus.py` emits
+      one ~5MB gzipped bundle per session (sanitized log + decisions +
+      manifest); `upload_corpus.py` PUTs it to the private repo
+      **mharrell/hearth-telemetry** (gh keyring or a repo-scoped
+      GH_TELEMETRY_TOKEN). Verified end-to-end.
 - [ ] Phase 6 sham-control: matched advice-vs-sham-coach games (the only
       causal test that coaching helps placement).
 
@@ -285,6 +356,6 @@ tavern-owned) — shop_ranking just silently dropped them.
 - Evaluation protocol (sham-control).
 
 ## Dependencies / blockers
-- Network to PyPI (for `hslog` deps) — currently down from working environment.
-- `DEEPSEEK_API_KEY` for headless harness runs — not yet wired.
-- Vision model availability for the coach agent.
+- `DEEPSEEK_API_KEY` for the patch-notes LLM extraction pass and headless
+  harness runs — set in the user's normal terminal environment.
+- Vision model availability for the coach agent (open decision).
