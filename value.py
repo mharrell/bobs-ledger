@@ -7,6 +7,7 @@ card is safest to sell?" via marginal contribution.
 Design: analysis/VALUE_FUNCTION.md. The weights (W_*) are initial guesses,
 intended to be tuned against real games.
 """
+import functools
 import json
 import os
 import re
@@ -64,6 +65,7 @@ _SPELL_SCALING_MARKERS = ("each turn", "end of turn", "this game",
                           "whenever you", "after you")
 
 
+@functools.lru_cache(maxsize=1)
 def _load_card_db():
     """card id -> {name, race, attack, health, mechanics, text} from the BG pool.
 
@@ -91,6 +93,7 @@ def _load_card_db():
     return out
 
 
+@functools.lru_cache(maxsize=1)
 def _load_spell_db():
     """card id -> {name, tier, cost, text} from meta/tavern_spells.json."""
     path = os.path.join(_HERE, "meta", "tavern_spells.json")
@@ -1031,6 +1034,7 @@ _DEFAULT_SCENARIO = {
 }
 
 
+@functools.lru_cache(maxsize=1)
 def _load_bg_names():
     """card id -> name from the BG pools (meta/minions.json + tavern_spells.json).
 

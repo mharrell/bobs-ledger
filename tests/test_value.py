@@ -91,9 +91,6 @@ class TestBannedPenalty(unittest.TestCase):
         self.assertEqual(penalized[EL] - clean[EL], -2.0)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 class TestNoEvidenceNoComp(unittest.TestCase):
     """A target comp requires EVIDENCE (2026-09-04 live note: "already has
     a recommended comp listed from the beginning of the game, which is
@@ -310,3 +307,7 @@ class TestCompFilteredBuy(unittest.TestCase):
         self.assertGreater(blessed[self.PERCUSSIONIST],
                            base[self.PERCUSSIONIST] + 9)  # the +10 core bonus
         self.assertAlmostEqual(blessed[self.SLAMMA], base[self.SLAMMA])
+
+
+if __name__ == "__main__":
+    unittest.main()

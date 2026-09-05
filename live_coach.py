@@ -365,21 +365,6 @@ class LiveCoach:
         if m and self.choice is not None:
             self.choice["picked"] = m.group(1)
         m = _SHOP_OPT.search(line)
-        # The shop changes at a new buy phase, on a refresh (re-roll), or on a
-        # buy; reset so the next DebugPrintOptions block rebuilds it from the
-        # current offers. (Only actual PLAY actions for refresh/buy, not the
-        # DebugPrintOptions buttons.)
-        if "tag=STEP value=MAIN_ACTION" in line \
-                or "BlockType=PLAY Entity=[entityName=Refresh " in line \
-                or ("BlockType=PLAY Entity=[entityName=Drag To Buy " in line and "Target=" in line):
-            self.shop_cards = []
-        # The game re-prints ALL options after every event; each new options
-        # block starts with "DebugPrintOptions() - id=N". Treat the shop as the
-        # most recent block: reset on block start so stale generations
-        # (including discover choices) don't accumulate in the ranking.
-        if _OPTIONS_HEADER.search(line):
-            self.shop_cards = []
-        m = _SHOP_OPT.search(line)
         if m:
             cid, p = m.group(1), int(m.group(2))
             # Keep every card option, minions and tavern spells (shop offers are
