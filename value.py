@@ -479,6 +479,53 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
     return scored
 
 
+def hand_plan(hand, board_minions=None, scenario=None):
+    """What to do with cards ALREADY in hand — plays the coach never made
+    (2026-09-04: five spells sat in hand that would 10x the board's stats
+    while the coach said nothing about them).
+
+    Casting a spell from hand costs NO gold and playing a minion stuck in
+    hand (full board) costs none either, so each card's whole effect is
+    profit. Spells rank by direct effect + cast-engine fuel (each cast
+    feeds end-of-turn compounding, which counts casts made THIS turn);
+    hand minions rank by their value as a free play. Returns a list of
+    {"card", "name", "verb": "cast"|"play", "score", "why"} — one entry
+    per hand card, most valuable first.
+    """
+    spell_db = _load_spell_db()
+    card_db = _load_card_db()
+    names = _load_bg_names()
+    board = board_minions or []
+    steps = []
+    for m in hand:
+        cid = m.get("card")
+        if not cid:
+            continue
+        spell = spell_db.get(cid)
+        if m.get("type") == "spell" or (spell and m.get("type") is None):
+            if not spell:
+                continue  # generated/unknown spell entity — can't advise
+            points = _spell_effect(spell, len(board))
+            fuel = _spell_fuel_bonus(board, names, scenario,
+                                     extra_casts=_extra_casts(spell))
+            why = "each cast feeds your cast engine" if fuel > 0 else None
+            steps.append({"card": cid, "verb": "cast", "score": points
+                          + W_SPELL_FUEL * fuel,
+                          "name": names.get(cid, cid), "why": why})
+        else:
+            card = card_db.get(cid)
+            if not card:
+                continue
+            why = None
+            if len(board) >= 7:
+                why = "board is full — sell to make room"
+            steps.append({"card": cid, "verb": "play",
+                          "score": minion_value(m, card),
+                          "name": names.get(cid, cid), "why": why})
+    steps.sort(key=lambda s: (-s["score"], s["name"]))
+    return steps
+
+
 def top_move(analysis):
     """A one-line decision call as numbered priority steps.
 
@@ -498,6 +545,9 @@ def top_move(analysis):
     minion costs its TIER (the card's `cost` field is mana — using it made
     the coach suggest cards the player couldn't afford, the 2026-09-01
     evening complaint), a spell costs `cost`.
+    The HAND leads everything: casts and plays from hand are free, and
+    end-of-turn compounding counts casts made THIS turn — the 2026-09-04
+    plan left five hand spells sitting that would 10x the board.
     """
     names = _load_bg_names()
     card_db = _load_card_db()
@@ -510,6 +560,32 @@ def top_move(analysis):
     tier = analysis.get("tier")
     gold = analysis.get("gold")
     parts = []
+
+    # 0. The hand (free actions, in ranked order): cast spells, play stuck
+    #    minions. Copies group ("x2"); beyond three the rest summarize so the
+    #    level/buy steps stay visible.
+    hand_entries = analysis.get("hand_plan") or []
+    hand_parts = []
+    if hand_entries:
+        counts, order = {}, []
+        for s in hand_entries:
+            key = (s["verb"], s["card"])
+            if key not in counts:
+                counts[key] = [0, s]
+                order.append(key)
+            counts[key][0] += 1
+        for key in order:
+            n, s = counts[key]
+            label = ("Cast " if s["verb"] == "cast" else "Play ") + s["name"]
+            if n > 1:
+                label += f" x{n}"
+            if s.get("why"):
+                label += f" ({s['why']})"
+            hand_parts.append(label)
+        if len(hand_parts) > 3:
+            extra = len(hand_parts) - 3
+            hand_parts = hand_parts[:3] + [f"then the rest of your hand "
+                                           f"({extra} more)"]
 
     # 1. LEVEL — the tier gates the whole shop, so it leads whenever relevant.
     #    The gates and their reasons follow analysis/LEVELING_MODEL.md:
@@ -691,25 +767,36 @@ def top_move(analysis):
     if stay_note and tier:
         parts.append(f"stay on tier {tier} — your comp's missing pieces are "
                      f"on this tier; leveling would lower the odds")
-    if parts:
-        return " · ".join(f"{i}. {p}" for i, p in enumerate(parts, 1))
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
-    # right move is to pass and let the engine grow.
-    if len(analysis.get("board", [])) >= 7 \
+    # right move is to pass and let the engine grow — casting the hand first
+    # (end-of-turn effects count the casts made this turn).
+    if not parts and len(analysis.get("board", [])) >= 7 \
             and _has_end_of_turn(analysis.get("board", []), card_db):
-        msg = "wait for end of turn — let the engine scale"
-        analysis["buy_step_roll"] = msg  # the Buy box mirrors the plan
-        return msg
+        parts.append("wait for end of turn — let the engine scale")
+        if not hand_parts:
+            analysis["buy_step_roll"] = parts[-1]  # the Buy box mirrors it
+    if parts or hand_parts:
+        return " · ".join(f"{i}. {p}"
+                          for i, p in enumerate(hand_parts + parts, 1))
     # Nothing affordable and nothing to level: roll unless there's no gold at all.
+    # Committed and hunting pieces is the endgame (2026-09-04: "we committed,
+    # we have it, now we scale it to kingdom come") — say so instead of a
+    # generic roll.
+    target = analysis.get("target_comp")
+    scaling = target and analysis.get("target_state") == "committing"
     if gold is not None and gold >= 1:
-        msg = "roll — nothing in the shop beats your gold; level needs saving"
+        msg = ("roll — hunt more " + target + " to scale it"
+               if scaling else
+               "roll — nothing in the shop beats your gold; level needs saving")
         analysis["buy_step_roll"] = msg
         return msg
-    # Otherwise point at the target comp so the advice stays actionable instead
-    # of going stale ("committing to X" with no next step).
-    target = analysis.get("target_comp")
+    # Otherwise point at the comp so the advice stays actionable instead of
+    # going stale — with the endgame framing once committed.
     if target:
-        msg = f"hold — look for {target} core cards"
+        msg = (f"scale {target} — buy its scalers, cast everything, sell "
+               f"nothing that grows"
+               if scaling else
+               f"hold — look for {target} core cards")
     elif gold == 0:
         msg = "pass — out of gold"
     else:

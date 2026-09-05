@@ -321,6 +321,18 @@ function render(a) {
   // The plan's actual buy (highlighted in the shop tiles below too).
   const stepCard = a.buy_step_card || null;
 
+  // HAND — casts from hand are free, stuck minions play free; the ranked
+  // order here is the plan's hand steps (they're numbered in the panel too).
+  if (a.hand && a.hand.length) {
+    const tiles = el('div', 'tiles');
+    a.hand.forEach(s => {
+      const sub = (s.verb === 'cast' ? 'cast' : 'play')
+        + (s.score != null ? ' · ' + s.score.toFixed(0) : '');
+      tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
+    });
+    app.appendChild(box('Your hand', tiles));
+  }
+
   // SELL — one horizontal line: safe to sell | divider | do not sell.
   // The split is the value function's own filler threshold (score < 15 is
   // what top_move calls "a clear filler").
@@ -430,6 +442,10 @@ def render_json(analysis):
             g["score"] = min(g["score"], round(v))
     sell.sort(key=lambda g: g["score"])
     a["sell_rank"] = sell
+    # The hand: casts/plays ranked for the "Your hand" tiles (free actions —
+    # the plan's numbered steps carry them too; this row is the reference).
+    a["hand"] = [dict(s, name=names.get(s["card"], s["card"]))
+                 for s in analysis.get("hand", [])]
     # Tag shop entries by comp membership (core/addon) or kind (spell), so the
     # shop list shows why each card matters without opening the comp DB.
     # Each row also carries its tavern price (minion = tier, spell = cost) —

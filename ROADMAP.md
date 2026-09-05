@@ -277,6 +277,31 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       loss** (a won combat never drops health+armor — the Guff game lost
       every fight by 1-5 and the old ≥3 rule read it as no streak); close
       losses are flagged in the reason, not discounted.
+- [x] **Hand coaching + the endgame scale (2026-09-04, "it would have just
+      had me leave 5 spells in my hand that 10x my stats" / "we committed,
+      we have it, now we scale it to kingdom come")**:
+      (1) **The hand is now parsed** (board_state.hand: minions AND tavern
+      spells, each typed; casting from hand is free, a stuck minion plays
+      free — every hand card is pure profit the coach can't leave on the
+      table). (2) **`value.hand_plan`** ranks casts (direct effect + cast-
+      engine fuel — end-of-turn compounding counts casts made THIS turn)
+      and plays (free minion value; "board is full — sell to make room"
+      when applicable); generated spell entities without a real id are
+      skipped. (3) **The hand leads top_move's numbered plan** (free actions
+      execute first; copies group "x2", beyond three kinds the rest
+      summarize so the level/buy steps stay visible), and the full-board
+      "wait for end of turn" pass lists the casts before it. (4) **The
+      fingerprint includes the hand** — buying a spell into hand or casting
+      one out re-advises without touching gold/board/shop. (5) **The
+      overlay** gets a "Your hand" tile row (cast/play + score) under the
+      instruction panel. (6) **Endgame framing**: once committed
+      (target_state == "committing"), the stale/roll fallbacks say "scale
+      <comp> — buy its scalers, cast everything, sell nothing that grows"
+      / "roll — hunt more <comp> to scale it" instead of "hold — look for
+      core cards". Validated on the live Guff game: t2 casts the Banana
+      alone, t9 lists Spitescale Special + Tavern Coins, t13-14 show stuck
+      comp pieces with make-room notes; UI smoke-tested against the real
+      payload.
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored

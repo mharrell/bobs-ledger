@@ -36,6 +36,46 @@ def tags(prefix, eid, atk, health, zone="PLAY", player=1, cid=""):
     ]
 
 
+class TestHand(unittest.TestCase):
+    def test_hand_carries_minions_and_spells(self):
+        """The hand is a coaching input (2026-09-04: five spells sat in hand
+        while the coach said nothing — casting from hand is free). Minions
+        and tavern spells both parse, each tagged with a type."""
+        gs = GameState()
+        lines = (
+            creating(30, "BG33_140")
+            + tags(GS, 30, 2, 2, zone="HAND", player=1, cid="BG33_140")
+            + [f"{GS}    FULL_ENTITY - Creating ID=31 CardID=BG28_897",
+               f"{GS}        tag=CONTROLLER value=1",
+               f"{GS}        tag=ZONE value=HAND",
+               f"{GS}        tag=ZONE_POSITION value=2",
+               f"{GS}        tag=CARDTYPE value=SPELL"]
+        )
+        for line in lines:
+            gs.feed(line)
+        hand = gs.hand(friendly_player=1)
+        types = {m["card"]: m["type"] for m in hand}
+        self.assertEqual(types.get("BG33_140"), "minion")
+        self.assertEqual(types.get("BG28_897"), "spell")
+
+    def test_cast_spell_leaves_the_hand(self):
+        """Casting moves the spell out of HAND — the hand (and the plan)
+        must shrink with it."""
+        gs = GameState()
+        for line in (
+            [f"{GS}    FULL_ENTITY - Creating ID=31 CardID=BG28_897",
+             f"{GS}        tag=CONTROLLER value=1",
+             f"{GS}        tag=ZONE value=HAND",
+             f"{GS}        tag=CARDTYPE value=SPELL"]
+        ):
+            gs.feed(line)
+        self.assertEqual(len(gs.hand(friendly_player=1)), 1)
+        gs.feed(f"{GS}TAG_CHANGE Entity=[entityName=Spell id=31 zone=HAND "
+                f"zonePos=1 cardId=BG28_897 player=1] tag=ZONE "
+                f"value=REMOVEDFROMGAME")
+        self.assertEqual(gs.hand(friendly_player=1), [])
+
+
 class TestUpdatingForm(unittest.TestCase):
     def test_updating_block_targets_its_own_entity(self):
         """A Tusked Camper (3/4) followed by a PTL Updating block of a *different*

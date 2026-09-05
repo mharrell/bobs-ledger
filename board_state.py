@@ -291,20 +291,29 @@ class GameState:
         return friendly_board, opponent_board
 
     def hand(self, friendly_player):
-        """Minions in ZONE=HAND (bought, not yet played), friendly only."""
+        """Cards in ZONE=HAND (bought, not yet played/cast), friendly only.
+
+        Minions AND tavern spells: casting a spell from hand is free, and a
+        minion stuck in hand (full board) plays free — both are decisions the
+        coach must see. Each entry carries "type" ("minion"/"spell"); spell
+        filtering (real tavern spells vs generated junk) happens upstream
+        where the spell DB lives.
+        """
         hand = []
         for eid, cid in self.card.items():
             if not MINION_ONLY.match(cid):
                 continue
             ct = self.cardtype.get(eid)
-            if ct is not None and ct != "MINION":
+            if ct not in ("MINION", "SPELL"):
                 continue
             if self.zone.get(eid) != "HAND":
                 continue
             if self.player.get(eid) != friendly_player:
                 continue
-            hand.append(self._minion(eid, cid))
-        hand.sort(key=lambda m: m["card"])
+            m = self._minion(eid, cid)
+            m["type"] = "spell" if ct == "SPELL" else "minion"
+            hand.append(m)
+        hand.sort(key=lambda m: (m["pos"] is None, m["pos"] or 0))
         return hand
 
 
