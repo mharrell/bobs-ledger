@@ -284,7 +284,7 @@
     "id": "BG36_246",
     "name": "Mighty Dragonbreath",
     "cost": 2,
-    "text": "[x]Give your minions +2/+1.\nRepeat for your Dragons.\nRepeat for your minions\nwith Divine Shield."
+    "text": "Give your minions +3/+2. Repeat for your Dragons. Repeat for your minions with Divine Shield."
   },
   {
     "tier": 4,
@@ -339,8 +339,8 @@
     "tier": 4,
     "id": "BG28_845",
     "name": "Natural Blessing",
-    "cost": 4,
-    "text": "Choose a minion. Give all minions that share a type with it +3/+3."
+    "cost": 2,
+    "text": "Choose a minion. Give all minions that share a type with it +2/+1."
   },
   {
     "tier": 4,
@@ -348,13 +348,6 @@
     "name": "Temperature Shift",
     "cost": 4,
     "text": "Get a Fire Baller and a Snow Baller."
-  },
-  {
-    "tier": 5,
-    "id": "BG33_817",
-    "name": "Sanctify",
-    "cost": 1,
-    "text": "[x]Give your minions\nwith Divine Shield\n+6 Attack."
   },
   {
     "tier": 5,
