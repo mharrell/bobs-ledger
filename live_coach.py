@@ -698,8 +698,24 @@ class LiveCoach:
         gold = self.gs.gold.get(self.account) if self.account else None
         scenario = self.actions.scenario()
         hero_power = _hero_power_text(self.hero_name)
+        # Recent acquisitions (this turn's plays + the last completed turn's)
+        # feed the pivot override — the board alone lags an actual pivot.
+        friendly = self.friendly
+        recent = [cid for p, cid in self.actions.plays if p == friendly]
+        if self.actions.turn_plays:
+            recent += [cid for p, cid in self.actions.turn_plays[-1]
+                       if p == friendly]
+        target = comp_target(board, self.playable, recent_cards=recent)
+        # ONE comp target feeds sell + buy + display — the evidence-based
+        # target. The old per-function comp picks (crude tribe overlap for
+        # sells, an arbitrary dict-order comp for buys) disagreed with the
+        # "committing to" display and mis-floored the glue: Banana Slamma
+        # headlined a Naga game (t9) and "sell Fauna Whisperer" — the comp's
+        # own payoff — fired while Balinda (in the wrong comp's core) was
+        # protected (the 2026-09-04 1st-place game).
         ranked = sell_recommendation(board, self.playable, self.allowed,
-                                     scenario=scenario, hero_power=hero_power)
+                                     scenario=scenario, hero_power=hero_power,
+                                     comp=target)
         # The shop = the DebugPrintOptions offers owned by anyone but the friendly
         # player (the player's own minions are shown as sell options, not offers).
         offer_ids = []
@@ -710,7 +726,8 @@ class LiveCoach:
                 seen.add(c)
         shop = shop_ranking(offer_ids, self.playable, board,
                             self.allowed, hero_power=hero_power,
-                            scenario=scenario) if offer_ids else []
+                            scenario=scenario, recent_cards=recent,
+                            comp=target) if offer_ids else []
         # The hand: casts from hand are free, stuck minions play free — the
         # coach's blind spot until 2026-09-04 (five spells sat in hand that
         # would 10x the board while the coach said nothing). Spell entities
@@ -723,14 +740,6 @@ class LiveCoach:
         golden_by_cid = {m["card"]: m.get("golden") for m in hand}
         for s in hand_steps:
             s["golden"] = golden_by_cid.get(s["card"], False)
-        # Recent acquisitions (this turn's plays + the last completed turn's)
-        # feed the pivot override — the board alone lags an actual pivot.
-        friendly = self.friendly
-        recent = [cid for p, cid in self.actions.plays if p == friendly]
-        if self.actions.turn_plays:
-            recent += [cid for p, cid in self.actions.turn_plays[-1]
-                       if p == friendly]
-        target = comp_target(board, self.playable, recent_cards=recent)
         # Armor flow (loss-streak signal, analysis/LEVELING_MODEL.md Q0):
         # the per-turn record's LAST armor/HP write is the end-of-turn
         # effective health; quiet turns (won combats — no writes) carry the

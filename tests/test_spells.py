@@ -232,11 +232,17 @@ class TestGrowthCalibration(unittest.TestCase):
                             "core": ["BG33_886"], "addons": []}}
         board = [{"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"},
                  {"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"}]
-        scored = dict(shop_ranking(["BG33_886", "BG26_ICC_901"], comps,
+        other = [{"card": "BG29_503", "atk": 4, "health": 4,
+                  "tribe": "MECHANICAL"}]
+        scored = dict(shop_ranking(["BG26_ICC_901"], comps,
                                    board_minions=board))
-        # BG26_ICC_901 (Drakkari, no tribe) is exempt from damping; the comp
-        # core card gets +10, so it outranks the neutral by more than that.
-        self.assertGreater(scored["BG33_886"], scored["BG26_ICC_901"])
+        elsewhere = dict(shop_ranking(["BG26_ICC_901"], comps,
+                                      board_minions=other))
+        # BG26_ICC_901 (Drakkari, no tribe) is exempt from damping: same
+        # score on a committed-beasts board and on a mech board. (Its score
+        # rose with multiplier recognition — W_MULT — but the exemption is
+        # what this test pins.)
+        self.assertEqual(scored["BG26_ICC_901"], elsewhere["BG26_ICC_901"])
 
 
 class TestTopMovePriority(unittest.TestCase):
