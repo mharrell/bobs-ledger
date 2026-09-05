@@ -479,6 +479,11 @@ def render_json(analysis):
     # buy_step_roll are written by value.top_move), so the two can't disagree.
     a["buy_step_card"] = analysis.get("buy_step_card")
     a["buy_roll_text"] = analysis.get("buy_step_roll")
+    # Structured steps from value.top_move — [{text, kind, card}]. The JS
+    # still renders from the top_move string today; migrating it onto these
+    # (one entry per step, kind-tagged, buy card attached) is the planned
+    # render-at-the-edge rework.
+    a["top_move_steps"] = analysis.get("top_move_steps") or []
     # Scout strip (gates 3+4): our stat total vs the next opponent's
     # last-known board (exact — we fought them), else the lobby median /
     # corpus baseline (~ estimate).
