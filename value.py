@@ -39,8 +39,12 @@ W_SPELL_FUEL = 0.3  # per stat of marginal engine growth one spell cast buys
 W_OFF_COMP = -2.0   # shop card whose tribe fights a COMMITTED comp (damping)
 W_MULT = 4.0        # multiplier glue (Balinda/Drakkari-class): worth what it
                     # amplifies, not its stats — never "safest to sell" glue
-W_SELL_FLOOR = 16.0  # comp glue can't rank into "safe to sell" (< 15 is the
-                     # filler threshold shared with top_move and the UI)
+W_SELL_FLOOR = 16.0  # comp glue can't rank into "safe to sell" (below the
+                     # SELL_FILLER_SCORE threshold shared with top_move and the UI)
+SELL_FILLER_SCORE = 15.0  # a board/shop value under this reads as clear filler
+                          # (top_move; the overlay keys its coloring off it too)
+DYING_HEALTH = 12  # effective health (hp+armor) at/below this = "dying" —
+                   # leveling beats board (top_move's Q0 gate)
 
 # Keywords/phrases that mark a scaling/engine minion vs a plain body.
 _SCALING_MARKERS = ("end of turn", "whenever you play", "improves", "each",
@@ -660,7 +664,7 @@ def top_move(analysis):
             health = analysis.get("health")
             armor = analysis.get("armor") or 0
             eff = health + armor if health is not None else None
-            dying = eff is not None and eff <= 12
+            dying = eff is not None and eff <= DYING_HEALTH
             damage_last = analysis.get("damage_last")
             loss_streak = analysis.get("loss_streak") or 0
             close = analysis.get("close_losses")
@@ -806,7 +810,7 @@ def top_move(analysis):
     if bought is not None and len(analysis.get("board", [])) >= 7 \
             and analysis.get("sell_rank"):
         worst = analysis["sell_rank"][0]  # safest to sell
-        if worst[1] < 15:  # a clear filler (low value)
+        if worst[1] < SELL_FILLER_SCORE:  # a clear filler (low value)
             parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
     # The stay decision (Q1) trails the buys: what the comp needs is ON this
     # tier, and the player should know the level was declined on purpose.
