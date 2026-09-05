@@ -509,13 +509,23 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
         # Committed to the comp (>=2 core on board): a shop minion whose tribe
         # fights the comp won't fit the board's growth — damp it so comp cards
         # and neutral pieces win ties (the player's complaint: off-comp growth
-        # cards recommended over the established comp).
+        # cards recommended over the established comp). The damp discounts the
+        # card's own GROWTH term, not just a flat penalty: off-comp growth
+        # doesn't compound in this build (Twilight Tidehunter scored 21 vs
+        # the comp piece's 6.3 — the 2026-09-04 beasts game, "recommended
+        # Naga cards every time"). Untribed cards (race=None in the DB —
+        # Rimescale-class) count as off-comp when they carry real growth;
+        # low-growth utility neutrals (Drakkari) stay exempt from the
+        # growth discount.
         if comp and not comp_card and \
                 target_state(comp, board_minions or []) == "committing":
             ct = normalize(comp.get("tribe"))
             tribe = normalize(m.get("tribe"))
-            if ct and tribe and tribe not in ct.split("/"):
+            if ct and (not tribe or tribe not in ct.split("/")):
                 val += W_OFF_COMP
+                growth = growth_potential(card)
+                if tribe or growth >= 2.0:
+                    val -= W_GROWTH * growth * 0.75
         if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0  # banned-tribe minion can't grow
         scored.append((cid, val))
@@ -923,18 +933,27 @@ def comp_target(board, comps, recent_cards=None):
     two of acquisitions (copies count — a pivot is often 3x one core; the
     board alone is backward-looking, the 2026-09-04 Varden game pushed
     LEVEL for five phases while the player built Demons). A recent-hits
-    override beats a board commit from a DIFFERENT comp. Returns comp or
+    override beats a board commit from a DIFFERENT comp. Below a comp
+    commit, TRIBE-level evidence counts: >=2 core hits spread across comps
+    of one tribe point at the tribe (the 2026-09-04 beasts game built
+    Tasty Lobster + Banana Slamma — two beasts comps — and the coach stayed
+    comp-agnostic, headlining Naga cards, all game). Returns comp or
     None — None is meaningful ("no direction yet").
     """
+    rc = list(recent_cards or [])  # copies count: a pivot is often 3x one core
+
+    def core_hits(comp):
+        cores = set(comp.get("core", []))
+        return (sum(1 for m in board if m["card"] in cores)
+                + sum(1 for c in rc if c in cores))
+
     committed = None
     for comp in comps.values():
         # Copies count (a commit is often 2x/3x one core, same as a pivot)
-        cores = set(comp.get("core", []))
-        overlap = sum(1 for m in board if m["card"] in cores)
+        overlap = core_hits(comp)
         if overlap >= 2 and (committed is None or overlap > committed[1]):
             committed = (comp, overlap)
-    if recent_cards:
-        rc = list(recent_cards)  # copies count: a pivot is often 3x one core
+    if rc:
         best_recent = None
         for comp in comps.values():
             if committed and comp is committed[0]:
@@ -947,6 +966,23 @@ def comp_target(board, comps, recent_cards=None):
             return best_recent[0]
     if committed:
         return committed[0]
+    # Tribe-level evidence: core hits spread across comps of one tribe.
+    tribe_best = {}
+    tribe_total = {}
+    for comp in comps.values():
+        hits = core_hits(comp)
+        if not hits:
+            continue
+        tribe = comp.get("tribe")
+        if not tribe:
+            continue
+        tribe_total[tribe] = tribe_total.get(tribe, 0) + hits
+        cur = tribe_best.get(tribe)
+        if cur is None or hits > cur[1]:
+            tribe_best[tribe] = (comp, hits)
+    for tribe, total in sorted(tribe_total.items(), key=lambda kv: -kv[1]):
+        if total >= 2:
+            return tribe_best[tribe][0]
     return None  # no evidence yet — "no direction" beats a made-up pick
 
 

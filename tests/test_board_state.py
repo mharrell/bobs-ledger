@@ -76,6 +76,50 @@ class TestHand(unittest.TestCase):
         self.assertEqual(gs.hand(friendly_player=1), [])
 
 
+class TestControllerLock(unittest.TestCase):
+    """The bracket's player is a snapshot from BEFORE the block ran: sibling
+    writes that follow a same-block CONTROLLER change still carry the old
+    player and must not un-move the minion (2026-09-04 beasts ghost: the
+    coach said 'play Wrath Weaver' every later turn while the entity sat in
+    the other player's hand). Mirror flips carry no CONTROLLER write — their
+    bracket must still seed."""
+
+    def test_same_block_bracket_does_not_undo_controller(self):
+        gs = GameState()
+        gs.feed(f"{GS}TAG_CHANGE Entity=[entityName=Wrath Weaver id=50 "
+                f"zone=SETASIDE zonePos=0 cardId=BGS_004 player=5] "
+                f"tag=CONTROLLER value=13")
+        gs.feed(f"{GS}TAG_CHANGE Entity=[entityName=Wrath Weaver id=50 "
+                f"zone=SETASIDE zonePos=0 cardId=BGS_004 player=5] "
+                f"tag=ZONE value=HAND")
+        self.assertEqual(gs.player.get(50), 13)
+
+    def test_bracket_flip_without_controller_write_still_seeds(self):
+        gs = GameState()
+        gs.feed(f"{GS}TAG_CHANGE Entity=[entityName=X id=51 zone=PLAY "
+                f"zonePos=1 cardId=BG33_140 player=1] tag=ATK value=2")
+        self.assertEqual(gs.player.get(51), 1)
+        gs.feed(f"{GS}TAG_CHANGE Entity=[entityName=X id=51 zone=PLAY "
+                f"zonePos=1 cardId=BG33_140 player=13] tag=ATK value=3")
+        self.assertEqual(gs.player.get(51), 13)
+
+    def test_ghost_card_leaves_the_hand(self):
+        """Bought into hand, then moved to the other player: hand(friendly)
+        must stop listing it the moment the controller write lands."""
+        gs = GameState()
+        for line in (creating(70, "BG33_140")
+                     + tags(GS, 70, 2, 2, zone="HAND", player=5,
+                            cid="BG33_140")):
+            gs.feed(line)
+        self.assertEqual([m["card"] for m in gs.hand(friendly_player=5)],
+                         ["BG33_140"])
+        gs.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=70 zone=HAND "
+                f"zonePos=1 cardId=BG33_140 player=5] tag=CONTROLLER value=13")
+        gs.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=70 zone=HAND "
+                f"zonePos=1 cardId=BG33_140 player=5] tag=ZONE_POSITION value=2")
+        self.assertEqual(gs.hand(friendly_player=5), [])
+
+
 class TestUpdatingForm(unittest.TestCase):
     def test_updating_block_targets_its_own_entity(self):
         """A Tusked Camper (3/4) followed by a PTL Updating block of a *different*

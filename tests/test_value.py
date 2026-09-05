@@ -115,6 +115,31 @@ class TestNoEvidenceNoComp(unittest.TestCase):
         board = [{"card": "BG33_140"}, {"card": "BG33_140"}]
         self.assertIs(value.comp_target(board, comps), comps["nagas"])
 
+    def test_board_plus_recent_hits_commit(self):
+        """One core on the board + one among recent acquisitions is a commit
+        (a buy IS intention)."""
+        comps = {"nagas": {"name": "Nagas", "core": ["BG33_140"], "addons": []}}
+        board = [{"card": "BG33_140"}]
+        self.assertIs(value.comp_target(board, comps,
+                                        recent_cards=["BG33_140"]),
+                      comps["nagas"])
+
+    def test_tribe_evidence_across_comps(self):
+        """A build straddling two comps of one tribe (2026-09-04 beasts game:
+        Tasty Lobster + Banana Slamma) still points at the tribe — the coach
+        must stop headlining off-tribe cards."""
+        comps = {"lobstah": {"name": "Lobstah", "tribe": "Beast",
+                             "core": ["BG36_208"], "addons": []},
+                 "beetles": {"name": "Beetles", "tribe": "Beast",
+                             "core": ["BG26_802"], "addons": []},
+                 "nagas": {"name": "Nagas", "tribe": "Naga",
+                           "core": ["BG32_821"], "addons": []}}
+        board = [{"card": "BG36_208"}]
+        recent = ["BG26_802"]
+        target = value.comp_target(board, comps, recent_cards=recent)
+        self.assertIsNotNone(target)
+        self.assertEqual(target["tribe"], "Beast")
+
 
 class TestHandPlan(unittest.TestCase):
     """Hand plays the coach never made (2026-09-04: five spells sat in hand

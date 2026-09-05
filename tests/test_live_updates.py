@@ -599,6 +599,39 @@ class TestBuyStep(unittest.TestCase):
         self.assertIsNone(a["buy_step_card"])
 
 
+class TestBuyEvidence(unittest.TestCase):
+    """A bought card is comp evidence: a minion can sit in hand behind a
+    full board and a spell is acquired by buying — the old plays-only
+    evidence kept the beasts game comp-agnostic until t11 (2026-09-04)."""
+
+    def test_buy_is_tracked(self):
+        c = LiveCoach()
+        c.friendly = 7
+        # A buy: the ZONE tag line (bracket still shows the old zone) plus
+        # the follow-up writes whose bracket now reads zone=HAND — real buys
+        # always have these (stats, position).
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=SETASIDE "
+               f"zonePos=0 cardId=BG33_140 player=7] tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=HAND "
+               f"zonePos=1 cardId=BG33_140 player=7] tag=ZONE_POSITION value=1")
+        self.assertIn((7, "BG33_140"), c.actions.buys)
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        self.assertIn((7, "BG33_140"), c.actions.turn_buys[-1])
+        self.assertEqual(c.actions.buys, [])  # cleared for the new turn
+
+    def test_hand_reentry_not_double_counted(self):
+        """The bracket re-prints zone=HAND on every sibling write — only the
+        SETASIDE/PLAY -> HAND transition is a buy."""
+        c = LiveCoach()
+        c.friendly = 7
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=SETASIDE "
+               f"zonePos=0 cardId=BG33_140 player=7] tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=HAND "
+               f"zonePos=1 cardId=BG33_140 player=7] tag=ATK value=2")
+        self.assertEqual(len(c.actions.buys), 1)
+
+
 class TestBanGate(unittest.TestCase):
     def test_partial_pool_reveal_fails_open(self):
         """One tribe's pool minions seen (allowed=[Beast]) is NOT ban info —

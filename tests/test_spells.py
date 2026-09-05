@@ -224,25 +224,28 @@ class TestGrowthCalibration(unittest.TestCase):
         not_yet = [{"card": "BG29_503", "atk": 4, "health": 4, "tribe": "MECHANICAL"}]
         committed_rank = dict(shop_ranking(["BG29_503"], comps, board_minions=committed))
         not_yet_rank = dict(shop_ranking(["BG29_503"], comps, board_minions=not_yet))
-        self.assertEqual(committed_rank["BG29_503"] - not_yet_rank["BG29_503"],
-                         value.W_OFF_COMP)
+        # The damp is W_OFF_COMP plus a discount of the card's own growth
+        # term (off-comp growth doesn't compound in the build), so the delta
+        # is at least W_OFF_COMP — never a bump.
+        self.assertLessEqual(committed_rank["BG29_503"] - not_yet_rank["BG29_503"],
+                             value.W_OFF_COMP)
 
-    def test_neutral_cards_not_damped(self):
+    def test_neutral_cards_not_growth_discounted(self):
         comps = {"beasts": {"name": "Beasts", "tribe": "Beast",
                             "core": ["BG33_886"], "addons": []}}
         board = [{"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"},
                  {"card": "BG33_886", "atk": 3, "health": 4, "tribe": "BEAST"}]
         other = [{"card": "BG29_503", "atk": 4, "health": 4,
                   "tribe": "MECHANICAL"}]
-        scored = dict(shop_ranking(["BG26_ICC_901"], comps,
-                                   board_minions=board))
-        elsewhere = dict(shop_ranking(["BG26_ICC_901"], comps,
+        scored = dict(shop_ranking(["BGS_131"], comps, board_minions=board))
+        elsewhere = dict(shop_ranking(["BGS_131"], comps,
                                       board_minions=other))
-        # BG26_ICC_901 (Drakkari, no tribe) is exempt from damping: same
-        # score on a committed-beasts board and on a mech board. (Its score
-        # rose with multiplier recognition — W_MULT — but the exemption is
-        # what this test pins.)
-        self.assertEqual(scored["BG26_ICC_901"], elsewhere["BG26_ICC_901"])
+        # BGS_131 (Deadly Spore: venomous, no tribe, no growth) takes ONLY
+        # the flat off-comp damp when the comp is committed — cards without
+        # a growth engine keep their value (Drakkari-class cards carry real
+        # end-of-turn growth and DO get the discount in an off-comp build).
+        self.assertAlmostEqual(scored["BGS_131"],
+                               elsewhere["BGS_131"] + value.W_OFF_COMP)
 
 
 class TestTopMovePriority(unittest.TestCase):

@@ -320,6 +320,32 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       no evidence means no comp bonus, cards score on their own merits.
       Verified on the replay: every wrong sell and the t9 mis-blessing are
       gone; 172/172 tests.
+- [x] **Ghost hand + comp evidence from buys + committed steering** (2026-09-04,
+      the beasts session — "it kept telling me to play a card that wasn't in
+      my hand" / "recommended Naga cards EVERY time"):
+      (1) **The ghost**: every bracketed tag write re-seeded the entity's
+      player from the bracket — and within a block the bracket is stale, so
+      the sibling writes after a same-block CONTROLLER=change re-un-did the
+      move and kept a minion "in hand" while it sat with the other player
+      (Wrath Weaver, every later turn). Fix: a controller-lock — after a
+      CONTROLLER write, brackets still showing the moved-away player are
+      skipped; any other bracket value seeds (mirror flips are bracket-only,
+      no CONTROLLER write); only a write that CHANGES the player re-locks
+      (the PowerTaskList twin of an applied change would otherwise lock the
+      new player and its stale brackets undo the move). (2) **A buy IS
+      evidence**: comp_target now sees buys (hand entries) as recent
+      acquisitions — the beasts build straddled two comps and stayed
+      comp-agnostic until t11; the commit now lands ~t7-8. (3) **Tribe-level
+      direction**: below a comp commit, >=2 core hits spread across comps of
+      one tribe point at that tribe's best comp (Tasty Lobster + Banana
+      Slamma = beasts, even split across two comps). (4) **The committed
+      damp discounts the card's own growth term** (off-comp growth doesn't
+      compound in the build — Twilight Tidehunter scored 21 vs the comp
+      piece's 6.3; untribed Rimescale-class cards included when they carry
+      real growth, low-growth utility neutrals exempt from the extra
+      discount). Verified on the replay: the ghost is gone, the commit lands
+      3-4 phases early, and t10 headlines Headhunter Gryphon (beast, 6.3)
+      over the damped Tidehunter (3.0); 179/179 tests.
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored
