@@ -255,6 +255,28 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       ("no direction yet"; the checklist-comp-from-turn-1 anti-pattern
       Shadybunny warns against). Board copies now count toward a commit
       (2x one core commits, same as a pivot).
+- [x] **Scout + pick + ban fixes** (2026-09-04, from the Guff live session —
+      the coach recommended leveling through a losing streak and the overlay
+      froze on a picked trinket; log forensics pinned five bugs):
+      (1) **The scout resolver marked turns before their fight existed** —
+      each turn got marked resolved during its own buy phase, often from the
+      previous fight's teardown remnants (a phantom 6-stat "opponent board"),
+      so every real fight board was skipped; now only completed turns
+      resolve, from combat-phase snapshots only. (2) **Pairings reset each
+      turn** — but NEXT_OPPONENT_PLAYER_ID only logs on CHANGE, so same-
+      player rematches never re-announced and their boards were dropped; the
+      announced value now persists and the pairing is captured when the buy
+      phase closes. (3) **A None==None guard hole** let unbracketed
+      announcements match before the hero parsed. (4) **The pick freeze** —
+      `state_fingerprint` didn't include the choice or scout, so resolving a
+      trinket pick (which changes no gold/board/shop) never re-advised; the
+      overlay sat on the pick panel until a refresh. (5) **`_banned(None)`
+      displayed all 10 tribes as banned** on fail-open (its own docstring
+      promised the opposite), and `_refresh_bans` never re-ran once the hero
+      parsed first — ban-blind games. Plus: **any hero damage counts as a
+      loss** (a won combat never drops health+armor — the Guff game lost
+      every fight by 1-5 and the old ≥3 rule read it as no streak); close
+      losses are flagged in the reason, not discounted.
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored

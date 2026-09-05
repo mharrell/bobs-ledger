@@ -71,8 +71,11 @@ _NEXT_OPP = re.compile(
 
 
 def _banned(allowed):
-    # Unknown ban info (None) shows as no banned tribes, never "all banned".
-    return [t for t in DISPLAY_TRIBES if t not in set(allowed or [])]
+    # Unknown ban info (None) shows as no banned tribes, never "all banned"
+    # (the old code listed all 10 for None — the 2026-09-04 Guff overlay).
+    if not allowed:
+        return []
+    return [t for t in DISPLAY_TRIBES if t not in set(allowed)]
 
 
 def _median(values):
@@ -245,13 +248,14 @@ class LiveCoach:
         self._stat_seen = 0    # hero_stat_log entries already drained
         self._stat_pending = []  # (turn, cid, tag, value) before hero parse
         self.next_opponent = None  # announced NEXT_OPPONENT_PLAYER_ID
-        self._combat_opp = None  # the id announced for the combat in progress
+        self._pair_cand = None  # pairing announced during the open buy phase
         self._pairing = {}     # turn -> opponent id announced for its fight
         self._snap_by_turn = {}  # turn -> [(player, stat_total), ...] snapshot
         self._resolved = set()  # turns already committed to the lobby stats
         self._opp_boards = {}  # player id -> {"stats", "n", "turn"} last-known
         self._lobby_stats = []  # stats of every opponent board we fought
         self._snap_seen = 0    # snapshots already buffered
+        self._phase = "buy"    # buy phase vs combat window (GameState STEP)
         self._bans_ready = False
         self._card_races = None
         self._seed = None
@@ -281,13 +285,14 @@ class LiveCoach:
         self._stat_seen = 0
         self._stat_pending = []
         self.next_opponent = None
-        self._combat_opp = None
+        self._pair_cand = None
         self._pairing = {}
         self._snap_by_turn = {}
         self._resolved = set()
         self._opp_boards = {}
         self._lobby_stats = []
         self._snap_seen = 0
+        self._phase = "buy"
         self._bans_ready = False
         self._card_races = None
         self._seed = None
@@ -297,6 +302,23 @@ class LiveCoach:
     def feed(self, line):
         if _GAME_START.search(line):
             self._reset()
+        # Phase tracking (GameState lines only — the PowerTaskList copies
+        # arrive after and would flip the phase late): the window between
+        # MAIN_END and the next MAIN_ACTION is combat. Snapshots captured
+        # there are the real fight boards; buy-phase snapshots are shop plays
+        # and the previous fight's teardown remnants, which must never be
+        # committed as "the board we fought".
+        if "GameState." in line:
+            if "tag=STEP value=MAIN_END" in line:
+                # The BUY-phase MAIN_END (the second one closes combat): the
+                # pairing in force is the fight that follows. The tag only
+                # logs on CHANGE — a same-player rematch never re-announces —
+                # so the announced value persists until the next one.
+                if self._phase == "buy":
+                    self._pairing[self.actions.turn] = self._pair_cand
+                self._phase = "combat"
+            elif "tag=STEP value=MAIN_ACTION" in line:
+                self._phase = "buy"
         # The shop changes at a new buy phase, on a refresh (re-roll), or on a
         # buy; reset so the next DebugPrintOptions block rebuilds it from the
         # current offers. (Only actual PLAY actions for refresh/buy, not the
@@ -363,27 +385,34 @@ class LiveCoach:
         if "TechUp" in line and "GameState" in line:
             self._feed_techup(line)
         self.gs.feed(line)
-        prev_turn = self.actions.turn
         self.actions.feed(line)
         self.cur_lines.append(line)
-        # A turn boundary closes the previous combat: record the pairing in
-        # force during that turn (the fight belongs to the opponent
-        # announced while that buy phase was open), then the next pairing
-        # takes over. The BOARDS resolve lazily in _resolve_boards — the
+        # A turn boundary closes the previous combat. The pairing itself is
+        # written when the buy phase closes (see the phase tracker above):
+        # the fight belongs to the opponent announced while that buy phase
+        # was open, persisted across turns because the tag only logs on
+        # change. The BOARDS resolve lazily in _resolve_boards — the
         # friendly player id is only known once the hero parses, which may
         # be after the combat snapshots arrived (the 2026-09-04 Holmes
         # game captured nothing live for exactly this reason).
-        if self.actions.turn != prev_turn:
-            self._pairing[prev_turn] = self._combat_opp
-            self._combat_opp = self.next_opponent
         # The buy-phase preview: NEXT_OPPONENT_PLAYER_ID on the friendly
         # hero (or the account entity) names the player of the fight after
-        # this shopping phase.
+        # this shopping phase; during combat it names the NEXT turn's fight.
         m = _NEXT_OPP.search(line)
-        if m and (m.group(2) == str(self.friendly)
-                  or m.group(1) == self.hero_card
-                  or m.group(3) == self.account):
+        # Each alternative must actually IDENTIFY the friendly player: an
+        # unbracketed entity leaves groups 1/2 None, and None == None (hero
+        # not parsed yet) once passed the guard for every announcement.
+        if m and ((m.group(1) is not None and m.group(1) == self.hero_card)
+                  or (m.group(2) is not None
+                      and m.group(2) == str(self.friendly))
+                  or (m.group(3) is not None
+                      and m.group(3) == self.account)):
             self.next_opponent = int(m.group(4)) or None
+            # _pair_cand mirrors the tag value in force at all times (the
+            # combat announcement of the NEXT fight is what pairs that fight
+            # when its buy phase never re-announces — the tag only logs on
+            # change); the pairing snapshot happens when the buy phase ends.
+            self._pair_cand = self.next_opponent
         # Armor flow (Q0): stamp every friendly-hero ARMOR/HEALTH write with
         # the turn it arrived in, keeping first/last per turn — combat
         # damage = first minus last (the buy-phase state vs post-combat).
@@ -398,16 +427,19 @@ class LiveCoach:
         # Scout: buffer the board snapshots PER TURN (player id + stat
         # totals; the opponent-side id is DYNAMIC per game — 11 in one game,
         # 13 in another — so the != friendly filter at resolve time is what
-        # identifies it). Snapshots fire on plays AND combat deaths, so a
-        # turn accumulates several; the resolver keeps the fullest view.
+        # identifies it). Each snapshot carries the phase it was captured in
+        # so the resolver can keep only real fight boards. Snapshots fire on
+        # plays AND combat deaths, so a turn accumulates several.
         if len(self.gs.snapshots) > self._snap_seen:
             new = self.gs.snapshots[self._snap_seen:]
             self._snap_seen = len(self.gs.snapshots)
             for snap in new:
-                self._snap_by_turn.setdefault(self.actions.turn, []).append(
-                    [(m["player"],
-                      (m.get("atk") or 0) + (m.get("health") or 0))
-                     for m in snap])
+                self._snap_by_turn.setdefault(self.actions.turn, []).append({
+                    "phase": self._phase,
+                    "minions": [(m["player"],
+                                 (m.get("atk") or 0) + (m.get("health") or 0))
+                                for m in snap],
+                })
         # Track when the friendly's tier changed, for the upgrade-price
         # fallback (the price drops 1 per turn you stay at a tier).
         if self.hero_card:
@@ -437,20 +469,31 @@ class LiveCoach:
     def _resolve_boards(self):
         """Commit buffered combat snapshots to the lobby scout (gates 3+4).
 
-        Deferred until the friendly player id is known. Per turn, the
-        snapshot with the MOST opponent presence is the board we fought —
-        combat reveals their board progressively and deaths empty it
-        toward the end, so the fullest view is the honest estimate.
-        Credited to the pairing announced for that turn."""
+        Deferred until the friendly player id is known AND the turn's fight
+        is over: only turns strictly before the current one are resolved, so
+        a turn can never be marked from its own still-empty buy-phase data
+        (the 2026-09-04 Guff game committed a 6-stat teardown remnant of the
+        previous fight as the fought board and skipped every real fight).
+        Within a completed turn, the COMBAT-phase snapshot with the MOST
+        opponent presence is the board we fought — combat reveals their
+        board progressively and deaths empty it toward the end, so the
+        fullest view is the honest estimate. Buy-phase snapshots (shop plays
+        and the previous fight's teardown remnants, which share the dynamic
+        opponent-side id) are never committed. Credited to the pairing
+        announced for that turn."""
         if self.friendly is None:
             return
         for t in sorted(self._snap_by_turn):
-            if t < 1 or t in self._resolved:
+            if t < 1 or t >= self.actions.turn or t in self._resolved:
                 continue
+            snaps = [s for s in self._snap_by_turn[t]
+                     if s.get("phase") == "combat"]
+            if not snaps:
+                snaps = self._snap_by_turn[t]
             self._resolved.add(t)
             best = None
-            for snap in self._snap_by_turn[t]:
-                opp = [(p, s) for p, s in snap
+            for snap in snaps:
+                opp = [(p, s) for p, s in snap.get("minions", [])
                        if p not in (self.friendly, None)]
                 stats = sum(s for _p, s in opp)
                 if best is None or stats > best[0]:
@@ -600,14 +643,22 @@ class LiveCoach:
     def state_fingerprint(self):
         """A cheap fingerprint of everything the advice depends on.
 
-        (gold, tier, board, tavern offers) — the monitor re-advises whenever
-        this changes during a buy phase, so buys/rolls/plays/sells mid-turn
-        update the advice instead of waiting for the next buy phase. None
-        before the hero is parsed (nothing to fingerprint yet).
+        (gold, tier, board, tavern offers, pending pick, next opponent) —
+        the monitor re-advises whenever this changes during a buy phase, so
+        buys/rolls/plays/sells mid-turn update the advice instead of waiting
+        for the next buy phase. The pick and scout are part of what the
+        advice renders: without them in the fingerprint, resolving a trinket
+        pick (2026-09-04, user report) left gold/board/shop identical, the
+        fingerprint matched, and the overlay sat frozen on the pick panel
+        until a refresh changed the shop. None before the hero is parsed
+        (nothing to fingerprint yet).
         """
         if self.friendly is None:
             return None
         board, _ = self.gs.final_board(self.friendly)
+        c = self.choice
+        pick = ((c["ctype"], c["source"], c["picked"],
+                 tuple(o for _n, o in c["options"])) if c else None)
         return (
             self.gs.gold.get(self.account) if self.account else None,
             self.gs.hero_meta.get(self.hero_card, {}).get("tier"),
@@ -615,6 +666,8 @@ class LiveCoach:
             tuple(sorted((m["card"], m.get("atk") or 0, m.get("health") or 0,
                           m.get("golden") or False) for m in board)),
             tuple(self.tavern_offers()),
+            pick,
+            self.next_opponent,
         )
 
     def analyze(self):
@@ -622,6 +675,11 @@ class LiveCoach:
         self._ensure_meta()
         if self.friendly is None:
             return None  # no game/hero yet — nothing to analyze
+        if not self._bans_ready:
+            # The pool streams over the game's first seconds; if the hero
+            # parse landed first, _ensure_meta returns before its ban refresh
+            # ever re-runs (the 2026-09-04 Guff game stayed ban-blind).
+            self._refresh_bans()
         self._resolve_boards()
         board, _ = self.gs.final_board(self.friendly)
         if not board and self.gs.snapshots:
@@ -661,8 +719,10 @@ class LiveCoach:
         # the per-turn record's LAST armor/HP write is the end-of-turn
         # effective health; quiet turns (won combats — no writes) carry the
         # last known values forward. The combat that ends turn t costs
-        # series[t-1] - series[t], readable at the NEXT buy phase. A real
-        # loss is >= 3 (1-2 is a close fight).
+        # series[t-1] - series[t], readable at the NEXT buy phase. ANY damage
+        # is a loss (a won combat never drops health+armor — the 2026-09-04
+        # Guff game lost every fight by 1-5 and the old >=3 "real loss" rule
+        # read it as no streak at all); 1-2 is flagged close, not discounted.
         health = self.gs.hero_meta.get(self.hero_card, {}).get("health")
         armor = self.gs.hero_meta.get(self.hero_card, {}).get("armor")
         turn = self.actions.turn
@@ -686,19 +746,23 @@ class LiveCoach:
 
         damage_last = None
         loss_streak = 0
+        close_losses = False  # every loss in the streak was by 1-2
         d = _combat_damage(turn - 1)
-        if d is not None:
-            damage_last = d if d > 0 else None
-            if damage_last and damage_last >= 3:
-                loss_streak = 1
-                t = turn - 2
-                while t >= 1:
-                    pd = _combat_damage(t)
-                    if pd is not None and pd >= 3:
-                        loss_streak += 1
-                        t -= 1
-                    else:
-                        break
+        if d is not None and d > 0:
+            damage_last = d
+            loss_streak = 1
+            if d <= 2:
+                close_losses = True
+            t = turn - 2
+            while t >= 1:
+                pd = _combat_damage(t)
+                if pd is not None and pd > 0:
+                    loss_streak += 1
+                    if pd > 2:
+                        close_losses = False
+                    t -= 1
+                else:
+                    break
         # The pending pick (hero / trinket / discover), ranked against the
         # current board and comp.
         choice_advice = None
@@ -718,6 +782,7 @@ class LiveCoach:
             "armor": armor,
             "damage_last": damage_last,
             "loss_streak": loss_streak,
+            "close_losses": close_losses,
             "board": board,
             # Scout (gates 3+4, analysis/LEVELING_MODEL.md): our board's
             # stat total; the announced next opponent's LAST-KNOWN board

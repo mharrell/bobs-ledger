@@ -541,6 +541,7 @@ def top_move(analysis):
             dying = eff is not None and eff <= 12
             damage_last = analysis.get("damage_last")
             loss_streak = analysis.get("loss_streak") or 0
+            close = analysis.get("close_losses")
             headline = analysis.get("buy_this")
             h_cost = costs.get(headline) if headline else None
             core_ids = {c.get("card")
@@ -574,8 +575,9 @@ def top_move(analysis):
             if dying:
                 flip_why = "too fragile to level first"
             elif tier >= 3 and loss_streak >= 2:
-                flip_why = (f"lost {loss_streak} straight fights — "
-                            f"stabilize first")
+                flip_why = (f"lost {loss_streak} straight fights"
+                            + (" (close) — " if close else " — ")
+                            + "stabilize first")
             elif tier >= 3 and damage_last and damage_last >= 10:
                 flip_why = f"took {damage_last} last fight — stabilize first"
             if flip_why and opp_note(board_stats, their, approx):

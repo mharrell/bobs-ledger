@@ -59,6 +59,27 @@ class TestStateFingerprint(unittest.TestCase):
             c.feed(line)
         return c
 
+    def test_picking_changes_fingerprint(self):
+        """Resolving a pick changes no gold/board/shop — without the choice
+        in the fingerprint the monitor never re-advises and the overlay sat
+        frozen on the pick panel until a refresh (2026-09-04 user report)."""
+        c = self._offers_coach()
+        c.choice = {"ctype": "GENERAL", "source": "TB_BaconShop_TRINKET_1",
+                    "options": [("Bouncy Box", "TB_BaconTrinket18u")],
+                    "picked": None}
+        pending = c.state_fingerprint()
+        c.choice["picked"] = "TB_BaconTrinket18u"
+        self.assertNotEqual(pending, c.state_fingerprint())
+
+    def test_scout_change_changes_fingerprint(self):
+        """A newly announced next opponent changes what the advice says."""
+        c = self._offers_coach()
+        c.account = "TestAccount"
+        before = c.state_fingerprint()
+        c.feed(f"{GS}TAG_CHANGE Entity=TestAccount "
+               f"tag=NEXT_OPPONENT_PLAYER_ID value=8")
+        self.assertNotEqual(before, c.state_fingerprint())
+
 
 class TestGoldSpending(unittest.TestCase):
     def test_spent_gold_is_subtracted(self):
@@ -277,10 +298,21 @@ class TestLevelGates(unittest.TestCase):
         self.assertIn("you're strong — convert it into a tier", tm)
 
     def test_token_loss_does_not_flip(self):
-        """A 2-damage combat is a won fight, not a tempo alarm."""
+        """A close 2-damage loss with no streak is no tempo alarm (tier 2 is
+        shop-driven anyway — early game never gates)."""
         a, top_move = self._analysis(damage_last=2, loss_streak=0)
         tm = top_move(a)
         self.assertTrue(tm.startswith("1. LEVEL "), tm)
+
+    def test_close_losses_still_flip(self):
+        """Any damage is a loss (a won combat never drops health+armor): the
+        2026-09-04 Guff game lost every fight by 1-5 and the old >=3 rule
+        read it as no streak. Two straight close losses at tier 3 flip."""
+        a, top_move = self._analysis(damage_last=2, loss_streak=2, tier=3)
+        a["close_losses"] = True
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("lost 2 straight fights (close)", tm)
 
     def test_curve_prior_names_itself(self):
         a, top_move = self._analysis()
@@ -355,7 +387,9 @@ class TestOpponentScout(unittest.TestCase):
     def test_combat_board_mapped_to_announced_opponent(self):
         c = self._coach()
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 1; pairing takes over
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 1
+        # every buy phase re-announces the pairing (account + hero entities)
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
         c.gs.cardtype[50] = "MINION"
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
@@ -391,6 +425,7 @@ class TestOpponentScout(unittest.TestCase):
         c = self._coach()
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
         c.gs.cardtype[50] = "MINION"
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
@@ -401,6 +436,68 @@ class TestOpponentScout(unittest.TestCase):
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
         a = c.analyze()
         self.assertEqual(a["last_opp_stats"], 8)
+
+    def test_turn_not_resolved_before_its_fight(self):
+        """A turn is only resolved once its fight is over: during the turn's
+        own buy phase the resolver must not mark it (the Guff game committed
+        the previous fight's 6-stat teardown remnants as the fought board
+        and skipped every real fight)."""
+        c = self._coach()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.gs.cardtype[50] = "MINION"
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")
+        c.analyze()  # turn 1's buy phase: nothing resolved yet
+        self.assertNotIn(1, c._resolved)
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        c.analyze()
+        self.assertIn(1, c._resolved)
+        self.assertEqual(c._opp_boards.get(4, {}).get("stats"), 8)
+
+    def test_teardown_remnants_never_committed(self):
+        """The remnants of the previous fight are torn down during the next
+        turn's buy phase under the same dynamic opponent-side id — they must
+        not be committed as the board we fought; the combat-phase snapshot
+        of the real fight wins."""
+        c = self._coach()
+        c.gs.cardtype[50] = "MINION"
+        c.gs.cardtype[51] = "MINION"
+        opp1 = "Entity=[entityName=A id=50 zone=PLAY zonePos=1 cardId=BG33_886 player=11]"
+        opp2 = "Entity=[entityName=B id=51 zone=PLAY zonePos=2 cardId=BG33_886 player=11]"
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 1
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        # fight 1: opponent plays a 3/5
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ATK value=3")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ZONE value=PLAY")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        a = c.analyze()
+        self.assertEqual(a["last_opp_stats"], 8)
+        # turn-2 buy phase: fight 1's remnant (half dead) is torn down...
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ATK value=2")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=HEALTH value=1")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ZONE value=GRAVEYARD")
+        # ...the next opponent (player 6) is announced (each buy phase is)...
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=6")
+        # ...their 6/6 enters during the combat that closes this turn
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}TAG_CHANGE {opp2} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {opp2} tag=ATK value=6")
+        c.feed(f"{GS}TAG_CHANGE {opp2} tag=HEALTH value=6")
+        c.feed(f"{GS}TAG_CHANGE {opp2} tag=ZONE value=PLAY")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 3
+        a = c.analyze()
+        # the remnant (3 stats) never enters the lobby; the 12-stat fight wins
+        self.assertEqual([r["stats"] for r in c._lobby_stats], [8, 12])
+        self.assertEqual(c._opp_boards.get(6, {}).get("stats"), 12)
 
 
 class TestBoardFallback(unittest.TestCase):
@@ -524,6 +621,32 @@ class TestBanGate(unittest.TestCase):
             c._refresh_bans()
         self.assertEqual(c.allowed, allowed)
         self.assertTrue(c._bans_ready)
+
+    def test_bans_resolve_when_hero_parsed_first(self):
+        """The pool streams after the hero parses; _ensure_meta returns early
+        once friendly is set, so analyze must keep refreshing the bans
+        (the 2026-09-04 Guff game stayed ban-blind all game)."""
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c.friendly = 7          # hero already parsed
+        c.hero_card = "BG30_HERO_100"
+        c._comps = {}
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
+        fake = [{"seed": "1", "allowed": allowed, "banned": ["x"] * 5}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake), \
+                mock.patch.object(LiveCoach, "_resolve_boards"), \
+                mock.patch.object(c.gs, "final_board", return_value=([], None)), \
+                mock.patch("live_coach.sell_recommendation", return_value=[]), \
+                mock.patch("live_coach.comp_target", return_value=None), \
+                mock.patch("live_coach.comp_cards", return_value=None), \
+                mock.patch("live_coach.target_state", return_value=None), \
+                mock.patch("live_coach.top_move", return_value=""):
+            a = c.analyze()
+        self.assertEqual(c.allowed, allowed)
 
 
 class TestRenderJsonComps(unittest.TestCase):
