@@ -18,8 +18,8 @@ Usage:
          cache-hit rate, usage-weighted composite, and a paired sign test.
 
 Env:
-    DEEPSEEK_API_KEY   (already used by coach_llm.py)
-    GLM_API_KEY        (Zhipu / GLM key)
+    GLM_API_KEY        (Zhipu / GLM key — coach_llm.py's default pin)
+    DEEPSEEK_API_KEY   (only needed for the deepseek side of the race)
     GLM_BASE_URL       default https://api.zhipuai.com/chat/completions
     GLM_MODEL          default glm-5.3-flash
 """
@@ -31,44 +31,7 @@ import statistics
 import sys
 import time
 
-import requests
-
-from coach_llm import build_fixed_block, build_messages, complete as deepseek_complete
-
-# ---------------------------------------------------------------------------
-# GLM client (OpenAI-compatible). DeepSeek side is already wired in coach_llm.
-# ---------------------------------------------------------------------------
-
-GLM_BASE_URL = os.environ.get("GLM_BASE_URL", "https://api.zhipuai.com/chat/completions")
-GLM_MODEL = os.environ.get("GLM_MODEL", "glm-5.3-flash")
-
-
-def _glm_headers():
-    key = os.environ.get("GLM_API_KEY")
-    if not key:
-        raise RuntimeError("GLM_API_KEY is not set in the environment")
-    return {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-
-
-def glm_complete(variable_tail, fixed_block, temperature=0.7, max_tokens=1024,
-                 reasoning_effort=None):
-    """One GLM call, mirroring coach_llm.complete(). Returns text + usage."""
-    payload = {
-        "model": GLM_MODEL,
-        "messages": build_messages(fixed_block, variable_tail),
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-        "stream": False,
-    }
-    if reasoning_effort:
-        payload["reasoning_effort"] = reasoning_effort
-    resp = requests.post(GLM_BASE_URL, headers=_glm_headers(), json=payload, timeout=60)
-    resp.raise_for_status()
-    data = resp.json()
-    return {
-        "text": data["choices"][0]["message"]["content"],
-        "usage": data.get("usage", {}),
-    }
+from coach_llm import build_fixed_block, complete as coach_complete
 
 
 # ---------------------------------------------------------------------------
@@ -165,10 +128,14 @@ def run(prompts_path, repeats, temperature, max_tokens, reasoning_effort):
 
     def call(model, tail):
         if model == "deepseek-v4-flash":
-            return deepseek_complete(tail, fixed_block=deepseek_fb,
-                                    temperature=temperature, max_tokens=max_tokens)
-        return glm_complete(tail, fixed_block=glm_fb, temperature=temperature,
-                            max_tokens=max_tokens, reasoning_effort=reasoning_effort)
+            return coach_complete(tail, fixed_block=deepseek_fb,
+                                  temperature=temperature, max_tokens=max_tokens,
+                                  provider="deepseek")
+        extra = ({"reasoning_effort": reasoning_effort}
+                 if reasoning_effort else None)
+        return coach_complete(tail, fixed_block=glm_fb, temperature=temperature,
+                              max_tokens=max_tokens, provider="glm",
+                              extra_payload=extra)
 
     rows, sheet = [], []
     rid = 0
