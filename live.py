@@ -58,6 +58,12 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     c = coach.choice
     if not c or c.get("picked") is not None or not c.get("options"):
         return
+    # Dedup BEFORE ranking: rank_choices runs the full shop-ranking pipeline,
+    # and this fires every poll tick while the pick sits on screen — checked
+    # after ranking it re-ranked ~3x/second for as long as the pick waited.
+    state = ("pick", c.get("source"), tuple(c["options"]))
+    if state == _last_state:
+        return
     kind = choice_kind(c["ctype"], c["source"], c["options"])
     ranked = rank_choices(kind, c["options"], [], None)
     if not ranked:
@@ -74,8 +80,6 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
                         if kind == "hero" and len(ranked) > 1 else "")),
     }
     state = ("pick", c.get("source"), tuple(c["options"]))
-    if state == _last_state:
-        return
     _last_state = state
     coach_ui.update_analysis(a)
     decision_log.record(a, log_path=log_path, log_offset=log_offset,

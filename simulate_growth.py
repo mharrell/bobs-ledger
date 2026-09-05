@@ -14,6 +14,7 @@ Drone consumes). See memory `hearth-value-function`.
 Design: analysis/VALUE_FUNCTION.md. Buff magnitudes come from card text in
 `meta/minions.json` and `meta/trinkets.json`.
 """
+import functools
 import json
 import os
 
@@ -28,6 +29,7 @@ _MULTIPLIERS = {
 }
 
 
+@functools.lru_cache(maxsize=1)
 def _load_engines():
     path = os.path.join(_HERE, "meta", "engines.json")
     with open(path, encoding="utf-8") as f:

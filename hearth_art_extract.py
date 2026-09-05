@@ -40,8 +40,13 @@ CACHE = os.path.join(_HERE, "img_cache")
 # BG_LOE_077. Golden defs may share the base id (the UI strips _G anyway).
 ID_RE = re.compile(r"^(?:BG\d+_[A-Za-z0-9_]+|BGS_\d+|BG_[A-Z]+_\d+)$")
 
-import UnityPy  # noqa: E402
-UnityPy.config.FALLBACK_UNITY_VERSION = "6000.3.11f1"
+# UnityPy is imported lazily (_unitypy) rather than at module level: it's an
+# optional dep, and the eager import made `import hearth_art_extract` — and the
+# test suite's test_art_extract — hard-fail when it isn't installed.
+def _unitypy():
+    import UnityPy
+    UnityPy.config.FALLBACK_UNITY_VERSION = "6000.3.11f1"
+    return UnityPy
 
 
 def _meta_ids():
@@ -91,7 +96,7 @@ def _art_map():
     bundles = sorted(glob.glob(os.path.join(HS_DATA_DIR, "carddef*.unity3d")))
     for path in bundles:
         try:
-            env = UnityPy.load(path)
+            env = _unitypy().load(path)
         except Exception as e:  # noqa: BLE001
             print(f"  (skip {os.path.basename(path)}: {e})")
             continue
@@ -150,7 +155,7 @@ def extract(only_ids=None, write=True):
         if not need:
             break
         try:
-            env = UnityPy.load(path)
+            env = _unitypy().load(path)
         except Exception as e:  # noqa: BLE001
             print(f"  (skip {os.path.basename(path)}: {e})")
             continue
