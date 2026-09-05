@@ -2,7 +2,7 @@
   {
     "id": "BG36_MagicItem_3022",
     "name": "Gold Mallet",
-    "description": "At the end of your turn, give your minions +2/+1. (Improved by Golden minions you've played this game!)",
+    "description": "At the end of your turn, give your minions +1/+1. (Improved by Golden minions you've played this game!)",
     "pick_rate": 48.5,
     "avg_placement": 3.59,
     "placement_distribution": {
@@ -16,42 +16,6 @@
       "8": 2.6
     },
     "guide": "+4/2 a turn is decent on turn 6, +6/3 is amazing. Use tempo to comfortably level to 5."
-  },
-  {
-    "id": "BG32_MagicItem_8940",
-    "name": "Blessing Portrait",
-    "description": "Get a Natural Blessing. At the start of each turn, get another. Your Natural Blessings also affect minions in hand.",
-    "pick_rate": 27.7,
-    "avg_placement": 3.61,
-    "placement_distribution": {
-      "1": 12.19,
-      "2": 21.31,
-      "3": 21.13,
-      "4": 14.99,
-      "5": 12.29,
-      "6": 8.91,
-      "7": 5.62,
-      "8": 3.56
-    },
-    "guide": null
-  },
-  {
-    "id": "BG35_MagicItem_3003",
-    "name": "Copper Coil",
-    "description": "Whenever you Magnetize a minion, give it +1/+1 and improve this.",
-    "pick_rate": 50.6,
-    "avg_placement": 3.62,
-    "placement_distribution": {
-      "1": 30.42,
-      "2": 13.91,
-      "3": 9.78,
-      "4": 9.25,
-      "5": 9.17,
-      "6": 9.18,
-      "7": 9.62,
-      "8": 8.67
-    },
-    "guide": null
   },
   {
     "id": "BG30_MagicItem_3016",
@@ -128,7 +92,7 @@
   {
     "id": "BG32_MagicItem_9303",
     "name": "Archaic Scroll",
-    "description": "After you cast 7 spells, get a random Naga. (7 left!)",
+    "description": "After you cast 8 spells, get a random Naga. (8 left!)",
     "pick_rate": 29.8,
     "avg_placement": 3.86,
     "placement_distribution": {
@@ -182,7 +146,7 @@
   {
     "id": "BG36_MagicItem_3050",
     "name": "Rune of Transmutation",
-    "description": "After you cast 15 spells, replace this with a random Greater Naga Trinket. (15 left!)",
+    "description": "After you cast 18 spells, replace this with a random Greater Naga Trinket. (18 left!)",
     "pick_rate": 49.8,
     "avg_placement": 3.95,
     "placement_distribution": {
@@ -267,7 +231,8 @@
       "7": 10.96,
       "8": 9.89
     },
-    "guide": null
+    "guide": null,
+    "cost": 3
   },
   {
     "id": "BG30_MagicItem_4262",
@@ -303,7 +268,8 @@
       "7": 9.16,
       "8": 4.27
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG30_MagicItem_4262",
@@ -339,7 +305,8 @@
       "7": 9.8,
       "8": 7.32
     },
-    "guide": null
+    "guide": null,
+    "cost": 2
   },
   {
     "id": "BG30_MagicItem_4222",
@@ -393,7 +360,8 @@
       "7": 9.74,
       "8": 7.32
     },
-    "guide": null
+    "guide": null,
+    "cost": 2
   },
   {
     "id": "BG32_MagicItem_3604",
@@ -447,7 +415,8 @@
       "7": 11.83,
       "8": 11.19
     },
-    "guide": null
+    "guide": null,
+    "cost": 6
   },
   {
     "id": "BG30_MagicItem_4262",
@@ -483,7 +452,8 @@
       "7": 10.6,
       "8": 8.04
     },
-    "guide": null
+    "guide": null,
+    "cost": 3
   },
   {
     "id": "BG36_MagicItem_2033",
@@ -501,12 +471,13 @@
       "7": 9.84,
       "8": 6.6
     },
-    "guide": null
+    "guide": null,
+    "cost": 2
   },
   {
     "id": "BG35_MagicItem_9200",
     "name": "Bubble Crown",
-    "description": "Once you cast 12 spells, your Tavern spells give an extra +4/+4. (12 left!)",
+    "description": "Once you cast 14 spells, your Tavern spells give an extra +4/+4. (14 left!)",
     "pick_rate": 14.0,
     "avg_placement": 4.13,
     "placement_distribution": {
@@ -524,7 +495,7 @@
   {
     "id": "BG36_MagicItem_3903",
     "name": "Baller Portrait",
-    "description": "Get a Fire Baller or a Snow Baller. At the start of each turn, repeat this.",
+    "description": "Get a Temperature Shift. After you play 11 Elementals, repeat this. (11 left!)",
     "pick_rate": 24.6,
     "avg_placement": 4.18,
     "placement_distribution": {
@@ -537,7 +508,8 @@
       "7": 11.25,
       "8": 9.44
     },
-    "guide": null
+    "guide": null,
+    "cost": 5
   },
   {
     "id": "BG32_MagicItem_8600",
@@ -560,7 +532,7 @@
   {
     "id": "BG36_MagicItem_8102",
     "name": "Inductive Gyroblade",
-    "description": "At the end of your turn, get a 4/4 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)",
+    "description": "At the end of your turn, get a 12/12 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)",
     "pick_rate": 25.4,
     "avg_placement": 4.21,
     "placement_distribution": {
@@ -609,7 +581,8 @@
       "7": 11.79,
       "8": 12.3
     },
-    "guide": null
+    "guide": null,
+    "cost": 3
   },
   {
     "id": "BG30_MagicItem_7133",
@@ -627,7 +600,8 @@
       "7": 11.49,
       "8": 8.69
     },
-    "guide": null
+    "guide": null,
+    "cost": 2
   },
   {
     "id": "BG35_MagicItem_8500",
@@ -645,7 +619,8 @@
       "7": 10.38,
       "8": 6.32
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG32_MagicItem_4162",
@@ -663,7 +638,8 @@
       "7": 11.41,
       "8": 9.83
     },
-    "guide": null
+    "guide": null,
+    "cost": 3
   },
   {
     "id": "BG32_MagicItem_8080",
@@ -789,7 +765,8 @@
       "7": 9.34,
       "8": 6.58
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG30_MagicItem_9622",
@@ -861,7 +838,8 @@
       "7": 11.52,
       "8": 8.68
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG30_MagicItem_7035",
@@ -897,7 +875,8 @@
       "7": 10.89,
       "8": 9.71
     },
-    "guide": null
+    "guide": null,
+    "cost": 3
   },
   {
     "id": "BG30_MagicItem_4201",
@@ -969,7 +948,8 @@
       "7": 9.99,
       "8": 7.55
     },
-    "guide": null
+    "guide": null,
+    "cost": 1
   },
   {
     "id": "BG32_MagicItem_3616",
@@ -1023,12 +1003,13 @@
       "7": 11.35,
       "8": 9.92
     },
-    "guide": null
+    "guide": null,
+    "cost": 3
   },
   {
     "id": "BG35_MagicItem_3020",
     "name": "Stormcoil Sticker",
-    "description": "After 8 friendly minions die, get a random Mech. (8 left!)",
+    "description": "After 6 friendly minions die, get a random Mech. (6 left!)",
     "pick_rate": 17.2,
     "avg_placement": 4.42,
     "placement_distribution": {
@@ -1041,7 +1022,8 @@
       "7": 12.83,
       "8": 9.07
     },
-    "guide": null
+    "guide": null,
+    "cost": 1
   },
   {
     "id": "BG30_MagicItem_8911",
@@ -1131,7 +1113,8 @@
       "7": 13.1,
       "8": 11.23
     },
-    "guide": null
+    "guide": null,
+    "cost": 4
   },
   {
     "id": "BG35_MagicItem_8152",
@@ -1167,7 +1150,8 @@
       "7": 10.92,
       "8": 6.73
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG36_MagicItem_8012",
@@ -1242,24 +1226,6 @@
     "guide": null
   },
   {
-    "id": "BG36_MagicItem_2052",
-    "name": "Deathwhisper Sticker",
-    "description": "After a friendly minion is Reborn, give your minions +2/+2.",
-    "pick_rate": 12.3,
-    "avg_placement": 4.47,
-    "placement_distribution": {
-      "1": 6.6,
-      "2": 11.27,
-      "3": 15.5,
-      "4": 16.63,
-      "5": 18.0,
-      "6": 15.13,
-      "7": 10.9,
-      "8": 5.98
-    },
-    "guide": null
-  },
-  {
     "id": "BG30_MagicItem_7073",
     "name": "Tickatus Sticker",
     "description": "Discover a Tier 3 Darkmoon Prize. At the start of every three turns, repeat this. (3 turns left!)",
@@ -1298,7 +1264,7 @@
   {
     "id": "BG30_MagicItem_5440",
     "name": "Nomi Sticker",
-    "description": "After you play an Elemental, give Elementals in the Tavern +2/+2 this game.",
+    "description": "After you play an Elemental, give Elementals in the Tavern +3/+2 this game.",
     "pick_rate": 40.6,
     "avg_placement": 4.49,
     "placement_distribution": {
@@ -1310,24 +1276,6 @@
       "6": 13.68,
       "7": 12.3,
       "8": 9.03
-    },
-    "guide": null
-  },
-  {
-    "id": "BG35_MagicItem_9210",
-    "name": "Cowrie Necklace",
-    "description": "Tavern spells that give stats cost (2) less.",
-    "pick_rate": 10.8,
-    "avg_placement": 4.49,
-    "placement_distribution": {
-      "1": 10.58,
-      "2": 12.12,
-      "3": 13.42,
-      "4": 14.2,
-      "5": 13.46,
-      "6": 13.46,
-      "7": 12.81,
-      "8": 9.95
     },
     "guide": null
   },
@@ -1419,7 +1367,8 @@
       "7": 13.32,
       "8": 11.97
     },
-    "guide": null
+    "guide": null,
+    "cost": 1
   },
   {
     "id": "BG30_MagicItem_8471",
@@ -1455,7 +1404,8 @@
       "7": 13.13,
       "8": 9.3
     },
-    "guide": null
+    "guide": null,
+    "cost": 3
   },
   {
     "id": "BG36_MagicItem_3032",
@@ -1491,7 +1441,8 @@
       "7": 13.24,
       "8": 12.26
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG30_MagicItem_8411",
@@ -1509,7 +1460,8 @@
       "7": 13.39,
       "8": 9.17
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG30_MagicItem_8880",
@@ -1707,7 +1659,8 @@
       "7": 12.85,
       "8": 7.98
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG30_MagicItem_4343",
@@ -1761,7 +1714,8 @@
       "7": 12.9,
       "8": 9.71
     },
-    "guide": null
+    "guide": null,
+    "cost": 1
   },
   {
     "id": "BG30_MagicItem_8683",
@@ -1815,7 +1769,8 @@
       "7": 12.62,
       "8": 11.66
     },
-    "guide": null
+    "guide": null,
+    "cost": 1
   },
   {
     "id": "BG32_MagicItem_9573",
@@ -1851,7 +1806,8 @@
       "7": 13.59,
       "8": 10.34
     },
-    "guide": null
+    "guide": null,
+    "cost": 1
   },
   {
     "id": "BG35_MagicItem_8231",
@@ -1995,12 +1951,13 @@
       "7": 14.27,
       "8": 13.16
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG36_MagicItem_2011",
     "name": "Lionfish Portrait",
-    "description": "Get a Lurking Lionfish. Whenever a friendly Beast attacks, give it +2/+2.",
+    "description": "Get a Lurking Lionfish. Whenever a friendly Beast attacks, give it +4/+2.",
     "pick_rate": 19.8,
     "avg_placement": 4.67,
     "placement_distribution": {
@@ -2085,7 +2042,8 @@
       "7": 14.95,
       "8": 11.4
     },
-    "guide": null
+    "guide": null,
+    "cost": 0
   },
   {
     "id": "BG36_MagicItem_3000",
@@ -2121,7 +2079,8 @@
       "7": 15.26,
       "8": 12.27
     },
-    "guide": null
+    "guide": null,
+    "cost": 2
   },
   {
     "id": "BG30_MagicItem_4100",
@@ -2139,7 +2098,8 @@
       "7": 14.88,
       "8": 14.52
     },
-    "guide": null
+    "guide": null,
+    "cost": 1
   },
   {
     "id": "BG30_MagicItem_4262",

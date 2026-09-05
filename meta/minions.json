@@ -550,8 +550,8 @@
     "name": "Prodigious Tusker",
     "cost": 3,
     "tribe": "Quilboar",
-    "attack": 1,
-    "health": 3,
+    "attack": 2,
+    "health": 5,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
@@ -626,11 +626,11 @@
     "cost": 3,
     "tribe": "Demon",
     "attack": 4,
-    "health": 1,
+    "health": 2,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After your hero takes damage, rewind it and give this +1 Health."
+    "text": "After your hero takes damage, rewind it and give this +2 Health."
   },
   {
     "tier": 2,
@@ -819,7 +819,7 @@
     "text": "Deathrattle: Summon three 1/1 Skeletons."
   },
   {
-    "tier": 3,
+    "tier": 4,
     "id": "BG36_508",
     "name": "Cagey Conjurer",
     "cost": 3,
@@ -876,12 +876,12 @@
     "name": "Devout Hellcaller",
     "cost": 3,
     "tribe": "Demon",
-    "attack": 2,
-    "health": 2,
+    "attack": 4,
+    "health": 4,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After another friendly Demon deals damage, gain +1/+2 permanently."
+    "text": "After another friendly Demon deals damage, gain +2/+2 permanently."
   },
   {
     "tier": 3,
@@ -989,8 +989,8 @@
     "name": "Malchezaar, Prince of Dance",
     "cost": 3,
     "tribe": "Demon",
-    "attack": 2,
-    "health": 1,
+    "attack": 4,
+    "health": 3,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
@@ -1054,10 +1054,10 @@
     "name": "Private Investigator",
     "cost": 3,
     "tribe": "Pirate",
-    "attack": 2,
-    "health": 4,
+    "attack": 5,
+    "health": 6,
     "mechanics": [],
-    "text": "Activate (1): Gain 3 Gold next turn."
+    "text": "Activate (1): Gain 2 Gold next turn."
   },
   {
     "tier": 3,
@@ -1158,12 +1158,12 @@
     "name": "Tasty Lobster",
     "cost": 3,
     "tribe": "Beast",
-    "attack": 1,
+    "attack": 2,
     "health": 1,
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Give a  random\nfriendly Beast +1/+1.\nImprove your future\nTasty Lobsters."
+    "text": "Deathrattle: Give a random friendly Beast +2/+1. Improve your future Tasty Lobsters."
   },
   {
     "tier": 3,
@@ -1301,12 +1301,12 @@
     "name": "Ashen Corruptor",
     "cost": 3,
     "tribe": "Demon",
-    "attack": 5,
+    "attack": 6,
     "health": 6,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After your hero takes\ndamage, rewind it and\ngive minions in the Tavern\n+1/+1 this turn."
+    "text": "After your hero takes damage, rewind it and give minions in the Tavern +2/+2 this turn."
   },
   {
     "tier": 4,
@@ -1418,8 +1418,8 @@
     "name": "Bronze Timewalker",
     "cost": 3,
     "tribe": "Dragon",
-    "attack": 2,
-    "health": 9,
+    "attack": 4,
+    "health": 5,
     "mechanics": [
       "BACON_RALLY"
     ],
@@ -2175,11 +2175,11 @@
     "cost": 3,
     "tribe": "Undead",
     "attack": 2,
-    "health": 9,
+    "health": 7,
     "mechanics": [
       "AVENGE"
     ],
-    "text": "Avenge (4): Get a Butchering."
+    "text": "Avenge (3): Get a Butchering."
   },
   {
     "tier": 5,
@@ -2263,12 +2263,12 @@
     "text": "Taunt\nSpellcraft: Give a minion Divine Shield until next turn."
   },
   {
-    "tier": 5,
+    "tier": 4,
     "id": "BG36_210",
     "name": "Hoarding Hyena",
     "cost": 3,
     "tribe": "Beast",
-    "attack": 5,
+    "attack": 4,
     "health": 6,
     "mechanics": [
       "BACON_RALLY"
@@ -2335,11 +2335,11 @@
     "cost": 3,
     "tribe": "Beast",
     "attack": 3,
-    "health": 8,
+    "health": 9,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you summon a Beast, give it +2 Attack and improve this permanently."
+    "text": "Whenever you summon a Beast, give it +3 Attack and improve this permanently."
   },
   {
     "tier": 5,
@@ -2427,12 +2427,12 @@
     "name": "Sanguine Refiner",
     "cost": 3,
     "tribe": "Quilboar",
-    "attack": 2,
+    "attack": 3,
     "health": 8,
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "[x]Rally: Your Blood Gems\ngive an extra +1/+1\nthis game."
+    "text": "Rally: Your Blood Gems give an extra +1/+2 this game."
   },
   {
     "tier": 5,
@@ -2520,12 +2520,12 @@
     "name": "Tichondrius",
     "cost": 3,
     "tribe": "Demon",
-    "attack": 3,
-    "health": 3,
+    "attack": 4,
+    "health": 4,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After your hero takes damage, give your Demons +3/+3."
+    "text": "After your hero takes damage, give your Demons +4/+4."
   },
   {
     "tier": 5,
@@ -2681,11 +2681,11 @@
     "cost": 3,
     "tribe": "Demon",
     "attack": 6,
-    "health": 6,
+    "health": 8,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After your hero takes 3\ndamage, cast Shiny Ring.\n(3 left!)"
+    "text": "After your hero takes 4 damage, get a copy of Corrupted Cupcakes. (4 left!)"
   },
   {
     "tier": 6,
@@ -2735,12 +2735,12 @@
     "cost": 3,
     "tribe": "Dragon",
     "attack": 8,
-    "health": 5,
+    "health": 6,
     "mechanics": [
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Start of Combat: Give your\nDragons +2/+1.\nImproves permanently after\n    you cast a Tavern spell."
+    "text": "Start of Combat: Give your Dragons +2/+2. Improves permanently after you cast a Tavern spell."
   },
   {
     "tier": 6,
@@ -2749,11 +2749,11 @@
     "cost": 3,
     "tribe": "Undead",
     "attack": 3,
-    "health": 10,
+    "health": 8,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you cast a Tavern\nspell, your Undead have\n+2 Attack this game\n(wherever they are)."
+    "text": "After you cast a Tavern spell, your Undead have +3 Attack this game (wherever they are)."
   },
   {
     "tier": 6,
@@ -2769,17 +2769,17 @@
     "text": "Whenever you cast a spell on this, it casts Misplaced Tea Set."
   },
   {
-    "tier": 6,
+    "tier": 5,
     "id": "BGS_018",
     "name": "Goldrinn, the Great Wolf",
     "cost": 3,
     "tribe": "Beast",
-    "attack": 8,
-    "health": 8,
+    "attack": 7,
+    "health": 7,
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Your Beasts have +8/+8 until next turn."
+    "text": "Deathrattle: Your Beasts have +7/+7 until next turn."
   },
   {
     "tier": 6,
@@ -2880,12 +2880,12 @@
     "cost": 3,
     "tribe": "Quilboar",
     "attack": 9,
-    "health": 3,
+    "health": 4,
     "mechanics": [
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "[x]Battlecry and Deathrattle:\nYour Blood Gems give an\nextra +1/+1 this game."
+    "text": "Battlecry and Deathrattle: Your Blood Gems give an extra +2/+1 this game."
   },
   {
     "tier": 6,
@@ -2974,7 +2974,7 @@
     "attack": 10,
     "health": 10,
     "mechanics": [],
-    "text": "Activate (2): Set another minion's stats to 50/50."
+    "text": "Activate (1): Set another minion's stats to 50/50."
   },
   {
     "tier": 6,
@@ -2996,11 +2996,11 @@
     "cost": 3,
     "tribe": "Elemental",
     "attack": 6,
-    "health": 5,
+    "health": 9,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After you play an Elemental, give your Elementals +4/+4."
+    "text": "After you play an Elemental, give your Elementals +2/+3."
   },
   {
     "tier": 6,
@@ -3009,11 +3009,11 @@
     "cost": 3,
     "tribe": "Mech",
     "attack": 4,
-    "health": 6,
+    "health": 5,
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn,\ngive your minions +4/+4\nfor each Magnetization\nthey have."
+    "text": "At the end of your turn, give your minions +4/+5 for each Magnetization they have."
   },
   {
     "tier": 6,
@@ -3105,7 +3105,7 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "[x]Rally: Summon a Golem with\nstats equal to this minion's\nBlood Gems to attack the\ntarget first. (0/0)"
+    "text": "Rally: Summon a Golem with this minion's stats to attack the target first."
   },
   {
     "tier": 7,
