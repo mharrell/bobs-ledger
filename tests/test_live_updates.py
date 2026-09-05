@@ -741,5 +741,26 @@ class TestRenderJsonComps(unittest.TestCase):
         self.assertIsNone(a["shop_rank"][0]["price"])
 
 
+class TestGameStateTable(unittest.TestCase):
+    """The per-game state table: _reset() must restore __init__'s state exactly.
+
+    The two used to be hand-synced lists — a field added to one and not the
+    other leaked the previous game's value into the new game (invisible in
+    play, wrong in advice). The table is the single source of truth; this
+    pins it.
+    """
+
+    def test_reset_restores_fresh_state(self):
+        from live_coach import _GAME_DEFAULTS
+        played = LiveCoach()
+        for name in _GAME_DEFAULTS:
+            setattr(played, name, "DIRTY")
+        played._reset()
+        fresh = LiveCoach()
+        for name in _GAME_DEFAULTS:
+            self.assertEqual(played.__dict__[name], fresh.__dict__[name],
+                             f"{name} diverges after _reset()")
+
+
 if __name__ == "__main__":
     unittest.main()

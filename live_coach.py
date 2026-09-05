@@ -243,36 +243,51 @@ class _LiveActions:
         return out
 
 
+# Per-game state defaults — the single source of truth for __init__ AND
+# _reset(). The two were previously hand-synced lists: a field added to one
+# and not the other was a latent cross-game contamination bug (the previous
+# game's value silently carried into the new one). Callable values are
+# factories (fresh list/dict/set per game); plain values are immutable.
+_GAME_DEFAULTS = {
+    "cur_lines": list,
+    "shop_cards": list,
+    "choice": None,          # pending pick: {'kind','source','options','picked'}
+    "techup": dict,          # TechUp button id -> {tier, player, cost, zone}
+    "_last_tier": None,
+    "_tier_seen_turn": None,  # turn the current tier was reached
+    "_armor_hist": dict,     # turn -> {af, al, hf, hl} first/last armor+HP
+    "_stat_seen": 0,         # hero_stat_log entries already drained
+    "_stat_pending": list,   # (turn, cid, tag, value) before hero parse
+    "next_opponent": None,   # announced NEXT_OPPONENT_PLAYER_ID
+    "_pair_cand": None,      # pairing announced during the open buy phase
+    "_pairing": dict,        # turn -> opponent id announced for its fight
+    "_snap_by_turn": dict,   # turn -> [(player, stat_total), ...] snapshots
+    "_resolved": set,        # turns already committed to the lobby stats
+    "_opp_boards": dict,     # player id -> {"stats", "n", "turn"} last-known
+    "_lobby_stats": list,    # stats of every opponent board we fought
+    "_snap_seen": 0,         # snapshots already buffered
+    "_phase": "buy",         # buy phase vs combat window (GameState STEP)
+    "_bans_ready": False,
+    "_card_races": None,
+    "_seed": None,
+    "_comps": None,
+}
+
+
 class LiveCoach:
     """Feeds lines incrementally; analyze() is fast on each buy phase."""
 
     def __init__(self):
         self.gs = GameState()
         self.actions = _LiveActions()
-        self.cur_lines = []
-        self.shop_cards = []
-        self.choice = None  # pending pick (hero/trinket/discover) or None
         self.game_no = 0    # bumped by _reset() on each CREATE_GAME
-        self.techup = {}    # TechUp button id -> {tier, player, cost, zone}
-        self._last_tier = None
-        self._tier_seen_turn = None  # turn the current tier was reached
-        self._armor_hist = {}  # turn -> {af, al, hf, hl} first/last armor+HP
-        self._stat_seen = 0    # hero_stat_log entries already drained
-        self._stat_pending = []  # (turn, cid, tag, value) before hero parse
-        self.next_opponent = None  # announced NEXT_OPPONENT_PLAYER_ID
-        self._pair_cand = None  # pairing announced during the open buy phase
-        self._pairing = {}     # turn -> opponent id announced for its fight
-        self._snap_by_turn = {}  # turn -> [(player, stat_total), ...] snapshot
-        self._resolved = set()  # turns already committed to the lobby stats
-        self._opp_boards = {}  # player id -> {"stats", "n", "turn"} last-known
-        self._lobby_stats = []  # stats of every opponent board we fought
-        self._snap_seen = 0    # snapshots already buffered
-        self._phase = "buy"    # buy phase vs combat window (GameState STEP)
-        self._bans_ready = False
-        self._card_races = None
-        self._seed = None
-        self._comps = None
+        self._init_game_state()
         self._reset_meta()
+
+    def _init_game_state(self):
+        """Restore every per-game attribute from _GAME_DEFAULTS."""
+        for name, default in _GAME_DEFAULTS.items():
+            setattr(self, name, default() if callable(default) else default)
 
     def _reset_meta(self):
         self.meta = None
@@ -286,29 +301,8 @@ class LiveCoach:
     def _reset(self):
         self.gs = GameState()
         self.actions = _LiveActions()
-        self.cur_lines = []
-        self.shop_cards = []
-        self.choice = None  # pending pick: {'kind','source','options','picked'}
         self.game_no += 1
-        self.techup = {}
-        self._last_tier = None
-        self._tier_seen_turn = None
-        self._armor_hist = {}
-        self._stat_seen = 0
-        self._stat_pending = []
-        self.next_opponent = None
-        self._pair_cand = None
-        self._pairing = {}
-        self._snap_by_turn = {}
-        self._resolved = set()
-        self._opp_boards = {}
-        self._lobby_stats = []
-        self._snap_seen = 0
-        self._phase = "buy"
-        self._bans_ready = False
-        self._card_races = None
-        self._seed = None
-        self._comps = None
+        self._init_game_state()
         self._reset_meta()
 
     def feed(self, line):
