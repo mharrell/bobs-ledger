@@ -14,11 +14,13 @@ import json
 import re
 import sys
 
-from extract_game import split_game_chunks, extract_game, _friendly_player
+from extract_game import split_game_chunks, extract_game, _friendly_player, MINION_ID
 from tribes import normalize
 
-# A real board minion (excludes enchantments, golden _G, trinkets).
-MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BGS_\d+|BG_[A-Z]+_\d+)$")
+# The canonical minion-id regex (extract_game); this narrower local copy was
+# blind to the BGxx_SETCODE_NNN form (e.g. Drakkari = BG26_ICC_901) and
+# diverged from board_state's.
+MINION_ONLY = MINION_ID
 
 # [Entity|mainEntity]=[entityName=X id=N zone=Z zonePos=P cardId=C player=P]
 # mainEntity= appears in DebugPrintOptions (shop offers / hand display).

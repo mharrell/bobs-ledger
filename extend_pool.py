@@ -19,7 +19,7 @@ import os
 import re
 import sys
 
-from board_state import MINION_ONLY
+from extract_game import MINION_ID
 from tribes import normalize
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -37,7 +37,7 @@ def minion_ids_in_logs(limit=5):
             for line in f:
                 for m in re.finditer(r"cardId=(\w+)", line):
                     cid = m.group(1)
-                    if MINION_ONLY.match(cid):
+                    if MINION_ID.match(cid):
                         # Golden variants never get looked up (board_state
                         # strips _G before the pool query) — skip them.
                         ids.add(cid[:-2] if cid.endswith("_G") else cid)

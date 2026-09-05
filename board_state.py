@@ -22,17 +22,13 @@ from collections import defaultdict
 
 from extract_game import (
     ENTITY_TAG, FULL_ENTITY, FULL_ENTITY_UPDATING, FULL_TAG, NAME_HERO,
-    ZONE_PLAIN, UPDATING_ENTITY_ID, HERO_CARD, TIMESTAMP, split_game_chunks,
-    extract_game, _friendly_player,
+    MINION_ID, ZONE_PLAIN, UPDATING_ENTITY_ID, HERO_CARD, TIMESTAMP,
+    split_game_chunks, extract_game, _friendly_player,
 )
 
-# A real board minion: BGxx_NNN, BGxx_SETCODE_NNN (e.g. Drakkari = BG26_ICC_901),
-# BGS_NNN (legacy), or BG_XXX_NNN (reprints, e.g. Brann = BG_LOE_077). BGS_ is
-# used by both minions and spells, so the cardtype filter (not this regex) does
-# the minion/spell split. Excludes enchantments (BGxx_NNNx) and trinkets. Golden
-# cards (BGxx_NNN_G) ARE matched; _minion strips the _G and sets a `golden` flag.
-# Heroes (HERO) match the set-code branch but are filtered by the cardtype check.
-MINION_ONLY = re.compile(r"^(?:BG\d+_\d+|BG\d+_[A-Z]+_\d+|BGS_\d+|BG_[A-Z]+_\d+)(_G)?$")
+# The one canonical minion-id regex lives in extract_game (MINION_ID);
+# MINION_ONLY is kept as the name this module's callers know.
+MINION_ONLY = MINION_ID
 
 # Boolean combat keywords worth reporting on a board.
 KEYWORDS = ("TAUNT", "DIVINE_SHIELD", "REBORN", "WINDFURY", "POISONOUS",
