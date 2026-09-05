@@ -37,6 +37,8 @@ Usage:
                    then tier_rank.
   --prune          (with --top) remove comps from comps.json that are no longer
                    in the current top-N visible set. Off by default.
+  --diff           print a per-comp change report (tier moves, core/addon
+                   swaps, text edits) instead of silently overwriting.
   --youtube        also fetch the YouTube affiliate links for each comp
   --cards-cache    where to cache the hearthstonejson card list (default
                    .cards_cache.json next to this script)
@@ -75,6 +77,12 @@ HAND_ADDED_FIELDS = ("tribe", "guide")
 
 # [[Card Name||dbfId]] wiki-link used in when_to_commit / common_enablers.
 WIKILINK_RE = re.compile(r"\[\[([^|\]]+)\|\|(\d+)\]\]")
+
+# Free-text comp fields that the site edits between patches (reported by
+# --diff as "edited (N -> M chars)" rather than a full dump).
+TEXT_FIELDS = ("how_to_play", "summary", "when_to_commit", "common_enablers")
+
+MINIONS_PATH = os.path.join(_HERE, "meta", "minions.json")
 
 
 def _headers(referer=None):
@@ -210,6 +218,63 @@ def enablers_to_text(enablers):
     return strip_wikilinks(str(enablers))
 
 
+def load_card_names(path=MINIONS_PATH):
+    """Return {bg_id: name} for pretty-printing --diff output.
+
+    Best-effort: an unreadable/missing minions.json just means diffs print
+    raw BG ids instead of names.
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            return {m["id"]: m["name"] for m in json.load(f) if m.get("id")}
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+
+
+def diff_comp(old, new, card_names):
+    """Return human-readable change lines between an old and new comp dict.
+
+    Compares tier, difficulty, core/addon membership, representative card and
+    the free-text guide fields. Card lists print as names where known, ids
+    otherwise; text fields report length changes instead of full dumps.
+    """
+    changes = []
+    for field, label in (("meta_tier", "tier"), ("difficulty", "difficulty")):
+        if old.get(field) != new.get(field):
+            changes.append(f"{label}: {old.get(field, '?')} -> {new.get(field, '?')}")
+
+    def fmt(cards):
+        return ", ".join(card_names.get(c, c) for c in cards)
+
+    for field in ("core", "addons"):
+        old_cards = old.get(field) or []
+        new_cards = new.get(field) or []
+        removed = [c for c in old_cards if c not in new_cards]
+        added = [c for c in new_cards if c not in old_cards]
+        if removed or added:
+            parts = []
+            if removed:
+                parts.append("- " + fmt(removed))
+            if added:
+                parts.append("+ " + fmt(added))
+            changes.append(f"{field}: " + "  ".join(parts))
+
+    if old.get("representative_card") != new.get("representative_card"):
+        rep_old = old.get("representative_card") or "(none)"
+        rep_new = new.get("representative_card") or "(none)"
+        changes.append(
+            f"representative: {card_names.get(rep_old, rep_old)}"
+            f" -> {card_names.get(rep_new, rep_new)}"
+        )
+
+    for field in TEXT_FIELDS:
+        if old.get(field) != new.get(field):
+            old_len = len(old.get(field) or "")
+            new_len = len(new.get(field) or "")
+            changes.append(f"{field}: edited ({old_len} -> {new_len} chars)")
+    return changes
+
+
 def build_comp(record, dbfid_map):
     """Turn a raw comp record (comp_* keys) into the meta schema dict."""
     rep = record.get("comp_representative_card")
@@ -245,6 +310,8 @@ def main():
     ap.add_argument("--top", type=int, help="scrape the top N visible comps instead")
     ap.add_argument("--prune", action="store_true",
                     help="(with --top) drop comps no longer in the top-N visible set")
+    ap.add_argument("--diff", action="store_true",
+                    help="print a per-comp change report (tier, cards, text edits)")
     ap.add_argument("--youtube", action="store_true", help="fetch YouTube links too")
     ap.add_argument("--cards-cache", default=DEFAULT_CARDS_CACHE)
     args = ap.parse_args()
@@ -256,6 +323,7 @@ def main():
         comps = json.load(f)
 
     dbfid_map = load_dbfid_map(args.cards_cache)
+    card_names = load_card_names() if args.diff else {}
 
     # Work list: [(comp_id, key)]. With --top, key is the index slug; the
     # keep-set for --prune is the full top-N visible set (so a failed scrape
@@ -300,6 +368,16 @@ def main():
                     }
                     for l in links
                 ]
+
+        if args.diff:
+            if existing:
+                changes = diff_comp(existing, comp, card_names)
+                for line in changes:
+                    print(f"  {line}")
+                if not changes:
+                    print("  no changes")
+            else:
+                print("  new comp")
 
         comps[key] = comp
         print(f"  {comp['name']} [{comp['meta_tier']}/{comp['difficulty']}] "
