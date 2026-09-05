@@ -52,9 +52,17 @@ ZONE_PLAIN = re.compile(r"Entity=(\d+) tag=ZONE value=(\w+)")
 # hero powers (_p/_p2/_pe) and placeholders (_PH, _KelThuzad).
 HERO_CARD = re.compile(r"^(?:BG\d+_HERO_\d+|TB_BaconShop_HERO_\d+)(?:_SKIN_\w+)?$")
 
-# A real minion/spell card (excludes internal entities like TB_BaconShop_* and
-# BG30_Trinket_*).
-MINION = re.compile(r"^(?:BG\d+_\d+|BGS_\d+|BG\d+_GS\d+)$")
+# A real board minion id — THE canonical definition (four divergent copies
+# drifted before consolidation; see analysis/code_audit_2026-09-04.md §3):
+# BGxx_NNN, BGxx_SETCODE_NNN (e.g. Drakkari = BG26_ICC_901), BGS_NNN (legacy),
+# BG_XXX_NNN (reprints, e.g. Brann = BG_LOE_077), or the BGxx_GSxx form.
+# BGS_ is used by both minions and spells, so the cardtype filter (not this
+# regex) does the minion/spell split. Excludes enchantments (BGxx_NNNx) and
+# trinkets (BG30_Trinket_*). Golden ids (BGxx_NNN_G) ARE matched; callers
+# strip the _G where it matters. Heroes (HERO) match the set-code branch but
+# are filtered by the cardtype check.
+MINION_ID = re.compile(
+    r"^(?:BG\d+_\d+|BG\d+_[A-Z]+_\d+|BGS_\d+|BG_[A-Z]+_\d+|BG\d+_GS\d+)(_G)?$")
 
 # Log line timestamp, e.g. "D 21:41:45.4076558 ...".
 TIMESTAMP = re.compile(r"^D (\d+:\d+:\d+\.\d+)")
@@ -201,7 +209,7 @@ def extract_moves(lines, friendly_player):
                 old = controller.get(eid)
                 new = int(value)
                 if old is not None and old != new and new == friendly_player:
-                    if MINION.match(cid):
+                    if MINION_ID.match(cid):
                         buys.append((t, cid))
                 controller[eid] = new
             elif tag == "DAMAGE":
@@ -211,7 +219,7 @@ def extract_moves(lines, friendly_player):
                 new_zone = value
                 if old_zone == "PLAY" and new_zone == "GRAVEYARD":
                     # A sell leaves the minion undamaged; a combat death does not.
-                    if (MINION.match(cid)
+                    if (MINION_ID.match(cid)
                             and controller.get(eid) == friendly_player
                             and damage.get(eid, 0) == 0):
                         sells.append((t, cid))

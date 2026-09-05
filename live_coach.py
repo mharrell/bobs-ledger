@@ -16,13 +16,13 @@ import os
 import re
 
 from board_state import GameState
-from extract_game import extract_game, _friendly_player
+from extract_game import extract_game, _friendly_player, MINION_ID
 from tribes import normalize
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
 from meta import hero_power as _hero_power_text
 from tribes import DISPLAY_TRIBES, normalize
 from player_actions import (
-    STEP_RE, _GS, ENTITY, MINION_ONLY, CHOICE,
+    STEP_RE, _GS, ENTITY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
 )
 from choices import _CHOICE_HEADER, _CHOICE_OPT, _CHOICE_SOURCE, _CHOSEN, choice_kind, rank_choices
@@ -42,7 +42,7 @@ _SPELL = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=([^]]+) cardId=(\
 _SHOP_BUTTON_NAMES = ("Refresh", "Freeze", "Tavern Tier", "Drag To Buy",
                       "Dark Discovery")
 # A tavern offer: a DebugPrintOptions POWER option whose mainEntity is a real
-# card — minion or tavern spell (BG/BGS spell ids match MINION_ONLY too; the
+# card — minion or tavern spell (BG/BGS spell ids match MINION_ID too; the
 # minion/spell split happens in shop_ranking, which has the spell DB). Captures
 # cardId and the owning player, so the player's own minions (shown as sell
 # options) are excluded from the shop.
@@ -178,7 +178,7 @@ class _LiveActions:
         m = ENTITY.search(line)
         if m:
             _name, eid, z, _pos, cid, p = m.groups()
-            if not MINION_ONLY.match(cid):
+            if not MINION_ID.match(cid):
                 return
             eid, p = int(eid), int(p)
             old = self.zone.get(eid)
@@ -370,7 +370,7 @@ class LiveCoach:
             # Keep every card option, minions and tavern spells (shop offers are
             # owned by the tavern player; the friendly player's own board/hand
             # minions — and the spells they cast — are filtered in analyze()).
-            if MINION_ONLY.match(cid) and "HERO" not in cid \
+            if MINION_ID.match(cid) and "HERO" not in cid \
                     and all(cid != c for c, _ in self.shop_cards):
                 self.shop_cards.append((p, cid))
             return

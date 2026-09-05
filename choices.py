@@ -21,6 +21,7 @@ import os
 import re
 
 from value import shop_ranking
+from extract_game import MINION_ID
 from tribes import normalize
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -57,7 +58,7 @@ def choice_kind(ctype, source, options):
 
 
 def _is_minion_id(cid):
-    return bool(re.match(r"^(?:BG\d+_[A-Z]+_\d+|BG\d+_\d+|BGS_\d+|BG_[A-Z]+_\d+)(_G)?$", cid))
+    return bool(MINION_ID.match(cid))
 
 
 def _load_trinket_db():
