@@ -33,7 +33,8 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
-HS_DATA = r"C:\Program Files (x86)\Hearthstone\Data\Win"
+from config import HS_DATA_DIR, HS_LOG_GLOB  # noqa: E402
+
 CACHE = os.path.join(_HERE, "img_cache")
 
 # Card ids in the defs: BG36_204, BG30_MagicItem_434, BG26_HERO_104, BGS_012,
@@ -72,8 +73,7 @@ def _meta_ids():
 def _log_ids():
     """Card ids seen in any Hearthstone session log (heroes/trinkets included)."""
     wanted = set()
-    for log in glob.glob(r"C:\Program Files (x86)\Hearthstone\Logs"
-                         r"\Hearthstone_*\Power.log"):
+    for log in glob.glob(HS_LOG_GLOB):
         try:
             with open(log, encoding="utf-8", errors="replace") as f:
                 text = f.read()
@@ -122,9 +122,6 @@ def _art_map():
             if pt and ":" in pt:
                 mapping[cid] = pt.split(":")[-1]
     return mapping
-
-
-HS_DATA_DIR = r"C:\Program Files (x86)\Hearthstone\Data\Win"
 
 
 def extract(only_ids=None, write=True):

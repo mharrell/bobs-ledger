@@ -9,6 +9,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 from sanitize_log import BATTLETAG, sanitize_text  # noqa: E402
+from config import HS_LOG_GLOB  # noqa: E402
 
 
 class TestSanitizeText(unittest.TestCase):
@@ -45,8 +46,7 @@ class TestSanitizeText(unittest.TestCase):
     def test_real_log_fully_redacted(self):
         """Integration (local logs): after sanitizing, zero BattleTag
         matches remain in the output."""
-        logs = sorted(glob.glob(r"C:\Program Files (x86)\Hearthstone\Logs"
-                                r"\Hearthstone_*\Power.log"),
+        logs = sorted(glob.glob(HS_LOG_GLOB),
                       key=os.path.getmtime, reverse=True)
         if not logs:
             self.skipTest("no Hearthstone session log found")

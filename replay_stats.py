@@ -16,6 +16,7 @@ import os
 import sys
 from collections import defaultdict
 
+from config import HS_LOG_GLOB
 from extract_game import split_game_chunks, extract_game, _friendly_player
 from board_state import GameState
 from value import _load_bg_names, _best_engine
@@ -185,7 +186,7 @@ def main():
     as_json = "--json" in argv
     if not args:
         # default: the whole local corpus
-        args = sorted(glob.glob(r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"))
+        args = sorted(glob.glob(HS_LOG_GLOB))
     names = _load_bg_names()
     games = []
     seen_seeds = set()

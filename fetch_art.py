@@ -25,11 +25,12 @@ import re
 import sys
 import urllib.request
 
+from config import HS_LOG_GLOB as LOG_GLOB
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(_HERE, "img_cache")
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 ART = "https://art.hearthstonejson.com/v1/render/latest/enUS/256x/{}.png"
-LOG_GLOB = r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"
 
 # Hero/trinket id families as they appear in logs (heroes.json has NO ids;
 # trinket log ids are patch-drifted vs trinkets.json).

@@ -20,6 +20,7 @@ import time
 
 from choices import choice_kind, rank_choices
 from coach import describe
+from config import HS_LOG_GLOB
 from live_coach import LiveCoach
 import coach_ui
 import decision_log
@@ -29,7 +30,7 @@ def find_active_log():
     """Newest Hearthstone_*/Power.log written more recently than `recent_seconds`."""
     recent_seconds = int(os.environ.get("LIVE_RECENT", "600"))
     logs = sorted(
-        glob.glob(r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"),
+        glob.glob(HS_LOG_GLOB),
         key=os.path.getmtime, reverse=True,
     )
     for path in logs:

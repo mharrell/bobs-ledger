@@ -19,6 +19,8 @@ import os
 import subprocess
 import urllib.request
 
+from config import HS_LOG_GLOB
+
 DEFAULT_REPO = "mharrell/hearth-telemetry"
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -82,8 +84,7 @@ def main():
     bundle = args.bundle
     if args.latest or not bundle:
         import package_corpus
-        logs = sorted(glob.glob(r"C:\Program Files (x86)\Hearthstone\Logs"
-                                r"\Hearthstone_*\Power.log"),
+        logs = sorted(glob.glob(HS_LOG_GLOB),
                       key=os.path.getmtime, reverse=True)
         if not logs:
             print("no session log found")

@@ -19,13 +19,13 @@ import os
 import re
 import sys
 
+from config import HS_LOG_GLOB as LOG_GLOB
 from extract_game import MINION_ID
 from tribes import normalize
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 POOL = os.path.join(_HERE, "meta", "minions.json")
 CARDS = os.path.join(_HERE, ".cards_full.json")
-LOG_GLOB = r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"
 
 
 def minion_ids_in_logs(limit=5):

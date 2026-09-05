@@ -18,6 +18,7 @@ import os
 import re
 import sys
 
+from config import HS_LOG_GLOB
 from extract_game import split_game_chunks, extract_game, _friendly_player
 from player_actions import parse_actions
 from value import _load_bg_names
@@ -100,8 +101,7 @@ def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     latest = "--latest" in sys.argv[1:]
     if latest or not args:
-        logs = sorted(glob.glob(
-            r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"),
+        logs = sorted(glob.glob(HS_LOG_GLOB),
             key=os.path.getmtime, reverse=True)
         if not logs:
             print("no session log found")
