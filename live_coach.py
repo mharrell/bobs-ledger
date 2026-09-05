@@ -19,6 +19,7 @@ from board_state import GameState
 from extract_game import extract_game, _friendly_player, MINION_ID
 from tribes import normalize
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
+import meta
 from meta import hero_power as _hero_power_text
 from tribes import DISPLAY_TRIBES, normalize
 from player_actions import (
@@ -532,16 +533,16 @@ class LiveCoach:
         """Compute per-game data once heroes are parsed; retry until they are."""
         if self.friendly is not None or not self.cur_lines:
             return
-        meta = extract_game(self.cur_lines)
-        friendly = _friendly_player(meta["heroes"])
+        game = extract_game(self.cur_lines)
+        friendly = _friendly_player(game["heroes"])
         if friendly is None:
             return  # no heroes parsed yet (very early / end-of-game); retry next analyze
-        self.meta = meta
+        self.meta = game
         self.friendly = friendly
-        hero = next((h for h in meta["heroes"] if h["player"] == friendly), None)
+        hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
         self.hero_card = hero["card"] if hero else None
         self.hero_name = hero["hero_name"] if hero else None
-        self.account = next((n for n, c in meta["account"].items()
+        self.account = next((n for n, c in game["account"].items()
                              if c == self.hero_card), None)
         self.actions.friendly = self.friendly
         if self._stat_pending:
@@ -557,8 +558,7 @@ class LiveCoach:
         self._card_races = card_races
         seed_m = _SEED.search("".join(self.cur_lines))
         self._seed = seed_m.group(1) if seed_m else None
-        with open(os.path.join(_HERE, "meta", "comps.json"), encoding="utf-8") as f:
-            self._comps = json.load(f)
+        self._comps = meta.comps()
         self._refresh_bans()
 
     def _refresh_bans(self):

@@ -13,14 +13,13 @@ Usage:
   python replay_review.py --latest
 """
 import glob
-import json
 import os
-import re
 import sys
 
 from config import HS_LOG_GLOB
 from extract_game import split_game_chunks, extract_game, _friendly_player
 from player_actions import parse_actions
+import meta
 from value import _load_bg_names
 
 GS = "GameState."
@@ -78,23 +77,13 @@ def _advise_point(lines, phase_lo, phase_hi):
 
 
 def _known_minion_ids():
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           "meta", "minions.json"), encoding="utf-8") as f:
-        return {m.get("id") for m in json.load(f)}
+    return {m.get("id") for m in meta.minions()}
 
 
 def _spell_names():
     """id -> name for tavern spells (shop advice ranks spells too since
     spell-buy advice; spell purchases are reported as such, not as 'passed')."""
-    try:
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                               "meta", "tavern_spells.json"), encoding="utf-8") as f:
-            data = json.load(f)
-        items = data if isinstance(data, list) else list(data.values())
-        return {s.get("id"): s.get("name") for s in items
-                if isinstance(s, dict) and s.get("id")}
-    except OSError:
-        return {}
+    return {s.get("id"): s.get("name") for s in meta.spells() if s.get("id")}
 
 
 def main():

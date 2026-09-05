@@ -12,6 +12,7 @@ import json
 import os
 import re
 
+import meta
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
 from tribes import is_banned, normalize
 
@@ -74,13 +75,8 @@ def _load_card_db():
     the value function was blind to BG card text (e.g. Ravaging Scorpid's Beetle
     scaling) and underrated them. See VALUE_FUNCTION.md "BG-pool guardrail".
     """
-    path = os.path.join(_HERE, "meta", "minions.json")
-    if not os.path.exists(path):
-        return {}
-    with open(path, encoding="utf-8") as f:
-        minions = json.load(f)
     out = {}
-    for c in minions:
+    for c in meta.minions():
         out[c.get("id")] = {
             "name": c.get("name"),
             "race": c.get("tribe"),  # minions.json uses 'tribe', not 'race'
@@ -96,14 +92,7 @@ def _load_card_db():
 @functools.lru_cache(maxsize=1)
 def _load_spell_db():
     """card id -> {name, tier, cost, text} from meta/tavern_spells.json."""
-    path = os.path.join(_HERE, "meta", "tavern_spells.json")
-    if not os.path.exists(path):
-        return {}
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    items = data if isinstance(data, list) else list(data.values())
-    return {s.get("id"): s for s in items
-            if isinstance(s, dict) and s.get("id")}
+    return {s.get("id"): s for s in meta.spells() if s.get("id")}
 
 
 def _spell_effect(spell, board_size=0):
@@ -1043,12 +1032,7 @@ def _load_bg_names():
     so shop/buy advice can display tavern spells (their ids never collide with
     minion ids).
     """
-    path = os.path.join(_HERE, "meta", "minions.json")
-    names = {}
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            minions = json.load(f)
-        names = {m.get("id"): m.get("name") for m in minions}
+    names = {m.get("id"): m.get("name") for m in meta.minions()}
     names.update({sid: s.get("name") for sid, s in _load_spell_db().items()})
     return names
 

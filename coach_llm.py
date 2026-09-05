@@ -19,6 +19,8 @@ import os
 
 import requests
 
+import meta
+
 MODEL = "deepseek-v4-flash"
 BASE_URL = "https://api.deepseek.com/chat/completions"
 
@@ -35,18 +37,22 @@ SYSTEM_PROMPT = (
 )
 
 
+_FIXED_BLOCK = None  # assembled once — the prefix must never change mid-session
+
+
 def build_fixed_block():
     """Assemble the static meta reference once, deterministically.
 
     Ordering is frozen (comps by slug, cards by id) so the serialized bytes are
     identical across calls — that is what makes the prefix cacheable. Returns a
-    single string to append after the system prompt.
+    single string to append after the system prompt. Cached module-level:
+    rebuilding identical bytes per call wasted work and invited drift.
     """
-    here = os.path.dirname(os.path.abspath(__file__))
-    with open(os.path.join(here, "meta", "comps.json"), encoding="utf-8") as f:
-        comps = json.load(f)
-    with open(os.path.join(here, "meta", "cards.json"), encoding="utf-8") as f:
-        cards = json.load(f)
+    global _FIXED_BLOCK
+    if _FIXED_BLOCK is not None:
+        return _FIXED_BLOCK
+    comps = meta.comps()
+    cards = meta.cards()
 
     lines = ["# Curated meta reference (static)"]
     lines.append("## Comps")
@@ -63,7 +69,8 @@ def build_fixed_block():
             f"- {c['name']} ({cid}): tier {c.get('tier', '?')} "
             f"{c.get('tribe', '')} {c.get('atk', '?')}/{c.get('health', '?')}"
         )
-    return "\n".join(lines)
+    _FIXED_BLOCK = "\n".join(lines)
+    return _FIXED_BLOCK
 
 
 def build_messages(fixed_block, variable_tail):

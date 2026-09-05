@@ -22,6 +22,7 @@ import re
 
 from value import shop_ranking
 from extract_game import MINION_ID
+import meta
 from tribes import normalize
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -67,24 +68,12 @@ def _load_trinket_db():
     Matched by NAME — trinket card ids are patch-drifted (the DB carries
     BG36_MagicItem_3022-family ids; live logs use BG30_MagicItem_700-family).
     """
-    path = os.path.join(_HERE, "meta", "trinkets.json")
-    if not os.path.exists(path):
-        return {}
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    items = data if isinstance(data, list) else list(data.values())
-    return {t.get("name"): t for t in items if isinstance(t, dict) and t.get("name")}
+    return {t.get("name"): t for t in meta.trinkets() if t.get("name")}
 
 
 def _load_hero_db():
     """name -> hero entry (pick_rate, hero_power text)."""
-    path = os.path.join(_HERE, "meta", "heroes.json")
-    if not os.path.exists(path):
-        return {}
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    items = data if isinstance(data, list) else list(data.values())
-    return {h.get("name"): h for h in items if isinstance(h, dict) and h.get("name")}
+    return {h.get("name"): h for h in meta.heroes() if h.get("name")}
 
 
 def _locked_heroes():

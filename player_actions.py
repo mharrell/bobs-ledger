@@ -15,6 +15,7 @@ import re
 import sys
 
 from extract_game import split_game_chunks, extract_game, _friendly_player, MINION_ID
+import meta
 from tribes import normalize
 
 # The canonical minion-id regex (extract_game); this narrower local copy was
@@ -215,27 +216,14 @@ def _load_bg_minion_ids():
     """Set of BG minion card ids (meta/minions.json), cached."""
     global _BG_MINION_IDS
     if _BG_MINION_IDS is None:
-        import os
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            "meta", "minions.json")
-        if os.path.exists(path):
-            with open(path, encoding="utf-8") as f:
-                _BG_MINION_IDS = {m.get("id") for m in json.load(f)}
-        else:
-            _BG_MINION_IDS = set()
+        _BG_MINION_IDS = {m.get("id") for m in meta.minions()}
     return _BG_MINION_IDS
 
 
 def _load_bg_pool():
     """card id -> {tribe, tier} from the BG minion pool."""
-    import os
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                        "meta", "minions.json")
-    if not os.path.exists(path):
-        return {}
-    with open(path, encoding="utf-8") as f:
-        return {m.get("id"): {"tribe": m.get("tribe"), "tier": m.get("tier")}
-                for m in json.load(f)}
+    return {m.get("id"): {"tribe": m.get("tribe"), "tier": m.get("tier")}
+            for m in meta.minions()}
 
 
 def trigger_counts(actions, bg_pool=None):

@@ -16,7 +16,6 @@ is a sane heuristic; the model is not exact).
 Usage:
     python validate_growth.py <Power.log> [game_index]
 """
-import json
 import os
 import re
 import sys
@@ -26,6 +25,7 @@ from extract_game import split_game_chunks, extract_game, _friendly_player
 from player_actions import parse_actions, trigger_counts
 from simulate_growth import _load_engines, simulate_growth
 from value import _best_engine, _load_bg_names
+import meta
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 STEP_RE = re.compile(r"Entity=GameEntity tag=STEP value=(\w+)")
@@ -33,9 +33,8 @@ STEP_RE = re.compile(r"Entity=GameEntity tag=STEP value=(\w+)")
 
 def _base_stats():
     """card id -> (atk, health) from the BG minion pool."""
-    with open(os.path.join(_HERE, "meta", "minions.json"), encoding="utf-8") as f:
-        return {m.get("id"): (m.get("attack") or 0, m.get("health") or 0)
-                for m in json.load(f)}
+    return {m.get("id"): (m.get("attack") or 0, m.get("health") or 0)
+            for m in meta.minions()}
 
 
 def _total_stats(board):
