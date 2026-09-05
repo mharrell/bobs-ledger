@@ -576,29 +576,42 @@ def hand_plan(hand, board_minions=None, scenario=None):
     return steps
 
 
+_STEP_KINDS = (("LEVEL", "level"), ("PICK ", "pick"), ("Buy ", "buy"),
+               ("sell ", "sell"), ("roll", "roll"), ("Cast ", "cast"),
+               ("Play ", "play"), ("stay on tier", "note"),
+               ("wait for end of turn", "note"), ("pass", "note"),
+               ("stabilize", "note"))
+
+
 def top_move(analysis):
     """A one-line decision call as numbered priority steps.
 
-    `analysis` is the coach dict (hero, tier, gold, buy_this, sell_rank, ...).
-    Returns a line like "1. LEVEL to tier 5 — 3 left · 2. PICK Baller
-    Portrait (pick 25%) · 3. Buy Glambot (committing to Mech)" — the
-    highest-priority move is step 1. (ASCII-safe: Windows consoles are
-    cp1252, so no Unicode arrows.)
-
-    Priority order: LEVEL (the tavern tier gates everything; when affordable,
-    buys are budgeted from the LEFTOVER gold, not the full purse) — unless
-    taking the level would cost the player the board: when effective health
-    is dying-low, or when the leftover couldn't buy the shop's top card and
-    that card is a core piece of the target comp, the BUY leads and the
-    level follows (or waits a turn). Then a forced PICK, then buys/sells.
-    Every buy is priced at what the card actually costs in the tavern: a
-    minion costs its TIER (the card's `cost` field is mana — using it made
-    the coach suggest cards the player couldn't afford, the 2026-09-01
-    evening complaint), a spell costs `cost`.
-    The HAND leads everything: casts and plays from hand are free, and
-    end-of-turn compounding counts casts made THIS turn — the 2026-09-04
-    plan left five hand spells sitting that would 10x the board.
+    CONTRACT (the audit's "formatting used as data" finding, in transition):
+    returns the rendered line — "1. LEVEL to tier 5 — 3 left · 2. PICK Baller
+    Portrait (pick 25%) · 3. Buy Glambot (committing to Mech)" — AND
+    side-writes into `analysis`:
+      buy_step_card / buy_step_roll  the Buy box's resolved card / roll text
+      top_move_steps                 [{text, kind, card}] — the same steps as
+                                     structured data, so the overlay can
+                                     render from data instead of re-parsing
+                                     the strings (it still does today).
+    Kind is one of level/pick/buy/sell/roll/cast/play/note; `card` is the
+    resolved buy card (buy_step_card) when the step is the buy.
     """
+    text = _top_move_text(analysis)
+    steps = []
+    for p in text.split(" · "):
+        body = re.sub(r"^\d+\. ", "", p)
+        kind = next((k for prefix, k in _STEP_KINDS if body.startswith(prefix)),
+                    "note")
+        card = analysis.get("buy_step_card") if kind == "buy" else None
+        steps.append({"text": body, "kind": kind, "card": card})
+    analysis["top_move_steps"] = steps
+    return text
+
+
+def _top_move_text(analysis):
+    """Render top_move's numbered steps (the planner proper; see top_move)."""
     names = _load_bg_names()
     card_db = _load_card_db()
     spell_db = _load_spell_db()
