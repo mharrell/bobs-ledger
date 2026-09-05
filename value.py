@@ -35,10 +35,15 @@ W_ENGINE_SIM = 0.05  # per stat of simulated growth the board's engine drives
 W_GROWTH = 2.0      # per point of growth potential (how much a minion can scale)
 W_SPELL_FUEL = 0.3  # per stat of marginal engine growth one spell cast buys
 W_OFF_COMP = -2.0   # shop card whose tribe fights a COMMITTED comp (damping)
+W_MULT = 4.0        # multiplier glue (Balinda/Drakkari-class): worth what it
+                    # amplifies, not its stats — never "safest to sell" glue
+W_SELL_FLOOR = 16.0  # comp glue can't rank into "safe to sell" (< 15 is the
+                     # filler threshold shared with top_move and the UI)
 
 # Keywords/phrases that mark a scaling/engine minion vs a plain body.
 _SCALING_MARKERS = ("end of turn", "whenever you play", "improves", "each",
-                    "triggers twice", "reborn", "deathrattle", "battlecry")
+                    "triggers twice", "reborn", "deathrattle", "battlecry",
+                    "spellcraft")
 _ENGINE_MARKERS = ("double", "twice", "each turn", "each", "improve",
                    "scales", "compounding")
 # Whole-board/comp scaling engines (buff the whole board or a tribe).
@@ -216,10 +221,14 @@ def _detect_role(minion, card):
 
 
 def _is_multiplier(card):
-    """True if the card multiplies other minions' effects (Drakkari etc.)."""
+    """True if the card multiplies other effects (Drakkari, Balinda, Brann,
+    Titus — the comp's glue; "cast twice" is Balinda, which the 2026-09-04
+    1st-place game sold three phases running because only the "trigger
+    twice" forms were recognized)."""
     text = (card or {}).get("text") or ""
-    return any(p in text for p in ("triggers twice", "trigger twice", "double",
-                                   "extra time"))
+    return any(p in text for p in ("triggers twice", "trigger twice",
+                                   "cast twice", "casts twice", "double",
+                                   "extra time", "twice"))
 
 
 def _is_scaling(card):
@@ -266,6 +275,8 @@ def growth_potential(card):
         score += 4.0
     if "battlecry" in text:
         score += 1.0  # one-shot: plays once (was 2.0 — treated as scaling)
+    if "spellcraft" in text:
+        score += 2.0  # a per-turn generator (Rimescale-class stat spells)
     if "deathrattle" in text:
         score += 2.0
     if "improve" in text:
@@ -302,6 +313,14 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
     # Engine potential: a multiplier amplifies every scaling minion on the board.
     if board_scaling and _is_multiplier(card):
         score += W_ENGINE_MULT * board_scaling
+    # Multiplier glue: Balinda/Drakkari/Brann-class cards are worth what they
+    # AMPLIFY, not their own stats (the 2026-09-04 1st-place game sold
+    # Balinda three phases running). The board_scaling term only counts
+    # on-board scaling stats, which misses spell multipliers (Balinda
+    # doubles every stat spell cast); this modest floor helps everywhere,
+    # and sell_recommendation adds a comp-glue floor on top.
+    if _is_multiplier(card):
+        score += W_MULT
 
     # Engine recognition: the board's engine (e.g. Nomi) is worth far more than
     # its small stats suggest. Match by race OR by the text naming the tribe
@@ -365,7 +384,7 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
 
 
 def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None,
-                        hero_power=None, trinkets=None):
+                        hero_power=None, trinkets=None, comp=None):
     """Rank board minions from safest-to-sell to most-valuable.
 
     `board_minions`: list from board_state (each has card, atk, health, tribe).
@@ -377,11 +396,18 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
     `hero_power`: the friendly hero's hero-power TEXT (meta.hero_power), feeding
     the W_HERO synergy term.
     `trinkets`: list of trinket texts/descriptions (W_TRINKET), when known.
+    `comp`: the SAME evidence-based target the buy ranking and display use —
+    without it the comp-glue floor keys on a crude tribe-overlap comp, which
+    can be the WRONG naga comp and leave the real payoff card sellable (the
+    2026-09-04 1st-place game: "sell Fauna Whisperer", the comp's own
+    end-of-turn scaler, while Balinda — in the wrong-picked comp's core —
+    was floored).
     Returns a list of (card_id, score) sorted asecending (best to sell first).
     """
     card_db = _load_card_db()
-    # Pick the comp whose tribe most overlaps the board (a crude comp fit).
-    comp = _best_comp(board_minions, comps)
+    # Pick the comp whose tribe most overlaps the board (a crude comp fit)
+    # unless the caller already resolved the evidence-based target.
+    comp = comp if comp is not None else _best_comp(board_minions, comps)
     trinkets = trinkets or []
     # Total stats of the scaling minions on the board (a multiplier amplifies this).
     board_scaling = sum((m.get("atk") or 0) + (m.get("health") or 0)
@@ -406,13 +432,26 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
         # Banned-tribe minions on the board are worth less (can't grow).
         if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0
+        # Comp glue is never "safe to sell" (floor above the 15 filler
+        # threshold): multipliers amplify the comp's effects, the fit comp's
+        # own pieces ARE the build, and Spellcraft generators feed it a
+        # stat spell every turn. (2026-09-04 1st-place game: "sell Balinda
+        # (making room)" fired three phases in a row — she IS nagas core;
+        # Rimescale Priestess was the earlier report.)
+        text = (card.get("text") or "").lower() if card else ""
+        glue = _is_multiplier(card) or "spellcraft" in text or (comp and (
+            m["card"] in comp.get("core", [])
+            or m["card"] in comp.get("addons", [])))
+        if glue:
+            val = max(val, W_SELL_FLOOR)
         scored.append((m["card"], val, comp))
     scored.sort(key=lambda x: (x[1], x[0]))
     return [(c, v) for c, v, _ in scored]
 
 
 def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
-                 hero_power=None, trinkets=None, scenario=None):
+                 hero_power=None, trinkets=None, scenario=None,
+                 recent_cards=None, comp=None):
     """Rank the shop's tavern cards (minions AND spells) by value.
 
     `shop_cards`: list of card ids currently offered. `comps`: the playable comps
@@ -420,21 +459,26 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
     comp. `allowed_tribes`: canonical allowed tribes, or None when unknown (no
     penalty). `hero_power`/`trinkets`: the W_HERO / W_TRINKET synergy inputs.
     `scenario`: real per-turn trigger counts (feeds the spell fuel term).
+    `recent_cards`/`comp`: the SAME comp evidence the target display uses —
+    without them the ranking scored against an ARBITRARY comp (dict order)
+    when there was no evidence yet, blessing that comp's core with +10 (the
+    2026-09-04 1st-place game: Banana Slamma, a Beast, headlined a Naga game
+    at t9). No evidence now means NO comp bonus — cards score on their own
+    merits — and a caller that already computed the target passes it so the
+    buy headline and the "committing to" display can't disagree.
     Returns a list of (card_id, score) sorted most-valuable first, so the
     coach can headline "Buy this".
     """
     card_db = _load_card_db()
     spell_db = _load_spell_db()
     names = _load_bg_names()
-    comp = None
-    if comps:
+    if comp is None and comps:
         # Score shop cards against the TARGET comp (what you're building toward),
         # not the current board's implied comp — so the buy recommendation guides
         # the pivot/commit rather than just matching the current board.
-        if board_minions:
-            comp = comp_target(board_minions, comps)
-        if comp is None:
-            comp = next(iter(comps.values()))
+        # comp stays None without evidence — never an arbitrary dict-order
+        # comp (the old `next(iter(comps.values()))` fallback).
+        comp = comp_target(board_minions or [], comps, recent_cards=recent_cards)
     engine_bonus = _engine_growth_bonus(board_minions, names) if board_minions else {}
     scored = []
     for cid in shop_cards:

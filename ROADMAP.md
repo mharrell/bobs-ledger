@@ -302,6 +302,24 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
       alone, t9 lists Spitescale Special + Tavern Coins, t13-14 show stuck
       comp pieces with make-room notes; UI smoke-tested against the real
       payload.
+- [x] **Multiplier sell protection + one comp target** (2026-09-04, from the
+      1st-place Guff replay — "sell Balinda Stonehearth (making room)" fired
+      three phases in a row; t9 headlined Banana Slamma, a Beast, in a Naga
+      game): (1) **Comp glue is never safest to sell** — sell_recommendation
+      floors multipliers (Balinda "cast twice" was invisible to the old
+      "trigger twice" patterns), the fit comp's core/addon pieces, and
+      Spellcraft generators (Rimescale-class, now a scaling marker) above
+      the 15-point filler threshold shared with top_move and the UI.
+      (2) **ONE evidence-based comp target feeds sell + buy + display** —
+      shop_ranking used to fall back to an arbitrary dict-order comp
+      (+10 to its core) when there was no evidence, and
+      sell_recommendation keyed its glue floor on a crude tribe-overlap
+      comp that could be the wrong Naga comp (protecting Balinda while
+      listing "sell Fauna Whisperer" — the comp's own payoff). Both now
+      take the target live_coach computes from board + recent acquisitions;
+      no evidence means no comp bonus, cards score on their own merits.
+      Verified on the replay: every wrong sell and the t9 mis-blessing are
+      gone; 172/172 tests.
 
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored

@@ -218,3 +218,70 @@ class TestTopMoveHand(unittest.TestCase):
         tm = value.top_move(a)
         self.assertIn("scale Nagas - Groundbreaker", tm)
         self.assertIn("sell nothing that grows", tm)
+
+
+class TestMultiplierProtect(unittest.TestCase):
+    """Comp glue is never 'safest to sell' (2026-09-04 1st-place game: 'sell
+    Balinda Stonehearth (making room)' fired three phases in a row — she IS
+    nagas core; Rimescale Priestess was the earlier report)."""
+
+    BALINDA = "BG35_883"       # "Your spells that target friendly minions
+    RIMESCALE = "BG33_319"     # cast twice." / Spellcraft generator
+    FILLER = "BG33_140"        # River Skipper, a plain tier-1 body
+
+    def test_balinda_is_recognized_as_a_multiplier(self):
+        self.assertTrue(value._is_multiplier(
+            value._load_card_db().get(self.BALINDA)))
+
+    def test_spellcraft_generators_are_scaling(self):
+        card = value._load_card_db().get(self.RIMESCALE)
+        self.assertEqual(value._detect_role({"card": self.RIMESCALE}, card),
+                         "scaling")
+
+    def test_glue_never_ranks_safest(self):
+        board = [{"card": self.BALINDA, "atk": 4, "health": 6, "tribe": "NAGA"},
+                 {"card": self.RIMESCALE, "atk": 2, "health": 6,
+                  "tribe": "NAGA"},
+                 {"card": self.FILLER, "atk": 2, "health": 2, "tribe": "NAGA"}]
+        ranked = value.sell_recommendation(board, [])
+        self.assertNotEqual(ranked[0][0], self.BALINDA)
+        self.assertNotEqual(ranked[0][0], self.RIMESCALE)
+        self.assertEqual(ranked[0][0], self.FILLER)
+        scores = dict(ranked)
+        self.assertGreaterEqual(scores[self.BALINDA], 16)
+        self.assertLess(scores[self.FILLER], 16)
+
+
+class TestCompFilteredBuy(unittest.TestCase):
+    """The buy ranking uses the SAME comp evidence as the target display —
+    no evidence means NO comp bonus (the old fallback blessed an arbitrary
+    dict-order comp's core with +10: Banana Slamma, a Beast, headlined the
+    Naga game at t9 of the 2026-09-04 1st-place run)."""
+
+    SLAMMA = "BG26_802"         # Banana Slamma (Beast)
+    PERCUSSIONIST = "BG26_525"  # Imposing Percussionist
+    COMPS = {
+        "beasts": {"name": "Beasts", "tribe": "Beast",
+                   "core": [SLAMMA], "addons": []},
+        "nagas": {"name": "Nagas", "tribe": "Naga",
+                  "core": [PERCUSSIONIST], "addons": []},
+    }
+
+    def test_no_evidence_no_arbitrary_comp_bonus(self):
+        plain = dict(value.shop_ranking([self.SLAMMA], {},
+                                        board_minions=[]))
+        with_comps = dict(value.shop_ranking([self.SLAMMA], self.COMPS,
+                                             board_minions=[]))
+        self.assertAlmostEqual(with_comps[self.SLAMMA], plain[self.SLAMMA])
+
+    def test_recent_evidence_blesses_only_that_comp(self):
+        recent = [self.PERCUSSIONIST, self.PERCUSSIONIST]  # copies commit
+        blessed = dict(value.shop_ranking(
+            [self.SLAMMA, self.PERCUSSIONIST], self.COMPS,
+            board_minions=[], recent_cards=recent))
+        base = dict(value.shop_ranking(
+            [self.SLAMMA, self.PERCUSSIONIST], self.COMPS,
+            board_minions=[]))
+        self.assertGreater(blessed[self.PERCUSSIONIST],
+                           base[self.PERCUSSIONIST] + 9)  # the +10 core bonus
+        self.assertAlmostEqual(blessed[self.SLAMMA], base[self.SLAMMA])
