@@ -28,7 +28,7 @@ from player_actions import (
 from choices import _CHOICE_HEADER, _CHOICE_OPT, _CHOICE_SOURCE, _CHOSEN, choice_kind, rank_choices
 from value import (
     comp_cards, sell_recommendation, shop_ranking, top_move, comp_target,
-    target_state,
+    target_state, hand_plan, _load_spell_db,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -643,15 +643,17 @@ class LiveCoach:
     def state_fingerprint(self):
         """A cheap fingerprint of everything the advice depends on.
 
-        (gold, tier, board, tavern offers, pending pick, next opponent) —
-        the monitor re-advises whenever this changes during a buy phase, so
-        buys/rolls/plays/sells mid-turn update the advice instead of waiting
-        for the next buy phase. The pick and scout are part of what the
-        advice renders: without them in the fingerprint, resolving a trinket
-        pick (2026-09-04, user report) left gold/board/shop identical, the
-        fingerprint matched, and the overlay sat frozen on the pick panel
-        until a refresh changed the shop. None before the hero is parsed
-        (nothing to fingerprint yet).
+        (gold, tier, board, tavern offers, pending pick, next opponent,
+        hand) — the monitor re-advises whenever this changes during a buy
+        phase, so buys/rolls/plays/sells mid-turn update the advice instead
+        of waiting for the next buy phase. The pick and scout are part of
+        what the advice renders: without them in the fingerprint, resolving
+        a trinket pick (2026-09-04, user report) left gold/board/shop
+        identical, the fingerprint matched, and the overlay sat frozen on
+        the pick panel until a refresh changed the shop. The hand too:
+        buying a spell into hand, or casting one out, changes what the plan
+        says without touching gold/board/shop. None before the hero is
+        parsed (nothing to fingerprint yet).
         """
         if self.friendly is None:
             return None
@@ -668,6 +670,8 @@ class LiveCoach:
             tuple(self.tavern_offers()),
             pick,
             self.next_opponent,
+            tuple(sorted(m.get("card") or ""
+                         for m in self.gs.hand(self.friendly))),
         )
 
     def analyze(self):
@@ -707,6 +711,18 @@ class LiveCoach:
         shop = shop_ranking(offer_ids, self.playable, board,
                             self.allowed, hero_power=hero_power,
                             scenario=scenario) if offer_ids else []
+        # The hand: casts from hand are free, stuck minions play free — the
+        # coach's blind spot until 2026-09-04 (five spells sat in hand that
+        # would 10x the board while the coach said nothing). Spell entities
+        # are filtered by the tavern-spell DB (generated junk can carry a
+        # spell cardtype but has no real spell id).
+        hand = [m for m in self.gs.hand(self.friendly)
+                if m.get("type") != "spell"
+                or m.get("card") in _load_spell_db()]
+        hand_steps = hand_plan(hand, board, scenario)
+        golden_by_cid = {m["card"]: m.get("golden") for m in hand}
+        for s in hand_steps:
+            s["golden"] = golden_by_cid.get(s["card"], False)
         # Recent acquisitions (this turn's plays + the last completed turn's)
         # feed the pivot override — the board alone lags an actual pivot.
         friendly = self.friendly
@@ -815,6 +831,8 @@ class LiveCoach:
             "target_comp": target["name"] if target else None,
             "target_state": target_state(target, board),
             "target_cards": comp_cards(target, board),
+            "hand": hand_steps,
+            "hand_plan": hand_steps,
             "scenario": scenario,
         }
         result["top_move"] = top_move(result)

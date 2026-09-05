@@ -80,6 +80,17 @@ class TestStateFingerprint(unittest.TestCase):
                f"tag=NEXT_OPPONENT_PLAYER_ID value=8")
         self.assertNotEqual(before, c.state_fingerprint())
 
+    def test_hand_change_changes_fingerprint(self):
+        """A spell bought into hand (or cast out) changes the plan without
+        touching gold/board/shop — the fingerprint must notice."""
+        c = self._offers_coach()
+        before = c.state_fingerprint()
+        c.gs.feed(f"{GS}    FULL_ENTITY - Creating ID=77 CardID=BG28_897")
+        c.gs.feed(f"{GS}        tag=CONTROLLER value=7")
+        c.gs.feed(f"{GS}        tag=ZONE value=HAND")
+        c.gs.feed(f"{GS}        tag=CARDTYPE value=SPELL")
+        self.assertNotEqual(before, c.state_fingerprint())
+
 
 class TestGoldSpending(unittest.TestCase):
     def test_spent_gold_is_subtracted(self):

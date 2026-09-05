@@ -114,3 +114,107 @@ class TestNoEvidenceNoComp(unittest.TestCase):
         comps = {"nagas": {"name": "Nagas", "core": ["BG33_140"], "addons": []}}
         board = [{"card": "BG33_140"}, {"card": "BG33_140"}]
         self.assertIs(value.comp_target(board, comps), comps["nagas"])
+
+
+class TestHandPlan(unittest.TestCase):
+    """Hand plays the coach never made (2026-09-04: five spells sat in hand
+    that would 10x the board's stats while the coach said nothing). Casting
+    from hand is free, a stuck minion plays free — each is pure profit."""
+
+    BANANA = "BG28_897"   # Tavern Dish Banana: give a minion +2/+2 (t1 spell)
+    MINION = "BG33_140"   # River Skipper, a tier-1 body
+
+    def test_casts_and_plays_carry_verbs(self):
+        hand = [{"card": self.BANANA, "type": "spell"},
+                {"card": self.MINION, "type": "minion",
+                 "atk": 2, "health": 2}]
+        steps = value.hand_plan(hand, board_minions=[])
+        self.assertTrue(steps)
+        self.assertEqual(steps[0]["verb"], "cast")
+        self.assertEqual(steps[0]["card"], self.BANANA)
+        self.assertIn("play", [s["verb"] for s in steps])
+
+    def test_engine_fuel_boosts_a_cast(self):
+        """A running cast-spell engine turns every cast into compounding
+        growth — the spell scores higher and says so."""
+        spell = [{"card": self.BANANA, "type": "spell"}]
+        plain = value.hand_plan(spell, board_minions=[],
+                                scenario={"cast_spell": 0})
+        glambot_board = [{"card": "BG36_853", "name": "Glambot",
+                          "atk": 4, "health": 4}]
+        fueled = value.hand_plan(spell, board_minions=glambot_board,
+                                 scenario={"cast_spell": 10})
+        self.assertGreater(fueled[0]["score"], plain[0]["score"])
+        self.assertTrue(fueled[0]["why"])
+
+    def test_unknown_spell_skipped(self):
+        """Generated spell entities without a real id can't be advised."""
+        self.assertEqual(value.hand_plan(
+            [{"card": "UNKNOWN_SPELL_X", "type": "spell"}]), [])
+
+
+class TestTopMoveHand(unittest.TestCase):
+    """The hand leads the numbered plan (free actions, execution order)."""
+
+    def _analysis(self, hand_entries=None):
+        return {"tier": 2, "gold": 6, "level_cost": 5, "health": 30,
+                "armor": 0, "turn": 7, "damage_last": None, "loss_streak": 0,
+                "board": [], "shop_rank": [], "buy_this": None,
+                "playable_comps": {}, "choice": None, "sell_rank": [],
+                "target_comp": None, "target_cards": None,
+                "hand_plan": hand_entries or []}
+
+    def test_hand_casts_lead_the_plan(self):
+        tm = value.top_move(self._analysis([
+            {"card": "BG28_897", "verb": "cast", "name": "Tavern Dish Banana",
+             "score": 4, "why": None}]))
+        self.assertTrue(tm.startswith("1. Cast Tavern Dish Banana"), tm)
+        self.assertIn("2. LEVEL to tier 3 (standard curve)", tm)
+
+    def test_copies_group_and_rest_summarize(self):
+        entries = ([{"card": "BG28_897", "verb": "cast",
+                     "name": "Tavern Dish Banana", "score": 4, "why": None}]
+                   * 2
+                   + [{"card": "BG28_810", "verb": "cast",
+                       "name": "Tavern Coin", "score": 1, "why": None}])
+        tm = value.top_move(self._analysis(entries))
+        self.assertIn("1. Cast Tavern Dish Banana x2", tm)
+        self.assertIn("2. Cast Tavern Coin", tm)
+        self.assertIn("3. LEVEL", tm)
+
+    def test_more_than_three_kinds_summarize(self):
+        entries = [{"card": f"BG28_80{i}", "verb": "cast", "name": f"Spell {i}",
+                    "score": 5 - i, "why": None} for i in range(4)]
+        tm = value.top_move(self._analysis(entries))
+        self.assertIn("then the rest of your hand (1 more)", tm)
+
+    def test_hand_minion_on_full_board_says_make_room(self):
+        entries = [{"card": "BG33_140", "verb": "play", "name": "River Skipper",
+                    "score": 10, "why": "board is full — sell to make room"}]
+        tm = value.top_move(self._analysis(entries))
+        self.assertIn("Play River Skipper (board is full — sell to make room)",
+                      tm)
+
+    def test_wait_for_end_of_turn_casts_first(self):
+        """End-of-turn compounding counts casts made THIS turn — the hand
+        goes before the pass."""
+        a = self._analysis([
+            {"card": "BG28_897", "verb": "cast",
+             "name": "Tavern Dish Banana", "score": 4, "why": None}])
+        a["tier"] = 6  # nothing left to level — the pass is the only spend move
+        a["board"] = [{"card": "BG32_235"}] * 7  # end-of-turn scaler, full board
+        tm = value.top_move(a)
+        self.assertTrue(tm.startswith("1. Cast Tavern Dish Banana"), tm)
+        self.assertIn("wait for end of turn", tm)
+
+    def test_committed_endgame_says_scale(self):
+        """Once committed the endgame is enriching what we have (2026-09-04:
+        "we committed, we have it, now we scale it to kingdom come") — the
+        stale fallback says scale, not hold."""
+        a = self._analysis()
+        a["gold"] = 0
+        a["target_comp"] = "Nagas - Groundbreaker"
+        a["target_state"] = "committing"
+        tm = value.top_move(a)
+        self.assertIn("scale Nagas - Groundbreaker", tm)
+        self.assertIn("sell nothing that grows", tm)
