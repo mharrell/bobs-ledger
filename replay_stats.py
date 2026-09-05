@@ -20,13 +20,13 @@ from config import HS_LOG_GLOB
 from extract_game import split_game_chunks, extract_game, _friendly_player
 from board_state import GameState
 from value import _load_bg_names, _best_engine
+import meta
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def _load_comps():
-    with open(os.path.join(_HERE, "meta", "comps.json"), encoding="utf-8") as f:
-        return json.load(f)
+    return meta.comps()
 
 
 def _detect_comp(board, comps):

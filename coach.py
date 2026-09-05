@@ -14,7 +14,6 @@ over (board + meta) before speaking.
 Usage:
     python coach.py <Power.log> [game_index]
 """
-import json
 import os
 import re
 import sys
@@ -26,8 +25,6 @@ from player_actions import parse_actions, trigger_counts
 from value import sell_recommendation, _load_card_db, _load_bg_names, _load_spell_db
 import meta
 from tribes import DISPLAY_TRIBES, normalize
-
-_HERE = _HERE  # reuse bans' module dir
 
 
 def _game_seed(chunk):
@@ -69,9 +66,7 @@ def analyze(path, game_index=1):
         if g["seed"] == seed:
             allowed = g["allowed"]
             break
-    with open(os.path.join(_HERE, "meta", "comps.json"), encoding="utf-8") as f:
-        comps = json.load(f)
-    playable = filter_comps_by_available_tribes(comps, card_races, allowed)
+    playable = filter_comps_by_available_tribes(meta.comps(), card_races, allowed)
 
     # Real per-turn trigger counts (spells cast, elementals/mechs/nagas played)
     # from the player's actions, so the growth simulator uses actual rates

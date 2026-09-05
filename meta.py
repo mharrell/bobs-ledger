@@ -1,57 +1,86 @@
-"""Load the curated card/comp meta and match a board against known comps.
+r"""Lazy, cached accessors for the curated meta DB — the ONE place that opens
+meta/*.json.
 
-The card DB is built up by hand (see meta/cards.json and meta/comps.json) from
-curated meta sources (tier lists, comp guides). Card ids are the internal
-Battlegrounds ids (BGxx_NNN, BGS_NNN, BG_XXX_NNN) that board_state.py emits.
+Before consolidation every module hand-rolled its own loader (35+ raw
+json.load sites, six naming schemes, three different missing-file behaviors —
+analysis/code_audit_2026-09-04.md §2). Rules here:
+
+  - lazy: nothing touches disk until an accessor is called (the old eager
+    import-time CARDS/COMPS load made `import meta` fail for tools whose
+    checkout lacked the DBs);
+  - cached: the DBs only change on a patch (patch_notes.py --apply,
+    extend_pool.py --apply) — standalone processes, so a within-process stale
+    cache is not a real scenario;
+  - forgiving: a missing or corrupt file yields an empty collection (with a
+    one-line warning), never a crash — a corrupt comp DB must not kill the
+    live loop;
+  - shared: accessors return the cached object. Callers must not mutate it
+    (value functions and the UI only read; filter_* builds new dicts).
+
+Accessors:
+    minions()  -> list of minion records (meta/minions.json)
+    spells()   -> list of tavern-spell records (meta/tavern_spells.json)
+    comps()    -> dict slug -> comp record (meta/comps.json)
+    cards()    -> dict card id -> card record (meta/cards.json)
+    trinkets() / heroes() -> list of records
+    items(name) -> list form of any meta file (a dict-of-records is tolerated)
 """
+import functools
 import json
 import os
+import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
-with open(os.path.join(_HERE, "meta", "cards.json"), encoding="utf-8") as f:
-    CARDS = json.load(f)
 
-with open(os.path.join(_HERE, "meta", "comps.json"), encoding="utf-8") as f:
-    COMPS = json.load(f)
-
-
-def card(cid):
-    """Card metadata for a card id, or None if unknown."""
-    return CARDS.get(cid)
-
-
-def card_name(cid):
-    """Human-readable name for a card id (falls back to the id)."""
-    c = CARDS.get(cid)
-    return c["name"] if c else cid
+@functools.lru_cache(maxsize=None)
+def _raw(name):
+    path = os.path.join(_HERE, "meta", name)
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError) as e:
+        print(f"meta: {name} unreadable ({e}) — continuing without it",
+              file=sys.stderr)
+        return None
 
 
-def match_comps(board_ids):
-    """Rank known comps by how many of their core/addon cards are on the board.
-
-    Returns a list of dicts, best match first:
-      {slug, name, core_hits, addon_hits, score}
-    score = 2 * core_hits + addon_hits (core cards weigh more).
-    """
-    board = set(board_ids)
-    results = []
-    for slug, comp in COMPS.items():
-        core_hits = [cid for cid in comp["core"] if cid in board]
-        addon_hits = [cid for cid in comp.get("addons", []) if cid in board]
-        if core_hits or addon_hits:
-            results.append({
-                "slug": slug,
-                "name": comp["name"],
-                "core_hits": core_hits,
-                "addon_hits": addon_hits,
-                "score": 2 * len(core_hits) + len(addon_hits),
-            })
-    results.sort(key=lambda r: -r["score"])
-    return results
+def _items(name):
+    data = _raw(name)
+    if isinstance(data, list):
+        return [d for d in data if isinstance(d, dict)]
+    if isinstance(data, dict):
+        return [d for d in data.values() if isinstance(d, dict)]
+    return []
 
 
-_HEROES = None
+def minions():
+    return _items("minions.json")
+
+
+def spells():
+    return _items("tavern_spells.json")
+
+
+def comps():
+    return _raw("comps.json") or {}
+
+
+def cards():
+    return _raw("cards.json") or {}
+
+
+def trinkets():
+    return _items("trinkets.json")
+
+
+def heroes():
+    return _items("heroes.json")
+
+
+def items(name):
+    """Records of any meta file as a list (dict-of-records tolerated)."""
+    return _items(name)
 
 
 def hero_power(hero_name):
@@ -60,15 +89,9 @@ def hero_power(hero_name):
     Best-effort: exact (case-insensitive) name match against meta/heroes.json.
     Skin display names that don't match exactly return None.
     """
-    global _HEROES
-    if _HEROES is None:
-        path = os.path.join(_HERE, "meta", "heroes.json")
-        _HEROES = {}
-        if os.path.exists(path):
-            with open(path, encoding="utf-8") as f:
-                for h in json.load(f):
-                    if h.get("name"):
-                        _HEROES[h["name"].lower()] = h.get("hero_power")
     if not hero_name:
         return None
-    return _HEROES.get(hero_name.lower())
+    for h in heroes():
+        if (h.get("name") or "").lower() == hero_name.lower():
+            return h.get("hero_power")
+    return None
