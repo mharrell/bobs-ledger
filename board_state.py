@@ -55,6 +55,9 @@ class GameState:
         self.tribe = {}         # entity id -> CARDRACE
         self.tier = {}          # entity id -> TECH_LEVEL (minion tier)
         self.keywords = defaultdict(set)  # entity id -> set of keywords
+        self.unplayable = {}    # entity id -> LITERALLY_UNPLAYABLE is truthy
+                                # (hand cards locked by a condition, e.g.
+                                # Thorim's Tier-7 pick until 60 gold spent)
         self.gold_max = {}      # account -> RESOURCES (this turn's purse)
         self.gold_used = {}     # account -> RESOURCES_USED (spent this turn)
         self.gold_temp = {}     # account -> TEMP_RESOURCES (hero-power gold)
@@ -217,6 +220,10 @@ class GameState:
             self.tribe[eid] = value
         elif tag == "TECH_LEVEL":
             self.tier[eid] = int(value)
+        elif tag == "LITERALLY_UNPLAYABLE":
+            # Hand cards locked by a condition (Thorim's 60-gold Tier-7 pick,
+            # 2026-09-05): value "1" locks, "0" unlocks when paid off.
+            self.unplayable[eid] = value == "1"
         elif tag == "PLAYER_TECH_LEVEL":
             cid = self.card.get(eid, "")
             if HERO_CARD.match(cid):
@@ -328,6 +335,7 @@ class GameState:
                 continue
             m = self._minion(eid, cid)
             m["type"] = "spell" if ct == "SPELL" else "minion"
+            m["locked"] = self.unplayable.get(eid, False)
             hand.append(m)
         hand.sort(key=lambda m: (m["pos"] is None, m["pos"] or 0))
         return hand
