@@ -67,6 +67,7 @@ class GameState:
         self.hero_stat_log = []  # (card, tag, value) hero ARMOR/HEALTH writes
         self.snapshots = []     # board snapshots, one per minion entering PLAY
         self.current_entity = None
+        self._controller_lock = {}  # eid -> the player it was moved away from
         self._game_ended = False  # set on PLAYSTATE=WON/LOST; stops snapshots
         self._post_game = set()   # entity ids created after game end (re-created)
 
@@ -91,7 +92,18 @@ class GameState:
             ename, eid, cid, p, tag, value = m.groups()
             eid = int(eid)
             self.card[eid] = cid
-            self.player[eid] = int(p)
+            p = int(p)
+            # The bracket's player is a snapshot from BEFORE this block ran:
+            # re-seeding it on every sibling write un-did a same-block
+            # CONTROLLER=change and kept a minion "in hand" after it had
+            # moved to the other player (2026-09-04 beasts game: the coach
+            # said "play Wrath Weaver" every later turn while the entity sat
+            # elsewhere). A bracket still showing the moved-away player is
+            # stale and skipped; any other bracket value is fresh and seeds
+            # (mirror flips are bracket-only, with no CONTROLLER write).
+            if self._controller_lock.get(eid) != p:
+                self.player[eid] = p
+                self._controller_lock.pop(eid, None)
             self._apply(eid, tag, value)
             return
 
@@ -185,7 +197,15 @@ class GameState:
             # TAG_CHANGE carries it in the Entity=[...player=N] header) —
             # without this, combat-created minions have player None and the
             # friendly/opponent split (and the scout) can't tell sides.
-            self.player[eid] = int(value)
+            # Lock out the stale pre-move player: sibling writes in the same
+            # block still carry the OLD player in their brackets (see feed).
+            # Only a write that CHANGES the player re-locks — the
+            # PowerTaskList twin of an already-applied change would lock the
+            # NEW player and its stale brackets would undo the move.
+            new = int(value)
+            if self.player.get(eid) != new:
+                self._controller_lock[eid] = self.player.get(eid)
+                self.player[eid] = new
         elif tag == "CARDTYPE":
             self.cardtype[eid] = value
         elif tag == "ATK":

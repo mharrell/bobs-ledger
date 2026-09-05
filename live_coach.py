@@ -134,11 +134,13 @@ class _LiveActions:
         self.spells = 0
         self.discovers = 0
         self.plays = []  # (player, card) this turn
+        self.buys = []   # (player, card) entering HAND this turn
         self.zone = {}
         self.player = {}
         self.turn_spells = []
         self.turn_discovers = []
         self.turn_plays = []
+        self.turn_buys = []
 
     def feed(self, line):
         m = STEP_RE.search(line)
@@ -184,14 +186,23 @@ class _LiveActions:
             self.player[eid] = p
             if z == "PLAY" and old == "HAND":
                 self.plays.append((p, cid))
+            # An acquisition: a minion entering HAND (a buy from the tavern,
+            # or a generated copy). Buying IS intention — the comp-evidence
+            # contract used plays only, so a beasts build whose pieces sat in
+            # hand (full board) or a bought-but-uncast spell was invisible
+            # (the 2026-09-04 beasts game stayed comp-agnostic until t11).
+            elif z == "HAND" and old != "HAND":
+                self.buys.append((p, cid))
 
     def _end_turn(self):
         self.turn_spells.append(self.spells)
         self.turn_discovers.append(self.discovers)
         self.turn_plays.append(self.plays)
+        self.turn_buys.append(self.buys)
         self.spells = 0
         self.discovers = 0
         self.plays = []
+        self.buys = []
 
     def scenario(self):
         maxes = {k: 0 for k in _TRIGGER_KEYS}
@@ -698,12 +709,18 @@ class LiveCoach:
         gold = self.gs.gold.get(self.account) if self.account else None
         scenario = self.actions.scenario()
         hero_power = _hero_power_text(self.hero_name)
-        # Recent acquisitions (this turn's plays + the last completed turn's)
-        # feed the pivot override — the board alone lags an actual pivot.
+        # Recent acquisitions (this turn's plays + buys, and the last
+        # completed turn's) feed the pivot override — the board alone lags
+        # an actual pivot, and a buy IS intention (a card can sit in hand
+        # behind a full board, and a spell is acquired by buying).
         friendly = self.friendly
         recent = [cid for p, cid in self.actions.plays if p == friendly]
+        recent += [cid for p, cid in self.actions.buys if p == friendly]
         if self.actions.turn_plays:
             recent += [cid for p, cid in self.actions.turn_plays[-1]
+                       if p == friendly]
+        if self.actions.turn_buys:
+            recent += [cid for p, cid in self.actions.turn_buys[-1]
                        if p == friendly]
         target = comp_target(board, self.playable, recent_cards=recent)
         # ONE comp target feeds sell + buy + display — the evidence-based
