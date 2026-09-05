@@ -77,13 +77,16 @@ why is coachable; opaque advice teaches nothing):
 
 Have: turn, gold, live level cost (button price, −1/turn waited), tier,
 board (minions/stats/engines/comp), shop rank + prices, HP + armor,
-target comp + shopping list, hero + trinket, armor delta (loss streak —
-needs tracking per phase).
+target comp + shopping list, hero + trinket, armor delta (loss streak).
 
 Need (build order):
 1. **Armor-flow tracking** (per-phase armor delta) — DONE 2026-09-04
    (gates 1+2): `damage_last` + `loss_streak`; two straight losses or
    one ≥10 hit at tier ≥3 defer the level with a stated reason.
+   ANY hero damage is a loss (a won combat never drops health+armor);
+   2026-09-04 refinement after the Guff game lost every fight by 1-5 and
+   the old ≥3 "real loss" rule read it as no streak: losses of 1-2 are
+   flagged close, not discounted.
 2. **Shopping-list tier filter** — DONE 2026-09-04 (gates 1+2):
    `_comp_needs_by_tier` splits the comp's unowned pieces by tier;
    pieces only on the current tier → stay and buy, stated.
