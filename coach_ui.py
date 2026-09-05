@@ -3,9 +3,15 @@
 
 Runs a tiny stdlib HTTP server (no dependencies). `live.py` pushes the latest
 situation analysis here each buy phase; the server exposes it as JSON at
-`/analysis` and serves a static HTML/CSS/JS page at `/` that polls it and renders
-the V1 widgets (board, sell ranking, comps, banned tribes, trigger counts,
-gold/tier). Design: analysis/DESIGN_COACHING_UI.md.
+`/analysis` and serves a static HTML/CSS/JS page at `/` that polls it. Layout
+(2026-09-04 rework, player-directed): one priority column — a big "Do this
+now" instruction panel (pending pick, then the numbered plan steps, then the
+level/roll reference line), then horizontal game-like card tiles: the Sell
+row split into "safe to sell | do not sell" groups (the value function's own
+filler threshold, score < 15), the target-comp shopping list, and the ranked
+tavern with the plan's buy glowing gold. The board list is gone (the sell
+row covers what matters); triggers/turn live in the state strip.
+Design: analysis/DESIGN_COACHING_UI.md.
 
 Usage:
     python coach_ui.py [--port N]     # run the server standalone (empty state)
@@ -72,7 +78,7 @@ def _fetch_render(cid):
         _remember_miss(cid)
         return False
 
-_HTML = """<!doctype html>
+_HTML = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -92,68 +98,71 @@ _HTML = """<!doctype html>
               font-size:15px; font-weight:600; }
   #statebar .lbl { color:var(--dim); font-weight:400; font-size:12px; }
   #statebar .banned { color:var(--dim); font-weight:400; font-size:12px; }
-  #app { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;
-         align-items:start; }
-  @media (max-width:1250px) { #app { grid-template-columns:1fr 1fr; } }
-  @media (max-width:840px)  { #app { grid-template-columns:1fr; } }
-  .col { display:flex; flex-direction:column; gap:8px; min-width:0; }
+  /* One priority column: explicit instructions first, then the horizontal
+     card rows (game-like), then reference chips. */
+  #app { display:flex; flex-direction:column; gap:8px; min-width:0; }
   .box { background:var(--panel); border:1px solid #2c2f36; border-radius:6px;
          padding:7px 9px; }
   .box h3 { margin:0 0 4px; font-size:11px; letter-spacing:.06em;
             text-transform:uppercase; color:var(--dim); }
-  /* Rows: thumb, then the name snug against it (flex:1 — the old
-     space-between floated the middle child to the panel's center), score
-     pinned right. */
-  .row { display:flex; align-items:center; gap:7px; padding:1px 0; }
-  .row .l { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;
-            white-space:nowrap; }
-  .row .r { flex:none; }
+  /* The instruction panel is THE element: gold border, big numbered steps. */
+  .instructions { border:2px solid var(--gold); padding:10px 12px; }
+  .instructions h3 { color:var(--gold); font-size:12px; }
+  .instructions .step { font-size:19px; padding:3px 0; }
+  .instructions .footline { margin-top:6px; padding-top:5px;
+                            border-top:1px solid #2c2f36;
+                            color:var(--dim); font-size:13px; }
+  .instructions .pickline { font-size:19px; font-weight:700;
+                            color:var(--good); padding:3px 0; }
+  /* Horizontal game-like card tiles: thumb on top, name below. */
+  .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
+  .tile { display:flex; flex-direction:column; align-items:center; gap:2px;
+          width:104px; min-width:0; text-align:center; }
+  .tile .thumb { width:56px; height:56px; }
+  .tile .tname { font-size:12px; line-height:1.25; width:104px; overflow:hidden;
+                 text-overflow:ellipsis; white-space:nowrap; }
+  .tile .tsub { font-size:11px; color:var(--dim); }
+  .tile .xcount { color:var(--dim); font-size:11px; }
+  .tile.buynow .tname { color:var(--gold); font-weight:700; }
+  /* Sell groups: safe | divider | keep, all on one horizontal line. */
+  .sellrow { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; }
+  .sellgroup { display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .sellgroup .grouplabel { font-size:12px; font-weight:700;
+                           letter-spacing:.05em; text-transform:uppercase; }
+  .sellgroup.safe .grouplabel { color:var(--good); }
+  .sellgroup.keep .grouplabel { color:var(--bad); }
+  .sellgroup.safe .tname { color:var(--good); }
+  .sellgroup.keep .tname { color:var(--bad); }
+  .gdivider { width:2px; align-self:stretch; flex:none;
+              background:#2c2f36; border-radius:1px; }
+  /* Target-comp tiles: what you're hunting fully opaque, owned faded. */
+  .tile.comprow { opacity:.4; }
+  .tile.comprow.missing { opacity:1; }
   .gold { color:#ffd97a; }
-  .golden::after { content:" ◆"; color:#ffd97a; }
-  .safest { color:var(--good); } .valuable { color:var(--bad); }
-  .thumb { width:44px; height:44px; border-radius:5px; object-fit:cover; flex:none;
+  .thumb { width:56px; height:56px; border-radius:5px; object-fit:cover; flex:none;
            cursor:zoom-in; transition:transform .12s ease-out; }
   /* No art cached for this card: a same-size placeholder keeps every row
      aligned (missing art used to collapse the row and shift names). */
   .thumb.ph { display:inline-flex; align-items:center; justify-content:center;
               color:var(--dim); background:var(--panel2);
               border:1px solid #2c2f36; font-size:18px; cursor:default; }
-  /* Hover zoom: art is 256x256, so scale(5) on a 44px thumb shows it near
-     full size; origin left keeps the popup on-panel (thumbs sit at the
-     row's left edge), z-index floats it above the other boxes. Scoped to
-     real images — a placeholder has nothing to zoom. */
-  img.thumb:hover { transform:scale(5); transform-origin:left center;
+  /* Hover zoom: art is 256x256, so scale(4.5) on a 56px tile thumb shows it
+     near full size; origin center bottom grows the popup up and outward
+     from the tile, z-index floats it above the other boxes. Scoped to real
+     images — a placeholder has nothing to zoom. */
+  img.thumb:hover { transform:scale(4.5); transform-origin:center bottom;
                     position:relative; z-index:5; }
   .thumb.golden { box-shadow:0 0 0 2px #ffd97a; }
-  .thumbrow { display:flex; align-items:center; gap:7px; }
-  /* The Buy box mirrors the top move's actual buy; its card is highlighted
-     in the ranked shop list too. */
-  .buynow .l { color:var(--gold); font-weight:700; }
+  /* The plan's buy glows in the tavern tiles. */
   img.thumb.buynowart { box-shadow:0 0 0 2px var(--gold); }
-  /* Target-comp shopping list: what you're hunting is fully opaque; pieces
-     already on the board fade back. Rows stack under the group label. */
-  .comprow { opacity:.45; }
-  .comprow.missing { opacity:1; }
-  .compgroup { display:flex; align-items:flex-start; gap:6px; margin-top:5px; }
-  .compgroup .grouplabel { color:var(--dim); font-size:12px; width:44px; flex:none;
-                           padding-top:16px; }
-  .complist { display:flex; flex-direction:column; gap:1px; flex:1; min-width:0; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:1px 8px;
           font-size:13px; }
-  .level { font-weight:600; }
   /* Top move: each numbered priority step on its own line */
   .step { font-size:16px; font-weight:700; line-height:1.4; padding:1px 0; }
   .stepnum { color:var(--gold); margin-right:7px; }
-  .topmove { font-size:16px; font-weight:700; color:var(--text); line-height:1.4; }
-  .topmove .act { color:var(--gold); }
   .target { font-size:14px; font-weight:600; color:var(--gold); }
   .target .pivot { color:var(--warn); }
-  .chip.owned { border:1px solid var(--good); color:var(--good); }
-  .chip.missing { border:1px dashed var(--dim); color:var(--dim); }
-  .buythis { display:flex; align-items:center; gap:9px; font-size:16px;
-             font-weight:700; color:var(--gold); }
-  .buythis small { color:var(--dim); font-weight:400; }
   .tag-core { color:var(--gold); }
   .tag-spell { color:#7ab8f0; }
   .tag-addon { color:var(--warn); }
@@ -207,17 +216,20 @@ function thumb(cid, name) {
   };
   return img;
 }
-function thumbRow(cid, name) {
-  const r = el('div', 'row thumbrow');
-  r.appendChild(thumb(cid, name));
-  r.appendChild(el('span', 'l', name));
-  return r;
-}
-function rankRow(name, score, isTop) {
-  const r = el('div', 'row');
-  r.appendChild(el('span', 'l ' + (isTop ? 'safest' : 'valuable'), name));
-  r.appendChild(el('span', 'score', score.toFixed(0)));
-  return r;
+// A horizontal game-like card tile: thumb on top, name below, sub-line
+// (price / score / count) under that.
+function tile(cid, name, sub, opts) {
+  opts = opts || {};
+  const t = el('div', 'tile' + (opts.cls ? ' ' + opts.cls : ''));
+  const img = thumb(cid, name);
+  if (opts.golden) img.classList.add('golden');
+  if (opts.cls === 'buynow') img.classList.add('buynowart');
+  t.appendChild(img);
+  const nm = el('div', 'tname', name);
+  if (opts.n > 1) nm.appendChild(el('span', 'xcount', '  ×' + opts.n));
+  t.appendChild(nm);
+  if (sub) t.appendChild(el('div', 'tsub', sub));
+  return t;
 }
 function render(a) {
   const app = document.getElementById('app');
@@ -226,13 +238,7 @@ function render(a) {
   statebar.innerHTML = '';
   if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
 
-  // Three columns: DECIDE (what to do), BUILD (what you're making), MARKET
-  // (what's on offer). State + banned tribes live in the strip above.
-  const decide = el('div', 'col');
-  const build = el('div', 'col');
-  const market = el('div', 'col');
-
-  // STATE STRIP — hero / gold / tier / turn / banned tribes
+  // STATE STRIP — hero / gold / tier / turn / scout / banned / triggers
   statebar.appendChild(el('span', null, a.hero || '?'));
   const gold = el('span', null); gold.appendChild(el('span', 'lbl', 'Gold '));
   gold.appendChild(el('span', 'gold', String(a.gold ?? '?')));
@@ -256,34 +262,38 @@ function render(a) {
   if (a.scout) {
     statebar.appendChild(el('span', 'lbl', a.scout));
   }
+  const triggers = (a.scenario || {});
+  const active = Object.entries(triggers)
+    .filter(([k, v]) => v && !k.endsWith('_total') && k !== 'turns');
+  active.forEach(([k, v]) => {
+    statebar.appendChild(el('span', 'lbl',
+      k.replace('play_', '') + ' ' + v));
+  });
   if (a.banned && a.banned.length) {
     statebar.appendChild(el('span', 'lbl', 'Banned:'));
     a.banned.forEach(t => statebar.appendChild(el('span', 'banned', t)));
   }
 
-  // DECIDE — the pending pick (hero / trinket / discover), top of the column
+  // INSTRUCTIONS — the explicit, do-this-now panel. A pending pick gates
+  // everything, so it reads first; then the numbered plan steps; then the
+  // level/roll reference line.
+  const instr = el('div', 'box instructions');
+  instr.appendChild(el('h3', null, 'Do this now'));
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
-    const pickBody = el('div', 'pickbody');
     const [name, cid, score, why] = a.choice.ranked[0];
-    const head = el('div', 'thumbrow');
-    head.appendChild(thumb(cid, name));
-    head.appendChild(el('div', 'topmove', 'PICK ' + name));
-    pickBody.appendChild(head);
-    if (why) pickBody.appendChild(el('div', 'none', why));
+    const line = el('div', 'pickline', 'PICK ' + name + (why ? ' — ' + why : ''));
+    instr.appendChild(line);
     if (a.choice.kind === 'hero' && a.choice.ranked.length > 1) {
-      pickBody.appendChild(el('div', 'none', 'if locked, pick ' + a.choice.ranked[1][0]));
+      instr.appendChild(el('div', 'none',
+        'if locked, pick ' + a.choice.ranked[1][0]));
     }
-    const rest = el('div', null);
+    const alts = el('div', 'tiles');
     a.choice.ranked.forEach(([n, c, s, w]) => {
-      rest.appendChild(thumbRow(c, n + (s != null ? '  (' + (w || s.toFixed(1)) + ')' : '')));
+      alts.appendChild(tile(c, n, w != null ? w : (s != null ? s.toFixed(1) : null)));
     });
-    pickBody.appendChild(rest);
-    decide.appendChild(box('Choose 1 (' + a.choice.kind + ')', pickBody));
+    instr.appendChild(alts);
   }
-
-  // DECIDE — top move: each numbered priority step on its own line
   if (a.top_move) {
-    const body = el('div', 'steps');
     a.top_move.split(' · ').forEach(step => {
       const m = step.match(/^(\d+)\. (.*)$/);
       const line = el('div', 'step');
@@ -293,82 +303,83 @@ function render(a) {
       } else {
         line.textContent = step;
       }
-      body.appendChild(line);
+      instr.appendChild(line);
     });
-    decide.appendChild(box('Top move', body));
   }
-
-  // DECIDE — the Buy box mirrors the top move's actual buy. When the plan
-  // says roll, the Top move already says exactly that — a Buy box repeating
-  // it was dead real estate. And when the plan has NO buy step at all
-  // (nothing affordable, e.g. the level took the whole purse), showing the
-  // raw shop #1 read as "level then buy this" — a move the player can't
-  // make (2026-09-05 live note) — so the box goes quiet instead.
-  const stepCard = a.buy_step_card
-    || (a.buy_roll_text ? null : null);
-  if (stepCard) {
-    const s = a.shop_rank.find(x => x.card === stepCard);
-    const stepName = s ? s.name : stepCard;
-    const buyBox = el('div', 'buythis');
-    buyBox.appendChild(thumb(stepCard, stepName));
-    buyBox.appendChild(el('span', null, stepName + '  '));
-    if (s) buyBox.appendChild(el('small', null,
-      'score ' + s.score + (s.price != null ? ' · ' + s.price + 'g' : '')));
-    decide.appendChild(box(a.buy_label || 'Buy this', buyBox));
-  }
-
-  // DECIDE — refresh-vs-level call (the button's real price, not tier+1)
+  // Level/roll reference: the button's real price (not tier+1).
   if (a.tier && a.tier < 6) {
     const cost = (a.level_cost != null) ? a.level_cost : a.tier + 1;
-    decide.appendChild(box('Level / Roll', el('div', 'level',
+    instr.appendChild(el('div', 'footline',
       a.gold !== null && a.gold >= cost
-        ? 'Can afford to level (tier ' + a.tier + ' → ' + (a.tier + 1) + ', ' + cost + 'g)'
-        : 'Level costs ' + cost + 'g — ' + Math.max(0, cost - (a.gold ?? 0)) + ' short; stabilize / roll')));
+        ? 'Level available: tier ' + a.tier + ' → ' + (a.tier + 1)
+          + ' for ' + cost + 'g'
+        : 'Level costs ' + cost + 'g — '
+          + Math.max(0, cost - (a.gold ?? 0)) + ' short'));
+  }
+  app.appendChild(instr);
+
+  // The plan's actual buy (highlighted in the shop tiles below too).
+  const stepCard = a.buy_step_card || null;
+
+  // SELL — one horizontal line: safe to sell | divider | do not sell.
+  // The split is the value function's own filler threshold (score < 15 is
+  // what top_move calls "a clear filler").
+  const sellSafe = el('div', 'tiles');
+  const sellKeep = el('div', 'tiles');
+  (a.sell_rank || []).forEach(s => {
+    const t = tile(s.card, s.name, s.score.toFixed(0),
+                   {golden: s.golden, n: s.n, cls: s.score < 15 ? 'safe' : 'keep'});
+    (s.score < 15 ? sellSafe : sellKeep).appendChild(t);
+  });
+  const sellBody = el('div', 'sellrow');
+  const safeG = el('div', 'sellgroup safe');
+  safeG.appendChild(el('span', 'grouplabel', 'Safe to sell'));
+  safeG.appendChild(sellSafe.children.length ? sellSafe : el('div', 'none', '—'));
+  sellBody.appendChild(safeG);
+  if (sellKeep.children.length) {
+    sellBody.appendChild(el('div', 'gdivider'));
+    const keepG = el('div', 'sellgroup keep');
+    keepG.appendChild(el('span', 'grouplabel', 'Do not sell'));
+    keepG.appendChild(sellKeep);
+    sellBody.appendChild(keepG);
+  }
+  app.appendChild(box('Sell', sellBody));
+
+  // TARGET COMP — what you're hunting: horizontal tiles, missing pieces
+  // fully opaque, owned pieces faded.
+  if (a.target_comp) {
+    const pivot = a.target_state === 'pivot';
+    const body = el('div', 'target',
+      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp);
+    const tc = a.target_cards || {};
+    const list = el('div', 'tiles');
+    [['core', 'core'], ['addons', 'addons']].forEach(([_label, key]) => {
+      (tc[key] || []).forEach(c => {
+        list.appendChild(tile(c.card, c.name, c.owned ? 'have' : null,
+                              {cls: 'comprow ' + (c.owned ? 'owned' : 'missing')}));
+      });
+    });
+    body.appendChild(list);
+    app.appendChild(box('Looking for (' + (pivot ? 'pivot' : 'comp') + ')', body));
   }
 
-  // MARKET — the full ranked tavern (the plan's buy is highlighted)
+  // TAVERN — the ranked shop as a horizontal card row (game-like); the
+  // plan's buy glows gold. Score + price under each card.
   if (a.shop_rank && a.shop_rank.length) {
-    const shopBody = el('div');
+    const tiles = el('div', 'tiles');
     a.shop_rank.forEach(s => {
-      const r = el('div', 'row thumbrow');
-      if (s.card === stepCard) r.classList.add('buynow');
-      const t = thumb(s.card, s.name);
-      if (s.card === stepCard) t.classList.add('buynowart');
-      r.appendChild(t);
-      const tagCls = s.tag ? ' tag-' + s.tag : '';
-      r.appendChild(el('span', 'l' + tagCls,
-        s.name + (s.tag ? '  [' + s.tag + ']' : '')));
-      const sc = el('span', 'score',
-        (s.price != null ? s.price + 'g · ' : '') + s.score.toFixed(0));
-      r.appendChild(sc);
-      shopBody.appendChild(r);
+      const sub = (s.price != null ? s.price + 'g · ' : '') + s.score.toFixed(0)
+        + (s.tag ? ' · ' + s.tag : '');
+      tiles.appendChild(tile(s.card, s.name, sub,
+                             {cls: s.card === stepCard ? 'buynow' : null,
+                              golden: s.golden}));
     });
-    market.appendChild(box('Tavern shop (minions + spells)', shopBody));
+    app.appendChild(box('Tavern (ranked)', tiles));
   } else {
-    market.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
+    app.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
 
-  // MARKET — sell ranking (safest to sell -> most valuable); duplicates
-  // grouped with a ×N badge (score = the instance you'd sell first)
-  const sellBody = el('div');
-  if (a.sell_rank && a.sell_rank.length) {
-    a.sell_rank.forEach((s, i) => {
-      const r = el('div', 'row thumbrow');
-      r.appendChild(thumb(s.card, s.name));
-      const lbl = el('span', 'l ' + (i < 2 ? 'safest' : 'valuable'), s.name);
-      if (s.n > 1) {
-        lbl.appendChild(el('span', 'xcount', '  ×' + s.n));
-      }
-      r.appendChild(lbl);
-      r.appendChild(el('span', 'score', s.score.toFixed(0)));
-      sellBody.appendChild(r);
-    });
-  } else {
-    sellBody.appendChild(el('div', 'none', '—'));
-  }
-  market.appendChild(box('Sell ranking (safe → keep)', sellBody));
-
-  // MARKET — playable comps
+  // Playable comps — reference chips.
   const compsBody = el('div');
   if (a.comps && a.comps.length) {
     const chips = el('div', 'chips');
@@ -377,59 +388,7 @@ function render(a) {
   } else {
     compsBody.appendChild(el('div', 'none', '—'));
   }
-  market.appendChild(box('Playable comps', compsBody));
-
-  // BUILD — target comp: what you're hunting is fully opaque; pieces already
-  // on the board fade back.
-  if (a.target_comp) {
-    const pivot = a.target_state === 'pivot';
-    const body = el('div', 'target',
-      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp);
-    const tc = a.target_cards || {};
-    [['core', 'core'], ['addons', 'addons']].forEach(([label, key]) => {
-      const cards = tc[key] || [];
-      if (!cards.length) return;
-      const g = el('div', 'compgroup');
-      g.appendChild(el('span', 'grouplabel', label));
-      const list = el('div', 'complist');
-      cards.forEach(c => {
-        const r = thumbRow(c.card, c.name + (c.owned ? '  [have]' : ''));
-        r.classList.add('comprow', c.owned ? 'owned' : 'missing');
-        list.appendChild(r);
-      });
-      g.appendChild(list);
-      body.appendChild(g);
-    });
-    build.appendChild(box('Target comp', body));
-  }
-
-  // BUILD — board (golden thumbs get a gold ring)
-  const boardBody = el('div');
-  (a.board || []).forEach(m => {
-    const r = thumbRow(m.card, (m.name || m.card) + ' ' + m.atk + '/' + m.health);
-    if (m.golden) {
-      r.querySelector('.l').classList.add('golden');
-      const img = r.querySelector('img');
-      if (img) img.classList.add('golden');
-    }
-    r.appendChild(el('span', null, m.tribe || ''));
-    boardBody.appendChild(r);
-  });
-  build.appendChild(box('Board', boardBody));
-
-  // BUILD — real per-turn triggers ("turns" is game state, in the strip)
-  const triggers = (a.scenario || {});
-  const active = Object.entries(triggers)
-    .filter(([k, v]) => v && !k.endsWith('_total') && k !== 'turns');
-  if (active.length) {
-    const chips = el('div', 'chips');
-    active.forEach(([k, v]) => chips.appendChild(el('span', 'chip', k.replace('play_','') + ' ' + v)));
-    build.appendChild(box('Per-turn triggers', chips));
-  }
-
-  app.appendChild(decide);
-  app.appendChild(build);
-  app.appendChild(market);
+  app.appendChild(box('Playable comps', compsBody));
 }
 setInterval(poll, 1000);
 poll();
@@ -461,7 +420,9 @@ def render_json(analysis):
     for c, v in analysis["sell_rank"]:
         g = grouped.get(c)
         if g is None:
-            g = {"card": c, "name": names.get(c, c), "score": round(v), "n": 1}
+            g = {"card": c, "name": names.get(c, c), "score": round(v), "n": 1,
+                 "golden": any(m["card"] == c and m.get("golden")
+                               for m in analysis["board"])}
             grouped[c] = g
             sell.append(g)
         else:
