@@ -24,6 +24,7 @@ import sys
 
 from sanitize_log import sanitize_text
 import decision_log
+from config import HS_LOG_GLOB
 
 SCHEMA = 1
 
@@ -87,8 +88,7 @@ def main():
     args = ap.parse_args()
     path = args.log
     if not path or args.latest:
-        logs = sorted(glob.glob(r"C:\Program Files (x86)\Hearthstone\Logs"
-                                r"\Hearthstone_*\Power.log"),
+        logs = sorted(glob.glob(HS_LOG_GLOB),
                       key=os.path.getmtime, reverse=True)
         if not logs:
             print("no session log found")

@@ -12,7 +12,7 @@ sys.path.insert(0, HERE)
 
 import live_coach  # noqa: E402
 
-LOG_GLOB = r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"
+from config import HS_LOG_GLOB as LOG_GLOB
 
 
 def _newest_log():

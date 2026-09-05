@@ -16,12 +16,12 @@ import os
 import sys
 
 import live_coach
+from config import HS_LOG_GLOB
 from extract_game import split_game_chunks
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(_HERE, "meta", "turn_baseline.json")
-_LOGS = sorted(glob.glob(
-    r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"))
+_LOGS = sorted(glob.glob(HS_LOG_GLOB))
 
 
 def _median(values):
