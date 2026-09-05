@@ -153,10 +153,17 @@ def monitor(path, poll=1.0):
     _advise(coach, force=True)  # seed the overlay with the current (last) game
     in_action = False
     last_state = None
+    next_log_check = 0.0  # session discovery throttled to ~5s (was every tick)
+    meta_checked_lines = 0  # only retry the hero parse when new lines arrived
     try:
         while True:
             # A new session (Hearthstone_*/Power.log) may appear; switch to it.
-            active = find_active_log()
+            # Re-globbing the Logs dir every 0.3s tick was pure overhead —
+            # a new session can only appear every few seconds.
+            active = None
+            if time.time() >= next_log_check:
+                next_log_check = time.time() + 5.0
+                active = find_active_log()
             if active and os.path.abspath(active) != os.path.abspath(path):
                 print(f"New session detected: {active}", flush=True)
                 f.close()
@@ -167,6 +174,7 @@ def monitor(path, poll=1.0):
                 _advise(coach, force=True)
                 in_action = False
                 last_state = None
+                meta_checked_lines = 0
 
             f.seek(last_offset)
             data = f.read().decode("utf-8", errors="replace")
@@ -194,7 +202,14 @@ def monitor(path, poll=1.0):
                 if in_action and coach.tavern_offers():
                     state = coach.state_fingerprint()
                     if state is None:
-                        coach.ensure_meta()
+                        # Retry the hero parse only when new lines arrived:
+                        # ensure_meta re-runs extract_game over the whole line
+                        # buffer, and a hero that never parses (spectate, odd
+                        # formats) would otherwise rescan an ever-growing
+                        # buffer ~3x/second for the whole session.
+                        if len(coach.cur_lines) > meta_checked_lines:
+                            coach.ensure_meta()
+                            meta_checked_lines = len(coach.cur_lines)
                     elif state != last_state:
                         last_state = state
                         _advise(coach, log_path=path, log_offset=last_offset,
