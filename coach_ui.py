@@ -138,6 +138,9 @@ _HTML = r"""<!doctype html>
   /* Target-comp tiles: what you're hunting fully opaque, owned faded. */
   .tile.comprow { opacity:.4; }
   .tile.comprow.missing { opacity:1; }
+  /* A banned-tribe piece of a hybrid comp: struck out, dim. */
+  .tile.comprow.bannedrow .tname { text-decoration:line-through; }
+  .tile.comprow.bannedrow .tsub { color:var(--bad); }
   .gold { color:#ffd97a; }
   .thumb { width:56px; height:56px; border-radius:5px; object-fit:cover; flex:none;
            cursor:zoom-in; transition:transform .12s ease-out; }
@@ -380,8 +383,12 @@ function render(a) {
     const list = el('div', 'tiles');
     [['core', 'core'], ['addons', 'addons']].forEach(([_label, key]) => {
       (tc[key] || []).forEach(c => {
-        list.appendChild(tile(c.card, c.name, c.owned ? 'have' : null,
-                              {cls: 'comprow ' + (c.owned ? 'owned' : 'missing')}));
+        // Banned-tribe piece of a hybrid comp (e.g. the Dragon in a naga
+        // comp): shown struck-out, never as a hunt target.
+        const sub = c.banned ? 'banned' : (c.owned ? 'have' : null);
+        const cls = 'comprow ' + (c.banned ? 'bannedrow'
+                     : c.owned ? 'owned' : 'missing');
+        list.appendChild(tile(c.card, c.name, sub, {cls: cls}));
       });
     });
     body.appendChild(list);

@@ -944,8 +944,8 @@ def _comp_needs_by_tier(analysis, card_db):
     nxt = here = 0
     for section in ("core", "addons"):
         for row in tc.get(section) or []:
-            if row.get("owned"):
-                continue
+            if row.get("owned") or row.get("banned"):
+                continue  # owned, or banned this game (never findable)
             t = (card_db.get(row.get("card")) or {}).get("tier")
             if t is None:
                 continue
@@ -984,6 +984,7 @@ def comp_progress(board, comps, recent_cards=None, top=4):
         cores = set(comp.get("core", []))
         hits = _core_hits(board, rc, cores)
         if hits:
+            blocked = set(comp.get("_blocked_core") or [])
             rows.append({
                 "name": comp.get("name"),
                 "tribe": comp.get("tribe"),
@@ -991,7 +992,8 @@ def comp_progress(board, comps, recent_cards=None, top=4):
                 "hits": hits,
                 "ready": hits >= 2,
                 "needs": [cid for cid in comp.get("core", [])
-                          if cid in cores and cid not in board_cards],
+                          if cid in cores and cid not in board_cards
+                          and cid not in blocked],
             })
     # Tribe evidence across comps (the comp_target tribe rule): a row whose
     # TRIBE gathers >=2 hits total is closer to a real direction than its
@@ -1087,17 +1089,20 @@ def comp_cards(target, board):
     """The target comp's cards, named and flagged by board presence.
 
     Returns {"name", "core": [...], "addons": [...]} where each card is
-    {card, name, owned} — so the UI/console can show the comp's shopping list
-    without opening comps.json, and the player sees at a glance which pieces
-    they already have.
+    {card, name, owned, banned} — so the UI/console can show the comp's
+    shopping list without opening comps.json, and the player sees at a
+    glance which pieces they already have and which are banned this game
+    (hybrid comps keep a banned-tribe piece in core; it can't be bought).
     """
     if not target:
         return None
     board_ids = {m["card"] for m in board}
     names = _load_bg_names()
+    blocked = set(target.get("_blocked_core") or [])
 
     def rows(ids):
-        return [{"card": cid, "name": names.get(cid, cid), "owned": cid in board_ids}
+        return [{"card": cid, "name": names.get(cid, cid),
+                 "owned": cid in board_ids, "banned": cid in blocked}
                 for cid in ids]
 
     return {

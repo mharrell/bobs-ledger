@@ -211,6 +211,31 @@ class TestCompProgress(unittest.TestCase):
         self.assertFalse(by_name["Lobstah"]["ready"])  # 1 hit each, not a commit
 
 
+class TestBlockedCore(unittest.TestCase):
+    """Hybrid comps survive the ban with _blocked_core set (bans.py
+    degraded-keep); the shopping list must mark those pieces banned, never
+    hunt them, and count them findable for the leveling note."""
+
+    def test_comp_cards_marks_banned(self):
+        target = {"name": "Nagas - Groundbreaker",
+                  "core": ["BG31_035", "BG36_243"],
+                  "addons": [], "_blocked_core": ["BG36_243"]}
+        board = [{"card": "BG31_035"}]
+        tc = value.comp_cards(target, board)
+        by_card = {r["card"]: r for r in tc["core"]}
+        self.assertTrue(by_card["BG31_035"]["owned"])
+        self.assertFalse(by_card["BG31_035"]["banned"])
+        self.assertFalse(by_card["BG36_243"]["owned"])
+        self.assertTrue(by_card["BG36_243"]["banned"])
+
+    def test_progress_needs_exclude_blocked(self):
+        comps = {"nagas": {"name": "Nagas", "tribe": "Naga", "meta_tier": "A",
+                           "core": ["BG31_035", "BG36_243"], "addons": [],
+                           "_blocked_core": ["BG36_243"]}}
+        rows = value.comp_progress([{"card": "BG31_035"}], comps)
+        self.assertEqual(rows[0]["needs"], ["BG31_035"] and [])
+
+
 class TestHandPlan(unittest.TestCase):
     """Hand plays the coach never made (2026-09-04: five spells sat in hand
     that would 10x the board's stats while the coach said nothing). Casting
