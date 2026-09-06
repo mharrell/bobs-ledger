@@ -12,6 +12,7 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import value
+import simulate_growth
 from value import _best_comp, minion_value, sell_recommendation
 
 EL = "BG33_886"   # Tusked Camper (Beast, t1) — present in the real BG pool
@@ -209,6 +210,50 @@ class TestCompProgress(unittest.TestCase):
         # not the full comp list — that's the "Playable comps" box).
         self.assertNotIn("Nagas", by_name)
         self.assertFalse(by_name["Lobstah"]["ready"])  # 1 hit each, not a commit
+
+
+class TestUndeadEngine(unittest.TestCase):
+    """The undead-attack-scaling engine (added 2026-09-06: the comp is
+    S-tier but had no model — the coach drifted while the player built it).
+    Butchering: destroy a friendly Undead -> ALL Undead +5 Attack this
+    game, one cast at a time; the Phantom's reborn transfer is approximated."""
+
+    def test_butchering_growth(self):
+        eng = simulate_growth._load_engines()["undead-attack-scaling"]
+        board = [{"card": "BG32_324", "name": "Drustfallen Butcher",
+                  "atk": 6, "health": 6, "tribe": "UNDEAD"},
+                 {"card": "BG36_515", "name": "Snazzy Phantom",
+                  "atk": 5, "health": 5, "tribe": "UNDEAD"},
+                 {"card": "BG36_511", "name": "Dead Bellringer",
+                  "atk": 4, "health": 4, "tribe": "UNDEAD"},
+                 {"card": "BG34_925", "name": "Seafloor Recruiter",
+                  "atk": 3, "health": 3, "tribe": "NAGA"}]
+        r = simulate_growth.simulate_growth(board, {"cast_spell": 3}, eng)
+        # 3 casts x 5 atk x 3 undead (tribe scope) + 3 casts x ~3 atk (Phantom)
+        self.assertEqual(r["gain"]["atk"], 45 + 9)
+        self.assertEqual(r["gain"]["hp"], 3)
+
+    def test_engine_pieces_credited(self):
+        names = value._load_bg_names()
+        board = [{"card": "BG32_324", "name": "Drustfallen Butcher",
+                  "atk": 6, "health": 6, "tribe": "UNDEAD"},
+                 {"card": "BG36_515", "name": "Snazzy Phantom",
+                  "atk": 5, "health": 5, "tribe": "UNDEAD"},
+                 {"card": "BG36_511", "name": "Dead Bellringer",
+                  "atk": 4, "health": 4, "tribe": "UNDEAD"}]
+        bonus = value._engine_growth_bonus(board, names,
+                                           scenario={"cast_spell": 3})
+        self.assertGreater(bonus.get("BG32_324", 0), 0)  # Butcher
+        self.assertGreater(bonus.get("BG36_515", 0), 0)  # Phantom
+
+    def test_best_engine_picked_on_undead_board(self):
+        names = value._load_bg_names()
+        board = [{"card": "BG32_324", "name": "Drustfallen Butcher",
+                  "atk": 6, "health": 6, "tribe": "UNDEAD"},
+                 {"card": "BG36_511", "name": "Dead Bellringer",
+                  "atk": 4, "health": 4, "tribe": "UNDEAD"}]
+        best = value._best_engine(board, names)
+        self.assertEqual((best or {}).get("name"), "Undead - Attack Scaling")
 
 
 class TestEngineFit(unittest.TestCase):
