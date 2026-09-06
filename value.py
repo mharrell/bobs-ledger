@@ -34,6 +34,10 @@ W_ENGINE_MULT = 0.05  # per point of scaling-minion stats it amplifies
 W_ENGINE = 15.0     # bonus for the board's engine piece (e.g. Nomi, Glambot)
 W_COMBAT_SCALE = 4.0  # bonus for combat-time scaling minions (e.g. Flaming Enforcer)
 W_ENGINE_SIM = 0.05  # per stat of simulated growth the board's engine drives
+W_ENGINE_OFF_TRIBE = 0.4  # engine whose tribe fights the board's dominant
+                          # tribe: its scaling lands on minions you're about
+                          # to stop buying (Deflect-o-Bot atop a beast shop,
+                          # 2026-09-06 Reno game t7) — credit damped, not erased
 W_GROWTH = 2.0      # per point of growth potential (how much a minion can scale)
 W_SPELL_FUEL = 0.3  # per stat of marginal engine growth one spell cast buys
 W_OFF_COMP = -2.0   # shop card whose tribe fights a COMMITTED comp (damping)
@@ -408,11 +412,8 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
     # Total stats of the scaling minions on the board (a multiplier amplifies this).
     board_scaling = sum((m.get("atk") or 0) + (m.get("health") or 0)
                         for m in board_minions if _is_scaling(card_db.get(m["card"])))
-    # Board's dominant tribe (for engine recognition).
-    from collections import Counter
-    tribes = Counter(normalize(m.get("tribe")) for m in board_minions
-                     if normalize(m.get("tribe")))
-    dominant_tribe = tribes.most_common(1)[0][0] if tribes else None
+    # Board's dominant tribe (for engine recognition and fit).
+    dominant_tribe = _dominant_tribe(board_minions)
 
     # Growth-aware engine value: run the simulator for the board's best-fit
     # engine and attribute the growth it drives to the engine pieces.
@@ -521,6 +522,21 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                 val += W_OFF_COMP
                 growth = growth_potential(card)
                 if tribe or growth >= 2.0:
+                    val -= W_GROWTH * growth * 0.75
+        elif comp is None:
+            # Pre-commit engine fit (2026-09-06 Reno game t7, placement 6):
+            # with no target yet but the board already one tribe, an
+            # off-tribe GROWTH card scales minions the player is leaving —
+            # Deflect-o-Bot (mech, growth 3.0) headlined a beast board at
+            # 11.5 with NO engine bonus (the "(growth engine)" why-label is
+            # text-based). Same growth discount as the committed damp, but
+            # no flat penalty (a pivot is still legal pre-commit) and
+            # untribed cards are exempt (they fit any build).
+            dt = _dominant_tribe(board_minions or [])
+            tribe = normalize(m.get("tribe"))
+            if dt and tribe and tribe not in dt.split("/"):
+                growth = growth_potential(card)
+                if growth >= 2.0:
                     val -= W_GROWTH * growth * 0.75
         if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0  # banned-tribe minion can't grow
@@ -1168,6 +1184,15 @@ def _best_engine(board_minions, names):
     return best
 
 
+def _dominant_tribe(board_minions):
+    """The board's most common (normalized) tribe, or None for a mixed/
+    untried board — the "what build does this look like" signal."""
+    from collections import Counter
+    tribes = Counter(normalize(m.get("tribe")) for m in board_minions
+                     if normalize(m.get("tribe")))
+    return tribes.most_common(1)[0][0] if tribes else None
+
+
 def _engine_growth_bonus(board_minions, names, scenario=None):
     """Run the growth simulator for every engine whose core is present on the
     board and return {card_id: value_bonus} for the engine pieces.
@@ -1176,9 +1201,16 @@ def _engine_growth_bonus(board_minions, names, scenario=None):
     engine drives per turn — so a low-stats engine (Nomi, Glambot) ranks high
     because it's what makes the board grow. Crediting all running engines (not
     just the best-fit one) handles hybrid boards (e.g. Mana Surge + Unbound).
+
+    Engine FIT: an engine whose tribe fights the board's dominant tribe is
+    damped (W_ENGINE_OFF_TRIBE) — the growth lands on minions the player is
+    pivoting away from, so crediting it in full put Deflect-o-Bot (mech)
+    atop a beast-leaning shop (2026-09-06 Reno game t7). A card credited by
+    several engines keeps its best credit (max, not last-write).
     """
     engines = _load_engines()
     bonus = {}
+    dominant = _dominant_tribe(board_minions)
     for slug, engine in engines.items():
         if slug.startswith("_"):
             continue
@@ -1193,24 +1225,29 @@ def _engine_growth_bonus(board_minions, names, scenario=None):
         total = result["gain"]["atk"] + result["gain"]["hp"]
         if total <= 0:
             continue
+        factor = 1.0
+        et = normalize(engine.get("tribe"))
+        if dominant and et and dominant not in et.split("/"):
+            factor = W_ENGINE_OFF_TRIBE
+        credit = W_ENGINE_SIM * total * factor
         # Chain source cards (the engine pieces).
         for step in engine["chain"]:
             for m in board_minions:
                 if step["source"].lower() in (names.get(m["card"]) or "").lower():
-                    bonus[m["card"]] = W_ENGINE_SIM * total
+                    bonus[m["card"]] = max(bonus.get(m["card"], 0.0), credit)
             # The shop-buff engine (e.g. Nomi) that makes a compounding step
             # compound is as critical as the payoff; credit it too.
             if step.get("buff_source"):
                 for m in board_minions:
                     if step["buff_source"].lower() in (names.get(m["card"]) or "").lower():
-                        bonus[m["card"]] = W_ENGINE_SIM * total
+                        bonus[m["card"]] = max(bonus.get(m["card"], 0.0), credit)
         # Multiplier cards (Balinda/Drakkari/Brann/Titus) amplify the engine;
         # they're not chain sources but are just as critical to keep.
         for cards in _MULTIPLIERS.values():
             for card_name in cards:
                 for m in board_minions:
                     if card_name.lower() in (names.get(m["card"]) or "").lower():
-                        bonus[m["card"]] = W_ENGINE_SIM * total
+                        bonus[m["card"]] = max(bonus.get(m["card"], 0.0), credit)
     return bonus
 
 
