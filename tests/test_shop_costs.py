@@ -151,5 +151,41 @@ class TestTopMoveAffordability(unittest.TestCase):
         self.assertEqual(a["buy_step_card"], alt)
 
 
+class TestShopCostMapEntityExact(unittest.TestCase):
+    """shop_cost_map must price the shop's OWN entities: the 2026-09-05 Holmes
+    game priced a shop Waverider 31g off a discovery-pool copy's COST write
+    (SETASIDE, combat scaling) — card-id "later write wins" picked the junk
+    value. The offer entity's own COST wins; the cid scan is fallback only."""
+
+    def _gs(self, lines):
+        gs = GameState()
+        for line in lines:
+            gs.feed(line)
+        return gs
+
+    def test_offer_entity_beats_later_same_card_write(self):
+        shop_eid, junk_eid = 12023, 15222
+        lines = [
+            f"{GS}TAG_CHANGE Entity=[entityName=Shop Waverider id={shop_eid} "
+            f"zone=PLAY cardId=BG23_007 player=15] tag=479 value=3",
+            # a later, different entity of the same card with junk cost
+            f"{GS}TAG_CHANGE Entity=[entityName=Pool Waverider id={junk_eid} "
+            f"zone=SETASIDE cardId=BG23_007 player=5] tag=479 value=31",
+        ]
+        gs = self._gs(lines)
+        from live_coach import shop_cost_map
+        costs = shop_cost_map(gs, ["BG23_007"], {"BG23_007": shop_eid})
+        self.assertEqual(costs["BG23_007"], 3)
+
+    def test_cid_scan_fallback_without_eids(self):
+        lines = [
+            f"{GS}TAG_CHANGE Entity=[entityName=Waverider id=1 "
+            f"zone=PLAY cardId=BG23_007 player=15] tag=479 value=3",
+        ]
+        gs = self._gs(lines)
+        from live_coach import shop_cost_map
+        self.assertEqual(shop_cost_map(gs, ["BG23_007"])["BG23_007"], 3)
+
+
 if __name__ == "__main__":
     unittest.main()
