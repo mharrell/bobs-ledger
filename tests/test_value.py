@@ -211,6 +211,68 @@ class TestCompProgress(unittest.TestCase):
         self.assertFalse(by_name["Lobstah"]["ready"])  # 1 hit each, not a commit
 
 
+class TestEngineFit(unittest.TestCase):
+    """Engine credit must fit the board: an engine whose tribe fights the
+    board's dominant tribe is growing minions the player is pivoting away
+    from — raw credit put Deflect-o-Bot (mech) atop a beast-leaning shop
+    (2026-09-06 Reno game t7, placement 6)."""
+
+    def test_off_dominant_engine_damped(self):
+        names = value._load_bg_names()
+        snapper = "BG36_851"   # Spark Snapper — mechs-magnetics core (MECH)
+        lobster = "BG36_202"   # Tasty Lobster — beasts engine core (BEAST)
+        automaton = "BG_TTN_401"  # Ancestral Automaton, a mech body
+        mech_board = [{"card": snapper, "atk": 2, "health": 2, "tribe": "MECH"},
+                      {"card": automaton, "atk": 3, "health": 3, "tribe": "MECH"},
+                      {"card": automaton, "atk": 3, "health": 3, "tribe": "MECH"}]
+        beast_board = [{"card": snapper, "atk": 2, "health": 2, "tribe": "MECH"},
+                       {"card": lobster, "atk": 4, "health": 4, "tribe": "BEAST"},
+                       {"card": lobster, "atk": 4, "health": 4, "tribe": "BEAST"}]
+        full = value._engine_growth_bonus(mech_board, names).get(snapper, 0)
+        damped = value._engine_growth_bonus(beast_board, names).get(snapper, 0)
+        self.assertGreater(full, 0)   # the engine still runs and is credited
+        self.assertGreater(damped, 0)
+        self.assertLess(damped, full * 0.5)  # damped, not erased
+
+    def test_tribe_engine_undamped_on_its_board(self):
+        names = value._load_bg_names()
+        lobster = "BG36_202"
+        barnstormer = "BG26_162"   # Dancing Barnstormer, a beast body
+        beast_board = [{"card": lobster, "atk": 4, "health": 4, "tribe": "BEAST"},
+                       {"card": barnstormer, "atk": 3, "health": 3, "tribe": "BEAST"},
+                       {"card": barnstormer, "atk": 3, "health": 3, "tribe": "BEAST"}]
+        credit = value._engine_growth_bonus(beast_board, names).get(lobster, 0)
+        self.assertGreater(credit, 0)  # a fit engine keeps full credit
+
+    def test_precommit_off_tribe_growth_damped(self):
+        """No target yet, but the board is already one tribe: an off-tribe
+        GROWTH card is scaling minions the player is leaving — its growth
+        term is discounted (Deflect-o-Bot, mech, growth 3.0, headlined a
+        beast board at 11.5 with no engine bonus at all; 2026-09-06 Reno
+        t7). Milder than the committed damp: no flat penalty, and untribed
+        cards are exempt (they fit any build)."""
+        deflect = "BGS_071"    # Deflect-o-Bot (MECH, growth 3.0)
+        board_beast = [{"card": "BG36_202", "atk": 4, "health": 4, "tribe": "BEAST"},
+                       {"card": "BG26_162", "atk": 3, "health": 3, "tribe": "BEAST"},
+                       {"card": "BG26_162", "atk": 3, "health": 3, "tribe": "BEAST"}]
+        board_mech = [{"card": deflect, "atk": 3, "health": 2, "tribe": "MECH"},
+                      {"card": "BG_TTN_401", "atk": 3, "health": 3, "tribe": "MECH"},
+                      {"card": "BG_TTN_401", "atk": 3, "health": 3, "tribe": "MECH"}]
+        damped = dict(value.shop_ranking([deflect], {}, board_beast))
+        undamped = dict(value.shop_ranking([deflect], {}, board_mech))
+        self.assertLess(damped[deflect], undamped[deflect])
+
+    def test_precommit_untribed_growth_exempt(self):
+        """Untribed cards fit any build — no pre-commit damp."""
+        deflect = "BGS_071"
+        board = [{"card": "BG36_202", "atk": 4, "health": 4, "tribe": "BEAST"},
+                 {"card": "BG26_162", "atk": 3, "health": 3, "tribe": "BEAST"}]
+        amalgam = "BG36_640"   # Gatekeeper Amalgam, all-tribe
+        scored = dict(value.shop_ranking([deflect, amalgam], {}, board))
+        # the mech is damped relative to the all-tribe card of similar growth
+        self.assertGreater(scored[amalgam], scored[deflect] - 20)
+
+
 class TestBlockedCore(unittest.TestCase):
     """Hybrid comps survive the ban with _blocked_core set (bans.py
     degraded-keep); the shopping list must mark those pieces banned, never
