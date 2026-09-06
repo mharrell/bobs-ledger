@@ -551,6 +551,10 @@ def hand_plan(hand, board_minions=None, scenario=None):
         cid = m.get("card")
         if not cid:
             continue
+        if m.get("locked"):
+            continue  # condition-locked (Thorim's 60-gold pick): no play or
+                      # cast is possible, and advising one sold real minions
+                      # to make room for it (2026-09-05)
         spell = spell_db.get(cid)
         if m.get("type") == "spell" or (spell and m.get("type") is None):
             if not spell:

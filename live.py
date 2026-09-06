@@ -214,9 +214,19 @@ def monitor(path, poll=1.0):
                         last_state = state
                         _advise(coach, log_path=path, log_offset=last_offset,
                                 game_no=coach.game_no)
-                # A pending pick outside the buy phase (hero selection has no
-                # tavern offers and the full analysis isn't ready yet) still
-                # gets its Choose-1 advice.
+            # A pending pick is advised on EVERY tick — quiet log included.
+            # While a pick screen waits, the friendly player's own log stops
+            # writing, so gating advice on new data left between-rounds picks
+            # (dark gifts, triple rewards) unadvised for their whole window
+            # (2026-09-05: all four Dark Gift picks + a Triple Reward). Out-
+            # side the shop the minimal Choose-1 analysis fires; inside it the
+            # full analysis does (board-aware ranking) — its fingerprint
+            # dedup keeps it to one advisory per pick.
+            c = coach.choice
+            if c is not None and c.get("picked") is None and c.get("options"):
+                if in_action and coach.tavern_offers():
+                    _advise(coach, log_path=path, log_offset=last_offset,
+                            game_no=coach.game_no)
                 else:
                     _advise_pick(coach, log_path=path, log_offset=last_offset,
                                  game_no=coach.game_no)
