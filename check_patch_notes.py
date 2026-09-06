@@ -17,7 +17,7 @@ Usage:
                 task; review-first means the task only writes a report)
     --no-notify suppress the Windows toast notification
 
-The DeepSeek key is read from DEEPSEEK_API_KEY, falling back to
+The GLM key is read from GLM_API_KEY, falling back to
 meta/.patch_config.json {"api_key": "..."}. Without a key, the report still
 captures the Battlegrounds section for manual review.
 """
@@ -58,7 +58,7 @@ def save_state(state):
 
 
 def get_api_key():
-    key = os.environ.get("DEEPSEEK_API_KEY")
+    key = os.environ.get("GLM_API_KEY")
     if key:
         return key
     if os.path.exists(CONFIG_FILE):
@@ -154,7 +154,7 @@ def main(argv=None):
     changes_text = None
     key = get_api_key()
     if key:
-        os.environ["DEEPSEEK_API_KEY"] = key
+        os.environ["GLM_API_KEY"] = key
         try:
             changes = pn.extract_changes(bg)
             if changes:
@@ -163,7 +163,7 @@ def main(argv=None):
         except Exception as e:  # noqa: BLE001 — report the failure, keep going
             changes_text = f"(LLM extraction failed: {e})"
     else:
-        changes_text = ("(No DEEPSEEK_API_KEY set — LLM extraction skipped. "
+        changes_text = ("(No GLM_API_KEY set — LLM extraction skipped. "
                         "Review the Battlegrounds section manually.)")
 
     path = write_report(article["slug"], article.get("title", "patch"),

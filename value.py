@@ -86,7 +86,7 @@ def _load_card_db():
             "race": c.get("tribe"),  # minions.json uses 'tribe', not 'race'
             "attack": c.get("attack"),
             "health": c.get("health"),
-            "tier": c.get("tier"),  # the tavern tier = the BUY price
+            "tier": c.get("tier"),  # pool tier — NOT the buy price since 36.4.x
             "mechanics": c.get("mechanics", []),
             "text": (c.get("text") or "").lower(),
         }
@@ -551,6 +551,10 @@ def hand_plan(hand, board_minions=None, scenario=None):
         cid = m.get("card")
         if not cid:
             continue
+        if m.get("locked"):
+            continue  # condition-locked (Thorim's 60-gold pick): no play or
+                      # cast is possible, and advising one sold real minions
+                      # to make room for it (2026-09-05)
         spell = spell_db.get(cid)
         if m.get("type") == "spell" or (spell and m.get("type") is None):
             if not spell:
@@ -615,10 +619,14 @@ def _top_move_text(analysis):
     names = _load_bg_names()
     card_db = _load_card_db()
     spell_db = _load_spell_db()
-    # Tavern prices: minion = its tier, spell = its cost. Prefer a KNOWN
-    # price — an unpriceable card can't be promised as affordable.
+    # Tavern prices: the log's live COST tag (per offer entity — since patch
+    # 36.4.x buy cost is per-card and decoupled from TECH_LEVEL, so the DB
+    # tier is a stale price), else minion = its tier, spell = its cost.
+    # Prefer a KNOWN price — an unpriceable card can't be promised as
+    # affordable.
     costs = {c: (v or {}).get("tier") for c, v in card_db.items()}
     costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
+    costs.update(analysis.get("shop_costs") or {})
     comp = _best_comp(analysis.get("board", []), analysis.get("playable_comps") or {})
     tier = analysis.get("tier")
     gold = analysis.get("gold")
