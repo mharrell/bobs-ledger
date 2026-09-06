@@ -166,6 +166,16 @@ _HTML = r"""<!doctype html>
   .tag-core { color:var(--gold); }
   .tag-spell { color:#7ab8f0; }
   .tag-addon { color:var(--warn); }
+  /* Comp direction meter: pip row + candidate name + distance-to-commit. */
+  .mrow { display:flex; align-items:baseline; gap:8px; padding:2px 0;
+          font-size:14px; min-width:0; }
+  .mrow .pips { font-size:13px; letter-spacing:2px; color:var(--dim);
+                flex:none; }
+  .mrow .pips .full { color:var(--gold); }
+  .mrow .mname { font-weight:600; overflow:hidden; text-overflow:ellipsis;
+                 white-space:nowrap; }
+  .mrow .mstat { color:var(--dim); font-size:12px; flex:none; }
+  .mrow.locked .mname { color:var(--gold); font-weight:700; }
   .none { color:var(--dim); font-style:italic; }
   .score { color:var(--dim); flex:none; }
   .xcount { color:var(--dim); font-weight:400; }
@@ -375,6 +385,39 @@ function render(a) {
     app.appendChild(box('Looking for (' + (pivot ? 'pivot' : 'comp') + ')', body));
   }
 
+  // COMP DIRECTION — commit-readiness meter: how close each candidate comp
+  // is to the 2-core-hit commit threshold, BEFORE comp_target declares a
+  // target. The committed comp glows gold; pre-commit, the top candidate's
+  // missing core is shown as tiles (the cards that move the meter).
+  if (a.comp_progress && a.comp_progress.length) {
+    const body = el('div');
+    a.comp_progress.forEach(r => {
+      const row = el('div', 'mrow' + (r.name === a.target_comp ? ' locked' : ''));
+      const pips = el('span', 'pips');
+      const n = Math.min(r.hits, 2);
+      for (let i = 0; i < 2; i++) {
+        pips.appendChild(el('span', i < n ? 'full' : null, i < n ? '●' : '○'));
+      }
+      if (r.hits > 2) pips.appendChild(el('span', 'full', '×' + r.hits));
+      row.appendChild(pips);
+      row.appendChild(el('span', 'mname', r.name));
+      row.appendChild(el('span', 'mstat',
+        r.name === a.target_comp
+          ? (a.target_state === 'pivot' ? 'pivoting — committed' : 'committed')
+          : r.ready ? 'ready to commit'
+          : (r.tribe_hits || 0) >= 2
+            ? 'one core card away · tribe signal'
+            : 'one core card away'));
+      body.appendChild(row);
+    });
+    if (!a.target_comp && (a.comp_progress[0].needs || []).length) {
+      const t = el('div', 'tiles');
+      a.comp_progress[0].needs.forEach(c => t.appendChild(tile(c.card, c.name)));
+      body.appendChild(t);
+    }
+    app.appendChild(box('Comp direction', body));
+  }
+
   // TAVERN — the ranked shop as a horizontal card row (game-like); the
   // plan's buy glows gold. Score + price under each card.
   if (a.shop_rank && a.shop_rank.length) {
@@ -464,7 +507,29 @@ def render_json(analysis):
                                 "addon" if c in addons else
                                 "spell" if c in spells else None))
                       for c, v in analysis.get("shop_rank", [])]
+    # Pre-commit "leads" tagging (comp meter): with no target committed yet,
+    # shop cards that are unowned core of the leading candidate get a "leads
+    # <tribe>" tag — that's the card the meter is waiting on. Once a target
+    # exists the core/addon tags above take over.
+    progress = analysis.get("comp_progress") or []
+    if not analysis.get("target_comp") and progress:
+        lead = progress[0]
+        leads_set = set(lead.get("needs") or [])
+        if leads_set:
+            label = "leads " + (lead.get("tribe") or lead.get("name") or "")
+            a["shop_rank"] = [dict(row, tag=label if row["card"] in leads_set
+                                   else row["tag"])
+                              for row in a["shop_rank"]]
     a["target_cards"] = analysis.get("target_cards")
+    # Commit-readiness meter (per-candidate core hits) — pre-commit the
+    # player is otherwise blind to direction until comp_target fires. The
+    # missing-core ids are named here so the UI can show them as tiles
+    # ("these lead to <comp>") without a client-side id->name map.
+    a["comp_progress"] = [
+        dict(r, needs=[{"card": cid, "name": names.get(cid, cid)}
+                       for cid in (r.get("needs") or [])])
+        for r in progress
+    ]
     # Playable comps: the analysis carries a slug->comp dict, the UI wants a
     # name list (meta-tier order). (The box read a["comps"], which the
     # analysis never provided — it sat on "—" forever.)

@@ -931,6 +931,62 @@ def _comp_needs_by_tier(analysis, card_db):
     return nxt, here
 
 
+def _core_hits(board, rc, cores):
+    """Core-card hits for one comp: board minions plus recent acquisitions
+    (copies count — a commit is often 2x/3x one core)."""
+    return (sum(1 for m in board if m["card"] in cores)
+            + sum(1 for c in rc if c in cores))
+
+
+def comp_progress(board, comps, recent_cards=None, top=4):
+    """Commit readiness per candidate comp — the meter behind comp_target's
+    rule (UI: the "Comp direction" box shows how close each candidate is to
+    the 2-core-hit commit threshold BEFORE comp_target declares a target).
+
+    Same evidence semantics as comp_target: board minions + recent
+    acquisitions, copies count. Comps with >=1 direct core hit are listed
+    (hits desc, then meta tier, capped at `top`); each row also carries
+    `tribe_hits`, the tribe's total across its comps — the comp_target
+    tribe rule (>=2 spread across comps of one tribe) is visible as tribe
+    momentum on the row even when no single comp hits alone.
+    Returns [{name, tribe, meta_tier, hits, ready, needs, tribe_hits}] —
+    needs is the unowned core (the shopping list that moves the meter).
+    """
+    rc = list(recent_cards or [])
+    board_cards = {m["card"] for m in board}
+    rows = []
+    for comp in comps.values():
+        cores = set(comp.get("core", []))
+        hits = _core_hits(board, rc, cores)
+        if hits:
+            rows.append({
+                "name": comp.get("name"),
+                "tribe": comp.get("tribe"),
+                "meta_tier": comp.get("meta_tier"),
+                "hits": hits,
+                "ready": hits >= 2,
+                "needs": [cid for cid in comp.get("core", [])
+                          if cid in cores and cid not in board_cards],
+            })
+    # Tribe evidence across comps (the comp_target tribe rule): a row whose
+    # TRIBE gathers >=2 hits total is closer to a real direction than its
+    # own hit count alone reads.
+    tribe_total = {}
+    for comp in comps.values():
+        tribe = comp.get("tribe")
+        if not tribe:
+            continue
+        hits = _core_hits(board, rc, set(comp.get("core", [])))
+        if hits:
+            tribe_total[tribe] = tribe_total.get(tribe, 0) + hits
+    for r in rows:
+        r["tribe_hits"] = tribe_total.get(r["tribe"])
+    tier_rank = {"S": 0, "A": 1, "B": 2}
+    rows.sort(key=lambda r: (-r["hits"], tier_rank.get(r["meta_tier"], 3),
+                             r["name"] or ""))
+    return rows[:top]
+
+
 def comp_target(board, comps, recent_cards=None):
     """The comp to build toward, given evidence only.
 
@@ -952,9 +1008,7 @@ def comp_target(board, comps, recent_cards=None):
     rc = list(recent_cards or [])  # copies count: a pivot is often 3x one core
 
     def core_hits(comp):
-        cores = set(comp.get("core", []))
-        return (sum(1 for m in board if m["card"] in cores)
-                + sum(1 for c in rc if c in cores))
+        return _core_hits(board, rc, set(comp.get("core", [])))
 
     committed = None
     for comp in comps.values():

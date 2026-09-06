@@ -28,8 +28,8 @@ from player_actions import (
 )
 from choices import _CHOICE_HEADER, _CHOICE_OPT, _CHOICE_SOURCE, _CHOSEN, choice_kind, rank_choices
 from value import (
-    comp_cards, sell_recommendation, shop_ranking, top_move, comp_target,
-    target_state, hand_plan, _load_spell_db,
+    comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
+    comp_target, target_state, hand_plan, _load_spell_db,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -829,6 +829,11 @@ class LiveCoach:
             "baseline_opp": _baseline_opp(turn),
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
+            # Commit-readiness meter: how close each candidate comp is to the
+            # commit threshold, so the UI can show direction BEFORE
+            # comp_target declares a target (the pre-commit blind spot).
+            "comp_progress": comp_progress(board, self.playable,
+                                           recent_cards=recent),
             "sell_rank": ranked,
             "shop_rank": shop,
             "buy_this": shop[0][0] if shop else None,

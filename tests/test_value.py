@@ -138,6 +138,79 @@ class TestNoEvidenceNoComp(unittest.TestCase):
         self.assertEqual(target["tribe"], "Beast")
 
 
+class TestCompProgress(unittest.TestCase):
+    """The commit-readiness meter (comp_progress) mirrors comp_target's
+    evidence rule per candidate, so the UI can show direction BEFORE the
+    2-core-hit commit threshold fires."""
+
+    def test_no_evidence_no_rows(self):
+        comps = {"nagas": {"name": "Nagas", "tribe": "Naga",
+                           "core": ["BG33_140"], "addons": []}}
+        self.assertEqual(value.comp_progress([], comps), [])
+
+    def test_one_hit_is_visible_but_not_ready(self):
+        """The pre-commit blind spot: 1 core hit is not a commit, but the
+        meter must still show the candidate and how far it is."""
+        comps = {"nagas": {"name": "Nagas", "tribe": "Naga",
+                           "core": ["BG33_140"], "addons": []}}
+        rows = value.comp_progress([{"card": "BG33_140"}], comps)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["hits"], 1)
+        self.assertFalse(rows[0]["ready"])
+
+    def test_two_hits_ready_and_needs_exclude_owned(self):
+        comps = {"nagas": {"name": "Nagas", "tribe": "Naga",
+                           "core": ["BG33_140", "BG32_821"], "addons": []}}
+        board = [{"card": "BG33_140"}]
+        rows = value.comp_progress(board, comps, recent_cards=["BG32_821"])
+        self.assertTrue(rows[0]["ready"])
+        # needs = unowned core ON THE BOARD; the copied core in hand isn't
+        # there yet (a needs row for a card you just bought is noise).
+        self.assertEqual(rows[0]["needs"], ["BG32_821"])
+        rows = value.comp_progress([{"card": "BG33_140"},
+                                    {"card": "BG32_821"}], comps)
+        self.assertEqual(rows[0]["needs"], [])
+
+    def test_recent_hits_count(self):
+        comps = {"nagas": {"name": "Nagas", "tribe": "Naga",
+                           "core": ["BG33_140"], "addons": []}}
+        rows = value.comp_progress([], comps, recent_cards=["BG33_140"])
+        self.assertEqual(rows[0]["hits"], 1)
+
+    def test_sorted_by_hits_then_meta_tier(self):
+        comps = {"a": {"name": "A", "tribe": "T", "meta_tier": "B",
+                       "core": ["c1"], "addons": []},
+                 "b": {"name": "B", "tribe": "T", "meta_tier": "S",
+                       "core": ["c2"], "addons": []}}
+        board = [{"card": "c1"}, {"card": "c2"}]
+        rows = value.comp_progress(board, comps)
+        self.assertEqual([r["name"] for r in rows], ["B", "A"])
+
+    def test_tribe_signal_annotates_rows(self):
+        """Tribe evidence spread across comps (1 + 1 hits, one tribe) —
+        neither comp commits alone, but comp_target's tribe rule fires, so
+        each Beast row carries the tribe total for the meter to show."""
+        comps = {"lobstah": {"name": "Lobstah", "tribe": "Beast",
+                             "meta_tier": "A", "core": ["BG36_208"],
+                             "addons": []},
+                 "beetles": {"name": "Beetles", "tribe": "Beast",
+                             "meta_tier": "B", "core": ["BG26_802"],
+                             "addons": []},
+                 "nagas": {"name": "Nagas", "tribe": "Naga",
+                           "meta_tier": "S", "core": ["BG32_821"],
+                           "addons": []}}
+        board = [{"card": "BG36_208"}]
+        recent = ["BG26_802"]
+        rows = value.comp_progress(board, comps, recent_cards=recent)
+        by_name = {r["name"]: r for r in rows}
+        self.assertEqual(by_name["Lobstah"]["tribe_hits"], 2)
+        self.assertEqual(by_name["Beetles"]["tribe_hits"], 2)
+        # Zero-hit comps are not rows at all (the meter shows candidates,
+        # not the full comp list — that's the "Playable comps" box).
+        self.assertNotIn("Nagas", by_name)
+        self.assertFalse(by_name["Lobstah"]["ready"])  # 1 hit each, not a commit
+
+
 class TestHandPlan(unittest.TestCase):
     """Hand plays the coach never made (2026-09-04: five spells sat in hand
     that would 10x the board's stats while the coach said nothing). Casting
