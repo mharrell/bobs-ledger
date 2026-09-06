@@ -1,7 +1,7 @@
 """Apply official Hearthstone patch notes to the curated meta DB.
 
 Fetches a Blizzard patch-notes page, isolates the Battlegrounds section, uses
-the DeepSeek LLM to turn the prose into structured before/after changes, then
+the coach LLM (GLM 5.3 flash) to turn the prose into structured before/after changes, then
 matches each change against the meta JSON files and (with --apply) writes them
 back. Defaults to a dry-run report so a human reviews before anything is edited.
 
@@ -15,7 +15,7 @@ Usage:
     --apply   write the matched changes into meta/ (default: dry-run report)
     --no-llm  skip LLM extraction; just print the Battlegrounds section
 
-Reads DEEPSEEK_API_KEY from the environment (same as coach_llm.py). Without it,
+Reads GLM_API_KEY from the environment (same as coach_llm.py). Without it,
 or with --no-llm, the script only prints the section for manual review.
 """
 import argparse
@@ -25,13 +25,10 @@ import os
 import re
 import sys
 
-import requests
+import coach_llm
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 META = os.path.join(_HERE, "meta")
-
-MODEL = "deepseek-v4-flash"
-BASE_URL = "https://api.deepseek.com/chat/completions"
 
 # entity_type -> (meta file, field-alias map). The alias map translates the
 # LLM's field names to the actual JSON key in that file.
@@ -139,7 +136,7 @@ def discover_latest():
 # ---------------------------------------------------------------------------
 
 def extract_changes(bg_text):
-    """Ask DeepSeek to turn the prose into a JSON array of changes."""
+    """Ask the coach LLM to turn the prose into a JSON array of changes."""
     system = (
         "You extract structured card/hero balance changes from Hearthstone "
         "Battlegrounds patch notes. Return ONLY a JSON array. Each element is an "
@@ -152,25 +149,15 @@ def extract_changes(bg_text):
         "Only include real data changes; ignore pure bug fixes that don't alter "
         "card data. If there are no data changes, return []."
     )
-    payload = {
-        "model": MODEL,
-        "messages": [
+    out = coach_llm.chat(
+        [
             {"role": "system", "content": system},
             {"role": "user", "content": bg_text},
         ],
-        "temperature": 0,
-        "max_tokens": 2000,
-        "stream": False,
-    }
-    resp = requests.post(
-        BASE_URL,
-        headers={"Authorization": f"Bearer {os.environ['DEEPSEEK_API_KEY']}",
-                 "Content-Type": "application/json"},
-        json=payload, timeout=60,
+        temperature=0,
+        max_tokens=2000,
     )
-    resp.raise_for_status()
-    content = resp.json()["choices"][0]["message"]["content"]
-    return parse_json_array(content)
+    return parse_json_array(out["text"])
 
 
 def parse_json_array(text):
@@ -360,8 +347,8 @@ def main(argv=None):
     print(bg)
     print()
 
-    if args.no_llm or not os.environ.get("DEEPSEEK_API_KEY"):
-        print("(LLM extraction skipped: pass --no-llm or set DEEPSEEK_API_KEY)")
+    if args.no_llm or not os.environ.get("GLM_API_KEY"):
+        print("(LLM extraction skipped: pass --no-llm or set GLM_API_KEY)")
         return 0
 
     changes = extract_changes(bg)
