@@ -498,9 +498,10 @@ def render_json(analysis):
     # "safe to sell: —" could sit next to a plan that plays a hand card and
     # the player couldn't see that card's sell standing (2026-09-05). Same
     # value scale (the hand step's score IS minion_value), flagged hand.
-    # Cast-verb spells can't be sold.
+    # Cast-verb spells can't be sold; a HOLD card must not read as
+    # "safe to sell" — the plan just said to keep it (golden hunt).
     for s in analysis.get("hand", []):
-        if s.get("verb") == "cast":
+        if s.get("verb") in ("cast", "hold"):
             continue
         cid = s["card"]
         g = grouped.get(("hand", cid))
