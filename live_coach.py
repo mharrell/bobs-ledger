@@ -118,6 +118,26 @@ def _baseline_opp(turn):
     return None
 
 
+def shop_cost_map(gs, offer_ids):
+    """Live buy prices for the shop offers: the COST tag each offer entity
+    carried (patch 36.4.x decoupled tavern cost from TECH_LEVEL — 2026-09-05:
+    86 of 117 shop creations differ; Lullabot tier 1 but COST 2 — so the
+    DB's tier is no longer a price). Later entities win per card id (the
+    most recent write is the current shop's copy), golden cards keep their
+    own COST via the exact id, and the plain id also maps so callers can
+    price either form. Cards the log never priced are absent — callers fall
+    back to the DB tier."""
+    cost_by_cid = {}
+    for eid in sorted(gs.cost):
+        cid = gs.card.get(eid)
+        cost = gs.cost.get(eid)
+        if cid and cost is not None:
+            cost_by_cid[cid] = cost
+            if cid.endswith("_G"):
+                cost_by_cid.setdefault(cid[:-2], cost)
+    return {c: cost_by_cid[c] for c in offer_ids if c in cost_by_cid}
+
+
 class _LiveActions:
     """Incrementally track per-turn trigger counts (spells, tribe plays).
 
@@ -724,6 +744,7 @@ class LiveCoach:
                             self.allowed, hero_power=hero_power,
                             scenario=scenario, recent_cards=recent,
                             comp=target) if offer_ids else []
+        shop_costs = shop_cost_map(self.gs, offer_ids)
         # The hand: casts from hand are free, stuck minions play free — the
         # coach's blind spot until 2026-09-04 (five spells sat in hand that
         # would 10x the board while the coach said nothing). Spell entities
@@ -798,6 +819,7 @@ class LiveCoach:
             "tier": tier,
             "turn": turn,
             "gold": gold,
+            "shop_costs": shop_costs,
             "level_cost": self.level_cost(),
             "health": health,
             "armor": armor,
