@@ -538,9 +538,11 @@ def hand_plan(hand, board_minions=None, scenario=None):
     hand (full board) costs none either, so each card's whole effect is
     profit. Spells rank by direct effect + cast-engine fuel (each cast
     feeds end-of-turn compounding, which counts casts made THIS turn);
-    hand minions rank by their value as a free play. Returns a list of
-    {"card", "name", "verb": "cast"|"play", "score", "why"} — one entry
-    per hand card, most valuable first.
+    hand minions rank by their value as a free play — with triple
+    awareness: 2 on board = play NOW (golden), 1 on board = hold the hand
+    copy and hunt a 3rd. Returns a list of
+    {"card", "name", "verb": "cast"|"play"|"hold", "score", "why"} — one
+    entry per hand card, most valuable first.
     """
     spell_db = _load_spell_db()
     card_db = _load_card_db()
@@ -570,11 +572,25 @@ def hand_plan(hand, board_minions=None, scenario=None):
             card = card_db.get(cid)
             if not card:
                 continue
-            why = None
-            if len(board) >= 7:
+            # Triple awareness (2026-09-05: the coach said "Play Balinda" —
+            # but with 1 on board the hand copy is the golden-hunt piece:
+            # hold it, buy a 3rd, THEN play for the golden. With 2 on board
+            # the hand copy IS the triple — play it now).
+            on_board = sum(1 for b in board if b.get("card") == cid)
+            verb, why = "play", None
+            if on_board >= 2:
+                why = "triples golden!" + (" — sell to make room"
+                                           if len(board) >= 7 else "")
+            elif on_board == 1:
+                verb = "hold"
+                why = "hold — 1 on board; a 3rd copy turns it golden"
+            elif len(board) >= 7:
                 why = "board is full — sell to make room"
-            steps.append({"card": cid, "verb": "play",
-                          "score": minion_value(m, card),
+            score = minion_value(m, card)
+            if on_board >= 2:
+                score += 25.0  # a golden now outranks nearly any free play
+            steps.append({"card": cid, "verb": verb,
+                          "score": score,
                           "name": names.get(cid, cid), "why": why})
     steps.sort(key=lambda s: (-s["score"], s["name"]))
     return steps
@@ -582,7 +598,7 @@ def hand_plan(hand, board_minions=None, scenario=None):
 
 _STEP_KINDS = (("LEVEL", "level"), ("PICK ", "pick"), ("Buy ", "buy"),
                ("sell ", "sell"), ("roll", "roll"), ("Cast ", "cast"),
-               ("Play ", "play"), ("stay on tier", "note"),
+               ("Play ", "play"), ("Hold ", "hold"), ("stay on tier", "note"),
                ("wait for end of turn", "note"), ("pass", "note"),
                ("stabilize", "note"))
 
@@ -647,7 +663,8 @@ def _top_move_text(analysis):
             counts[key][0] += 1
         for key in order:
             n, s = counts[key]
-            label = ("Cast " if s["verb"] == "cast" else "Play ") + s["name"]
+            label = {"cast": "Cast ", "play": "Play ",
+                     "hold": "Hold "}.get(s["verb"], "Play ") + s["name"]
             if n > 1:
                 label += f" x{n}"
             if s.get("why"):

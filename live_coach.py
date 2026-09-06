@@ -45,10 +45,22 @@ _SHOP_BUTTON_NAMES = ("Refresh", "Freeze", "Tavern Tier", "Drag To Buy",
 # A tavern offer: a DebugPrintOptions POWER option whose mainEntity is a real
 # card — minion or tavern spell (BG/BGS spell ids match MINION_ID too; the
 # minion/spell split happens in shop_ranking, which has the spell DB). Captures
-# cardId and the owning player, so the player's own minions (shown as sell
-# options) are excluded from the shop.
-# e.g. "option 4 type=POWER mainEntity=[entityName=X cardId=BG36_345 .. player=15]"
-_SHOP_OPT = re.compile(r"DebugPrintOptions\(\).*?cardId=(\w+)[^\]]*player=(\d+)")
+# the entity id (for exact COST pricing) and the owning player, so the player's
+# own minions (shown as sell options) are excluded from the shop.
+# e.g. "option 4 type=POWER mainEntity=[entityName=X id=12023 zone=PLAY
+#       zonePos=1 cardId=BG36_345 .. player=15]"
+_SHOP_OPT = re.compile(
+    r"DebugPrintOptions\(\).*?id=(\d+)[^\]]*cardId=(\w+)[^\]]*player=(\d+)")
+# A SHOP block carries the tavern buttons as options (Refresh / Freeze /
+# Drag To Sell / Drag To Buy — all TB_BaconShop_* card ids). Other options
+# blocks share the wire format: a Murloc Holmes discovery block offered the
+# shop's own Waverider as a choice (2026-09-05) and the old parse swallowed
+# it as the whole shop — the Tavern box showed one card at a wrong price.
+# Only blocks with a button option commit as the shop.
+_SHOP_BUTTON_OPT = re.compile(
+    r"GameState\.DebugPrintOptions\(\) -\s+option \d+ type=POWER "
+    r"mainEntity=\[[^\]]*cardId=TB_BaconShop_?(?:8p_Reroll_Button|"
+    r"LockAll_Button|DragSell|DragBuy|TechUp)")
 # A new options block starts (GameState). Options re-print after every game
 # event; each block is the authoritative current shop.
 _OPTIONS_HEADER = re.compile(r"GameState\.DebugPrintOptions\(\) -\s+id=\d+")
@@ -118,15 +130,43 @@ def _baseline_opp(turn):
     return None
 
 
-def shop_cost_map(gs, offer_ids):
+def _recent_acquisitions(plays, buys, last_plays, last_buys, friendly):
+    """The last turn or two of friendly acquisitions, per-cid copies =
+    max(#buys, #plays). A copy bought and then played is ONE acquisition,
+    but the raw plays+buys sum counted it twice (2026-09-05 Holmes game:
+    one bought-and-played Deathstrider read as 2 recent hits and "pivoted"
+    the coach to Beasts over a six-naga board). Generated or discovered
+    copies (played, never bought) still count via plays."""
+    pl = [cid for p, cid in list(plays) + list(last_plays)
+          if p == friendly]
+    by = [cid for p, cid in list(buys) + list(last_buys)
+          if p == friendly]
+    copies = {}
+    for cid in set(pl) | set(by):
+        copies[cid] = max(by.count(cid), pl.count(cid))
+    return [cid for cid, n in copies.items() for _ in range(n)]
+
+
+def shop_cost_map(gs, offer_ids, eids=None):
     """Live buy prices for the shop offers: the COST tag each offer entity
     carried (patch 36.4.x decoupled tavern cost from TECH_LEVEL — 2026-09-05:
     86 of 117 shop creations differ; Lullabot tier 1 but COST 2 — so the
-    DB's tier is no longer a price). Later entities win per card id (the
-    most recent write is the current shop's copy), golden cards keep their
-    own COST via the exact id, and the plain id also maps so callers can
-    price either form. Cards the log never priced are absent — callers fall
-    back to the DB tier."""
+    DB's tier is no longer a price).
+
+    `eids` (shop card id -> offer entity id) prices the CURRENT shop's own
+    entities — the 2026-09-05 Holmes game showed why: a discovery-pool
+    Waverider carried COST 31 in SETASIDE, and card-id-keyed "later write
+    wins" priced the shop's Waverider 31g. With entity ids, the shop's
+    exact entity wins; the card-id scan (later entity wins, golden _G keeps
+    its own COST and also maps the plain id) remains the fallback for ids
+    the shop block didn't carry. Cards the log never priced are absent —
+    callers fall back to the DB tier."""
+    exact = {}
+    if eids:
+        for c in offer_ids:
+            eid = eids.get(c)
+            if eid is not None and gs.cost.get(eid) is not None:
+                exact[c] = gs.cost[eid]
     cost_by_cid = {}
     for eid in sorted(gs.cost):
         cid = gs.card.get(eid)
@@ -135,6 +175,7 @@ def shop_cost_map(gs, offer_ids):
             cost_by_cid[cid] = cost
             if cid.endswith("_G"):
                 cost_by_cid.setdefault(cid[:-2], cost)
+    cost_by_cid.update(exact)  # the shop's own entities win
     return {c: cost_by_cid[c] for c in offer_ids if c in cost_by_cid}
 
 
@@ -271,6 +312,9 @@ class _LiveActions:
 _GAME_DEFAULTS = {
     "cur_lines": list,
     "shop_cards": list,
+    "shop_eids": dict,       # shop card id -> offer entity id (exact pricing)
+    "_pending_shop": list,   # offers buffered for the open options block
+    "_pending_is_shop": False,  # the open block carries a tavern button
     "choice": None,          # pending pick: {'kind','source','options','picked'}
     "techup": dict,          # TechUp button id -> {tier, player, cost, zone}
     "_last_tier": None,
@@ -353,12 +397,20 @@ class LiveCoach:
                 or "BlockType=PLAY Entity=[entityName=Refresh " in line \
                 or ("BlockType=PLAY Entity=[entityName=Drag To Buy " in line and "Target=" in line):
             self.shop_cards = []
+            self.shop_eids = {}
+            self._pending_shop = []
+            self._pending_is_shop = False
         # The game re-prints ALL options after every event; each new options
-        # block starts with "DebugPrintOptions() - id=N". Treat the shop as the
-        # most recent block: reset on block start so stale generations
-        # (including discover choices) don't accumulate in the ranking.
+        # block starts with "DebugPrintOptions() - id=N". Offers BUFFER per
+        # block and commit only when the block carries a tavern button —
+        # discovery/choice blocks share the options format and must not
+        # replace the shop (see _SHOP_BUTTON_OPT).
         if _OPTIONS_HEADER.search(line):
-            self.shop_cards = []
+            self._flush_shop_block()
+            self._pending_shop = []
+            self._pending_is_shop = False
+        if _SHOP_BUTTON_OPT.search(line):
+            self._pending_is_shop = True
         # The pending pick (hero / trinket / discover): a choice block opens,
         # then the player's SendChoices resolves it. Track but fall through —
         # actions.feed counts SendChoices for the discover trigger counts.
@@ -381,13 +433,13 @@ class LiveCoach:
             self.choice["picked"] = m.group(1)
         m = _SHOP_OPT.search(line)
         if m:
-            cid, p = m.group(1), int(m.group(2))
+            eid, cid, p = int(m.group(1)), m.group(2), int(m.group(3))
             # Keep every card option, minions and tavern spells (shop offers are
             # owned by the tavern player; the friendly player's own board/hand
             # minions — and the spells they cast — are filtered in analyze()).
             if MINION_ID.match(cid) and "HERO" not in cid \
-                    and all(cid != c for c, _ in self.shop_cards):
-                self.shop_cards.append((p, cid))
+                    and all(cid != c for _e, c, _p in self._pending_shop):
+                self._pending_shop.append((p, cid, eid))
             return
         # The tavern upgrade button's live price (see _TECHUP above). GameState
         # lines only: the PowerTaskList copies carry the same values, and the
@@ -619,10 +671,22 @@ class LiveCoach:
         """
         self._ensure_meta()
 
+    def _flush_shop_block(self):
+        """Commit-copy the buffered options block as the shop — only if it
+        carried a tavern button (a real shop block; discovery/choice blocks
+        share the format and must not replace the shop). Copies only: the
+        buffer is cleared by the next block header / new-phase reset, never
+        here — tavern_offers polls mid-block, and clearing would orphan
+        offers that arrive after this flush."""
+        if self._pending_is_shop and self._pending_shop:
+            self.shop_cards = [(p, c) for p, c, _e in self._pending_shop]
+            self.shop_eids = {c: e for _p, c, e in self._pending_shop}
+
     def tavern_offers(self):
         """Minion card ids offered by the tavern right now — excludes the
         friendly player's own minions, which DebugPrintOptions lists as sell
         options (they arrive BEFORE the actual shop offers)."""
+        self._flush_shop_block()
         return [c for p, c in self.shop_cards
                 if self.friendly is None or p != self.friendly]
 
@@ -713,14 +777,11 @@ class LiveCoach:
         # an actual pivot, and a buy IS intention (a card can sit in hand
         # behind a full board, and a spell is acquired by buying).
         friendly = self.friendly
-        recent = [cid for p, cid in self.actions.plays if p == friendly]
-        recent += [cid for p, cid in self.actions.buys if p == friendly]
-        if self.actions.turn_plays:
-            recent += [cid for p, cid in self.actions.turn_plays[-1]
-                       if p == friendly]
-        if self.actions.turn_buys:
-            recent += [cid for p, cid in self.actions.turn_buys[-1]
-                       if p == friendly]
+        recent = _recent_acquisitions(
+            self.actions.plays, self.actions.buys,
+            self.actions.turn_plays[-1] if self.actions.turn_plays else [],
+            self.actions.turn_buys[-1] if self.actions.turn_buys else [],
+            friendly)
         target = comp_target(board, self.playable, recent_cards=recent)
         # ONE comp target feeds sell + buy + display — the evidence-based
         # target. The old per-function comp picks (crude tribe overlap for
@@ -744,7 +805,7 @@ class LiveCoach:
                             self.allowed, hero_power=hero_power,
                             scenario=scenario, recent_cards=recent,
                             comp=target) if offer_ids else []
-        shop_costs = shop_cost_map(self.gs, offer_ids)
+        shop_costs = shop_cost_map(self.gs, offer_ids, self.shop_eids)
         # The hand: casts from hand are free, stuck minions play free — the
         # coach's blind spot until 2026-09-04 (five spells sat in hand that
         # would 10x the board while the coach said nothing). Spell entities

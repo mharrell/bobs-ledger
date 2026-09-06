@@ -336,7 +336,7 @@ function render(a) {
   if (a.hand && a.hand.length) {
     const tiles = el('div', 'tiles');
     a.hand.forEach(s => {
-      const sub = (s.verb === 'cast' ? 'cast' : 'play')
+      const sub = (s.verb === 'cast' ? 'cast' : s.verb === 'hold' ? 'hold' : 'play')
         + (s.score != null ? ' · ' + s.score.toFixed(0) : '');
       tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
     });
@@ -349,7 +349,10 @@ function render(a) {
   const sellSafe = el('div', 'tiles');
   const sellKeep = el('div', 'tiles');
   (a.sell_rank || []).forEach(s => {
-    const t = tile(s.card, s.name, s.score.toFixed(0),
+    // Hand minions appear here too (flagged) — the plan's "Play/Hold X" and
+    // the sell row must be able to agree on every sellable card.
+    const sub = s.score.toFixed(0) + (s.hand ? ' · hand' : '');
+    const t = tile(s.card, s.name, sub,
                    {golden: s.golden, n: s.n, cls: s.score < 15 ? 'safe' : 'keep'});
     (s.score < 15 ? sellSafe : sellKeep).appendChild(t);
   });
@@ -483,6 +486,25 @@ def render_json(analysis):
         else:
             g["n"] += 1
             g["score"] = min(g["score"], round(v))
+    sell.sort(key=lambda g: g["score"])
+    # Hand minions are sellable too — the Sell row covered only the board, so
+    # "safe to sell: —" could sit next to a plan that plays a hand card and
+    # the player couldn't see that card's sell standing (2026-09-05). Same
+    # value scale (the hand step's score IS minion_value), flagged hand.
+    # Cast-verb spells can't be sold.
+    for s in analysis.get("hand", []):
+        if s.get("verb") == "cast":
+            continue
+        cid = s["card"]
+        g = grouped.get(("hand", cid))
+        if g is None:
+            g = {"card": cid, "name": names.get(cid, cid),
+                 "score": round(s.get("score") or 0), "n": 1,
+                 "golden": bool(s.get("golden")), "hand": True}
+            grouped[("hand", cid)] = g
+            sell.append(g)
+        else:
+            g["n"] += 1
     sell.sort(key=lambda g: g["score"])
     a["sell_rank"] = sell
     # The hand: casts/plays ranked for the "Your hand" tiles (free actions —

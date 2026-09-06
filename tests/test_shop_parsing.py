@@ -17,13 +17,26 @@ GS = "D 21:17:13.7844972 GameState.DebugPrintPower() - "
 OPT = "D 21:17:14.0000000 GameState.DebugPrintOptions() - "
 
 
-def opt_block(n, offers):
-    """An options block: header + one POWER option per mainEntity."""
+def opt_block(n, offers, button=True):
+    """An options block: header + one POWER option per mainEntity.
+
+    `button` appends the tavern Refresh button — a real shop block carries
+    the tavern buttons as options; discovery/choice blocks (same wire
+    format, no buttons) must NOT commit as the shop (the 2026-09-05 Holmes
+    game: a discovery block offering the shop's own Waverider replaced the
+    whole shop parse — the Tavern box showed one card at a wrong price).
+    """
     lines = [f"{OPT}  id={n}", ]
     for i, (name, cid, player) in enumerate(offers):
         lines.append(
             f"{OPT}  option {i} type=POWER mainEntity=[entityName={name} "
             f"id={100 + i} zone=PLAY zonePos=0 cardId={cid} player={player}] "
+            f"error=NONE errorParam=")
+    if button:
+        lines.append(
+            f"{OPT}  option {len(offers)} type=POWER "
+            f"mainEntity=[entityName=Refresh id={100 + len(offers)} zone=PLAY "
+            f"zonePos=0 cardId=TB_BaconShop_8p_Reroll_Button player=7] "
             f"error=NONE errorParam=")
     lines.append(f"{OPT}  option {2 + len(offers)} type=END_TURN mainEntity= "
                  f"error=NONE errorParam=")
@@ -71,6 +84,26 @@ class TestShopParsing(unittest.TestCase):
                 ("My Board Minion", "BG33_444", 7)]):
             c.feed(line)
         self.assertFalse(c.tavern_offers())  # only own minions -> no fire yet
+
+    def test_discovery_block_does_not_replace_shop(self):
+        """A Murloc Holmes discovery block (2026-09-05) offered the shop's own
+        Waverider as a choice — no tavern buttons — and the old parse replaced
+        the whole shop with it, crashing the Tavern box down to one card at
+        the discovery copy's junk COST (31g). A buttonless block must leave
+        the previous shop intact."""
+        c = self._coach()
+        for line in (["x tag=STEP value=MAIN_ACTION"]
+                     + opt_block(1, [("Sand Swirler", "BG32_841", 15),
+                                     ("Cagey Conjurer", "BG36_508", 15)])):
+            c.feed(line)
+        self.assertEqual(c.tavern_offers(), ["BG32_841", "BG36_508"])
+        # the discovery block: shop-side Waverider + SETASIDE pool minions,
+        # no buttons
+        for line in opt_block(2, [("Waverider", "BG23_007", 15),
+                                  ("Fruit Vendor", "BG36_346", 7),
+                                  ("Nomi", "BGS_104", 7)], button=False):
+            c.feed(line)
+        self.assertEqual(c.tavern_offers(), ["BG32_841", "BG36_508"])
 
 
 if __name__ == "__main__":

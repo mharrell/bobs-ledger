@@ -247,6 +247,29 @@ class TestHandPlan(unittest.TestCase):
         self.assertEqual(value.hand_plan(
             [{"card": "UNKNOWN_SPELL_X", "type": "spell"}]), [])
 
+    def test_triple_awareness(self):
+        """2 on board: the hand copy IS the triple — play now. 1 on board:
+        hold it and hunt a 3rd (2026-09-05: the coach said "Play Balinda"
+        when the right move was holding her for the golden)."""
+        hand = [{"card": self.MINION, "type": "minion",
+                 "atk": 2, "health": 2}]
+        two = value.hand_plan(hand, board_minions=[
+            {"card": self.MINION, "atk": 2, "health": 2}] * 2)
+        self.assertEqual(two[0]["verb"], "play")
+        self.assertIn("golden", two[0]["why"])
+        one = value.hand_plan(hand, board_minions=[
+            {"card": self.MINION, "atk": 2, "health": 2}])
+        self.assertEqual(one[0]["verb"], "hold")
+        self.assertIn("golden", one[0]["why"])
+
+    def test_triple_play_outranks_a_bigger_free_play(self):
+        two = value.hand_plan(
+            [{"card": self.MINION, "type": "minion", "atk": 2, "health": 2}],
+            board_minions=[{"card": self.MINION, "atk": 2, "health": 2}] * 2)
+        plain = value.hand_plan(
+            [{"card": self.MINION, "type": "minion", "atk": 2, "health": 2}])
+        self.assertGreater(two[0]["score"], plain[0]["score"])
+
 
 class TestTopMoveHand(unittest.TestCase):
     """The hand leads the numbered plan (free actions, execution order)."""

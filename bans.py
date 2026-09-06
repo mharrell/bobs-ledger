@@ -105,21 +105,30 @@ def bans_from_log(powerlog_path, card_races=None, lines=None):
 def filter_comps_by_available_tribes(comps, card_races, allowed_tribes):
     """Return the comps (slug -> comp) playable given the allowed tribes.
 
-    A comp is playable if **every core card** has at least one tribe in
-    `allowed_tribes`, or is neutral / all-tribe. Compound core cards (e.g.
-    ELEMENTAL/DEMON) are playable if *either* tribe is allowed. Cards with
-    unknown tribes are treated as playable (fail-open) so a comp is never
-    wrongly excluded.
+    A comp survives when its core still has a working MAJORITY after the
+    ban: hsreplay cores are "the combo pieces", and hybrid comps carry
+    cross-tribe and/or pieces (nagas-groundbreaker lists the Dragon
+    Sky-hatch Runaway alongside the Nagas Groundbreaker + Seafloor
+    Recruiter) — the 2026-09-05 game had Groundbreaker + Seafloor
+    Recruiter on board with Naga ALLOWED, but the old all-or-nothing rule
+    dropped the comp because Sky-hatch (Dragon) was banned, and the coach
+    went comp-blind over a naga board. A comp is dropped only when more
+    than half its core is banned-tribe (the comp as written can't be
+    built); survivors carry `_blocked_core` (the banned core ids) so the
+    shopping list can mark them banned-this-game instead of buyable.
 
-    `allowed_tribes` None or empty = no ban info — fail OPEN and keep every
-    comp (an unknown ban must not look like "all tribes banned").
+    Core cards with unknown tribes are treated as playable (fail-open) so
+    a comp is never wrongly excluded; compound races (e.g.
+    ELEMENTAL/DEMON) are playable if *either* tribe is allowed.
+    `allowed_tribes` None or empty = no ban info — fail OPEN and keep
+    every comp (an unknown ban must not look like "all tribes banned").
     """
     if not allowed_tribes:
         return dict(comps)
     allowed = set(allowed_tribes)
     playable = {}
     for slug, comp in comps.items():
-        ok = True
+        blocked = []
         for cid in comp.get("core", []):
             races = card_races.get(cid)
             if races is None:
@@ -127,10 +136,13 @@ def filter_comps_by_available_tribes(comps, card_races, allowed_tribes):
             if not races or "ALL" in races:
                 continue  # neutral or all-tribe — always available
             if not ({canon(r) for r in races} & allowed):
-                ok = False
-                break
-        if ok:
-            playable[slug] = comp
+                blocked.append(cid)
+        core = comp.get("core", [])
+        if len(blocked) * 2 >= len(core) and core:
+            continue  # most of the core is unbuyable — comp as written is dead
+        if blocked:
+            comp = dict(comp, _blocked_core=blocked)  # copy: meta dicts are shared
+        playable[slug] = comp
     return playable
 
 
