@@ -867,14 +867,19 @@ class LiveCoach:
                 else:
                     break
         # The pending pick (hero / trinket / discover), ranked against the
-        # current board and comp.
+        # current board and comp. Its rows are (name, cid, score, why) — a
+        # DIFFERENT shape from the sell ranking's (cid, score). They used to
+        # share the `ranked` variable, so any pending pick silently replaced
+        # the sell ranking: top_move crashed comparing the name string to a
+        # score threshold, and the overlay's Sell box showed the pick
+        # options (2026-09-05 game 2, records 172-173 of the replay).
         choice_advice = None
         c = self.choice
         if c and c["picked"] is None and c["options"]:
             kind = choice_kind(c["ctype"], c["source"], c["options"])
-            ranked = rank_choices(kind, c["options"], board, self.playable)
+            pick_ranked = rank_choices(kind, c["options"], board, self.playable)
             choice_advice = {"kind": kind, "source": c["source"],
-                             "ranked": ranked}
+                             "ranked": pick_ranked}
         result = {
             "hero": self.hero_name,
             "tier": tier,
