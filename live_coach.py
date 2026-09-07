@@ -846,6 +846,15 @@ class LiveCoach:
         # Same tribe + no strictly more evidence -> keep showing the
         # previous comp; cross-tribe pivots always pass through.
         prev = self._sticky_target
+        if prev is not None and self.playable is not None and not any(
+                c.get("name") == prev.get("name")
+                for c in self.playable.values()):
+            # The ban/pool filter removed the held comp (2026-09-07, twice:
+            # before the 5/5 ban resolves the coach runs fail-open with
+            # every comp playable — a target locked in that window, and the
+            # sticky hold then kept showing Nagas AFTER Naga was banned).
+            # A comp the filter removed can no longer be the direction.
+            self._sticky_target = prev = None
         if prev is not None:
             # Same-tribe churn and sub-threshold dips both go through the
             # sticky rule; the prev hit count decides whether a dip holds
