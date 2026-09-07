@@ -820,12 +820,15 @@ class LiveCoach:
         # Same tribe + no strictly more evidence -> keep showing the
         # previous comp; cross-tribe pivots always pass through.
         prev = self._sticky_target
-        if prev is not None and target is not None \
-                and prev.get("tribe") == target.get("tribe"):
+        if prev is not None:
+            # Same-tribe churn and sub-threshold dips both go through the
+            # sticky rule; the prev hit count decides whether a dip holds
+            # (>=1 core still evidenced) or the direction dies (0).
             prev_hits = _core_hits(board, recent,
                                    set(prev.get("core", [])))
             new_hits = _core_hits(board, recent,
-                                  set(target.get("core", [])))
+                                  set(target.get("core", []))) \
+                if target else 0
             target = sticky_comp_target(prev, target, prev_hits, new_hits)
         self._sticky_target = target
         # ONE comp target feeds sell + buy + display — the evidence-based
