@@ -477,6 +477,7 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
         # comp (the old `next(iter(comps.values()))` fallback).
         comp = comp_target(board_minions or [], comps, recent_cards=recent_cards)
     engine_bonus = _engine_growth_bonus(board_minions, names) if board_minions else {}
+    board_ids = {m["card"] for m in (board_minions or [])}
     scored = []
     for cid in shop_cards:
         if cid in spell_db:
@@ -493,15 +494,20 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
              "health": card.get("health") or 0, "tribe": card.get("race")}
         val = minion_value(m, card, comp, hero_power, trinkets,
                            engine_bonus=engine_bonus.get(cid, 0))
-        # Strongly prefer the target comp's core/addon cards, so the buy
-        # recommendation actually guides the build rather than just matching stats.
+        # Committed mode (2026-09-07, user principle: "once committed to a
+        # comp, the calculation changes — we're maximizing this comp, not
+        # just purchasing the best card from whatever is available"): the
+        # bonuses are sized so a comp piece outranks a strong generic body
+        # (an 11.5-score Deflect-o-Bot class card loses to missing core),
+        # and a MISSING core piece outranks a dupe (the dupe still scores —
+        # copies are triples — but completing the build leads).
         comp_card = False
         if comp:
             if cid in comp.get("core", []):
-                val += 10.0
+                val += 14.0 if cid not in board_ids else 10.0
                 comp_card = True
             elif cid in comp.get("addons", []):
-                val += 5.0
+                val += 7.0
                 comp_card = True
         # Committed to the comp (>=2 core on board): a shop minion whose tribe
         # fights the comp won't fit the board's growth — damp it so comp cards
