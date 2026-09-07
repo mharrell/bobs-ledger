@@ -648,6 +648,45 @@ def top_move(analysis):
 
 MINION_BUY_PRICE = 3   # the patch's flat default for ALL tiers of minions
 
+_ACTIVATE_RE = re.compile(r"Activate \((\d+)\):\s*(.+)", re.S | re.I)
+
+
+def activation_of(card):
+    """Parse 'Activate (N): effect' from a card's text.
+
+    Returns {"cost", "effect"} or None. Board-minion activations are a
+    spend-the-last-gold action the coach ignored: the 2026-09-06 live game
+    advised a useless reroll at 1 gold while Suspicious Prisonguard
+    ("Activate (1): Give another minion +3/+3") sat on the board — +3/+3
+    of real stats beats a refresh that can only find 1-cost spells.
+    """
+    if not card:
+        return None
+    text = (card.get("text") or "").replace("[x]", "").strip()
+    m = _ACTIVATE_RE.match(text)
+    if not m:
+        return None
+    return {"cost": int(m.group(1)),
+            "effect": m.group(2).strip().replace("\n", " ").rstrip(".")}
+
+
+def _affordable_activation(analysis, budget):
+    """The best available board activation the budget covers, as
+    (cid, name, cost, effect) — None when none fits. `budget` None means
+    unknown gold: don't promise an activation."""
+    card_db = _load_card_db()
+    names = _load_bg_names()
+    seen = set()
+    for act in analysis.get("activations") or []:
+        cid = act.get("cid")
+        if cid in seen:
+            continue
+        seen.add(cid)
+        info = activation_of(card_db.get(cid))
+        if info and budget is not None and info["cost"] <= budget:
+            return (cid, names.get(cid, cid), info["cost"], info["effect"])
+    return None
+
 
 def _tribe_of(comp_name):
     """'Beasts - Tasty Lobstah' -> 'Beasts' — the display-level tribe half
@@ -933,7 +972,16 @@ def _top_move_text(analysis):
                     fallback = alt
                     break
             if fallback is None:
-                if budget:  # a roll costs 1 — with nothing left it isn't advice
+                act = _affordable_activation(analysis, budget)
+                if act:
+                    # A board activation beats a reroll: +3/+3 of real stats
+                    # vs a refresh that can only find 1-cost spells (the
+                    # 2026-09-06 live game: Prisonguard sat unused at 1
+                    # gold while the coach said roll).
+                    parts.append(f"Activate {act[1]} ({act[3]}) — beats a reroll")
+                    analysis["buy_step_roll"] = parts[-1]
+                    analysis["activation_step"] = act[0]
+                elif budget:  # a roll costs 1 — with nothing left it isn't advice
                     # Gold doesn't carry over between turns, so spending the
                     # last gold on a refresh beats passing; say WHAT didn't
                     # fit, not "costs 3, 1 left" (read as "buy it" — the
@@ -1003,6 +1051,12 @@ def _top_move_text(analysis):
     # generic roll.
     target = analysis.get("target_comp")
     scaling = target and analysis.get("target_state") == "committing"
+    act = _affordable_activation(analysis, gold)
+    if act and gold is not None and gold >= act[2]:
+        msg = f"Activate {act[1]} ({act[3]}) — beats a reroll"
+        analysis["buy_step_roll"] = msg
+        analysis["activation_step"] = act[0]
+        return msg
     if gold is not None and gold >= 1:
         msg = ("roll — hunt more " + target + " to scale it"
                if scaling else
