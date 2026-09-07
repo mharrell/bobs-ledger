@@ -521,19 +521,18 @@ def render_json(analysis):
                  for s in analysis.get("hand", [])]
     # Tag shop entries by comp membership (core/addon) or kind (spell), so the
     # shop list shows why each card matters without opening the comp DB.
-    # Each row also carries its tavern price (the log's live COST tag, else
-    # minion = tier / spell = cost) — the price model is otherwise invisible,
-    # and a wrong one ("thinks minions cost 1 gold") becomes instantly
-    # diagnosable. Since patch 36.4.x buy cost is per-card and decoupled from
-    # TECH_LEVEL, so the live shop_costs (from the log) must win.
+    # Each row also carries its tavern price: minions a FLAT 3 (the patch's
+    # default for ALL tiers — the log's tag=479 minion costs are stale legacy
+    # tier costs; 2026-09-06 log charged 3 for tags saying 1, player-confirmed),
+    # spells their own per-spell price. A wrong price ("thinks minions cost 1
+    # gold") is otherwise instantly misleading.
     tc = analysis.get("target_cards") or {}
     core = {c["card"] for c in tc.get("core", [])}
     addons = {c["card"] for c in tc.get("addons", [])}
     spell_db = _load_spell_db()
     spells = set(spell_db)
-    prices = {c: (v or {}).get("tier") for c, v in _load_card_db().items()}
-    prices.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
-    prices.update(analysis.get("shop_costs") or {})
+    from value import _buy_prices
+    prices = _buy_prices(analysis)
     a["shop_rank"] = [dict(card=c, name=names.get(c, c), score=round(v),
                            price=prices.get(c),
                            tag=("core" if c in core else

@@ -148,10 +148,13 @@ def _recent_acquisitions(plays, buys, last_plays, last_buys, friendly):
 
 
 def shop_cost_map(gs, offer_ids, eids=None):
-    """Live buy prices for the shop offers: the COST tag each offer entity
-    carried (patch 36.4.x decoupled tavern cost from TECH_LEVEL — 2026-09-05:
-    86 of 117 shop creations differ; Lullabot tier 1 but COST 2 — so the
-    DB's tier is no longer a price).
+    """Live COST-tag values for the shop offers, per entity.
+
+    NOTE (2026-09-06): MINION tag=479 values are stale legacy tier costs —
+    the patch prices ALL minions at a flat 3 (log ground truth: Buzzing
+    Vermin/Decoy Conjurer charged RESOURCES_USED=3 with tags saying 1), so
+    downstream consumers apply this map to SPELLS only. Kept for spell
+    pricing (spells carry real per-spell COST tags) and for debugging.
 
     `eids` (shop card id -> offer entity id) prices the CURRENT shop's own
     entities — the 2026-09-05 Holmes game showed why: a discovery-pool
@@ -159,8 +162,7 @@ def shop_cost_map(gs, offer_ids, eids=None):
     wins" priced the shop's Waverider 31g. With entity ids, the shop's
     exact entity wins; the card-id scan (later entity wins, golden _G keeps
     its own COST and also maps the plain id) remains the fallback for ids
-    the shop block didn't carry. Cards the log never priced are absent —
-    callers fall back to the DB tier."""
+    the shop block didn't carry."""
     exact = {}
     if eids:
         for c in offer_ids:

@@ -262,27 +262,31 @@ class TestTopMovePriority(unittest.TestCase):
         line = top_move(self._analysis(2, 5, None, []))
         self.assertTrue(line.startswith("1. LEVEL"))
 
-    def test_minion_priced_by_tier_not_mana_cost(self):
-        """A minion whose TIER exceeds gold must not be suggested even if its
-        (irrelevant) mana cost fits — the 2026-09-01 evening complaint."""
-        # Shadow Rager: mana cost 3, tavern tier 4.
+    def test_minion_costs_flat_three(self):
+        """Minions cost a FLAT 3 for all tiers (2026-09-06, player-confirmed;
+        the log's tag=479 values are stale legacy tier costs). Shadow Rager's
+        tier-4 and mana-cost-3 are both irrelevant: 2 gold can't buy it, 3
+        can."""
         cid = next(c for c, v in value._load_card_db().items()
                    if v.get("name") == "Shadow Rager")
-        line = top_move(self._analysis(5, 3, cid, [(cid, 9.0)]))
+        line = top_move(self._analysis(5, 2, cid, [(cid, 9.0)]))
         self.assertNotIn("Buy Shadow Rager", line)
         self.assertIn("roll", line)
+        line = top_move(self._analysis(5, 3, cid, [(cid, 9.0)]))
+        self.assertIn("Buy Shadow Rager", line)
 
     def test_buy_budgeted_from_leftover_after_leveling(self):
         """When leveling leads, buys must fit the LEFTOVER gold, not the purse:
-        tier 5 (level costs 6) with 7 gold leaves 1 — a tier-2 minion doesn't
-        fit; a tier-1 one does."""
+        tier 5 (level costs 6) with 7 gold leaves 1 — no minion fits (flat 3),
+        but a 1-cost spell does."""
         card_db = value._load_card_db()
-        t1 = next(c for c, v in card_db.items() if v.get("tier") == 1)
         t2 = next(c for c, v in card_db.items() if v.get("tier") == 2)
-        line = top_move(self._analysis(5, 7, t2, [(t2, 9.0), (t1, 5.0)]))
-        self.assertIn(f"1. LEVEL to tier 6 (standard curve) — 1 left", line)
+        spell = next(c for c, v in value._load_spell_db().items()
+                     if (v or {}).get("cost") == 1)
+        line = top_move(self._analysis(5, 7, t2, [(t2, 9.0), (spell, 5.0)]))
+        self.assertIn("1. LEVEL to tier 6 (standard curve) — 1 left", line)
         self.assertNotIn(f"Buy {value._load_bg_names().get(t2, t2)} (", line)
-        self.assertIn(f"Buy {value._load_bg_names().get(t1, t1)}", line)
+        self.assertIn(f"Buy {value._load_bg_names().get(spell, spell)}", line)
 
 
 class TestCompCards(unittest.TestCase):
