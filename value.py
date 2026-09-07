@@ -1010,6 +1010,30 @@ def _top_move_text(analysis):
             else:
                 cid = fallback
         if cid is not None:
+            # Hunt mode (2026-09-07, the player's roll-x10 style): committed
+            # with missing core, the affordable shop top is OFF-BUILD — the
+            # gold rolls for the missing pieces instead of blessing a buy
+            # that doesn't advance the build. Skipped while dying (a body
+            # beats a hunt) and early-game (board presence first).
+            tc = analysis.get("target_cards") or {}
+            missing = [r for r in (tc.get("core") or [])
+                       if not r.get("owned") and not r.get("banned")]
+            build_ids = {r["card"] for r in (tc.get("core") or [])} | \
+                {r["card"] for r in (tc.get("addons") or [])}
+            off_build = cid not in build_ids
+            eff_health = (analysis.get("health") or 0) \
+                + (analysis.get("armor") or 0)
+            if missing and off_build \
+                    and analysis.get("target_state") == "committing" \
+                    and (budget or 0) >= 1 and eff_health > 12 \
+                    and (analysis.get("turn") or 99) > 2:
+                nm = ", ".join(r["name"] for r in missing[:2])
+                parts.append(f"roll — hunting {nm} "
+                             f"({names.get(cid, cid)} is off-build)")
+                analysis["buy_step_roll"] = parts[-1]
+                analysis["buy_step_card"] = None
+                cid = None
+        if cid is not None:
             bought = cid
             analysis["buy_step_card"] = cid
             parts.append(f"Buy {names.get(cid, cid)} "
@@ -1129,6 +1153,39 @@ def opp_note(board_stats, their, approx):
     if board_stats is None or not their:
         return ""
     return f"your {board_stats} vs their {'~' if approx else ''}{int(their)}"
+
+
+def combat_forecast(analysis):
+    """A one-line next-fight verdict: favored / close / behind from the
+    stat ratio, with OUR keyword edges named (divine shields absorb a hit
+    each, venomous removes a minion each — the 'my guys evaporated' class
+    of surprise). v1 limits: the opponent's keywords aren't tracked yet
+    (their board reaches us as stat totals), and the estimate is a ratio,
+    not a combat simulation.
+    """
+    bs = analysis.get("board_stats")
+    theirs = analysis.get("opp_stats") or analysis.get("lobby_opp") \
+        or analysis.get("baseline_opp")
+    if bs is None or not theirs:
+        return None
+    board = analysis.get("board") or []
+    shields = sum(1 for m in board
+                  if "DIVINE_SHIELD" in (m.get("keywords") or []))
+    venom = sum(1 for m in board
+                if "VENOMOUS" in (m.get("keywords") or [])
+                or "POISONOUS" in (m.get("keywords") or []))
+    edges = []
+    if shields:
+        edges.append(f"{shields} divine shield{'s' if shields > 1 else ''}")
+    if venom:
+        edges.append("venomous")
+    edge = f" (yours: {', '.join(edges)})" if edges else ""
+    ratio = bs / max(theirs, 1)
+    if ratio >= 1.3:
+        return f"favored — {bs} vs {int(theirs)}{edge}"
+    if ratio >= 0.8:
+        return f"close fight — {bs} vs {int(theirs)}{edge}"
+    return f"behind — {bs} vs {int(theirs)}; don't take this fight{edge}"
 
 
 def _comp_needs_by_tier(analysis, card_db):

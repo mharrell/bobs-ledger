@@ -373,6 +373,83 @@ class TestSharedUtilityCores(unittest.TestCase):
         self.assertFalse(by_card[self.BALINDA]["owned"])
 
 
+class TestRollHunt(unittest.TestCase):
+    """Hunt mode (2026-09-07, the player's roll-x10 style): committed with
+    missing core, an off-build shop top isn't 'the best card' — the gold
+    rolls for the pieces. Skipped while dying and early-game."""
+
+    LOBSTAHC = {"name": "Beasts - Tasty Lobstah", "tribe": "Beast",
+                "core": ["BG36_202", "BG36_208"], "addons": []}
+
+    def _analysis(self, gold, health=20, turn=9):
+        return {"tier": 5, "gold": gold, "level_cost": None, "board": [],
+                "shop_rank": [("BGS_071", 9.0)], "buy_this": "BGS_071",
+                "playable_comps": {}, "choice": None,
+                "target_comp": "Beasts - Tasty Lobstah",
+                "target_state": "committing",
+                "target_cards": {
+                    "name": "Beasts - Tasty Lobstah",
+                    "core": [{"card": "BG36_202", "name": "Tasty Lobster",
+                              "owned": True, "banned": False},
+                             {"card": "BG36_208", "name": "Deathstrider",
+                              "owned": False, "banned": False}],
+                    "addons": []},
+                "health": health, "armor": 0, "turn": turn,
+                "comp": self.LOBSTAHC, "sell_rank": []}
+
+    def test_off_build_buy_becomes_a_hunt(self):
+        # Deflect-o-Bot (mech) affordable on a committed beast board with a
+        # missing core: the plan rolls and names the hunt.
+        line = value.top_move(self._analysis(4))
+        self.assertIn("roll — hunting Deathstrider", line)
+        self.assertNotIn("Buy", line)
+
+    def test_comp_piece_still_buys(self):
+        a = self._analysis(4)
+        a["shop_rank"] = [("BG36_208", 9.0)]
+        a["buy_this"] = "BG36_208"
+        line = value.top_move(a)
+        self.assertIn("Buy", line)
+        self.assertNotIn("hunting", line)
+
+    def test_dying_buys_a_body(self):
+        line = value.top_move(self._analysis(4, health=10))
+        self.assertIn("Buy", line)
+
+    def test_no_hunt_without_missing_core(self):
+        a = self._analysis(4)
+        a["target_cards"]["core"][1]["owned"] = True
+        line = value.top_move(a)
+        self.assertIn("Buy", line)
+
+
+class TestCombatForecast(unittest.TestCase):
+    """The next-fight verdict: favored / close / behind from the stat
+    ratio, with our keyword edges named (divine shields, venomous). The
+    opponent's keywords aren't tracked yet — v1 limit."""
+
+    def test_favored_with_edges(self):
+        a = {"board_stats": 300, "opp_stats": 140,
+             "board": [{"card": "X", "keywords": ["DIVINE_SHIELD"]},
+                       {"card": "Y", "keywords": ["VENOMOUS"]}]}
+        line = value.combat_forecast(a)
+        self.assertIn("favored — 300 vs 140", line)
+        self.assertIn("1 divine shield", line)
+        self.assertIn("venomous", line)
+
+    def test_close_and_behind(self):
+        self.assertIn("close fight", value.combat_forecast(
+            {"board_stats": 100, "opp_stats": 110, "board": []}))
+        self.assertIn("behind", value.combat_forecast(
+            {"board_stats": 100, "opp_stats": 200, "board": []}))
+        self.assertIn("don't take this fight", value.combat_forecast(
+            {"board_stats": 100, "opp_stats": 200, "board": []}))
+
+    def test_none_without_opponent(self):
+        self.assertIsNone(value.combat_forecast(
+            {"board_stats": 100, "opp_stats": None, "board": []}))
+
+
 class TestSituationLine(unittest.TestCase):
     """The plan's one-line thread above the steps (the 2026-09-06 Guff game
     had 240 stats vs a ~140 lobby and 30 HP with zero armor — every panel

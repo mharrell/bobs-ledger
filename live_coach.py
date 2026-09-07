@@ -30,7 +30,7 @@ from choices import _CHOICE_HEADER, _CHOICE_OPT, _CHOICE_SOURCE, _CHOSEN, choice
 from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
-    situation_line, sticky_comp_target,
+    situation_line, sticky_comp_target, combat_forecast,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -1028,5 +1028,6 @@ class LiveCoach:
             "activations": [{"cid": c} for c in self.activations],
         }
         result["situation"] = situation_line(result)
+        result["forecast"] = combat_forecast(result)
         result["top_move"] = top_move(result)
         return result
