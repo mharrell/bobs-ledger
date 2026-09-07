@@ -339,6 +339,18 @@ class TestStickyCompTarget(unittest.TestCase):
             value.sticky_comp_target(self.BEETLES, self.NAGAS, 3, 1),
             self.NAGAS)
 
+    def test_subthreshold_dip_holds(self):
+        """No new target anywhere, the previous comp still has 1 core hit —
+        the direction holds (2026-09-07 Chromie game: a sold core dropped
+        the target to None at t11-t14 on a full naga build)."""
+        self.assertIs(
+            value.sticky_comp_target(self.BEETLES, None, 1, 0),
+            self.BEETLES)
+
+    def test_zero_evidence_drops_the_direction(self):
+        self.assertIsNone(
+            value.sticky_comp_target(self.BEETLES, None, 0, 0))
+
 
 class TestUndeadEngine(unittest.TestCase):
     """The undead-attack-scaling engine (added 2026-09-06: the comp is

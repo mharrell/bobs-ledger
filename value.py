@@ -706,9 +706,17 @@ def sticky_comp_target(prev, new, prev_hits, new_hits):
     (board + recent hits, copies included — the caller computes both with
     _core_hits). Cross-tribe pivots always pass through — stickiness must
     never fight the pivot override.
+
+    Sub-threshold dips hold too (2026-09-07 Chromie game: a sold core
+    dropped the target to None at t11-t14 — 'surviving until we can
+    commit' on a full naga build): with no new target anywhere, the
+    previous comp keeps showing while it still has >=1 core hit on board
+    or in recent buys, and dies only at zero evidence.
     """
-    if prev is None or new is None:
+    if prev is None:
         return new
+    if new is None:
+        return prev if prev_hits >= 1 else None
     if prev.get("tribe") != new.get("tribe"):
         return new  # a cross-tribe pivot is always shown
     return new if new_hits > prev_hits else prev
