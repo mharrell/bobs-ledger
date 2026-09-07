@@ -995,8 +995,15 @@ class LiveCoach:
             # lags it badly by the late game (37 vs boards of 141/229 in the
             # Holmes t9). The last 3 fights are the honest "what boards look
             # like right now".
-            "lobby_opp": _median([r["stats"]
-                                  for r in self._lobby_stats[-3:]]),
+            # The lobby median only counts fights from the last 2 rounds:
+            # boards grow ~2x/round mid-game, so older boards consistently
+            # UNDER-estimate the lobby (2026-09-07 Tickatus t7: '~25 theirs'
+            # from t3-t5 boards while the turn-matched baseline said 56 —
+            # the player's 'why only 25?' report). Stale fights fall back
+            # to the baseline instead of dragging old boards forward.
+            "lobby_opp": _median([r["stats"] for r in
+                                  [r for r in self._lobby_stats
+                                   if turn - r.get("turn", 0) <= 2][-3:]]),
             "baseline_opp": _baseline_opp(turn),
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
