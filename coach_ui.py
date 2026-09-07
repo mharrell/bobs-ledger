@@ -97,6 +97,8 @@ _HTML = r"""<!doctype html>
               border-radius:6px; padding:6px 12px; margin-bottom:8px;
               font-size:15px; font-weight:600; }
   #statebar .lbl { color:var(--dim); font-weight:400; font-size:12px; }
+  #statebar .good { color:var(--good); font-weight:400; font-size:12px; }
+  #statebar .bad { color:var(--bad); font-weight:400; font-size:12px; }
   #statebar .banned { color:var(--dim); font-weight:400; font-size:12px; }
   /* One priority column: explicit instructions first, then the horizontal
      card rows (game-like), then reference chips. */
@@ -277,6 +279,12 @@ function render(a) {
   }
   if (a.scout) {
     statebar.appendChild(el('span', 'lbl', a.scout));
+  }
+  if (a.forecast) {
+    // The next-fight verdict: colored by its verdict word.
+    const good = a.forecast.startsWith('favored');
+    const cls = good ? 'good' : (a.forecast.startsWith('behind') ? 'bad' : null);
+    statebar.appendChild(el('span', cls, a.forecast));
   }
   const triggers = (a.scenario || {});
   const active = Object.entries(triggers)
@@ -608,6 +616,9 @@ def render_json(analysis):
     a["scout"] = (f"you {bs} stats · "
                   f"{'~' if approx else ''}{int(their)} theirs"
                   if bs is not None and their else None)
+    # The next-fight verdict (stat ratio + our keyword edges) rides the
+    # scout strip so "will the next fight kill me" is on screen.
+    a["forecast"] = analysis.get("forecast")
     # When leveling leads the top move, the buy is what you do with the
     # leftover — label it that way so the priorities read in order.
     a["buy_label"] = ("Then buy (after leveling)"
