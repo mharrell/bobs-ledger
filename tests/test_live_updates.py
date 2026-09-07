@@ -11,6 +11,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import live_coach
 from live_coach import LiveCoach
 from tests.test_shop_parsing import opt_block
 
@@ -544,6 +545,31 @@ class TestBoardFallback(unittest.TestCase):
         c.gs.cardtype[99] = "MINION"
         a = c.analyze()
         self.assertEqual([m["card"] for m in a["board"]], ["BG33_886"])
+
+
+class TestBoardEstimate(unittest.TestCase):
+    """During the combat-teardown window the board estimate must show the
+    buy-phase board, not the fight's depleted remnant (2026-09-07 Tickatus
+    game: the overlay read 'you 90' mid-turn on a 300-stat board — the
+    player's 'my guys evaporated' report)."""
+
+    def test_fullest_snapshot_wins(self):
+        from live_coach import _estimate_board
+        full = [{"player": 3, "card": "A", "atk": 100, "health": 100},
+                {"player": 3, "card": "B", "atk": 100, "health": 100}]
+        remnant = [{"player": 3, "card": "A", "atk": 20, "health": 10}]
+        opp = [{"player": 9, "card": "X", "atk": 500, "health": 500}]
+        got = live_coach._estimate_board([full, remnant, opp], 3)
+        self.assertEqual([m["card"] for m in got], ["A", "B"])
+
+    def test_remnant_only_when_nothing_fresher(self):
+        from live_coach import _estimate_board
+        remnant = [{"player": 3, "card": "A", "atk": 5, "health": 5}]
+        self.assertEqual(_estimate_board([remnant], 3), remnant)
+
+    def test_empty_snapshots(self):
+        from live_coach import _estimate_board
+        self.assertEqual(_estimate_board([], 3), [])
 
 
 class TestBuyStep(unittest.TestCase):

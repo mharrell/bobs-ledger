@@ -142,6 +142,32 @@ def _baseline_opp(turn):
     return None
 
 
+def _estimate_board(snapshots, friendly, lookback=8):
+    """The strongest recent snapshot of the friendly board.
+
+    The estimate runs during the combat-teardown window (the real board is
+    empty until the game re-adds it after the next shop prints). The LAST
+    snapshot is the fight's END state — a won-but-costly fight shows the
+    depleted remnant (2026-09-07 Tickatus game: the overlay read 'you 90'
+    mid-turn on a 300-stat board — the player's 'my guys evaporated'
+    report). The fullest recent snapshot is the buy-phase board: deaths
+    only remove minions, so the pre-fight board is the high-water mark
+    (a token-summon moment can briefly exceed it; acceptable for a
+    transient estimate — the real board re-advises when it lands).
+    """
+    if not snapshots:
+        return []
+    recent = snapshots[-lookback:]
+
+    def friendly_minions(snap):
+        return [m for m in snap if m["player"] == friendly]
+
+    best = max(recent, key=lambda snap: sum(
+        (m.get("atk") or 0) + (m.get("health") or 0)
+        for m in friendly_minions(snap)))
+    return friendly_minions(best)
+
+
 def _recent_acquisitions(plays, buys, last_plays, last_buys, friendly):
     """The last turn or two of friendly acquisitions, per-cid copies =
     max(#buys, #plays). A copy bought and then played is ONE acquisition,
@@ -796,9 +822,9 @@ class LiveCoach:
             # the game re-adds it only AFTER the next shop's options print
             # (2026-09-03 games: the coach saw board 0 for one phase). Until
             # the real board lands — the fingerprint re-advises when it does —
-            # estimate from the last snapshot instead of advising blind.
-            board = [m for m in self.gs.snapshots[-1]
-                     if m["player"] == self.friendly]
+            # estimate from the fullest recent snapshot instead of advising
+            # blind.
+            board = _estimate_board(self.gs.snapshots, self.friendly)
         tier = self.gs.hero_meta.get(self.hero_card, {}).get("tier")
         gold = self.gs.gold.get(self.account) if self.account else None
         scenario = self.actions.scenario()
