@@ -298,6 +298,14 @@ function render(a) {
   // The situation read: the plan's thread (direction, strength, danger) in
   // one line, so the numbered steps read as a story instead of a list.
   if (a.situation) instr.appendChild(el('div', 'situation', a.situation));
+  // The empty-shop gap (after a buy/roll the offers vanish from the log for
+  // a second or two before the game re-prints them) holds the old plan —
+  // saying so makes the lag legible instead of looking like a freeze
+  // (2026-09-07 'the coach has seized up' report).
+  if ((!a.shop_rank || !a.shop_rank.length) && (a.board || []).length) {
+    instr.appendChild(el('div', 'none',
+      'reading the new shop… (the plan above is from your last action)'));
+  }
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
     const [name, cid, score, why] = a.choice.ranked[0];
     const line = el('div', 'pickline', 'PICK ' + name + (why ? ' — ' + why : ''));
