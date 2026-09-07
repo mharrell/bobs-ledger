@@ -212,6 +212,82 @@ class TestCompProgress(unittest.TestCase):
         self.assertFalse(by_name["Lobstah"]["ready"])  # 1 hit each, not a commit
 
 
+class TestActivations(unittest.TestCase):
+    """Board-minion activations are a spend-the-last-gold action class: the
+    2026-09-06 live game advised a useless reroll at 1 gold while Suspicious
+    Prisonguard ('Activate (1): Give another minion +3/+3') sat on board."""
+
+    PRISON = "BG36_345"
+
+    def test_activation_parsed(self):
+        info = value.activation_of(value._load_card_db().get(self.PRISON))
+        self.assertEqual(info["cost"], 1)
+        self.assertIn("+3/+3", info["effect"])
+
+    def test_activation_beats_useless_reroll(self):
+        """1 gold, everything in the shop costs 3, a usable activation on
+        the board -> 'Activate', not 'roll'."""
+        a = {"tier": 3, "gold": 1, "board": [],
+             "shop_rank": [("BG_TTN_401", 9.0)], "buy_this": "BG_TTN_401",
+             "activations": [{"cid": self.PRISON}],
+             "playable_comps": {}, "choice": None, "target_comp": None,
+             "sell_rank": []}
+        line = value.top_move(a)
+        self.assertIn("1. Activate", line)
+        self.assertFalse(line.startswith("roll"))
+
+    def test_unaffordable_activation_still_rolls(self):
+        a = {"tier": 3, "gold": 1, "board": [],
+             "shop_rank": [("BG_TTN_401", 9.0)], "buy_this": "BG_TTN_401",
+             "activations": [{"cid": self.PRISON}],
+             "playable_comps": {}, "choice": None, "target_comp": None,
+             "sell_rank": []}
+        a["activations"] = [{"cid": "BG32_324"}]  # Drustfallen Butcher: no Activate
+        line = value.top_move(a)
+        self.assertIn("roll", line)
+        self.assertNotIn("Activate", line)
+
+    def test_live_capture(self):
+        """The friendly's usable activation rides the settled options block;
+        opponent-owned, hand-zone, and error!=NONE options don't count."""
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c.friendly = 5
+        OPT = "D 12:00:00.0000000 GameState.DebugPrintOptions() - "
+        for line in [
+            "x STEP MAIN_ACTION",
+            f"{OPT}  id=1",
+            f"{OPT}  option 0 type=POWER mainEntity=[entityName=Refresh id=9 "
+            f"zone=PLAY zonePos=0 cardId=TB_BaconShop_8p_Reroll_Button "
+            f"player=5] error=NONE errorParam=",
+            f"{OPT}  option 1 type=POWER mainEntity=[entityName=Suspicious "
+            f"Prisonguard id=406 zone=PLAY zonePos=3 cardId=BG36_345 "
+            f"player=5] error=NONE errorParam=",
+        ]:
+            c.feed(line)
+        c.tavern_offers()  # settles the block (the live loop polls this)
+        self.assertIn("BG36_345", c.activations)
+        # exhausted / unaffordable / hand-zone / opponent-owned are excluded
+        for line in [
+            f"{OPT}  id=2",
+            f"{OPT}  option 0 type=POWER mainEntity=[entityName=Refresh id=9 "
+            f"zone=PLAY zonePos=0 cardId=TB_BaconShop_8p_Reroll_Button "
+            f"player=5] error=NONE errorParam=",
+            f"{OPT}  option 1 type=POWER mainEntity=[entityName=Suspicious "
+            f"Prisonguard id=406 zone=PLAY zonePos=3 cardId=BG36_345 "
+            f"player=5] error=REQ_ENOUGH_MANA errorParam=",
+            f"{OPT}  option 2 type=POWER mainEntity=[entityName=Suspicious "
+            f"Prisonguard id=500 zone=HAND zonePos=1 cardId=BG36_345 "
+            f"player=5] error=NONE errorParam=",
+            f"{OPT}  option 3 type=POWER mainEntity=[entityName=Suspicious "
+            f"Prisonguard id=406 zone=PLAY zonePos=3 cardId=BG36_345 "
+            f"player=11] error=NONE errorParam=",
+        ]:
+            c.feed(line)
+        c.tavern_offers()  # settle block 2
+        self.assertNotIn("BG36_345", c.activations)
+
+
 class TestSituationLine(unittest.TestCase):
     """The plan's one-line thread above the steps (the 2026-09-06 Guff game
     had 240 stats vs a ~140 lobby and 30 HP with zero armor — every panel

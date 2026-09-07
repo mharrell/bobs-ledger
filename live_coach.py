@@ -65,6 +65,17 @@ _SHOP_BUTTON_OPT = re.compile(
 # A new options block starts (GameState). Options re-print after every game
 # event; each block is the authoritative current shop.
 _OPTIONS_HEADER = re.compile(r"GameState\.DebugPrintOptions\(\) -\s+id=\d+")
+# A board-minion ACTIVATION option: "option 7 type=POWER mainEntity=[...
+# zone=PLAY ... cardId=X player=F] error=NONE" — error=NONE means the
+# activation is usable RIGHT NOW (the game re-prints options after every
+# action, so exhaustion shows up as REQ_NOT_EXHAUSTED_ACTIVATE /
+# REQ_ENOUGH_MANA). Zone=PLAY only: a POWER option on a HAND minion is the
+# play action, not an activation. Owned by the friendly player (shop copies
+# of the same card belong to the tavern/opponent).
+_ACT_OPT = re.compile(
+    r"GameState\.DebugPrintOptions\(\) -\s+option \d+ type=POWER "
+    r"mainEntity=\[entityName=[^\]]*zone=(\w+)[^\]]*cardId=(\w+)"
+    r"[^\]]*player=(\d+)\] error=(\w+)")
 # The tavern upgrade button: "Tavern Tier N" (TechUp0N = upgrade TO tier N).
 # Its COST tag is the REAL upgrade price this turn — BG prices start at
 # (target+3) gold and drop 1 at the start of each round you wait, so the old
@@ -319,6 +330,8 @@ _GAME_DEFAULTS = {
     "_sticky_target": None,  # last shown comp, for sticky same-tribe direction
     "_pending_shop": list,   # offers buffered for the open options block
     "_pending_is_shop": False,  # the open block carries a tavern button
+    "activations": list,     # board card ids with a usable Activate right now
+    "_pending_activations": list,  # buffered for the open options block
     "choice": None,          # pending pick: {'kind','source','options','picked'}
     "techup": dict,          # TechUp button id -> {tier, player, cost, zone}
     "_last_tier": None,
@@ -404,6 +417,7 @@ class LiveCoach:
             self.shop_eids = {}
             self._pending_shop = []
             self._pending_is_shop = False
+            self._pending_activations = []
         # The game re-prints ALL options after every event; each new options
         # block starts with "DebugPrintOptions() - id=N". Offers BUFFER per
         # block and commit only when the block carries a tavern button —
@@ -413,8 +427,17 @@ class LiveCoach:
             self._flush_shop_block()
             self._pending_shop = []
             self._pending_is_shop = False
+            self._pending_activations = []
         if _SHOP_BUTTON_OPT.search(line):
             self._pending_is_shop = True
+        m = _ACT_OPT.search(line)
+        if m:
+            zone, cid, p, err = m.group(1), m.group(2), int(m.group(3)), \
+                m.group(4)
+            if (zone == "PLAY" and err == "NONE"
+                    and self.friendly is not None and p == self.friendly
+                    and cid not in self._pending_activations):
+                self._pending_activations.append(cid)
         # The pending pick (hero / trinket / discover): a choice block opens,
         # then the player's SendChoices resolves it. Track but fall through —
         # actions.feed counts SendChoices for the discover trigger counts.
@@ -685,6 +708,10 @@ class LiveCoach:
         if self._pending_is_shop and self._pending_shop:
             self.shop_cards = [(p, c) for p, c, _e in self._pending_shop]
             self.shop_eids = {c: e for _p, c, e in self._pending_shop}
+        if self._pending_is_shop:
+            # Available board activations ride the same settled shop state
+            # (error=NONE as of this block's print).
+            self.activations = list(self._pending_activations)
 
     def tavern_offers(self):
         """Minion card ids offered by the tavern right now — excludes the
@@ -950,6 +977,10 @@ class LiveCoach:
             "hand": hand_steps,
             "hand_plan": hand_steps,
             "scenario": scenario,
+            # Board activations usable right now (error=NONE in the settled
+            # options block) — the planner turns them into Activate steps
+            # instead of advising a reroll with the last gold.
+            "activations": [{"cid": c} for c in self.activations],
         }
         result["situation"] = situation_line(result)
         result["top_move"] = top_move(result)
