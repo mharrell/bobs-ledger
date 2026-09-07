@@ -288,6 +288,42 @@ class TestActivations(unittest.TestCase):
         self.assertNotIn("BG36_345", c.activations)
 
 
+class TestCommittedMaximizes(unittest.TestCase):
+    """Committed mode (2026-09-07, user principle): once committed to a
+    comp, the shop calculation maximizes THAT comp — a missing core piece
+    outranks a dupe, and both outrank a strong generic body."""
+
+    def test_missing_core_outranks_a_strong_generic(self):
+        # Committed (a core on board): an unowned core card beats an
+        # 11.5-score generic body.
+        comp = {"name": "Beasts - Tasty Lobstah", "tribe": "Beast",
+                "core": ["BG36_202", "BG36_208"], "addons": []}
+        board = [{"card": "BG36_202", "atk": 4, "health": 4,
+                  "tribe": "BEAST"}]
+        ranked = dict(value.shop_ranking(
+            ["BG36_208", "BGS_071"], {"b": comp}, board, comp=comp))
+        self.assertGreater(ranked["BG36_208"], ranked["BGS_071"])
+
+    def test_missing_core_outscores_dupe_by_the_completion_gap(self):
+        """Equal-raw core cards: the missing one (+14) outscores the dupe
+        (+10) by the 4-point completion gap — completing the build leads,
+        copies still score (triples)."""
+        barnstormer = "BG26_162"   # beast body, no engine chain
+        camper = "BG33_886"        # beast body, no engine chain
+        comp = {"name": "Beasts - Test", "tribe": "Beast",
+                "core": [barnstormer, camper], "addons": []}
+        missing = dict(value.shop_ranking(
+            [camper], {"b": comp},
+            [{"card": barnstormer, "atk": 3, "health": 3, "tribe": "BEAST"}],
+            comp=comp))
+        dupe = dict(value.shop_ranking(
+            [camper], {"b": comp},
+            [{"card": barnstormer, "atk": 3, "health": 3, "tribe": "BEAST"},
+             {"card": camper, "atk": 3, "health": 3, "tribe": "BEAST"}],
+            comp=comp))
+        self.assertAlmostEqual(missing[camper], dupe[camper] + 4.0, places=2)
+
+
 class TestSituationLine(unittest.TestCase):
     """The plan's one-line thread above the steps (the 2026-09-06 Guff game
     had 240 stats vs a ~140 lobby and 30 HP with zero armor — every panel
