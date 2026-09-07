@@ -297,15 +297,20 @@ class TestCompCards(unittest.TestCase):
                   "core": ["BG33_140"], "addons": []},
         "demons": {"name": "Demons", "tribe": "Demon",
                    "core": ["BG34_500"], "addons": []},
+        "dragons": {"name": "Dragons - Battlecries", "tribe": "Dragon",
+                    "core": ["BG36_208"], "addons": []},
     }
 
     def test_pivot_override_follows_recent_buys(self):
-        """The board is backward-looking: two old Naga cores on the board
-        kept the tracker 'committed to Nagas' for five straight LEVEL-first
-        advisories in the 2026-09-04 Varden game while the player built
-        Demons. Recent acquisitions of a different comp must win."""
+        """The board is backward-looking: two old Naga cores among a mixed
+        board kept the tracker 'committed to Nagas' for five straight
+        LEVEL-first advisories in the 2026-09-04 Varden game while the
+        player built Demons. Recent acquisitions of a different comp must
+        win when the old comp is a minority remnant of the board."""
         board = [{"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"},
-                 {"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"}]
+                 {"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"},
+                 {"card": "BG21_000", "atk": 2, "health": 4, "tribe": "BEAST"},
+                 {"card": "BG21_000", "atk": 2, "health": 4, "tribe": "BEAST"}]
         recent = ["BG34_500", "BG34_500"]  # demon cores bought this turn
         target = value.comp_target(board, self.COMPS, recent_cards=recent)
         self.assertEqual(target["name"], "Demons")
@@ -315,6 +320,21 @@ class TestCompCards(unittest.TestCase):
                  {"card": "BG33_140", "atk": 2, "health": 4, "tribe": "NAGA"}]
         target = value.comp_target(board, self.COMPS, recent_cards=["BG34_500"])
         self.assertEqual(target["name"], "Nagas")
+
+    def test_board_dominant_commit_holds_on_a_tie(self):
+        """A deep single-tribe board is the commitment: 2 incidental recent
+        buys of another comp must not flip it (2026-09-07 live: 'pivot to
+        Beasts' over a five-dragon board with a 278/212 Tarecgosa)."""
+        dragon = {"card": "BG21_000", "atk": 2, "health": 4,
+                  "tribe": "DRAGON"}
+        board = [{"card": "BG36_208", "atk": 9, "health": 9,
+                  "tribe": "DRAGON"},
+                 {"card": "BG36_208", "atk": 9, "health": 9,
+                  "tribe": "DRAGON"},
+                 dragon, dict(dragon), dict(dragon), dict(dragon)]
+        recent = ["BG34_500", "BG34_500"]
+        target = value.comp_target(board, self.COMPS, recent_cards=recent)
+        self.assertEqual(target["name"], "Dragons - Battlecries")
 
     def test_same_comp_recent_buys_not_a_pivot(self):
         """Buying more Naga cores stays committed to Nagas (no flip-flop)."""

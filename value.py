@@ -1162,6 +1162,17 @@ def _core_hits(board, rc, cores):
             + sum(1 for c in rc if c in cores))
 
 
+def _board_tribe_share(comp, board):
+    """The fraction of the current board that shares the comp's tribe —
+    the 'is this build the board' signal used to break evidence ties."""
+    tribe = normalize(comp.get("tribe") or "")
+    if not tribe or not board:
+        return 0.0
+    hits = sum(1 for m in board
+               if normalize(m.get("tribe")) in tribe.split("/"))
+    return hits / len(board)
+
+
 def comp_progress(board, comps, recent_cards=None, top=4):
     """Commit readiness per candidate comp — the meter behind comp_target's
     rule (UI: the "Comp direction" box shows how close each candidate is to
@@ -1224,7 +1235,9 @@ def comp_target(board, comps, recent_cards=None):
     two of acquisitions (copies count — a pivot is often 3x one core; the
     board alone is backward-looking, the 2026-09-04 Varden game pushed
     LEVEL for five phases while the player built Demons). A recent-hits
-    override beats a board commit from a DIFFERENT comp. Below a comp
+    override beats a board commit from a DIFFERENT comp only with strictly
+    more evidence — on a tie the board wins (2026-09-07: 2 recent beast
+    buys yanked the direction off a five-dragon board). Below a comp
     commit, TRIBE-level evidence counts: >=2 core hits spread across comps
     of one tribe point at the tribe (the 2026-09-04 beasts game built
     Tasty Lobster + Banana Slamma — two beasts comps — and the coach stayed
@@ -1236,12 +1249,20 @@ def comp_target(board, comps, recent_cards=None):
     def core_hits(comp):
         return _core_hits(board, rc, set(comp.get("core", [])))
 
-    committed = None
+    committed = None   # (comp, overlap, board_dominant)
     for comp in comps.values():
-        # Copies count (a commit is often 2x/3x one core, same as a pivot)
+        # Copies count (a commit is often 2x/3x one core, same as a pivot).
+        # Ties break on BOARD DOMINANCE: a comp whose tribe is a strict
+        # majority of the board is the live build (2026-09-07: a five-dragon
+        # board with a 278/212 Tarecgosa), while remnants are a minority of
+        # a mixed board being sold off (the 2026-09-04 Varden pivot).
         overlap = core_hits(comp)
-        if overlap >= 2 and (committed is None or overlap > committed[1]):
-            committed = (comp, overlap)
+        if overlap < 2:
+            continue
+        dominant = _board_tribe_share(comp, board) > 0.5
+        key = (overlap, dominant)
+        if committed is None or key > (committed[1], committed[2]):
+            committed = (comp, overlap, dominant)
     if rc:
         best_recent = None
         for comp in comps.values():
@@ -1251,7 +1272,14 @@ def comp_target(board, comps, recent_cards=None):
             hits = sum(1 for c in rc if c in cores)
             if hits >= 2 and (best_recent is None or hits > best_recent[1]):
                 best_recent = (comp, hits)
-        if best_recent:
+        if best_recent and (committed is None
+                            or best_recent[1] > committed[1]
+                            or not committed[2]):
+            # A recent-acquisition override beats the board commit when it
+            # carries strictly more evidence, or when the board commit is a
+            # MINORITY remnant of a mixed board (a real pivot: the board
+            # lags, the buys lead). A board-dominant commit holds on a tie
+            # — the thing actually fighting stays the direction.
             return best_recent[0]
     if committed:
         return committed[0]
