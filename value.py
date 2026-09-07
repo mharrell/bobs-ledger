@@ -934,8 +934,14 @@ def _top_move_text(analysis):
                     break
             if fallback is None:
                 if budget:  # a roll costs 1 — with nothing left it isn't advice
-                    roll = (f"roll — {names.get(cid, cid)} costs {cost}, "
-                            f"{budget} left")
+                    # Gold doesn't carry over between turns, so spending the
+                    # last gold on a refresh beats passing; say WHAT didn't
+                    # fit, not "costs 3, 1 left" (read as "buy it" — the
+                    # 2026-09-06 user question).
+                    when = " after the level" if level_next else ""
+                    roll = (f"roll — best shop card ({names.get(cid, cid)}, "
+                            f"{cost}g) doesn't fit your {budget} gold left"
+                            f"{when}")
                     parts.append(roll)
                     analysis["buy_step_roll"] = roll
                 cid = None  # nothing affordable — don't also say "Buy X"
