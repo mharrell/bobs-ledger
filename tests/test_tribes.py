@@ -69,5 +69,49 @@ class TestIsBanned(unittest.TestCase):
         self.assertFalse(is_banned("WEIRDRACE", ["Beast"]))
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestTribeBanKillsComps(unittest.TestCase):
+    """A comp whose own tribe is banned drops regardless of core composition
+    (2026-09-07 live: the coach pivoted to Nagas with Naga banned —
+    nagas-end-of-turn has only ONE naga-tribe core card, so the
+    core-majority degraded-keep rule alone passed it). The core rule then
+    only governs HYBRID comps whose tribe is allowed (the 2026-09-05
+    Sky-hatch case: Naga allowed, the Dragon piece banned -> degraded
+    keep with _blocked_core)."""
+
+    COMPS = {
+        "nagas-eot": {"name": "Nagas - End Of Turn/Spell Buff",
+                      "tribe": "Naga",
+                      "core": ["BG32_821", "BG26_ICC_901", "BG36_640",
+                               "BG32_837", "BG35_883"], "addons": []},
+        "groundbreaker": {"name": "Nagas - Groundbreaker", "tribe": "Naga",
+                          "core": ["BG31_035", "BG36_243", "BG35_883",
+                                   "BG34_925"], "addons": []},
+        "beasts": {"name": "Beasts - Test", "tribe": "Beast",
+                   "core": ["BG36_202"], "addons": []},
+    }
+
+    def _filter(self, allowed):
+        from bans import filter_comps_by_available_tribes
+        races = {"BG32_821": ["Demon"], "BG26_ICC_901": None,
+                 "BG36_640": None, "BG32_837": ["Naga"], "BG35_883": None,
+                 "BG31_035": ["Naga"], "BG36_243": ["Dragon"],
+                 "BG34_925": ["Naga"], "BG36_202": ["Beast"]}
+        return filter_comps_by_available_tribes(self.COMPS, races,
+                                                allowed)
+
+    def test_banned_tribe_drops_all_its_comps(self):
+        # Naga banned: BOTH naga comps die — even the one with only 1 of 5
+        # naga-tribe core cards.
+        allowed = ["Beast", "Demon", "Dragon", "Quilboar", "Undead"]
+        filtered = self._filter(allowed)
+        self.assertEqual(set(filtered), {"beasts"})
+
+    def test_hybrid_comp_survives_with_blocked_pieces(self):
+        # Naga ALLOWED, Dragon banned: groundbreaker degraded-keeps with
+        # the Dragon core piece marked.
+        allowed = ["Beast", "Naga", "Quilboar", "Undead", "Elemental"]
+        got = self._filter(allowed)
+        self.assertIn("groundbreaker", got)
+        self.assertEqual(got["groundbreaker"].get("_blocked_core"),
+                         ["BG36_243"])
+        self.assertIn("nagas-eot", got)
