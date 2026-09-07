@@ -324,6 +324,55 @@ class TestCommittedMaximizes(unittest.TestCase):
         self.assertAlmostEqual(missing[camper], dupe[camper] + 4.0, places=2)
 
 
+class TestSharedUtilityCores(unittest.TestCase):
+    """Core cards shared across comps of >=4 tribes are utility, not build
+    evidence (2026-09-07 dragon game: Balinda — core of 7 comps across 5
+    tribes — plus one dragon piece manufactured 'Nagas - Groundbreaker'
+    direction at t7-t9 on a board that was never naga). Brann (3 tribes)
+    deliberately stays: battlecry comps genuinely share him."""
+
+    BALINDA = "BG35_883"
+    SKYHATCH = "BG36_243"
+
+    # Balinda core of comps across 4+ tribes — the shared-utility trigger.
+    def _comps(self):
+        return {
+            "groundbreaker": {
+                "name": "Nagas - Groundbreaker", "tribe": "Naga",
+                "core": ["BG31_035", self.SKYHATCH, self.BALINDA],
+                "addons": []},
+            "demons": {"name": "Demons - Test", "tribe": "Demon",
+                       "core": ["BG34_500", self.BALINDA], "addons": []},
+            "mechs": {"name": "Mechs - Test", "tribe": "Mech",
+                      "core": ["BG21_000", self.BALINDA], "addons": []},
+            "pirates": {"name": "Pirates - Test", "tribe": "Pirate",
+                        "core": ["BG19_000", self.BALINDA], "addons": []},
+        }
+
+    def test_balinda_does_not_manufacture_direction(self):
+        board = [{"card": self.BALINDA, "atk": 4, "health": 4},
+                 {"card": self.SKYHATCH, "atk": 4, "health": 4}]
+        # Balinda + Sky-hatch used to read 2 hits = a naga commit; with
+        # Balinda excluded it's 1 specific hit — no direction, and the
+        # meter row reads 1 hit (not 2).
+        self.assertIsNone(value.comp_target(board, self._comps()))
+        rows = value.comp_progress(board, self._comps())
+        self.assertEqual(rows[0]["hits"], 1)
+
+    def test_specific_cores_still_commit(self):
+        board = [{"card": "BG31_035", "atk": 4, "health": 4},
+                 {"card": self.SKYHATCH, "atk": 4, "health": 4}]
+        target = value.comp_target(board, self._comps())
+        self.assertEqual(target["name"], "Nagas - Groundbreaker")
+
+    def test_shared_card_stays_in_shopping_list(self):
+        comps = self._comps()
+        tc = value.comp_cards(comps["groundbreaker"], [])
+        by_card = {r["card"]: r for r in tc["core"]}
+        self.assertIn(self.BALINDA, by_card)  # the list keeps it
+        self.assertFalse(by_card[self.BALINDA]["owned"])
+
+
 class TestSituationLine(unittest.TestCase):
     """The plan's one-line thread above the steps (the 2026-09-06 Guff game
     had 240 stats vs a ~140 lobby and 30 HP with zero armor — every panel

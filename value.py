@@ -1162,6 +1162,36 @@ def _core_hits(board, rc, cores):
             + sum(1 for c in rc if c in cores))
 
 
+def _shared_utility_cores(comps, min_tribes=4):
+    """Core cards shared across comps of >= min_tribes are SHARED UTILITY:
+    their presence says 'good player', not 'this build', and they are
+    excluded from commit evidence.
+
+    The 2026-09-07 dragon game manufactured 'Nagas - Groundbreaker'
+    direction at t7-t9 from Balinda + one dragon piece on a board that was
+    never naga — Balinda is core of 7 comps across 5 tribes, so any board
+    holding her is one incidental piece away from fake evidence in five
+    directions. Brann (3 tribes) deliberately stays: battlecry comps
+    genuinely share him and excluding him gutted the dragon commit in
+    testing. These cards stay in the shopping lists and glue floors — the
+    card is still part of the comp, it just can't MANUFACTURE the
+    direction.
+    """
+    from collections import defaultdict
+    spread = defaultdict(set)
+    for comp in comps.values():
+        for cid in set(comp.get("core", [])):
+            spread[cid].add(comp.get("tribe"))
+    return {cid for cid, tribes in spread.items()
+            if len({t for t in tribes if t}) >= min_tribes}
+
+
+def _evidence_core_ids(comp, comps):
+    """The comp's core MINUS shared-utility cards (see
+    _shared_utility_cores) — the ids that count toward commit evidence."""
+    return set(comp.get("core", [])) - _shared_utility_cores(comps)
+
+
 def _board_tribe_share(comp, board):
     """The fraction of the current board that shares the comp's tribe —
     the 'is this build the board' signal used to break evidence ties."""
@@ -1189,9 +1219,10 @@ def comp_progress(board, comps, recent_cards=None, top=4):
     """
     rc = list(recent_cards or [])
     board_cards = {m["card"] for m in board}
+    shared = _shared_utility_cores(comps)
     rows = []
     for comp in comps.values():
-        cores = set(comp.get("core", []))
+        cores = set(comp.get("core", [])) - shared
         hits = _core_hits(board, rc, cores)
         if hits:
             blocked = set(comp.get("_blocked_core") or [])
@@ -1245,9 +1276,11 @@ def comp_target(board, comps, recent_cards=None):
     None — None is meaningful ("no direction yet").
     """
     rc = list(recent_cards or [])  # copies count: a pivot is often 3x one core
+    shared = _shared_utility_cores(comps)
 
     def core_hits(comp):
-        return _core_hits(board, rc, set(comp.get("core", [])))
+        return _core_hits(board, rc,
+                          set(comp.get("core", [])) - shared)
 
     committed = None   # (comp, overlap, board_dominant)
     for comp in comps.values():
@@ -1268,7 +1301,7 @@ def comp_target(board, comps, recent_cards=None):
         for comp in comps.values():
             if committed and comp is committed[0]:
                 continue  # more of the same comp is not a pivot
-            cores = set(comp.get("core", []))
+            cores = set(comp.get("core", [])) - shared
             hits = sum(1 for c in rc if c in cores)
             if hits >= 2 and (best_recent is None or hits > best_recent[1]):
                 best_recent = (comp, hits)
