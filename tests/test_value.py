@@ -379,6 +379,22 @@ class TestHandPlan(unittest.TestCase):
         self.assertEqual(value.hand_plan(
             [{"card": "UNKNOWN_SPELL_X", "type": "spell"}]), [])
 
+    def test_make_room_never_sells_a_held_card(self):
+        """One plan, one direction (2026-09-06 Guff t12): the hand said
+        'Hold Sewer Lord — a 3rd copy turns it golden' and the same panel's
+        make-room step said 'sell Sewer Lord'. The make-room walk must skip
+        held cards; if the only filler is held, the golden hunt outranks
+        the slot and no sell step appears."""
+        a = {"board": [{"card": "BG33_140", "atk": 2, "health": 2}] * 7,
+             "sell_rank": [("BG33_140", 8.0), ("BG36_511", 30.0)],
+             "hand_plan": [{"card": "BG33_140", "verb": "hold",
+                            "name": "Sewer Lord", "score": 8.0}],
+             "buy_this": "BG36_202", "shop_rank": [("BG36_202", 9.0)],
+             "gold": 3, "tier": 5, "playable_comps": {}, "hand_plan": None}
+        line = value.top_move(a)
+        self.assertNotIn("sell BG33_140", line)
+        self.assertNotIn("sell Sewer", line)
+
     def test_triple_awareness(self):
         """2 on board: the hand copy IS the triple — play now. 1 on board:
         hold it and hunt a 3rd (2026-09-05: the coach said "Play Balinda"

@@ -875,12 +875,22 @@ def _top_move_text(analysis):
                                  if level_flip_why else
                                  f"LEVEL next turn — {short}; roll meanwhile")
     # 4. Sell only to make room: board full AND buying something that needs
-    # the slot. If there's space, selling is unnecessary.
+    # the slot. If there's space, selling is unnecessary. Held cards are
+    # exempt: the hand plan said "hold — a 3rd copy turns it golden", and
+    # the same panel must not also say to sell it (2026-09-06 Guff t12:
+    # "3. Hold Sewer Lord" + "6. sell Sewer Lord" in one plan). If the only
+    # filler is held, the golden hunt outranks the slot — no sell step.
     if bought is not None and len(analysis.get("board", [])) >= 7 \
             and analysis.get("sell_rank"):
-        worst = analysis["sell_rank"][0]  # safest to sell
-        if worst[1] < SELL_FILLER_SCORE:  # a clear filler (low value)
-            parts.append(f"sell {names.get(worst[0], worst[0])} (making room)")
+        held = {s["card"] for s in (analysis.get("hand_plan") or [])
+                if s.get("verb") == "hold"}
+        for worst in analysis["sell_rank"]:
+            if worst[0] in held:
+                continue  # the golden hunt outranks the slot
+            if worst[1] < SELL_FILLER_SCORE:  # a clear filler (low value)
+                parts.append(f"sell {names.get(worst[0], worst[0])} "
+                             f"(making room)")
+            break
     # The stay decision (Q1) trails the buys: what the comp needs is ON this
     # tier, and the player should know the level was declined on purpose.
     if stay_note and tier:
