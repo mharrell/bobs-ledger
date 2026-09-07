@@ -649,6 +649,90 @@ def top_move(analysis):
 MINION_BUY_PRICE = 3   # the patch's flat default for ALL tiers of minions
 
 
+def _tribe_of(comp_name):
+    """'Beasts - Tasty Lobstah' -> 'Beasts' — the display-level tribe half
+    of a comp name (comp_target's tribe field is canonical, this is the
+    label)."""
+    return (comp_name or "").split(" - ")[0]
+
+
+def sticky_comp_target(prev, new, prev_hits, new_hits):
+    """Which comp to SHOW as the build direction.
+
+    The 2026-09-06 Guff game churned 'Summon Beetles' -> 'Tasty Lobstah'
+    phase-to-phase on identical tribe evidence — same build, different
+    name, reading to the player as 'which build am I actually doing?'.
+    When the new target shares the previous target's TRIBE, keep the
+    previous comp unless the new one carries strictly more core evidence
+    (board + recent hits, copies included — the caller computes both with
+    _core_hits). Cross-tribe pivots always pass through — stickiness must
+    never fight the pivot override.
+    """
+    if prev is None or new is None:
+        return new
+    if prev.get("tribe") != new.get("tribe"):
+        return new  # a cross-tribe pivot is always shown
+    return new if new_hits > prev_hits else prev
+
+
+def situation_line(analysis):
+    """One-line situation read, rendered above the plan steps.
+
+    The Guff game (2026-09-06, 3rd place) had the pieces on screen — 240
+    stats vs a ~140 lobby, 30 HP with ZERO armor since t7 — but no panel
+    ever said "one bad fight kills". This is the plan's thread: direction,
+    strength, danger, in that order, at most ~3 clauses.
+    """
+    bits = []
+    target = analysis.get("target_comp")
+    if target:
+        tribe = _tribe_of(target)
+        state = analysis.get("target_state")
+        bits.append(f"{tribe} build — "
+                    + ("scaling" if state == "committing" else "hunting pieces"))
+    bs = analysis.get("board_stats")
+    theirs = analysis.get("opp_stats")
+    source_is_baseline = False
+    if theirs is None:
+        theirs = analysis.get("lobby_opp")
+    if theirs is None:
+        theirs = analysis.get("baseline_opp")
+        source_is_baseline = True
+    if bs and theirs:
+        # "~" marks an estimate; the corpus baseline is labelled as such —
+        # calling 240 stats "behind" a historical median while the real
+        # lobby sits at 140 would be the wrong alarm.
+        mark = "~" if theirs != analysis.get("opp_stats") else ""
+        ratio = bs / max(theirs, 1)
+        if ratio >= 1.5:
+            bits.append(f"strong ({bs} vs {mark}{int(theirs)})")
+        elif ratio < 0.75:
+            label = "behind baseline" if source_is_baseline else "behind"
+            bits.append(f"{label} ({bs} vs {mark}{int(theirs)})")
+    streak = analysis.get("loss_streak") or 0
+    if streak >= 2:
+        bits.append(f"lost {streak} straight")
+    health = analysis.get("health")
+    armor = analysis.get("armor") or 0
+    # The mortality clock keys on the REAL lobby (fought/announced boards),
+    # never the historical baseline — a high baseline median at a late turn
+    # is not the lobby you're about to fight.
+    lobby = analysis.get("opp_stats") or analysis.get("lobby_opp")
+    if health is not None and lobby:
+        if health + armor <= 12:
+            bits.append(f"DYING at {health}"
+                        + (f"+{armor}" if armor else "") + " — buy board now")
+        elif armor == 0 and lobby >= 100:
+            # No armor buffer left and the lobby's boards are big enough
+            # that one lost fight can take 30+ — the silent mortality clock
+            # (t7-t12 of the Guff game were all wins, then one fight ended
+            # it).
+            bits.append(f"no armor at {health} — one bad fight can end it")
+    if not bits:
+        return None
+    return " · ".join(bits[:3])
+
+
 def _buy_prices(analysis):
     """Buy prices for the shop overlay/affordability walk.
 

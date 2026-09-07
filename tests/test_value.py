@@ -212,6 +212,58 @@ class TestCompProgress(unittest.TestCase):
         self.assertFalse(by_name["Lobstah"]["ready"])  # 1 hit each, not a commit
 
 
+class TestSituationLine(unittest.TestCase):
+    """The plan's one-line thread above the steps (the 2026-09-06 Guff game
+    had 240 stats vs a ~140 lobby and 30 HP with zero armor — every panel
+    stayed silent about the one thing that mattered: one bad fight kills)."""
+
+    def test_zero_armor_mortality(self):
+        a = {"target_comp": "Beasts - Tasty Lobstah", "target_state": "committing",
+             "board_stats": 240, "lobby_opp": 140, "health": 30, "armor": 0}
+        line = value.situation_line(a)
+        self.assertIn("Beasts build", line)
+        self.assertIn("strong (240 vs ~140)", line)
+        self.assertIn("no armor at 30 — one bad fight can end it", line)
+
+    def test_dying_overrides(self):
+        a = {"target_comp": None, "board_stats": 40, "lobby_opp": 200,
+             "health": 8, "armor": 2, "loss_streak": 3}
+        line = value.situation_line(a)
+        self.assertIn("DYING at 8+2 — buy board now", line)
+        self.assertIn("lost 3 straight", line)
+
+    def test_quiet_when_nothing_to_say(self):
+        # Early game, armor up, no direction: no invented drama.
+        a = {"board_stats": 6, "lobby_opp": 8, "health": 30, "armor": 12,
+             "target_comp": None}
+        self.assertIsNone(value.situation_line(a))
+
+
+class TestStickyCompTarget(unittest.TestCase):
+    """Same-tribe target churn (Summon Beetles -> Tasty Lobstah phase to
+    phase) read as 'which build am I doing?' — the previous comp sticks
+    unless the new one carries strictly more core evidence."""
+
+    BEETLES = {"name": "Beasts - Summon Beetles", "tribe": "Beast"}
+    LOBSTAH = {"name": "Beasts - Tasty Lobstah", "tribe": "Beast"}
+    NAGAS = {"name": "Nagas - Groundbreaker", "tribe": "Naga"}
+
+    def test_same_tribe_sticks(self):
+        self.assertIs(
+            value.sticky_comp_target(self.BEETLES, self.LOBSTAH, 2, 2),
+            self.BEETLES)
+
+    def test_more_evidence_switches(self):
+        self.assertIs(
+            value.sticky_comp_target(self.BEETLES, self.LOBSTAH, 2, 3),
+            self.LOBSTAH)
+
+    def test_cross_tribe_pivot_always_passes(self):
+        self.assertIs(
+            value.sticky_comp_target(self.BEETLES, self.NAGAS, 3, 1),
+            self.NAGAS)
+
+
 class TestUndeadEngine(unittest.TestCase):
     """The undead-attack-scaling engine (added 2026-09-06: the comp is
     S-tier but had no model — the coach drifted while the player built it).
