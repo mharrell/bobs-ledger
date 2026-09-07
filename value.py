@@ -646,19 +646,34 @@ def top_move(analysis):
     return text
 
 
+MINION_BUY_PRICE = 3   # the patch's flat default for ALL tiers of minions
+
+
+def _buy_prices(analysis):
+    """Buy prices for the shop overlay/affordability walk.
+
+    Minions cost a FLAT 3 (the current patch's default for ALL tiers) — the
+    shop entities' tag=479 values are stale legacy tier costs: the
+    2026-09-06 23:00 log charged RESOURCES_USED=3 for Buzzing Vermin and
+    Decoy Conjurer whose tags said 1, and the player confirmed the rule
+    ("the default price for all minions of all tiers is THREE GOLD"). The
+    DB's `tier` was never a price. Tavern spells keep their own per-spell
+    price: the log's COST tag for spell entities, else the spell DB.
+    """
+    spell_db = _load_spell_db()
+    costs = {c: MINION_BUY_PRICE for c in _load_card_db()}
+    costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
+    costs.update({c: v for c, v in (analysis.get("shop_costs") or {}).items()
+                  if c in spell_db})
+    return costs
+
+
 def _top_move_text(analysis):
     """Render top_move's numbered steps (the planner proper; see top_move)."""
     names = _load_bg_names()
     card_db = _load_card_db()
     spell_db = _load_spell_db()
-    # Tavern prices: the log's live COST tag (per offer entity — since patch
-    # 36.4.x buy cost is per-card and decoupled from TECH_LEVEL, so the DB
-    # tier is a stale price), else minion = its tier, spell = its cost.
-    # Prefer a KNOWN price — an unpriceable card can't be promised as
-    # affordable.
-    costs = {c: (v or {}).get("tier") for c, v in card_db.items()}
-    costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
-    costs.update(analysis.get("shop_costs") or {})
+    costs = _buy_prices(analysis)
     comp = _best_comp(analysis.get("board", []), analysis.get("playable_comps") or {})
     tier = analysis.get("tier")
     gold = analysis.get("gold")

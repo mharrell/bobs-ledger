@@ -548,21 +548,24 @@ class TestBoardFallback(unittest.TestCase):
 
 class TestBuyStep(unittest.TestCase):
     def _analysis(self, gold, budget_card_first=True):
-        from value import top_move, _load_card_db
+        from value import top_move, _load_card_db, _load_spell_db
         db = _load_card_db()
-        priced = [(cid, v["tier"]) for cid, v in db.items() if v.get("tier")]
-        hi = next(cid for cid, t in priced if t >= 3)
-        lo = next(cid for cid, t in priced if t == 1)
+        hi = next(cid for cid, v in db.items()
+                  if v.get("tier") and v["tier"] >= 3)
+        # minions cost a flat 3 now — the walk-down target is a 2-cost spell
+        spell = next(cid for cid, v in _load_spell_db().items()
+                     if (v or {}).get("cost") == 2)
         a = {"tier": 2, "gold": gold, "level_cost": 5, "board": [],
-             "shop_rank": [(hi, 9.0), (lo, 4.0)], "buy_this": hi,
+             "shop_rank": [(hi, 9.0), (spell, 4.0)], "buy_this": hi,
              "playable_comps": {}, "choice": None, "target_comp": None,
              "sell_rank": []}
-        return a, hi, lo, top_move
+        return a, hi, spell, top_move
 
     def test_unaffordable_headline_walks_down(self):
-        """Gold 6, level 5, headline costs 3: the plan buys the affordable
-        card, and buy_step_card says so (the UI's Buy box must agree)."""
-        a, hi, lo, top_move = self._analysis(6)
+        """Gold 7, level 5 (budget 2), headline minion costs 3: the plan buys
+        the affordable 2-cost spell, and buy_step_card says so (the UI's Buy
+        box must agree)."""
+        a, hi, lo, top_move = self._analysis(7)
         tm = top_move(a)
         self.assertEqual(a["buy_step_card"], lo)
         self.assertIn("Buy", tm)

@@ -108,47 +108,52 @@ class TestShopCostMap(unittest.TestCase):
 
 
 class TestTopMoveAffordability(unittest.TestCase):
-    """top_move must never bless a Buy the purse can't cover — with the LOG
-    cost, not the DB tier."""
+    """top_move must never bless a Buy the purse can't cover. Minions cost a
+    FLAT 3 (the patch's default for ALL tiers — the log's tag=479 minion
+    values are stale legacy costs: 2026-09-06 charged 3 for tags saying 1,
+    player-confirmed); tavern spells keep their own prices."""
 
     def _analysis(self, gold, cid, cost):
         return {"gold": gold, "buy_this": cid, "shop_costs": {cid: cost},
                 "shop_rank": [[cid, 5.0]], "board": [], "turn": 9}
 
-    def test_db_tier_lies_log_cost_decides(self):
-        # Lullabot: DB tier 1 (would be "affordable" at 1 gold) but the log
-        # says COST 2 — the recommendation must be a roll, not a buy.
-        a = self._analysis(1, LULLABOT, 2)
+    def test_minion_costs_flat_three(self):
+        # The stale log tag says 1 and the DB tier says 1 — the minion still
+        # costs 3, so 2 gold must NOT bless the buy.
+        a = self._analysis(2, LULLABOT, 1)
         text = value.top_move(a)
         self.assertNotIn("buy", [s["kind"] for s in a["top_move_steps"]])
         self.assertIsNone(a["buy_step_card"])
         self.assertIn("roll", text)
 
-    def test_log_cost_affordable_buys(self):
-        a = self._analysis(2, LULLABOT, 2)
+    def test_minion_affordable_at_three(self):
+        a = self._analysis(3, LULLABOT, 1)
         text = value.top_move(a)
         self.assertIn("buy", [s["kind"] for s in a["top_move_steps"]])
         self.assertEqual(a["buy_step_card"], LULLABOT)
 
-    def test_log_cost_cheaper_than_db_tier(self):
-        # The override works both ways: a DB tier-3 card the log prices at 1
-        # is buyable at 1 gold.
-        cid = next(c for c, v in value._load_card_db().items()
-                   if (v or {}).get("tier") == 3)
-        a = self._analysis(1, cid, 1)
+    def test_spell_log_cost_decides(self):
+        # A tavern spell's own log COST tag is real: a tier-5 spell priced
+        # at 2 is buyable at 2 gold even though the spell DB says more.
+        spell_db = value._load_spell_db()
+        cid = next(c for c, v in spell_db.items()
+                   if (v or {}).get("cost", 0) and (v or {}).get("cost") > 2)
+        a = self._analysis(2, cid, 2)
         value.top_move(a)
         self.assertEqual(a["buy_step_card"], cid)
 
-    def test_fallback_walk_uses_log_costs(self):
-        # Headline unaffordable, a cheaper shop card affordable — the ranking
-        # walk must price both from the log costs.
-        alt = next(c for c, v in value._load_card_db().items()
-                   if (v or {}).get("tier") == 1 and c != LULLABOT)
-        a = self._analysis(1, LULLABOT, 2)
-        a["shop_costs"][alt] = 1
-        a["shop_rank"] = [[LULLABOT, 5.0], [alt, 3.0]]
+    def test_spell_fallback_walk_uses_log_costs(self):
+        # Headline (a minion at 3) unaffordable, a cheaper spell affordable —
+        # the ranking walk must price both correctly.
+        spell_db = value._load_spell_db()
+        spell = next(c for c, v in spell_db.items()
+                     if (v or {}).get("cost", 0) > 2)
+        alt = next(c for c in spell_db if c != spell)
+        a = self._analysis(2, LULLABOT, 99)
+        a["shop_costs"][spell] = 2
+        a["shop_rank"] = [[LULLABOT, 5.0], [spell, 3.0]]
         value.top_move(a)
-        self.assertEqual(a["buy_step_card"], alt)
+        self.assertEqual(a["buy_step_card"], spell)
 
 
 class TestShopCostMapEntityExact(unittest.TestCase):
