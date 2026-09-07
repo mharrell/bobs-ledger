@@ -572,6 +572,58 @@ class TestBoardEstimate(unittest.TestCase):
         self.assertEqual(_estimate_board([], 3), [])
 
 
+class TestStickyBanGate(unittest.TestCase):
+    """The sticky direction must respect the ban filter: before the 5/5 ban
+    resolves the coach runs fail-open with every comp playable, so a target
+    can lock in that window — and the hold then kept showing Nagas AFTER
+    Naga was banned (2026-09-07, twice)."""
+
+    def test_removed_comp_releases_the_direction(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = 3
+        c.account = "TestAccount"
+        c._bans_ready = True
+        c.allowed = ["Beast"]
+        beast = {"name": "Beasts - Test", "tribe": "Beast",
+                 "core": ["BG36_202"], "addons": []}
+        naga = {"name": "Nagas - Groundbreaker", "tribe": "Naga",
+                "core": ["BG31_035"], "addons": []}
+        c.playable = {"beasts": beast}          # the ban already dropped nagas
+        c._sticky_target = naga                 # locked in the fail-open window
+        # a naga core is on the board (sub-threshold: 1 hit would hold)
+        c.gs.feed(f"{GS}FULL_ENTITY - Creating ID=50 CardID=BG31_035")
+        c.gs.feed(f"{GS}    tag=CONTROLLER value=7")
+        c.gs.feed(f"{GS}    tag=ZONE value=PLAY")
+        c.gs.feed(f"{GS}    tag=CARDTYPE value=MINION")
+        c.gs.feed(f"{GS}    tag=ATK value=3")
+        c.gs.feed(f"{GS}    tag=HEALTH value=3")
+        a = c.analyze()
+        self.assertIsNone(a["target_comp"])
+
+    def test_still_playable_comp_holds(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = 3
+        c.account = "TestAccount"
+        c._bans_ready = True
+        c.allowed = ["Beast", "Naga"]
+        naga = {"name": "Nagas - Groundbreaker", "tribe": "Naga",
+                "core": ["BG31_035"], "addons": []}
+        c.playable = {"nagas": naga}
+        c._sticky_target = naga
+        c.gs.feed(f"{GS}FULL_ENTITY - Creating ID=50 CardID=BG31_035")
+        c.gs.feed(f"{GS}    tag=CONTROLLER value=7")
+        c.gs.feed(f"{GS}    tag=ZONE value=PLAY")
+        c.gs.feed(f"{GS}    tag=CARDTYPE value=MINION")
+        c.gs.feed(f"{GS}    tag=ATK value=3")
+        c.gs.feed(f"{GS}    tag=HEALTH value=3")
+        a = c.analyze()
+        self.assertEqual(a["target_comp"], "Nagas - Groundbreaker")
+
+
 class TestBuyStep(unittest.TestCase):
     def _analysis(self, gold, budget_card_first=True):
         from value import top_move, _load_card_db, _load_spell_db
