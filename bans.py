@@ -128,6 +128,15 @@ def filter_comps_by_available_tribes(comps, card_races, allowed_tribes):
     allowed = set(allowed_tribes)
     playable = {}
     for slug, comp in comps.items():
+        # The comp's own TRIBE is the first gate (2026-09-07, live report:
+        # the coach pivoted to Nagas with Naga banned — nagas-end-of-turn
+        # has only ONE naga-tribe core card, so the core-majority rule
+        # alone passed it). A comp whose tribe is banned is unplayable no
+        # matter how its core divides; the core rule below then only
+        # governs hybrid comps whose tribe IS allowed.
+        tribe = comp.get("tribe")
+        if tribe and canon(tribe) not in allowed:
+            continue
         blocked = []
         for cid in comp.get("core", []):
             races = card_races.get(cid)
