@@ -29,7 +29,8 @@ from player_actions import (
 from choices import _CHOICE_HEADER, _CHOICE_OPT, _CHOICE_SOURCE, _CHOSEN, choice_kind, rank_choices
 from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
-    comp_target, target_state, hand_plan, _load_spell_db,
+    comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
+    situation_line, sticky_comp_target,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -315,6 +316,7 @@ _GAME_DEFAULTS = {
     "cur_lines": list,
     "shop_cards": list,
     "shop_eids": dict,       # shop card id -> offer entity id (exact pricing)
+    "_sticky_target": None,  # last shown comp, for sticky same-tribe direction
     "_pending_shop": list,   # offers buffered for the open options block
     "_pending_is_shop": False,  # the open block carries a tavern button
     "choice": None,          # pending pick: {'kind','source','options','picked'}
@@ -785,6 +787,20 @@ class LiveCoach:
             self.actions.turn_buys[-1] if self.actions.turn_buys else [],
             friendly)
         target = comp_target(board, self.playable, recent_cards=recent)
+        # Sticky same-tribe direction (2026-09-06 Guff game: the target
+        # churned 'Summon Beetles' -> 'Tasty Lobstah' phase-to-phase on
+        # identical tribe evidence, reading as "which build am I doing?").
+        # Same tribe + no strictly more evidence -> keep showing the
+        # previous comp; cross-tribe pivots always pass through.
+        prev = self._sticky_target
+        if prev is not None and target is not None \
+                and prev.get("tribe") == target.get("tribe"):
+            prev_hits = _core_hits(board, recent,
+                                   set(prev.get("core", [])))
+            new_hits = _core_hits(board, recent,
+                                  set(target.get("core", [])))
+            target = sticky_comp_target(prev, target, prev_hits, new_hits)
+        self._sticky_target = target
         # ONE comp target feeds sell + buy + display — the evidence-based
         # target. The old per-function comp picks (crude tribe overlap for
         # sells, an arbitrary dict-order comp for buys) disagreed with the
@@ -935,5 +951,6 @@ class LiveCoach:
             "hand_plan": hand_steps,
             "scenario": scenario,
         }
+        result["situation"] = situation_line(result)
         result["top_move"] = top_move(result)
         return result

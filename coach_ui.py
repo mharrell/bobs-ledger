@@ -114,6 +114,9 @@ _HTML = r"""<!doctype html>
                             color:var(--dim); font-size:13px; }
   .instructions .pickline { font-size:19px; font-weight:700;
                             color:var(--good); padding:3px 0; }
+  /* The situation read: the plan's one-line thread. */
+  .instructions .situation { font-size:14px; font-weight:600;
+                             color:var(--warn); padding:2px 0 3px; }
   /* Horizontal game-like card tiles: thumb on top, name below. */
   .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
   .tile { display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -292,6 +295,9 @@ function render(a) {
   // level/roll reference line.
   const instr = el('div', 'box instructions');
   instr.appendChild(el('h3', null, 'Do this now'));
+  // The situation read: the plan's thread (direction, strength, danger) in
+  // one line, so the numbered steps read as a story instead of a list.
+  if (a.situation) instr.appendChild(el('div', 'situation', a.situation));
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
     const [name, cid, score, why] = a.choice.ranked[0];
     const line = el('div', 'pickline', 'PICK ' + name + (why ? ' — ' + why : ''));
