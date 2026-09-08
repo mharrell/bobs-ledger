@@ -40,6 +40,12 @@ NAME_TAG = re.compile(r"Entity=([^ ]+) tag=(\w+) value=(\w+)")
 # SHOW_ENTITY - Updating Entity=<id> CardID=<card> (plain form).
 SHOW_ENTITY = re.compile(r"SHOW_ENTITY - Updating Entity=(\d+) CardID=(\w+)")
 
+# CHANGE_ENTITY - Updating Entity=[...] CardID=<new> — a full card swap on an
+# existing entity id. This is how the friendly's trinket placeholders become
+# their chosen trinkets (BG30_Trinket_1st/2nd -> BGxx_MagicItem_NNN, verified
+# in the 2026-09-08 13:33 session log) and how other transforms print.
+CHANGE_ENTITY = re.compile(r"CHANGE_ENTITY - Updating Entity=\[(.*)\] CardID=(\S+)")
+
 # Held trinkets: BGxx_MagicItem_NNN entities (fetch_art.TRINKET_ID's pattern;
 # ids drift between sets, so match the shape, never one set code).
 TRINKET_ID = re.compile(r"^BG\d+_MagicItem_\d+$")
@@ -149,6 +155,24 @@ class GameState:
         m = SHOW_ENTITY.search(line)
         if m:
             self.card[int(m.group(1))] = m.group(2)
+            return
+
+        m = CHANGE_ENTITY.search(line)
+        if m:
+            # Retarget current_entity so the fresh definition's tag lines in
+            # the same block land on this entity, like FULL_ENTITY - Updating.
+            inner = UPDATING_ENTITY_ID.search(m.group(1))
+            if inner:
+                eid = int(inner.group(1))
+                self.current_entity = eid
+                self.card[eid] = m.group(2)
+                # Drop the old card's stats: a transform must not inherit
+                # them (the new block re-prints what it carries).
+                for tbl in (self.atk, self.health, self.tribe,
+                            self.tier, self.cost):
+                    tbl.pop(eid, None)
+                if self._game_ended:
+                    self._post_game.add(eid)
             return
 
         m = FULL_ENTITY.search(line)
