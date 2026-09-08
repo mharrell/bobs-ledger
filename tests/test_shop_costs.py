@@ -1,17 +1,14 @@
 """Regression tests for live shop pricing.
 
-The historical bug (2026-09-05, "the coach recommends buying minions when I
-only have 2 gold"): since patch 36.4.x a minion's BUY COST is per-card and
-decoupled from its TECH_LEVEL — the logs show 86 of 117 shop creations where
-COST != TECH_LEVEL (Lullabot TECH_LEVEL 1 but COST 2; Soul Rewinder tier 2
-but COST 4). The coach priced every minion at its DB tier, blessed buys the
-purse couldn't cover, and the decision log holds 24 low-gold Buy
-recommendations that day.
-
-The fix: board_state captures the entity COST tag (printed numerically as
-tag=479), live_coach maps the shop offers to those live prices, and
-value._top_move_text overlays them on the DB price map — DB tier stays only
-as the fallback for cards the log hasn't priced.
+Two superseded pricing models are on record (don't re-derive them):
+1. 2026-09-05: "buy price = DB tier" died — 86 of 117 shop creations had
+   COST != TECH_LEVEL, so the coach blessed buys the purse couldn't cover.
+   board_state now captures the entity COST tag (tag=479).
+2. 2026-09-06: "price from the captured COST tag" died too — those tags are
+   stale legacy tier costs (RESOURCES_USED=3 charged for tags saying 1).
+   Player-confirmed: minions cost a FLAT 3 gold at every tier, goldens
+   included. The captured costs feed TAVERN SPELLS ONLY
+   (value._buy_prices); TestTopMoveAffordability below pins that split.
 """
 import os
 import sys
@@ -74,6 +71,11 @@ class TestCostCapture(unittest.TestCase):
 
 
 class TestShopCostMap(unittest.TestCase):
+    """Capture plumbing only: shop_cost_map returns the raw captured COST
+    values (minions included — kept for spell pricing and debugging).
+    Downstream, value._buy_prices applies shop_costs to SPELLS only; a
+    minion's captured tag is never its buy price."""
+
     def _gs_with(self, *specs):
         """specs: (eid, cid, cost) in feed order."""
         gs = GameState()

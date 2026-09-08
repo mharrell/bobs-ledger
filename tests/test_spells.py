@@ -225,10 +225,11 @@ class TestGrowthCalibration(unittest.TestCase):
         committed_rank = dict(shop_ranking(["BG29_503"], comps, board_minions=committed))
         not_yet_rank = dict(shop_ranking(["BG29_503"], comps, board_minions=not_yet))
         # The damp is W_OFF_COMP plus a discount of the card's own growth
-        # term (off-comp growth doesn't compound in the build), so the delta
-        # is at least W_OFF_COMP — never a bump.
-        self.assertLessEqual(committed_rank["BG29_503"] - not_yet_rank["BG29_503"],
-                             value.W_OFF_COMP)
+        # term (off-comp growth doesn't compound in the build): never a
+        # bump, and never weaker than the flat W_OFF_COMP.
+        delta = committed_rank["BG29_503"] - not_yet_rank["BG29_503"]
+        self.assertLessEqual(delta, value.W_OFF_COMP)
+        self.assertLess(delta, 0)
 
     def test_neutral_cards_not_growth_discounted(self):
         comps = {"beasts": {"name": "Beasts", "tribe": "Beast",
@@ -249,17 +250,19 @@ class TestGrowthCalibration(unittest.TestCase):
 
 
 class TestTopMovePriority(unittest.TestCase):
-    """Buy prices are tavern prices (minion = TIER, not mana cost) and are
-    budgeted from the leftover after leveling; steps are numbered and the
-    level leads."""
+    """Buy prices are tavern prices (minions cost a FLAT 3; spells their
+    per-spell price) and are budgeted from the leftover after leveling;
+    steps are numbered and the level leads."""
 
-    def _analysis(self, tier, gold, buy_this, shop_rank):
+    def _analysis(self, tier, gold, buy_this, shop_rank, level_cost=None):
         return {"board": [], "playable_comps": {}, "tier": tier,
                 "gold": gold, "buy_this": buy_this, "shop_rank": shop_rank,
-                "sell_rank": []}
+                "level_cost": level_cost, "sell_rank": []}
 
     def test_steps_are_numbered_and_level_leads(self):
-        line = top_move(self._analysis(2, 5, None, []))
+        # Real upgrade price from the log: first round at tier 2 = 5
+        # (target+3, dropping 1 per round) — affordable with 5 gold.
+        line = top_move(self._analysis(2, 5, None, [], level_cost=5))
         self.assertTrue(line.startswith("1. LEVEL"))
 
     def test_minion_costs_flat_three(self):
@@ -283,7 +286,8 @@ class TestTopMovePriority(unittest.TestCase):
         t2 = next(c for c, v in card_db.items() if v.get("tier") == 2)
         spell = next(c for c, v in value._load_spell_db().items()
                      if (v or {}).get("cost") == 1)
-        line = top_move(self._analysis(5, 7, t2, [(t2, 9.0), (spell, 5.0)]))
+        line = top_move(self._analysis(5, 7, t2, [(t2, 9.0), (spell, 5.0)],
+                                      level_cost=6))
         self.assertIn("1. LEVEL to tier 6 (standard curve) — 1 left", line)
         self.assertNotIn(f"Buy {value._load_bg_names().get(t2, t2)} (", line)
         self.assertIn(f"Buy {value._load_bg_names().get(spell, spell)}", line)

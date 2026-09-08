@@ -39,6 +39,11 @@ W_ENGINE_OFF_TRIBE = 0.4  # engine whose tribe fights the board's dominant
                           # to stop buying (Deflect-o-Bot atop a beast shop,
                           # 2026-09-06 Reno game t7) — credit damped, not erased
 W_GROWTH = 2.0      # per point of growth potential (how much a minion can scale)
+W_SHOP_GOLDEN = 25.0  # a GOLDEN shop minion (player-confirmed 2026-09-08): still
+                      # costs the flat 3, and playing it pays the triple reward
+                      # immediately — the golden body (3 copies stacked) plus the
+                      # reward outranks a missing comp core (+14). Matches the
+                      # hand plan's play-now golden score (hand_plan +25.0).
 W_SPELL_FUEL = 0.3  # per stat of marginal engine growth one spell cast buys
 W_OFF_COMP = -2.0   # shop card whose tribe fights a COMMITTED comp (damping)
 W_MULT = 4.0        # multiplier glue (Balinda/Drakkari-class): worth what it
@@ -486,14 +491,30 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
             scored.append((cid, _spell_score(spell_db[cid], board_minions,
                                              names, scenario)))
             continue
+        raw_cid = cid
+        # A GOLDEN shop offer carries the "_G" id suffix: resolve to the base
+        # card (comps, DB, board lookups key on base ids) but keep the raw id
+        # in the ranking so the overlay/affordability walk still see the
+        # golden. Without this the golden was dropped from the ranking
+        # entirely (card_db has base ids only, 2026-09-08 audit).
+        golden = cid.endswith("_G")
+        if golden:
+            cid = cid[:-2]
         card = card_db.get(cid)
         if not card:
             continue
-        # A shop minion at base stats (un-bought).
-        m = {"card": cid, "atk": card.get("attack") or 0,
-             "health": card.get("health") or 0, "tribe": card.get("race")}
+        # A shop minion at base stats (un-bought); a golden's stats are the
+        # stacked 3 copies (the merge), so score the golden body at 3x.
+        atk, health = (card.get("attack") or 0), (card.get("health") or 0)
+        if golden:
+            atk, health = atk * 3, health * 3
+        m = {"card": cid, "atk": atk, "health": health, "tribe": card.get("race")}
         val = minion_value(m, card, comp, hero_power, trinkets,
                            engine_bonus=engine_bonus.get(cid, 0))
+        if golden:
+            # ...and playing it pays the triple reward NOW — super-duper high
+            # value (player rule), above a missing comp core (+14).
+            val += W_SHOP_GOLDEN
         # Committed mode (2026-09-07, user principle: "once committed to a
         # comp, the calculation changes — we're maximizing this comp, not
         # just purchasing the best card from whatever is available"): the
@@ -546,7 +567,7 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                     val -= W_GROWTH * growth * 0.75
         if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0  # banned-tribe minion can't grow
-        scored.append((cid, val))
+        scored.append((raw_cid, val))
     scored.sort(key=lambda x: (-x[1], x[0]))
     return scored
 
@@ -826,20 +847,32 @@ def situation_line(analysis):
 def _buy_prices(analysis):
     """Buy prices for the shop overlay/affordability walk.
 
-    Minions cost a FLAT 3 (the current patch's default for ALL tiers) — the
-    shop entities' tag=479 values are stale legacy tier costs: the
-    2026-09-06 23:00 log charged RESOURCES_USED=3 for Buzzing Vermin and
-    Decoy Conjurer whose tags said 1, and the player confirmed the rule
-    ("the default price for all minions of all tiers is THREE GOLD"). The
-    DB's `tier` was never a price. Tavern spells keep their own per-spell
-    price: the log's COST tag for spell entities, else the spell DB.
+    Minions cost a FLAT 3 (the current patch's default for ALL tiers,
+    GOLDEN SHOP MINIONS INCLUDED — player-confirmed 2026-09-08: a golden
+    in the shop still buys at 3 and still pays the triple reward when
+    played) — the shop entities' tag=479 values are stale legacy tier
+    costs: the 2026-09-06 23:00 log charged RESOURCES_USED=3 for Buzzing
+    Vermin and Decoy Conjurer whose tags said 1. The DB's `tier` was never
+    a price. Tavern spells keep their own per-spell price: the log's COST
+    tag for spell entities, else the spell DB. Golden minion offers carry
+    the "_G" id, priced identically to the base.
     """
     spell_db = _load_spell_db()
     costs = {c: MINION_BUY_PRICE for c in _load_card_db()}
+    costs.update({c + "_G": MINION_BUY_PRICE for c in list(costs)})
     costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
     costs.update({c: v for c, v in (analysis.get("shop_costs") or {}).items()
                   if c in spell_db})
     return costs
+
+
+def _shop_name(cid, names):
+    """Display name for a shop card id — goldens resolve to the base card's
+    name (the names DB has base ids) and carry a "(golden)" tag."""
+    if cid.endswith("_G"):
+        base = cid[:-2]
+        return f"{names.get(base, base)} (golden)"
+    return names.get(cid, cid)
 
 
 def _top_move_text(analysis):
@@ -899,10 +932,12 @@ def _top_move_text(analysis):
     if tier and tier < 6:
         # Real upgrade price: the live TechUp button COST (tier+3 base,
         # dropping 1 per turn you wait) — tier+1 was the old wrong model.
-        level_cost = analysis.get("level_cost") or tier + 1
+        # An analysis without a price gets NO level step: an unpriced
+        # upgrade is not advice, never a guessed number.
+        level_cost = analysis.get("level_cost")
         if gold is None:
             level_lead = f"LEVEL (access to tier {tier + 1})"
-        elif gold >= level_cost:
+        elif level_cost is not None and gold >= level_cost:
             spare = gold - level_cost
             health = analysis.get("health")
             armor = analysis.get("armor") or 0
@@ -1050,7 +1085,7 @@ def _top_move_text(analysis):
                     # fit, not "costs 3, 1 left" (read as "buy it" — the
                     # 2026-09-06 user question).
                     when = " after the level" if level_next else ""
-                    roll = (f"roll — best shop card ({names.get(cid, cid)}, "
+                    roll = (f"roll — best shop card ({_shop_name(cid, names)}, "
                             f"{cost}g) doesn't fit your {budget} gold left"
                             f"{when}")
                     parts.append(roll)
@@ -1086,17 +1121,17 @@ def _top_move_text(analysis):
                                 analysis.get("playable_comps") or {})]
                 nm = ", ".join(r["name"] for r in (specific or missing)[:2])
                 parts.append(f"roll — hunting {nm} "
-                             f"({names.get(cid, cid)} is off-build)")
+                             f"({_shop_name(cid, names)} is off-build)")
                 analysis["buy_step_roll"] = parts[-1]
                 analysis["buy_step_card"] = None
                 cid = None
         if cid is not None:
             bought = cid
             analysis["buy_step_card"] = cid
-            parts.append(f"Buy {names.get(cid, cid)} "
+            parts.append(f"Buy {_shop_name(cid, names)} "
                          f"({_buy_intention(cid, comp, card_db, spell_db)})")
-            if level_next and tier:
-                level_cost = analysis.get("level_cost") or tier + 1
+            if level_next and tier and analysis.get("level_cost") is not None:
+                level_cost = analysis.get("level_cost")
                 leftover = (gold or 0) - (costs.get(cid) or 0)
                 if leftover >= level_cost:
                     parts.append(f"LEVEL to tier {tier + 1} — "

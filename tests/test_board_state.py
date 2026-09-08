@@ -36,6 +36,37 @@ def tags(prefix, eid, atk, health, zone="PLAY", player=1, cid=""):
     ]
 
 
+class TestHeldTrinkets(unittest.TestCase):
+    """Held trinkets (BGxx_MagicItem_NNN) sit in PLAY once chosen — the
+    value function's W_TRINKET term and the simulator's requires_trinket
+    steps read this (both were dead code in the live loop, 2026-09-08)."""
+
+    def test_friendly_play_trinket_found(self):
+        gs = GameState()
+        for line in (
+            [f"{GS}    FULL_ENTITY - Creating ID=88 CardID=BG30_MagicItem_416",
+             f"{GS}        tag=CONTROLLER value=1",
+             f"{GS}        tag=ZONE value=PLAY",
+             f"{GS}        tag=CARDTYPE value=TRINKET"]
+        ):
+            gs.feed(line)
+        self.assertEqual(gs.held_trinkets(1), ["BG30_MagicItem_416"])
+        self.assertEqual(gs.held_trinkets(2), [])
+
+    def test_other_zones_and_players_excluded(self):
+        gs = GameState()
+        for zone, player in (("SETASIDE", 1), ("PLAY", 2)):
+            eid = 90 + player
+            for line in (
+                [f"{GS}    FULL_ENTITY - Creating ID={eid} CardID=BG36_MagicItem_390",
+                 f"{GS}        tag=CONTROLLER value={player}",
+                 f"{GS}        tag=ZONE value={zone}",
+                 f"{GS}        tag=CARDTYPE value=TRINKET"]
+            ):
+                gs.feed(line)
+        self.assertEqual(gs.held_trinkets(1), [])
+
+
 class TestHand(unittest.TestCase):
     def test_hand_carries_minions_and_spells(self):
         """The hand is a coaching input (2026-09-04: five spells sat in hand
