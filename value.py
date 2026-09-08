@@ -1027,7 +1027,15 @@ def _top_move_text(analysis):
                     and analysis.get("target_state") == "committing" \
                     and (budget or 0) >= 1 and eff_health > 12 \
                     and (analysis.get("turn") or 99) > 2:
-                nm = ", ".join(r["name"] for r in missing[:2])
+                # Name comp-SPECIFIC cores first: a shared-utility card
+                # (Balinda-class) is still on the shopping list, but it's a
+                # generic-good card, not this build's win condition — the
+                # hunt names what the BUILD is missing (2026-09-08: the
+                # hunt's second target read 'Balinda Stonehearth').
+                specific = [r for r in missing
+                            if r["card"] not in _shared_utility_cores(
+                                analysis.get("playable_comps") or {})]
+                nm = ", ".join(r["name"] for r in (specific or missing)[:2])
                 parts.append(f"roll — hunting {nm} "
                              f"({names.get(cid, cid)} is off-build)")
                 analysis["buy_step_roll"] = parts[-1]
