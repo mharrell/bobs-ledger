@@ -566,9 +566,13 @@ class LiveCoach:
                 self._last_tier = tier
 
     def _drain_stats(self, entries):
-        """Record hero ARMOR/HEALTH writes into the per-turn first/last
-        history. A turn's record starts seeded with the previous turn's
-        ending values (an armor-only combat still knows the health)."""
+        """Record hero ARMOR/HEALTH/DAMAGE writes into the per-turn
+        first/last history. A turn's record starts seeded with the previous
+        turn's ending values (an armor-only combat still knows the health).
+        DAMAGE: the current season logs hero damage as a DAMAGE tag with
+        HEALTH staying at base — the series must use true HP (HEALTH -
+        DAMAGE) or every loss streak reads zero (2026-09-08 Guff session:
+        11 damage invisible all game)."""
         for turn, cid, tag, value in entries:
             if self.hero_card and cid != self.hero_card:
                 continue
@@ -576,11 +580,18 @@ class LiveCoach:
             rec = self._armor_hist.get(turn)
             if rec is None:
                 prev = self._armor_hist.get(turn - 1) or {}
-                rec = {"af": prev.get("al"), "hf": prev.get("hl")}
+                rec = {"af": prev.get("al"), "hf": prev.get("hl"),
+                       "df": prev.get("dl")}
                 rec["al"] = rec["af"]
                 rec["hl"] = rec["hf"]
+                rec["dl"] = rec["df"]
                 self._armor_hist[turn] = rec
-            rec["al" if tag == "ARMOR" else "hl"] = v  # last write wins
+            if tag == "ARMOR":
+                rec["al"] = v
+            elif tag == "DAMAGE":
+                rec["dl"] = v
+            else:
+                rec["hl"] = v  # last write wins
 
     def _resolve_boards(self):
         """Commit buffered combat snapshots to the lobby scout (gates 3+4).
@@ -909,8 +920,16 @@ class LiveCoach:
         # is a loss (a won combat never drops health+armor — the 2026-09-04
         # Guff game lost every fight by 1-5 and the old >=3 "real loss" rule
         # read it as no streak at all); 1-2 is flagged close, not discounted.
-        health = self.gs.hero_meta.get(self.hero_card, {}).get("health")
-        armor = self.gs.hero_meta.get(self.hero_card, {}).get("armor")
+        hero_meta = self.gs.hero_meta.get(self.hero_card, {})
+        # Effective health: HEALTH - DAMAGE. This season hero damage logs as
+        # a DAMAGE tag with HEALTH staying at base (the 2026-09-08 Guff
+        # session: DAMAGE 11, HEALTH 30, true HP 19 — the coach read 30 all
+        # game and every loss streak read zero).
+        health = None
+        if hero_meta.get("health") is not None:
+            health = hero_meta["health"] - (hero_meta.get("damage") or 0)
+        armor = hero_meta.get("armor")
+        damage_cap = self.gs.damage_cap
         turn = self.actions.turn
 
         series = {}
@@ -919,11 +938,13 @@ class LiveCoach:
             for t in range(max(self._armor_hist) + 1):
                 rec = self._armor_hist.get(t)
                 if rec:
-                    for k in ("al", "hl"):
+                    for k in ("al", "hl", "dl"):
                         if rec.get(k) is not None:
                             last[k] = rec[k]
                 if last.get("al") is not None and last.get("hl") is not None:
-                    series[t] = last["al"] + last["hl"]
+                    # true HP = armor + HEALTH - DAMAGE
+                    series[t] = (last["al"] + last["hl"]
+                                 - (last.get("dl") or 0))
 
         def _combat_damage(t):
             if t < 0 or t - 1 not in series or t not in series:
@@ -972,6 +993,9 @@ class LiveCoach:
             "level_cost": self.level_cost(),
             "health": health,
             "armor": armor,
+            # This season's per-combat damage cap (BACON_COMBAT_DAMAGE_CAP,
+            # escalating by round) — the mortality bands key on it.
+            "damage_cap": damage_cap,
             "damage_last": damage_last,
             "loss_streak": loss_streak,
             "close_losses": close_losses,

@@ -797,17 +797,25 @@ def situation_line(analysis):
     # never the historical baseline — a high baseline median at a late turn
     # is not the lobby you're about to fight.
     lobby = analysis.get("opp_stats") or analysis.get("lobby_opp")
+    cap = analysis.get("damage_cap")
     if health is not None and lobby:
         eff = health + armor
-        if eff <= 12:
+        if cap and eff <= cap:
+            # This season caps per-combat damage (BACON_COMBAT_DAMAGE_CAP,
+            # escalating by round) — "one bad fight can end it" is literally
+            # true only at or under the cap.
+            bits.append(f"{eff} HP vs a {cap} damage cap — "
+                        "one bad fight ends it, buy board now")
+        elif cap and eff <= 2 * cap and lobby >= 100:
+            bits.append(f"{eff} HP vs a {cap} damage cap — "
+                        "two lost fights end it")
+        elif eff <= 12:
             bits.append(f"DYING at {health}"
                         + (f"+{armor}" if armor else "") + " — buy board now")
         elif eff <= 30 and lobby >= 100:
             # Armor is just extra health (player-corrected 2026-09-08) — the
-            # signal is TOTAL effective HP vs the lobby's damage output:
-            # boards big enough that one lost fight can take 30+ while
-            # you're down to your base pool (the silent mortality clock —
-            # t7-t12 of the Guff game were all wins, then one fight ended
+            # signal is TOTAL effective HP vs the lobby's damage output
+            # (t7-t12 of the Guff game were all wins, then one fight ended
             # it).
             bits.append(f"{eff} HP left — one bad fight can end it")
     if not bits:

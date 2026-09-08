@@ -55,6 +55,9 @@ class GameState:
         self.tribe = {}         # entity id -> CARDRACE
         self.tier = {}          # entity id -> TECH_LEVEL (minion tier)
         self.cost = {}          # entity id -> COST (the live BUY price)
+        self.dmg = {}           # entity id -> DAMAGE (accumulated; heroes'
+                                # current-season damage tag, see HEALTH above)
+        self.damage_cap = None  # BACON_COMBAT_DAMAGE_CAP (escalates by round)
 
         self.keywords = defaultdict(set)  # entity id -> set of keywords
         self.unplayable = {}    # entity id -> LITERALLY_UNPLAYABLE is truthy
@@ -130,6 +133,13 @@ class GameState:
                 # Game over: the end-of-game cleanup re-creates minions as
                 # enchantments for the leaderboard, so stop snapshotting here.
                 self._game_ended = True
+            elif tag == "BACON_COMBAT_DAMAGE_CAP":
+                # This season's per-combat damage cap, escalating by round
+                # (2/5/10/15 seen in the 2026-09-08 session; carried on the
+                # bare-numeric GameEntity, which only routes through this
+                # plain-entity branch). "One bad fight can end it" is only
+                # true when effective HP <= the current cap.
+                self.damage_cap = int(value)
             return
 
         m = SHOW_ENTITY.search(line)
@@ -216,8 +226,22 @@ class GameState:
             cid = self.card.get(eid, "")
             if HERO_CARD.match(cid):
                 # The friendly hero's health — the dying-vs-leveling signal.
+                # NOTE (2026-09-08): this season hero damage logs as tag=DAMAGE
+                # with HEALTH staying at the base — true HP = HEALTH - DAMAGE
+                # (the DAMAGE branch below); live_coach subtracts it.
                 self.hero_meta[cid]["health"] = int(value)
                 self.hero_stat_log.append((cid, "HEALTH", int(value)))
+        elif tag == "DAMAGE":
+            # Accumulated damage on any entity; for HEROES this is how the
+            # current season logs hero damage (HEALTH stays at base — the
+            # 2026-09-08 Guff session: 11 damage, HEALTH 30, true HP 19
+            # while the coach read 30 all game). Hero damage recorded here;
+            # live_coach computes effective health as HEALTH - DAMAGE.
+            self.dmg[eid] = int(value)
+            cid = self.card.get(eid, "")
+            if HERO_CARD.match(cid):
+                self.hero_meta[cid]["damage"] = int(value)
+                self.hero_stat_log.append((cid, "DAMAGE", int(value)))
         elif tag == "CARDRACE":
             self.tribe[eid] = value
         elif tag == "TECH_LEVEL":
@@ -243,6 +267,11 @@ class GameState:
             if HERO_CARD.match(cid):
                 self.hero_meta[cid]["armor"] = int(value)
                 self.hero_stat_log.append((cid, "ARMOR", int(value)))
+        elif tag == "BACON_COMBAT_DAMAGE_CAP":
+            # This season's per-combat damage cap, escalating by round
+            # (2/5/10/15 seen in the 2026-09-08 session). "One bad fight can
+            # end it" is only true when effective HP <= the current cap.
+            self.damage_cap = int(value)
         elif tag in KEYWORDS:
             if value == "1":
                 self.keywords[eid].add(tag)
