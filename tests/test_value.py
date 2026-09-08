@@ -462,6 +462,43 @@ class TestCombatForecast(unittest.TestCase):
             {"board_stats": 100, "opp_stats": None, "board": []}))
 
 
+class TestStrengthGapLevelGate(unittest.TestCase):
+    """Losing AND far behind the turn-appropriate board defers the level at
+    any tier >=2 (2026-09-08 Loh game: the coach said 'standard curve' at
+    t2/t4 through four straight losses with a 2-minion, 7-stat board vs
+    ~23, then the review blamed the player for following it — a paradox).
+    Tier 1 stays curve-driven."""
+
+    def _analysis(self, tier, streak, board_stats, baseline, gold=10,
+                  level_cost=5):
+        return {"tier": tier, "gold": gold, "level_cost": level_cost,
+                "board": [{"card": "BG33_140", "atk": 1, "health": 1}],
+                "board_stats": board_stats, "baseline_opp": baseline,
+                "loss_streak": streak, "damage_last": 2,
+                "close_losses": False, "shop_rank": [("BG33_140", 9.0)],
+                "buy_this": "BG33_140", "playable_comps": {},
+                "choice": None, "target_comp": None, "sell_rank": [],
+                "turn": 9}
+
+    def test_losing_and_far_behind_buys_stats(self):
+        # Gold 6, level 5, buy 3 — they can't both fit (the Loh t4 shape):
+        # the strength gap defers the level behind the board buy.
+        line = value.top_move(self._analysis(2, 3, 7, 15, gold=6))
+        self.assertIn("buy stats first", line)
+        self.assertIn("Buy", line)  # the board-building buy leads
+        self.assertFalse(line.startswith("1. LEVEL"))
+
+    def test_losing_but_on_curve_levels(self):
+        # Not far behind: the standard curve stands.
+        line = value.top_move(self._analysis(2, 2, 13, 15))
+        self.assertNotIn("buy stats first", line)
+
+    def test_tier1_stays_curve_driven(self):
+        line = value.top_move(self._analysis(1, 3, 2, 15, gold=10,
+                                             level_cost=5))
+        self.assertNotIn("buy stats first", line)
+
+
 class TestSituationLine(unittest.TestCase):
     """The plan's one-line thread above the steps (the 2026-09-06 Guff game
     had 240 stats vs a ~140 lobby and 30 HP with zero armor — every panel

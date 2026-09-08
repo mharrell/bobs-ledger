@@ -902,10 +902,22 @@ def _top_move_text(analysis):
                       and not damage_last and not loss_streak)
             # Q0 flow: armor/HP drops are the loss streak. Early-game losses
             # (tiers 1-2) are normal — the flow gate is a tier-3+ (mid-game)
-            # concept, matching the shop-driven vs board-driven split.
+            # concept, matching the shop-driven vs board-driven split. BUT a
+            # losing streak with a far-behind board defers the level at ANY
+            # tier (the 2026-09-08 Loh game: the coach said 'standard curve'
+            # at t2/t4 through four straight losses with a 2-minion, 7-stat
+            # board vs ~23, then the review blamed the player for falling
+            # behind — a paradox. Losing AND far behind the turn-appropriate
+            # board means the last gold buys stats, not a tier. Tier 1 stays
+            # curve-driven: turn-1/2 leveling is nearly always right and the
+            # losses are cheap.)
             flip_why = None
             if dying:
                 flip_why = "too fragile to level first"
+            elif tier >= 2 and loss_streak >= 2 and board_stats is not None \
+                    and their and board_stats < 0.7 * their:
+                flip_why = (f"lost {loss_streak} straight and your board is "
+                            f"behind — buy stats first")
             elif tier >= 3 and loss_streak >= 2:
                 flip_why = (f"lost {loss_streak} straight fights"
                             + (" (close) — " if close else " — ")
