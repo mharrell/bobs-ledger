@@ -39,7 +39,10 @@ def tags(prefix, eid, atk, health, zone="PLAY", player=1, cid=""):
 class TestHeldTrinkets(unittest.TestCase):
     """Held trinkets (BGxx_MagicItem_NNN) sit in PLAY once chosen — the
     value function's W_TRINKET term and the simulator's requires_trinket
-    steps read this (both were dead code in the live loop, 2026-09-08)."""
+    steps read this (both were dead code in the live loop, 2026-09-08).
+    The real log path: the placeholder Lesser/Greater Trinket entity
+    (BG30_Trinket_1st/2nd, always controller 7) CHANGE_ENTITYs to the
+    chosen trinket id (2026-09-08 13:33 session, entity 420)."""
 
     def test_friendly_play_trinket_found(self):
         gs = GameState()
@@ -65,6 +68,26 @@ class TestHeldTrinkets(unittest.TestCase):
             ):
                 gs.feed(line)
         self.assertEqual(gs.held_trinkets(1), [])
+
+    def test_placeholder_change_entity_becomes_the_trinket(self):
+        """The 2026-09-08 13:33 log's exact shape: BG30_Trinket_1st swaps to
+        BG35_MagicItem_301 via CHANGE_ENTITY — the block's own tag lines
+        (CARDTYPE, COST) land on the same entity, and stale stats from the
+        placeholder don't survive the swap."""
+        gs = GameState()
+        for line in (
+            creating(420, "BG30_Trinket_1st")
+            + [f"{GS}        tag=CONTROLLER value=7",
+               f"{GS}        tag=ZONE value=PLAY",
+               f"{GS}        tag=CARDTYPE value=BATTLEGROUND_TRINKET"]
+        ):
+            gs.feed(line)
+        gs.feed(f"{GS}CHANGE_ENTITY - Updating Entity=[entityName=Lesser Trinket "
+                f"id=420 zone=PLAY zonePos=0 cardId=BG30_Trinket_1st player=7] "
+                f"CardID=BG35_MagicItem_301")
+        gs.feed(f"{GS}    tag=CARDTYPE value=BATTLEGROUND_TRINKET")
+        self.assertEqual(gs.card[420], "BG35_MagicItem_301")
+        self.assertEqual(gs.held_trinkets(7), ["BG35_MagicItem_301"])
 
 
 class TestHand(unittest.TestCase):

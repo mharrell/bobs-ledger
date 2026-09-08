@@ -139,6 +139,17 @@ def _spell_effect(spell, board_size=0):
     for kw, v in _SPELL_UTILITY:
         if kw in text:
             points += v
+    # Gold grants (economy spells — Tavern Coin, Wealthy Bounty, the
+    # tie/win Overconfidence; player-flagged 2026-09-08, every one parsed
+    # to 0 before this): a gold is liquid tempo, ~2 direct-effect points.
+    # "Gain N Gold next turn" keeps full value (it IS next turn's purse).
+    for m in re.finditer(r"gain (\d+) gold", text):
+        points += int(m.group(1)) * 2.0
+    # "Increase your maximum gold by 1" is recurring income — it pays every
+    # turn from here, worth double per point.
+    m = re.search(r"maximum gold by (\d+)", text)
+    if m:
+        points += int(m.group(1)) * 4.0
     return points
 
 

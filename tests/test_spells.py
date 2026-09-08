@@ -54,6 +54,17 @@ class TestSpellEffect(unittest.TestCase):
         pricey = _spell_score(_spell("Give a minion +3/+1.", cost=5), [], NAMES)
         self.assertAlmostEqual(cheap, pricey * 5.0)
 
+    def test_gold_grants_score(self):
+        """Economy spells (player-flagged 2026-09-08: Overconfidence, the
+        tie/win gold spell, scored 0) — 'Gain N Gold' is liquid tempo."""
+        self.assertEqual(_spell_effect(_spell("Gain 1 Gold.")), 2.0)
+        win_tie = _spell_effect(_spell("If you win your next combat, "
+                                       "gain 3 Gold.\nIf you tie, gain 1."))
+        self.assertEqual(win_tie, 6.0)
+        # Recurring income (max gold) is worth double per point.
+        self.assertEqual(_spell_effect(_spell("Increase your maximum Gold "
+                                              "by 1.")), 4.0)
+
 
 class TestCastGeneratingSpells(unittest.TestCase):
     """Spells that GENERATE cast events (Spellcraft grants) must credit their
