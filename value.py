@@ -772,15 +772,18 @@ def situation_line(analysis):
     # is not the lobby you're about to fight.
     lobby = analysis.get("opp_stats") or analysis.get("lobby_opp")
     if health is not None and lobby:
-        if health + armor <= 12:
+        eff = health + armor
+        if eff <= 12:
             bits.append(f"DYING at {health}"
                         + (f"+{armor}" if armor else "") + " — buy board now")
-        elif armor == 0 and lobby >= 100:
-            # No armor buffer left and the lobby's boards are big enough
-            # that one lost fight can take 30+ — the silent mortality clock
-            # (t7-t12 of the Guff game were all wins, then one fight ended
+        elif eff <= 30 and lobby >= 100:
+            # Armor is just extra health (player-corrected 2026-09-08) — the
+            # signal is TOTAL effective HP vs the lobby's damage output:
+            # boards big enough that one lost fight can take 30+ while
+            # you're down to your base pool (the silent mortality clock —
+            # t7-t12 of the Guff game were all wins, then one fight ended
             # it).
-            bits.append(f"no armor at {health} — one bad fight can end it")
+            bits.append(f"{eff} HP left — one bad fight can end it")
     if not bits:
         return None
     return " · ".join(bits[:3])
