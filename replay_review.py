@@ -152,7 +152,10 @@ def main():
         picks = [a.get("buy_this")] + [c for c, _ in (a.get("shop_rank") or [])[:3]]
         picks = [p for p in picks if p]
         if picks and not buy_planned:
-            print(f"     buy match: plan said roll — player bought "
+            rolled = any(s.get("kind") == "roll"
+                         for s in (a.get("top_move_steps") or []))
+            print(f"     buy match: plan said "
+                  f"{'roll (hunt)' if rolled else 'level only'} — player bought "
                   f"({', '.join(names.get(c, c) for c in buys_raw) or 'nothing'})")
         elif picks:
             if buys_raw and set(buys_raw) & set(picks):
