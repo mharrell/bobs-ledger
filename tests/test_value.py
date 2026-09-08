@@ -422,6 +422,18 @@ class TestRollHunt(unittest.TestCase):
         line = value.top_move(a)
         self.assertIn("Buy", line)
 
+    def test_hunt_names_specific_cores_first(self):
+        """A shared-utility card (Balinda) is still on the shopping list,
+        but the hunt names the build's win condition first (2026-09-08:
+        the hunt's second target read 'Balinda Stonehearth')."""
+        a = self._analysis(4)
+        a["target_cards"]["core"].append(
+            {"card": "BG35_883", "name": "Balinda Stonehearth",
+             "owned": False, "banned": False})
+        line = value.top_move(self._analysis(4))
+        self.assertIn("hunting Deathstrider", line)
+        self.assertNotIn("Balinda", line)
+
 
 class TestCombatForecast(unittest.TestCase):
     """The next-fight verdict: favored / close / behind from the stat
