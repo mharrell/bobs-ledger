@@ -104,20 +104,87 @@ def _load_card_db():
 
 @functools.lru_cache(maxsize=1)
 def _load_spell_db():
-    """card id -> {name, tier, cost, text} from meta/tavern_spells.json."""
-    return {s.get("id"): s for s in meta.spells() if s.get("id")}
+    """card id -> {name, tier, cost, text, effects?} from meta/tavern_spells.json.
+
+    `effects` carries the curated card-read (meta/spell_effects.json, the
+    2026-09-08 card-text pass) when the spell has one.
+    """
+    curated = meta.spell_effects()
+    out = {}
+    for s in meta.spells():
+        sid = s.get("id")
+        if not sid:
+            continue
+        rec = dict(s)
+        ann = curated.get(sid)
+        if ann:
+            rec["effects"] = ann.get("effects") or []
+        out[sid] = rec
+    return out
+
+
+def _curated_effect_points(effects, board_size=0):
+    """Deterministic points from the curated card-read (spell_effects.json).
+
+    The card-text discipline (2026-09-08, player rule: "literally read the
+    text of each card and each spell"): each spell's text was read and
+    encoded ONCE — scope multipliers, recurring/delayed factors, gold and
+    utility values are decided at read time per card, not guessed at
+    decision time by the regex parser (which stays as the fallback for
+    unannotated spells).
+    """
+    def one(eff):
+        k = eff.get("kind")
+        if k == "stats":
+            scope = eff.get("scope", "target")
+            mult = min(max(board_size, 1), 7) if scope == "all" else 1
+            if scope == "tavern":
+                mult = 2  # the shop's minions you'll buy across the turn
+            stat = (eff.get("atk", 0) + eff.get("hp", 0)) * eff.get("count", 1) * mult
+            if eff.get("recurring"):
+                stat *= 2.0
+            if eff.get("delayed"):
+                stat *= 0.5
+            return stat
+        if k == "gold":
+            return eff.get("n", 0) * 2.0
+        if k == "max_gold":
+            return eff.get("n", 1) * 4.0  # recurring income
+        if k == "summon":
+            pts = (eff.get("atk", 0) + eff.get("hp", 0)) * eff.get("n", 1)
+            if eff.get("recurring"):
+                pts *= 2.0
+            return pts + 2.0
+        if k == "discover":
+            return eff.get("points", 2.0)
+        if k == "golden":
+            return 8.0
+        if k == "spellcraft":
+            return 2.0  # the direct read; the fuel term is computed separately
+        if k == "utility":
+            return eff.get("points", 0.0)
+        if k == "choose_one":
+            return max(sum(one(e) for e in branch)
+                       for branch in eff.get("branches", []))
+        return 0.0
+    return sum(one(e) for e in effects)
 
 
 def _spell_effect(spell, board_size=0):
-    """Rough direct-effect points of a tavern spell from its text.
+    """Direct-effect points of a tavern spell from its text.
 
-    +N/+N (and bare +N) grants count their stat points; a whole-board scope
-    multiplies by the current board size (capped at 7). Recurring/scaling
-    text doubles the value; one-shot utility effects the stat parse can't see
-    (discover, summon, triple, steal) add flat amounts. Rough by design —
-    the terms get honed against the replay corpus like every other weight.
+    Annotated spells (meta/spell_effects.json — the curated card-text pass)
+    score deterministically from the encoded effects. Unannotated spells
+    fall back to the regex read: +N/+N (and bare +N) grants count their stat
+    points; a whole-board scope multiplies by the current board size (capped
+    at 7); recurring/scaling text doubles; one-shot utility effects the stat
+    parse can't see (discover, summon, triple, steal) add flat amounts.
+    Rough by design — the terms get honed against the replay corpus.
     """
     text = (spell.get("text") or "").lower()
+    curated = spell.get("effects")
+    if curated:
+        return _curated_effect_points(curated, board_size)
     scope_all = any(p in text for p in _SPELL_SCOPE_ALL)
     n_targets = min(max(board_size, 1), 7) if scope_all else 1
     pairs = [(int(m.group(1)) + int(m.group(2)))

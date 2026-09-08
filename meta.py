@@ -62,6 +62,11 @@ def spells():
     return _items("tavern_spells.json")
 
 
+def spell_effects():
+    """Curated per-spell effect reads (the card-text pass), or {}."""
+    return _raw("spell_effects.json") or {}
+
+
 def comps():
     return _raw("comps.json") or {}
 

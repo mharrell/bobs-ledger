@@ -66,6 +66,46 @@ class TestSpellEffect(unittest.TestCase):
                                               "by 1.")), 4.0)
 
 
+class TestCuratedSpells(unittest.TestCase):
+    """The card-text pass (2026-09-08, player rule: 'literally read the text
+    of each spell'): all 71 tavern spells carry curated effect reads in
+    meta/spell_effects.json and score from them deterministically. The
+    regex parser stays as the fallback for unannotated spells."""
+
+    def test_all_spells_annotated(self):
+        for cid, s in value._load_spell_db().items():
+            self.assertTrue(s.get("effects"),
+                            f"{cid} ({(s.get('name') or '?')}) is not "
+                            f"annotated in meta/spell_effects.json")
+
+    def test_annotated_spell_scores_from_the_curated_read(self):
+        # Overconfidence: gold 3 (win) + gold 1 (tie) = 4 gold = 8 pts —
+        # the tie branch the regex parser never counted.
+        overc = value._load_spell_db()["BG28_884"]
+        self.assertEqual(value._spell_effect(overc), 8.0)
+
+    def test_choose_one_takes_the_max_branch(self):
+        # Forest's Bounty at board 5: max(6/6 twice = 24, board 2/2 = 20).
+        forest = value._load_spell_db()["BG31_886"]
+        self.assertEqual(value._spell_effect(forest, board_size=5), 24.0)
+        self.assertEqual(value._spell_effect(forest, board_size=7), 28.0)
+
+    def test_board_scope_scales_with_the_board(self):
+        ring = value._load_spell_db()["BG28_168"]   # Shiny Ring, +1/+1 all
+        self.assertEqual(value._spell_effect(ring, board_size=5), 10.0)
+        self.assertEqual(value._spell_effect(ring, board_size=9), 14.0)  # cap 7
+
+    def test_golden_making_and_set_stats(self):
+        eyes = value._load_spell_db()["EBG_Spell_017"]
+        self.assertEqual(value._spell_effect(eyes), 8.0)
+        vision = value._load_spell_db()["BG28_838"]  # set 20/20
+        self.assertEqual(value._spell_effect(vision), 40.0)
+
+    def test_regex_fallback_for_unannotated_spells(self):
+        # A fixture spell with no curated effects still parses by regex.
+        self.assertEqual(_spell_effect(_spell("Give a minion +2/+2.")), 4.0)
+
+
 class TestCastGeneratingSpells(unittest.TestCase):
     """Spells that GENERATE cast events (Spellcraft grants) must credit their
     engine fuel for every generated cast, not just themselves — the Naga
