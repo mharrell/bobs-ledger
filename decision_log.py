@@ -43,8 +43,12 @@ def coach_version():
 def record(analysis, log_path=None, log_offset=None, game_no=None):
     """Append one advisory to decision_logs/decision_<session>.jsonl.
 
+    Opt-out: set HEARTH_TELEMETRY=0 to record nothing at all (the log is
+    local-only and contains no personal data, but recording is a choice).
     Never raises: telemetry must not kill the advise loop.
     """
+    if os.environ.get("HEARTH_TELEMETRY") == "0":
+        return
     try:
         os.makedirs(LOG_DIR, exist_ok=True)
         base = os.path.basename(log_path or "unknown")

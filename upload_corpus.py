@@ -10,6 +10,10 @@ The repo defaults to HEARTH_TELEMETRY_REPO or mharrell/hearth-telemetry.
 Usage:
   python upload_corpus.py corpus_out/corpus_XXXX.json.gz
   python upload_corpus.py --latest        # package the newest session, then upload
+
+Uploading is opt-in and never happens automatically: each run shows what it
+would send (the BattleTag-redacted session log + this session's decisions)
+and where it's going, and asks for confirmation unless --yes is given.
 """
 import argparse
 import base64
@@ -80,6 +84,8 @@ def main():
                     help="package the newest session, then upload it")
     ap.add_argument("--repo", help="telemetry repo (default "
                     f"{DEFAULT_REPO})")
+    ap.add_argument("--yes", "-y", action="store_true",
+                    help="skip the confirmation prompt")
     args = ap.parse_args()
     bundle = args.bundle
     if args.latest or not bundle:
@@ -97,6 +103,19 @@ def main():
     if not gh_available() and not os.environ.get("GH_TELEMETRY_TOKEN"):
         print("no auth: install/login `gh`, or set GH_TELEMETRY_TOKEN")
         return 1
+    repo = args.repo or os.environ.get("HEARTH_TELEMETRY_REPO", DEFAULT_REPO)
+    print(f"about to upload: {bundle}")
+    print("  contents: the BattleTag-redacted Power.log + this session's "
+          "decision log (no other personal data)")
+    print(f"  destination: {repo}/corpus/{os.path.basename(bundle)}")
+    if not args.yes:
+        try:
+            answer = input("upload? [y/N] ").strip().lower()
+        except EOFError:
+            answer = ""
+        if answer != "y":
+            print("cancelled — nothing uploaded")
+            return 1
     try:
         upload(bundle, repo=args.repo)
     except Exception as e:  # noqa: BLE001
