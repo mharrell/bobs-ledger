@@ -142,9 +142,19 @@ def main():
         # two ranked offers count.
         buys_raw = actual.get("buys") or []
         spell_buys = [c for c in buys_raw if c not in minion_ids]
+        # A plan whose step is a hunt/roll (not a buy) doesn't bless the
+        # shop's top card — scoring the player's buy as TAKEN there
+        # inflated the coach's accuracy (2026-09-08 Loh t9: the plan said
+        # 'roll — hunting Handless Forsaken' and the player's Fortify still
+        # scored TAKEN).
+        buy_planned = any(s.get("kind") == "buy"
+                          for s in (a.get("top_move_steps") or []))
         picks = [a.get("buy_this")] + [c for c, _ in (a.get("shop_rank") or [])[:3]]
         picks = [p for p in picks if p]
-        if picks:
+        if picks and not buy_planned:
+            print(f"     buy match: plan said roll — player bought "
+                  f"({', '.join(names.get(c, c) for c in buys_raw) or 'nothing'})")
+        elif picks:
             if buys_raw and set(buys_raw) & set(picks):
                 hit = next(c for c in buys_raw if c in picks)
                 print(f"     buy match: TAKEN ({names.get(hit, hit)})")
