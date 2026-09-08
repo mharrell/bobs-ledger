@@ -560,6 +560,20 @@ class TestSituationLine(unittest.TestCase):
         self.assertIn("DYING at 8+2 — buy board now", line)
         self.assertIn("lost 3 straight", line)
 
+    def test_damage_cap_bands(self):
+        """This season caps per-combat damage (BACON_COMBAT_DAMAGE_CAP,
+        escalating by round): 'one bad fight ends it' is literally true only
+        at or under the cap (2026-09-08: the coach said '30 HP, one bad
+        fight can end it' at 19 HP with the cap at 15)."""
+        a = {"board_stats": 100, "lobby_opp": 140, "health": 19,
+             "armor": 0, "damage_cap": 15}
+        line = value.situation_line(a)
+        self.assertIn("19 HP vs a 15 damage cap — two lost fights end it",
+                      line)
+        a["health"] = 14
+        line = value.situation_line(a)
+        self.assertIn("one bad fight ends it, buy board now", line)
+
     def test_quiet_when_nothing_to_say(self):
         # Early game, armor up, no direction: no invented drama.
         a = {"board_stats": 6, "lobby_opp": 8, "health": 30, "armor": 12,
