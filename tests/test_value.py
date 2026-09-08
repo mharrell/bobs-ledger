@@ -528,6 +528,15 @@ class TestButcheringTargets(unittest.TestCase):
         steps = value.hand_plan(self._hand(1), board_minions=[self.UNDEAD])
         self.assertIn("Reborn minion first", steps[0]["why"])
 
+    def test_no_reborn_names_generators(self):
+        """With no Reborn targets, the why points at the comp page's
+        generators (Handless Forsaken / Mummifier / Eternal Summoner) —
+        the loop's sustain is producing new reborn bodies, not re-killing
+        one body forever."""
+        plain = dict(self.UNDEAD, keywords=[])
+        steps = value.hand_plan(self._hand(1), board_minions=[plain])
+        self.assertIn("generate one", steps[0]["why"])
+
 
 class TestSituationLine(unittest.TestCase):
     """The plan's one-line thread above the steps (the 2026-09-06 Guff game

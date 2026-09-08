@@ -375,8 +375,11 @@ function render(a) {
   const sellKeep = el('div', 'tiles');
   (a.sell_rank || []).forEach(s => {
     // Hand minions appear here too (flagged) — the plan's "Play/Hold X" and
-    // the sell row must be able to agree on every sellable card.
-    const sub = s.score.toFixed(0) + (s.hand ? ' · hand' : '');
+    // the sell row must be able to agree on every sellable card. A
+    // Butchering-fuel undead reads "cast it instead of selling".
+    const sub = s.score.toFixed(0)
+      + (s.hand ? ' · hand' : '')
+      + (s.fuel ? ' · cast, not sell' : '');
     const t = tile(s.card, s.name, sub,
                    {golden: s.golden, n: s.n, cls: s.score < 15 ? 'safe' : 'keep'});
     (s.score < 15 ? sellSafe : sellKeep).appendChild(t);
@@ -536,6 +539,22 @@ def render_json(analysis):
         else:
             g["n"] += 1
     sell.sort(key=lambda g: g["score"])
+    # Butchering fuel (2026-09-08, the comp page): with a destroy-cost spell
+    # in hand, a safe-to-sell UNDEAD is worth more dead-by-cast than sold —
+    # the cast gives permanent +5 Attack to ALL Undead and frees the same
+    # slot, where selling gives 1 gold. Annotated so the Sell row and the
+    # hand's cast steps point the same direction.
+    spell_db = _load_spell_db()
+    holding_destroy = any("destroy a friendly"
+                          in ((spell_db.get(s["card"]) or {}).get("text")
+                              or "").lower()
+                          for s in analysis.get("hand", []))
+    if holding_destroy:
+        card_db = _load_card_db()
+        for g in sell:
+            race = ((card_db.get(g["card"]) or {}).get("race") or "")
+            if g["score"] < 15 and "Undead" in (race or ""):
+                g["fuel"] = True
     a["sell_rank"] = sell
     # The hand: casts/plays ranked for the "Your hand" tiles (free actions —
     # the plan's numbered steps carry them too; this row is the reference).
