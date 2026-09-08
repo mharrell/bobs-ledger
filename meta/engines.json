@@ -316,7 +316,7 @@
     "applies_to": "target",
     "count_from": "primary",
     "multiplier": "cast_spell",
-    "note": "Reborn-loop approximation: each Butchering destroys a reborn-able Undead (Handless Forsaken's hand, Mummifier/Dead Bellringer marks, Eternal Summoner) -> it reborns -> the Phantom gives its Attack to the right-most Undead. 3/1 approximates a mid-game body; the real value grows with the board."
+    "note": "Reborn-loop approximation: each Butchering destroys a friendly Undead — a Reborn body covers ONE death (Reborn is one-shot; player-corrected 2026-09-08), so the loop's sustain is GENERATING new reborn bodies: Handless Forsaken's hands, Eternal Summoner's knights, Mummifier marks, and the Dead Bellringer+Mummifier loop (the comp page's best variation — a renewable target engine). The Phantom transfers the dead body's Attack to the right-most Undead, in combat and in the shop. 3/1 approximates a mid-game body."
    }
   ],
   "note": "Unmodeled recursive term: Eternal Knight gains +4/+2 permanently for each Knight that died (Eternal Summoner supplies them), so late-game growth compounds harder than this model shows."

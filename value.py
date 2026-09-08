@@ -601,9 +601,18 @@ def hand_plan(hand, board_minions=None, scenario=None):
                 if destroy_casts >= undead:
                     continue  # no Undead left to destroy — uncastable
                 destroy_casts += 1
-                why = ("each cast: +5 Attack to ALL Undead, permanent — "
-                       "target a Reborn minion first (each reborn covers "
-                       "one cast)")
+                # The targeting rule + the comp page's generator combos: no
+                # Reborn targets? Handless Forsaken / Mummifier / Eternal
+                # Summoner make one (the Bellringer+Mummifier loop is the
+                # page's "best variation" — a renewable target engine).
+                if any("REBORN" in (b.get("keywords") or []) for b in board):
+                    why = ("each cast: +5 Attack to ALL Undead, permanent — "
+                           "target a Reborn minion first (each reborn "
+                           "covers one cast)")
+                else:
+                    why = ("each cast: +5 Attack to ALL Undead, permanent — "
+                           "no Reborn targets: Handless Forsaken / Mummifier "
+                           "/ Eternal Summoner generate one")
             steps.append({"card": cid, "verb": "cast", "score": points
                           + W_SPELL_FUEL * fuel,
                           "name": names.get(cid, cid), "why": why})
