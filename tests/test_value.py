@@ -510,7 +510,9 @@ class TestSituationLine(unittest.TestCase):
         line = value.situation_line(a)
         self.assertIn("Beasts build", line)
         self.assertIn("strong (240 vs ~140)", line)
-        self.assertIn("no armor at 30 — one bad fight can end it", line)
+        # Armor is just extra health (player-corrected 2026-09-08): the
+        # signal is TOTAL effective HP, not the armor's absence.
+        self.assertIn("30 HP left — one bad fight can end it", line)
 
     def test_dying_overrides(self):
         a = {"target_comp": None, "board_stats": 40, "lobby_opp": 200,
