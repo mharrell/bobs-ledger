@@ -802,16 +802,21 @@ class TestRenderJsonComps(unittest.TestCase):
 
     def test_shop_rows_carry_tavern_prices(self):
         """Prices are invisible in the UI, so a wrong one ("thinks minions
-        cost 1 gold") was undiagnosable. Minion = tier, spell = cost."""
+        cost 1 gold") was undiagnosable. Minion = FLAT 3 at every tier,
+        spell = its per-spell cost."""
         from coach_ui import render_json
         analysis = {"board": [], "sell_rank": [], "playable_comps": {},
-                    "shop_rank": [("BG30_123", 5.0), ("BG28_504", 3.0)]}
+                    "shop_rank": [("BG30_123", 5.0), ("BG28_504", 3.0),
+                                  ("BG34_858", 4.0)]}
         a = render_json(analysis)
         by_card = {r["card"]: r for r in a["shop_rank"]}
-        # BG30_123 Fearless Foodie = tier-3 minion (healed from the log's
-        # TECH_LEVEL after a patch moved it); BG28_504 Recruit a Trainee =
-        # 2g spell (spell DB, not the minion pool)
+        # BG30_123 Fearless Foodie = tier-3 minion; BG34_858 Air Revenant =
+        # tier-5 minion (a tier-5 row is the flat-3 discriminator: tier-
+        # pricing and flat-3 coincide at tier 3, so only a non-3 tier can
+        # catch a regression to tier-priced minions); BG28_504 Recruit a
+        # Trainee = 2g spell (spell DB, not the minion pool)
         self.assertEqual(by_card["BG30_123"]["price"], 3)
+        self.assertEqual(by_card["BG34_858"]["price"], 3)
         self.assertEqual(by_card["BG28_504"]["price"], 2)
 
     def test_unpriced_cards_carry_no_price(self):

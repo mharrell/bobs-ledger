@@ -38,7 +38,6 @@ class TestLockedHandCards(unittest.TestCase):
         gs = GameState()
         for line in hand_card_lines(371, "BG34_950", locked=True):
             gs.feed(line)
-        gs._account = "Me#1"  # hand() keys on the friendly player id; see below
         hand = gs.hand(1)
         self.assertEqual(len(hand), 1)
         self.assertTrue(hand[0]["locked"])

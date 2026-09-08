@@ -341,9 +341,11 @@ function render(a) {
       instr.appendChild(line);
     });
   }
-  // Level/roll reference: the button's real price (not tier+1).
-  if (a.tier && a.tier < 6) {
-    const cost = (a.level_cost != null) ? a.level_cost : a.tier + 1;
+  // Level/roll reference: the button's real price. An analysis without a
+  // level_cost (never the live loop's case) shows no level line at all —
+  // tier+1 was the old wrong model, never a fallback price.
+  if (a.tier && a.tier < 6 && a.level_cost != null) {
+    const cost = a.level_cost;
     instr.appendChild(el('div', 'footline',
       a.gold !== null && a.gold >= cost
         ? 'Level available: tier ' + a.tier + ' → ' + (a.tier + 1)

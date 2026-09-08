@@ -40,6 +40,10 @@ NAME_TAG = re.compile(r"Entity=([^ ]+) tag=(\w+) value=(\w+)")
 # SHOW_ENTITY - Updating Entity=<id> CardID=<card> (plain form).
 SHOW_ENTITY = re.compile(r"SHOW_ENTITY - Updating Entity=(\d+) CardID=(\w+)")
 
+# Held trinkets: BGxx_MagicItem_NNN entities (fetch_art.TRINKET_ID's pattern;
+# ids drift between sets, so match the shape, never one set code).
+TRINKET_ID = re.compile(r"^BG\d+_MagicItem_\d+$")
+
 
 class GameState:
     """Tracks the evolving state of one Battlegrounds game from raw log lines."""
@@ -247,12 +251,12 @@ class GameState:
         elif tag == "TECH_LEVEL":
             self.tier[eid] = int(value)
         elif tag == "479" or tag == "COST":
-            # The minion's live BUY price. Since patch 36.4.x the tavern cost
-            # is per-card and decoupled from TECH_LEVEL (2026-09-05 logs: 86
-            # of 117 shop creations differ — Lullabot TECH_LEVEL 1, COST 2;
-            # Soul Rewinder tier 2, COST 4), so "buy price = tier" is dead.
-            # The COST tag is the authoritative price; the DB's tier is only
-            # a fallback for cards the log hasn't priced yet.
+            # Captured as-is (raw), but it is NOT the minion buy price: the
+            # tag=479 values are stale legacy tier costs baked into the card
+            # definitions (2026-09-06: RESOURCES_USED=3 charged for tags
+            # saying 1 — player-confirmed rule: minions cost a FLAT 3 at
+            # every tier). Downstream consumers apply captured costs to
+            # TAVERN SPELLS ONLY (value._buy_prices); goldens included.
             self.cost[eid] = int(value)
         elif tag == "LITERALLY_UNPLAYABLE":
             # Hand cards locked by a condition (Thorim's 60-gold Tier-7 pick,
@@ -352,6 +356,26 @@ class GameState:
         friendly_board.sort(key=lambda m: (m["pos"] is None, m["pos"] or 0))
         opponent_board.sort(key=lambda m: m["card"])
         return friendly_board, opponent_board
+
+    def held_trinkets(self, friendly_player):
+        """Card ids of the friendly player's held trinkets (PLAY zone).
+
+        Trinket entities (BGxx_MagicItem_NNN) sit in PLAY once chosen. The
+        value function's W_TRINKET synergy term and the growth simulator's
+        requires_trinket steps need to know which are held — without this
+        both were dead code in the live loop (2026-09-08 audit). Zone
+        verified against live logs in the 2026-09-08 audit pass.
+        """
+        out = []
+        for eid, cid in self.card.items():
+            if not TRINKET_ID.match(cid or ""):
+                continue
+            if self.zone.get(eid) != "PLAY":
+                continue
+            if self.player.get(eid) != friendly_player:
+                continue
+            out.append(cid)
+        return out
 
     def hand(self, friendly_player):
         """Cards in ZONE=HAND (bought, not yet played/cast), friendly only.

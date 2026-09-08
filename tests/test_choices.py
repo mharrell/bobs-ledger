@@ -70,7 +70,7 @@ class TestChoiceParsing(unittest.TestCase):
         self.assertEqual(choice_kind("GENERAL", "Shift your Hero Power",
                                      [("Reborn Rites", "BG31_XYZ")]), "unknown")
         self.assertEqual(choice_kind("GENERAL", None,
-                                     [("A", "BG31_880")]), "discover")
+                                     [("A", "BG33_140")]), "discover")  # a real minion id
         self.assertEqual(choice_kind("MULLIGAN", None, []), "hero")
 
 

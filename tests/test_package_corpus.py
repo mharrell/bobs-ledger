@@ -46,9 +46,8 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(m["decision_count"], 1)
         self.assertEqual(m["battletags_redacted"], 1)
         self.assertEqual(m["log_basename"], "Power.log")
-        self.assertEqual(m["log_sha256"],
-                         hashlib.sha256(
-                             open(self.log, "rb").read()).hexdigest())
+        with open(self.log, "rb") as raw:
+            self.assertEqual(m["log_sha256"], hashlib.sha256(raw.read()).hexdigest())
         # the sanitized log round-trips and carries no BattleTags
         log = gzip.decompress(base64.b64decode(b["log_gz_b64"])).decode()
         self.assertNotIn("Player", log)

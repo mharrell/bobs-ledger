@@ -430,9 +430,54 @@ class TestRollHunt(unittest.TestCase):
         a["target_cards"]["core"].append(
             {"card": "BG35_883", "name": "Balinda Stonehearth",
              "owned": False, "banned": False})
-        line = value.top_move(self._analysis(4))
+        # Balinda must read as SHARED UTILITY for the hunt to skip her —
+        # core of 4 comps across 4 tribes (_shared_utility_cores's gate).
+        a["playable_comps"] = {
+            t: {"name": t, "tribe": t, "core": ["BG35_883"], "addons": []}
+            for t in ("Beast", "Dragon", "Mech", "Murloc")}
+        line = value.top_move(a)
         self.assertIn("hunting Deathstrider", line)
         self.assertNotIn("Balinda", line)
+
+
+class TestShopGolden(unittest.TestCase):
+    """A GOLDEN shop offer (2026-09-08, player-confirmed): costs the flat 3,
+    and playing it pays the triple reward NOW — super-duper high value. It
+    used to be invisible: the ranking dropped the "_G" id (card_db has base
+    ids only) and the price walk couldn't price it either."""
+
+    CID = "BG33_140"   # River Skipper — any base minion id
+
+    def test_golden_shop_offer_is_ranked_not_dropped(self):
+        scored = dict(value.shop_ranking([self.CID + "_G"], {}))
+        self.assertIn(self.CID + "_G", scored)
+
+    def test_golden_scores_golden_body_plus_reward(self):
+        plain = dict(value.shop_ranking([self.CID], {}))
+        gold = dict(value.shop_ranking([self.CID + "_G"], {}))
+        # 3x the stacked body on top of the triple-reward weight.
+        self.assertGreater(gold[self.CID + "_G"],
+                           plain[self.CID] + value.W_SHOP_GOLDEN)
+
+    def test_golden_outranks_missing_core(self):
+        comp = {"name": "Beasts", "tribe": "Beast", "core": [self.CID],
+                "addons": []}
+        scored = dict(value.shop_ranking(
+            [self.CID, self.CID + "_G"], {"b": comp}, board_minions=[]))
+        # The plain copy is the comp's MISSING core (+14); the golden still
+        # wins — an immediate triple beats a future one.
+        self.assertGreater(scored[self.CID + "_G"], scored[self.CID])
+
+    def test_golden_priced_flat_three(self):
+        costs = value._buy_prices({})
+        self.assertEqual(costs.get(self.CID + "_G"), 3)
+
+    def test_top_move_buys_a_golden_at_three(self):
+        a = {"gold": 3, "buy_this": self.CID + "_G",
+             "shop_rank": [[self.CID + "_G", 30.0]], "board": [], "turn": 9}
+        line = value.top_move(a)
+        self.assertEqual(a["buy_step_card"], self.CID + "_G")
+        self.assertIn("Buy River Skipper (golden)", line)
 
 
 class TestCombatForecast(unittest.TestCase):
@@ -714,14 +759,19 @@ class TestEngineFit(unittest.TestCase):
         self.assertLess(damped[deflect], undamped[deflect])
 
     def test_precommit_untribed_growth_exempt(self):
-        """Untribed cards fit any build — no pre-commit damp."""
+        """Untribed cards fit any build — no pre-commit damp, on any board."""
         deflect = "BGS_071"
-        board = [{"card": "BG36_202", "atk": 4, "health": 4, "tribe": "BEAST"},
-                 {"card": "BG26_162", "atk": 3, "health": 3, "tribe": "BEAST"}]
-        amalgam = "BG36_640"   # Gatekeeper Amalgam, all-tribe
-        scored = dict(value.shop_ranking([deflect, amalgam], {}, board))
-        # the mech is damped relative to the all-tribe card of similar growth
-        self.assertGreater(scored[amalgam], scored[deflect] - 20)
+        board_beast = [{"card": "BG36_202", "atk": 4, "health": 4, "tribe": "BEAST"},
+                       {"card": "BG26_162", "atk": 3, "health": 3, "tribe": "BEAST"}]
+        board_mech = [{"card": deflect, "atk": 3, "health": 2, "tribe": "MECH"},
+                      {"card": "BG_TTN_401", "atk": 3, "health": 3, "tribe": "MECH"}]
+        amalgam = "BG36_640"   # Gatekeeper Amalgam, no tribe in the DB
+        on_beast = dict(value.shop_ranking([deflect, amalgam], {}, board_beast))
+        on_mech = dict(value.shop_ranking([deflect, amalgam], {}, board_mech))
+        # The untribed card scores identically on both boards (exempt);
+        # the mech takes the damp on the beast board.
+        self.assertAlmostEqual(on_mech[amalgam], on_beast[amalgam])
+        self.assertLess(on_beast[deflect], on_mech[deflect])
 
 
 class TestBlockedCore(unittest.TestCase):
@@ -746,7 +796,8 @@ class TestBlockedCore(unittest.TestCase):
                            "core": ["BG31_035", "BG36_243"], "addons": [],
                            "_blocked_core": ["BG36_243"]}}
         rows = value.comp_progress([{"card": "BG31_035"}], comps)
-        self.assertEqual(rows[0]["needs"], ["BG31_035"] and [])
+        # BG31_035 is owned; BG36_243 is blocked-core, never "needed".
+        self.assertEqual(rows[0]["needs"], [])
 
 
 class TestHandPlan(unittest.TestCase):
@@ -796,10 +847,10 @@ class TestHandPlan(unittest.TestCase):
              "hand_plan": [{"card": "BG33_140", "verb": "hold",
                             "name": "Sewer Lord", "score": 8.0}],
              "buy_this": "BG36_202", "shop_rank": [("BG36_202", 9.0)],
-             "gold": 3, "tier": 5, "playable_comps": {}, "hand_plan": None}
+             "gold": 3, "tier": 5, "level_cost": None, "playable_comps": {}}
         line = value.top_move(a)
-        self.assertNotIn("sell BG33_140", line)
-        self.assertNotIn("sell Sewer", line)
+        self.assertIn("Hold Sewer Lord", line)
+        self.assertNotIn("sell", line.lower())
 
     def test_triple_awareness(self):
         """2 on board: the hand copy IS the triple — play now. 1 on board:
