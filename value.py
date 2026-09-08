@@ -571,6 +571,7 @@ def hand_plan(hand, board_minions=None, scenario=None):
     names = _load_bg_names()
     board = board_minions or []
     steps = []
+    destroy_casts = 0  # Butchering-class casts advised so far (target cap)
     for m in hand:
         cid = m.get("card")
         if not cid:
@@ -587,6 +588,22 @@ def hand_plan(hand, board_minions=None, scenario=None):
             fuel = _spell_fuel_bonus(board, names, scenario,
                                      extra_casts=_extra_casts(spell))
             why = "each cast feeds your cast engine" if fuel > 0 else None
+            # Destroy-cost casts (Butchering-class) consume a TARGET: each
+            # cast kills a friendly Undead, and Reborn covers ONE death per
+            # body — it is not a repeat cycle (player-corrected 2026-09-08:
+            # 'Cast Butchering x4' with 5 minions / 3 reborns, where the
+            # 4th cast eats a permanent minion). The castable count is
+            # capped at the board's Undead, and the targeting rule is
+            # stated: Reborn minions first (each reborn is one extra cast).
+            if "destroy a friendly" in (spell.get("text") or "").lower():
+                undead = sum(1 for b in board
+                             if normalize(b.get("tribe")) == "Undead")
+                if destroy_casts >= undead:
+                    continue  # no Undead left to destroy — uncastable
+                destroy_casts += 1
+                why = ("each cast: +5 Attack to ALL Undead, permanent — "
+                       "target a Reborn minion first (each reborn covers "
+                       "one cast)")
             steps.append({"card": cid, "verb": "cast", "score": points
                           + W_SPELL_FUEL * fuel,
                           "name": names.get(cid, cid), "why": why})

@@ -499,6 +499,36 @@ class TestStrengthGapLevelGate(unittest.TestCase):
         self.assertNotIn("buy stats first", line)
 
 
+class TestButcheringTargets(unittest.TestCase):
+    """Destroy-cost casts consume a target: Reborn is one-shot (covers a
+    single death per body — the player-corrected 2026-09-08 point), so the
+    cast advice caps at the board's Undead and states the targeting rule.
+    Sustain comes from generating NEW reborn bodies (Forsaken's hands,
+    Eternal Summoner's knights), not from re-killing one body forever."""
+
+    BUTCHER = "BG28_604"
+    UNDEAD = {"card": "BG36_511", "name": "Dead Bellringer", "atk": 4,
+              "health": 4, "tribe": "UNDEAD", "keywords": ["REBORN"]}
+
+    def _hand(self, n):
+        return [{"card": self.BUTCHER, "type": "spell"}] * n
+
+    def test_casts_capped_at_board_undead(self):
+        # 4 Butcherings, 2 Undead on board: only 2 castable.
+        steps = value.hand_plan(self._hand(4), board_minions=[self.UNDEAD,
+                                                              self.UNDEAD])
+        casts = [s for s in steps if s["card"] == self.BUTCHER]
+        self.assertEqual(len(casts), 2)
+
+    def test_no_targets_no_casts(self):
+        steps = value.hand_plan(self._hand(2), board_minions=[])
+        self.assertEqual([s for s in steps if s["card"] == self.BUTCHER], [])
+
+    def test_why_says_reborn_first(self):
+        steps = value.hand_plan(self._hand(1), board_minions=[self.UNDEAD])
+        self.assertIn("Reborn minion first", steps[0]["why"])
+
+
 class TestSituationLine(unittest.TestCase):
     """The plan's one-line thread above the steps (the 2026-09-06 Guff game
     had 240 stats vs a ~140 lobby and 30 HP with zero armor — every panel
