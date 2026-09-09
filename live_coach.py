@@ -855,6 +855,33 @@ class LiveCoach:
                             for c in held]
         else:
             trinket_recs = []
+        # Dark gifts: the Dark Discovery button grants a RANDOM gift (real
+        # logs show ~3 markers per press — three minions each carrying one);
+        # the log prints each gift's name on a MidGameEffect marker attached
+        # to its host minion (tag=1234, 2026-09-08 ground truth). Player
+        # attribution is fuzzy mid-combat (the shared spectator number makes
+        # one of the two tags lie) — require the marker's AND the host's
+        # controller to both be the friendly player, and dedup by name: the
+        # same gift recurs on new minions (Replication-class) and in later
+        # presses. dark_gifts.json finally gets read.
+        _dg_db = {d.get("name"): d for d in meta.dark_gifts()}
+        dark_gifts, _dg_seen = [], set()
+        for rec in self.gs.dark_gift_effects():
+            info = _dg_db.get(rec["name"])
+            if not info or rec["name"] in _dg_seen:
+                continue
+            if rec["host_player"] == self.friendly \
+                    and rec["player"] == self.friendly:
+                _dg_seen.add(rec["name"])
+                dark_gifts.append({"name": rec["name"],
+                                   "description": info.get("description")})
+        # Opponent trinkets: the log reveals every player's chosen trinkets
+        # (2026-09-08 ground truth) — free scout intel.
+        opp_trinkets = sorted({
+            _trinkets_by_id[c]["name"]
+            for p in set(self.gs.player.values()) if p != self.friendly
+            for c in self.gs.held_trinkets(p)
+            if c in _trinkets_by_id})
         hero_power = _hero_power_text(self.hero_name)
         # Recent acquisitions (this turn's plays + buys, and the last
         # completed turn's) feed the pivot override — the board alone lags
@@ -1008,6 +1035,8 @@ class LiveCoach:
             "gold": gold,
             "shop_costs": shop_costs,
             "level_cost": self.level_cost(),
+            "dark_gifts": dark_gifts,
+            "opp_trinkets": opp_trinkets,
             "health": health,
             "armor": armor,
             # This season's per-combat damage cap (BACON_COMBAT_DAMAGE_CAP,

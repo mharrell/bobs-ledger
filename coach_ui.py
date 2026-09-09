@@ -353,6 +353,16 @@ function render(a) {
         : 'Level costs ' + cost + 'g — '
           + Math.max(0, cost - (a.gold ?? 0)) + ' short'));
   }
+  // Dark gifts (what Dark Discovery granted) and the opponents' trinkets —
+  // both read from the log (2026-09-08 ground truth).
+  (a.dark_gifts || []).forEach(g => {
+    instr.appendChild(el('div', 'footline',
+      'Dark gift: ' + g.name + ' — ' + (g.description || '')));
+  });
+  if (a.opp_trinkets && a.opp_trinkets.length) {
+    instr.appendChild(el('div', 'footline',
+      'Their trinkets: ' + a.opp_trinkets.join(', ')));
+  }
   app.appendChild(instr);
 
   // The plan's actual buy (highlighted in the shop tiles below too).
@@ -640,6 +650,10 @@ def render_json(analysis):
     # The next-fight verdict (stat ratio + our keyword edges) rides the
     # scout strip so "will the next fight kill me" is on screen.
     a["forecast"] = analysis.get("forecast")
+    # Dark gifts (what Dark Discovery granted) and the opponents' trinkets
+    # (visible in the log, 2026-09-08 ground truth) — free intel lines.
+    a["dark_gifts"] = analysis.get("dark_gifts") or []
+    a["opp_trinkets"] = analysis.get("opp_trinkets") or []
     # When leveling leads the top move, the buy is what you do with the
     # leftover — label it that way so the priorities read in order.
     a["buy_label"] = ("Then buy (after leveling)"

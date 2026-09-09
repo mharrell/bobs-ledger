@@ -90,6 +90,61 @@ class TestHeldTrinkets(unittest.TestCase):
         self.assertEqual(gs.held_trinkets(7), ["BG35_MagicItem_301"])
 
 
+class TestDarkGifts(unittest.TestCase):
+    """Dark Discovery's random grant is recoverable: the gift NAME rides the
+    entityName of a generic BGxx_MidGameEffect_* marker attached to its host
+    minion via tag=1234 (2026-09-08 13:33 log: marker 872 'Charisma' -> host
+    871, controller 7). The marker drops to REMOVEDFROMGAME while the gift
+    stays active — zone is not the filter."""
+
+    def test_marker_name_and_host_link(self):
+        gs = GameState()
+        for line in (
+            [f"{GS}    FULL_ENTITY - Creating ID=871 CardID=BG35_142",
+             f"{GS}        tag=CONTROLLER value=7",
+             f"{GS}        tag=ZONE value=PLAY",
+             f"{GS}        tag=CARDTYPE value=MINION"],
+            [f"{GS}    FULL_ENTITY - Creating ID=872 CardID=",
+             f"{GS}        tag=CONTROLLER value=7",
+             f"{GS}        tag=ZONE value=SETASIDE",
+             f"{GS}        tag=CARDTYPE value=INVALID"],
+        ):
+            for l in line:
+                gs.feed(l)
+        gs.feed(f"{GS}    SHOW_ENTITY - Updating Entity=872 "
+                f"CardID=BG36_MidGameEffect_000t3e2")
+        # The name resolves on a later bracket line (HIDE_ENTITY's shape).
+        gs.feed(f"{GS}    HIDE_ENTITY - Entity=[entityName=Charisma id=872 "
+                f"zone=PLAY zonePos=0 cardId=BG36_MidGameEffect_000t3e2 "
+                f"player=7] tag=ZONE value=PLAY")
+        gs.feed(f"{GS}    TAG_CHANGE Entity=[entityName=Charisma id=872 "
+                f"zone=PLAY zonePos=0 cardId=BG36_MidGameEffect_000t3e2 "
+                f"player=7] tag=1234 value=871")
+        gs.feed(f"{GS}    TAG_CHANGE Entity=[entityName=Charisma id=872 "
+                f"zone=PLAY zonePos=0 cardId=BG36_MidGameEffect_000t3e2 "
+                f"player=7] tag=ZONE value=REMOVEDFROMGAME")
+        got = gs.dark_gift_effects()
+        self.assertEqual(len(got), 1)
+        self.assertEqual(got[0]["name"], "Charisma")
+        self.assertEqual(got[0]["host"], 871)
+        self.assertEqual(got[0]["host_player"], 7)
+
+    def test_non_gift_tag_1234_ignored(self):
+        # tag=1234 on a non-MidGameEffect entity is not a host link.
+        gs = GameState()
+        for line in (
+            [f"{GS}    FULL_ENTITY - Creating ID=500 CardID=BG33_140",
+             f"{GS}        tag=CONTROLLER value=7"]
+        ):
+            for l in line:
+                gs.feed(l)
+        gs.feed(f"{GS}    TAG_CHANGE Entity=[entityName=Minion id=500 "
+                f"zone=PLAY zonePos=0 cardId=BG33_140 player=7] "
+                f"tag=1234 value=42")
+        self.assertEqual(gs.dark_gift_effects(), [])
+        self.assertNotIn(500, gs.dark_gift_host)
+
+
 class TestHand(unittest.TestCase):
     def test_hand_carries_minions_and_spells(self):
         """The hand is a coaching input (2026-09-04: five spells sat in hand

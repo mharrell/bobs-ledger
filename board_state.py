@@ -50,12 +50,20 @@ CHANGE_ENTITY = re.compile(r"CHANGE_ENTITY - Updating Entity=\[(.*)\] CardID=(\S
 # ids drift between sets, so match the shape, never one set code).
 TRINKET_ID = re.compile(r"^BG\d+_MagicItem_\d+$")
 
+# Dark-gift markers: generic BGxx_MidGameEffect_* effect entities whose
+# bracket entityName IS the granted gift's name (tag=1234 links the marker
+# to its host minion). 2026-09-08 13:33 log ground truth.
+DARK_GIFT_EFFECT = re.compile(r"^BG\d+_MidGameEffect_")
+DARK_GIFT_HOST_TAG = "1234"
+
 
 class GameState:
     """Tracks the evolving state of one Battlegrounds game from raw log lines."""
 
     def __init__(self):
         self.card = {}          # entity id -> card id
+        self.ename = {}         # entity id -> last bracket entityName
+        self.dark_gift_host = {}  # MidGameEffect eid -> host minion eid
         self.player = {}        # entity id -> player number
         self.zone = {}          # entity id -> zone
         self.zone_pos = {}      # entity id -> ZONE_POSITION
@@ -106,6 +114,11 @@ class GameState:
             ename, eid, cid, p, tag, value = m.groups()
             eid = int(eid)
             self.card[eid] = cid
+            # The bracket's entityName is where generated-card identity
+            # lives when the CardID is generic (dark-gift markers print
+            # "Charisma" etc. on a BGxx_MidGameEffect_* entity).
+            if ename and not ename.startswith("UNKNOWN"):
+                self.ename[eid] = ename
             p = int(p)
             # The bracket's player is a snapshot from BEFORE this block ran:
             # re-seeding it on every sibling write un-did a same-block
@@ -249,6 +262,12 @@ class GameState:
             self.cardtype[eid] = value
         elif tag == "ATK":
             self.atk[eid] = int(value)
+        elif tag == DARK_GIFT_HOST_TAG \
+                and DARK_GIFT_EFFECT.match(self.card.get(eid, "")):
+            # A dark-gift marker's host link: the MidGameEffect entity is
+            # attached to the minion carrying the gift (2026-09-08 13:33
+            # log: marker 872 'Charisma' -> host 871, controller 7).
+            self.dark_gift_host[eid] = int(value)
         elif tag == "HEALTH":
             self.health[eid] = int(value)
             cid = self.card.get(eid, "")
@@ -399,6 +418,38 @@ class GameState:
             if self.player.get(eid) != friendly_player:
                 continue
             out.append(cid)
+        return out
+
+    def dark_gift_effects(self):
+        """All granted dark-gift markers: [{eid, name, host, player,
+        host_player}].
+
+        Dark Discovery grants a RANDOM dark gift; the log prints it as an
+        entity whose entityName IS the gift name on a generic
+        BGxx_MidGameEffect_* effect entity, linked to its host minion via
+        tag=1234. The marker drops to REMOVEDFROMGAME while the gift stays
+        active, so zone is NOT the filter — the MidGameEffect cardId plus a
+        resolvable bracket name is. Attribution goes through the host
+        minion's controller (the marker's own player tag can be the shared
+        spectator number); 2026-09-08 13:33 log ground truth: marker 872
+        'Charisma' -> host 871 (controller 7, the friendly).
+
+        Callers (live_coach) filter by the dark_gifts.json name list and
+        the friendly player number — this is the raw recovery layer.
+        """
+        out = []
+        for eid, cid in self.card.items():
+            if not DARK_GIFT_EFFECT.match(cid or ""):
+                continue
+            name = self.ename.get(eid)
+            if not name:
+                continue
+            host = self.dark_gift_host.get(eid)
+            out.append({
+                "eid": eid, "name": name, "host": host,
+                "player": self.player.get(eid),
+                "host_player": self.player.get(host) if host else None,
+            })
         return out
 
     def hand(self, friendly_player):
