@@ -986,6 +986,78 @@ class TestTopMoveHand(unittest.TestCase):
         self.assertIn("sell nothing that grows", tm)
 
 
+class TestTavernBuffWaste(unittest.TestCase):
+    """One-shot tavern buffs (Them Apples-class) live and die with THIS
+    shop (2026-09-08 player report: the coach said "Cast Them Apples",
+    then LEVEL and no purchases — the spell was wasted). A cast only
+    stays in the plan when the plan buys a shop minion this turn."""
+
+    def _buff(self):
+        return [{"card": "BG28_966", "verb": "cast", "name": "Them Apples",
+                 "score": 6, "why": None}]
+
+    def test_held_when_the_plan_buys_nothing(self):
+        a = {"tier": 2, "gold": 6, "level_cost": 5, "health": 30,
+             "armor": 0, "turn": 7, "damage_last": None, "loss_streak": 0,
+             "board": [], "shop_rank": [], "buy_this": None,
+             "playable_comps": {}, "choice": None, "sell_rank": [],
+             "target_comp": None, "target_cards": None,
+             "hand_plan": self._buff()}
+        tm = value.top_move(a)
+        self.assertIn("LEVEL to tier 3", tm)          # the reported shape
+        self.assertIn("Hold Them Apples", tm)
+        self.assertNotIn("Cast Them Apples", tm)
+        self.assertIn("dies with this shop", tm)
+
+    def test_cast_kept_and_warned_with_a_minion_buy(self):
+        a = {"tier": 2, "gold": 6, "level_cost": 99, "health": 30,
+             "armor": 0, "turn": 7, "damage_last": None, "loss_streak": 0,
+             "board": [], "shop_rank": [("BG33_140", 9.0)],
+             "buy_this": "BG33_140",
+             "playable_comps": {}, "choice": None, "sell_rank": [],
+             "target_comp": None, "target_cards": None,
+             "hand_plan": self._buff()}
+        tm = value.top_move(a)
+        self.assertIn("Cast Them Apples", tm)
+        self.assertIn("buy the buffed minions this turn", tm)
+        self.assertIn("Buy River Skipper", tm)
+
+    def test_recurring_tavern_buffs_are_exempt(self):
+        """Refresh-scaling tavern spells re-apply on future refreshes — a
+        no-buy turn doesn't waste them, so their casts stay."""
+        db = value._load_spell_db()
+        self.assertTrue(value._is_shop_turn_buff(db.get("BG28_966")))
+        self.assertFalse(value._is_shop_turn_buff(db.get("BG34_689")))
+        self.assertFalse(value._is_shop_turn_buff(db.get("BG28_897")))
+        self.assertFalse(value._is_shop_turn_buff(None))
+
+    def test_shop_buff_buy_swapped_for_an_affordable_minion(self):
+        """Buying Them Apples out of the shop with no room for a minion
+        after wastes the buff — the gold goes to the best minion instead."""
+        a = {"tier": 2, "gold": 3, "level_cost": 99, "health": 30,
+             "armor": 0, "turn": 7, "damage_last": None, "loss_streak": 0,
+             "board": [],
+             "shop_rank": [("BG28_966", 8.0), ("BG33_140", 6.0)],
+             "buy_this": "BG28_966",
+             "playable_comps": {}, "choice": None, "sell_rank": [],
+             "target_comp": None, "target_cards": None, "hand_plan": []}
+        tm = value.top_move(a)
+        self.assertIn("Buy River Skipper", tm)
+        self.assertNotIn("Buy Them Apples", tm)
+
+    def test_shop_buff_buy_with_no_minion_fits_rolls(self):
+        a = {"tier": 2, "gold": 2, "level_cost": 99, "health": 30,
+             "armor": 0, "turn": 7, "damage_last": None, "loss_streak": 0,
+             "board": [],
+             "shop_rank": [("BG28_966", 8.0), ("BG33_140", 6.0)],
+             "buy_this": "BG28_966",
+             "playable_comps": {}, "choice": None, "sell_rank": [],
+             "target_comp": None, "target_cards": None, "hand_plan": []}
+        tm = value.top_move(a)
+        self.assertIn("roll — casting Them Apples", tm)
+        self.assertIn("dies with the shop", tm)
+
+
 class TestMultiplierProtect(unittest.TestCase):
     """Comp glue is never 'safest to sell' (2026-09-04 1st-place game: 'sell
     Balinda Stonehearth (making room)' fired three phases in a row — she IS

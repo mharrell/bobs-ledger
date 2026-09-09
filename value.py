@@ -220,6 +220,32 @@ def _spell_effect(spell, board_size=0):
     return points
 
 
+def _is_shop_turn_buff(spell):
+    """A ONE-SHOT buff on the Tavern's minions (Them Apples-class).
+
+    Its stats live and die with THIS shop (player rule 2026-09-08: the
+    coach said "Cast Them Apples", then LEVEL and no purchases — the
+    spell was wasted). It is only worth casting when this turn's plan
+    BUYS shop minions before any refresh: leveling keeps the shop, a
+    roll wipes it, a pass wastes it. Refresh-scaling tavern spells
+    (recurring: "every Refresh this game buffs the Tavern") re-apply on
+    future refreshes, so a no-buy turn doesn't waste them. Unannotated
+    spells fall back to the text read; recurring language keeps them
+    exempt the same way.
+    """
+    if not spell:
+        return False
+    for eff in spell.get("effects") or []:
+        if (eff.get("kind") == "stats" and eff.get("scope") == "tavern"
+                and not eff.get("recurring")):
+            return True
+    if spell.get("effects"):
+        return False
+    text = (spell.get("text") or "").lower()
+    return (bool(re.search(r"minions in (bob's |the )?tavern", text))
+            and "every" not in text and "each" not in text)
+
+
 def _spell_fuel_bonus(board_minions, names, scenario=None, extra_casts=0):
     """Marginal growth one extra spell cast buys on the board's cast-spell engines.
 
@@ -994,30 +1020,10 @@ def _top_move_text(analysis):
 
     # 0. The hand (free actions, in ranked order): cast spells, play stuck
     #    minions. Copies group ("x2"); beyond three the rest summarize so the
-    #    level/buy steps stay visible.
+    #    level/buy steps stay visible. Rendered AFTER the buy step settles —
+    #    one-shot tavern buffs demote on the plan's actual buy (below).
     hand_entries = analysis.get("hand_plan") or []
     hand_parts = []
-    if hand_entries:
-        counts, order = {}, []
-        for s in hand_entries:
-            key = (s["verb"], s["card"])
-            if key not in counts:
-                counts[key] = [0, s]
-                order.append(key)
-            counts[key][0] += 1
-        for key in order:
-            n, s = counts[key]
-            label = {"cast": "Cast ", "play": "Play ",
-                     "hold": "Hold "}.get(s["verb"], "Play ") + s["name"]
-            if n > 1:
-                label += f" x{n}"
-            if s.get("why"):
-                label += f" ({s['why']})"
-            hand_parts.append(label)
-        if len(hand_parts) > 3:
-            extra = len(hand_parts) - 3
-            hand_parts = hand_parts[:3] + [f"then the rest of your hand "
-                                           f"({extra} more)"]
 
     # 1. LEVEL — the tier gates the whole shop, so it leads whenever relevant.
     #    The gates and their reasons follow analysis/LEVELING_MODEL.md:
@@ -1165,6 +1171,27 @@ def _top_move_text(analysis):
                         and (budget is None or budget >= alt_cost)):
                     cid = alt
                     break
+        # A one-shot tavern buff bought from the SHOP is only worth its gold
+        # when a minion buy can FOLLOW it this turn — the buff dies with the
+        # shop (2026-09-08 player report: cast, level, no purchases). No room
+        # for a minion after it: buy the best affordable minion instead, else
+        # roll and say why.
+        if _is_shop_turn_buff(spell_db.get(cid)) and budget is not None:
+            buff_cost = costs.get(cid)
+            if buff_cost is not None and budget - buff_cost < MINION_BUY_PRICE:
+                alt_minion = next((alt for alt, _v in shop_rank
+                                   if alt not in spell_db
+                                   and costs.get(alt) is not None
+                                   and budget >= costs.get(alt)), None)
+                if alt_minion is None and budget:
+                    wasted = (f"roll — casting {_shop_name(cid, names)} with no "
+                              f"gold left for a shop minion wastes it "
+                              f"(the buff dies with the shop)")
+                    parts.append(wasted)
+                    analysis["buy_step_roll"] = wasted
+                    cid = None
+                else:
+                    cid = alt_minion
         cost = costs.get(cid)
         if budget is not None and cost is not None and budget < cost:
             # Can't afford the headline pick — walk the ranking for one the
@@ -1265,6 +1292,71 @@ def _top_move_text(analysis):
                 parts.append(f"sell {names.get(worst[0], worst[0])} "
                              f"(making room)")
             break
+    # 0. The hand, rendered now that the plan's buy is known: a one-shot
+    #    tavern buff ("Them Apples") lives and dies with THIS shop, so its
+    #    cast is only advice when the plan BUYS a shop minion this turn
+    #    (2026-09-08 player report: cast, LEVEL, no purchases — the spell
+    #    was wasted). No minion buy: the cast demotes to a hold, stated so
+    #    the player knows to cast it the turn they actually shop. With one:
+    #    the cast stays, warning that the buffed minions must be bought
+    #    before any refresh. (Leveling doesn't refresh the shop, so
+    #    Cast → LEVEL → Buy is a fine order; a roll or pass wipes the buff.)
+    #    The demotion mutates the shared hand-plan entries in place, so the
+    #    overlay's hand box agrees with the plan; demoted holds move last.
+    demoted = []
+    for s in hand_entries:
+        if s.get("verb") != "cast":
+            continue
+        if not _is_shop_turn_buff(spell_db.get(s.get("card"))):
+            continue
+        if bought is not None and bought not in spell_db:
+            s["why"] = ("buff dies with this shop — buy the buffed "
+                        "minions this turn")
+        else:
+            # No minion buy in the plan — the cast only survives if one can
+            # still FOLLOW it this turn (spare gold after the level and the
+            # named buy, and an affordable minion in the shop). Otherwise the
+            # buff dies with the shop: hold it.
+            spare = None
+            if budget is not None:
+                spare = budget - ((costs.get(bought) or 0) if bought else 0)
+            if spare is not None and spare >= MINION_BUY_PRICE \
+                    and any(alt not in spell_db
+                            and costs.get(alt) is not None
+                            and spare >= costs.get(alt)
+                            for alt, _v in shop_rank):
+                s["why"] = ("buff dies with this shop — buy the buffed "
+                            "minions this turn")
+            else:
+                s["verb"] = "hold"
+                s["why"] = ("cast it the turn you buy shop minions — "
+                            "the buff dies with this shop")
+                demoted.append(s)
+    if demoted:
+        demoted_ids = {id(s) for s in demoted}
+        hand_entries[:] = [s for s in hand_entries
+                           if id(s) not in demoted_ids] + demoted
+    if hand_entries:
+        counts, order = {}, []
+        for s in hand_entries:
+            key = (s["verb"], s["card"])
+            if key not in counts:
+                counts[key] = [0, s]
+                order.append(key)
+            counts[key][0] += 1
+        for key in order:
+            n, s = counts[key]
+            label = {"cast": "Cast ", "play": "Play ",
+                     "hold": "Hold "}.get(s["verb"], "Play ") + s["name"]
+            if n > 1:
+                label += f" x{n}"
+            if s.get("why"):
+                label += f" ({s['why']})"
+            hand_parts.append(label)
+        if len(hand_parts) > 3:
+            extra = len(hand_parts) - 3
+            hand_parts = hand_parts[:3] + [f"then the rest of your hand "
+                                           f"({extra} more)"]
     # The stay decision (Q1) trails the buys: what the comp needs is ON this
     # tier, and the player should know the level was declined on purpose.
     if stay_note and tier:
