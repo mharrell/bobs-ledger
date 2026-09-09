@@ -331,6 +331,61 @@ class TestLevelGates(unittest.TestCase):
         tm = top_move(a)
         self.assertIn("LEVEL to tier 3 (standard curve)", tm)
 
+    def test_addon_next_tier_does_not_defeat_core_here_stay(self):
+        """A missing CORE on the current tier outranks a lone ADDON at
+        tier+1: the old gate required tier+1 to hold NOTHING, so any addon
+        there pulled LEVEL while the comp's cores sat here (2026-09-08:
+        'keeps saying to upgrade even if there are minions at this tier we
+        still need')."""
+        from value import _load_card_db
+        db = _load_card_db()
+        t2 = next(c for c, v in db.items() if v.get("tier") == 2)
+        t3 = next(c for c, v in db.items() if v.get("tier") == 3
+                  and c != t2)
+        a, top_move = self._analysis(next_pieces=(), here_pieces=(t2,))
+        a["target_cards"]["core"] = [{"card": t2, "name": t2, "owned": False}]
+        a["target_cards"]["addons"] = [{"card": t3, "name": t3, "owned": False}]
+        tm = top_move(a)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIn("stay on tier 2", tm)
+
+    def test_lower_tier_core_counts_as_here(self):
+        """A tier-3 core while at tier 4: leveling dilutes sub-tier pool
+        shares too — 'here' is this tier OR below."""
+        from value import _load_card_db
+        db = _load_card_db()
+        t3 = next(c for c, v in db.items() if v.get("tier") == 3)
+        a, top_move = self._analysis(tier=4)
+        a["target_cards"]["core"] = [{"card": t3, "name": t3, "owned": False}]
+        tm = top_move(a)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIn("stay on tier 4", tm)
+
+    def test_more_next_cores_than_here_levels(self):
+        """The comp's missing cores live mostly one tier up: LEVEL states
+        the payoff."""
+        from value import _load_card_db
+        db = _load_card_db()
+        t2 = next(c for c, v in db.items() if v.get("tier") == 2)
+        t3s = [c for c, v in db.items() if v.get("tier") == 3][:2]
+        a, top_move = self._analysis(tier=2)
+        a["target_cards"]["core"] = [{"card": t2, "name": t2, "owned": False}] \
+            + [{"card": c, "name": c, "owned": False} for c in t3s]
+        tm = top_move(a)
+        self.assertIn("the comp's next pieces live there", tm)
+
+    def test_unranked_pick_never_blessed(self):
+        """An unranked pick (no data — score None) gets no 'PICK X' step:
+        recommending the first listed option read as advice (2026-09-08
+        hero-power stance discover)."""
+        from value import top_move
+        a, _tm = self._analysis()
+        a["choice"] = {"kind": "unknown", "source": "Shift your Hero Power",
+                       "ranked": [("A", "BG31_XYZ", None, ""),
+                                  ("B", "BG31_ABC", None, "")]}
+        tm = top_move(a)
+        self.assertNotIn("PICK", tm)
+
 
 class TestArmorFlow(unittest.TestCase):
     """Armor/HP drops between buy phases are the loss-streak signal (Q0,
