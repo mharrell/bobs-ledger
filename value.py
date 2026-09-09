@@ -1063,7 +1063,8 @@ def _top_move_text(analysis):
                           and spare < h_cost)
             # Q1 payoff: unowned pieces of the target comp, split by which
             # tavern tier holds them (copies of what we own don't count).
-            needs_next, needs_here = _comp_needs_by_tier(analysis, card_db)
+            next_core, here_core, next_any, here_any = _comp_needs_by_tier(
+                analysis, card_db)
             # Scout (gates 3+4): "their" = the next opponent's last-known
             # board when we've fought them (the exact buy-phase preview),
             # else the lobby median, else the corpus baseline. The "~" marks
@@ -1108,13 +1109,20 @@ def _top_move_text(analysis):
                 budget = gold  # the buy comes first, from the full purse
                 level_next = True
                 level_flip_why = flip_why or "the shop's top card is a comp core"
-            elif needs_here and not needs_next:
-                # Q1: what the comp needs is ON this tier — leveling would
-                # lower the odds of finding it. Stay and buy.
+            elif (here_core > 0 and here_core >= next_core) or \
+                    (here_core == 0 and next_core == 0
+                     and here_any > 0 and next_any == 0):
+                # Q1: what the comp is MISSING lives here — this tier or
+                # below — and not more of it one tier up, so leveling would
+                # lower the odds of finding it. Cores dominate; addons only
+                # carry the stay when they're all the shopping left. The old
+                # gate required tier+1 to hold NOTHING: any single addon
+                # there pulled LEVEL while missing cores sat here
+                # (2026-09-08).
                 budget = gold
                 stay_note = True
             else:
-                if needs_next:
+                if next_core > here_core:
                     why = "the comp's next pieces live there"
                 elif strong:
                     why = "you're strong — convert it into a tier"
@@ -1133,8 +1141,12 @@ def _top_move_text(analysis):
     # 2. The forced pick (hero / trinket / discover) — the shop doesn't gate it.
     # Hero picks carry a fallback: the log doesn't expose ownership, so the
     # top pick might be season-pass locked — name the next-best too.
+    # An UNRANKED pick (no data — score None) is never blessed: recommending
+    # the first listed option read as advice (2026-09-08: "PICK Upstart
+    # Embers" for a Trip Vouchers discover, Entities[0] with no reason).
+    # The Choose-1 box still lists the options.
     choice = analysis.get("choice")
-    if choice and choice.get("ranked"):
+    if choice and choice.get("ranked") and choice["ranked"][0][2] is not None:
         best = choice["ranked"][0]
         why = f" ({best[3]})" if best[3] else ""
         pick = f"PICK {best[0]}{why}"
@@ -1265,11 +1277,12 @@ def _top_move_text(analysis):
                 parts.append(f"sell {names.get(worst[0], worst[0])} "
                              f"(making room)")
             break
-    # The stay decision (Q1) trails the buys: what the comp needs is ON this
-    # tier, and the player should know the level was declined on purpose.
+    # The stay decision (Q1) trails the buys: what the comp is missing lives
+    # here (this tier or below), and the player should know the level was
+    # declined on purpose.
     if stay_note and tier:
-        parts.append(f"stay on tier {tier} — your comp's missing pieces are "
-                     f"on this tier; leveling would lower the odds")
+        parts.append(f"stay on tier {tier} — your comp's missing cores are "
+                     f"on this tier or below; leveling would lower the odds")
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
     # right move is to pass and let the engine grow — casting the hand first
     # (end-of-turn effects count the casts made this turn).
@@ -1387,15 +1400,23 @@ def combat_forecast(analysis):
 
 
 def _comp_needs_by_tier(analysis, card_db):
-    """Unowned pieces of the target comp, split by which tavern tier holds
-    them relative to the current tier: (needs_next, needs_here) (Q1,
+    """Unowned pieces of the target comp, split by tavern tier relative to
+    the current one: (next_core, here_core, next_any, here_any) (Q1,
     analysis/LEVELING_MODEL.md — leveling lowers the odds of finding the
-    CURRENT tier's cards, so where the missing pieces live decides)."""
+    CURRENT tier's cards, so where the missing pieces live decides).
+
+    CORES drive the decision; addons only matter when they're ALL the
+    shopping that's left (a lone addon at tier+1 used to pull LEVEL past
+    missing cores on the current tier — the 2026-09-08 report: 'keeps
+    saying to upgrade even if there are minions at this tier we still
+    need'). 'Here' includes LOWER tiers: a tier-3 core while at tier 4 is
+    still diluted by leveling (the pool's sub-tier share drops as the
+    tavern climbs)."""
     tc = analysis.get("target_cards")
     tier = analysis.get("tier")
     if not tc or tier is None:
-        return 0, 0
-    nxt = here = 0
+        return 0, 0, 0, 0
+    next_core = here_core = next_any = here_any = 0
     for section in ("core", "addons"):
         for row in tc.get(section) or []:
             if row.get("owned") or row.get("banned"):
@@ -1404,10 +1425,14 @@ def _comp_needs_by_tier(analysis, card_db):
             if t is None:
                 continue
             if t == tier + 1:
-                nxt += 1
-            elif t == tier:
-                here += 1
-    return nxt, here
+                if section == "core":
+                    next_core += 1
+                next_any += 1
+            elif t <= tier:
+                if section == "core":
+                    here_core += 1
+                here_any += 1
+    return next_core, here_core, next_any, here_any
 
 
 def _core_hits(board, rc, cores):

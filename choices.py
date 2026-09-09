@@ -45,6 +45,14 @@ _CHOSEN = re.compile(
     r"\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)")
 
 _HERO_ID = re.compile(r"^(?:TB_BaconShop_HERO_\d+|BG\d+_HERO_\d+)$")
+# Trinket-offer options carry BGxx_MagicItem_NNN ids. MINION_ID can't catch
+# them (the [A-Z]+_ id segment is uppercase-only; "MagicItem" is mixed), and
+# the SOURCE that offers them usually isn't named "trinket" — the Lesser/Greater
+# Trinket buttons are, but their EFFECTS aren't: Trip Vouchers' discover
+# (2026-09-08 20:35 log) sourced "Trip Vouchers" and offered four MagicItem
+# cards, which the old check classified "unknown" and ranked in original
+# option order — "PICK Upstart Embers" (Entities[0]) with no reason.
+_MAGIC_ITEM_ID = re.compile(r"^BG\d+_MagicItem_\d+t?$")
 
 
 def choice_kind(ctype, source, options):
@@ -52,6 +60,8 @@ def choice_kind(ctype, source, options):
     if ctype == "MULLIGAN" or all(_HERO_ID.match(c) for _n, c in options):
         return "hero"
     if source and "trinket" in source.lower():
+        return "trinket"
+    if options and all(_MAGIC_ITEM_ID.match(c) for _n, c in options):
         return "trinket"
     if options and all(_is_minion_id(c) for _n, c in options):
         return "discover"
