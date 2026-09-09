@@ -90,6 +90,23 @@ CHANGE_ENTITY + gold spells, test_simulate_growth.py, spell card-text pass).
 - Opponent trinkets are visible too (players share nothing; trinkets are
   per-player) — future scout-box intel.
 
+## Dark-gift ranker + opponent trinket intel (landed, same session)
+
+- `board_state` now captures the bracket `entityName` (where generated-card
+  identity lives when the CardID is generic) and the tag=1234 host link;
+  `dark_gift_effects()` is the raw recovery layer.
+- Ground truth refined on the full log: Dark Discovery grants ~3 gifts per
+  press (three markers, sequential hosts); the same gift recurs on new
+  minions (Replication-class); player attribution is fuzzy mid-combat
+  (marker vs host controller disagree — the shared-spectator problem), so
+  the friendly filter requires BOTH tags to agree; display dedups by name.
+- `live_coach.analyze` emits `dark_gifts` (name + description —
+  dark_gifts.json is read by decision code for the first time) and
+  `opp_trinkets`; the overlay shows them as footlines.
+- Opponent trinket intel reads `[]` in games where opponents haven't
+  picked yet (the 13:33 log ends before their picks); the 09:52 log has
+  players 5/6 carrying trinkets — intel appears when they exist.
+
 ## Longer-standing gaps (already documented, unchanged)
 
 - Gate-5 combat forecast is a stat ratio (no positioning/keywords/

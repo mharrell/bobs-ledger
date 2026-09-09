@@ -84,6 +84,11 @@ def trinket_effects():
     return _raw("trinket_effects.json") or {}
 
 
+def dark_gifts():
+    """The Dark Discovery gift pool (name + description), or []."""
+    return _items("dark_gifts.json")
+
+
 def heroes():
     return _items("heroes.json")
 
