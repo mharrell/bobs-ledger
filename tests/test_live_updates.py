@@ -830,16 +830,45 @@ class TestBanGate(unittest.TestCase):
 
 
 class TestRenderJsonComps(unittest.TestCase):
-    def test_playable_comps_dict_becomes_name_list(self):
-        """The analysis carries a slug->comp dict; the UI reads a["comps"] as
-        a name list — the box sat on "—" forever without this mapping."""
+    def test_playable_comps_become_rich_tier_rows(self):
+        """The comps panel needs more than names: each playable comp row
+        carries its slug (the click-to-expand key), meta tier (the panel's
+        grouping) and its core/addons shopping list with owned/banned flags
+        — the player sees at a glance which required cards they have.
+        Rows sort meta-tier first (S before A) so the panel can group."""
+        from coach_ui import render_json
+        analysis = {"board": [{"card": "BG23_318", "attack": 1, "health": 1}],
+                    "sell_rank": [], "shop_rank": [],
+                    "playable_comps": {
+                        "beasts-x": {"name": "Beasts - X", "meta_tier": "A",
+                                     "core": ["BG30_111"], "addons": []},
+                        "mechs-y": {"name": "Mechs - Y", "meta_tier": "S",
+                                    "core": ["BG23_318", "BG33_318"],
+                                    "addons": ["BG27_556"],
+                                    "_blocked_core": ["BG33_318"]}}}
+        a = render_json(analysis)
+        self.assertEqual([c["slug"] for c in a["comps"]],
+                         ["mechs-y", "beasts-x"])
+        mechs = a["comps"][0]
+        self.assertEqual(mechs["meta_tier"], "S")
+        by_id = {r["card"]: r for r in mechs["core"]}
+        self.assertTrue(by_id["BG23_318"]["owned"])     # on the board
+        self.assertFalse(by_id["BG33_318"]["owned"])
+        self.assertTrue(by_id["BG33_318"]["banned"])    # _blocked_core
+        self.assertFalse(mechs["addons"][0]["banned"])
+        # The comp cards ride the tooltip metadata map too.
+        self.assertIn("BG23_318", a["cards"])
+
+    def test_playable_comps_no_ban_info_keeps_all(self):
+        """A comp without _blocked_core marks nothing banned — unknown ban
+        info must not read as 'banned'."""
         from coach_ui import render_json
         analysis = {"board": [], "sell_rank": [], "shop_rank": [],
                     "playable_comps": {
-                        "beasts-x": {"name": "Beasts - X", "meta_tier": "A"},
-                        "mechs-y": {"name": "Mechs - Y", "meta_tier": "S"}}}
+                        "x": {"name": "X", "meta_tier": "B",
+                              "core": ["BG30_111"], "addons": []}}}
         a = render_json(analysis)
-        self.assertEqual(a["comps"], ["Mechs - Y", "Beasts - X"])
+        self.assertFalse(a["comps"][0]["core"][0]["banned"])
         self.assertEqual(a["buy_step_card"], None)
 
     def test_sell_rank_groups_duplicates(self):
