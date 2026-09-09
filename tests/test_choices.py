@@ -73,6 +73,42 @@ class TestChoiceParsing(unittest.TestCase):
                                      [("A", "BG33_140")]), "discover")  # a real minion id
         self.assertEqual(choice_kind("MULLIGAN", None, []), "hero")
 
+    def test_trinket_effect_discover_is_trinket(self):
+        """A trinket's EFFECT discover (Trip Vouchers, 2026-09-08 20:35 log):
+        the source names the trinket, not 'trinket', and the options are
+        MagicItem ids MINION_ID can't match — the old check classified
+        'unknown' and the coach recommended Entities[0] with no reason."""
+        opts = [("Upstart Embers", "BG35_MagicItem_862"),
+                ("Corrupted Tome", "BG35_MagicItem_812"),
+                ("Nomi Sticker", "BG30_MagicItem_544t"),
+                ("Portable Factory", "BG32_MagicItem_361t")]
+        self.assertEqual(choice_kind("GENERAL", "Trip Vouchers", opts),
+                         "trinket")
+        lines = [
+            "D 20:35:31.9855470 GameState.DebugPrintEntityChoices() - id=7 "
+            "Player=X TaskList=2127 ChoiceType=GENERAL CountMin=1 CountMax=1",
+            "D 20:35:31.9855470 GameState.DebugPrintEntityChoices() -   "
+            "Source=[entityName=Trip Vouchers id=431 zone=PLAY zonePos=0 "
+            "cardId=BG30_MagicItem_891 player=2]",
+        ]
+        for i, (n, c) in enumerate(opts):
+            lines.append(f"D 20:35:31.9855470 "
+                         f"GameState.DebugPrintEntityChoices() -   "
+                         f"Entities[{i}]=[entityName={n} id=64{i} "
+                         f"zone=SETASIDE zonePos=0 cardId={c} player=2]")
+        (kind, src, parsed), = parse_choice_blocks(lines)
+        self.assertEqual(kind, "trinket")
+        self.assertEqual(src, "Trip Vouchers")
+        self.assertEqual(len(parsed), 4)
+
+    def test_unranked_options_still_score_none(self):
+        """Genuinely unknown picks keep their rows but stay unranked — the
+        renderers must not bless the first option (score None = no data)."""
+        ranked = rank_choices("unknown", [("A", "BG31_XYZ"), ("B", "BG31_ABC")])
+        self.assertEqual(len(ranked), 2)
+        self.assertIsNone(ranked[0][2])
+        self.assertIsNone(ranked[1][2])
+
 
 class TestRanking(unittest.TestCase):
     def test_heroes_ranked_by_pick_rate_with_power_text(self):
