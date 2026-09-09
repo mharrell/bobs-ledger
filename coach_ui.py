@@ -14,7 +14,10 @@ row covers what matters); triggers/turn live in the state strip.
 Design: analysis/DESIGN_COACHING_UI.md. Tile names carry a '*N' tavern-tier
 badge (2026-09-09); hovering a tile shows the full card render — framed
 layout WITH text (img_cache/card/, fetched on demand) — or, when upstream
-has no render, the card text from the meta DBs.
+has no render, the card text from the meta DBs. The bottom "Playable comps"
+panel (2026-09-09) groups the playable comps by meta tier; clicking a comp
+expands its required cards (owned faded, banned struck out), clicking again
+collapses it (expansion state survives the 1s poll rebuilds).
 
 Usage:
     python coach_ui.py [--port N]     # run the server standalone (empty state)
@@ -196,6 +199,19 @@ _HTML = r"""<!doctype html>
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:1px 8px;
           font-size:13px; }
+  /* Comps panel (bottom): tier headers + click-to-expand comp rows. The
+     expanded shopping list reuses the target-comp tile language (owned
+     faded, banned struck out, missing opaque). */
+  .cptier { font-size:11px; font-weight:700; letter-spacing:.06em;
+            text-transform:uppercase; color:var(--dim); margin:6px 0 2px; }
+  .cptier:first-child { margin-top:0; }
+  .crowhead { display:flex; align-items:baseline; gap:7px; padding:2px 6px;
+              cursor:pointer; border-radius:4px; }
+  .crowhead:hover { background:var(--panel2); }
+  .carrow { color:var(--dim); font-size:11px; flex:none; width:10px; }
+  .cname { font-weight:600; }
+  .cstat { color:var(--dim); font-size:12px; flex:none; }
+  .cbody { padding:0 0 4px 17px; }
   /* Top move: each numbered priority step on its own line */
   .step { font-size:16px; font-weight:700; line-height:1.4; padding:1px 0; }
   .stepnum { color:var(--gold); margin-right:7px; }
@@ -341,6 +357,54 @@ function tile(cid, name, sub, opts) {
   t.appendChild(nm);
   if (sub) t.appendChild(el('div', 'tsub', sub));
   return t;
+}
+// Comps panel: one playable comp as a clickable row. Clicking expands its
+// required cards (core, then addons) — owned faded, banned-this-game struck
+// out, missing fully opaque, same language as the Looking-for box; clicking
+// again collapses. The open set survives the 1s poll rebuilds (a rebuild
+// drops the DOM but re-opens whatever was open). The collapsed row already
+// says how much of the core you own, so expanding is only for the detail.
+const _openComps = new Set();
+function compTiles(c) {
+  const tiles = el('div', 'tiles');
+  [['core', 'core'], ['addons', 'addons']].forEach(([_label, key]) => {
+    (c[key] || []).forEach(x => {
+      const sub = x.banned ? 'banned' : (x.owned ? 'have' : null);
+      const cls = 'comprow ' + (x.banned ? 'bannedrow'
+                   : x.owned ? 'owned' : 'missing');
+      tiles.appendChild(tile(x.card, x.name, sub, {cls: cls}));
+    });
+  });
+  return tiles.children.length
+    ? tiles : el('div', 'none', 'no card list in the meta DB');
+}
+function compRow(c) {
+  const open = _openComps.has(c.slug);
+  const head = el('div', 'crowhead');
+  const arrow = el('span', 'carrow', open ? '▾' : '▸');
+  head.appendChild(arrow);
+  const core = c.core || [];
+  head.appendChild(el('span', 'cname', c.name));
+  head.appendChild(el('span', 'cstat',
+    core.length + ' core · '
+    + core.filter(x => x.owned).length + ' owned'));
+  const body = el('div', 'cbody');
+  // Collapsed rows build their tiles lazily (on first expand) so a 21-comp
+  // panel doesn't queue 100+ card fetches up front; an open row builds now.
+  body.hidden = !open;
+  if (open) body.appendChild(compTiles(c));
+  head.onclick = () => {
+    const nowOpen = !_openComps.has(c.slug);
+    if (nowOpen) _openComps.add(c.slug); else _openComps.delete(c.slug);
+    head.classList.toggle('open', nowOpen);
+    arrow.textContent = nowOpen ? '▾' : '▸';
+    body.hidden = !nowOpen;
+    if (nowOpen && !body.children.length) body.appendChild(compTiles(c));
+  };
+  const wrap = el('div', 'crow');
+  wrap.appendChild(head);
+  wrap.appendChild(body);
+  return wrap;
 }
 function render(a) {
   const app = document.getElementById('app');
@@ -592,12 +656,21 @@ function render(a) {
     app.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
 
-  // Playable comps — reference chips.
+  // PLAYABLE COMPS — the bottom panel: grouped by meta tier (S/A/B, the
+  // server pre-sorts), each comp a clickable row that expands into its
+  // required cards with owned/banned flags. Click again to collapse.
   const compsBody = el('div');
   if (a.comps && a.comps.length) {
-    const chips = el('div', 'chips');
-    a.comps.forEach(c => chips.appendChild(el('span', 'chip', c)));
-    compsBody.appendChild(chips);
+    let lastTier = null;
+    a.comps.forEach(c => {
+      const tier = c.meta_tier || '?';
+      if (tier !== lastTier) {
+        lastTier = tier;
+        compsBody.appendChild(el('div', 'cptier',
+          tier === '?' ? 'Unranked' : tier + ' tier'));
+      }
+      compsBody.appendChild(compRow(c));
+    });
   } else {
     compsBody.appendChild(el('div', 'none', '—'));
   }
@@ -712,16 +785,42 @@ def render_json(analysis):
                        for cid in (r.get("needs") or [])])
         for r in progress
     ]
-    # Playable comps: the analysis carries a slug->comp dict, the UI wants a
-    # name list (meta-tier order). (The box read a["comps"], which the
-    # analysis never provided — it sat on "—" forever.)
+    # Playable comps, rich rows for the bottom comps panel (2026-09-09): the
+    # analysis carries a slug->comp dict; the UI groups them by meta tier and
+    # each row expands into its required cards, so it needs the full shopping
+    # list with owned/banned flags — not just names. owned = on the board
+    # (same rule as the target-comp box: the board is what fights), banned =
+    # a banned-tribe core piece of a hybrid comp (_blocked_core — can't be
+    # bought this game). Sorted meta-tier first so the panel can group.
     pc = analysis.get("playable_comps") or {}
-    comps = list(pc.values()) if isinstance(pc, dict) else list(pc or [])
-    comps = [c for c in comps if isinstance(c, dict) and c.get("name")]
+    if isinstance(pc, dict):
+        comp_items = list(pc.items())
+    else:
+        comp_items = [(c.get("name"), c) for c in (pc or [])
+                      if isinstance(c, dict)]
+    board_ids = {m["card"] for m in analysis["board"]}
     tier_rank = {"S": 0, "A": 1, "B": 2}
-    comps.sort(key=lambda c: (tier_rank.get(c.get("meta_tier"), 3),
-                              c.get("name") or ""))
-    a["comps"] = [c["name"] for c in comps]
+    comp_rows = []
+    for slug, comp in comp_items:
+        if not isinstance(comp, dict) or not comp.get("name"):
+            continue
+        blocked = set(comp.get("_blocked_core") or [])
+
+        def rows(ids_, _blocked=blocked):
+            return [{"card": cid, "name": names.get(cid, cid),
+                     "owned": cid in board_ids, "banned": cid in _blocked}
+                    for cid in (ids_ or [])]
+
+        comp_rows.append({
+            "slug": slug,
+            "name": comp["name"],
+            "meta_tier": comp.get("meta_tier"),
+            "core": rows(comp.get("core")),
+            "addons": rows(comp.get("addons")),
+        })
+    comp_rows.sort(key=lambda c: (tier_rank.get(c["meta_tier"], 3),
+                                  c["name"] or ""))
+    a["comps"] = comp_rows
     # The Buy box mirrors the top move's actual buy/roll step (buy_step_card /
     # buy_step_roll are written by value.top_move), so the two can't disagree.
     a["buy_step_card"] = analysis.get("buy_step_card")
@@ -767,6 +866,10 @@ def render_json(analysis):
     ids.update(r["card"] for r in a["shop_rank"])
     ids.update(c["card"] for key in ("core", "addons")
                for c in (tc.get(key) or []))
+    # The comps panel's shopping lists ride the same tooltip metadata.
+    for comp in a["comps"]:
+        for key in ("core", "addons"):
+            ids.update(r["card"] for r in comp[key])
     ids.update(c["card"] for r in progress for c in (r.get("needs") or []))
     choice = analysis.get("choice") or {}
     ids.update(row[1] for row in (choice.get("ranked") or [])
