@@ -109,6 +109,36 @@ class TestRanking(unittest.TestCase):
         self.assertEqual(ranked[0][2], 0.0)
         self.assertEqual(ranked[0][0], "Totally New Trinket")
 
+
+class TestCuratedTrinkets(unittest.TestCase):
+    """Card-text pass phase 2 (2026-09-08): every trinket has a curated read
+    in meta/trinket_effects.json; the pick ranker's synergy term reads it."""
+
+    def test_all_trinkets_annotated(self):
+        import meta
+        ids = {t["id"] for t in meta.trinkets()}
+        got = set(meta.trinket_effects()) - {"_comment"}
+        self.assertFalse(ids - got, f"unannotated: {sorted(ids - got)}")
+        self.assertFalse(got - ids, f"orphans: {sorted(got - ids)}")
+
+    def test_curated_synergy_fits_the_board(self):
+        # Dragon Skull rewards BATTLECRY boards (keyword in the curated
+        # synergy), not just a tribe mention in the description.
+        ranked = rank_choices("trinket", [
+            ("Dragon Skull", "BG36_MagicItem_2033"),
+            ("Holy Mallet", "BG30_MagicItem_9021")],
+            [{"card": "X", "tribe": None, "keywords": ["BATTLECRY"]}])
+        self.assertEqual(ranked[0][0], "Dragon Skull")
+        self.assertIn("fits your board", ranked[0][3])
+
+    def test_curated_tribe_synergy(self):
+        # Mama Bear Sticker's synergy tribe is Beast.
+        ranked = rank_choices("trinket", [
+            ("Mama Bear Sticker", "BG35_MagicItem_8710"),
+            ("Holy Mallet", "BG30_MagicItem_9021")],
+            [{"card": "X", "tribe": "BEAST"}])
+        self.assertEqual(ranked[0][0], "Mama Bear Sticker")
+
     def test_discover_prefers_comp_core(self):
         comps = {"beasts": {"name": "Beasts", "tribe": "Beast",
                             "core": ["BG33_886"], "addons": []}}

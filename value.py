@@ -453,17 +453,45 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
             if k in hp_text and k.replace(" ", "_").upper() in (card.get("mechanics") or []):
                 score += W_HERO
 
-    # Trinket synergy (best-effort: trinket mentions the tribe).
+    # Trinket synergy: curated reads (trinket_effects.json) match a card's
+    # tribe/mechanics precisely; plain description strings fall back to the
+    # old substring read.
     if trinkets and card:
+        race = normalize(card.get("race")) or card.get("race")
+        text = (card.get("text") or "").lower()
+        mechanics = {m.lower() for m in (card.get("mechanics") or [])}
         for t in trinkets:
-            race = normalize(card.get("race")) or card.get("race")
-            if race and race.lower() in t.lower():
+            if _trinket_synergy_hit(t, race, text, mechanics):
                 score += W_TRINKET
 
     # Growth-aware engine value: how much the board's engine grows per turn.
     score += engine_bonus
 
     return score
+
+
+def _trinket_synergy_hit(trinket, race, card_text, mechanics=()):
+    """Does this trinket reward holding THIS card?
+
+    `trinket` is a merged record (meta.trinkets() + trinket_effects.json:
+    carries a "synergy" dict of tribes/keywords) or a plain description
+    string (legacy callers — the old tribe-substring read).
+    """
+    if isinstance(trinket, str):
+        return bool(race and race.lower() in trinket.lower())
+    syn = trinket.get("synergy") or {}
+    if syn.get("note"):  # the Compass-style free-text entry
+        return False
+    for tribe in syn.get("tribes") or []:
+        if race and normalize(tribe) == race:
+            return True
+    for kw in syn.get("keywords") or []:
+        k = kw.lower()
+        if k in mechanics or (k in card_text and k in (
+                "deathrattle", "battlecry", "taunt", "divine shield",
+                "reborn", "magnetic", "blood gem")):
+            return True
+    return False
 
 
 def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None,

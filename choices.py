@@ -129,16 +129,23 @@ def _rank_heroes(options):
 
 
 def _rank_trinkets(options, board):
-    """Rank trinkets by meta stats + board synergy from their text.
+    """Rank trinkets by meta stats + curated board synergy.
 
     score = pick_rate/10 (0-10, hsreplay's population-weighted preference)
     + (4.5 - avg_placement) — a trinket placing 1.0 adds ~3.5 — plus a flat
-    synergy bonus when the description mentions the board's dominant tribe.
+    synergy bonus when the CURATED read (trinket_effects.json) says the
+    trinket rewards what the board actually is: a matching tribe, or a
+    keyword the board's minions carry (deathrattle/battlecry/magnetic/...).
+    Falls back to the description substring for unannotated trinkets.
     """
     db = _load_trinket_db()
+    ann = meta.trinket_effects()
     board = board or []
     tribes = [normalize(m.get("tribe")) for m in board if normalize(m.get("tribe"))]
     dominant = max(set(tribes), key=tribes.count) if tribes else None
+    board_keywords = set()
+    for m in board:
+        board_keywords.update(k.lower() for k in (m.get("keywords") or []))
     ranked = []
     for name, cid in options:
         t = db.get(name)
@@ -152,12 +159,35 @@ def _rank_trinkets(options, board):
         else:
             score = 0.0
         desc = (t.get("description") or "").lower() if t else ""
-        if dominant and dominant.lower() in desc:
+        # By trinket ID first (names drift across patches); the Compass
+        # family shares one id across tribe variants, so also try by name.
+        rec = ann.get(cid) or ann.get(_trinket_id_by_name(t)) or {}
+        syn = rec.get("synergy") or {}
+        fit = False
+        if syn and not syn.get("note"):
+            if dominant and any(normalize(tr) == dominant
+                                for tr in syn.get("tribes") or []):
+                fit = True
+            for kw in syn.get("keywords") or []:
+                k = kw.lower()
+                if k in board_keywords or (k in desc and k in (
+                        "deathrattle", "battlecry", "spell", "refresh",
+                        "economy", "battlecry", "spellcraft")):
+                    fit = True
+        elif dominant and dominant.lower() in desc:
+            fit = True
+        if fit:
             score += 1.5
             why += " · fits your board"
         ranked.append((name, cid, score, why.strip(" ·")))
     ranked.sort(key=lambda x: (-(x[2] or 0), x[0]))
     return ranked
+
+
+def _trinket_id_by_name(t):
+    """The trinket record's id, or None (choices matches by NAME because
+    the choice-block ids drift; the curated file is id-keyed)."""
+    return (t or {}).get("id")
 
 
 def _rank_discover(options, board, comps):

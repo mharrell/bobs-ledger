@@ -64,13 +64,31 @@ CHANGE_ENTITY + gold spells, test_simulate_growth.py, spell card-text pass).
 
 ## Remaining phases of the card-text pass (open)
 
-2. **Shop-ranking minions + engines.json chains** verified against card
+3. **Shop-ranking minions + engines.json chains** verified against card
    text (the Butchering precedent; the undead engine's self-declared
    under-counts: Eternal Knight recursion, ~casts/turn error).
-3. **Trinkets (117)** — descriptions already in DB; encoding feeds the
-   pick ranker's synergy and the (now-live) held-trinket path.
 4. **Dark gifts (43) + heroes (115)** — the unranked universes; the
    ground-truth recovery path above is the prerequisite.
+
+## Phase 2 done — trinkets (2026-09-08, same session)
+
+- `meta/trinket_effects.json`: all 117 trinkets (108 unique ids; the
+  Colorful Compass family shares one id across 10 tribe variants; its DB
+  text is glitched to "Get a random 92" — read as a random tribe minion)
+  annotated with `base_value` (intrinsic power read) and `synergy`
+  (precise tribe/keyword fit). Coverage verified; `test_all_trinkets_annotated`
+  is the guard.
+- `value.minion_value`'s trinket term now matches curated
+  tribes/keywords (mechanics + card text) instead of the description
+  substring; description strings keep the substring read as fallback.
+- `choices._rank_trinkets`: the "fits your board" bonus is curated-synergy
+  driven (board tribes + minion keywords, e.g. Dragon Skull fits a
+  BATTLECRY board without mentioning any tribe); population anchor
+  (pick_rate/avg_placement) unchanged.
+- `live_coach.analyze` passes merged trinket records (description +
+  curated synergy) into the sell/shop rankings.
+- Opponent trinkets are visible too (players share nothing; trinkets are
+  per-player) — future scout-box intel.
 
 ## Longer-standing gaps (already documented, unchanged)
 

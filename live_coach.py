@@ -840,18 +840,21 @@ class LiveCoach:
         gold = self.gs.gold.get(self.account) if self.account else None
         scenario = self.actions.scenario()
         # Held trinkets (PLAY-zone BGxx_MagicItem_NNN): names feed the growth
-        # simulator's requires_trinket steps, descriptions the W_TRINKET
-        # synergy term. Both were dead code until this wiring — analyze() never
-        # passed trinkets to anything (2026-09-08 audit).
+        # simulator's requires_trinket steps; the merged records (description
+        # + curated synergy from trinket_effects.json) feed the W_TRINKET
+        # synergy term. Both were dead code until this wiring — analyze()
+        # never passed trinkets to anything (2026-09-08 audit).
         _trinkets_by_id = {t["id"]: t for t in meta.trinkets()}
+        _trinket_ann = meta.trinket_effects()
         held = [t for t in (self.gs.held_trinkets(self.friendly)
                             if self.friendly else [])
                 if t in _trinkets_by_id]
         if held:
             scenario["trinkets"] = [_trinkets_by_id[c]["name"] for c in held]
-            trinket_texts = [_trinkets_by_id[c]["description"] for c in held]
+            trinket_recs = [dict(_trinkets_by_id[c], **(_trinket_ann.get(c) or {}))
+                            for c in held]
         else:
-            trinket_texts = []
+            trinket_recs = []
         hero_power = _hero_power_text(self.hero_name)
         # Recent acquisitions (this turn's plays + buys, and the last
         # completed turn's) feed the pivot override — the board alone lags
@@ -899,7 +902,7 @@ class LiveCoach:
         # protected (the 2026-09-04 1st-place game).
         ranked = sell_recommendation(board, self.playable, self.allowed,
                                      scenario=scenario, hero_power=hero_power,
-                                     trinkets=trinket_texts, comp=target)
+                                     trinkets=trinket_recs, comp=target)
         # The shop = the DebugPrintOptions offers owned by anyone but the friendly
         # player (the player's own minions are shown as sell options, not offers).
         offer_ids = []
@@ -910,7 +913,7 @@ class LiveCoach:
                 seen.add(c)
         shop = shop_ranking(offer_ids, self.playable, board,
                             self.allowed, hero_power=hero_power,
-                            trinkets=trinket_texts, scenario=scenario,
+                            trinkets=trinket_recs, scenario=scenario,
                             recent_cards=recent,
                             comp=target) if offer_ids else []
         shop_costs = shop_cost_map(self.gs, offer_ids, self.shop_eids)
