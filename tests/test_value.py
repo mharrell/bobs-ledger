@@ -440,6 +440,49 @@ class TestRollHunt(unittest.TestCase):
         self.assertNotIn("Balinda", line)
 
 
+class TestTrinketSynergy(unittest.TestCase):
+    """Held-trinket synergy (the 2026-09-08 wiring): curated records match
+    a card's tribe/mechanics precisely; description strings keep the old
+    substring read as the fallback."""
+
+    def test_curated_tribe_record_hits(self):
+        mama = {"id": "BG35_MagicItem_8710", "name": "Mama Bear Sticker",
+                "description": "Whenever you summon a Beast, give it +6/+6.",
+                "synergy": {"tribes": ["Beast"]}}
+        beast_card = {"name": "Tasty Lobster", "race": "BEAST", "text": ""}
+        beast = {"card": "BG36_202", "atk": 3, "health": 3, "tribe": "BEAST"}
+        with_beast = value.minion_value(beast, beast_card, None, None, [mama])
+        plain = value.minion_value(beast, beast_card, None, None, None)
+        self.assertAlmostEqual(with_beast - plain, value.W_TRINKET)
+        demon_card = {"name": "Felboar", "race": "DEMON", "text": ""}
+        no_hit = value.minion_value(
+            {"card": "BG34_500", "atk": 3, "health": 3, "tribe": "DEMON"},
+            demon_card, None, None, [mama])
+        self.assertAlmostEqual(no_hit, plain)
+
+    def test_curated_keyword_record_hits(self):
+        skull = {"name": "Dragon Skull", "text": "",
+                 "synergy": {"keywords": ["battlecry"]}}
+        card = {"name": "A Frightened Flamingo", "race": None,
+                "text": "battlecry: do something", "mechanics": ["BATTLECRY"]}
+        hit = value.minion_value({"card": "X", "atk": 1, "health": 1},
+                                 card, None, None, [skull])
+        miss = value.minion_value({"card": "X", "atk": 1, "health": 1},
+                                  card, None, None, None)
+        self.assertAlmostEqual(hit - miss, value.W_TRINKET)
+
+    def test_string_fallback_substring(self):
+        beast_card = {"name": "Tasty Lobster", "race": "BEAST", "text": ""}
+        with_beast = value.minion_value(
+            {"card": "BG36_202", "atk": 3, "health": 3, "tribe": "BEAST"},
+            beast_card, None, None,
+            ["whenever you summon a beast, give it +6/+6"])
+        plain = value.minion_value(
+            {"card": "BG36_202", "atk": 3, "health": 3, "tribe": "BEAST"},
+            beast_card, None, None, None)
+        self.assertAlmostEqual(with_beast - plain, value.W_TRINKET)
+
+
 class TestShopGolden(unittest.TestCase):
     """A GOLDEN shop offer (2026-09-08, player-confirmed): costs the flat 3,
     and playing it pays the triple reward NOW — super-duper high value. It

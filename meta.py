@@ -79,6 +79,11 @@ def trinkets():
     return _items("trinkets.json")
 
 
+def trinket_effects():
+    """Curated per-trinket reads (card-text pass phase 2), or {}."""
+    return _raw("trinket_effects.json") or {}
+
+
 def heroes():
     return _items("heroes.json")
 
