@@ -386,11 +386,10 @@ function render(a) {
   const sellSafe = el('div', 'tiles');
   const sellKeep = el('div', 'tiles');
   (a.sell_rank || []).forEach(s => {
-    // Hand minions appear here too (flagged) — the plan's "Play/Hold X" and
-    // the sell row must be able to agree on every sellable card. A
-    // Butchering-fuel undead reads "cast it instead of selling".
+    // Board minions only — a hand card can't be sold until it's played
+    // (player rule 2026-09-09), so render_json keeps hand entries out.
+    // A Butchering-fuel undead reads "cast it instead of selling".
     const sub = s.score.toFixed(0)
-      + (s.hand ? ' · hand' : '')
       + (s.fuel ? ' · cast, not sell' : '');
     const t = tile(s.card, s.name, sub,
                    {golden: s.golden, n: s.n, cls: s.score < 15 ? 'safe' : 'keep'});
@@ -531,26 +530,12 @@ def render_json(analysis):
             g["n"] += 1
             g["score"] = min(g["score"], round(v))
     sell.sort(key=lambda g: g["score"])
-    # Hand minions are sellable too — the Sell row covered only the board, so
-    # "safe to sell: —" could sit next to a plan that plays a hand card and
-    # the player couldn't see that card's sell standing (2026-09-05). Same
-    # value scale (the hand step's score IS minion_value), flagged hand.
-    # Cast-verb spells can't be sold; a HOLD card must not read as
-    # "safe to sell" — the plan just said to keep it (golden hunt).
-    for s in analysis.get("hand", []):
-        if s.get("verb") in ("cast", "hold"):
-            continue
-        cid = s["card"]
-        g = grouped.get(("hand", cid))
-        if g is None:
-            g = {"card": cid, "name": names.get(cid, cid),
-                 "score": round(s.get("score") or 0), "n": 1,
-                 "golden": bool(s.get("golden")), "hand": True}
-            grouped[("hand", cid)] = g
-            sell.append(g)
-        else:
-            g["n"] += 1
-    sell.sort(key=lambda g: g["score"])
+    # Hand minions are NOT in the Sell row: a hand minion can't be sold —
+    # it has to be played first (player-corrected 2026-09-09, superseding
+    # the 2026-09-05 "hand minions are sellable too" note that put hand
+    # cards under "Safe to sell"). The hand box carries the play advice;
+    # the plan's full-board play step already names the board filler to
+    # sell for room, and that's the card that's actually sellable.
     # Butchering fuel (2026-09-08, the comp page): with a destroy-cost spell
     # in hand, a safe-to-sell UNDEAD is worth more dead-by-cast than sold —
     # the cast gives permanent +5 Attack to ALL Undead and frees the same

@@ -800,6 +800,22 @@ class TestRenderJsonComps(unittest.TestCase):
         self.assertEqual(rows[0]["n"], 2)
         self.assertEqual(rows[0]["score"], 2)
 
+    def test_sell_row_excludes_hand_minions(self):
+        """A hand minion can't be sold — it has to be played first
+        (player-corrected 2026-09-09, superseding the 2026-09-05
+        "hand minions are sellable too" note that let a hand card sit
+        under "Safe to sell" while the coach said to sell the unplayable).
+        Play advice belongs to the hand box; the Sell row stays board-only."""
+        from coach_ui import render_json
+        analysis = {"board": [], "shop_rank": [], "playable_comps": {},
+                    "sell_rank": [("BG33_140", 5.0)],
+                    "hand": [{"card": "BG33_886", "verb": "play",
+                              "score": 4.0},
+                             {"card": "BG33_887", "verb": "hold",
+                              "score": 9.0}]}
+        a = render_json(analysis)
+        self.assertEqual([r["card"] for r in a["sell_rank"]], ["BG33_140"])
+
     def test_shop_rows_carry_tavern_prices(self):
         """Prices are invisible in the UI, so a wrong one ("thinks minions
         cost 1 gold") was undiagnosable. Minion = FLAT 3 at every tier,
