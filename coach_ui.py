@@ -316,7 +316,12 @@ function render(a) {
   }
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
     const [name, cid, score, why] = a.choice.ranked[0];
-    const line = el('div', 'pickline', 'PICK ' + name + (why ? ' — ' + why : ''));
+    // An unranked pick (no data — score null) is never blessed as "PICK X":
+    // the first listed option read as advice (2026-09-08 Trip Vouchers
+    // discover). Say the options carry no ranking instead.
+    const line = score == null
+      ? el('div', 'pickline', 'no data on these options — your call')
+      : el('div', 'pickline', 'PICK ' + name + (why ? ' — ' + why : ''));
     instr.appendChild(line);
     if (a.choice.kind === 'hero' && a.choice.ranked.length > 1) {
       instr.appendChild(el('div', 'none',
