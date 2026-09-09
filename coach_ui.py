@@ -11,7 +11,10 @@ row split into "safe to sell | do not sell" groups (the value function's own
 filler threshold, score < 15), the target-comp shopping list, and the ranked
 tavern with the plan's buy glowing gold. The board list is gone (the sell
 row covers what matters); triggers/turn live in the state strip.
-Design: analysis/DESIGN_COACHING_UI.md.
+Design: analysis/DESIGN_COACHING_UI.md. Tile names carry a '*N' tavern-tier
+badge (2026-09-09); hovering a tile shows the full card render — framed
+layout WITH text (img_cache/card/, fetched on demand) — or, when upstream
+has no render, the card text from the meta DBs.
 
 Usage:
     python coach_ui.py [--port N]     # run the server standalone (empty state)
@@ -26,20 +29,33 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from value import _load_bg_names, _load_card_db, _load_spell_db
 
+import meta
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_PORT = 8747
 
-# On-demand card art. HearthstoneJSON's render build lags the current patch —
-# returning minions (old ids) and most heroes render, but brand-new minions,
-# the newest heroes, and ALL trinkets 404 upstream (and the wiki is
-# Cloudflare-blocked), so those stay as UI placeholders.
+# On-demand card art. HearthstoneJSON's render build lags the current patch:
+# returning cards (old ids), heroes and trinkets render, but brand-new
+# minions and the newest heroes 404 upstream (and the wiki is
+# Cloudflare-blocked), so those stay as UI placeholders / text tooltips.
 RENDER_URL = "https://art.hearthstonejson.com/v1/render/latest/enUS/256x/{}.png"
 MISS_TTL = 3600.0  # seconds before re-attempting a card id that 404'd
+# A bare "Mozilla/5.0" now gets 403 from the art CDN (2026-09-09 probe) —
+# the on-demand fetches need a plausible full browser User-Agent.
+RENDER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+             "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
+
+# Full-card renders (framed layout WITH name/text, unlike img_cache root's
+# raw portraits) for the hover tooltip, kept in their own subdir so the two
+# art kinds don't get confused. Same upstream URL as the /img fetch, so the
+# two endpoints share one miss list — a card that 404s upstream misses both.
+CARD_DIR = os.path.join(_HERE, "img_cache", "card")
 
 _art_lock = threading.Lock()
 _art_miss_path = os.path.join(_HERE, ".art_miss.json")
 os.makedirs(os.path.join(_HERE, "img_cache"), exist_ok=True)
+os.makedirs(CARD_DIR, exist_ok=True)
 try:
     with open(_art_miss_path, encoding="utf-8") as _f:
         _art_miss = json.load(_f)
@@ -61,17 +77,20 @@ def _can_retry(cid):
     return time.time() - _art_miss.get(cid, 0) > MISS_TTL
 
 
-def _fetch_render(cid):
-    """Download the HearthstoneJSON render for cid into img_cache. True on
-    success. The browser re-requests images on every DOM rebuild, so a miss
-    is remembered for MISS_TTL — repeated polls must not re-hammer upstream.
+def _fetch_render(cid, dest_dir=None):
+    """Download the HearthstoneJSON render for cid into dest_dir (img_cache
+    root by default). True on success. The browser re-requests images on
+    every DOM rebuild, so a miss is remembered for MISS_TTL — repeated polls
+    must not re-hammer upstream.
     """
+    if dest_dir is None:
+        dest_dir = os.path.join(_HERE, "img_cache")
     try:
         req = urllib.request.Request(RENDER_URL.format(cid),
-                                     headers={"User-Agent": "Mozilla/5.0"})
+                                     headers={"User-Agent": RENDER_UA})
         with urllib.request.urlopen(req, timeout=5) as r:
             data = r.read()
-        with open(os.path.join(_HERE, "img_cache", f"{cid}.png"), "wb") as f:
+        with open(os.path.join(dest_dir, f"{cid}.png"), "wb") as f:
             f.write(data)
         return True
     except Exception:
@@ -154,15 +173,26 @@ _HTML = r"""<!doctype html>
   .thumb.ph { display:inline-flex; align-items:center; justify-content:center;
               color:var(--dim); background:var(--panel2);
               border:1px solid #2c2f36; font-size:18px; cursor:default; }
-  /* Hover zoom: art is 256x256, so scale(4.5) on a 56px tile thumb shows it
-     near full size; origin center bottom grows the popup up and outward
-     from the tile, z-index floats it above the other boxes. Scoped to real
-     images — a placeholder has nothing to zoom. */
-  img.thumb:hover { transform:scale(4.5); transform-origin:center bottom;
+  /* Hover zoom (the fallback when no tooltip appears): art is 256x256, so
+     scale(4.5) on a 56px tile thumb shows it near full size; origin center
+     bottom grows the popup up and outward from the tile, z-index floats it
+     above the other boxes. Scoped to real images with no tooltip content —
+     canzoom is dropped the moment a render/text tooltip shows. */
+  img.thumb.canzoom:hover { transform:scale(4.5); transform-origin:center bottom;
                     position:relative; z-index:5; }
   .thumb.golden { box-shadow:0 0 0 2px #ffd97a; }
   /* The plan's buy glows in the tavern tiles. */
   img.thumb.buynowart { box-shadow:0 0 0 2px var(--gold); }
+  /* Hover card: the full framed render (with text) near the tile, or — when
+     upstream has no render for the card — a text box fed from the meta DB. */
+  #tip { position:fixed; z-index:50; max-width:300px; }
+  .tiprender { display:block; width:256px; border-radius:8px;
+               box-shadow:0 8px 24px rgba(0,0,0,.65); }
+  .tipbox { background:var(--panel2); border:1px solid #2c2f36;
+            border-radius:6px; padding:6px 9px; max-width:280px;
+            box-shadow:0 8px 24px rgba(0,0,0,.65); }
+  .tipname { font-weight:700; font-size:13px; }
+  .tiptext { font-size:12px; color:var(--dim); margin-top:2px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:1px 8px;
           font-size:13px; }
@@ -211,6 +241,63 @@ function el(tag, cls, text) {
   if (text != null) n.textContent = text;
   return n;
 }
+// Per-card display metadata from the payload ({tier, text}) — golden ids
+// resolve to their base id like the server's own cache does.
+let CARDS = {};
+const _warmed = new Set();
+function cardMeta(cid) {
+  return CARDS[String(cid || '').replace(/_G$/, '')] || {};
+}
+// The tier badge in every name: "*1 Suspicious Prisoner guard". Cards the
+// meta DBs carry no tier for (heroes, trinkets) show bare names.
+function badgeName(cid, name) {
+  const meta = cardMeta(cid);
+  return (meta.tier ? '*' + meta.tier + ' ' : '') + (name || '');
+}
+// Hover tooltip: the full HearthstoneJSON render (framed card with text) when
+// upstream has it, else the card text from the meta DB, else nothing (and
+// the old portrait zoom stays active). The page pre-warms /card fetches for
+// every card in the payload, so the first hover of a phase may still be
+// loading but every later hover is instant.
+const tip = document.createElement('div');
+tip.id = 'tip';
+tip.hidden = true;
+document.body.appendChild(tip);
+let tipCid = null;
+function hoverCard(elm, cid, name) {
+  const meta = cardMeta(cid);
+  const id = String(cid || '').replace(/_G$/, '');
+  tipCid = id;
+  let shown = false;
+  const show = node => {
+    if (tipCid !== id) return;  // a later hover superseded this one
+    tip.innerHTML = '';
+    tip.appendChild(node);
+    const r = elm.getBoundingClientRect();
+    tip.style.left =
+      Math.max(4, Math.min(r.left - 100, window.innerWidth - 300)) + 'px';
+    tip.style.top =
+      Math.max(4, Math.min(r.bottom + 2, window.innerHeight - 400)) + 'px';
+    tip.hidden = false;
+    shown = true;
+    elm.classList.remove('canzoom');  // tooltip replaces the portrait zoom
+  };
+  // Text box first (instant, from the meta DB) when we have text.
+  if (meta.text) {
+    const box = el('div', 'tipbox');
+    box.appendChild(el('div', 'tipname', badgeName(cid, name)));
+    box.appendChild(el('div', 'tiptext', meta.text));
+    show(box);
+  }
+  // The full render upgrades the tooltip when upstream has it; a 404 keeps
+  // the text box — or, with no text either, the old portrait zoom.
+  const big = new Image();
+  big.className = 'tiprender';
+  big.onload = () => show(big);
+  big.onerror = () => { if (tipCid === id && !shown) tipCid = null; };
+  big.src = '/card/' + id + '.png';
+}
+function leaveCard() { tipCid = null; tip.hidden = true; }
 function box(title, body) {
   const b = el('div', 'box');
   b.appendChild(el('h3', null, title));
@@ -219,17 +306,23 @@ function box(title, body) {
 }
 // Card art thumbnail (img_cache/ via /img/<id>.png, fetched by fetch_art.py).
 // Hides itself gracefully when no art is cached (current-set BG-only cards).
+// Hover shows the full card render (framed layout WITH text) via /card/,
+// falling back to a text box from the meta DB, then to the old portrait zoom.
 function thumb(cid, name) {
   const img = document.createElement('img');
-  img.className = 'thumb';
+  img.className = 'thumb canzoom';
   img.src = '/img/' + cid + '.png';
   img.alt = '';
+  img.onmouseenter = () => hoverCard(img, cid, name);
+  img.onmouseleave = leaveCard;
   img.onerror = () => {
     // No art available (render build lags the patch; trinkets have none
     // upstream): a same-size placeholder keeps every row aligned.
     const ph = document.createElement('span');
     ph.className = 'thumb ph';
     ph.textContent = (name || '?').trim().charAt(0).toUpperCase();
+    ph.onmouseenter = () => hoverCard(ph, cid, name);
+    ph.onmouseleave = leaveCard;
     img.replaceWith(ph);
   };
   return img;
@@ -243,7 +336,7 @@ function tile(cid, name, sub, opts) {
   if (opts.golden) img.classList.add('golden');
   if (opts.cls === 'buynow') img.classList.add('buynowart');
   t.appendChild(img);
-  const nm = el('div', 'tname', name);
+  const nm = el('div', 'tname', badgeName(cid, name));
   if (opts.n > 1) nm.appendChild(el('span', 'xcount', '  ×' + opts.n));
   t.appendChild(nm);
   if (sub) t.appendChild(el('div', 'tsub', sub));
@@ -252,9 +345,22 @@ function tile(cid, name, sub, opts) {
 function render(a) {
   const app = document.getElementById('app');
   const statebar = document.getElementById('statebar');
+  // A rebuild discards the hovered element without a mouseleave — drop the
+  // tooltip with the old frame so it can't outlive its card.
+  leaveCard();
+  CARDS = a.cards || {};
   app.innerHTML = '';
   statebar.innerHTML = '';
   if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
+  // Pre-warm the /card renders for everything on screen so hovers are
+  // instant (one-time per card: the server caches downloads in
+  // img_cache/card/, and misses are remembered server-side).
+  Object.keys(CARDS).forEach(cid => {
+    if (!_warmed.has(cid)) {
+      _warmed.add(cid);
+      new Image().src = '/card/' + cid + '.png';
+    }
+  });
 
   // STATE STRIP — hero / gold / tier / turn / scout / banned / triggers
   statebar.appendChild(el('span', null, a.hero || '?'));
@@ -321,7 +427,8 @@ function render(a) {
     // discover). Say the options carry no ranking instead.
     const line = score == null
       ? el('div', 'pickline', 'no data on these options — your call')
-      : el('div', 'pickline', 'PICK ' + name + (why ? ' — ' + why : ''));
+      : el('div', 'pickline', 'PICK ' + badgeName(cid, name)
+                             + (why ? ' — ' + why : ''));
     instr.appendChild(line);
     if (a.choice.kind === 'hero' && a.choice.ranked.length > 1) {
       instr.appendChild(el('div', 'none',
@@ -649,6 +756,37 @@ def render_json(analysis):
     a["buy_label"] = ("Then buy (after leveling)"
                       if (analysis.get("top_move") or "").startswith("1. LEVEL")
                       else "Buy this")
+    # Per-card display metadata for the overlay (2026-09-09): the tavern tier
+    # for the '*N' name badge and the card text for the hover tooltip — so
+    # cards whose full render isn't upstream (new sets, trinkets) still get
+    # their text. Golden ids resolve to their base card; heroes carry no
+    # tier/text in the DBs, so pick-panel names badge nothing.
+    ids = set()
+    ids.update(g["card"] for g in sell)
+    ids.update(s["card"] for s in analysis.get("hand", []))
+    ids.update(r["card"] for r in a["shop_rank"])
+    ids.update(c["card"] for key in ("core", "addons")
+               for c in (tc.get(key) or []))
+    ids.update(c["card"] for r in progress for c in (r.get("needs") or []))
+    choice = analysis.get("choice") or {}
+    ids.update(row[1] for row in (choice.get("ranked") or [])
+               if len(row) > 1 and row[1])
+    mrows = {m.get("id"): m for m in meta.minions()}
+    srows = {s.get("id"): s for s in meta.spells()}
+    trows = {t.get("id"): t for t in meta.trinkets()}
+    cards = {}
+    for cid in sorted(ids):
+        base = cid[:-2] if cid.endswith("_G") else cid
+        rec = mrows.get(base) or srows.get(base) or {}
+        entry = {}
+        if rec.get("tier"):
+            entry["tier"] = rec["tier"]
+        text = rec.get("text") or (trows.get(base) or {}).get("description")
+        if text:
+            entry["text"] = re.sub(r"\s+", " ", re.sub(r"<[^>]*>", "", text))
+        if entry:
+            cards[base] = entry
+    a["cards"] = cards
     return a
 
 
@@ -683,6 +821,23 @@ class _Handler(BaseHTTPRequestHandler):
                         self._send(200, "image/png", f.read())
                     return
                 self._send(404, "text/plain", b"no art cached")
+                return
+            m = re.match(r"^/card/([A-Za-z0-9_]+)\.png$", self.path)
+            if m:
+                # The hover tooltip's full render (framed card WITH text),
+                # cached in img_cache/card/. Golden ids resolve to the base
+                # card; misses share the /img miss list (same upstream URL).
+                cid = m.group(1)
+                if cid.endswith("_G"):
+                    cid = cid[:-2]
+                path = os.path.join(CARD_DIR, f"{cid}.png")
+                if not os.path.exists(path) and _can_retry(cid):
+                    _fetch_render(cid, dest_dir=CARD_DIR)
+                if os.path.exists(path):
+                    with open(path, "rb") as f:
+                        self._send(200, "image/png", f.read())
+                    return
+                self._send(404, "text/plain", b"no card render cached")
                 return
             self._send(200, "text/html; charset=utf-8", _HTML.encode())
 
