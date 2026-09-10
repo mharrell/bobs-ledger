@@ -696,17 +696,20 @@ class LiveCoach:
     def _refresh_bans(self):
         """Family-ban info, retried until the pool reveal is complete.
 
-        bans_from_log derives allowed tribes from pool minions SEEN so far,
-        and the pool streams in gradually with the shop rolls (2026-09-10
-        log: first pure tribe at ~50s, the fifth at ~3.5min — turn 3-5), so
-        a partial set (one tribe's minions) once froze 9 banned tribes in
-        the UI for a whole game (2026-09-03 screenshot). The real family
-        ban is 5 allowed / 5 banned, so only a 5-tribe set is accepted;
-        until then allowed stays None and this re-runs on each analyze.
-        More than 5 seen = not a 5/5 ban mode — fail open permanently.
+        bans_from_log derives allowed tribes from the pool minions seen so
+        far (a tribe only counts once it has 3+ DISTINCT pure pool minions —
+        effect-summoned singletons of banned tribes mid-game must not pad
+        the count), and the pool streams in gradually with the shop rolls
+        (2026-09-10 log: first pure tribe at ~50s, the fifth at ~3.5min —
+        turn 3-5), so a partial set (one tribe's minions) once froze 9
+        banned tribes in the UI for a whole game (2026-09-03 screenshot).
+        The real family ban is 5 allowed / 5 banned, so only a 5-tribe set
+        is accepted; until then allowed stays None and this re-runs on each
+        analyze. More than 5 seen = not a 5/5 ban mode — fail open
+        permanently.
 
         During that detection window the playable list is evidence-only:
-        comps whose tribe the pool has CONFIRMED (a seen pure tribe is
+        comps whose tribe the pool has CONFIRMED (a counted pure tribe is
         definitely in this lobby). Fail-open instead (every comp playable)
         made the bottom comps panel list banned-tribe comps for the first
         3 turns. Unseen tribes' comps stay hidden — they might be banned —
