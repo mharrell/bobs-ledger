@@ -870,7 +870,13 @@ def render_json(analysis):
     for comp in a["comps"]:
         for key in ("core", "addons"):
             ids.update(r["card"] for r in comp[key])
-    ids.update(c["card"] for r in progress for c in (r.get("needs") or []))
+    # comp meter needs: the RENDERED rows (a["comp_progress"]) carry needs as
+    # {card, name} dicts; the raw analysis rows carry needs as bare card-id
+    # strings (value.comp_progress), and c["card"] on those raised
+    # "string indices must be integers" — crashing every analysis push once
+    # the meter had a candidate with unowned core (i.e. most of the game).
+    ids.update(c["card"] for r in a["comp_progress"]
+               for c in (r.get("needs") or []))
     choice = analysis.get("choice") or {}
     ids.update(row[1] for row in (choice.get("ranked") or [])
                if len(row) > 1 and row[1])
