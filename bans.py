@@ -50,17 +50,24 @@ def _load_card_races(cache_path):
 
 
 def bans_from_log(powerlog_path, card_races=None, lines=None):
-    """Return a list of per-game dicts: {seed, allowed, banned}.
+    """Return a list of per-game dicts: {seed, allowed, banned, races}.
 
     `allowed`/`banned` are lists of canonical tribe names (e.g. "Mech",
     "Dragon"). Games with no pool minions (non-Battlegrounds) are skipped.
-    `lines` may be passed to avoid re-reading the file (the live coach passes the
-    current game's lines).
+    `races` is the card->races map observed from the log itself: each pool
+    minion's FULL_ENTITY block prints its own `tag=CARDRACE` at creation —
+    ground truth, unlike the upstream hearthstonejson cache, which lags the
+    patch by weeks (new-set ids were missing on 2026-09-09, so detection
+    never saw 5 tribes and the comp filter failed OPEN all game: every
+    comp listed, banned tribes included). Callers merge `races` over their
+    cache so the comp-ban marks work for new cards too. `lines` may be
+    passed to avoid re-reading the file (the live coach passes the current
+    game's lines).
     """
     if card_races is None:
         card_races = _load_card_races(DEFAULT_CARD_RACES_CACHE)
 
-    games = {}  # seed -> set of pure-tribe pool minions
+    games = {}  # seed -> {"pure": set of tribes, "races": {cid: [races]}}
     cur_seed = None
     if lines is None:
         with open(powerlog_path, encoding="utf-8", errors="replace") as f:
@@ -72,7 +79,7 @@ def bans_from_log(powerlog_path, card_races=None, lines=None):
         m = re.search(r"GAME_SEED value=(\d+)", line)
         if m:
             cur_seed = m.group(1)
-            games.setdefault(cur_seed, set())
+            games.setdefault(cur_seed, {"pure": set(), "races": {}})
         if cur_seed and ("SHOW_ENTITY" in line or "FULL_ENTITY" in line):
             block = []
             j = i
@@ -83,22 +90,50 @@ def bans_from_log(powerlog_path, card_races=None, lines=None):
             ):
                 block.append(lines[j])
                 j += 1
-            bt = " ".join(block)
-            if "BACON_POOL_MINION" in bt:
-                cid = re.search(r"CardID=([A-Z0-9_]+)", bt)
-                if cid:
-                    races = card_races.get(cid.group(1), [])
-                    if len(races) == 1 and races[0] in ALL_TRIBES:
-                        games[cur_seed].add(races[0])
+            # The block may glue several back-to-back entity definitions
+            # into one run (the pool reveal prints them without separators)
+            # — segment it per entity header so each CardID gets its own
+            # races instead of the first card swallowing the rest.
+            segments = []  # (card_id, block text)
+            cur_cid = None
+            cur_text = []
+            for bl in block:
+                if "FULL_ENTITY" in bl or "SHOW_ENTITY" in bl:
+                    if cur_cid is not None:
+                        segments.append((cur_cid, "\n".join(cur_text)))
+                    m2 = re.search(r"CardID=([A-Z0-9_]+)", bl)
+                    cur_cid = m2.group(1) if m2 else None
+                    cur_text = [bl]
+                else:
+                    cur_text.append(bl)
+            if cur_cid is not None:
+                segments.append((cur_cid, "\n".join(cur_text)))
+            for cid_str, bt in segments:
+                if "BACON_POOL_MINION" not in bt or cid_str is None:
+                    continue
+                # The log's own CARDRACE tags first (patch-proof); a cache
+                # lookup only for blocks without one (numeric values from
+                # older log formats, or a race the block omits).
+                race_vals = [r for r in re.findall(
+                    r"tag=CARDRACE value=([A-Z]+)", bt) if r in ALL_TRIBES]
+                races = race_vals
+                if not races:
+                    races = card_races.get(cid_str, [])
+                if races:
+                    games[cur_seed]["races"][cid_str] = races
+                if len(races) == 1 and races[0] in ALL_TRIBES:
+                    games[cur_seed]["pure"].add(races[0])
             i = j
         else:
             i += 1
 
     result = []
-    for seed, pure_tribes in games.items():
+    for seed, info in games.items():
+        pure_tribes = info["pure"]
         allowed = sorted(canon(t) for t in pure_tribes)
         banned = sorted(canon(t) for t in ALL_TRIBES if t not in pure_tribes)
-        result.append({"seed": seed, "allowed": allowed, "banned": banned})
+        result.append({"seed": seed, "allowed": allowed, "banned": banned,
+                       "races": info["races"]})
     return result
 
 

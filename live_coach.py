@@ -706,12 +706,20 @@ class LiveCoach:
         if self._bans_ready or self._comps is None or not self.cur_lines:
             return
         allowed = None
+        observed = {}
         if self._seed is not None:
             for g in bans_from_log(None, self._card_races,
                                    lines=self.cur_lines):
                 if g["seed"] == self._seed:
                     allowed = g["allowed"]
+                    observed = g.get("races") or {}
                     break
+        if observed:
+            # The log's own CARDRACE tags (see bans_from_log): patch-proof
+            # tribes for the comp filter too, not just the 5-tribe gate —
+            # the upstream cache lags the patch, and core cards unknown to
+            # it would otherwise fail open and never show their ban mark.
+            self._card_races = {**self._card_races, **observed}
         if allowed is not None and len(allowed) > 5:
             self.allowed = None  # not a 5/5 ban mode
             self._bans_ready = True
