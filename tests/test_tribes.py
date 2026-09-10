@@ -115,3 +115,52 @@ class TestTribeBanKillsComps(unittest.TestCase):
         self.assertEqual(got["groundbreaker"].get("_blocked_core"),
                          ["BG36_243"])
         self.assertIn("nagas-eot", got)
+
+
+class TestBansFromLogCardRace(unittest.TestCase):
+    """bans_from_log must read each pool minion's own `tag=CARDRACE` from its
+    FULL_ENTITY block — the log is the only patch-proof source. Upstream
+    hearthstonejson lags the patch by weeks (2026-09-09: the new set's ids
+    were absent, detection never saw 5 tribes, allowed stayed None and the
+    comp filter failed OPEN all game — every comp listed, banned tribes
+    included). The card_races cache stays as the fallback for blocks that
+    print no race tag, and the observed map is returned so callers can
+    merge it over the cache for the comp-ban marks."""
+
+    LINES = [
+        "D 12:00:00 GameState.DebugPrintPower() - GAME_SEED value=42\n",
+        "D 12:00:00 GameState.DebugPrintPower() -     FULL_ENTITY - Creating ID=1 CardID=NEWSET_001\n",
+        "D 12:00:00 GameState.DebugPrintPower() -         tag=CARDRACE value=BEAST\n",
+        "D 12:00:00 GameState.DebugPrintPower() -         tag=IS_BACON_POOL_MINION value=1\n",
+        "D 12:00:00 GameState.DebugPrintPower() -     FULL_ENTITY - Creating ID=2 CardID=NEWSET_002\n",
+        "D 12:00:00 GameState.DebugPrintPower() -         tag=CARDRACE value=QUILBOAR\n",
+        "D 12:00:00 GameState.DebugPrintPower() -         tag=IS_BACON_POOL_MINION value=1\n",
+        "D 12:00:00 GameState.DebugPrintPower() -     FULL_ENTITY - Creating ID=3 CardID=NEWSET_003\n",
+        "D 12:00:00 GameState.DebugPrintPower() -         tag=IS_BACON_POOL_MINION value=1\n",
+    ]
+
+    def test_log_native_races_reveal_tribes_without_cache(self):
+        from bans import bans_from_log
+        games = bans_from_log(None, {}, lines=self.LINES)
+        self.assertEqual(len(games), 1)
+        g = games[0]
+        self.assertEqual(g["allowed"], ["Beast", "Quilboar"])
+        # The neutral pool minion (no CARDRACE tag, unknown to the cache)
+        # is correctly not counted as a tribe.
+        self.assertNotIn("NEUTRAL", g["allowed"])
+        # Observed races are returned for callers to merge (the comp-ban
+        # marks need per-card races, not just the 5-tribe set).
+        self.assertEqual(g["races"],
+                         {"NEWSET_001": ["BEAST"], "NEWSET_002": ["QUILBOAR"]})
+        self.assertNotIn("NEWSET_003", g["races"])
+
+    def test_cache_fallback_for_blocks_without_race_tag(self):
+        from bans import bans_from_log
+        lines = self.LINES + [
+            "D 12:00:00 GameState.DebugPrintPower() -     FULL_ENTITY - Creating ID=4 CardID=OLDMON\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=IS_BACON_POOL_MINION value=1\n",
+        ]
+        games = bans_from_log(None, {"OLDMON": ["MECHANICAL"]}, lines=lines)
+        g = games[0]
+        self.assertEqual(g["allowed"], ["Beast", "Mech", "Quilboar"])
+        self.assertEqual(g["races"]["OLDMON"], ["MECHANICAL"])

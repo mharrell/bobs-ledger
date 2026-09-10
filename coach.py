@@ -65,6 +65,11 @@ def analyze(path, game_index=1):
     for g in bans_from_log(path, card_races):
         if g["seed"] == seed:
             allowed = g["allowed"]
+            # The log's own CARDRACE tags (see bans_from_log): the upstream
+            # cache lags the patch, so merge the observed tribes over it
+            # before comps filtering — otherwise new-set core cards fail
+            # open and never get their banned-this-game mark.
+            card_races.update(g.get("races") or {})
             break
     playable = filter_comps_by_available_tribes(meta.comps(), card_races, allowed)
 
