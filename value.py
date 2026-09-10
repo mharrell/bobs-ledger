@@ -49,7 +49,30 @@ W_OFF_COMP = -2.0   # shop card whose tribe fights a COMMITTED comp (damping)
 W_MULT = 4.0        # multiplier glue (Balinda/Drakkari-class): worth what it
                     # amplifies, not its stats — never "safest to sell" glue
 W_SELL_FLOOR = 16.0  # comp glue can't rank into "safe to sell" (below the
-                     # SELL_FILLER_SCORE threshold shared with top_move and the UI)
+                     # 15 filler threshold shared with top_move and the UI)
+
+# Hand-charge kits (2026-09-10 replay, curatively encoded per the card-text
+# discipline): a charger gains stats WHILE IN HAND and needs a deployer to
+# reach the board — holding it is the plan, not a stall, and the advice must
+# flip the turn the deployer leaves. From the cards' own text:
+#   Bream Counter: "While this is in your hand, after you play a Murloc,
+#     gain +6/+6."
+#   Diremuck Forager: "Start of Combat: When you have space, summon the
+#     highest-Attack Murloc from hand for this combat only."
+# (2026-09-10 Cariel game: two counters charged to 78/78 in hand; the
+# Forager died t7 and the second was sold t9, nothing re-bought it, and the
+# coach kept saying "Play Bream Counter x2" — right only AFTER the engine
+# died, never modeling the hold that was correct while it lived.)
+HAND_DEPLOY_KITS = {
+    "BG26_137": {  # Bream Counter
+        "deployer": "BG27_556",  # Diremuck Forager
+        "deployer_name": "Diremuck Forager",
+        "summons": "summons the highest-Attack Murloc from hand at start of combat",
+        "needs_space": True,  # "When you have space" — a full board blocks it
+    },
+}
+
+W_ENGINE_DEPLOY = 8.0  # shop deployer for a charger sitting in hand
 SELL_FILLER_SCORE = 15.0  # a board/shop value under this reads as clear filler
                           # (top_move; the overlay keys its coloring off it too)
 DYING_HEALTH = 12  # effective health (hp+armor) at/below this = "dying" —
@@ -585,7 +608,7 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
 
 def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                  hero_power=None, trinkets=None, scenario=None,
-                 recent_cards=None, comp=None):
+                 recent_cards=None, comp=None, hand=None):
     """Rank the shop's tavern cards (minions AND spells) by value.
 
     `shop_cards`: list of card ids currently offered. `comps`: the playable comps
@@ -615,6 +638,11 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
         comp = comp_target(board_minions or [], comps, recent_cards=recent_cards)
     engine_bonus = _engine_growth_bonus(board_minions, names) if board_minions else {}
     board_ids = {m["card"] for m in (board_minions or [])}
+    # A hand-charge kit wants its deployer back (2026-09-10: the Forager
+    # died, the chargers kept growing in hand, and no shop advice ever
+    # pointed at re-buying the engine).
+    deployers_wanted = {k["deployer"] for c, k in HAND_DEPLOY_KITS.items()
+                        if any(m.get("card") == c for m in (hand or []))}
     scored = []
     for cid in shop_cards:
         if cid in spell_db:
@@ -699,9 +727,69 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                     val -= W_GROWTH * growth * 0.75
         if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0  # banned-tribe minion can't grow
+        if cid in deployers_wanted:
+            # The deployer re-arms the engine: chargers in hand turn back
+            # into per-combat bodies (plus the free-slot rule — the plan
+            # text carries that).
+            val += W_ENGINE_DEPLOY
         scored.append((raw_cid, val))
     scored.sort(key=lambda x: (-x[1], x[0]))
     return scored
+
+
+def hand_engine(hand, board_minions):
+    """Live status of a hand-charge kit, or None when no charger is in hand.
+
+    The three facts the player needs at a glance (the 2026-09-10 game died
+    on exactly these): is the deployer on board, is there a free board slot
+    for its start-of-combat summon, and how many chargers are waiting.
+    """
+    board_ids = [b.get("card") for b in (board_minions or [])]
+    hand_ids = [m.get("card") for m in (hand or []) if m.get("card")]
+    for cid in dict.fromkeys(hand_ids):  # unique, hand order
+        kit = HAND_DEPLOY_KITS.get(cid)
+        if kit:
+            return {"charger": cid,
+                    "deployer": kit["deployer"],
+                    "deployer_name": kit["deployer_name"],
+                    "on_board": kit["deployer"] in board_ids,
+                    "space": len(board_ids) < 7,
+                    "charging": hand_ids.count(cid)}
+    return None
+
+
+def sell_reason(minion, card, comp=None, core=(), addons=(), banned_tribes=()):
+    """WHY a board minion sits where the sell ranking put it.
+
+    The 2026-09-10 ask: the Sell box must say whether a row is safe because
+    it has no comp role ("off-comp filler", "stats only") or valuable for a
+    REASON ("comp core" — that's a keep, not a stats read). Same inputs as
+    the scoring: comp membership, banned tribe, scaling text, raw stats.
+    `comp` is the target comp dict; `core`/`addons` the resolved target's
+    card-id sets; `banned_tribes` the canonical banned display names.
+    """
+    cid = minion.get("card")
+    if cid in core:
+        return "comp core"
+    if cid in addons:
+        return "comp addon"
+    if _is_multiplier(card):
+        return "comp glue"
+    tribe = normalize(minion.get("tribe"))
+    if banned_tribes and tribe and tribe in banned_tribes:
+        return "banned tribe — can't grow"
+    if _is_scaling(card):
+        return "scaler"
+    if _is_engine(card):
+        return "engine piece"
+    stats = (minion.get("atk") or 0) + (minion.get("health") or 0)
+    comp_tribes = (normalize(comp.get("tribe")) or "").split("/") if comp else []
+    off_comp = bool(tribe and comp_tribes and tribe not in comp_tribes)
+    if stats >= 25:
+        # Big body, no comp role — the "big stats so it's valuable" read the
+        # 2026-09-10 ask wanted named distinctly from comp-piece keeps.
+        return "off-comp body" if off_comp else "stats only — no comp role"
+    return "off-comp filler" if off_comp else "filler"
 
 
 def hand_plan(hand, board_minions=None, scenario=None):
@@ -715,7 +803,9 @@ def hand_plan(hand, board_minions=None, scenario=None):
     feeds end-of-turn compounding, which counts casts made THIS turn);
     hand minions rank by their value as a free play — with triple
     awareness: 2 on board = play NOW (golden), 1 on board = hold the hand
-    copy and hunt a 3rd. Returns a list of
+    copy and hunt a 3rd; and hand-charge kits (HAND_DEPLOY_KITS): hold the
+    charger while its deployer is on board, play it the turn the deployer
+    is gone. Returns a list of
     {"card", "name", "verb": "cast"|"play"|"hold", "score", "why"} — one
     entry per hand card, most valuable first.
     """
@@ -778,6 +868,13 @@ def hand_plan(hand, board_minions=None, scenario=None):
             # hold it, buy a 3rd, THEN play for the golden. With 2 on board
             # the hand copy IS the triple — play it now).
             on_board = sum(1 for b in board if b.get("card") == cid)
+            # Hand-charge kit awareness (2026-09-10 Cariel game): a charger
+            # gains stats in hand and a DEPLOYER summons it at combat — hold
+            # while the deployer lives (keeping it a summon slot), flip to
+            # "play it" the turn the deployer is gone.
+            kit = HAND_DEPLOY_KITS.get(cid)
+            deployer_up = bool(kit) and any(b.get("card") == kit["deployer"]
+                                            for b in board)
             verb, why = "play", None
             if on_board >= 2:
                 why = "triples golden!" + (" — sell to make room"
@@ -785,6 +882,17 @@ def hand_plan(hand, board_minions=None, scenario=None):
             elif on_board == 1:
                 verb = "hold"
                 why = "hold — 1 on board; a 3rd copy turns it golden"
+            elif kit and deployer_up:
+                verb = "hold"
+                why = ("hold — " + kit["deployer_name"] + " " +
+                       kit["summons"]
+                       + (" — SELL a body: the summon needs a free slot"
+                          if len(board) >= 7 else " — keep a board slot free"))
+            elif kit:
+                why = ("no " + kit["deployer_name"] + " on board — play it "
+                       "(nothing will summon it)"
+                       + ("; sell to make room first" if len(board) >= 7
+                          else ""))
             elif len(board) >= 7:
                 why = "board is full — sell to make room"
             score = minion_value(m, card)

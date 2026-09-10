@@ -940,6 +940,14 @@ class LiveCoach:
         ranked = sell_recommendation(board, self.playable, self.allowed,
                                      scenario=scenario, hero_power=hero_power,
                                      trinkets=trinket_recs, comp=target)
+        # The hand: casts from hand are free, stuck minions play free — the
+        # coach's blind spot until 2026-09-04 (five spells sat in hand that
+        # would 10x the board while the coach said nothing). Spell entities
+        # are filtered by the tavern-spell DB (generated junk can carry a
+        # spell cardtype but has no real spell id).
+        hand = [m for m in self.gs.hand(self.friendly)
+                if m.get("type") != "spell"
+                or m.get("card") in _load_spell_db()]
         # The shop = the DebugPrintOptions offers owned by anyone but the friendly
         # player (the player's own minions are shown as sell options, not offers).
         offer_ids = []
@@ -951,17 +959,9 @@ class LiveCoach:
         shop = shop_ranking(offer_ids, self.playable, board,
                             self.allowed, hero_power=hero_power,
                             trinkets=trinket_recs, scenario=scenario,
-                            recent_cards=recent,
-                            comp=target) if offer_ids else []
+                            recent_cards=recent, comp=target,
+                            hand=hand) if offer_ids else []
         shop_costs = shop_cost_map(self.gs, offer_ids, self.shop_eids)
-        # The hand: casts from hand are free, stuck minions play free — the
-        # coach's blind spot until 2026-09-04 (five spells sat in hand that
-        # would 10x the board while the coach said nothing). Spell entities
-        # are filtered by the tavern-spell DB (generated junk can carry a
-        # spell cardtype but has no real spell id).
-        hand = [m for m in self.gs.hand(self.friendly)
-                if m.get("type") != "spell"
-                or m.get("card") in _load_spell_db()]
         hand_steps = hand_plan(hand, board, scenario)
         golden_by_cid = {m["card"]: m.get("golden") for m in hand}
         for s in hand_steps:

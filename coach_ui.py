@@ -30,7 +30,8 @@ import time
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from value import _load_bg_names, _load_card_db, _load_spell_db
+from value import (_load_bg_names, _load_card_db, _load_spell_db,
+                   HAND_DEPLOY_KITS, hand_engine, sell_reason)
 
 import meta
 
@@ -162,6 +163,11 @@ _HTML = r"""<!doctype html>
   .sellgroup.keep .tname { color:var(--bad); }
   .gdivider { width:2px; align-self:stretch; flex:none;
               background:#2c2f36; border-radius:1px; }
+  /* Hand-charge engine row: deployer on board? slot free? charging? */
+  .engrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .engbit { font-size:12px; color:var(--dim); }
+  .engbit.ok { color:var(--good); }
+  .engbit.bad { color:var(--bad); font-weight:700; }
   /* Target-comp tiles: what you're hunting fully opaque, owned faded. */
   .tile.comprow { opacity:.4; }
   .tile.comprow.missing { opacity:1; }
@@ -556,6 +562,22 @@ function render(a) {
     app.appendChild(box('Your hand', tiles));
   }
 
+  // HAND ENGINE — a hand-charge kit (Bream Counter + Diremuck Forager is
+  // the known one): the charger grows IN HAND and the deployer summons it
+  // at start of combat. Each fact is a live check; the 2026-09-10 game
+  // died with both broken and nothing on screen said so.
+  if (a.engine) {
+    const e = a.engine;
+    const body = el('div', 'engrow');
+    const bit = (text, cls) => body.appendChild(el('span', 'engbit' + (cls ? ' ' + cls : ''), text));
+    if (e.on_board) bit('✓ ' + e.deployer_name + ' on board', 'ok');
+    else bit('✗ ' + e.deployer_name + ' NOT on board — play your chargers', 'bad');
+    if (e.space) bit('✓ slot free', 'ok');
+    else bit('✗ board full — the summon needs a free slot', 'bad');
+    bit(e.charging + ' charging');
+    app.appendChild(box('Hand engine', body));
+  }
+
   // SELL — one horizontal line: safe to sell | divider | do not sell.
   // The split is the value function's own filler threshold (score < 15 is
   // what top_move calls "a clear filler").
@@ -566,6 +588,7 @@ function render(a) {
     // (player rule 2026-09-09), so render_json keeps hand entries out.
     // A Butchering-fuel undead reads "cast it instead of selling".
     const sub = s.score.toFixed(0)
+      + (s.why ? ' · ' + s.why : '')
       + (s.fuel ? ' · cast, not sell' : '');
     const t = tile(s.card, s.name, sub,
                    {golden: s.golden, n: s.n, cls: s.score < 15 ? 'safe' : 'keep'});
@@ -727,17 +750,41 @@ def render_json(analysis):
     # slot, where selling gives 1 gold. Annotated so the Sell row and the
     # hand's cast steps point the same direction.
     spell_db = _load_spell_db()
+    card_db = _load_card_db()
     holding_destroy = any("destroy a friendly"
                           in ((spell_db.get(s["card"]) or {}).get("text")
                               or "").lower()
                           for s in analysis.get("hand", []))
     if holding_destroy:
-        card_db = _load_card_db()
         for g in sell:
             race = ((card_db.get(g["card"]) or {}).get("race") or "")
             if g["score"] < 15 and "Undead" in (race or ""):
                 g["fuel"] = True
+    # WHY each Sell row sits there (2026-09-10 ask): the score alone can't
+    # tell "comp core" (a keep!) from "stats only" (a safe sell) — the
+    # reason rides each row from the same inputs the scoring used, so the
+    # two can't disagree.
+    board_by_card = {}
+    for m in analysis["board"]:
+        board_by_card.setdefault(m["card"], m)
+    tc = analysis.get("target_cards") or {}
+    core_ids = {c["card"] for c in (tc.get("core") or [])
+                if isinstance(c, dict) and c.get("card")}
+    addon_ids = {c["card"] for c in (tc.get("addons") or [])
+                 if isinstance(c, dict) and c.get("card")}
+    target_comp = next((c for c in (analysis.get("playable_comps") or {}).values()
+                        if isinstance(c, dict)
+                        and c.get("name") == analysis.get("target_comp")), None)
+    banned_tribes = set(analysis.get("banned") or [])
+    for g in sell:
+        g["why"] = sell_reason(board_by_card.get(g["card"], {}),
+                               card_db.get(g["card"]), comp=target_comp,
+                               core=core_ids, addons=addon_ids,
+                               banned_tribes=banned_tribes)
     a["sell_rank"] = sell
+    # Hand-charge engine status (2026-09-10: the Forager/Counter kit died
+    # silently — the overlay now shows deployer on board? space? charging).
+    a["engine"] = hand_engine(analysis.get("hand") or [], analysis["board"])
     # The hand: casts/plays ranked for the "Your hand" tiles (free actions —
     # the plan's numbered steps carry them too; this row is the reference).
     a["hand"] = [dict(s, name=names.get(s["card"], s["card"]))
@@ -754,13 +801,20 @@ def render_json(analysis):
     addons = {c["card"] for c in tc.get("addons", [])}
     spell_db = _load_spell_db()
     spells = set(spell_db)
+    # A hand-charge kit's deployer (2026-09-10): the tag names WHY the shop
+    # row matters when the comp sets don't — "deploys hand" = the engine
+    # piece that summons the chargers back onto the board.
+    deployers = {k["deployer"] for r in (analysis.get("hand") or [])
+                 for k in [HAND_DEPLOY_KITS.get(r.get("card"))] if k}
     from value import _buy_prices
     prices = _buy_prices(analysis)
     a["shop_rank"] = [dict(card=c, name=names.get(c, c), score=round(v),
                            price=prices.get(c),
                            tag=("core" if c in core else
                                 "addon" if c in addons else
-                                "spell" if c in spells else None))
+                                "spell" if c in spells else
+                                "deploys hand" if c.rstrip("_G") in deployers
+                                else None))
                       for c, v in analysis.get("shop_rank", [])]
     # Pre-commit "leads" tagging (comp meter): with no target committed yet,
     # shop cards that are unowned core of the leading candidate get a "leads
