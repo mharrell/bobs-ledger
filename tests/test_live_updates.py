@@ -871,6 +871,26 @@ class TestRenderJsonComps(unittest.TestCase):
         self.assertFalse(a["comps"][0]["core"][0]["banned"])
         self.assertEqual(a["buy_step_card"], None)
 
+    def test_comp_progress_raw_needs_do_not_crash_render(self):
+        """The comp meter's RAW rows carry needs as bare card-id strings
+        (value.comp_progress); the tooltip-metadata collector indexed
+        c["card"] on them and every analysis push crashed with "string
+        indices must be integers" once a candidate had unowned core —
+        the live coach then retried forever ("coach skipped") and stalled.
+        The collector must read the RENDERED rows, and the needs ids must
+        still land in the cards tooltip map."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "target_comp": None,
+                    "comp_progress": [
+                        {"name": "Mechs - Y", "tribe": "Mech",
+                         "meta_tier": "S", "hits": 1, "ready": False,
+                         "needs": ["BG23_318"], "tribe_hits": 1}]}
+        a = render_json(analysis)  # used to raise TypeError
+        self.assertEqual(a["comp_progress"][0]["needs"][0]["card"],
+                         "BG23_318")
+        self.assertIn("BG23_318", a["cards"])
+
     def test_sell_rank_groups_duplicates(self):
         """Two board copies of one card showed as two confusing rows; they
         group with a ×N badge and the sell-first instance's score."""
