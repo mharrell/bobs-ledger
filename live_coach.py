@@ -701,7 +701,9 @@ class LiveCoach:
         banned, so only a 5-tribe set is accepted; until then allowed stays
         None (fail OPEN — no bans shown, every comp playable) and this
         re-runs on each analyze. More than 5 seen = not a 5/5 ban mode —
-        fail open permanently.
+        fail open permanently. (bans_from_log itself only counts a tribe
+        once it has 3+ DISTINCT pure pool minions — effect-summoned
+        singletons of banned tribes mid-game must not pad the count.)
         """
         if self._bans_ready or self._comps is None or not self.cur_lines:
             return
