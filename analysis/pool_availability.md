@@ -103,9 +103,13 @@ alive players drops exactly when places shift.
 
 ## Integration plan (phases)
 
-1. **Own-pool accounting (exact, small):** copies of each card bought/sold by
-   us (player_actions streams) + golden=3 rule → per-card "pool left" for the
-   Market column; value.py dampens uncompletable triple-chasing.
+1. **Own-pool accounting (exact, small) — LANDED (phase 1).** `pool.py`
+   (state-based holdings: board + hand, golden = 3; sizes from
+   `meta/pool.json`, patch-notes-owned) → `own_pool` on the live analysis →
+   Market chips ("N pool left" / "last pool copy" / "pool dry") and three
+   value gates: hand hold flips to play when the pool can't produce a 3rd
+   copy, the triple note says when the pool can't produce the remainder,
+   and `_hunt_check` refuses cores whose pool we've drained.
 2. **Card-level opponent snapshots (medium):** extend the lobby scout —
    staged-burst capture keyed by seat, subtract our exact board, staleness
    per seat → tribe-pressure lines for the Build column + next-opponent comp

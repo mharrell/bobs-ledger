@@ -32,7 +32,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from value import (_load_bg_names, _load_card_db, _load_spell_db,
                    HAND_DEPLOY_KITS, hand_engine, sell_reason)
-
+import pool
 import meta
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -672,12 +672,16 @@ function render(a) {
   }
 
   // TAVERN — the ranked shop as a horizontal card row (game-like); the
-  // plan's buy glows gold. Score + price under each card.
+  // plan's buy glows gold. Score + price under each card. Pool chips
+  // (phase 1): copies left in the shared pool beyond OUR holdings —
+  // opponent holdings aren't subtracted yet, so this is a floor, not a
+  // lobby total (analysis/pool_availability.md).
   if (a.shop_rank && a.shop_rank.length) {
     const tiles = el('div', 'tiles');
     a.shop_rank.forEach(s => {
       const sub = (s.price != null ? s.price + 'g · ' : '') + s.score.toFixed(0)
-        + (s.tag ? ' · ' + s.tag : '');
+        + (s.tag ? ' · ' + s.tag : '')
+        + (s.pool ? ' · ' + s.pool : '');
       tiles.appendChild(tile(s.card, s.name, sub,
                              {cls: s.card === stepCard ? 'buynow' : null,
                               golden: s.golden}));
@@ -826,8 +830,15 @@ def render_json(analysis):
                  for k in [HAND_DEPLOY_KITS.get(r.get("card"))] if k}
     from value import _buy_prices
     prices = _buy_prices(analysis)
+    # Pool availability chips (phase 1, analysis/pool_availability.md): the
+    # shared pool minus what WE hold. Not lobby-true until phase 2 adds
+    # opponent snapshots — the wording stays "pool left", never "remaining
+    # in the lobby".
+    held = analysis.get("own_pool")
     a["shop_rank"] = [dict(card=c, name=names.get(c, c), score=round(v),
                            price=prices.get(c),
+                           pool=(pool.chip(c, held)
+                                 if held is not None else None),
                            tag=("core" if c in core else
                                 "addon" if c in addons else
                                 "spell" if c in spells else

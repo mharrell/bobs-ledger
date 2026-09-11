@@ -93,6 +93,17 @@ def heroes():
     return _items("heroes.json")
 
 
+def pool_sizes():
+    """Shared-pool copy counts per tavern tier, or {} without the file.
+
+    meta/pool.json carries {"tiers": {"1": 18, ...}} — the counts drift by
+    season, so they live with the other patch data. Callers fall back to
+    pool.py's built-in table when this is empty."""
+    data = _raw("pool.json") or {}
+    tiers = data.get("tiers") or {}
+    return {int(t): int(n) for t, n in tiers.items() if str(t).isdigit()}
+
+
 def items(name):
     """Records of any meta file as a list (dict-of-records tolerated)."""
     return _items(name)

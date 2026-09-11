@@ -1,0 +1,14 @@
+{
+  "_comment": "Shared minion-pool copy counts per tavern tier. The pool is shared lobby-wide; these drift across seasons/lobby formats (older: 16/15/13/11/9/7), so they are patch data, not code. Owned by the patch-notes pipeline like every other patch-dependent number.",
+  "updated": "2026-09-11",
+  "source": "analysis/pool_availability.md (phase 0, community-confirmed counts)",
+  "tiers": {
+    "1": 18,
+    "2": 15,
+    "3": 13,
+    "4": 11,
+    "5": 9,
+    "6": 6,
+    "7": 5
+  }
+}
