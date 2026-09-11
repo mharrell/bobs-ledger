@@ -714,8 +714,9 @@ def hand_plan(hand, board_minions=None, scenario=None):
     profit. Spells rank by direct effect + cast-engine fuel (each cast
     feeds end-of-turn compounding, which counts casts made THIS turn);
     hand minions rank by their value as a free play — with triple
-    awareness: 2 on board = play NOW (golden), 1 on board = hold the hand
-    copy and hunt a 3rd. Returns a list of
+    awareness over REGULAR copies only (a golden never combines): 2 on
+    board = play NOW (golden), 1 on board = hold the hand copy and hunt
+    a 3rd. Returns a list of
     {"card", "name", "verb": "cast"|"play"|"hold", "score", "why"} — one
     entry per hand card, most valuable first.
     """
@@ -776,19 +777,27 @@ def hand_plan(hand, board_minions=None, scenario=None):
             # Triple awareness (2026-09-05: the coach said "Play Balinda" —
             # but with 1 on board the hand copy is the golden-hunt piece:
             # hold it, buy a 3rd, THEN play for the golden. With 2 on board
-            # the hand copy IS the triple — play it now).
-            on_board = sum(1 for b in board if b.get("card") == cid)
+            # the hand copy IS the triple — play it now). A GOLDEN never
+            # combines (player rule, 2026-09-10 Buttons game: a Dark-Gift
+            # golden + 1 regular read as "2 on board, buy the 3rd" — that
+            # buy made nothing): only regular copies count toward a triple,
+            # and a golden hand copy plays as a golden body, period.
+            on_board = sum(1 for b in board
+                           if b.get("card") == cid and not b.get("golden"))
             verb, why = "play", None
-            if on_board >= 2:
+            if m.get("golden"):
+                why = "golden body — goldens never combine" \
+                    + (" — sell to make room" if len(board) >= 7 else "")
+            elif on_board >= 2:
                 why = "triples golden!" + (" — sell to make room"
                                            if len(board) >= 7 else "")
             elif on_board == 1:
                 verb = "hold"
-                why = "hold — 1 on board; a 3rd copy turns it golden"
+                why = "hold — 1 regular on board; a 3rd copy turns it golden"
             elif len(board) >= 7:
                 why = "board is full — sell to make room"
             score = minion_value(m, card)
-            if on_board >= 2:
+            if on_board >= 2 and not m.get("golden"):
                 score += 25.0  # a golden now outranks nearly any free play
             steps.append({"card": cid, "verb": verb,
                           "score": score,
@@ -1273,8 +1282,9 @@ def _top_move_text(analysis):
         if cid is not None:
             bought = cid
             analysis["buy_step_card"] = cid
-            parts.append(f"Buy {_shop_name(cid, names)} "
-                         f"({_buy_intention(cid, comp, card_db, spell_db)})")
+            why = _buy_intention(cid, comp, card_db, spell_db,
+                                 board=analysis.get("board"))
+            parts.append(f"Buy {_shop_name(cid, names)} ({why})")
             if level_next and tier and analysis.get("level_cost") is not None:
                 level_cost = analysis.get("level_cost")
                 leftover = (gold or 0) - (costs.get(cid) or 0)
@@ -1428,15 +1438,40 @@ def _has_end_of_turn(board, card_db):
     return False
 
 
-def _buy_intention(cid, comp, card_db, spell_db=None):
+def _triple_note(cid, board):
+    """The buy's triple state, or '' when there's nothing to say.
+
+    A golden on board is NOT one of the three copies — goldens never
+    combine (player rule; the 2026-09-10 Buttons game advised 'buy it
+    for the triple' with a Dark-Gift golden + 1 regular on board, and
+    the buy made nothing). The note rides on the buy step so neither
+    the plan nor the LLM reading it can miscount a golden.
+    """
+    if not board:
+        return ""
+    regulars = sum(1 for b in board
+                   if b.get("card") == cid and not b.get("golden"))
+    if regulars >= 2:
+        return "this buy completes a golden triple"
+    if any(b.get("card") == cid and b.get("golden") for b in board):
+        left = 3 - regulars
+        return (f"the golden on board doesn't combine — "
+                f"{left} more regular {'' if left == 1 else 'copies'}"
+                f" still needed for a triple")
+    return ""
+
+
+def _buy_intention(cid, comp, card_db, spell_db=None, board=None):
     """Why the coach recommends buying this card (a pre-set intention)."""
+    note = _triple_note(cid, board)
+    note = f"; {note}" if note else ""
     if comp and cid in comp.get("core", []):
-        return f"committing to {comp.get('tribe') or comp.get('name')}"
+        return f"committing to {comp.get('tribe') or comp.get('name')}{note}"
     if comp and cid in comp.get("addons", []):
-        return "part of growth cycle"
+        return f"part of growth cycle{note}"
     card = card_db.get(cid)
     if card and _is_engine(card):
-        return "growth engine"
+        return f"growth engine{note}"
     spell = (spell_db or {}).get(cid)
     if spell:
         text = (spell.get("text") or "").lower()
@@ -1447,7 +1482,7 @@ def _buy_intention(cid, comp, card_db, spell_db=None):
         if re.search(r"\+\d+/\+\d+", text):
             return "tempo"
         return "spare gold into value"
-    return "surviving until we can commit"
+    return f"surviving until we can commit{note}"
 
 
 def opp_note(board_stats, their, approx):
