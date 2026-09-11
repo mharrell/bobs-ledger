@@ -1190,8 +1190,8 @@ def _top_move_text(analysis):
                           and spare < h_cost)
             # Q1 payoff: unowned pieces of the target comp, split by which
             # tavern tier holds them (copies of what we own don't count).
-            next_core, here_core, next_any, here_any = _comp_needs_by_tier(
-                analysis, card_db)
+            next_core, here_core, next_any, here_any, above_core, above_any \
+                = _comp_needs_by_tier(analysis, card_db)
             # Scout (gates 3+4): "their" = the next opponent's last-known
             # board when we've fought them (the exact buy-phase preview),
             # else the lobby median, else the corpus baseline. The "~" marks
@@ -1236,16 +1236,24 @@ def _top_move_text(analysis):
                 budget = gold  # the buy comes first, from the full purse
                 level_next = True
                 level_flip_why = flip_why or "the shop's top card is a comp core"
-            elif (here_core > 0 and here_core >= next_core) or \
-                    (here_core == 0 and next_core == 0
-                     and here_any > 0 and next_any == 0):
+            elif (here_core > 0 and next_core == 0 and above_core == 0) or \
+                    (here_core == 0 and next_core == 0 and above_any == 0
+                     and here_any > 0):
                 # Q1: what the comp is MISSING lives here — this tier or
-                # below — and not more of it one tier up, so leveling would
-                # lower the odds of finding it. Cores dominate; addons only
-                # carry the stay when they're all the shopping left. The old
-                # gate required tier+1 to hold NOTHING: any single addon
-                # there pulled LEVEL while missing cores sat here
-                # (2026-09-08).
+                # below — and nothing of it is out of reach above, so
+                # leveling would lower the odds of finding it WITHOUT
+                # unlocking anything. Cores dominate; addons only carry the
+                # stay when they're all the shopping left. The old gate
+                # required tier+1 to hold NOTHING: any single addon there
+                # pulled LEVEL while missing cores sat here (2026-09-08) —
+                # but it also counted tier+1 cores against here-cores on a
+                # flat tie and ignored pieces beyond tier+1 entirely
+                # (2026-09-10: a 2-vs-2 tie said 'stay on tier 5 — your
+                # comp's missing cores are on this tier or below' while the
+                # comp's payoff core sat at tier 6). Leveling is the ONLY
+                # path to anything above the current tier; here-pieces stay
+                # findable after leveling, so any missing piece above vetoes
+                # the stay.
                 budget = gold
                 stay_note = True
             else:
@@ -1640,9 +1648,10 @@ def combat_forecast(analysis):
 
 def _comp_needs_by_tier(analysis, card_db):
     """Unowned pieces of the target comp, split by tavern tier relative to
-    the current one: (next_core, here_core, next_any, here_any) (Q1,
-    analysis/LEVELING_MODEL.md — leveling lowers the odds of finding the
-    CURRENT tier's cards, so where the missing pieces live decides).
+    the current one: (next_core, here_core, next_any, here_any, above_core,
+    above_any) (Q1, analysis/LEVELING_MODEL.md — leveling lowers the odds of
+    finding the CURRENT tier's cards, so where the missing pieces live
+    decides).
 
     CORES drive the decision; addons only matter when they're ALL the
     shopping that's left (a lone addon at tier+1 used to pull LEVEL past
@@ -1650,12 +1659,22 @@ def _comp_needs_by_tier(analysis, card_db):
     saying to upgrade even if there are minions at this tier we still
     need'). 'Here' includes LOWER tiers: a tier-3 core while at tier 4 is
     still diluted by leveling (the pool's sub-tier share drops as the
-    tavern climbs)."""
+    tavern climbs).
+
+    'Above' = beyond tier+1 (tier-6 Fauna Whisperer while at tier 4). It
+    used to be counted NOWHERE, and a missing core AT tier+1 tied evenly
+    against here-cores (2026-09-10: a 2-vs-2 tie said 'stay on tier 5'
+    while the comp's payoff core sat at tier 6) — but leveling is the ONLY
+    path to any piece above the current tier, while here-pieces stay
+    findable after leveling. Missing pieces above therefore veto the stay;
+    they never drive a level by themselves (they're not findable at
+    tier+1 yet either — the curve handles that)."""
     tc = analysis.get("target_cards")
     tier = analysis.get("tier")
     if not tc or tier is None:
-        return 0, 0, 0, 0
+        return 0, 0, 0, 0, 0, 0
     next_core = here_core = next_any = here_any = 0
+    above_core = above_any = 0
     for section in ("core", "addons"):
         for row in tc.get(section) or []:
             if row.get("owned") or row.get("banned"):
@@ -1671,7 +1690,12 @@ def _comp_needs_by_tier(analysis, card_db):
                 if section == "core":
                     here_core += 1
                 here_any += 1
-    return next_core, here_core, next_any, here_any
+            else:  # beyond tier+1: unfindable here, unfindable at tier+1
+                if section == "core":
+                    above_core += 1
+                above_any += 1
+    return (next_core, here_core, next_any, here_any,
+            above_core, above_any)
 
 
 def _core_hits(board, rc, cores):
