@@ -988,6 +988,53 @@ class TestCombatOnlyGains(unittest.TestCase):
         self.assertEqual(value._buy_intention("BG35_602", None, cdb),
                          "scaling combat engine")
 
+    def test_rally_and_attack_triggers_are_combat_only(self):
+        # Full-pool audit 2026-09-11: combat-phase triggers the first pass
+        # didn't know — Rally (fires at the start of combat), on-attack,
+        # Reborn procs, takes-damage. Each of these buffs evaporates.
+        for cid in ("BG29_888",  # Glim Guardian: Rally: Gain +2 Attack
+                    "BG33_886",  # Tusked Camper: Rally: plays a Blood Gem (no
+                                 # "permanent" — Vineweaver's 3 permanent gems
+                                 # are the text saying otherwise)
+                    "BG20_104",  # Bonker: Rally: Blood Gem on all others
+                    "BG33_430",  # Prodigious Tusker: on-attack Blood Gem
+                    "BG36_211",  # Cage Gnawer: on-attack +2/+1 to Beasts
+                    "BG29_816",  # Roaring Recruiter: on-attack +3/+1
+                    "BG36_207",  # Wolf Pup: Rally: +4/+1 to others
+                    "BG36_514",  # Barrier Banshee: Reborn-proc +7/+7
+                    "BG33_318"):  # Bile Spitter: Rally: grants Venomous —
+                                  # combat-granted keywords expire too
+            self.assertTrue(value._combat_only_gain(self._card(cid)), cid)
+
+    def test_rally_permanent_wording_still_persists(self):
+        # "Rally: This plays 3 permanent Blood Gems on itself" — the text
+        # says permanent, so the combat-time gems stick.
+        vineweaver = self._card("BG33_883")
+        self.assertFalse(value._combat_only_gain(vineweaver))
+
+    def test_hand_targeted_gains_persist(self):
+        # Player follow-up 2026-09-11: a buff that lands on a card in the
+        # hand persists even when granted mid-combat — the hand card didn't
+        # fight, so nothing reverts.
+        winterfinner = self._card("BG29_300")  # give a minion in your hand
+        tide_oracle = self._card("BG27_513")   # ...to a minion in your hand
+        self.assertFalse(value._combat_only_gain(winterfinner))
+        self.assertFalse(value._combat_only_gain(tide_oracle))
+        # Gains FROM the hand ONTO a board minion are NOT covered — the
+        # receiving side decides.
+        self.assertTrue(value._combat_only_gain(self._card("BG26_354")))
+        # Choral Mrrrglr: Gain the stats of all the minions in your hand
+        self.assertTrue(value._combat_only_gain(self._card("BG34_142")))
+        # Costume Enthusiast: Gain the Attack of the ... minion in your hand
+
+    def test_dual_phase_snazzy_phantom_keeps_engine_status(self):
+        # No persistence wording in its text, but the curated undead engine
+        # entry (player-corrected 2026-09-08) says the transfer lands "in
+        # combat and in the shop" — dual-phase, so not combat-only.
+        phantom = self._card("BG36_515")
+        self.assertFalse(value._combat_only_gain(phantom))
+        self.assertTrue(value._is_engine(phantom))
+
     def test_flat_text_marker_across_line_wraps(self):
         # DB text wraps mid-phrase: Ravaging Scorpid's persist marker is
         # stored "+5/+5 this\ngame" — the first pass flagged it combat-only
