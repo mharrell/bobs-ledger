@@ -828,34 +828,43 @@ class TestEngineFit(unittest.TestCase):
 
     def test_tribe_engine_undamped_on_its_board(self):
         names = value._load_bg_names()
-        lobster = "BG36_202"
+        scorpid = "BG36_209"   # Ravaging Scorpid — beasts-beetles core (BEAST);
+        # "+5/+5 this game" persists, so it stays a growth engine (the 2026-09-11
+        # combat-only rule removed Tasty Lobster, the previous specimen, whose
+        # deathrattle buff evaporates each fight).
         barnstormer = "BG26_162"   # Dancing Barnstormer, a beast body
-        beast_board = [{"card": lobster, "atk": 4, "health": 4, "tribe": "BEAST"},
+        beast_board = [{"card": scorpid, "atk": 4, "health": 4, "tribe": "BEAST"},
                        {"card": barnstormer, "atk": 3, "health": 3, "tribe": "BEAST"},
                        {"card": barnstormer, "atk": 3, "health": 3, "tribe": "BEAST"}]
-        credit = value._engine_growth_bonus(beast_board, names).get(lobster, 0)
+        credit = value._engine_growth_bonus(beast_board, names).get(scorpid, 0)
         self.assertGreater(credit, 0)  # a fit engine keeps full credit
 
     def test_precommit_off_tribe_growth_damped(self):
         """No target yet, but the board is already one tribe: an off-tribe
         GROWTH card is scaling minions the player is leaving — its growth
-        term is discounted (Deflect-o-Bot, mech, growth 3.0, headlined a
-        beast board at 11.5 with no engine bonus at all; 2026-09-06 Reno
-        t7). Milder than the committed damp: no flat penalty, and untribed
-        cards are exempt (they fit any build)."""
-        deflect = "BGS_071"    # Deflect-o-Bot (MECH, growth 3.0)
+        term is discounted. Milder than the committed damp: no flat penalty,
+        and untribed cards are exempt (they fit any build).
+        (The original specimen was Deflect-o-Bot, mech, growth 3.0, which
+        headlined a beast board at 11.5 with no engine bonus; 2026-09-06 Reno
+        t7. The 2026-09-11 combat-only rule then dropped its growth to 0 —
+        its during-combat gains evaporate — so the damp is demonstrated with
+        a persistent scaler instead.)"""
+        scorpid = "BG36_209"   # Ravaging Scorpid, growth 3.2 ("this game")
         board_beast = [{"card": "BG36_202", "atk": 4, "health": 4, "tribe": "BEAST"},
                        {"card": "BG26_162", "atk": 3, "health": 3, "tribe": "BEAST"},
                        {"card": "BG26_162", "atk": 3, "health": 3, "tribe": "BEAST"}]
-        board_mech = [{"card": deflect, "atk": 3, "health": 2, "tribe": "MECH"},
+        board_mech = [{"card": "BG_TTN_401", "atk": 3, "health": 3, "tribe": "MECH"},
                       {"card": "BG_TTN_401", "atk": 3, "health": 3, "tribe": "MECH"},
                       {"card": "BG_TTN_401", "atk": 3, "health": 3, "tribe": "MECH"}]
-        damped = dict(value.shop_ranking([deflect], {}, board_beast))
-        undamped = dict(value.shop_ranking([deflect], {}, board_mech))
-        self.assertLess(damped[deflect], undamped[deflect])
+        undamped = dict(value.shop_ranking([scorpid], {}, board_beast))
+        damped = dict(value.shop_ranking([scorpid], {}, board_mech))
+        self.assertLess(damped[scorpid], undamped[scorpid])
 
     def test_precommit_untribed_growth_exempt(self):
-        """Untribed cards fit any build — no pre-commit damp, on any board."""
+        """Untribed cards fit any build — no pre-commit damp, on any board.
+        Combat-only helpers are exempt the same way (2026-09-11 rule):
+        Deflect-o-Bot's growth dropped to 0 and the damp only fires at
+        growth >= 2.0 — one-fight power is never "off-tribe growth"."""
         deflect = "BGS_071"
         board_beast = [{"card": "BG36_202", "atk": 4, "health": 4, "tribe": "BEAST"},
                        {"card": "BG26_162", "atk": 3, "health": 3, "tribe": "BEAST"}]
@@ -864,10 +873,99 @@ class TestEngineFit(unittest.TestCase):
         amalgam = "BG36_640"   # Gatekeeper Amalgam, no tribe in the DB
         on_beast = dict(value.shop_ranking([deflect, amalgam], {}, board_beast))
         on_mech = dict(value.shop_ranking([deflect, amalgam], {}, board_mech))
-        # The untribed card scores identically on both boards (exempt);
-        # the mech takes the damp on the beast board.
+        # The untribed card scores identically on both boards (exempt); the
+        # combat-only helper likewise — there's no growth left to damp.
         self.assertAlmostEqual(on_mech[amalgam], on_beast[amalgam])
-        self.assertLess(on_beast[deflect], on_mech[deflect])
+        self.assertAlmostEqual(on_beast[deflect], on_mech[deflect])
+
+
+class TestCombatOnlyGains(unittest.TestCase):
+    """Combat-phase stat gains evaporate at combat end (player rule
+    2026-09-11): buff-givers whose gain dies with the fight are one-fight
+    power (W_COMBAT_SCALE covers the helpfulness), not growth engines.
+    Cards whose text says the gain persists keep full growth."""
+
+    def _card(self, cid):
+        return value._load_card_db().get(cid)
+
+    def test_lobster_is_not_a_growth_engine(self):
+        # "Deathrattle: Give a random friendly Beast +2/+1. Improve your
+        # future Tasty Lobsters." — one-fight power. Before the rule it
+        # scored growth 6.5 with role "engine" and had its own engines.json
+        # entry (since removed).
+        lobster = self._card("BG36_202")
+        self.assertTrue(value._combat_only_gain(lobster))
+        self.assertEqual(value.growth_potential(lobster), 0.0)
+        self.assertFalse(value._is_engine(lobster))
+        # ...but it's still helpful this fight.
+        self.assertTrue(value._is_combat_scaling(lobster))
+
+    def test_during_combat_gain_is_combat_only(self):
+        # "Whenever you summon a Mech during combat, gain +2 Attack..." (was 3.0)
+        deflect = self._card("BGS_071")
+        self.assertTrue(value._combat_only_gain(deflect))
+        self.assertEqual(value.growth_potential(deflect), 0.0)
+
+    def test_explicit_expiry_markers(self):
+        # "+7/+7 until next turn" — the text itself says it expires (was 3.8).
+        goldrinn = self._card("BGS_018")
+        self.assertTrue(value._combat_only_gain(goldrinn))
+        self.assertEqual(value.growth_potential(goldrinn), 0.0)
+
+    def test_overrides_for_deceptive_prose(self):
+        # "Improves permanently" — but what improves is the evaporating
+        # start-of-combat buff (was growth 9.0).
+        evoker = self._card("BG32_822")
+        self.assertTrue(value._combat_only_gain(evoker))
+        self.assertEqual(value.growth_potential(evoker), 0.0)
+        # "improved by every 3 spells you've cast this game" — "this game"
+        # counts the casts, it doesn't persist the buff (was 6.5).
+        cyclist = self._card("BG31_925")
+        self.assertTrue(value._combat_only_gain(cyclist))
+        self.assertEqual(value.growth_potential(cyclist), 0.0)
+
+    def test_persist_markers_keep_growth(self):
+        # "+3/+3 permanently" (Motley Phalanx) and "+5/+5 this game"
+        # (Ravaging Scorpid) persist — real growth, unchanged by the rule.
+        phalanx = self._card("BG27_080")
+        scorpid = self._card("BG36_209")
+        self.assertFalse(value._combat_only_gain(phalanx))
+        self.assertFalse(value._combat_only_gain(scorpid))
+        self.assertGreater(value.growth_potential(phalanx), 2.0)
+        self.assertGreater(value.growth_potential(scorpid), 2.0)
+
+    def test_persistent_halves_keep_their_terms(self):
+        # "Battlecry and Start of Combat: Give your other Dragons +1/+1" —
+        # the battlecry half persists, so its one-shot term survives.
+        synth = self._card("BG26_963")
+        self.assertTrue(value._combat_only_gain(synth))
+        self.assertEqual(value.growth_potential(synth), 1.0)
+
+    def test_summons_from_combat_triggers_still_grow(self):
+        # Summons persist (tokens stay on the board) — a summon deathrattle
+        # keeps its growth term; only stat gains evaporate.
+        salvager = self._card("BG31_999")  # Deathrattle: Summon an exact copy
+        self.assertFalse(value._combat_only_gain(salvager))
+        self.assertGreaterEqual(value.growth_potential(salvager), 2.0)
+
+    def test_deathrattle_stat_buff_vs_tavern_refresh(self):
+        # Reborn. "Deathrattle: Give your minions +1/+1." — combat-only...
+        spirit = self._card("BG28_306")
+        self.assertTrue(value._combat_only_gain(spirit))
+        self.assertEqual(value.growth_potential(spirit), 0.0)
+        # ...but Waveling's buff lands on a Tavern refresh ("this game"),
+        # which persists — that IS growth.
+        waveling = self._card("BG34_856")
+        self.assertFalse(value._combat_only_gain(waveling))
+        self.assertGreaterEqual(value.growth_potential(waveling), 3.0)
+
+    def test_flat_text_marker_across_line_wraps(self):
+        # DB text wraps mid-phrase: Ravaging Scorpid's persist marker is
+        # stored "+5/+5 this\ngame" — the first pass flagged it combat-only
+        # because the raw substring check missed across the newline.
+        scorpid = self._card("BG36_209") or {}
+        self.assertIn("this game", value._flat_text(scorpid))
+        self.assertFalse(value._combat_only_gain(scorpid))
 
 
 class TestBlockedCore(unittest.TestCase):
