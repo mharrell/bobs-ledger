@@ -24,6 +24,15 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CARD_RACES_CACHE = os.path.join(_HERE, ".card_races.json")
 HEARTHSTONEJSON_URL = "https://api.hearthstonejson.com/v1/latest/enUS/cards.json"
 
+# Distinct pure-tribe pool minions a tribe needs before it counts as
+# allowed. Card effects summon banned-tribe pool minions mid-game (a spell
+# made the Demon BG34_500 enter an opponent's board on 2026-09-10), and
+# those singletons pushed the seen-tribe count past 5 — the live 5/5 gate
+# then failed open and the comps panel listed banned comps all game. Real
+# allowed tribes show 10+ distinct pure minions in the first minutes;
+# observed leaks max out at 2 (see bans_from_log docstring).
+MIN_PURE_POOL_CARDS = 3
+
 
 def _load_card_races(cache_path):
     """Return {card_id: [races]} from hearthstonejson, cached to disk.
@@ -54,6 +63,17 @@ def bans_from_log(powerlog_path, card_races=None, lines=None):
 
     `allowed`/`banned` are lists of canonical tribe names (e.g. "Mech",
     "Dragon"). Games with no pool minions (non-Battlegrounds) are skipped.
+    A tribe counts as allowed only with MIN_PURE_POOL_CARDS DISTINCT pure
+    pool minions: card effects summon banned-tribe pool minions mid-game
+    (2026-09-10: BG34_500 Flaming Enforcer, a Demon created by a spell with
+    an opponent, carried IS_BACON_POOL_MINION + a single CARDRACE), so
+    counting SEEN tribes made the seen-set reach 6-8 and the live coach's
+    5/5 gate failed OPEN all game — every comp listed, banned tribes
+    included. Real allowed tribes reveal 10+ distinct pure minions within
+    the first minutes (every lobby shop cycle); effect-generated leaks are
+    1-2 cards. Validated: with the 3-card gate, all 9 BG games across the
+    2026-09-08..10 sessions resolve to exactly 5 tribes and every observed
+    leak sits below it.
     `races` is the card->races map observed from the log itself: each pool
     minion's FULL_ENTITY block prints its own `tag=CARDRACE` at creation —
     ground truth, unlike the upstream hearthstonejson cache, which lags the
@@ -67,7 +87,8 @@ def bans_from_log(powerlog_path, card_races=None, lines=None):
     if card_races is None:
         card_races = _load_card_races(DEFAULT_CARD_RACES_CACHE)
 
-    games = {}  # seed -> {"pure": set of tribes, "races": {cid: [races]}}
+    # seed -> {"pure": tribe -> distinct card ids, "races": {cid: [races]}}
+    games = {}
     cur_seed = None
     if lines is None:
         with open(powerlog_path, encoding="utf-8", errors="replace") as f:
@@ -79,7 +100,7 @@ def bans_from_log(powerlog_path, card_races=None, lines=None):
         m = re.search(r"GAME_SEED value=(\d+)", line)
         if m:
             cur_seed = m.group(1)
-            games.setdefault(cur_seed, {"pure": set(), "races": {}})
+            games.setdefault(cur_seed, {"pure": {}, "races": {}})
         if cur_seed and ("SHOW_ENTITY" in line or "FULL_ENTITY" in line):
             block = []
             j = i
@@ -122,14 +143,16 @@ def bans_from_log(powerlog_path, card_races=None, lines=None):
                 if races:
                     games[cur_seed]["races"][cid_str] = races
                 if len(races) == 1 and races[0] in ALL_TRIBES:
-                    games[cur_seed]["pure"].add(races[0])
+                    games[cur_seed]["pure"].setdefault(
+                        races[0], set()).add(cid_str)
             i = j
         else:
             i += 1
 
     result = []
     for seed, info in games.items():
-        pure_tribes = info["pure"]
+        pure_tribes = {t for t, cids in info["pure"].items()
+                       if len(cids) >= MIN_PURE_POOL_CARDS}
         allowed = sorted(canon(t) for t in pure_tribes)
         banned = sorted(canon(t) for t in ALL_TRIBES if t not in pure_tribes)
         result.append({"seed": seed, "allowed": allowed, "banned": banned,
