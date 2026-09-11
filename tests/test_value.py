@@ -918,6 +918,63 @@ class TestHandPlan(unittest.TestCase):
             [{"card": self.MINION, "type": "minion", "atk": 2, "health": 2}])
         self.assertGreater(two[0]["score"], plain[0]["score"])
 
+    def test_triple_awareness_ignores_a_board_golden(self):
+        """A golden on board is NOT one of the three copies — goldens
+        never combine (2026-09-10 Buttons game: Dark-Gift golden + 1
+        regular read as "2 on board, buy the 3rd", and the buy made
+        nothing). Golden + regular on board: the hand copy is still only
+        the 2nd regular — hold."""
+        hand = [{"card": self.MINION, "type": "minion",
+                 "atk": 2, "health": 2}]
+        steps = value.hand_plan(hand, board_minions=[
+            {"card": self.MINION, "atk": 2, "health": 2, "golden": True},
+            {"card": self.MINION, "atk": 2, "health": 2}])
+        self.assertEqual(steps[0]["verb"], "hold")
+        self.assertIn("regular", steps[0]["why"])
+
+    def test_a_golden_hand_copy_never_triples(self):
+        """A golden is terminal: playing it is a golden-body play, never
+        the "triples golden!" +25 — nothing combines with it, not even
+        with 2 regulars waiting on board."""
+        golden_hand = value.hand_plan(
+            [{"card": self.MINION, "type": "minion",
+              "atk": 2, "health": 2, "golden": True}],
+            board_minions=[{"card": self.MINION,
+                            "atk": 2, "health": 2}] * 2)
+        self.assertEqual(golden_hand[0]["verb"], "play")
+        self.assertIn("never combine", golden_hand[0]["why"])
+        regular_hand = value.hand_plan(
+            [{"card": self.MINION, "type": "minion", "atk": 2, "health": 2}],
+            board_minions=[{"card": self.MINION,
+                            "atk": 2, "health": 2}] * 2)
+        self.assertIn("triples golden!", regular_hand[0]["why"])
+        self.assertLess(golden_hand[0]["score"], regular_hand[0]["score"])
+
+
+class TestBuyIntentionTriple(unittest.TestCase):
+    """The buy step's why-text carries the triple arithmetic (2026-09-10:
+    'buy it for the triple' with a Dark-Gift golden + 1 regular on board
+    — the LLM improvised the count off the board list and made nothing)."""
+
+    MINION = "BG33_140"   # River Skipper, a tier-1 body
+
+    def test_golden_on_board_does_not_count(self):
+        board = [{"card": self.MINION, "atk": 2, "health": 2, "golden": True},
+                 {"card": self.MINION, "atk": 2, "health": 2}]
+        why = value._buy_intention(self.MINION, None, {}, board=board)
+        self.assertIn("doesn't combine", why)
+        self.assertIn("2 more regular copies", why)
+
+    def test_two_regulars_the_buy_completes(self):
+        board = [{"card": self.MINION, "atk": 2, "health": 2}] * 2
+        why = value._buy_intention(self.MINION, None, {}, board=board)
+        self.assertIn("completes a golden triple", why)
+
+    def test_no_copies_no_note(self):
+        self.assertEqual(
+            value._buy_intention(self.MINION, None, {}, board=[]),
+            value._buy_intention(self.MINION, None, {}))
+
 
 class TestTopMoveHand(unittest.TestCase):
     """The hand leads the numbered plan (free actions, execution order)."""
