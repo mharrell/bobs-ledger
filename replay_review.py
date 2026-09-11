@@ -11,9 +11,11 @@ overrode it, and what the coach was blind to.
 Usage:
   python replay_review.py <Power.log> [game_index]
   python replay_review.py --latest
+  python replay_review.py --latest [game_index] --at 23:27:30   (or --at <abs-log-line>)
 """
 import glob
 import os
+import re
 import sys
 
 from config import HS_LOG_GLOB
@@ -23,6 +25,7 @@ import meta
 from value import _load_bg_names
 
 GS = "GameState."
+TIMESTAMP = re.compile(r"^D (\d+:\d+:\d+)\.")
 
 
 def _phases(chunk):
@@ -76,6 +79,50 @@ def _advise_point(lines, phase_lo, phase_hi):
     return coach.analyze(), stop
 
 
+def _advise_at(chunk, target):
+    """Coach analysis at an arbitrary moment (the --at flag).
+
+    _advise_point only ever ranks the phase-start shop, but decisions happen
+    mid-phase: the 2026-09-10 game's only Felfire Conjurer appeared on roll
+    4 of 9 at 23:27:30 and no phase snapshot saw it. Feed from game start
+    through the target, then keep scanning to the first LONG-stable offer
+    set — a shop the player actually got to look at (a roll generation
+    builds in well under 200 lines; roll gaps run thousands — the 2026-09-10
+    t13 storm). A short settle would report the outgoing generation.
+    """
+    import live_coach
+    coach = live_coach.LiveCoach()
+    for j in range(target):
+        coach.feed(chunk[j])
+    prev_offers = None
+    last_change = target
+    SETTLE = 1000
+    for j in range(target, len(chunk)):
+        coach.feed(chunk[j])
+        offers = tuple(coach.tavern_offers())
+        if offers != prev_offers:
+            prev_offers = offers
+            last_change = j
+        elif offers and j - last_change >= SETTLE:
+            break
+    return coach.analyze()
+
+
+def _resolve_at(chunk, spec, start):
+    """A --at spec (HH:MM:SS or absolute log line) -> chunk-relative index."""
+    if re.fullmatch(r"\d+:\d{2}:\d{2}", spec):
+        for j, line in enumerate(chunk):
+            m = TIMESTAMP.match(line)
+            if m and m.group(1) == spec:
+                return j
+        return None
+    if spec.isdigit():
+        abs_line = int(spec)
+        rel = abs_line - 1 - start
+        return rel if 0 <= rel < len(chunk) else None
+    return None
+
+
 def _known_minion_ids():
     return {m.get("id") for m in meta.minions()}
 
@@ -87,8 +134,14 @@ def _spell_names():
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    latest = "--latest" in sys.argv[1:]
+    argv = sys.argv[1:]
+    at_spec = None
+    if "--at" in argv:
+        i = argv.index("--at")
+        if i + 1 < len(argv):
+            at_spec = argv[i + 1]
+    args = [a for a in argv if not a.startswith("--")]
+    latest = "--latest" in argv
     if latest or not args:
         logs = sorted(glob.glob(HS_LOG_GLOB),
             key=os.path.getmtime, reverse=True)
@@ -116,6 +169,32 @@ def main():
     print(f"replay review — {os.path.basename(os.path.dirname(path))} "
           f"game {game_index}/{len(chunks)}, hero={hero['hero_name'] if hero else '?'}"
           + (f", placement {place}" if place else ""))
+
+    if at_spec:
+        target = _resolve_at(chunk, at_spec, s)
+        if target is None:
+            print(f"--at {at_spec}: no matching moment in game {game_index}")
+            return 1
+        ts = TIMESTAMP.match(chunk[target])
+        print(f"at {ts.group(1) if ts else at_spec} "
+              f"(log line {s + target + 1}):")
+        a = _advise_at(chunk, target)
+        if a is None:
+            print("  (coach not ready at this moment)")
+            return 1
+        print(f"  tier {a.get('tier')}  gold {a.get('gold')}  "
+              f"board {len(a.get('board') or [])}")
+        print(f"  top_move: {a.get('top_move')}")
+        for p in (a.get("comp_progress") or [])[:2]:
+            print(f"  comp: {p.get('name')} hits {p.get('hits')} "
+                  f"needs {[names.get(n, n) for n in (p.get('needs') or [])]}")
+        for entry in (a.get("shop_rank") or [])[:8]:
+            if isinstance(entry, dict):
+                cid, score = entry.get("card"), entry.get("score")
+            else:
+                cid, score = entry[0], entry[1]
+            print(f"  shop: {names.get(cid, cid)} ({score})")
+        return 0
 
     phases = _phases(chunk)
     spell_names = _spell_names()
