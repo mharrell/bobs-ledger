@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import value
 import simulate_growth
-from value import _best_comp, minion_value, sell_recommendation
+from value import _best_comp, minion_value, sell_reason, sell_recommendation
 
 EL = "BG33_886"   # Tusked Camper (Beast, t1) — present in the real BG pool
 MECH = "BG29_503"  # a real mech in minions.json if present; tests skip if not
@@ -1331,6 +1331,84 @@ class TestCompFilteredBuy(unittest.TestCase):
         self.assertGreater(blessed[self.PERCUSSIONIST],
                            base[self.PERCUSSIONIST] + 9)  # the +10 core bonus
         self.assertAlmostEqual(blessed[self.SLAMMA], base[self.SLAMMA])
+
+
+class TestTribeLookups(unittest.TestCase):
+    """Tribe membership goes through DB lookups (tribes.matches/overlaps),
+    never equality — equality silently dropped compound halves (minions.json
+    carried races[0]: Felboar was pure Demon) and read Amalgams as untribed
+    (2026-09-11 lookup backfill)."""
+
+    FELBOAR = {"name": "Felboar", "race": "Demon/Quilboar", "attack": 2,
+               "health": 4, "mechanics": [], "text": ""}
+    AMALGAM = {"name": "Gatekeeper Amalgam", "race": "All", "attack": 4,
+               "health": 4, "mechanics": [], "text": ""}
+
+    def _minion(self, tribe):
+        return {"card": "X", "atk": 2, "health": 4, "tribe": tribe}
+
+    def test_compound_minion_fits_either_half(self):
+        base = minion_value(self._minion("Demon/Quilboar"), self.FELBOAR, None)
+        for tribe in ("Demon", "Quilboar"):
+            comp = {"tribe": tribe, "core": [], "addons": []}
+            self.assertAlmostEqual(
+                minion_value(self._minion("Demon/Quilboar"), self.FELBOAR,
+                             comp) - base, value.W_TRIBE, msg=tribe)
+        off = {"tribe": "Mech", "core": [], "addons": []}
+        self.assertAlmostEqual(
+            minion_value(self._minion("Demon/Quilboar"), self.FELBOAR,
+                         off) - base, 0.0)
+
+    def test_amalgam_fits_every_comp(self):
+        base = minion_value(self._minion("All"), self.AMALGAM, None)
+        for tribe in ("Beast", "Demon", "Undead", "Mech"):
+            comp = {"tribe": tribe, "core": [], "addons": []}
+            self.assertAlmostEqual(
+                minion_value(self._minion("All"), self.AMALGAM,
+                             comp) - base, value.W_TRIBE, msg=tribe)
+
+    def test_engine_membership_by_db_tribe(self):
+        # The certain path: the DB race matches the dominant tribe. (Text is
+        # lowercased upstream by _load_card_db — synthetic cards mirror that.)
+        nomi = {"name": "Nomi", "race": "Elemental", "attack": 2, "health": 4,
+                "mechanics": [],
+                "text": "after you play an elemental, give elementals "
+                        "in the tavern +4/+4."}
+        base = minion_value(self._minion("Elemental"), nomi, None)
+        with_dt = minion_value(self._minion("Elemental"), nomi, None,
+                               dominant_tribe="Elemental")
+        self.assertAlmostEqual(with_dt - base, value.W_ENGINE)
+
+    def test_untribed_engine_still_matches_via_text(self):
+        # The fallback for a genuinely untribed card whose text scales the
+        # tribe (gated by _is_engine's buff-shaped markers).
+        nomi = {"name": "Untribed Scaler", "race": None, "attack": 2,
+                "health": 4, "mechanics": [],
+                "text": "after you play an elemental, give elementals "
+                        "in the tavern +4/+4."}
+        base = minion_value(self._minion("Elemental"), nomi, None)
+        with_dt = minion_value(self._minion("Elemental"), nomi, None,
+                               dominant_tribe="Elemental")
+        self.assertAlmostEqual(with_dt - base, value.W_ENGINE)
+
+    def test_non_tribed_non_engine_gets_no_engine_bonus(self):
+        plain = {"name": "Vanilla", "race": "Beast", "attack": 2, "health": 4,
+                 "mechanics": [], "text": ""}
+        base = minion_value(self._minion("Elemental"), plain, None)
+        with_dt = minion_value(self._minion("Elemental"), plain, None,
+                               dominant_tribe="Elemental")
+        self.assertAlmostEqual(with_dt - base, 0.0)
+
+    def test_sell_reason_compound_not_off_comp(self):
+        big = {"card": "X", "atk": 30, "health": 30, "tribe": "Demon/Quilboar"}
+        card = {"name": "Big Felboar", "race": "Demon/Quilboar", "attack": 2,
+                "health": 4, "mechanics": [], "text": ""}
+        on = sell_reason(big, card, {"name": "Demons", "tribe": "Demon",
+                                     "core": [], "addons": []})
+        off = sell_reason(big, card, {"name": "Mechs", "tribe": "Mech",
+                                      "core": [], "addons": []})
+        self.assertEqual(on, "stats only — no comp role")
+        self.assertEqual(off, "off-comp body")
 
 
 if __name__ == "__main__":

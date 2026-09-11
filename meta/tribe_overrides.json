@@ -1,0 +1,9 @@
+{
+  "_readme": "Hand-curated tribe pins, highest-precedence source in parse_minions.py --refresh-tribes. Keys are card ids, values canonical tribe display names (compound with '/'). Pin ONLY what a real source shows — never a guess; cite the source in _sources.",
+  "_sources": {
+    "BGS_012": "Kangor's Apprentice — Mech per Blizzard card library / wiki Battlegrounds-Mech listing, 2026-09-11 (hearthstonejson reports no race; never seen in local logs yet)",
+    "BGS_104": "Nomi, Kitchen Nightmare — Elemental per Blizzard card library / wiki, 2026-09-11 (hearthstonejson reports no race; never seen in local logs yet)"
+  },
+  "BGS_012": "Mech",
+  "BGS_104": "Elemental"
+}
