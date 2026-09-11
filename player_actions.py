@@ -57,6 +57,16 @@ CHOICE = re.compile(
 BUY = re.compile(
     _GS + r"BlockType=PLAY Entity=\[entityName=Drag To Buy .*?Target=\[entityName=(.+?) id=\d+ zone=\w+ zonePos=\d+ cardId=(\w+)"
 )
+# A sell = the same block shape on the "Drag To Sell" button. Zone-transition
+# inference (below) misses a sell made at the VERY END of a buy phase: its
+# only other print is one TAG_CHANGE whose entity bracket still carries the
+# OLD zone, never re-printed before MAIN_END — the 2026-09-10 Forager sell
+# that killed the hand engine showed as "(pass / no actions)" in the replay
+# review. The Target's entity id is captured so the zone inference can skip
+# an already-counted sell (mid-phase sells print BOTH shapes).
+SELL = re.compile(
+    _GS + r"BlockType=PLAY Entity=\[entityName=Drag To Sell .*?Target=\[entityName=(.+?) id=(\d+) zone=\w+ zonePos=\d+ cardId=(\w+)"
+)
 # A spell cast = a PLAY block on a spell card (e.g. Blood Gem BG20_GEM, tavern
 # spells). The buy button (TB_BaconShop_DragBuy*) is excluded; minions are
 # excluded by checking against the BG minion pool.
@@ -75,6 +85,7 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     step = None
     in_buying_phase = False
     played = set()      # entity ids the player played onto the board (HAND->PLAY)
+    sold_entities = set()   # entity ids already counted sold via Drag To Sell
     card = {}           # entity id -> card id
     player = {}         # entity id -> player number
     zone = {}           # entity id -> zone
@@ -153,6 +164,12 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             turns[-1]["buys"].append(m.group(2))  # card id bought
             continue
 
+        m = SELL.search(line)
+        if m and cur_turn is not None:
+            sold_entities.add(int(m.group(2)))
+            turns[-1]["sells"].append(m.group(3))  # card id sold
+            continue
+
         m = SPELL_PLAY.search(line)
         if m and cur_turn is not None:
             cid = m.group(1)
@@ -184,8 +201,11 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             # SELL: a played minion leaves the board during the shop phase. Only
             # counts minions the player actually played (in `played`) so effect
             # removals (e.g. Lock & Load removing a tavern minion) aren't sold.
+            # Entities counted via the Drag To Sell block are skipped (a
+            # mid-phase sell prints both shapes).
             elif (p == friendly and eid in played and old_zone == "PLAY"
-                  and z in ("SETASIDE", "GRAVEYARD") and step in SHOP_STEPS):
+                  and z in ("SETASIDE", "GRAVEYARD") and step in SHOP_STEPS
+                  and eid not in sold_entities):
                 turns[-1]["sells"].append(cid)
             continue
 
