@@ -376,13 +376,20 @@ class TestSharedUtilityCores(unittest.TestCase):
 class TestRollHunt(unittest.TestCase):
     """Hunt mode (2026-09-07, the player's roll-x10 style): committed with
     missing core, an off-build shop top isn't 'the best card' — the gold
-    rolls for the pieces. Skipped while dying and early-game."""
+    rolls for the pieces. Skipped while dying and early-game. Feasibility
+    (2026-09-11): the hunted core must be a card the tavern can actually
+    produce at this tier, with recent evidence it's showing."""
 
     LOBSTAHC = {"name": "Beasts - Tasty Lobstah", "tribe": "Beast",
                 "core": ["BG36_202", "BG36_208"], "addons": []}
 
-    def _analysis(self, gold, health=20, turn=9):
-        return {"tier": 5, "gold": gold, "level_cost": None, "board": [],
+    def _analysis(self, gold, health=20, turn=9, tier=6):
+        # Default tavern 6: the fixture's missing core (Deathstrider) is a
+        # tier-6 card, so the hunt is reachable. The tier-5 variants below
+        # pin the infeasibility gates. (The fixture originally hunted the
+        # tier-6 Deathstrider from a tavern 5 — precisely the bug class the
+        # 2026-09-11 review found in the Morchie game.)
+        return {"tier": tier, "gold": gold, "level_cost": None, "board": [],
                 "shop_rank": [("BGS_071", 9.0)], "buy_this": "BGS_071",
                 "playable_comps": {}, "choice": None,
                 "target_comp": "Beasts - Tasty Lobstah",
@@ -438,6 +445,91 @@ class TestRollHunt(unittest.TestCase):
         line = value.top_move(a)
         self.assertIn("hunting Deathstrider", line)
         self.assertNotIn("Balinda", line)
+
+    # --- Feasibility gates (2026-09-11 Morchie review) -------------------
+
+    def test_hunt_skips_core_above_the_tavern(self):
+        """A tier-6 core at tavern 5 can't be bought at all — the old plan
+        rolled for it anyway. Now the buy stands and the plan says why."""
+        a = self._analysis(4, tier=5)
+        a["shop_seen"] = {}  # tracked session (recency irrelevant here)
+        line = value.top_move(a)
+        self.assertIn("Buy", line)
+        self.assertIn("no hunt — Deathstrider (needs tier 6)", line)
+
+    def test_hunt_paused_when_core_gone_cold(self):
+        """The Morchie t9-t19 pattern: the tier-3 Gem Rat hunted from a
+        tier-5 tavern that offered it twice all game. A sighting 6 turns
+        stale is not a plan — buy the shop instead."""
+        a = self._analysis(4, tier=5, turn=15)
+        a["target_cards"]["core"][1] = {"card": "BG31_326",
+                                        "name": "Gem Rat",
+                                        "owned": False, "banned": False}
+        a["shop_seen"] = {"BG31_326": 9}  # seen at t9, now t15
+        line = value.top_move(a)
+        self.assertIn("Buy", line)
+        self.assertIn("no hunt — Gem Rat (last shown 6 turns ago)", line)
+
+    def test_hunt_fires_on_recent_sighting(self):
+        """A below-tavern core the shop IS showing stays huntable — evidence
+        beats the tier gap."""
+        a = self._analysis(4, tier=5, turn=15)
+        a["target_cards"]["core"][1] = {"card": "BG31_326",
+                                        "name": "Gem Rat",
+                                        "owned": False, "banned": False}
+        a["shop_seen"] = {"BG31_326": 14}  # seen last turn, now t15
+        line = value.top_move(a)
+        self.assertIn("roll — hunting Gem Rat", line)
+        self.assertNotIn("Buy", line)
+
+    def test_never_shown_core_is_not_hunted(self):
+        """Tracked session, core never offered: the strongest don't-hunt
+        signal there is."""
+        a = self._analysis(4, tier=6)
+        a["shop_seen"] = {"BGS_071": 8}
+        line = value.top_move(a)
+        self.assertIn("Buy", line)
+        self.assertIn("no hunt — Deathstrider (hasn't shown in the tavern)",
+                      line)
+
+    def test_untracked_analysis_keeps_the_legacy_hunt(self):
+        """No shop_seen key (older callers): no recency gate — but the tier
+        gate is unconditional, so the core must live at this tavern."""
+        a = self._analysis(4)  # tier 6 = Deathstrider's tier, no shop_seen
+        line = value.top_move(a)
+        self.assertIn("roll — hunting Deathstrider", line)
+
+
+class TestSkipTurnHero(unittest.TestCase):
+    """Turn-structure hero powers (2026-09-11 Faelin review): a
+    'Skip your first turn' hero has no turn-1 plan — the old planner
+    rendered 'LEVEL (access to tier 2) / Buy ...' for a turn that
+    doesn't exist."""
+
+    def test_turn1_pass_names_the_hero(self):
+        a = {"turn": 1, "hero": "Ambassador Faelin",
+             "hero_power": "Skip your first turn. Discover minions from "
+                           "Tiers 6, 4, and 2 to get at those Tiers."}
+        line = value.top_move(a)
+        self.assertIn("pass — Ambassador Faelin skips turn 1", line)
+        self.assertNotIn("LEVEL", line)
+        self.assertNotIn("Buy", line)
+
+    def test_other_heroes_keep_a_turn1_plan(self):
+        a = {"turn": 1, "hero": "Morchie",
+             "hero_power": "On Turn 5, visit the Minor Timewarp. "
+                           "(4 turns left!)",
+             "gold": 3, "tier": 1, "board": [], "sell_rank": []}
+        line = value.top_move(a)
+        self.assertNotIn("skips turn 1", line)
+
+    def test_gate_is_turn1_only(self):
+        a = {"turn": 2, "hero": "Ambassador Faelin",
+             "hero_power": "Skip your first turn. Discover minions from "
+                           "Tiers 6, 4, and 2 to get at those Tiers.",
+             "gold": 4, "tier": 2, "board": [], "sell_rank": []}
+        line = value.top_move(a)
+        self.assertNotIn("skips turn 1", line)
 
 
 class TestTrinketSynergy(unittest.TestCase):

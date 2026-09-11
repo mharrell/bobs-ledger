@@ -1285,6 +1285,18 @@ def _top_move_text(analysis):
     gold = analysis.get("gold")
     parts = []
 
+    # Turn-structure hero powers lead: "Skip your first turn" (Ambassador
+    # Faelin) can't act on turn 1 — the power IS the turn. The old planner
+    # read "LEVEL (access to tier 2) / Buy Flighty Scout" for a turn that
+    # doesn't exist (2026-09-11 Faelin game t1; gold is also unparseable
+    # there — a skipped turn writes no RESOURCES tag at all). The phrase is
+    # matched against the power's own text in meta/heroes.json — the curated
+    # wording, not a behavior guess.
+    hp = analysis.get("hero_power") or ""
+    if (analysis.get("turn") or 0) == 1 and "skip your first turn" in hp.lower():
+        return (f"pass — {analysis.get('hero') or 'this hero'} skips turn 1 "
+                f"(hero power)")
+
     # 0. The hand (free actions, in ranked order): cast spells, play stuck
     #    minions. Copies group ("x2"); beyond three the rest summarize so the
     #    level/buy steps stay visible. Rendered AFTER the buy step settles —
@@ -1527,24 +1539,45 @@ def _top_move_text(analysis):
             off_build = cid not in build_ids
             eff_health = (analysis.get("health") or 0) \
                 + (analysis.get("armor") or 0)
+            no_hunt_note = None
             if missing and off_build \
                     and analysis.get("target_state") == "committing" \
                     and (budget or 0) >= 1 and eff_health > 12 \
                     and (analysis.get("turn") or 99) > 2:
-                # Name comp-SPECIFIC cores first: a shared-utility card
-                # (Balinda-class) is still on the shopping list, but it's a
-                # generic-good card, not this build's win condition — the
-                # hunt names what the BUILD is missing (2026-09-08: the
-                # hunt's second target read 'Balinda Stonehearth').
-                specific = [r for r in missing
-                            if r["card"] not in _shared_utility_cores(
-                                analysis.get("playable_comps") or {})]
-                nm = ", ".join(r["name"] for r in (specific or missing)[:2])
-                parts.append(f"roll — hunting {nm} "
-                             f"({_shop_name(cid, names)} is off-build)")
-                analysis["buy_step_roll"] = parts[-1]
-                analysis["buy_step_card"] = None
-                cid = None
+                # Feasibility first (2026-09-11): hunt only cores the tavern
+                # can actually produce at this tier, with recent evidence
+                # they're showing. Among the huntable, name comp-SPECIFIC
+                # cores first: a shared-utility card (Balinda-class) is still
+                # on the shopping list, but it's a generic-good card, not
+                # this build's win condition — the hunt names what the BUILD
+                # is missing (2026-09-08: the hunt's second target read
+                # 'Balinda Stonehearth').
+                evaluated = [
+                    (r, *_hunt_check(r, tier, analysis.get("turn"),
+                                     analysis.get("shop_seen"),
+                                     "shop_seen" in analysis))
+                    for r in missing]
+                feasible = [r for r, _ok, _why in evaluated if _ok]
+                if feasible:
+                    specific = [r for r in feasible
+                                if r["card"] not in _shared_utility_cores(
+                                    analysis.get("playable_comps") or {})]
+                    nm = ", ".join(r["name"] for r in (specific or feasible)[:2])
+                    parts.append(f"roll — hunting {nm} "
+                                 f"({_shop_name(cid, names)} is off-build)")
+                    analysis["buy_step_roll"] = parts[-1]
+                    analysis["buy_step_card"] = None
+                    cid = None
+                else:
+                    # Every missing core is above the tavern or gone cold:
+                    # the buy stands. Say why the hunt stopped, AFTER the buy
+                    # step — the 2026-09-11 Morchie game said "roll — hunting
+                    # Gem Rat" 11 turns running while the tier-3 core showed
+                    # up twice all game; the plan needs to explain its change
+                    # of mind, not just silently buy.
+                    nm = ", ".join(r["name"] for r, _ok, _w in evaluated[:2])
+                    no_hunt_note = (f"no hunt — {nm} "
+                                    f"({evaluated[0][2] or 'not showing'})")
         if cid is not None:
             bought = cid
             analysis["buy_step_card"] = cid
@@ -1563,6 +1596,8 @@ def _top_move_text(analysis):
                                   f"{short}; roll meanwhile")
                                  if level_flip_why else
                                  f"LEVEL next turn — {short}; roll meanwhile")
+            if no_hunt_note:
+                parts.append(no_hunt_note)
     # 4. Sell only to make room: board full AND buying something that needs
     # the slot. If there's space, selling is unnecessary. Held cards are
     # exempt: the hand plan said "hold — a 3rd copy turns it golden", and
@@ -1881,6 +1916,46 @@ def _evidence_core_ids(comp, comps):
     """The comp's core MINUS shared-utility cards (see
     _shared_utility_cores) — the ids that count toward commit evidence."""
     return set(comp.get("core", [])) - _shared_utility_cores(comps)
+
+
+@functools.lru_cache(maxsize=1)
+def _minion_tiers():
+    """card id -> tavern tier (comp cores are minions; meta/minions.json)."""
+    return {m.get("id"): m.get("tier") for m in meta.minions()}
+
+
+# Buy phases a hunt stays alive after the missing core's last shop sighting.
+HUNT_SEEN_WINDOW = 4
+
+
+def _hunt_check(row, tavern_tier, turn, shop_seen, tracked):
+    """(ready, reason) — can the tavern actually produce this missing core?
+
+    Two gates (the 2026-09-11 Morchie game: the coach hunted the tier-3 Gem
+    Rat from a tier-5 tavern for 11 straight buy phases while its shop
+    offered that card exactly twice all game — the player bought on-tier
+    pieces, tripled four goldens and won):
+    - TIER: a core above the tavern can't appear at all. A core BELOW the
+      tavern is pool-weighted against hard, so it hunts only on recent
+      evidence (next gate).
+    - RECENCY: when the session tracks shop sightings (live_coach records
+      every shop generation it sees), a core unseen for HUNT_SEEN_WINDOW buy
+      phases is a lottery ticket, not a plan. Never-offered cores are the
+      strongest possible "don't hunt".
+    Analyses without a shop_seen key (unit fixtures, the coach.py path) keep
+    the old evidence-free hunt — the tier gate still applies.
+    """
+    ctier = _minion_tiers().get(row["card"])
+    if tavern_tier and ctier and ctier > tavern_tier:
+        return False, f"needs tier {ctier}"
+    if not tracked:
+        return True, None
+    seen = (shop_seen or {}).get(row["card"])
+    if seen is None:
+        return False, "hasn't shown in the tavern"
+    if turn is not None and turn - seen > HUNT_SEEN_WINDOW:
+        return False, f"last shown {turn - seen} turns ago"
+    return True, None
 
 
 def _board_tribe_share(comp, board):

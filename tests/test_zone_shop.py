@@ -133,6 +133,32 @@ class TestZoneShop(unittest.TestCase):
         self.assertNotEqual(before, c.state_fingerprint())
         self.assertEqual(c.tavern_offers(), ["BG32_821"])
 
+    def test_shop_sightings_recorded(self):
+        """Every shop generation feeds the hunt's evidence
+        (value._hunt_check): minion cid -> turn last offered, recorded at
+        feed time so the per-phase replay harness sees the full history.
+        Offered-then-bought cards keep their sighting (they DID show)."""
+        c = self._coach()
+        # a real GameState MAIN_ACTION line: it's what increments the turn
+        # counter the sightings are keyed by (the "x ..." fixture lines of
+        # the other tests don't).
+        c.feed(GS + "Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        for line in opt_block(1, [("River Skipper", "BG33_140", 15),
+                                  ("Tusked Camper", "BG33_886", 15)]):
+            c.feed(line)
+        self.assertCountEqual(c.tavern_offers(), ["BG33_140", "BG33_886"])
+        self.assertEqual(c._shop_seen, {"BG33_140": 1, "BG33_886": 1})
+        # a mid-phase roll: new generation, same turn, new eid -> recorded
+        c.feed("x BlockType=PLAY Entity=[entityName=Refresh "
+               "cardId=TB_BaconShop_8p_Reroll_Button player=7] Target=")
+        c.feed(GS + "TAG_CHANGE Entity=[entityName=River Skipper id=100 "
+                    "zone=PLAY zonePos=1 cardId=BG33_140 player=15] "
+                    "tag=ZONE value=REMOVEDFROMGAME")
+        for line in _created(200, "BG32_821", "Felfire Conjurer"):
+            c.feed(line)
+        c.feed(GS + "TAG_CHANGE Entity=200 tag=HAS_DRAG_TO_BUY value=1")
+        self.assertEqual(c._shop_seen["BG32_821"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
