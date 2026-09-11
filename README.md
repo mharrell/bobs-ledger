@@ -102,7 +102,10 @@ The overlay is one priority column. Read it top to bottom:
 - **Tavern (ranked)** — the current shop offers, ranked for your board,
   with prices and card art.
 - **Playable comps** — the comps actually possible this game (after the
-  tribe ban filter), in meta-tier order.
+  tribe ban filter), in meta-tier order. Readable from turn 1: while the
+  lobby's 5/5 tribe bans are still being read from the shop rolls
+  (~turn 3-5), every comp stays listed with not-yet-confirmed tribes
+  dimmed, then the list narrows to the ban filter.
 - **Choose 1** — appears during hero / trinket / Dark Gift / discover
   picks; ranks the options for your situation.
 

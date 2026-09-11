@@ -430,6 +430,7 @@ class LiveCoach:
         self.account = None
         self.allowed = None
         self.playable = None
+        self.game_comps = None   # the comps panel's game-level list
 
     def _reset(self):
         self.gs = GameState()
@@ -802,13 +803,22 @@ class LiveCoach:
         analyze. More than 5 seen = not a 5/5 ban mode — fail open
         permanently.
 
-        During that detection window the playable list is evidence-only:
-        comps whose tribe the pool has CONFIRMED (a counted pure tribe is
-        definitely in this lobby). Fail-open instead (every comp playable)
-        made the bottom comps panel list banned-tribe comps for the first
-        3 turns. Unseen tribes' comps stay hidden — they might be banned —
-        and confirmed comps carry no _blocked_core marks, since a hybrid
-        piece of an unseen tribe isn't known-banned, just not yet sampled.
+        The advisory list (`self.playable`) is evidence-only during that
+        window: comps whose tribe the pool has CONFIRMED (a counted pure
+        tribe is definitely in this lobby). Fail-open instead (every comp
+        playable) made the coach aim at banned-tribe comps for the first
+        3 turns. Unseen tribes' comps stay out of it — they might be
+        banned — and confirmed comps carry no _blocked_core marks, since
+        a hybrid piece of an unseen tribe isn't known-banned, just not
+        yet sampled.
+
+        The comps PANEL (`self.game_comps`) is a second, game-level list
+        (2026-09-11 ask): every comp stays listed until the bans land,
+        because the player reads it on turn 1 to see what this game might
+        allow — the evidence-only panel read as if the board picked the
+        list. Each row carries _tribe_confirmed (its tribe in the
+        confirmed set?) so the UI dims the could-still-be-banned ones
+        instead of hiding them.
         """
         if self._bans_ready or self._comps is None or not self.cur_lines:
             return
@@ -840,13 +850,13 @@ class LiveCoach:
         if self._bans_ready:
             self.playable = filter_comps_by_available_tribes(
                 self._comps, self._card_races, self.allowed)
+            self.game_comps = self.playable
         else:
-            # Detection window: strictly evidence — a comp shows only once
-            # its tribe is in the confirmed set (see docstring). Not
-            # is_banned(): that fail-opens on an empty set, but here an
-            # empty set means "nothing confirmed YET", not "no ban info" —
-            # with it the window listed all 21 comps again (2026-09-10
-            # replay: seen=0 -> n_playable=21).
+            # Detection window. confirmed-set membership, not is_banned():
+            # that fail-opens on an empty set, but here an empty set means
+            # "nothing confirmed YET", not "no ban info" — with it the
+            # window played fail-open (2026-09-10 replay: seen=0 ->
+            # n_playable=21).
             confirmed = set(allowed or ())
 
             def window_ok(tribe):
@@ -856,6 +866,11 @@ class LiveCoach:
 
             self.playable = {slug: comp for slug, comp in self._comps.items()
                              if window_ok(comp.get("tribe"))}
+            # The panel keeps the full game-level list; copies, because the
+            # meta comp dicts are shared and _tribe_confirmed is per-game.
+            self.game_comps = {
+                slug: dict(comp, _tribe_confirmed=window_ok(comp.get("tribe")))
+                for slug, comp in self._comps.items()}
 
     def ensure_meta(self):
         """Retry the hero parse from outside analyze().
@@ -1228,9 +1243,12 @@ class LiveCoach:
             "baseline_opp": _baseline_opp(turn),
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
+            # The comps panel's list (game-level; playable_comps is the
+            # advisory filter, evidence-only while the bans stream in).
+            "game_comps": self.game_comps,
             # True while the 5/5 tribe set is still streaming in: the comps
-            # panel then labels its confirmed-tribes-only list instead of
-            # implying the full meta is on the table (2026-09-10).
+            # panel then labels its list and dims unconfirmed-tribe rows
+            # instead of implying every tribe shown is confirmed (2026-09-10).
             "tribes_detecting": self.tribes_detecting,
             "tribes_seen": self.tribes_seen,
             # Commit-readiness meter: how close each candidate comp is to the
