@@ -397,6 +397,8 @@ _GAME_DEFAULTS = {
     "_opp_boards": dict,     # player id -> {"stats", "n", "turn"} last-known
     "_lobby_stats": list,    # stats of every opponent board we fought
     "_snap_seen": 0,         # snapshots already buffered
+    "_shop_seen": dict,      # shop minion cid -> turn last offered (hunt evidence)
+    "_shop_seen_eids": set,  # offer entity ids already recorded in _shop_seen
     "_phase": "buy",         # buy phase vs combat window (GameState STEP)
     "_bans_ready": False,
     "tribes_detecting": False,  # 5/5 ban set not confirmed yet (window state)
@@ -892,6 +894,14 @@ class LiveCoach:
         self.shop_cards = [(self._zone_shop_p.get(eid), cid)
                            for eid, cid in self._zone_shop.items()]
         self.shop_eids = {cid: eid for eid, cid in self._zone_shop.items()}
+        # Shop sightings (hunt evidence for value._hunt_check): a NEW offer
+        # eid is a shop generation showing this card. Recorded here, at feed
+        # time — the replay harness builds a fresh coach per phase, so
+        # analyze()-time recording would only ever see the current shop.
+        for eid, cid in self._zone_shop.items():
+            if eid not in self._shop_seen_eids:
+                self._shop_seen_eids.add(eid)
+                self._shop_seen[cid] = self.actions.turn
 
     def _flush_shop_block(self):
         """Merge the buffered options block into the zone shop — only if it
@@ -1202,6 +1212,14 @@ class LiveCoach:
                              "ranked": pick_ranked}
         result = {
             "hero": self.hero_name,
+            # Hero-power text (meta/heroes.json): feeds value ranking AND the
+            # turn-structure gate (a "Skip your first turn" hero can't take a
+            # turn-1 plan).
+            "hero_power": hero_power,
+            # Shop sighting history: minion cid -> turn last offered. The
+            # hunt's recency evidence (value._hunt_check) — a missing core
+            # the shop isn't producing is not a plan.
+            "shop_seen": dict(self._shop_seen),
             "tier": tier,
             "turn": turn,
             "gold": gold,

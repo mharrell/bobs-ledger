@@ -148,10 +148,14 @@ def main():
         if not logs:
             print("no session log found")
             return 1
-        path, gi = logs[0], len(list(split_game_chunks([])))
+        path = logs[0]
+        # `--latest [game_index]`: the index is the FIRST positional (there
+        # is no path argument). It used to read args[1], so a bare index was
+        # silently dropped and the tool always reviewed the last game.
+        game_index = int(args[0]) if args else None
     else:
         path = args[0]
-    game_index = int(args[1]) if len(args) > (1 if args else 0) else None
+        game_index = int(args[1]) if len(args) > 1 else None
 
     with open(path, encoding="utf-8", errors="replace") as f:
         lines = f.readlines()
@@ -230,7 +234,12 @@ def main():
                           for s in (a.get("top_move_steps") or []))
         picks = [a.get("buy_this")] + [c for c, _ in (a.get("shop_rank") or [])[:3]]
         picks = [p for p in picks if p]
-        if picks and not buy_planned:
+        steps = a.get("top_move_steps") or []
+        if steps and all(s.get("kind") == "note" for s in steps) \
+                and steps[0].get("text", "").startswith("pass"):
+            # a skip-turn hero's plan is a pass, not a buy — nothing to match
+            print("     buy match: pass — as advised")
+        elif picks and not buy_planned:
             rolled = any(s.get("kind") == "roll"
                          for s in (a.get("top_move_steps") or []))
             print(f"     buy match: plan said "
