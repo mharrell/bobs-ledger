@@ -183,8 +183,57 @@ class TestCuratedTrinkets(unittest.TestCase):
         ranked = rank_choices("discover",
                               [("Metallic Hunter", "BG33_449"),
                                ("Tusked Camper", "BG33_886")],
-                              board, comps)
+                              board, comps, comp=comps["beasts"])
         self.assertEqual(ranked[0][0], "Tusked Camper")
+        # Already on the board: an extra copy is triple fuel, not "core".
+        self.assertEqual(ranked[0][3], "core copy (triple fuel)")
+
+    def test_discover_labels_key_on_the_displayed_comp(self):
+        """The 2026-09-11 report: Lurking Leviathan (core of Beasts -
+        Leviathan) headlined the pick panel as "comp fit" while the overlay
+        showed Beasts - Tasty Lobstah committed — the ranking re-derived its
+        own comp and the label never inspected anything (an Elemental wore
+        "comp fit" in a Beast game). The panel now scores against the passed
+        target and labels what the score actually keyed on."""
+        comps = {
+            "beasts-tasty-lobstah": {
+                "name": "Beasts - Tasty Lobstah", "tribe": "Beast",
+                "core": ["BG36_202", "BG36_204"], "addons": ["BG36_201"]},
+            "beasts-leviathan": {
+                "name": "Beasts - Leviathan", "tribe": "Beast",
+                "core": ["BG35_602"], "addons": []},
+        }
+        board = [{"card": "BG36_202", "atk": 1, "health": 1, "tribe": "BEAST"}]
+        target = comps["beasts-tasty-lobstah"]
+        ranked = rank_choices(
+            "discover",
+            [("Lurking Leviathan", "BG35_602"),
+             ("Felfire Conjurer", "BG32_821"),   # Demon/Dragon — off-comp
+             ("Headhunter Gryphon", "BG36_204")],
+            board, comps, comp=target)
+        by_name = {r[0]: r for r in ranked}
+        # Leviathan's raw growth (6.0) legitimately leads the ranking — but
+        # its label may no longer CLAIM comp membership: it is the other
+        # comp's core, the displayed comp's tribe is all it shares.
+        self.assertEqual(by_name["Lurking Leviathan"][3], "tribe fit")
+        # The displayed comp's own core piece is labeled as such.
+        self.assertEqual(by_name["Headhunter Gryphon"][3], "comp core")
+        self.assertEqual(by_name["Felfire Conjurer"][3], "off-comp")
+        # ...and no option anywhere still wears the blanket lie.
+        for _n, _c, _s, why in ranked:
+            self.assertNotEqual(why, "comp fit")
+
+    def test_discover_without_a_direction_makes_no_comp_claim(self):
+        """No displayed target -> no comp wording at all; the top option is
+        'best available', never 'comp fit' (the live.py early-pick path has
+        no board/comps yet)."""
+        ranked = rank_choices("discover",
+                              [("Lurking Leviathan", "BG35_602"),
+                               ("Felfire Conjurer", "BG32_821")],
+                              [], {})
+        self.assertEqual(ranked[0][3], "best available")
+        for name, _cid, _s, why in ranked[1:]:
+            self.assertNotIn("comp", why)
 
 
 class TestLiveWiring(unittest.TestCase):
