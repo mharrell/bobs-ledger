@@ -33,6 +33,10 @@ W_TRINKET = 1.0     # synergizes with a trinket
 W_ENGINE_MULT = 0.05  # per point of scaling-minion stats it amplifies
 W_ENGINE = 15.0     # bonus for the board's engine piece (e.g. Nomi, Glambot)
 W_COMBAT_SCALE = 4.0  # bonus for combat-time scaling minions (e.g. Flaming Enforcer)
+W_COMBAT_ENGINE = 8.0  # self-improving combat engines (Tasty Lobster/Lurking
+                       # Leviathan): gains evaporate each fight but the grant
+                       # count/size compounds permanently — above a flat
+                       # combat buffer, below a stat-persisting engine
 W_ENGINE_SIM = 0.05  # per stat of simulated growth the board's engine drives
 W_ENGINE_OFF_TRIBE = 0.4  # engine whose tribe fights the board's dominant
                           # tribe: its scaling lands on minions you're about
@@ -119,7 +123,29 @@ COMBAT_ONLY_GAIN_OVERRIDES = {
     # "...improved by every 3 spells you've cast this game" — "this game"
     # counts the casts (the improvement), it does NOT persist the buff.
     "Showy Cyclist": True,
+    # "give it +3 Attack and improve this permanently" — "permanently"
+    # improves the CARD's grant, not the summoned beast's stats; combat
+    # grants still evaporate (player rule follow-up 2026-09-11).
+    "Lurking Leviathan": True,
 }
+
+# Self-improving combat engines (player rule follow-up 2026-09-11): the stats
+# they grant evaporate at combat end, but the card PERMANENTLY scales its own
+# output — Tasty Lobster's "Improve your future Tasty Lobsters" makes each
+# future grant fire once more (player-confirmed: the grant COUNT compounds),
+# and Lurking Leviathan's grant size grows. Their own class: not growth
+# engines (no stats persist) and not flat combat buffers — the per-fight
+# contribution compounds. Recognized at W_COMBAT_ENGINE; shop-path summons
+# (buying a beast with Leviathan aboard) DO stick.
+SELF_IMPROVING_COMBAT_ENGINES = {
+    "Tasty Lobster": "each grant makes future grants fire once more",
+    "Lurking Leviathan": "the per-summon grant grows permanently",
+}
+
+
+def _is_self_improving_combat(card):
+    """True for self-improving combat engines (SELF_IMPROVING_COMBAT_ENGINES)."""
+    return ((card or {}).get("name") or "") in SELF_IMPROVING_COMBAT_ENGINES
 
 
 def _flat_text(card):
@@ -546,8 +572,11 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
                 or dominant_tribe.lower() in (card.get("text") or "")):
             score += W_ENGINE
     # Combat-time scaling is invisible to the pre-combat snapshot; flag as +value.
+    # Self-improving combat engines (Lobster/Leviathan) compound their per-fight
+    # output — worth more than a flat buffer, less than a stat-persisting engine.
     if _is_combat_scaling(card):
-        score += W_COMBAT_SCALE
+        score += W_COMBAT_ENGINE if _is_self_improving_combat(card) \
+            else W_COMBAT_SCALE
     # Growth potential: how much the minion can scale (not just current stats).
     # Engine pieces (core/addon of the comp) grow far more in their comp, so
     # amplify their growth potential.
@@ -1677,6 +1706,8 @@ def _buy_intention(cid, comp, card_db, spell_db=None, board=None):
     if comp and cid in comp.get("addons", []):
         return f"part of growth cycle{note}"
     card = card_db.get(cid)
+    if card and _is_self_improving_combat(card):
+        return f"scaling combat engine{note}"
     if card and _is_engine(card):
         return f"growth engine{note}"
     spell = (spell_db or {}).get(cid)

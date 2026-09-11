@@ -959,6 +959,35 @@ class TestCombatOnlyGains(unittest.TestCase):
         self.assertFalse(value._combat_only_gain(waveling))
         self.assertGreaterEqual(value.growth_potential(waveling), 3.0)
 
+    def test_self_improving_combat_engines(self):
+        # Player follow-up 2026-09-11: Lobster's grants don't persist, but
+        # each grant makes future grants fire once more; Leviathan's grant
+        # size improves permanently. Their own class — combat-only gains,
+        # recognized at W_COMBAT_ENGINE with a distinct label.
+        lobster = self._card("BG36_202")
+        leviathan = self._card("BG35_602")
+        self.assertTrue(value._is_self_improving_combat(lobster))
+        self.assertTrue(value._is_self_improving_combat(leviathan))
+        # Leviathan's "permanently" improves the CARD's grant, not the
+        # summoned beast's stats — override makes it combat-only (before the
+        # follow-up the persist marker scored it as a full growth engine).
+        self.assertTrue(value._combat_only_gain(leviathan))
+        self.assertEqual(value.growth_potential(leviathan), 0.0)
+        self.assertFalse(value._is_engine(leviathan))
+        # ...and the class outranks a flat combat buffer (8.0 vs 4.0).
+        body = {"card": "BG36_202", "atk": 4, "health": 4, "tribe": "BEAST"}
+        as_engine = value.minion_value(body, card=lobster)
+        as_buffer = value.minion_value(body, card=dict(lobster, name="Plain Beast"))
+        self.assertAlmostEqual(as_engine - as_buffer,
+                               value.W_COMBAT_ENGINE - value.W_COMBAT_SCALE)
+
+    def test_self_improving_label(self):
+        cdb = value._load_card_db()
+        self.assertEqual(value._buy_intention("BG36_202", None, cdb),
+                         "scaling combat engine")
+        self.assertEqual(value._buy_intention("BG35_602", None, cdb),
+                         "scaling combat engine")
+
     def test_flat_text_marker_across_line_wraps(self):
         # DB text wraps mid-phrase: Ravaging Scorpid's persist marker is
         # stored "+5/+5 this\ngame" — the first pass flagged it combat-only
