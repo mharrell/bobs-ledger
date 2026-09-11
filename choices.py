@@ -23,7 +23,7 @@ import re
 from value import shop_ranking
 from extract_game import MINION_ID
 import meta
-from tribes import overlaps, parts
+from tribes import normalize, overlaps, parts
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -240,8 +240,10 @@ def _rank_discover(options, board, comps, comp=None):
         else:
             if cards is None:
                 cards = meta.cards()
-            card_tribe = normalize((cards.get(base) or {}).get("tribe"))
-            if tribe and card_tribe and card_tribe in tribe.split("/"):
+            # Membership lookup, not equality: the DB carries compounds
+            # (Demon/Quilboar fits a Demon comp) and Amalgams (fit every).
+            card_tribe = (cards.get(base) or {}).get("tribe")
+            if tribe and card_tribe and overlaps(card_tribe, tribe):
                 why = "tribe fit"   # right tribe, not a listed comp piece
             else:
                 why = "best off-comp" if i == 0 else "off-comp"
