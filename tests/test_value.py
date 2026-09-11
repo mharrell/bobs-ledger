@@ -587,6 +587,59 @@ class TestStrengthGapLevelGate(unittest.TestCase):
         self.assertNotIn("buy stats first", line)
 
 
+class TestQ1StayGate(unittest.TestCase):
+    """The Q1 stay decision must not claim 'your comp's missing cores are on
+    this tier or below' when any missing piece sits above the current tier —
+    leveling is the ONLY path to those, while here-pieces stay findable after
+    leveling (2026-09-10: a 2-vs-2 core tie said 'stay on tier 5' with the
+    comp's payoff core — tier-6 Fauna Whisperer — waiting one tier up; the
+    player leveled and was right)."""
+
+    def _analysis(self, tier, cores, gold=10, level_cost=3):
+        return {"tier": tier, "gold": gold, "level_cost": level_cost,
+                "board": [], "health": 20, "armor": 0, "turn": 9,
+                "shop_rank": [], "buy_this": None, "playable_comps": {},
+                "choice": None, "sell_rank": [], "damage_last": 0,
+                "loss_streak": 0, "close_losses": False,
+                "target_comp": "Nagas - End Of Turn/Spell Buff",
+                "target_state": "committing",
+                "comp": {"name": "Nagas - End Of Turn/Spell Buff",
+                         "tribe": "Naga", "core": [c["card"] for c in cores],
+                         "addons": []},
+                "target_cards": {
+                    "name": "Nagas - End Of Turn/Spell Buff",
+                    "core": cores, "addons": []}}
+
+    @staticmethod
+    def _core(cid, name):
+        return {"card": cid, "name": name, "owned": False, "banned": False}
+
+    def test_tie_between_here_and_next_cores_levels(self):
+        # Darkcrest (t5) here vs Fauna Whisperer (t6) next: the old flat
+        # 1-vs-1 tie stayed; leveling is the only path to the t6 core.
+        a = self._analysis(5, [self._core("BG31_920", "Darkcrest Strategist"),
+                               self._core("BG32_837", "Fauna Whisperer")])
+        line = value.top_move(a)
+        self.assertNotIn("stay on tier", line)
+        self.assertIn("LEVEL to tier 6", line)
+
+    def test_core_beyond_next_tier_vetoes_stay(self):
+        # Rimescale (t4) here, Fauna (t6) two tiers up: the old gate never
+        # counted t > tier+1 at all, so it stayed — wrong on the same logic.
+        a = self._analysis(4, [self._core("BG33_319", "Rimescale Priestess"),
+                               self._core("BG32_837", "Fauna Whisperer")])
+        line = value.top_move(a)
+        self.assertNotIn("stay on tier", line)
+
+    def test_all_missing_cores_here_stays(self):
+        # Nothing above: the stay stands (unchanged behavior, message true).
+        a = self._analysis(5, [self._core("BG31_920", "Darkcrest Strategist"),
+                               self._core("BG33_319", "Rimescale Priestess")])
+        line = value.top_move(a)
+        self.assertIn("stay on tier 5 — your comp's missing cores are "
+                      "on this tier or below", line)
+
+
 class TestButcheringTargets(unittest.TestCase):
     """Destroy-cost casts consume a target: Reborn is one-shot (covers a
     single death per body — the player-corrected 2026-09-08 point), so the

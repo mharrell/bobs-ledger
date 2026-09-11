@@ -42,13 +42,18 @@ class TestStateFingerprint(unittest.TestCase):
         self.assertNotEqual(before, c.state_fingerprint())
 
     def test_shop_change_changes_fingerprint(self):
-        """After a buy/refresh the shop loses an offer — the advice must re-run."""
+        """After a roll the shop loses an offer — the advice must re-run.
+        The roll's writes (old offer removed) are what carry the change: the
+        zone layer keeps the shop present across the reset itself."""
         c = self._offers_coach()
         before = c.state_fingerprint()
-        # A refresh wipes the captured offers until the next options block.
         c.feed("x BlockType=PLAY Entity=[entityName=Refresh "
                "cardId=TB_BaconShop_8p_Reroll_Button player=7] Target=")
+        c.feed(GS + "TAG_CHANGE Entity=[entityName=River Skipper id=100 "
+                    "zone=PLAY zonePos=1 cardId=BG33_140 player=15] "
+                    "tag=ZONE value=REMOVEDFROMGAME")
         self.assertNotEqual(before, c.state_fingerprint())
+        self.assertEqual(c.tavern_offers(), ["BG33_886"])
 
     def _offers_coach(self):
         from live_coach import LiveCoach

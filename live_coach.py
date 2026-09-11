@@ -52,6 +52,25 @@ _SHOP_BUTTON_NAMES = ("Refresh", "Freeze", "Tavern Tier", "Drag To Buy",
 #       zonePos=1 cardId=BG36_345 .. player=15]"
 _SHOP_OPT = re.compile(
     r"DebugPrintOptions\(\).*?id=(\d+)[^\]]*cardId=(\w+)[^\]]*player=(\d+)")
+# The zone layer: shop offers tracked from ENTITY WRITES, not options blocks.
+# During a mid-phase roll/buy storm the client barely re-prints options (the
+# 2026-09-10 game's t13: 9 rolls, 2 block headers in 4.6s) and the next
+# Refresh/Drag To Buy resets the buffered block before the deferred commit
+# can fire — so between actions the coach's shop was blank (the lobby's only
+# Felfire Conjurer sat in the shop at 23:27:30 with the coach structurally
+# unable to see it). The writes themselves are reliable: every offer gets
+# HAS_DRAG_TO_BUY=1 (minions and tavern spells), and leaves the shop via
+# ZONE REMOVEDFROMGAME (replaced/re-rolled) or ZONE HAND (bought — GRAVEYARD
+# for a bought-then-cast spell). GameState lines only: the PowerTaskList
+# copies duplicate every write for no signal.
+_POWER = r"GameState\.DebugPrintPower\(\) - "
+_CREATE = re.compile(_POWER + r"\s*FULL_ENTITY - Creating ID=(\d+) CardID=(\w+)")
+_SHOW_ENT = re.compile(_POWER + r"\s*SHOW_ENTITY - Updating Entity=(\d+) CardID=(\w+)")
+_ENT_UPD = re.compile(
+    _POWER + r"\s*FULL_ENTITY - Updating \[[^\]]*?id=(\d+)[^\]]*\] CardID=(\w+)")
+# A TAG_CHANGE naming an entity — bracketed (id inside) or bare Entity=<id>.
+_ENT_REF = re.compile(
+    r"TAG_CHANGE Entity=(?:\[[^\]]*?id=(\d+)[^\]]*\]|(\d+)) tag=(\w+) value=(\S+)")
 # A SHOP block carries the tavern buttons as options (Refresh / Freeze /
 # Drag To Sell / Drag To Buy — all TB_BaconShop_* card ids). Other options
 # blocks share the wire format: a Murloc Holmes discovery block offered the
@@ -356,6 +375,11 @@ _GAME_DEFAULTS = {
     "_sticky_target": None,  # last shown comp, for sticky same-tribe direction
     "_pending_shop": list,   # offers buffered for the open options block
     "_pending_is_shop": False,  # the open block carries a tavern button
+    "_ent_cid": dict,        # zone layer: entity id -> card id
+    "_ent_ctl": dict,        # zone layer: entity id -> controller player
+    "_zone_shop": dict,      # zone layer: entity id -> card id now offered
+    "_zone_shop_p": dict,    # zone layer: entity id -> controller player
+    "_zone_gone": set,       # zone layer: eids removed from the shop this phase
     "activations": list,     # board card ids with a usable Activate right now
     "_pending_activations": list,  # buffered for the open options block
     "choice": None,          # pending pick: {'kind','source','options','picked'}
@@ -437,15 +461,85 @@ class LiveCoach:
         # The shop changes at a new buy phase, on a refresh (re-roll), or on a
         # buy; reset so the next DebugPrintOptions block rebuilds it from the
         # current offers. (Only actual PLAY actions for refresh/buy, not the
-        # DebugPrintOptions buttons.)
+        # DebugPrintOptions buttons.) Mid-phase, the zone layer below keeps
+        # shop_cards populated between actions — the options block only
+        # reliably commits at phase start (see the zone-layer regex comment).
         if "tag=STEP value=MAIN_ACTION" in line \
                 or "BlockType=PLAY Entity=[entityName=Refresh " in line \
                 or ("BlockType=PLAY Entity=[entityName=Drag To Buy " in line and "Target=" in line):
+            # The action acted on the shop the open block describes — commit
+            # it (and mirror it into the zone layer) before the wipe, or a
+            # buy/roll that follows a block with no trailing header (the
+            # mid-phase norm) would drop its offers entirely.
+            self._flush_shop_block()
             self.shop_cards = []
             self.shop_eids = {}
             self._pending_shop = []
             self._pending_is_shop = False
             self._pending_activations = []
+            if "MAIN_ACTION" in line:
+                # Phase start: a fresh table — the phase's options block
+                # re-mirrors every offer (frozen ones included, which get no
+                # new HAS_DRAG_TO_BUY write). Mid-phase resets (Refresh / buy)
+                # keep the table: the roll's own REMOVEDFROMGAME writes prune
+                # it, and the new generation's HAS_DRAG_TO_BUY writes refill it.
+                self._zone_shop = {}
+                self._zone_shop_p = {}
+                self._zone_gone = set()
+            elif "Refresh" not in line:
+                # Drag To Buy: drop the bought offer now (its ZONE HAND write
+                # follows in the same block and would prune it anyway).
+                mt = re.search(r"Target=\[[^\]]*?id=(\d+)", line)
+                if mt:
+                    self._zone_gone.add(int(mt.group(1)))
+                    self._zone_shop.pop(int(mt.group(1)), None)
+                    self._zone_shop_p.pop(int(mt.group(1)), None)
+            self._zone_commit()
+        # Zone layer: track entity card ids, controllers, and shop membership
+        # from tag writes so the shop state is correct at ANY moment, not just
+        # right after an options block commits.
+        m = _ENT_REF.search(line)
+        if m:
+            eid = int(m.group(1) or m.group(2))
+            tag, val = m.group(3), m.group(4)
+            if tag == "HAS_DRAG_TO_BUY" and val == "1":
+                cid = self._ent_cid.get(eid)
+                # HAS_DRAG_TO_BUY=1 also lands on the friendly player's own
+                # board minions (drag-to-sell) and hand cards (drag-to-play);
+                # controller is the discriminator — offers belong to the
+                # tavern player (9/14/15... per game), never to us.
+                ctl = self._ent_ctl.get(eid)
+                if cid and MINION_ID.match(cid) and "HERO" not in cid \
+                        and (self.friendly is None or ctl != self.friendly):
+                    self._zone_shop[eid] = cid
+                    self._zone_shop_p[eid] = ctl
+                    self._zone_commit()
+            elif tag == "CONTROLLER":
+                self._ent_ctl[eid] = int(val)
+                if eid in self._zone_shop:
+                    if self.friendly is not None \
+                            and int(val) == self.friendly:
+                        # an own-card controller surfacing late: evict
+                        del self._zone_shop[eid]
+                        del self._zone_shop_p[eid]
+                    else:
+                        self._zone_shop_p[eid] = int(val)
+            elif tag == "ZONE" and val in ("REMOVEDFROMGAME", "GRAVEYARD",
+                                           "HAND"):
+                # Record the removal even if the table hasn't learned this
+                # eid yet — the phase's options block may still be unflushed
+                # and would otherwise re-add the dead offer at commit.
+                self._zone_gone.add(eid)
+                if eid in self._zone_shop:
+                    del self._zone_shop[eid]
+                    del self._zone_shop_p[eid]
+                self._zone_commit()
+        if "GameState." in line:
+            for cre in (_CREATE, _SHOW_ENT, _ENT_UPD):
+                cm = cre.search(line)
+                if cm:
+                    self._ent_cid[int(cm.group(1))] = cm.group(2)
+                    break
         # The game re-prints ALL options after every event; each new options
         # block starts with "DebugPrintOptions() - id=N". Offers BUFFER per
         # block and commit only when the block carries a tavern button —
@@ -775,16 +869,33 @@ class LiveCoach:
         """
         self._ensure_meta()
 
+    def _zone_commit(self):
+        """Rebuild shop_cards from the zone layer — the single source of
+        truth for the shop. Keeps it correct between mid-phase actions,
+        where options blocks don't re-print reliably (see the zone-layer
+        regex comment); options blocks merge into the table on flush."""
+        self.shop_cards = [(self._zone_shop_p.get(eid), cid)
+                           for eid, cid in self._zone_shop.items()]
+        self.shop_eids = {cid: eid for eid, cid in self._zone_shop.items()}
+
     def _flush_shop_block(self):
-        """Commit-copy the buffered options block as the shop — only if it
+        """Merge the buffered options block into the zone shop — only if it
         carried a tavern button (a real shop block; discovery/choice blocks
-        share the format and must not replace the shop). Copies only: the
-        buffer is cleared by the next block header / new-phase reset, never
+        share the format and must not replace the shop). Sell options (the
+        player's own minions, player==friendly) are NOT offers and never
+        enter the table; nor do offers already removed this phase (_zone_gone
+        — the 2026-09-10 storm blocks re-list stale copies). The buffer
+        itself is cleared by the next block header / new-phase reset, never
         here — tavern_offers polls mid-block, and clearing would orphan
         offers that arrive after this flush."""
         if self._pending_is_shop and self._pending_shop:
-            self.shop_cards = [(p, c) for p, c, _e in self._pending_shop]
-            self.shop_eids = {c: e for _p, c, e in self._pending_shop}
+            for p, c, e in self._pending_shop:
+                if e and MINION_ID.match(c) and "HERO" not in c \
+                        and e not in self._zone_gone \
+                        and (self.friendly is None or p != self.friendly):
+                    self._zone_shop[e] = c
+                    self._zone_shop_p[e] = p
+            self._zone_commit()
         if self._pending_is_shop:
             # Available board activations ride the same settled shop state
             # (error=NONE as of this block's print).
