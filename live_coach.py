@@ -1191,7 +1191,13 @@ class LiveCoach:
         c = self.choice
         if c and c["picked"] is None and c["options"]:
             kind = choice_kind(c["ctype"], c["source"], c["options"])
-            pick_ranked = rank_choices(kind, c["options"], board, self.playable)
+            # comp=target: the pick panel ranks against (and labels with) the
+            # SAME evidence-based target the "committing to" box shows — the
+            # old call let the ranking re-derive a comp from the board, which
+            # is how Lurking Leviathan (core of Beasts - Leviathan) headlined
+            # as "comp fit" in a game committed to Tasty Lobstah (2026-09-11).
+            pick_ranked = rank_choices(kind, c["options"], board, self.playable,
+                                       comp=target)
             choice_advice = {"kind": kind, "source": c["source"],
                              "ranked": pick_ranked}
         result = {

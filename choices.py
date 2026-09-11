@@ -106,12 +106,15 @@ def _locked_heroes():
         return set()
 
 
-def rank_choices(kind, options, board=None, comps=None):
+def rank_choices(kind, options, board=None, comps=None, comp=None):
     """Rank a pending choice's options. Returns [(name, card_id, score, why)].
 
     `options`: [(entity_name, card_id)] from the choice block. `board`/`comps`
-    feed the synergy terms (dominant tribe, comp fit). Locked heroes (the
-    player's list) are filtered out of hero rankings.
+    feed the synergy terms (dominant tribe, comp fit). `comp`: the SAME
+    evidence-based target the caller displays (live_coach's sticky target) —
+    discover scores AND labels key on it, so a pick panel can never bless a
+    card of a comp the overlay isn't showing. Locked heroes (the player's
+    list) are filtered out of hero rankings.
     """
     if kind == "hero":
         locked = _locked_heroes()
@@ -119,7 +122,7 @@ def rank_choices(kind, options, board=None, comps=None):
     if kind == "trinket":
         return _rank_trinkets(options, board)
     if kind == "discover":
-        return _rank_discover(options, board, comps)
+        return _rank_discover(options, board, comps, comp)
     return [(n, c, None, "") for n, c in options]
 
 
@@ -200,13 +203,46 @@ def _trinket_id_by_name(t):
     return (t or {}).get("id")
 
 
-def _rank_discover(options, board, comps):
-    """Rank minion discovers with the shop ranking (comp-targeted)."""
+def _rank_discover(options, board, comps, comp=None):
+    """Rank minion discovers with the shop ranking (comp-targeted).
+
+    The per-option label says what the score actually keyed on. The old
+    blanket "comp fit" tagged EVERY option — so Lurking Leviathan (core of
+    Beasts - Leviathan) wore it while the overlay showed Beasts - Tasty
+    Lobstah committed, and so did an Elemental in a Beast game (2026-09-11).
+    Two causes fixed: the label never inspected anything, and the ranking
+    re-derived its own comp from the board instead of using the displayed
+    one (the 2026-09-04 one-target rule, missed for the pick panel).
+    """
     cids = [c for _n, c in options]
-    ranked = shop_ranking(cids, comps or {}, board_minions=board)
+    ranked = shop_ranking(cids, comps or {}, board_minions=board, comp=comp)
     names = {c: n for n, c in options}
-    return [(names.get(cid, cid), cid, score, "comp fit")
-            for cid, score in ranked]
+    board_ids = {m.get("card") for m in (board or [])}
+    core = set((comp or {}).get("core", []))
+    addons = set((comp or {}).get("addons", []))
+    tribe = normalize((comp or {}).get("tribe")) if comp else None
+    cards = None  # lazy: card id -> tribe, only when a tribe-fit check needs it
+    out = []
+    for i, (cid, score) in enumerate(ranked):
+        base = cid[:-2] if cid.endswith("_G") else cid
+        if base in core:
+            why = "core copy (triple fuel)" if base in board_ids else "comp core"
+        elif base in addons:
+            why = "comp addon"
+        elif comp is None:
+            # No displayed direction — score alone is the reason; claiming a
+            # comp here is exactly the hollow label this replaces.
+            why = "best available" if i == 0 else ""
+        else:
+            if cards is None:
+                cards = meta.cards()
+            card_tribe = normalize((cards.get(base) or {}).get("tribe"))
+            if tribe and card_tribe and card_tribe in tribe.split("/"):
+                why = "tribe fit"   # right tribe, not a listed comp piece
+            else:
+                why = "best off-comp" if i == 0 else "off-comp"
+        out.append((names.get(cid, cid), cid, score, why))
+    return out
 
 
 def parse_choice_blocks(lines):
