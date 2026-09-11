@@ -104,16 +104,36 @@ _COMBAT_SCALE_MARKERS = ("in combat", "start of combat", "during combat",
 # scored growth 6.5 / role "engine"). Summons and generated CARDS from combat
 # triggers DO persist (tokens stay on the board) — only stat gains evaporate.
 _GAIN_PERSISTS_MARKERS = ("permanently", "this game", "wherever", "keep")
+# ...and gains granted TO a card in the hand persist even mid-combat (rule
+# follow-up, same day): the hand card didn't fight, so nothing reverts
+# (Winterfinner's hand-buff, Tide Oracle's kill-transfer). Gains FROM the
+# hand ONTO a board minion (Choral Mrrrglr, Costume Enthusiast) are NOT
+# covered — the receiving side decides.
+_HAND_GAIN_PERSISTS_MARKERS = ("give a minion in your hand",
+                               "give the left-most minion in your hand",
+                               "to a minion in your hand")
 _EXPLICIT_TEMPORARY_MARKERS = ("until next turn", "this combat only",
                                "rest of this combat", "for this combat")
 _COMBAT_GAIN_TRIGGERS = ("start of combat", "during combat", "in combat",
                          "when this attacks", "after this attacks",
-                         "whenever this attacks", "avenge", "deathrattle")
+                         "whenever this attacks", "avenge", "deathrattle",
+                         # Rally fires at the start of combat (Deathstrider:
+                         # "After a friendly Rally minion attacks"); bare
+                         # "attacks" covers "Whenever a friendly X attacks"
+                         # shapes (Cage Gnawer, Roaring Recruiter); "is
+                         # Reborn" procs in combat (Barrier Banshee);
+                         # "this takes damage" is combat (Winterfinner) —
+                         # "your hero takes damage" is NOT, the demon loop
+                         # self-damages in the tavern too.
+                         "rally", "attacks", "is reborn",
+                         "this takes damage")
 # What a card's text must say for the trigger to be delivering a STAT gain
 # (vs a summon / a generated card / removal, which persist or don't grow).
+# "plays a blood gem" counts: gems granted mid-combat evaporate — Razorfen
+# Vineweaver's "3 permanent Blood Gems" is the text saying otherwise.
 _COMBAT_STAT_GAIN_MARKERS = ("give ", "gain +", "have +", "gain its",
                              "gain the stats", "gain the attack",
-                             "double its attack")
+                             "double its attack", "plays a blood gem")
 # Cards whose prose defeats the markers, decided by hand (the Butchering
 # pattern: literally read the card). Matched by NAME — log ids patch-drift.
 COMBAT_ONLY_GAIN_OVERRIDES = {
@@ -127,6 +147,12 @@ COMBAT_ONLY_GAIN_OVERRIDES = {
     # improves the CARD's grant, not the summoned beast's stats; combat
     # grants still evaporate (player rule follow-up 2026-09-11).
     "Lurking Leviathan": True,
+    # No persistence wording in the text, BUT the gains persist when the
+    # trigger fires in the tavern (self-damage/knight deaths) — the curated
+    # undead-attack-scaling engine entry (player-corrected 2026-09-08) says
+    # the transfer lands "in combat and in the shop". Dual-phase, so NOT
+    # combat-only.
+    "Snazzy Phantom": False,
 }
 
 # Self-improving combat engines (player rule follow-up 2026-09-11): the stats
@@ -172,7 +198,11 @@ def _combat_only_gain(card):
         return True   # text says the gain expires
     if any(m in text for m in _GAIN_PERSISTS_MARKERS):
         return False  # text says the gain stays
-    if not any(m in text for m in _COMBAT_STAT_GAIN_MARKERS):
+    if any(m in text for m in _HAND_GAIN_PERSISTS_MARKERS):
+        return False  # the buff lands on a hand card — it didn't fight
+    shaped = (any(m in text for m in _COMBAT_STAT_GAIN_MARKERS)
+              or bool(re.search(r"\+\d+/\+\d+", text)))
+    if not shaped:
         return False  # summons / generated cards / removal — not a stat gain
     return any(m in text for m in _COMBAT_GAIN_TRIGGERS)
 
