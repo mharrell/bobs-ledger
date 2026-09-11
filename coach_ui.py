@@ -659,7 +659,18 @@ function render(a) {
   // PLAYABLE COMPS — the bottom panel: grouped by meta tier (S/A/B, the
   // server pre-sorts), each comp a clickable row that expands into its
   // required cards with owned/banned flags. Click again to collapse.
+  // While the lobby's tribes are still streaming in (5/5 confirmed around
+  // turn 3-5), the server lists only comps of CONFIRMED tribes — label
+  // that, so a short list reads as "reading the lobby", not as the meta.
   const compsBody = el('div');
+  if (a.tribes_detecting) {
+    compsBody.appendChild(el('div', 'none', 'reading the lobby’s tribes — '
+      + (a.tribes_seen || 0) + '/5 seen'
+      + (a.comps && a.comps.length
+        ? ' · ' + a.comps.length + ' confirmed comp'
+          + (a.comps.length === 1 ? '' : 's')
+        : '')));
+  }
   if (a.comps && a.comps.length) {
     let lastTier = null;
     a.comps.forEach(c => {
@@ -671,7 +682,7 @@ function render(a) {
       }
       compsBody.appendChild(compRow(c));
     });
-  } else {
+  } else if (!a.tribes_detecting) {
     compsBody.appendChild(el('div', 'none', '—'));
   }
   app.appendChild(box('Playable comps', compsBody));
