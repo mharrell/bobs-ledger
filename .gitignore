@@ -20,6 +20,9 @@ hearth-coach/python-hslog/
 hearth-coach/.cards_cache.json
 hearth-coach/.cards_full.json
 hearth-coach/.card_races.json
+# Observed CARDRACE per card id from local Power.logs (parse_minions
+# --refresh-tribes), regenerable and machine-specific (local log paths)
+hearth-coach/.observed_tribes.json
 
 # On-demand art fetch failures (coach_ui), regenerable
 hearth-coach/.art_miss.json

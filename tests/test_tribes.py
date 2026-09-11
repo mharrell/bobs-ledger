@@ -5,7 +5,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tribes import ALL_TRIBES, DISPLAY_TRIBES, canon, is_banned, normalize
+from tribes import (ALL_MARKER, ALL_TRIBES, DISPLAY_TRIBES, canon, is_banned,
+                    matches, normalize, overlaps, parts, tribes_from_races)
 
 
 def _pool_block(entity_id, cid, race=None):
@@ -247,3 +248,83 @@ class TestBansFromLogGenerationLeaks(unittest.TestCase):
         games = bans_from_log(None, {}, lines=lines)
         self._assert_real_five(games)
         self.assertEqual(games[0]["races"]["LEAK_D"], ["DEMON"])
+
+
+class TestTribesFromRaces(unittest.TestCase):
+    """Raw race lists (log CARDRACE / hearthstonejson) -> the meta tribe field."""
+
+    def test_single_race(self):
+        self.assertEqual(tribes_from_races(["ELEMENTAL"]), "Elemental")
+        self.assertEqual(tribes_from_races(["MECHANICAL"]), "Mech")
+
+    def test_compound_preserved(self):
+        # parse_minions/extend_pool used to write races[0] — Felboar became
+        # pure Demon and its Quilboar half was lost to every consumer.
+        self.assertEqual(tribes_from_races(["DEMON", "QUILBOAR"]),
+                         "Demon/Quilboar")
+
+    def test_all_marker_not_collapsed(self):
+        # Amalgams used to become None (= untribed) via normalize("ALL").
+        self.assertEqual(tribes_from_races(["ALL"]), ALL_MARKER)
+        self.assertEqual(tribes_from_races(["ALL", "BEAST"]), ALL_MARKER)
+
+    def test_empty_and_neutral(self):
+        self.assertIsNone(tribes_from_races([]))
+        self.assertIsNone(tribes_from_races(None))
+        self.assertIsNone(tribes_from_races(["NEUTRAL"]))
+
+
+class TestParts(unittest.TestCase):
+    def test_all_expands_to_every_tribe(self):
+        self.assertEqual(parts(ALL_MARKER), DISPLAY_TRIBES)
+
+    def test_compound_splits(self):
+        self.assertEqual(parts("Demon/Quilboar"), ["Demon", "Quilboar"])
+
+    def test_raw_and_canonical(self):
+        self.assertEqual(parts("ELEMENTAL"), ["Elemental"])
+        self.assertEqual(parts("Elemental"), ["Elemental"])
+
+    def test_untribed_matches_nothing(self):
+        self.assertEqual(parts(None), [])
+        self.assertEqual(parts("Neutral"), [])
+
+
+class TestMatches(unittest.TestCase):
+    def test_compound_membership(self):
+        self.assertTrue(matches("Demon/Quilboar", "Demon"))
+        self.assertTrue(matches("Demon/Quilboar", "QUILBOAR"))
+        self.assertFalse(matches("Demon/Quilboar", "Mech"))
+
+    def test_amalgam_matches_everything(self):
+        for t in DISPLAY_TRIBES:
+            self.assertTrue(matches(ALL_MARKER, t))
+
+    def test_untribed_matches_nothing(self):
+        self.assertFalse(matches(None, "Beast"))
+        self.assertFalse(matches("Neutral", "Beast"))
+
+    def test_raw_forms_accepted_on_both_sides(self):
+        self.assertTrue(matches("MECHANICAL", "Mech"))
+        self.assertTrue(matches("Mech", "MECHANICAL"))
+
+
+class TestOverlaps(unittest.TestCase):
+    def test_compound_vs_compound_shared_part(self):
+        self.assertTrue(overlaps("Demon/Quilboar", "Naga/Quilboar"))
+        self.assertFalse(overlaps("Demon/Quilboar", "Naga/Dragon"))
+
+    def test_amalgam_overlaps_any_tribed_field(self):
+        self.assertTrue(overlaps(ALL_MARKER, "Beast"))
+        self.assertTrue(overlaps("Beast", ALL_MARKER))
+        self.assertTrue(overlaps(ALL_MARKER, ALL_MARKER))
+
+    def test_untribed_overlaps_nothing(self):
+        self.assertFalse(overlaps(None, "Beast"))
+        self.assertFalse(overlaps("Beast", None))
+        self.assertFalse(overlaps(None, ALL_MARKER))
+
+    def test_is_the_w_tribe_fit_test(self):
+        # The consumer contract: comp "Demon" vs minion "Demon/Quilboar"
+        # must fit (the old equality test silently denied the W_TRIBE bonus).
+        self.assertTrue(overlaps("Demon/Quilboar", "Demon"))
