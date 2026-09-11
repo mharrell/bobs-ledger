@@ -92,6 +92,64 @@ _ENGINE_TEXT_MARKERS = ("give ", "your ", "play a ", "play an ", "gain +",
 _COMBAT_SCALE_MARKERS = ("in combat", "start of combat", "during combat",
                          "when this attacks", "this gains")
 
+# Combat-phase gains vs persistence (player rule 2026-09-11): stat increases
+# gained DURING a battle evaporate at combat end unless the card text says
+# they persist. A minion that buffs only during that battle is combat POWER
+# (W_COMBAT_SCALE), not a growth engine — crediting evaporating buffs as
+# persistent growth inflated combat helpers over real engines (Tasty Lobster
+# scored growth 6.5 / role "engine"). Summons and generated CARDS from combat
+# triggers DO persist (tokens stay on the board) — only stat gains evaporate.
+_GAIN_PERSISTS_MARKERS = ("permanently", "this game", "wherever", "keep")
+_EXPLICIT_TEMPORARY_MARKERS = ("until next turn", "this combat only",
+                               "rest of this combat", "for this combat")
+_COMBAT_GAIN_TRIGGERS = ("start of combat", "during combat", "in combat",
+                         "when this attacks", "after this attacks",
+                         "whenever this attacks", "avenge", "deathrattle")
+# What a card's text must say for the trigger to be delivering a STAT gain
+# (vs a summon / a generated card / removal, which persist or don't grow).
+_COMBAT_STAT_GAIN_MARKERS = ("give ", "gain +", "have +", "gain its",
+                             "gain the stats", "gain the attack",
+                             "double its attack")
+# Cards whose prose defeats the markers, decided by hand (the Butchering
+# pattern: literally read the card). Matched by NAME — log ids patch-drift.
+COMBAT_ONLY_GAIN_OVERRIDES = {
+    # "Improves permanently" — but what improves is the start-of-combat buff,
+    # which still evaporates each combat.
+    "Fire-forged Evoker": True,
+    # "...improved by every 3 spells you've cast this game" — "this game"
+    # counts the casts (the improvement), it does NOT persist the buff.
+    "Showy Cyclist": True,
+}
+
+
+def _flat_text(card):
+    """Card text with line wraps collapsed. DB text wraps mid-phrase
+    ("+5/+5 this\ngame"), which breaks substring marker matching — the
+    first pass flagged Ravaging Scorpid combat-only because its persist
+    marker "this game" straddled a newline (2026-09-11)."""
+    return " ".join(((card or {}).get("text") or "").split())
+
+
+def _combat_only_gain(card):
+    """True if the card's stat gains happen in battle and don't persist.
+
+    Player rule 2026-09-11: combat buffs revert at combat end unless the text
+    says otherwise — these minions are one-fight power, not growth engines.
+    """
+    text = _flat_text(card)
+    if not text:
+        return False
+    name = (card or {}).get("name") or ""
+    if name in COMBAT_ONLY_GAIN_OVERRIDES:
+        return COMBAT_ONLY_GAIN_OVERRIDES[name]
+    if any(m in text for m in _EXPLICIT_TEMPORARY_MARKERS):
+        return True   # text says the gain expires
+    if any(m in text for m in _GAIN_PERSISTS_MARKERS):
+        return False  # text says the gain stays
+    if not any(m in text for m in _COMBAT_STAT_GAIN_MARKERS):
+        return False  # summons / generated cards / removal — not a stat gain
+    return any(m in text for m in _COMBAT_GAIN_TRIGGERS)
+
 # Spell-scope markers: the effect hits every board minion, not one target.
 _SPELL_SCOPE_ALL = ("your minions", "all minions", "give minions", "all friendly")
 # One-shot utility effects the stat-grant parse can't see (rough point values).
@@ -339,11 +397,15 @@ def _spell_score(spell, board_minions, names, scenario=None):
 def _detect_role(minion, card):
     text = (card or {}).get("text") or ""
     mech = (card or {}).get("mechanics") or []
+    # Combat-only gains are one-fight power, not engine/scaling roles
+    # (player rule 2026-09-11): Banana Slamma's in-combat "double" and a
+    # deathrattle stat buff don't make a growth role.
+    combat_only = _combat_only_gain(card)
     # A compounding engine (scales with itself / each summon).
-    if any(m in text for m in _ENGINE_MARKERS):
+    if not combat_only and any(m in text for m in _ENGINE_MARKERS):
         return "engine"
     # Ongoing scaling (end-of-turn, whenever, buffs each turn).
-    if any(m in text for m in _SCALING_MARKERS):
+    if not combat_only and any(m in text for m in _SCALING_MARKERS):
         return "scaling"
     # Utility keywords (taunt, divine shield, reborn, windfury, venomous, etc.).
     if any(k in mech for k in ("TAUNT", "DIVINE_SHIELD", "REBORN", "WINDFURY",
@@ -369,15 +431,24 @@ def _is_scaling(card):
 
 
 def _is_engine(card):
-    """True if the card is a whole-board/comp scaling engine (e.g. Nomi)."""
+    """True if the card is a whole-board/comp scaling engine (e.g. Nomi).
+    Combat-only buff-givers are NOT engines — their buffs evaporate at
+    combat end (player rule 2026-09-11); they'd otherwise ride the
+    "give "/"your " markers to W_ENGINE credit (Humming Bird, Amber
+    Guardian, Goldrinn)."""
+    if _combat_only_gain(card):
+        return False
     text = (card or {}).get("text") or ""
     return any(m in text for m in _ENGINE_TEXT_MARKERS)
 
 
 def _is_combat_scaling(card):
-    """True if the card scales during combat (invisible to the snapshot)."""
+    """True if the card scales during combat (invisible to the snapshot).
+    Includes combat-only gains — helpful for one fight, but not growth
+    (player rule 2026-09-11)."""
     text = (card or {}).get("text") or ""
-    return any(m in text for m in _COMBAT_SCALE_MARKERS)
+    return (any(m in text for m in _COMBAT_SCALE_MARKERS)
+            or _combat_only_gain(card))
 
 
 def growth_potential(card):
@@ -393,8 +464,18 @@ def growth_potential(card):
     growth: its +N/+N magnitude is discounted 4x, so a +10/+10 battlecry can't
     outrank a real repeating scaler (this inflated one-shot battlecries like
     En-Djinn Blazer above genuine comp engines — the 2026-09-01 inconsistency).
+
+    Combat-only gains (player rule 2026-09-11) are not growth at all: a buff
+    that evaporates at combat end keeps only its persistent halves
+    (battlecry/magnetize). The one-fight power itself is W_COMBAT_SCALE.
     """
     text = (card or {}).get("text") or ""
+    if _combat_only_gain(card):
+        # The repeating-gain terms below describe one combat's power, not
+        # persistent stats — keep only the persistent halves.
+        flat = _flat_text(card)
+        return ((1.0 if "battlecry" in flat else 0.0)
+                + (4.0 if "magnetize" in flat else 0.0))
     score = 0.0
     # Growth triggers — how often the effect fires.
     if "end of" in text and "turn" in text:  # "end of YOUR turn" included

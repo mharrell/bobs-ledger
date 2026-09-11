@@ -1,5 +1,5 @@
 {
- "_comment": "Machine-readable growth engines for simulate_growth.py. Each engine models a deterministic trigger chain: a primary trigger (the action the scenario counts) fires chain steps, each of which adds a stat buff. Multipliers (Balinda/Drakkari/Brann/Titus) double a trigger type when the card is on the board. Derived counters (e.g. 'magnetize') let one step's output feed another. Buff magnitudes come from card text in meta/minions.json and trinkets.json. Engines that are economy/combat/shop-side (River Skipper, Hooktusk, Sargeras, Stitch, Admiration, Felboar, Butchering) are NOT modeled here — they don't fit the per-trigger stat-gain shape.",
+ "_comment": "Machine-readable growth engines for simulate_growth.py. Each engine models a deterministic trigger chain: a primary trigger (the action the scenario counts) fires chain steps, each of which adds a stat buff. Multipliers (Balinda/Drakkari/Brann/Titus) double a trigger type when the card is on the board. Derived counters (e.g. 'magnetize') let one step's output feed another. Buff magnitudes come from card text in meta/minions.json and trinkets.json. Engines that are economy/combat/shop-side (River Skipper, Hooktusk, Sargeras, Stitch, Admiration, Felboar, Butchering) are NOT modeled here — they don't fit the per-trigger stat-gain shape. Also not modeled: combat-only buff engines whose gains evaporate at combat end (player rule 2026-09-11: stat increases DURING a battle don't persist unless the text says so) — Tasty Lobster's deathrattle buff is one-fight power, not persistent growth (removed from here; the comp itself stays in comps.json).",
  "mechs-magnetics-spells": {
   "name": "Mechs — Magnetics/Spells",
   "tribe": "MECHANICAL",
@@ -135,24 +135,6 @@
     "count_from": "primary",
     "multiplier": "cast_spell",
     "note": "Whenever you cast a spell on a Naga, give your minions +2/+3"
-   }
-  ]
- },
- "beasts-tasty-lobstah": {
-  "name": "Beasts — Tasty Lobstah",
-  "tribe": "BEAST",
-  "trigger": "deathrattle",
-  "chain": [
-   {
-    "source": "Tasty Lobster",
-    "per_trigger": {
-     "atk": 1,
-     "hp": 1
-    },
-    "applies_to": "tribe",
-    "count_from": "primary",
-    "multiplier": "deathrattle",
-    "note": "Deathrattle: give a random friendly Beast +1/+1 (improves future Lobsters)"
    }
   ]
  },
