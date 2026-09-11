@@ -21,7 +21,7 @@ import sys
 
 from config import HS_LOG_GLOB as LOG_GLOB
 from extract_game import MINION_ID
-from tribes import normalize
+from tribes import tribes_from_races
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 POOL = os.path.join(_HERE, "meta", "minions.json")
@@ -90,7 +90,9 @@ def main():
             "id": cid,
             "name": card.get("name"),
             "cost": card.get("cost"),
-            "tribe": normalize(races[0]) if races else None,
+            # Full lookup via tribes.tribes_from_races: compounds preserved,
+            # Amalgams -> "All" (the old races[0] truncated both).
+            "tribe": tribes_from_races(races),
             "attack": card.get("attack"),
             "health": card.get("health"),
             "mechanics": card.get("mechanics", []),

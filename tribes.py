@@ -11,6 +11,11 @@ form is the singular display name matching cards.json and the bans output:
 
 Use `canon()` for raw log values (ALL_TRIBES members) and `normalize()` for
 card/meta entries (single, compound "Demon/Quilboar", "All"/"Neutral" -> None).
+
+Membership questions ("is this minion a Demon?") go through `matches()` /
+`overlaps()` / `parts()` — never `normalize(x) == normalize(y)`: equality
+drops compound tribes ("Demon/Quilboar" vs comp "Demon") and collapses
+Amalgams (`normalize("All")` -> None reads as untribed).
 """
 CANON = {
     "MECHANICAL": "Mech",
@@ -36,6 +41,62 @@ def canon(tribe):
 
 #: Canonical display names, in roster order — for UI text and "banned:" lists.
 DISPLAY_TRIBES = [canon(t) for t in ALL_TRIBES]
+
+#: The meta-DB value for a minion that counts as EVERY tribe (Amalgam-class:
+#: Gatekeeper Amalgam, Motley Phalanx). Deliberately distinct from None, which
+#: means *untribed* — collapse Amalgams to None and every tribe-fit term
+#: (W_TRIBE, comp damping, Butchering Undead targeting) misreads them.
+ALL_MARKER = "All"
+
+
+def tribes_from_races(races):
+    """Raw race list (log CARDRACE tags or hearthstonejson 'races') -> the
+    canonical meta `tribe` field.
+
+    ["DEMON", "QUILBOAR"] -> "Demon/Quilboar" (compounds preserved — the old
+    `normalize(races[0])` silently dropped every tribe after the first);
+    ["ALL"] -> "All"; [] / None -> None (genuinely untribed).
+    """
+    races = [r for r in (races or []) if r and r != "NEUTRAL"]
+    if not races:
+        return None
+    if "ALL" in races:
+        return ALL_MARKER
+    return normalize("/".join(races))
+
+
+def parts(tribe):
+    """Canonical tribe parts of a meta/log tribe field.
+
+    "All" -> every display tribe (Amalgam counts as each of them);
+    "Demon/Quilboar" -> ["Demon", "Quilboar"]; "Elemental" -> ["Elemental"];
+    None / neutral / unknown -> [] (an untribed card matches nothing).
+    """
+    if tribe == ALL_MARKER:
+        return list(DISPLAY_TRIBES)
+    norm = normalize(tribe)
+    return norm.split("/") if norm else []
+
+
+def matches(card_tribe, want):
+    """Membership lookup: does a card's tribe field include tribe `want`?
+
+    `want` may be any canonical form ("UNDEAD", "Undead", "Demon/Quilboar" —
+    any part of a compound want counts). All-tribe cards match everything
+    (even an unknown tribe name); untribed cards match nothing.
+    """
+    want_parts = parts(want)
+    return bool(want_parts) and bool(set(parts(card_tribe)) & set(want_parts))
+
+
+def overlaps(a, b):
+    """Do two tribe fields share any tribe?
+
+    The general fit test (minion vs comp, board vs spell target): "All"
+    overlaps any tribed field, compounds overlap on any shared part, and an
+    untribed field overlaps nothing.
+    """
+    return bool(set(parts(a)) & set(parts(b)))
 
 
 def normalize(value):
