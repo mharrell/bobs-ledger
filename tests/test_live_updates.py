@@ -797,10 +797,13 @@ class TestBanGate(unittest.TestCase):
 
     def test_detection_window_lists_confirmed_tribes_only(self):
         """The pool reveals stream in with the shop rolls (5/5 lands turn
-        3-5), and fail-open made the bottom comps panel show banned-tribe
-        comps until then. The window instead lists only comps whose tribe
-        the pool has CONFIRMED — a seen pure tribe is definitely in this
-        lobby; an unseen one might be banned, so its comps stay hidden."""
+        3-5), and fail-open made the coach AIM at banned-tribe comps until
+        then. The advisory list (playable) therefore admits only comps
+        whose tribe the pool has CONFIRMED — a seen pure tribe is
+        definitely in this lobby; an unseen one might be banned. The
+        panel's game-level list (game_comps) keeps every comp, flagged by
+        tribe confirmation (2026-09-11: the panel must read as "what this
+        game might allow" on turn 1, not as board-derived)."""
         from unittest import mock
         from live_coach import LiveCoach
         c = LiveCoach()
@@ -822,13 +825,22 @@ class TestBanGate(unittest.TestCase):
         self.assertNotIn("_blocked_core", c.playable["beasts-x"])
         self.assertTrue(c.tribes_detecting)
         self.assertEqual(c.tribes_seen, 1)
+        # The panel list stays game-level: everything listed, the confirmed
+        # tribe marked certain and the unseen one flagged for dimming.
+        self.assertEqual(set(c.game_comps), {"beasts-x", "nagas-y"})
+        self.assertTrue(c.game_comps["beasts-x"]["_tribe_confirmed"])
+        self.assertFalse(c.game_comps["nagas-y"]["_tribe_confirmed"])
+        # The meta dicts are shared — the per-game flag must be on a copy.
+        self.assertNotIn("_tribe_confirmed", c._comps["beasts-x"])
 
     def test_detection_window_empty_confirmed_set_hides_all(self):
         """Early window (0/5 confirmed — with the 3-distinct-card gate this
-        lasts the first ~2 minutes): the list must be EMPTY, not fail-open.
-        is_banned()'s no-ban-info fail-open is the wrong semantics here —
-        the replay showed seen=0 -> n_playable=21 (banned tribes included)
-        before this was made an explicit confirmed-set membership check."""
+        lasts the first ~2 minutes): the ADVISORY list must be EMPTY, not
+        fail-open. is_banned()'s no-ban-info fail-open is the wrong
+        semantics here — the replay showed seen=0 -> n_playable=21 (banned
+        tribes included) before this was made an explicit confirmed-set
+        membership check. The PANEL list still shows every comp (turn-1
+        game-level view), each dimmed as unconfirmed."""
         from unittest import mock
         from live_coach import LiveCoach
         c = LiveCoach()
@@ -845,6 +857,8 @@ class TestBanGate(unittest.TestCase):
         self.assertEqual(c.playable, {})
         self.assertTrue(c.tribes_detecting)
         self.assertEqual(c.tribes_seen, 0)
+        self.assertEqual(set(c.game_comps), {"beasts-x"})
+        self.assertFalse(c.game_comps["beasts-x"]["_tribe_confirmed"])
 
     def test_complete_ban_set_locks(self):
         from unittest import mock
@@ -931,6 +945,35 @@ class TestRenderJsonComps(unittest.TestCase):
         a = render_json(analysis)
         self.assertFalse(a["comps"][0]["core"][0]["banned"])
         self.assertEqual(a["buy_step_card"], None)
+
+    def test_game_comps_preferred_tribe_flag_rides(self):
+        """The panel renders game_comps (the live coach's game-level list)
+        over playable_comps (the evidence-only advisory filter), and the
+        detection-window dim flag rides the row: _tribe_confirmed=False ->
+        tribe_confirmed=False; absent -> True (post-resolution rows and
+        playable_comps fallbacks render certain)."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "playable_comps": {
+                        "advisory": {"name": "Advisory only", "core": []}},
+                    "game_comps": {
+                        "beasts-x": {"name": "Beasts - X", "meta_tier": "A",
+                                     "core": ["BG30_111"], "addons": [],
+                                     "_tribe_confirmed": True},
+                        "nagas-y": {"name": "Nagas - Y", "meta_tier": "B",
+                                    "core": ["BG23_318"], "addons": [],
+                                    "_tribe_confirmed": False}}}
+        a = render_json(analysis)
+        self.assertEqual({c["slug"] for c in a["comps"]},
+                         {"beasts-x", "nagas-y"})   # playable_comps ignored
+        by_slug = {c["slug"]: c for c in a["comps"]}
+        self.assertTrue(by_slug["beasts-x"]["tribe_confirmed"])
+        self.assertFalse(by_slug["nagas-y"]["tribe_confirmed"])
+        # Post-resolution / fallback rows carry no flag -> certain.
+        plain = render_json({"board": [], "sell_rank": [], "shop_rank": [],
+                             "playable_comps": {
+                                 "x": {"name": "X", "core": []}}})
+        self.assertTrue(plain["comps"][0]["tribe_confirmed"])
 
     def test_tribes_detecting_rides_the_payload(self):
         """During the detection window the comps panel labels its

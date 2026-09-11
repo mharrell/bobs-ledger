@@ -214,6 +214,9 @@ _HTML = r"""<!doctype html>
   .crowhead { display:flex; align-items:baseline; gap:7px; padding:2px 6px;
               cursor:pointer; border-radius:4px; }
   .crowhead:hover { background:var(--panel2); }
+  /* Detection-window rows: tribe not yet confirmed in this lobby — still
+     listed (it's the game-level view) but visibly uncertain. */
+  .crow.unconf { opacity:.5; }
   .carrow { color:var(--dim); font-size:11px; flex:none; width:10px; }
   .cname { font-weight:600; }
   .cstat { color:var(--dim); font-size:12px; flex:none; }
@@ -386,6 +389,10 @@ function compTiles(c) {
 }
 function compRow(c) {
   const open = _openComps.has(c.slug);
+  // Inside the ban-detection window the panel lists EVERY comp; a row whose
+  // tribe the pool hasn't confirmed yet is dimmed and labeled — it could
+  // still be banned, and it stays until the 5/5 set lands.
+  const unconf = c.tribe_confirmed === false;
   const head = el('div', 'crowhead');
   const arrow = el('span', 'carrow', open ? '▾' : '▸');
   head.appendChild(arrow);
@@ -393,7 +400,8 @@ function compRow(c) {
   head.appendChild(el('span', 'cname', c.name));
   head.appendChild(el('span', 'cstat',
     core.length + ' core · '
-    + core.filter(x => x.owned).length + ' owned'));
+    + core.filter(x => x.owned).length + ' owned'
+    + (unconf ? ' · tribe unconfirmed' : '')));
   const body = el('div', 'cbody');
   // Collapsed rows build their tiles lazily (on first expand) so a 21-comp
   // panel doesn't queue 100+ card fetches up front; an open row builds now.
@@ -407,7 +415,7 @@ function compRow(c) {
     body.hidden = !nowOpen;
     if (nowOpen && !body.children.length) body.appendChild(compTiles(c));
   };
-  const wrap = el('div', 'crow');
+  const wrap = el('div', 'crow' + (unconf ? ' unconf' : ''));
   wrap.appendChild(head);
   wrap.appendChild(body);
   return wrap;
@@ -682,17 +690,16 @@ function render(a) {
   // PLAYABLE COMPS — the bottom panel: grouped by meta tier (S/A/B, the
   // server pre-sorts), each comp a clickable row that expands into its
   // required cards with owned/banned flags. Click again to collapse.
-  // While the lobby's tribes are still streaming in (5/5 confirmed around
-  // turn 3-5), the server lists only comps of CONFIRMED tribes — label
-  // that, so a short list reads as "reading the lobby", not as the meta.
+  // This is the game-level list — what the tribe bans still allow — meant
+  // to be readable on turn 1. While the 5/5 ban set streams in (~turn 3-5)
+  // the panel lists EVERY comp (what this game might allow), dimming rows
+  // of not-yet-confirmed tribes; the header says so the full list doesn't
+  // read as "all tribes confirmed".
   const compsBody = el('div');
   if (a.tribes_detecting) {
-    compsBody.appendChild(el('div', 'none', 'reading the lobby’s tribes — '
-      + (a.tribes_seen || 0) + '/5 seen'
-      + (a.comps && a.comps.length
-        ? ' · ' + a.comps.length + ' confirmed comp'
-          + (a.comps.length === 1 ? '' : 's')
-        : '')));
+    compsBody.appendChild(el('div', 'none', 'bans still resolving — '
+      + (a.tribes_seen || 0) + '/5 tribes confirmed · dimmed comps could '
+      + 'still be banned'));
   }
   if (a.comps && a.comps.length) {
     let lastTier = null;
@@ -857,7 +864,12 @@ def render_json(analysis):
     # (same rule as the target-comp box: the board is what fights), banned =
     # a banned-tribe core piece of a hybrid comp (_blocked_core — can't be
     # bought this game). Sorted meta-tier first so the panel can group.
-    pc = analysis.get("playable_comps") or {}
+    # game_comps (2026-09-11) is the live coach's game-level list for this
+    # panel — during the ban-detection window it's ALL comps, each with
+    # _tribe_confirmed so unconfirmed rows can dim; playable_comps remains
+    # the evidence-only advisory filter and is the fallback for analyses
+    # without game_comps (coach.py, tests).
+    pc = analysis.get("game_comps") or analysis.get("playable_comps") or {}
     if isinstance(pc, dict):
         comp_items = list(pc.items())
     else:
@@ -880,6 +892,10 @@ def render_json(analysis):
             "slug": slug,
             "name": comp["name"],
             "meta_tier": comp.get("meta_tier"),
+            # Tribe confirmed in this lobby? Absent (True) once the bans
+            # resolve; False only inside the detection window, where the
+            # panel dims the could-still-be-banned rows.
+            "tribe_confirmed": comp.get("_tribe_confirmed", True),
             "core": rows(comp.get("core")),
             "addons": rows(comp.get("addons")),
         })
