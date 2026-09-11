@@ -21,7 +21,7 @@ from tribes import normalize
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
 import meta
 from meta import hero_power as _hero_power_text
-from tribes import DISPLAY_TRIBES, is_banned, normalize
+from tribes import DISPLAY_TRIBES, normalize
 from player_actions import (
     STEP_RE, _GS, ENTITY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
@@ -743,13 +743,25 @@ class LiveCoach:
             self.allowed = None  # still streaming — retry next analyze
         self.tribes_seen = len(allowed) if allowed else 0
         self.tribes_detecting = not self._bans_ready
-        if not self._bans_ready and allowed:
-            # Detection window: confirmed tribes only (see docstring).
-            self.playable = {slug: comp for slug, comp in self._comps.items()
-                             if not is_banned(comp.get("tribe"), allowed)}
-        else:
+        if self._bans_ready:
             self.playable = filter_comps_by_available_tribes(
                 self._comps, self._card_races, self.allowed)
+        else:
+            # Detection window: strictly evidence — a comp shows only once
+            # its tribe is in the confirmed set (see docstring). Not
+            # is_banned(): that fail-opens on an empty set, but here an
+            # empty set means "nothing confirmed YET", not "no ban info" —
+            # with it the window listed all 21 comps again (2026-09-10
+            # replay: seen=0 -> n_playable=21).
+            confirmed = set(allowed or ())
+
+            def window_ok(tribe):
+                norm = normalize(tribe)
+                return bool(norm and
+                            set(norm.split("/")) & confirmed)
+
+            self.playable = {slug: comp for slug, comp in self._comps.items()
+                             if window_ok(comp.get("tribe"))}
 
     def ensure_meta(self):
         """Retry the hero parse from outside analyze().

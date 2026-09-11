@@ -818,6 +818,29 @@ class TestBanGate(unittest.TestCase):
         self.assertTrue(c.tribes_detecting)
         self.assertEqual(c.tribes_seen, 1)
 
+    def test_detection_window_empty_confirmed_set_hides_all(self):
+        """Early window (0/5 confirmed — with the 3-distinct-card gate this
+        lasts the first ~2 minutes): the list must be EMPTY, not fail-open.
+        is_banned()'s no-ban-info fail-open is the wrong semantics here —
+        the replay showed seen=0 -> n_playable=21 (banned tribes included)
+        before this was made an explicit confirmed-set membership check."""
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
+                         "core": ["BG30_111"]},
+        }
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        fake = [{"seed": "1", "allowed": [], "banned": []}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertEqual(c.playable, {})
+        self.assertTrue(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 0)
+
     def test_complete_ban_set_locks(self):
         from unittest import mock
         from live_coach import LiveCoach
