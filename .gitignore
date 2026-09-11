@@ -10,6 +10,9 @@ venv/
 # Claude Code worktrees (isolated checkouts)
 .claude/worktrees/
 
+# Stop-hook ack latches (per-session, wt_stop_check.sh)
+.claude/wt-status/
+
 # Vendored dependency — has its own .git (decide: vendor / submodule / keep ignored)
 hearth-coach/python-hslog/
 

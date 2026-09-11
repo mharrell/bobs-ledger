@@ -1,0 +1,2 @@
+# Shell scripts must stay LF — CRLF breaks bash (the Stop hook runs via bash)
+*.sh text eol=lf
