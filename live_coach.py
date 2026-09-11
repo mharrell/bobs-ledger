@@ -20,6 +20,7 @@ from extract_game import extract_game, _friendly_player, MINION_ID
 from tribes import normalize
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
 import meta
+import pool
 from meta import hero_power as _hero_power_text
 from tribes import DISPLAY_TRIBES, normalize
 from player_actions import (
@@ -1128,7 +1129,12 @@ class LiveCoach:
                             recent_cards=recent, comp=target,
                             hand=hand) if offer_ids else []
         shop_costs = shop_cost_map(self.gs, offer_ids, self.shop_eids)
-        hand_steps = hand_plan(hand, board, scenario)
+        # Own-side pool ledger (phase 1, analysis/pool_availability.md):
+        # everything we hold (board + hand, golden = 3) is out of the shared
+        # pool until sold. Feeds the Market availability chips and the value
+        # layer's triple/hunt gates; opponents' holdings join in phase 2.
+        own_pool = pool.own_holdings(board, hand)
+        hand_steps = hand_plan(hand, board, scenario, pool_held=own_pool)
         golden_by_cid = {m["card"]: m.get("golden") for m in hand}
         for s in hand_steps:
             s["golden"] = golden_by_cid.get(s["card"], False)
@@ -1236,6 +1242,11 @@ class LiveCoach:
             "loss_streak": loss_streak,
             "close_losses": close_losses,
             "board": board,
+            # Own-side pool ledger (base cid -> held copies, golden = 3):
+            # what the Market availability chips and the triple/hunt pool
+            # gates are computed from. Dict, not Counter — the overlay
+            # serializes the analysis verbatim.
+            "own_pool": dict(own_pool),
             # Scout (gates 3+4, analysis/LEVELING_MODEL.md): our board's
             # stat total; the announced next opponent's LAST-KNOWN board
             # (the buy-phase preview, from a fight we were in); the median

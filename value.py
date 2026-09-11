@@ -13,6 +13,7 @@ import os
 import re
 
 import meta
+import pool
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
 from tribes import is_banned, matches, normalize, overlaps, parts
 
@@ -938,10 +939,15 @@ def sell_reason(minion, card, comp=None, core=(), addons=(), banned_tribes=()):
     return "off-comp filler" if off_comp else "filler"
 
 
-def hand_plan(hand, board_minions=None, scenario=None):
+def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
     """What to do with cards ALREADY in hand — plays the coach never made
     (2026-09-04: five spells sat in hand that would 10x the board's stats
     while the coach said nothing about them).
+
+    pool_held (pool.own_holdings output) gates the golden hunt: holding for
+    a 3rd copy is only advice while the shared pool can still produce one —
+    when our own holdings already drained it, the hand copy plays instead.
+    None (old callers, fixtures) keeps the evidence-free hold.
 
     Casting a spell from hand costs NO gold and playing a minion stuck in
     hand (full board) costs none either, so each card's whole effect is
@@ -1039,8 +1045,16 @@ def hand_plan(hand, board_minions=None, scenario=None):
                 why = "golden body — goldens never combine" \
                     + (" — sell to make room" if len(board) >= 7 else "")
             elif on_board == 1:
-                verb = "hold"
-                why = "hold — 1 regular on board; a 3rd copy turns it golden"
+                # Pool gate (phase 1, analysis/pool_availability.md): the
+                # 3rd copy has to come from a future roll, and a drained
+                # pool never rolls it — holding is a lost slot.
+                if pool_held is not None and pool.left(cid, pool_held) == 0:
+                    why = ("no 3rd copy left in the pool — play it "
+                           "(a golden can't complete)")
+                else:
+                    verb = "hold"
+                    why = ("hold — 1 regular on board; a 3rd copy "
+                           "turns it golden")
             elif kit and deployer_up:
                 verb = "hold"
                 why = ("hold — " + kit["deployer_name"] + " " +
@@ -1555,7 +1569,8 @@ def _top_move_text(analysis):
                 evaluated = [
                     (r, *_hunt_check(r, tier, analysis.get("turn"),
                                      analysis.get("shop_seen"),
-                                     "shop_seen" in analysis))
+                                     "shop_seen" in analysis,
+                                     analysis.get("own_pool")))
                     for r in missing]
                 feasible = [r for r, _ok, _why in evaluated if _ok]
                 if feasible:
@@ -1582,7 +1597,8 @@ def _top_move_text(analysis):
             bought = cid
             analysis["buy_step_card"] = cid
             why = _buy_intention(cid, comp, card_db, spell_db,
-                                 board=analysis.get("board"))
+                                 board=analysis.get("board"),
+                                 pool_held=analysis.get("own_pool"))
             parts.append(f"Buy {_shop_name(cid, names)} ({why})")
             if level_next and tier and analysis.get("level_cost") is not None:
                 level_cost = analysis.get("level_cost")
@@ -1739,7 +1755,7 @@ def _has_end_of_turn(board, card_db):
     return False
 
 
-def _triple_note(cid, board):
+def _triple_note(cid, board, pool_held=None):
     """The buy's triple state, or '' when there's nothing to say.
 
     A golden on board is NOT one of the three copies — goldens never
@@ -1747,6 +1763,8 @@ def _triple_note(cid, board):
     for the triple' with a Dark-Gift golden + 1 regular on board, and
     the buy made nothing). The note rides on the buy step so neither
     the plan nor the LLM reading it can miscount a golden.
+    With pool_held (pool.own_holdings), the "still needed" branch also
+    says when the shared pool can't produce the remaining copies.
     """
     if not board:
         return ""
@@ -1755,16 +1773,23 @@ def _triple_note(cid, board):
     if regulars >= 2:
         return "this buy completes a golden triple"
     if any(b.get("card") == cid and b.get("golden") for b in board):
-        left = 3 - regulars
-        return (f"the golden on board doesn't combine — "
-                f"{left} more regular {'' if left == 1 else 'copies'}"
-                f" still needed for a triple")
+        need = 3 - regulars
+        txt = (f"the golden on board doesn't combine — "
+               f"{need} more regular {'' if need == 1 else 'copies'}"
+               f" still needed for a triple")
+        if pool_held is not None:
+            avail = pool.left(cid, pool_held)
+            if avail is not None and avail < need:
+                txt += (f" — pool can't produce them "
+                        f"({avail or 'none'} left beyond your holdings)")
+        return txt
     return ""
 
 
-def _buy_intention(cid, comp, card_db, spell_db=None, board=None):
+def _buy_intention(cid, comp, card_db, spell_db=None, board=None,
+                   pool_held=None):
     """Why the coach recommends buying this card (a pre-set intention)."""
-    note = _triple_note(cid, board)
+    note = _triple_note(cid, board, pool_held)
     note = f"; {note}" if note else ""
     if comp and cid in comp.get("core", []):
         return f"committing to {comp.get('tribe') or comp.get('name')}{note}"
@@ -1928,26 +1953,31 @@ def _minion_tiers():
 HUNT_SEEN_WINDOW = 4
 
 
-def _hunt_check(row, tavern_tier, turn, shop_seen, tracked):
+def _hunt_check(row, tavern_tier, turn, shop_seen, tracked, pool_held=None):
     """(ready, reason) — can the tavern actually produce this missing core?
 
-    Two gates (the 2026-09-11 Morchie game: the coach hunted the tier-3 Gem
+    Three gates (the 2026-09-11 Morchie game: the coach hunted the tier-3 Gem
     Rat from a tier-5 tavern for 11 straight buy phases while its shop
     offered that card exactly twice all game — the player bought on-tier
     pieces, tripled four goldens and won):
     - TIER: a core above the tavern can't appear at all. A core BELOW the
       tavern is pool-weighted against hard, so it hunts only on recent
       evidence (next gate).
+    - POOL: when we already hold every copy the pool has (own-side ledger,
+      pool.own_holdings — phase 1), no roll can ever produce it. Opponent
+      holdings join the ledger in phase 2.
     - RECENCY: when the session tracks shop sightings (live_coach records
       every shop generation it sees), a core unseen for HUNT_SEEN_WINDOW buy
       phases is a lottery ticket, not a plan. Never-offered cores are the
       strongest possible "don't hunt".
     Analyses without a shop_seen key (unit fixtures, the coach.py path) keep
-    the old evidence-free hunt — the tier gate still applies.
+    the old evidence-free hunt — the tier and pool gates still apply.
     """
     ctier = _minion_tiers().get(row["card"])
     if tavern_tier and ctier and ctier > tavern_tier:
         return False, f"needs tier {ctier}"
+    if pool_held is not None and pool.left(row["card"], pool_held) == 0:
+        return False, "pool dry — you hold every copy"
     if not tracked:
         return True, None
     seen = (shop_seen or {}).get(row["card"])
