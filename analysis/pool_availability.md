@@ -110,15 +110,39 @@ alive players drops exactly when places shift.
    value gates: hand hold flips to play when the pool can't produce a 3rd
    copy, the triple note says when the pool can't produce the remainder,
    and `_hunt_check` refuses cores whose pool we've drained.
-2. **Card-level opponent snapshots (medium):** extend the lobby scout —
-   staged-burst capture keyed by seat, subtract our exact board, staleness
-   per seat → tribe-pressure lines for the Build column + next-opponent comp
-   preview for the Decide column (upgrade over today's stat-total-only
-   preview in `live_coach.py`).
+2. **Seat-level opponent snapshots — LANDED (phase 2, `lobby.py`).**
+   Staged-burst capture inside LiveCoach (open at the buy-phase MAIN_END
+   with our exact holdings, close at the next MAIN_ACTION), resolved into
+   per-seat board Counters via position-run grouping: staged boards arrive
+   as zonepos runs (1..N, restart 1..M) and windows can carry a second,
+   STALE run — the run with the largest position reach wins, our exact
+   holdings subtract out, and a resolved board above 7 copies is marked
+   BLENDED: it still feeds the pool ledger (an upper bound on holds) but
+   never the composition preview. Consumers:
+   - **Next opponent preview (Decide column):** the announced seat's
+     last-known board as tiles, hero + account named, "as of round N".
+   - **Tribe pressure (Build column):** "3 of 4 seen seats (2+ copies)"
+     per tribe, ban-filtered, over ALL seen seats — unseen seats are
+     omitted, not assumed absent.
+   - **Market chips:** fresh seats' held copies (≤2 rounds old) subtract
+     from the phase-1 own-side floor.
 3. **LLM context:** feed pressure summaries + remaining() into coach_llm
    context; honesty labels ("of seen seats", "as of round N").
 4. **Not built:** generic confidence percentages; fractions over unseen
-   seats.
+   seats; elimination flush (dead seats simply age out of the 2-round
+   freshness window — their last-known board keeps subtracting from the
+   ledger until then, a bounded and conservative error); tavern-spell
+   pools; Duos.
+
+### Phase-2 known limits (all labeled in the UI)
+
+- A blended window inflates a seat's held-count until its next clean
+  sighting; the preview hides it, the chips only get conservative.
+- Opponent hands/shops stay invisible (held copies undercounted →
+  availability optimistic between sightings).
+- NEXT_OPPONENT tags that stream before the hero parses are dropped
+  (pre-existing scout behavior) — round-1 attribution can be missing in
+  replay walks; live play parses the hero during the pick, before turn 1.
 
 Tool: `pool_forensics.py <Power.log> [--game N] [--bursts] [--elim] [--tags]`
 re-derives everything above from any session log — re-run after client

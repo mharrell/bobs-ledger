@@ -555,6 +555,28 @@ function render(a) {
   }
   app.appendChild(instr);
 
+  // NEXT OPPONENT — the announced seat's last-known composition (phase 2,
+  // lobby.py): exact when their board staged, aged since. The subtitle
+  // names the round so a 3-round-old preview never reads current. Hand and
+  // shop are invisible to the log, so this is their BOARD, not everything
+  // they hold.
+  if (a.opp_comp && a.opp_comp.cards && a.opp_comp.cards.length) {
+    const oc = a.opp_comp;
+    const body = el('div');
+    body.appendChild(el('div', 'footline',
+      (oc.hero_name || oc.hero || 'unknown hero')
+      + (oc.name ? ' · ' + oc.name : '')
+      + ' — as of round ' + oc.turn));
+    const tiles = el('div', 'tiles');
+    oc.cards.forEach(c => {
+      tiles.appendChild(tile(c.card, c.name,
+                             c.n > 1 ? '×' + c.n : null,
+                             {golden: c.golden}));
+    });
+    body.appendChild(tiles);
+    app.appendChild(box('Next opponent', body));
+  }
+
   // The plan's actual buy (highlighted in the shop tiles below too).
   const stepCard = a.buy_step_card || null;
 
@@ -669,6 +691,18 @@ function render(a) {
       body.appendChild(t);
     }
     app.appendChild(box('Comp direction', body));
+  }
+
+  // LOBBY PRESSURE — tribe commitment across SEEN seats (phase 2): who is
+  // contesting what, for pivot/deny context. "of" counts only seats we've
+  // sighted; unseen seats are unknown, not empty — the label says "seen".
+  if (a.tribe_pressure && a.tribe_pressure.length) {
+    const body = el('div');
+    a.tribe_pressure.forEach(r => {
+      body.appendChild(el('div', 'footline',
+        r.tribe + ' — ' + r.seats + ' of ' + r.of + ' seen seats (2+ copies)'));
+    });
+    app.appendChild(box('Lobby pressure', body));
   }
 
   // TAVERN — the ranked shop as a horizontal card row (game-like); the
@@ -830,11 +864,13 @@ def render_json(analysis):
                  for k in [HAND_DEPLOY_KITS.get(r.get("card"))] if k}
     from value import _buy_prices
     prices = _buy_prices(analysis)
-    # Pool availability chips (phase 1, analysis/pool_availability.md): the
-    # shared pool minus what WE hold. Not lobby-true until phase 2 adds
-    # opponent snapshots — the wording stays "pool left", never "remaining
-    # in the lobby".
-    held = analysis.get("own_pool")
+    # Pool availability chips (phases 1-2, analysis/pool_availability.md):
+    # the shared pool minus what WE hold, minus what FRESH seats hold
+    # (sightings <= 2 rounds old — lobby.py). Stale seats are excluded, not
+    # guessed at; the wording stays "pool left", never a lobby total.
+    held = dict(analysis.get("own_pool") or {})
+    for c, n in (analysis.get("opp_pool") or {}).items():
+        held[c] = held.get(c, 0) + n
     a["shop_rank"] = [dict(card=c, name=names.get(c, c), score=round(v),
                            price=prices.get(c),
                            pool=(pool.chip(c, held)
@@ -845,6 +881,16 @@ def render_json(analysis):
                                 "deploys hand" if c.rstrip("_G") in deployers
                                 else None))
                       for c, v in analysis.get("shop_rank", [])]
+    # Next-opponent composition (phase 2): the seat's last-known board as
+    # named tiles, golden-flagged, biggest first. Age rides along — the box
+    # says "as of round N" so a stale preview never reads current.
+    oc = analysis.get("opp_comp")
+    if oc:
+        cards = [{"card": c, "name": names.get(c, c), "n": n,
+                  "golden": c in (oc.get("goldens") or [])}
+                 for c, n in sorted(oc["cards"].items(),
+                                    key=lambda kv: (-kv[1], kv[0]))]
+        a["opp_comp"] = dict(oc, cards=cards)
     # Pre-commit "leads" tagging (comp meter): with no target committed yet,
     # shop cards that are unowned core of the leading candidate get a "leads
     # <tribe>" tag — that's the card the meter is waiting on. Once a target

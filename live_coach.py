@@ -21,8 +21,9 @@ from tribes import normalize
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
 import meta
 import pool
+import lobby
 from meta import hero_power as _hero_power_text
-from tribes import DISPLAY_TRIBES, normalize
+from tribes import DISPLAY_TRIBES, matches, normalize
 from player_actions import (
     STEP_RE, _GS, ENTITY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
@@ -407,6 +408,7 @@ _GAME_DEFAULTS = {
     "_card_races": None,
     "_seed": None,
     "_comps": None,
+    "_scout": lobby.LobbyScout,   # seat-level staged-burst tracker (phase 2)
 }
 
 
@@ -459,9 +461,23 @@ class LiveCoach:
                 # so the announced value persists until the next one.
                 if self._phase == "buy":
                     self._pairing[self.actions.turn] = self._pair_cand
+                    # The staged-burst scout opens the combat window at the
+                    # buy-phase close, with our exact holdings at the moment
+                    # both boards stage (lobby.py: staged counter minus this
+                    # = their board). The combat-close MAIN_END (phase
+                    # already "combat") must not re-open the round.
+                    if self.friendly is not None:
+                        b, _ob = self.gs.final_board(self.friendly)
+                        self._scout.open_round(
+                            self.actions.turn,
+                            pool.own_holdings(b, self.gs.hand(self.friendly)))
                 self._phase = "combat"
             elif "tag=STEP value=MAIN_ACTION" in line:
                 self._phase = "buy"
+                self._scout.close_round()
+        # Seat-level opponent tracker (phase 2): staged combat bursts, keyed
+        # by the BACON seat tags it parses itself.
+        self._scout.feed(line)
         # The shop changes at a new buy phase, on a refresh (re-roll), or on a
         # buy; reset so the next DebugPrintOptions block rebuilds it from the
         # current offers. (Only actual PLAY actions for refresh/buy, not the
@@ -730,6 +746,10 @@ class LiveCoach:
                 rec = {"stats": best[0], "n": best[1], "turn": t}
                 self._opp_boards[pid] = rec
                 self._lobby_stats.append(rec)
+        # Seat-level card snapshots (phase 2, lobby.py): same deferred
+        # contract — completed turns only, pairing-keyed.
+        self._scout.resolve_completed(self.actions.turn, self._pairing,
+                                      self.friendly)
 
     def _fresh_opp_stats(self, turn):
         """The next opponent's last-known board stats, if fresh enough."""
@@ -1135,6 +1155,32 @@ class LiveCoach:
         # layer's triple/hunt gates; opponents' holdings join in phase 2.
         own_pool = pool.own_holdings(board, hand)
         hand_steps = hand_plan(hand, board, scenario, pool_held=own_pool)
+        # Seat-level scout outputs (phase 2, analysis/pool_availability.md):
+        # the announced next opponent's last-known composition; tribe
+        # commitment across seen seats; and the fresh seats' held copies
+        # for the Market chips. All are exact AT the sighting and age from
+        # there — consumers label with the round.
+        opp_rec = (self._scout.seats.get(self.next_opponent)
+                   if self.next_opponent else None)
+        # A blended snapshot (two staged groups in one window, sum > 7)
+        # feeds the pool ledger but never the composition preview.
+        if opp_rec is not None and opp_rec.get("blended"):
+            opp_rec = None
+        opp_hero_name = None
+        if opp_rec and opp_rec.get("hero") and self.meta:
+            opp_hero_name = next(
+                (h.get("hero_name") for h in self.meta.get("heroes", [])
+                 if h.get("card") == opp_rec["hero"]), None)
+        opp_pool_held = self._scout.merged_holdings(self.actions.turn)
+        pressure = []
+        if self.allowed:
+            seen = len(self._scout.seats)
+            for tribe in self.allowed:
+                n = len(self._scout.committed(tribe, min_copies=2,
+                                              matches=matches))
+                if n:
+                    pressure.append({"tribe": tribe, "seats": n, "of": seen})
+            pressure.sort(key=lambda r: (-r["seats"], r["tribe"]))
         golden_by_cid = {m["card"]: m.get("golden") for m in hand}
         for s in hand_steps:
             s["golden"] = golden_by_cid.get(s["card"], False)
@@ -1247,6 +1293,27 @@ class LiveCoach:
             # gates are computed from. Dict, not Counter — the overlay
             # serializes the analysis verbatim.
             "own_pool": dict(own_pool),
+            # The announced next opponent's last-known composition (seat-
+            # keyed staged snapshot): {"cards", "goldens", "hero", "name",
+            # "turn"} or None when never sighted. Exact at "turn", aged
+            # since — the UI labels it.
+            "opp_comp": ({
+                "cards": dict(opp_rec["cards"]),
+                "goldens": sorted(opp_rec.get("goldens") or []),
+                "hero": opp_rec.get("hero"),
+                "hero_name": opp_hero_name,
+                "name": opp_rec.get("name"),
+                "turn": opp_rec["turn"],
+            } if opp_rec else None),
+            # Tribe commitment across SEEN seats (2+ copies of the tribe on
+            # a last-known board, ban-filtered via self.allowed). Seats
+            # never sighted are omitted, not assumed absent — the "of"
+            # count is honest about that.
+            "tribe_pressure": pressure,
+            # Fresh seats' held copies (base cid -> n): the Market chips
+            # subtract these from the own-side floor. Empty until sightings
+            # exist; seats whose snapshot is >2 rounds old are excluded.
+            "opp_pool": dict(opp_pool_held),
             # Scout (gates 3+4, analysis/LEVELING_MODEL.md): our board's
             # stat total; the announced next opponent's LAST-KNOWN board
             # (the buy-phase preview, from a fight we were in); the median
