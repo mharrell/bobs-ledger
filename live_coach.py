@@ -21,7 +21,7 @@ from tribes import normalize
 from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
 import meta
 from meta import hero_power as _hero_power_text
-from tribes import DISPLAY_TRIBES, normalize
+from tribes import DISPLAY_TRIBES, is_banned, normalize
 from player_actions import (
     STEP_RE, _GS, ENTITY, CHOICE,
     _load_bg_pool, _load_bg_minion_ids,
@@ -375,6 +375,8 @@ _GAME_DEFAULTS = {
     "_snap_seen": 0,         # snapshots already buffered
     "_phase": "buy",         # buy phase vs combat window (GameState STEP)
     "_bans_ready": False,
+    "tribes_detecting": False,  # 5/5 ban set not confirmed yet (window state)
+    "tribes_seen": 0,        # pure tribes the pool reveal has shown so far
     "_card_races": None,
     "_seed": None,
     "_comps": None,
@@ -695,13 +697,21 @@ class LiveCoach:
         """Family-ban info, retried until the pool reveal is complete.
 
         bans_from_log derives allowed tribes from pool minions SEEN so far,
-        and the pool streams over the game's first seconds — a partial set
-        (one tribe's minions) once froze 9 banned tribes in the UI for a whole
-        game (2026-09-03 screenshot). The real family ban is 5 allowed / 5
-        banned, so only a 5-tribe set is accepted; until then allowed stays
-        None (fail OPEN — no bans shown, every comp playable) and this
-        re-runs on each analyze. More than 5 seen = not a 5/5 ban mode —
-        fail open permanently.
+        and the pool streams in gradually with the shop rolls (2026-09-10
+        log: first pure tribe at ~50s, the fifth at ~3.5min — turn 3-5), so
+        a partial set (one tribe's minions) once froze 9 banned tribes in
+        the UI for a whole game (2026-09-03 screenshot). The real family
+        ban is 5 allowed / 5 banned, so only a 5-tribe set is accepted;
+        until then allowed stays None and this re-runs on each analyze.
+        More than 5 seen = not a 5/5 ban mode — fail open permanently.
+
+        During that detection window the playable list is evidence-only:
+        comps whose tribe the pool has CONFIRMED (a seen pure tribe is
+        definitely in this lobby). Fail-open instead (every comp playable)
+        made the bottom comps panel list banned-tribe comps for the first
+        3 turns. Unseen tribes' comps stay hidden — they might be banned —
+        and confirmed comps carry no _blocked_core marks, since a hybrid
+        piece of an unseen tribe isn't known-banned, just not yet sampled.
         """
         if self._bans_ready or self._comps is None or not self.cur_lines:
             return
@@ -728,8 +738,15 @@ class LiveCoach:
             self._bans_ready = True
         else:
             self.allowed = None  # still streaming — retry next analyze
-        self.playable = filter_comps_by_available_tribes(
-            self._comps, self._card_races, self.allowed)
+        self.tribes_seen = len(allowed) if allowed else 0
+        self.tribes_detecting = not self._bans_ready
+        if not self._bans_ready and allowed:
+            # Detection window: confirmed tribes only (see docstring).
+            self.playable = {slug: comp for slug, comp in self._comps.items()
+                             if not is_banned(comp.get("tribe"), allowed)}
+        else:
+            self.playable = filter_comps_by_available_tribes(
+                self._comps, self._card_races, self.allowed)
 
     def ensure_meta(self):
         """Retry the hero parse from outside analyze().
@@ -1085,6 +1102,11 @@ class LiveCoach:
             "baseline_opp": _baseline_opp(turn),
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
+            # True while the 5/5 tribe set is still streaming in: the comps
+            # panel then labels its confirmed-tribes-only list instead of
+            # implying the full meta is on the table (2026-09-10).
+            "tribes_detecting": self.tribes_detecting,
+            "tribes_seen": self.tribes_seen,
             # Commit-readiness meter: how close each candidate comp is to the
             # commit threshold, so the UI can show direction BEFORE
             # comp_target declares a target (the pre-commit blind spot).

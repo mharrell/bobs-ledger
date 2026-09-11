@@ -786,6 +786,37 @@ class TestBanGate(unittest.TestCase):
             c._refresh_bans()
         self.assertIsNone(c.allowed)
         self.assertFalse(c._bans_ready)  # keeps retrying on later analyzes
+        # Detection-window state rides the payload so the UI can label it.
+        self.assertTrue(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 1)
+
+    def test_detection_window_lists_confirmed_tribes_only(self):
+        """The pool reveals stream in with the shop rolls (5/5 lands turn
+        3-5), and fail-open made the bottom comps panel show banned-tribe
+        comps until then. The window instead lists only comps whose tribe
+        the pool has CONFIRMED — a seen pure tribe is definitely in this
+        lobby; an unseen one might be banned, so its comps stay hidden."""
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
+                         "core": ["BG30_111"]},
+            "nagas-y": {"name": "Nagas - Y", "tribe": "Naga",
+                        "core": ["BG23_318"]},
+        }
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        fake = [{"seed": "1", "allowed": ["Beast"], "banned": [
+            "Demon", "Dragon", "Elemental", "Mech", "Murloc", "Naga",
+            "Pirate", "Quilboar", "Undead"]}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertEqual(list(c.playable), ["beasts-x"])
+        self.assertNotIn("_blocked_core", c.playable["beasts-x"])
+        self.assertTrue(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 1)
 
     def test_complete_ban_set_locks(self):
         from unittest import mock
@@ -801,6 +832,8 @@ class TestBanGate(unittest.TestCase):
             c._refresh_bans()
         self.assertEqual(c.allowed, allowed)
         self.assertTrue(c._bans_ready)
+        self.assertFalse(c.tribes_detecting)  # window closed
+        self.assertEqual(c.tribes_seen, 5)
 
     def test_bans_resolve_when_hero_parsed_first(self):
         """The pool streams after the hero parses; _ensure_meta returns early
@@ -870,6 +903,22 @@ class TestRenderJsonComps(unittest.TestCase):
         a = render_json(analysis)
         self.assertFalse(a["comps"][0]["core"][0]["banned"])
         self.assertEqual(a["buy_step_card"], None)
+
+    def test_tribes_detecting_rides_the_payload(self):
+        """During the detection window the comps panel labels its
+        confirmed-tribes-only list — the flag and seen-count must reach
+        the render payload (post-hoc analyses without them stay falsy)."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "playable_comps": {},
+                    "tribes_detecting": True, "tribes_seen": 2}
+        a = render_json(analysis)
+        self.assertTrue(a["tribes_detecting"])
+        self.assertEqual(a["tribes_seen"], 2)
+        self.assertFalse(render_json({"board": [], "sell_rank": [],
+                                      "shop_rank": [],
+                                      "playable_comps": {}})
+                         .get("tribes_detecting"))
 
     def test_comp_progress_raw_needs_do_not_crash_render(self):
         """The comp meter's RAW rows carry needs as bare card-id strings
