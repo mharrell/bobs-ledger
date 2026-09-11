@@ -14,7 +14,7 @@ import re
 
 import meta
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
-from tribes import is_banned, normalize
+from tribes import is_banned, matches, normalize, overlaps, parts
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -562,10 +562,13 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
         score += W_MULT
 
     # Engine recognition: the board's engine (e.g. Nomi) is worth far more than
-    # its small stats suggest. Match by race OR by the text naming the tribe
-    # (Nomi has race=None but its text scales Elementals).
+    # its small stats suggest. The DB tribe lookup is the certain answer
+    # (compound- and Amalgam-aware via tribes.matches); the text naming the
+    # tribe stays only as the fallback for a genuinely untribed card whose
+    # text scales it — _is_engine's "give your"-shaped markers gate that, so
+    # kill/destroy text can't ride along.
     if dominant_tribe and card and _is_engine(card):
-        if (normalize(card.get("race")) == normalize(dominant_tribe)
+        if (matches(card.get("race"), dominant_tribe)
                 or dominant_tribe.lower() in (card.get("text") or "")):
             score += W_ENGINE
     # Combat-time scaling is invisible to the pre-combat snapshot; flag as +value.
@@ -595,8 +598,7 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
             score += W_CORE
         elif minion["card"] in comp.get("addons", []):
             score += W_ADDON
-        if normalize(comp.get("tribe")) and \
-                normalize(minion.get("tribe")) == normalize(comp.get("tribe")):
+        if overlaps(minion.get("tribe"), comp.get("tribe")):
             score += W_TRIBE
 
     # Role (scaling engine > utility > filler).
@@ -642,7 +644,7 @@ def _trinket_synergy_hit(trinket, race, card_text, mechanics=()):
     if syn.get("note"):  # the Compass-style free-text entry
         return False
     for tribe in syn.get("tribes") or []:
-        if race and normalize(tribe) == race:
+        if overlaps(race, tribe):
             return True
     for kw in syn.get("keywords") or []:
         k = kw.lower()
@@ -815,7 +817,10 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                 target_state(comp, board_minions or []) == "committing":
             ct = normalize(comp.get("tribe"))
             tribe = normalize(m.get("tribe"))
-            if ct and (not tribe or tribe not in ct.split("/")):
+            # Tribe overlap via lookup (compounds + Amalgams fit any comp
+            # part); untribed stays off-comp here — it can't grow with the
+            # build even when it doesn't fight it.
+            if ct and not overlaps(m.get("tribe"), ct):
                 val += W_OFF_COMP
                 growth = growth_potential(card)
                 if tribe or growth >= 2.0:
@@ -831,7 +836,7 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
             # untribed cards are exempt (they fit any build).
             dt = _dominant_tribe(board_minions or [])
             tribe = normalize(m.get("tribe"))
-            if dt and tribe and tribe not in dt.split("/"):
+            if dt and tribe and not overlaps(tribe, dt):
                 growth = growth_potential(card)
                 if growth >= 2.0:
                     val -= W_GROWTH * growth * 0.75
@@ -893,8 +898,9 @@ def sell_reason(minion, card, comp=None, core=(), addons=(), banned_tribes=()):
     if _is_engine(card):
         return "engine piece"
     stats = (minion.get("atk") or 0) + (minion.get("health") or 0)
-    comp_tribes = (normalize(comp.get("tribe")) or "").split("/") if comp else []
-    off_comp = bool(tribe and comp_tribes and tribe not in comp_tribes)
+    comp_tribe = comp.get("tribe") if comp else None
+    off_comp = bool(tribe and comp_tribe
+                    and not overlaps(minion.get("tribe"), comp_tribe))
     if stats >= 25:
         # Big body, no comp role — the "big stats so it's valuable" read the
         # 2026-09-10 ask wanted named distinctly from comp-piece keeps.
@@ -951,7 +957,7 @@ def hand_plan(hand, board_minions=None, scenario=None):
             # stated: Reborn minions first (each reborn is one extra cast).
             if "destroy a friendly" in (spell.get("text") or "").lower():
                 undead = sum(1 for b in board
-                             if normalize(b.get("tribe")) == "Undead")
+                             if matches(b.get("tribe"), "Undead"))
                 if destroy_casts >= undead:
                     continue  # no Undead left to destroy — uncastable
                 destroy_casts += 1
@@ -2156,10 +2162,10 @@ def _best_comp(board_minions, comps):
         return None
     tribes = {}
     for m in board_minions:
-        t = normalize(m.get("tribe"))
-        if t:
-            for part in t.split("/"):
-                tribes[part] = tribes.get(part, 0) + 1
+        # Canonical parts (compounds split); Amalgams count toward every
+        # tribe — the game treats them as each tribe.
+        for part in parts(m.get("tribe")):
+            tribes[part] = tribes.get(part, 0) + 1
     best = None
     best_score = 0
     for slug, comp in comps.items():

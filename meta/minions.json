@@ -10,7 +10,8 @@
     "mechanics": [
       "DIVINE_SHIELD"
     ],
-    "text": "Divine Shield\nThis minion is always Golden, but doesn't give a Triple Reward."
+    "text": "Divine Shield\nThis minion is always Golden, but doesn't give a Triple Reward.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -24,7 +25,8 @@
       "DEATHRATTLE",
       "TAUNT"
     ],
-    "text": "[x]Taunt\nDeathrattle: Summon a\n2/2 Beetle."
+    "text": "[x]Taunt\nDeathrattle: Summon a\n2/2 Beetle.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -38,7 +40,8 @@
       "DEATHRATTLE",
       "DIVINE_SHIELD"
     ],
-    "text": "[x]Divine Shield\nDeathrattle: Summon a\n1/1 Microbot."
+    "text": "[x]Divine Shield\nDeathrattle: Summon a\n1/1 Microbot.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -52,7 +55,8 @@
       "DIVINE_SHIELD",
       "WINDFURY"
     ],
-    "text": "Divine Shield\nWindfury"
+    "text": "Divine Shield\nWindfury",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -65,7 +69,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you cast a spell on this, gain +1 Health."
+    "text": "Whenever you cast a spell on this, gain +1 Health.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -79,7 +84,8 @@
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Start of Combat: If this\nminion is in your hand,\nsummon a copy of it."
+    "text": "[x]Start of Combat: If this\nminion is in your hand,\nsummon a copy of it.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -92,7 +98,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Summon a 1/1 Beast."
+    "text": "Rally: Summon a 1/1 Beast.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -105,7 +112,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Gain +2 Attack."
+    "text": "Rally: Gain +2 Attack.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -118,7 +126,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Summon\ntwo 1/1 Skeletons."
+    "text": "Deathrattle: Summon\ntwo 1/1 Skeletons.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -132,7 +141,8 @@
       "END_OF_TURN_TRIGGER",
       "MAGNETIC"
     ],
-    "text": "[x]Magnetic\nAt the end of your turn,\ngain +1 Health."
+    "text": "[x]Magnetic\nAt the end of your turn,\ngain +1 Health.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -146,7 +156,8 @@
       "BACON_SPELLCRAFT_ID",
       "TRIGGER_VISUAL"
     ],
-    "text": "Spellcraft: Give a minion +2 Attack until next turn."
+    "text": "Spellcraft: Give a minion +2 Attack until next turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -159,20 +170,22 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you play an\nElemental, gain\n+1 Health."
+    "text": "[x]After you play an\nElemental, gain\n+1 Health.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
     "id": "BG31_330",
     "name": "Ominous Seer",
     "cost": 3,
-    "tribe": "Demon",
+    "tribe": "Demon/Naga",
     "attack": 2,
     "health": 1,
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: The next\nTavern spell you buy\ncosts (1) less."
+    "text": "Battlecry: The next\nTavern spell you buy\ncosts (1) less.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -185,7 +198,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Get 2\nBlood Gems."
+    "text": "Battlecry: Get 2\nBlood Gems.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -199,7 +213,8 @@
       "REBORN",
       "TAUNT"
     ],
-    "text": "Taunt\nReborn"
+    "text": "Taunt\nReborn",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -210,7 +225,8 @@
     "attack": 1,
     "health": 1,
     "mechanics": [],
-    "text": "When you sell this, get a random Tier 1 minion."
+    "text": "When you sell this, get a random Tier 1 minion.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -223,7 +239,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Once this reaches 6 Attack, gain Divine Shield."
+    "text": "Once this reaches 6 Attack, gain Divine Shield.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -236,7 +253,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Gain\n1 Gold next turn."
+    "text": "Battlecry: Gain\n1 Gold next turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -247,7 +265,8 @@
     "attack": 3,
     "health": 3,
     "mechanics": [],
-    "text": "Activate (1): Give another minion +3/+3."
+    "text": "Activate (1): Give another minion +3/+3.",
+    "tribe_src": null
   },
   {
     "tier": 1,
@@ -260,7 +279,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "[x]Rally: This plays a Blood\nGem on itself."
+    "text": "[x]Rally: This plays a Blood\nGem on itself.",
+    "tribe_src": "log"
   },
   {
     "tier": 1,
@@ -273,7 +293,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After you play a Demon, deal 1 damage to your hero and gain +2/+2."
+    "text": "After you play a Demon, deal 1 damage to your hero and gain +2/+2.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -286,7 +307,8 @@
     "mechanics": [
       "AURA"
     ],
-    "text": "[x]Has +3/+2 for each other\nAncestral Automaton you've\nsummoned this game\n(wherever this is)."
+    "text": "[x]Has +3/+2 for each other\nAncestral Automaton you've\nsummoned this game\n(wherever this is).",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -299,7 +321,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Get a Lockbox.\nIf you already have one,\nit opens 1 turn sooner\ninstead."
+    "text": "[x]Battlecry: Get a Lockbox.\nIf you already have one,\nit opens 1 turn sooner\ninstead.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -310,7 +333,8 @@
     "attack": 2,
     "health": 3,
     "mechanics": [],
-    "text": "Activate (2): Discover a Tavern spell."
+    "text": "Activate (2): Discover a Tavern spell.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -323,7 +347,8 @@
     "mechanics": [
       "CHOOSE_ONE"
     ],
-    "text": "Choose One - Get 2 Blood Gems; or Get a Gem Day."
+    "text": "Choose One - Get 2 Blood Gems; or Get a Gem Day.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -334,7 +359,8 @@
     "attack": 3,
     "health": 4,
     "mechanics": [],
-    "text": "Activate (2): Steal the highest-Attack minion in the Tavern."
+    "text": "Activate (2): Steal the highest-Attack minion in the Tavern.",
+    "tribe_src": null
   },
   {
     "tier": 2,
@@ -348,7 +374,8 @@
       "BATTLECRY",
       "TRIGGER_VISUAL"
     ],
-    "text": "Battlecry and Start of Combat: Give your\nother Dragons +1/+1."
+    "text": "Battlecry and Start of Combat: Give your\nother Dragons +1/+1.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -362,7 +389,8 @@
       "AURA",
       "InvisibleDeathrattle"
     ],
-    "text": "[x]Has +4/+2 for each friendly\nEternal Knight that died this\n  game (wherever this is)."
+    "text": "[x]Has +4/+2 for each friendly\nEternal Knight that died this\n  game (wherever this is).",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -375,7 +403,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "[x]Rally: Summon the highest-\nAttack minion from your\n  hand for this combat only."
+    "text": "[x]Rally: Summon the highest-\nAttack minion from your\n  hand for this combat only.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -386,7 +415,8 @@
     "attack": 4,
     "health": 3,
     "mechanics": [],
-    "text": "[x]When you sell this, give\nyour minions +1 Attack.\nImprove your future\nBallers."
+    "text": "[x]When you sell this, give\nyour minions +1 Attack.\nImprove your future\nBallers.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -400,7 +430,8 @@
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "[x]Battlecry: Your Beetles\nhave +2/+1 this game.\nDeathrattle: Summon a\n2/2 Beetle."
+    "text": "[x]Battlecry: Your Beetles\nhave +2/+1 this game.\nDeathrattle: Summon a\n2/2 Beetle.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -414,7 +445,8 @@
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "Start of Combat: For the rest of this combat, your Beasts have +1 Attack."
+    "text": "Start of Combat: For the rest of this combat, your Beasts have +1 Attack.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -427,7 +459,8 @@
     "mechanics": [
       "CHOOSE_ONE"
     ],
-    "text": "[x]Choose One - Your Tavern\nspells give an extra\n+1 Attack this game;\nor +1 Health."
+    "text": "[x]Choose One - Your Tavern\nspells give an extra\n+1 Attack this game;\nor +1 Health.",
+    "tribe_src": null
   },
   {
     "tier": 2,
@@ -440,7 +473,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Add a Fodder to your next 3 Refreshes."
+    "text": "Battlecry: Add a Fodder to your next 3 Refreshes.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -453,7 +487,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]The first Spellcraft spell\n played from hand on this\neach turn is permanent.\n(1 left!)"
+    "text": "[x]The first Spellcraft spell\n played from hand on this\neach turn is permanent.\n(1 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -464,7 +499,8 @@
     "attack": 3,
     "health": 4,
     "mechanics": [],
-    "text": "Activate (2): Choose a card in the Tavern. Replace it with a Fishbait for your left-most Beast to attack."
+    "text": "Activate (2): Choose a card in the Tavern. Replace it with a Fishbait for your left-most Beast to attack.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -477,7 +513,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Whenever you play or\nMagnetize a Mech,\ngive it +3/+1."
+    "text": "[x]Whenever you play or\nMagnetize a Mech,\ngive it +3/+1.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -490,7 +527,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Get a\nPointy Arrow."
+    "text": "[x]Deathrattle: Get a\nPointy Arrow.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -503,7 +541,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Choose a friendly\nDemon. It consumes a\nminion in the Tavern\nto gain its stats."
+    "text": "[x]Battlecry: Choose a friendly\nDemon. It consumes a\nminion in the Tavern\nto gain its stats.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -516,7 +555,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Your Undead\nhave +1 Attack this game\n(wherever they are)."
+    "text": "[x]Battlecry: Your Undead\nhave +1 Attack this game\n(wherever they are).",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -529,7 +569,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Get two Slimy Shields that give\n+1/+1 and Taunt."
+    "text": "Battlecry: Get two Slimy Shields that give\n+1/+1 and Taunt.",
+    "tribe_src": null
   },
   {
     "tier": 2,
@@ -542,7 +583,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]When you sell this,\nDiscover a Tier 1 minion.\n(Improves each turn!)"
+    "text": "[x]When you sell this,\nDiscover a Tier 1 minion.\n(Improves each turn!)",
+    "tribe_src": null
   },
   {
     "tier": 2,
@@ -555,7 +597,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever another friendly minion attacks, this plays a Blood Gem on it."
+    "text": "Whenever another friendly minion attacks, this plays a Blood Gem on it.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -568,7 +611,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Get a Blood Gem."
+    "text": "Rally: Get a Blood Gem.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -582,7 +626,8 @@
       "DEATHRATTLE",
       "REBORN"
     ],
-    "text": "Reborn\nDeathrattle: Give a friendly Undead +1/+2."
+    "text": "Reborn\nDeathrattle: Give a friendly Undead +1/+2.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -593,7 +638,8 @@
     "attack": 3,
     "health": 3,
     "mechanics": [],
-    "text": "[x]When you sell this,\nget a 3/3 Elemental."
+    "text": "[x]When you sell this,\nget a 3/3 Elemental.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -606,7 +652,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Get a Tavern Coin."
+    "text": "Battlecry: Get a Tavern Coin.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -617,7 +664,8 @@
     "attack": 3,
     "health": 4,
     "mechanics": [],
-    "text": "[x]When you sell this, give\nyour minions +1 Health.\nImprove your future\nBallers."
+    "text": "[x]When you sell this, give\nyour minions +1 Health.\nImprove your future\nBallers.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -630,7 +678,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After your hero takes damage, rewind it and give this +2 Health."
+    "text": "After your hero takes damage, rewind it and give this +2 Health.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -643,7 +692,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn, give\nadjacent minions +1 Attack.\nRepeat for each friendly\nGolden minion."
+    "text": "[x]At the end of your turn, give\nadjacent minions +1 Attack.\nRepeat for each friendly\nGolden minion.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -654,7 +704,8 @@
     "attack": 2,
     "health": 2,
     "mechanics": [],
-    "text": "When you sell this,\nget a random Murloc."
+    "text": "When you sell this,\nget a random Murloc.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -667,7 +718,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "This permanently keeps Bonus Keywords and stats gained in combat."
+    "text": "This permanently keeps Bonus Keywords and stats gained in combat.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -681,7 +733,8 @@
       "BACON_SPELLCRAFT_ID",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Spellcraft: Give a minion\n+1/+1 until next turn.\n(Improved by every 3 spells\n        you've cast this game!)"
+    "text": "[x]Spellcraft: Give a minion\n+1/+1 until next turn.\n(Improved by every 3 spells\n        you've cast this game!)",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -695,7 +748,8 @@
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Start of Combat: Give\nyour left-most Dragon\n+1/+2 and Windfury."
+    "text": "[x]Start of Combat: Give\nyour left-most Dragon\n+1/+2 and Windfury.",
+    "tribe_src": "log"
   },
   {
     "tier": 2,
@@ -709,7 +763,8 @@
       "TAUNT",
       "TRIGGER_VISUAL"
     ],
-    "text": "Taunt\nWhenever this takes damage, give a minion in your hand +2/+1."
+    "text": "Taunt\nWhenever this takes damage, give a minion in your hand +2/+1.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -723,7 +778,8 @@
       "MAGNETIC",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Magnetic\nAt the start of your turn,\ngain 1 Gold."
+    "text": "[x]Magnetic\nAt the start of your turn,\ngain 1 Gold.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 3,
@@ -738,7 +794,8 @@
       "TAUNT",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Taunt\nStart of Combat: Give another\n friendly Dragon +2/+2\nand Divine Shield."
+    "text": "[x]Taunt\nStart of Combat: Give another\n friendly Dragon +2/+2\nand Divine Shield.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -753,7 +810,8 @@
       "MAGNETIC",
       "TAUNT"
     ],
-    "text": "Magnetic\nDivine Shield\nTaunt"
+    "text": "Magnetic\nDivine Shield\nTaunt",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -766,7 +824,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Your Tavern\nspells give an extra\n+1 Attack this game."
+    "text": "[x]Battlecry: Your Tavern\nspells give an extra\n+1 Attack this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -779,7 +838,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Your Tavern spells give an extra +1 Health this game."
+    "text": "Rally: Your Tavern spells give an extra +1 Health this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -790,7 +850,8 @@
     "attack": 5,
     "health": 5,
     "mechanics": [],
-    "text": "Activate (2): Get a random Murloc."
+    "text": "Activate (2): Get a random Murloc.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -803,7 +864,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Get a Blood Gem Barrage."
+    "text": "Battlecry: Get a Blood Gem Barrage.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -816,7 +878,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Summon three 1/1 Skeletons."
+    "text": "Deathrattle: Summon three 1/1 Skeletons.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -827,7 +890,8 @@
     "attack": 5,
     "health": 3,
     "mechanics": [],
-    "text": "[x]Activate (1): Cast 2\nrandom Tavern spells\n  (targets this if possible)."
+    "text": "[x]Activate (1): Cast 2\nrandom Tavern spells\n  (targets this if possible).",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -840,7 +904,8 @@
     "mechanics": [
       "VENOMOUS"
     ],
-    "text": "Venomous"
+    "text": "Venomous",
+    "tribe_src": null
   },
   {
     "tier": 3,
@@ -854,7 +919,8 @@
       "BACON_SPELLCRAFT_ID",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Spellcraft: Give a minion\n+2/+6 and Taunt\nuntil next turn."
+    "text": "[x]Spellcraft: Give a minion\n+2/+6 and Taunt\nuntil next turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -868,7 +934,8 @@
       "DIVINE_SHIELD",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Divine Shield\nWhenever you summon a Mech\nduring combat, gain +2 Attack\nand Divine Shield."
+    "text": "[x]Divine Shield\nWhenever you summon a Mech\nduring combat, gain +2 Attack\nand Divine Shield.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -881,7 +948,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After another friendly Demon deals damage, gain +2/+2 permanently."
+    "text": "After another friendly Demon deals damage, gain +2/+2 permanently.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -894,7 +962,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Start of Combat: When you have space, summon the highest-Attack Murloc from your hand\nfor this combat only."
+    "text": "Start of Combat: When you have space, summon the highest-Attack Murloc from your hand\nfor this combat only.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -907,7 +976,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Destroy a friendly Undead to get\na plain copy of it."
+    "text": "Battlecry: Destroy a friendly Undead to get\na plain copy of it.",
+    "tribe_src": null
   },
   {
     "tier": 3,
@@ -920,7 +990,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Your Undead have\n+1 Attack this game (wherever they are)."
+    "text": "Rally: Your Undead have\n+1 Attack this game (wherever they are).",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -931,7 +1002,8 @@
     "attack": 3,
     "health": 6,
     "mechanics": [],
-    "text": "Activate (1): Get 2\nTavern Dish Bananas."
+    "text": "Activate (1): Get 2\nTavern Dish Bananas.",
+    "tribe_src": null
   },
   {
     "tier": 3,
@@ -944,7 +1016,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "At the end of your turn,\nget a Gem Day."
+    "text": "At the end of your turn,\nget a Gem Day.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -957,7 +1030,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Summon a 2/1 Hand with Reborn."
+    "text": "Deathrattle: Summon a 2/1 Hand with Reborn.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -968,7 +1042,8 @@
     "attack": 3,
     "health": 5,
     "mechanics": [],
-    "text": "Activate (2): Get a random Chromadrake."
+    "text": "Activate (2): Get a random Chromadrake.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -981,7 +1056,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Get a Lockbox.\nIf you already have one,\nit opens 1 turn sooner\ninstead."
+    "text": "[x]Deathrattle: Get a Lockbox.\nIf you already have one,\nit opens 1 turn sooner\ninstead.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -994,7 +1070,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Two Refreshes each turn cost Health instead of Gold. (2 left!)"
+    "text": "Two Refreshes each turn cost Health instead of Gold. (2 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1007,7 +1084,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Give your other\nMurlocs +3 Attack.\n(Improved by each Mrrglton\n    you played this game!)"
+    "text": "[x]Battlecry: Give your other\nMurlocs +3 Attack.\n(Improved by each Mrrglton\n    you played this game!)",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1020,7 +1098,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After you sell an Elemental, gain +4/+4."
+    "text": "After you sell an Elemental, gain +4/+4.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1033,7 +1112,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Give a different friendly Undead Reborn."
+    "text": "Deathrattle: Give a different friendly Undead Reborn.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1046,7 +1126,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Give your other\nMurlocs +3 Health.\n(Improved by each Mrrglton\n    you played this game!)"
+    "text": "[x]Battlecry: Give your other\nMurlocs +3 Health.\n(Improved by each Mrrglton\n    you played this game!)",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1057,21 +1138,23 @@
     "attack": 5,
     "health": 6,
     "mechanics": [],
-    "text": "Activate (1): Gain 2 Gold next turn."
+    "text": "Activate (1): Gain 2 Gold next turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
     "id": "BG_DEEP_015",
     "name": "Prosthetic Hand",
     "cost": 3,
-    "tribe": "Undead",
+    "tribe": "Mech/Undead",
     "attack": 3,
     "health": 1,
     "mechanics": [
       "MAGNETIC",
       "REBORN"
     ],
-    "text": "Magnetic, Reborn\nCan Magnetize to\nMechs or Undead."
+    "text": "Magnetic, Reborn\nCan Magnetize to\nMechs or Undead.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1085,7 +1168,8 @@
       "DEATHRATTLE",
       "TAUNT"
     ],
-    "text": "[x]Taunt\nDeathrattle: Get a\nRepair Job."
+    "text": "[x]Taunt\nDeathrattle: Get a\nRepair Job.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1098,7 +1182,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever another friendly Dragon attacks, give it +3/+1."
+    "text": "Whenever another friendly Dragon attacks, give it +3/+1.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1111,7 +1196,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Your Elementals\ngive an extra +2 Attack\nthis game."
+    "text": "[x]Battlecry: Your Elementals\ngive an extra +2 Attack\nthis game.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1124,7 +1210,8 @@
     "mechanics": [
       "CHOOSE_ONE"
     ],
-    "text": "Choose One - Gain 2 free Refreshes; or Get 3 Blood Gems."
+    "text": "Choose One - Gain 2 free Refreshes; or Get 3 Blood Gems.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1137,7 +1224,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Summon a random Beast. Set its stats to 6/6."
+    "text": "Deathrattle: Summon a random Beast. Set its stats to 6/6.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1150,7 +1238,8 @@
     "mechanics": [
       "CHOOSE_ONE"
     ],
-    "text": "[x]Choose One - Give a Beast\n+1/+1 and Reborn; or\n+4 Attack and Windfury."
+    "text": "[x]Choose One - Give a Beast\n+1/+1 and Reborn; or\n+4 Attack and Windfury.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1163,20 +1252,22 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Give a random friendly Beast +2/+1. Improve your future Tasty Lobsters."
+    "text": "Deathrattle: Give a random friendly Beast +2/+1. Improve your future Tasty Lobsters.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
     "id": "BG27_005",
     "name": "Timecap'n Hooktail",
     "cost": 3,
-    "tribe": "Dragon",
+    "tribe": "Dragon/Pirate",
     "attack": 1,
     "health": 4,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Whenever you cast a\nTavern spell, give your\nminions +1 Attack."
+    "text": "[x]Whenever you cast a\nTavern spell, give your\nminions +1 Attack.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1189,20 +1280,22 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Add a Fodder to your next 3 Refreshes."
+    "text": "Deathrattle: Add a Fodder to your next 3 Refreshes.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
     "id": "BG36_763",
     "name": "Treasure Parrot",
     "cost": 3,
-    "tribe": "Beast",
+    "tribe": "Beast/Pirate",
     "attack": 5,
     "health": 5,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Once this deals 35 damage,\nget a Golden Touch.\n(35 left!)"
+    "text": "[x]Once this deals 35 damage,\nget a Golden Touch.\n(35 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1215,7 +1308,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "At the end of your turn, get a Gem Confiscation."
+    "text": "At the end of your turn, get a Gem Confiscation.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1228,7 +1322,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: After the Tavern\nis Refreshed this game,\ngive a random minion\nin it +4/+4."
+    "text": "[x]Deathrattle: After the Tavern\nis Refreshed this game,\ngive a random minion\nin it +4/+4.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1242,7 +1337,8 @@
       "BACON_SPELLCRAFT_ID",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Spellcraft: Give a minion\n+2/+2. If it's a Naga,\nalso give it Windfury\nuntil next turn."
+    "text": "[x]Spellcraft: Give a minion\n+2/+2. If it's a Naga,\nalso give it Windfury\nuntil next turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1255,7 +1351,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After this attacks and\nkills a minion, deal\nexcess damage to an adjacent enemy."
+    "text": "After this attacks and\nkills a minion, deal\nexcess damage to an adjacent enemy.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1268,7 +1365,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Give your other minions +4/+1."
+    "text": "Rally: Give your other minions +4/+1.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1282,7 +1380,8 @@
       "AURA",
       "DIVINE_SHIELD"
     ],
-    "text": "[x]Divine Shield\nHas +2/+1 for each\nTavern spell you've\ncast this game."
+    "text": "[x]Divine Shield\nHas +2/+1 for each\nTavern spell you've\ncast this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1293,7 +1392,8 @@
     "attack": 6,
     "health": 6,
     "mechanics": [],
-    "text": "When you sell this, give\nyour minions +2/+2.\nImprove your future\nBallers."
+    "text": "When you sell this, give\nyour minions +2/+2.\nImprove your future\nBallers.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1306,7 +1406,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After your hero takes damage, rewind it and give minions in the Tavern +2/+2 this turn."
+    "text": "After your hero takes damage, rewind it and give minions in the Tavern +2/+2 this turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1320,7 +1421,8 @@
       "DEATHRATTLE",
       "MAGNETIC"
     ],
-    "text": "[x]Magnetic\nDeathrattle: Summon an\n  Ancestral Automaton."
+    "text": "[x]Magnetic\nDeathrattle: Summon an\n  Ancestral Automaton.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1333,7 +1435,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you summon a\nBeast in combat,\ndouble its Attack."
+    "text": "[x]After you summon a\nBeast in combat,\ndouble its Attack.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1346,7 +1449,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "[x]Rally: Get a random Bounty."
+    "text": "[x]Rally: Get a random Bounty.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1357,7 +1461,8 @@
     "attack": 3,
     "health": 2,
     "mechanics": [],
-    "text": "Also damages the enemies next to whomever this attacks."
+    "text": "Also damages the enemies next to whomever this attacks.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1371,7 +1476,8 @@
       "BACON_RALLY",
       "WINDFURY"
     ],
-    "text": "Windfury\nRally: This plays a\nBlood Gem on all your\nother minions."
+    "text": "Windfury\nRally: This plays a\nBlood Gem on all your\nother minions.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1386,7 +1492,8 @@
       "TAUNT",
       "TRIGGER_VISUAL"
     ],
-    "text": "Taunt\nStart of Combat: Deal 3 damage to all other minions."
+    "text": "Taunt\nStart of Combat: Deal 3 damage to all other minions.",
+    "tribe_src": null
   },
   {
     "tier": 4,
@@ -1399,7 +1506,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Get a random Choose One card."
+    "text": "Rally: Get a random Choose One card.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1410,7 +1518,8 @@
     "attack": 6,
     "health": 6,
     "mechanics": [],
-    "text": "While this is in your hand, after you play a Murloc, gain +6/+6."
+    "text": "While this is in your hand, after you play a Murloc, gain +6/+6.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1423,7 +1532,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Get a random Chromadrake."
+    "text": "Rally: Get a random Chromadrake.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1436,20 +1546,22 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever a friendly Beast attacks, give your Beasts +2/+1."
+    "text": "Whenever a friendly Beast attacks, give your Beasts +2/+1.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
     "id": "BG36_760",
     "name": "Captain Cookie",
     "cost": 3,
-    "tribe": "Murloc",
+    "tribe": "Murloc/Pirate",
     "attack": 5,
     "health": 3,
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Get a Chef's Choice."
+    "text": "Deathrattle: Get a Chef's Choice.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1462,7 +1574,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Choose a friendly Mech. Discover a Mech to Magnetize to it."
+    "text": "Battlecry: Choose a friendly Mech. Discover a Mech to Magnetize to it.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1473,7 +1586,8 @@
     "attack": 3,
     "health": 6,
     "mechanics": [],
-    "text": "Activate (1): Give a different friendly Undead Reborn. Then destroy it to gain +4/+4."
+    "text": "Activate (1): Give a different friendly Undead Reborn. Then destroy it to gain +4/+4.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1487,7 +1601,8 @@
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "Battlecry and Deathrattle: Get a Deepwater Clan."
+    "text": "Battlecry and Deathrattle: Get a Deepwater Clan.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1500,7 +1615,8 @@
     "mechanics": [
       "DIVINE_SHIELD"
     ],
-    "text": "[x]Divine Shield\nActivate (1): The next\nMagnetization to this minion\nthis turn is doubled."
+    "text": "[x]Divine Shield\nActivate (1): The next\nMagnetization to this minion\nthis turn is doubled.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1513,7 +1629,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: After the Tavern\nis Refreshed this game,\ngive a random minion\nin it +10/+10."
+    "text": "[x]Battlecry: After the Tavern\nis Refreshed this game,\ngive a random minion\nin it +10/+10.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1527,7 +1644,8 @@
       "AURA",
       "MAGNETIC"
     ],
-    "text": "Magnetic\nYour Tavern spells give\nan extra +1/+1."
+    "text": "Magnetic\nYour Tavern spells give\nan extra +1/+1.",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -1540,20 +1658,22 @@
     "mechanics": [
       "CHOOSE_ONE"
     ],
-    "text": "Choose One - Your Blood Gems give an extra +1/+1 this game; or Get 4 Blood Gems."
+    "text": "Choose One - Your Blood Gems give an extra +1/+1 this game; or Get 4 Blood Gems.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
     "id": "BG34_500",
     "name": "Flaming Enforcer",
     "cost": 3,
-    "tribe": "Elemental",
+    "tribe": "Demon/Elemental",
     "attack": 4,
     "health": 5,
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn,\nconsume the highest-Health\nminion in the Tavern to\ngain its stats."
+    "text": "[x]At the end of your turn,\nconsume the highest-Health\nminion in the Tavern to\ngain its stats.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1566,20 +1686,22 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Your Tavern\nspells give an extra\n+1 Attack this game."
+    "text": "[x]Deathrattle: Your Tavern\nspells give an extra\n+1 Attack this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
     "id": "BG36_764",
     "name": "Gearfin",
     "cost": 3,
-    "tribe": "Mech",
+    "tribe": "Mech/Murloc",
     "attack": 6,
     "health": 5,
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "At the end of your turn, get two 1-Cost Tavern spells."
+    "text": "At the end of your turn, get two 1-Cost Tavern spells.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1592,7 +1714,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Whenever you cast a spell\non a Mech, Magnetize a\n4/4 Satellite to it."
+    "text": "[x]Whenever you cast a spell\non a Mech, Magnetize a\n4/4 Satellite to it.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1605,7 +1728,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Your\nElementals give an extra\n+2 Health this game."
+    "text": "[x]Deathrattle: Your\nElementals give an extra\n+2 Health this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1618,7 +1742,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Whenever you spend 5 Gold,\ngive your Pirates +2 Attack.\n(5 Gold left!)"
+    "text": "[x]Whenever you spend 5 Gold,\ngive your Pirates +2 Attack.\n(5 Gold left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1631,7 +1756,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Get a random Beast."
+    "text": "Rally: Get a random Beast.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1645,7 +1771,8 @@
       "BACON_RALLY",
       "STEALTH"
     ],
-    "text": "Stealth\nRally: Gain the target's Attack."
+    "text": "Stealth\nRally: Gain the target's Attack.",
+    "tribe_src": null
   },
   {
     "tier": 4,
@@ -1659,7 +1786,8 @@
       "AURA",
       "DIVINE_SHIELD"
     ],
-    "text": "[x]Divine Shield\nYour Tavern spells give\nan extra +1/+2."
+    "text": "[x]Divine Shield\nYour Tavern spells give\nan extra +1/+2.",
+    "tribe_src": null
   },
   {
     "tier": 4,
@@ -1672,7 +1800,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Get a Methodical Madness."
+    "text": "Deathrattle: Get a Methodical Madness.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1685,7 +1814,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Discover a\nDemon. Deal damage to\n   your hero equal to its Tier."
+    "text": "[x]Battlecry: Discover a\nDemon. Deal damage to\n   your hero equal to its Tier.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1696,7 +1826,8 @@
     "attack": 5,
     "health": 5,
     "mechanics": [],
-    "text": "Activate (1): Trigger a friendly minion's Battlecry."
+    "text": "Activate (1): Trigger a friendly minion's Battlecry.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1707,7 +1838,8 @@
     "attack": 4,
     "health": 5,
     "mechanics": [],
-    "text": "Activate (1): Gain the stats of the next minion you buy this turn."
+    "text": "Activate (1): Gain the stats of the next minion you buy this turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1720,7 +1852,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Give a Pirate\n+1 Health. (Improved by\neach Gold you spent\nthis turn!)"
+    "text": "[x]Battlecry: Give a Pirate\n+1 Health. (Improved by\neach Gold you spent\nthis turn!)",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1733,7 +1866,8 @@
     "mechanics": [
       "AURA"
     ],
-    "text": "[x]Has +7/+7 for each\nGolden minion you've\nplayed this game\n(wherever this is)."
+    "text": "[x]Has +7/+7 for each\nGolden minion you've\nplayed this game\n(wherever this is).",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1746,21 +1880,23 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Destroy a friendly Undead to Discover an Undead."
+    "text": "Battlecry: Destroy a friendly Undead to Discover an Undead.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
     "id": "BG27_080",
     "name": "Motley Phalanx",
     "cost": 3,
-    "tribe": null,
+    "tribe": "All",
     "attack": 3,
     "health": 3,
     "mechanics": [
       "DEATHRATTLE",
       "TAUNT"
     ],
-    "text": "[x]Taunt\nDeathrattle: Give a friendly\nminion of each type\n  +3/+3 permanently."
+    "text": "[x]Taunt\nDeathrattle: Give a friendly\nminion of each type\n  +3/+3 permanently.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1774,7 +1910,8 @@
       "DIVINE_SHIELD",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Divine Shield. Adjacent\nDragons permanently keep\nBonus Keywords and stats\ngained in combat."
+    "text": "[x]Divine Shield. Adjacent\nDragons permanently keep\nBonus Keywords and stats\ngained in combat.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1787,7 +1924,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Your Undead have\n+2 Attack this game, wherever\nthey are. (+4 if triggered\noutside combat!)"
+    "text": "[x]Deathrattle: Your Undead have\n+2 Attack this game, wherever\nthey are. (+4 if triggered\noutside combat!)",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1800,7 +1938,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Get a Blood Gem Barrage."
+    "text": "Deathrattle: Get a Blood Gem Barrage.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1813,7 +1952,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Gain 2\nfree Refreshes."
+    "text": "[x]Battlecry: Gain 2\nfree Refreshes.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1827,7 +1967,8 @@
       "BACON_SPELLCRAFT_ID",
       "TRIGGER_VISUAL"
     ],
-    "text": "Spellcraft: Get a random Tavern spell that gives stats."
+    "text": "Spellcraft: Get a random Tavern spell that gives stats.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1841,7 +1982,8 @@
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "Start of Combat: Cast Shiny Ring twice."
+    "text": "Start of Combat: Cast Shiny Ring twice.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1854,7 +1996,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Cast Chef's Choice on the minion to the right."
+    "text": "Rally: Cast Chef's Choice on the minion to the right.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1869,7 +2012,8 @@
       "DIVINE_SHIELD",
       "WINDFURY"
     ],
-    "text": "[x]Divine Shield, Windfury\nRally: Remove Reborn and\n Taunt from the target."
+    "text": "[x]Divine Shield, Windfury\nRally: Remove Reborn and\n Taunt from the target.",
+    "tribe_src": null
   },
   {
     "tier": 4,
@@ -1880,7 +2024,8 @@
     "attack": 4,
     "health": 7,
     "mechanics": [],
-    "text": "Activate (1): Trigger a friendly minion's Rally."
+    "text": "Activate (1): Trigger a friendly minion's Rally.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1893,7 +2038,8 @@
     "mechanics": [
       "CHOOSE_ONE"
     ],
-    "text": "Choose One - Get a random Quilboar; or Increase your maximum Gold by 1."
+    "text": "Choose One - Get a random Quilboar; or Increase your maximum Gold by 1.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1904,7 +2050,8 @@
     "attack": 4,
     "health": 5,
     "mechanics": [],
-    "text": "When you sell this, Refresh the Tavern with a Fishbait. Your left-most Beast attacks it."
+    "text": "When you sell this, Refresh the Tavern with a Fishbait. Your left-most Beast attacks it.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1915,7 +2062,8 @@
     "attack": 3,
     "health": 5,
     "mechanics": [],
-    "text": "Activate (2): Your Demons each consume a random minion in the Tavern to gain its stats."
+    "text": "Activate (2): Your Demons each consume a random minion in the Tavern to gain its stats.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1928,7 +2076,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Get a random Elemental."
+    "text": "Battlecry: Get a random Elemental.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1941,7 +2090,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "One Choose One card each turn has both effects combined. (1 left!)"
+    "text": "One Choose One card each turn has both effects combined. (1 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1952,7 +2102,8 @@
     "attack": 3,
     "health": 6,
     "mechanics": [],
-    "text": "If you lost your last combat, this minion sells for 5 Gold."
+    "text": "If you lost your last combat, this minion sells for 5 Gold.",
+    "tribe_src": null
   },
   {
     "tier": 4,
@@ -1965,7 +2116,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you cast a spell on this, give the left-most minion in your hand +8/+8."
+    "text": "Whenever you cast a spell on this, give the left-most minion in your hand +8/+8.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -1978,7 +2130,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Once per turn, when a\nSpellcraft spell is played on\n this, get a new copy of it."
+    "text": "[x]Once per turn, when a\nSpellcraft spell is played on\n this, get a new copy of it.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -1991,7 +2144,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After you spend 7 Gold, cast Easterly Winds.\n(7 left!)"
+    "text": "After you spend 7 Gold, cast Easterly Winds.\n(7 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2004,7 +2158,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After a friendly minion is Reborn, gain Divine Shield and +7/+7."
+    "text": "After a friendly minion is Reborn, gain Divine Shield and +7/+7.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2018,7 +2173,8 @@
       "BACON_RALLY",
       "VENOMOUS"
     ],
-    "text": "[x]Venomous\nRally: Give another friendly\nMurloc Venomous."
+    "text": "[x]Venomous\nRally: Give another friendly\nMurloc Venomous.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2031,7 +2187,8 @@
     "mechanics": [
       "AURA"
     ],
-    "text": "Your Battlecries trigger twice."
+    "text": "Your Battlecries trigger twice.",
+    "tribe_src": null
   },
   {
     "tier": 5,
@@ -2044,7 +2201,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn,\nget a copy of the last\nTavern spell you cast."
+    "text": "[x]At the end of your turn,\nget a copy of the last\nTavern spell you cast.",
+    "tribe_src": null
   },
   {
     "tier": 5,
@@ -2058,7 +2216,8 @@
       "DIVINE_SHIELD",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Divine Shield\nWhenever you cast a Tavern\nspell, give your minions with\n   Divine Shield +4 Attack."
+    "text": "[x]Divine Shield\nWhenever you cast a Tavern\nspell, give your minions with\n   Divine Shield +4 Attack.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2073,7 +2232,8 @@
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Divine Shield\nStart of Combat: Gain the\nAttack of the highest-Attack\nminion in your hand."
+    "text": "[x]Divine Shield\nStart of Combat: Gain the\nAttack of the highest-Attack\nminion in your hand.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2086,7 +2246,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn,\nget a Mama Mrrglton or a\nPapa Mrrglton."
+    "text": "[x]At the end of your turn,\nget a Mama Mrrglton or a\nPapa Mrrglton.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2100,7 +2261,8 @@
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "[x]Battlecry and Deathrattle:\nGive Elementals in the\nTavern +8/+8 this\ngame."
+    "text": "[x]Battlecry and Deathrattle:\nGive Elementals in the\nTavern +8/+8 this\ngame.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2115,7 +2277,8 @@
       "BACON_SPELLCRAFT_ID",
       "TRIGGER_VISUAL"
     ],
-    "text": "Spellcraft: Get a random Tier 1 Naga. (Improves each turn!)"
+    "text": "Spellcraft: Get a random Tier 1 Naga. (Improves each turn!)",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2126,7 +2289,8 @@
     "attack": 8,
     "health": 8,
     "mechanics": [],
-    "text": "Activate (1): Give all minions in the Tavern +8/+8 and Taunt, Divine Shield, or Windfury."
+    "text": "Activate (1): Give all minions in the Tavern +8/+8 and Taunt, Divine Shield, or Windfury.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2139,7 +2303,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you cast a spell on this, give minions in the Tavern +2/+2 this game."
+    "text": "Whenever you cast a spell on this, give minions in the Tavern +2/+2 this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2153,7 +2318,8 @@
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "Battlecry and Deathrattle: Get a random Chromadrake."
+    "text": "Battlecry and Deathrattle: Get a random Chromadrake.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2166,7 +2332,8 @@
     "mechanics": [
       "AURA"
     ],
-    "text": "Your end of turn effects trigger twice."
+    "text": "Your end of turn effects trigger twice.",
+    "tribe_src": null
   },
   {
     "tier": 5,
@@ -2179,7 +2346,8 @@
     "mechanics": [
       "AVENGE"
     ],
-    "text": "Avenge (3): Get a Butchering."
+    "text": "Avenge (3): Get a Butchering.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2192,7 +2360,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Whenever you spend 5 Gold,\ngive two friendly Pirates\n+4/+5. (5 Gold left!)"
+    "text": "[x]Whenever you spend 5 Gold,\ngive two friendly Pirates\n+4/+5. (5 Gold left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2205,47 +2374,51 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you spend 5 Gold, get\na Lockbox. If you already have\none, it opens 1 turns sooner\ninstead. (5 Gold left!)"
+    "text": "[x]After you spend 5 Gold, get\na Lockbox. If you already have\none, it opens 1 turns sooner\ninstead. (5 Gold left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
     "id": "BG28_633",
     "name": "Felboar",
     "cost": 3,
-    "tribe": "Demon",
+    "tribe": "Demon/Quilboar",
     "attack": 2,
     "health": 6,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you cast 3 spells,\nconsume a minion in the\nTavern to gain its stats.\n(3 left!)"
+    "text": "[x]After you cast 3 spells,\nconsume a minion in the\nTavern to gain its stats.\n(3 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
     "id": "BG32_821",
     "name": "Felfire Conjurer",
     "cost": 3,
-    "tribe": "Demon",
+    "tribe": "Demon/Dragon",
     "attack": 6,
     "health": 5,
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn,\nyour Tavern spells give\nan extra +1/+1\nthis game."
+    "text": "[x]At the end of your turn,\nyour Tavern spells give\nan extra +1/+1\nthis game.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
     "id": "BG32_820",
     "name": "Firescale Hoarder",
     "cost": 3,
-    "tribe": "Naga",
+    "tribe": "Dragon/Naga",
     "attack": 5,
     "health": 5,
     "mechanics": [
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "Battlecry and Deathrattle: Get a Shiny Ring."
+    "text": "Battlecry and Deathrattle: Get a Shiny Ring.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2260,7 +2433,8 @@
       "TAUNT",
       "TRIGGER_VISUAL"
     ],
-    "text": "Taunt\nSpellcraft: Give a minion Divine Shield until next turn."
+    "text": "Taunt\nSpellcraft: Give a minion Divine Shield until next turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -2273,7 +2447,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Summon a Tasty Lobster."
+    "text": "Rally: Summon a Tasty Lobster.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2287,7 +2462,8 @@
       "TAUNT",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Taunt. After you play a\nDemon, consume a random\nminion in the Tavern to gain\nits stats."
+    "text": "[x]Taunt. After you play a\nDemon, consume a random\nminion in the Tavern to gain\nits stats.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2300,20 +2476,22 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you trigger a Battlecry,\ngive your Dragons +2/+2."
+    "text": "[x]After you trigger a Battlecry,\ngive your Dragons +2/+2.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
     "id": "BGS_012",
     "name": "Kangor's Apprentice",
     "cost": 3,
-    "tribe": null,
+    "tribe": "Mech",
     "attack": 3,
     "health": 6,
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Summon plain\ncopies of your first 2 Mechs\nthat died this combat."
+    "text": "[x]Deathrattle: Summon plain\ncopies of your first 2 Mechs\nthat died this combat.",
+    "tribe_src": "override"
   },
   {
     "tier": 5,
@@ -2326,7 +2504,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Destroy the minion that killed this."
+    "text": "Deathrattle: Destroy the minion that killed this.",
+    "tribe_src": null
   },
   {
     "tier": 5,
@@ -2339,34 +2518,37 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you summon a Beast, give it +3 Attack and improve this permanently."
+    "text": "Whenever you summon a Beast, give it +3 Attack and improve this permanently.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
     "id": "BG32_111",
     "name": "Nightmare Par-tea Guest",
     "cost": 3,
-    "tribe": null,
+    "tribe": "All",
     "attack": 3,
     "health": 3,
     "mechanics": [
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "Battlecry and Deathrattle: Get a Misplaced Tea Set."
+    "text": "Battlecry and Deathrattle: Get a Misplaced Tea Set.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
     "id": "BGS_104",
     "name": "Nomi, Kitchen Nightmare",
     "cost": 3,
-    "tribe": null,
+    "tribe": "Elemental",
     "attack": 6,
     "health": 6,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you play an Elemental,\ngive Elementals in the\nTavern +4/+4 this game."
+    "text": "[x]After you play an Elemental,\ngive Elementals in the\nTavern +4/+4 this game.",
+    "tribe_src": "override"
   },
   {
     "tier": 5,
@@ -2380,7 +2562,8 @@
       "BATTLECRY",
       "DISCOVER"
     ],
-    "text": "Battlecry: If you control another Murloc, Discover a Murloc."
+    "text": "Battlecry: If you control another Murloc, Discover a Murloc.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2393,7 +2576,8 @@
     "mechanics": [
       "AURA"
     ],
-    "text": "Your Bounties cast twice."
+    "text": "Your Bounties cast twice.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2406,7 +2590,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: This plays 3 permanent Blood Gems on itself."
+    "text": "Rally: This plays 3 permanent Blood Gems on itself.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2419,7 +2604,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Discover a Tavern spell."
+    "text": "Battlecry: Discover a Tavern spell.",
+    "tribe_src": null
   },
   {
     "tier": 5,
@@ -2432,7 +2618,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Your Blood Gems give an extra +1/+2 this game."
+    "text": "Rally: Your Blood Gems give an extra +1/+2 this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2445,7 +2632,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Get a random Magnetic Mech."
+    "text": "Deathrattle: Get a random Magnetic Mech.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2458,7 +2646,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Summon two\nSewer Rats that summon\n 2/3 Turtles with Taunt."
+    "text": "[x]Deathrattle: Summon two\nSewer Rats that summon\n 2/3 Turtles with Taunt.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2471,7 +2660,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you cast a spell on a Murloc, give Murlocs in your hand and board +3/+3."
+    "text": "Whenever you cast a spell on a Murloc, give Murlocs in your hand and board +3/+3.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2485,7 +2675,8 @@
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "Battlecry and Deathrattle: Get a random Bounty."
+    "text": "Battlecry and Deathrattle: Get a random Bounty.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2499,7 +2690,8 @@
       "DEATHRATTLE",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Deathrattle: Give all your\nNaga +2/+1. (Improved\nby every 3 spells you've\ncast this game!)"
+    "text": "[x]Deathrattle: Give all your\nNaga +2/+1. (Improved\nby every 3 spells you've\ncast this game!)",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2512,7 +2704,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Whenever you play a Mech,\nMagnetize a 2/2\nSatellite to it and\nimprove this."
+    "text": "[x]Whenever you play a Mech,\nMagnetize a 2/2\nSatellite to it and\nimprove this.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2525,20 +2718,22 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After your hero takes damage, give your Demons +4/+4."
+    "text": "After your hero takes damage, give your Demons +4/+4.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
     "id": "BG25_354",
     "name": "Titus Rivendare",
     "cost": 3,
-    "tribe": null,
+    "tribe": "All",
     "attack": 1,
     "health": 7,
     "mechanics": [
       "AURA"
     ],
-    "text": "Your Deathrattles trigger an extra time."
+    "text": "Your Deathrattles trigger an extra time.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2552,7 +2747,8 @@
       "BACON_SPELLCRAFT_ID",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Spellcraft: Your Tavern\nspells give an extra\n+1/+1 this game."
+    "text": "[x]Spellcraft: Your Tavern\nspells give an extra\n+1/+1 this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2565,7 +2761,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "[x]Deathrattle: Your Beetles\nhave +5/+5 this game.\nSummon a 2/2 Beetle."
+    "text": "[x]Deathrattle: Your Beetles\nhave +5/+5 this game.\nSummon a 2/2 Beetle.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2578,7 +2775,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Whenever you cast a spell\non this, it plays a Blood Gem\non adjacent minions."
+    "text": "[x]Whenever you cast a spell\non this, it plays a Blood Gem\non adjacent minions.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2591,20 +2789,22 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Give minions in\nthe Tavern from Tier 3\nand below +3/+3\nthis game."
+    "text": "[x]Battlecry: Give minions in\nthe Tavern from Tier 3\nand below +3/+3\nthis game.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
     "id": "BG35_883",
     "name": "Balinda Stonehearth",
     "cost": 3,
-    "tribe": null,
+    "tribe": "All",
     "attack": 6,
     "health": 6,
     "mechanics": [
       "AURA"
     ],
-    "text": "[x]Your spells that target\nfriendly minions cast\ntwice."
+    "text": "[x]Your spells that target\nfriendly minions cast\ntwice.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2618,7 +2818,8 @@
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Start of Combat: Gain\nthe stats of all the\nminions in your hand."
+    "text": "[x]Start of Combat: Gain\nthe stats of all the\nminions in your hand.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2632,7 +2833,8 @@
       "BACON_RALLY",
       "DIVINE_SHIELD"
     ],
-    "text": "Divine Shield\nRally: Cast Mighty Dragonbreath."
+    "text": "Divine Shield\nRally: Cast Mighty Dragonbreath.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2646,7 +2848,8 @@
       "AVENGE",
       "DEATHRATTLE"
     ],
-    "text": "[x]Avenge (4): Get a random\nUndead. Deathrattle:\nSummon it from your hand\nfor this combat only."
+    "text": "[x]Avenge (4): Get a random\nUndead. Deathrattle:\nSummon it from your hand\nfor this combat only.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2659,7 +2862,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After a friendly Rally\nminion attacks, trigger your\nleft-most Deathrattle."
+    "text": "[x]After a friendly Rally\nminion attacks, trigger your\nleft-most Deathrattle.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2672,7 +2876,8 @@
     "mechanics": [
       "DIVINE_SHIELD"
     ],
-    "text": "Divine Shield\nThis minion can triple with any Elemental."
+    "text": "Divine Shield\nThis minion can triple with any Elemental.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2685,7 +2890,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After your hero takes 4 damage, get a copy of Corrupted Cupcakes. (4 left!)"
+    "text": "After your hero takes 4 damage, get a copy of Corrupted Cupcakes. (4 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2699,7 +2905,8 @@
       "DEATHRATTLE",
       "REBORN"
     ],
-    "text": "[x]Reborn. Deathrattle:\nSummon 1 Eternal Knight."
+    "text": "[x]Reborn. Deathrattle:\nSummon 1 Eternal Knight.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2713,7 +2920,8 @@
       "AURA",
       "DIVINE_SHIELD"
     ],
-    "text": "Divine Shield. Has +4/+2 for each Deathrattle you've triggered this game (wherever this is)."
+    "text": "Divine Shield. Has +4/+2 for each Deathrattle you've triggered this game (wherever this is).",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2726,7 +2934,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn,\ncast Natural Blessing on\nadjacent minions."
+    "text": "[x]At the end of your turn,\ncast Natural Blessing on\nadjacent minions.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2740,7 +2949,8 @@
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "Start of Combat: Give your Dragons +2/+2. Improves permanently after you cast a Tavern spell."
+    "text": "Start of Combat: Give your Dragons +2/+2. Improves permanently after you cast a Tavern spell.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2753,20 +2963,22 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After you cast a Tavern spell, your Undead have +3 Attack this game (wherever they are)."
+    "text": "After you cast a Tavern spell, your Undead have +3 Attack this game (wherever they are).",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
     "id": "BG36_640",
     "name": "Gatekeeper Amalgam",
     "cost": 3,
-    "tribe": null,
+    "tribe": "All",
     "attack": 6,
     "health": 6,
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you cast a spell on this, it casts Misplaced Tea Set."
+    "text": "Whenever you cast a spell on this, it casts Misplaced Tea Set.",
+    "tribe_src": "log"
   },
   {
     "tier": 5,
@@ -2779,7 +2991,8 @@
     "mechanics": [
       "DEATHRATTLE"
     ],
-    "text": "Deathrattle: Your Beasts have +7/+7 until next turn."
+    "text": "Deathrattle: Your Beasts have +7/+7 until next turn.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2792,7 +3005,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you play a Naga, gain\n+1/+1. (Improved by\nevery 3 spells you've cast\nthis game!)"
+    "text": "[x]After you play a Naga, gain\n+1/+1. (Improved by\nevery 3 spells you've cast\nthis game!)",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2805,7 +3019,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you Discover a card, give\nyour other Pirates +1/+1.\n(Improved by Golden minions\n   you played this game!)"
+    "text": "[x]After you Discover a card, give\nyour other Pirates +1/+1.\n(Improved by Golden minions\n   you played this game!)",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2818,7 +3033,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn, get\n2 random Tavern spells."
+    "text": "[x]At the end of your turn, get\n2 random Tavern spells.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2831,7 +3047,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Once per turn, after you\nbuy a Tavern spell, get a\n1/1 Murloc and teach\nit that spell. (1 left!)"
+    "text": "[x]Once per turn, after you\nbuy a Tavern spell, get a\n1/1 Murloc and teach\nit that spell. (1 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2844,7 +3061,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "[x]Rally: Your Elementals\ngive an extra +2/+2\nthis game."
+    "text": "[x]Rally: Your Elementals\ngive an extra +2/+2\nthis game.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2857,7 +3075,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After you play a card from Tier 3 or below, give your Murlocs +3/+3."
+    "text": "After you play a card from Tier 3 or below, give your Murlocs +3/+3.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2871,7 +3090,8 @@
       "DEATHRATTLE",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After a friendly minion attacks,\nyour Beetles have +5/+5 this\ngame. Deathrattle: Summon\na 2/2 Beetle."
+    "text": "[x]After a friendly minion attacks,\nyour Beetles have +5/+5 this\ngame. Deathrattle: Summon\na 2/2 Beetle.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2885,7 +3105,8 @@
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "Battlecry and Deathrattle: Your Blood Gems give an extra +2/+1 this game."
+    "text": "Battlecry and Deathrattle: Your Blood Gems give an extra +2/+1 this game.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2898,7 +3119,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "[x]Battlecry: Get a random\nGolden minion from Tier 4.\nIt doesn’t give a Triple\nReward."
+    "text": "[x]Battlecry: Get a random\nGolden minion from Tier 4.\nIt doesn’t give a Triple\nReward.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2911,7 +3133,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you spend\n9 Gold, get a random\nBounty. (9 Gold left!)"
+    "text": "[x]After you spend\n9 Gold, get a random\nBounty. (9 Gold left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2924,7 +3147,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After a friendly minion is Reborn, give stats equal to its Attack to your right-most Undead."
+    "text": "After a friendly minion is Reborn, give stats equal to its Attack to your right-most Undead.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2937,7 +3161,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you cast a spell on a Naga, give your minions +2/+3."
+    "text": "Whenever you cast a spell on a Naga, give your minions +2/+3.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2950,7 +3175,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you play a Choose One\ncard, this plays a Blood\nGem on all your other\nQuilboar."
+    "text": "[x]After you play a Choose One\ncard, this plays a Blood\nGem on all your other\nQuilboar.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2963,7 +3189,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After you sell a minion, add a Fodder to your\nnext Refresh."
+    "text": "After you sell a minion, add a Fodder to your\nnext Refresh.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -2974,7 +3201,8 @@
     "attack": 10,
     "health": 10,
     "mechanics": [],
-    "text": "Activate (1): Set another minion's stats to 50/50."
+    "text": "Activate (1): Set another minion's stats to 50/50.",
+    "tribe_src": null
   },
   {
     "tier": 6,
@@ -2987,7 +3215,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you play 3 Elementals,\ngain the stats of the highest-\nHealth minion in the\nTavern. (3 left!)"
+    "text": "[x]After you play 3 Elementals,\ngain the stats of the highest-\nHealth minion in the\nTavern. (3 left!)",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -3000,7 +3229,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "After you play an Elemental, give your Elementals +2/+3."
+    "text": "After you play an Elemental, give your Elementals +2/+3.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -3013,7 +3243,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "At the end of your turn, give your minions +4/+5 for each Magnetization they have."
+    "text": "At the end of your turn, give your minions +4/+5 for each Magnetization they have.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 6,
@@ -3026,7 +3257,8 @@
     "mechanics": [
       "CHOOSE_ONE"
     ],
-    "text": "[x]Choose One - This plays\n3 Blood Gems on all your\nminions; or cast Blood Gem\nBarrage 3 times."
+    "text": "[x]Choose One - This plays\n3 Blood Gems on all your\nminions; or cast Blood Gem\nBarrage 3 times.",
+    "tribe_src": "log"
   },
   {
     "tier": 6,
@@ -3037,7 +3269,8 @@
     "attack": 12,
     "health": 4,
     "mechanics": [],
-    "text": "Immune while attacking."
+    "text": "Immune while attacking.",
+    "tribe_src": "log"
   },
   {
     "tier": 7,
@@ -3050,7 +3283,8 @@
     "mechanics": [
       "BATTLECRY"
     ],
-    "text": "Battlecry: Make a friendly minion from Tier 6 or below Golden."
+    "text": "Battlecry: Make a friendly minion from Tier 6 or below Golden.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
@@ -3064,7 +3298,8 @@
       "BATTLECRY",
       "DEATHRATTLE"
     ],
-    "text": "[x]Battlecry and Deathrattle:\nGive minions in the Tavern\n+8/+8 this game."
+    "text": "[x]Battlecry and Deathrattle:\nGive minions in the Tavern\n+8/+8 this game.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
@@ -3077,7 +3312,8 @@
     "mechanics": [
       "END_OF_TURN_TRIGGER"
     ],
-    "text": "[x]At the end of your turn,\ngive this minion's stats to\nthe left-most minion in\nyour hand."
+    "text": "[x]At the end of your turn,\ngive this minion's stats to\nthe left-most minion in\nyour hand.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
@@ -3092,7 +3328,8 @@
       "BACON_RALLY",
       "DEATHRATTLE"
     ],
-    "text": "Battlecry, Deathrattle, and Rally: Get a random Tier 6 minion."
+    "text": "Battlecry, Deathrattle, and Rally: Get a random Tier 6 minion.",
+    "tribe_src": null
   },
   {
     "tier": 7,
@@ -3105,7 +3342,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Summon a Golem with this minion's stats to attack the target first."
+    "text": "Rally: Summon a Golem with this minion's stats to attack the target first.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
@@ -3118,7 +3356,8 @@
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "[x]Rally: Deal damage equal\nto this minion's Attack to\nthe target and an adjacent\nminion."
+    "text": "[x]Rally: Deal damage equal\nto this minion's Attack to\nthe target and an adjacent\nminion.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
@@ -3131,7 +3370,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "Whenever you Magnetize to a different minion, it also Magnetizes to this."
+    "text": "Whenever you Magnetize to a different minion, it also Magnetizes to this.",
+    "tribe_src": "log"
   },
   {
     "tier": 7,
@@ -3145,7 +3385,8 @@
       "BACON_SPELLCRAFT_ID",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Spellcraft: Choose a\ndifferent minion in the\n Tavern to get a copy of."
+    "text": "[x]Spellcraft: Choose a\ndifferent minion in the\n Tavern to get a copy of.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
@@ -3158,7 +3399,8 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you summon a minion\nin combat, give it this\nminion's maximum stats.\n(3 times per combat.)"
+    "text": "[x]After you summon a minion\nin combat, give it this\nminion's maximum stats.\n(3 times per combat.)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
@@ -3173,7 +3415,8 @@
       "START_OF_COMBAT",
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]Start of Combat: Destroy the\nminion to the left. Deathrattle:\nSummon an exact copy of it.\n      (Except Stitched Salvager.)"
+    "text": "[x]Start of Combat: Destroy the\nminion to the left. Deathrattle:\nSummon an exact copy of it.\n      (Except Stitched Salvager.)",
+    "tribe_src": "log"
   },
   {
     "tier": 7,
@@ -3186,20 +3429,22 @@
     "mechanics": [
       "TRIGGER_VISUAL"
     ],
-    "text": "[x]After you buy a minion, give\nit +20/+20 and double its\nstats. (Once per turn.)"
+    "text": "[x]After you buy a minion, give\nit +20/+20 and double its\nstats. (Once per turn.)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
     "id": "BG34_320",
     "name": "The Last One Standing",
     "cost": 3,
-    "tribe": null,
+    "tribe": "All",
     "attack": 15,
     "health": 15,
     "mechanics": [
       "BACON_RALLY"
     ],
-    "text": "Rally: Give a friendly minion of each type +15/+15 permanently."
+    "text": "Rally: Give a friendly minion of each type +15/+15 permanently.",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 2,
@@ -3213,7 +3458,8 @@
       "DEATHRATTLE"
     ],
     "text": "[x]Deathrattle: Summon a\n2/3 Turtle with Taunt.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "log"
   },
   {
     "tier": 3,
@@ -3227,7 +3473,8 @@
       "AVENGE"
     ],
     "text": "Avenge (4): Gain Taunt\nand Reborn.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 3,
@@ -3241,21 +3488,23 @@
       "TRIGGER_VISUAL"
     ],
     "text": "After a friendly minion is Reborn, gain +2/+3 permanently.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 4,
     "id": "BG26_361",
     "name": "Plagued Tidewalker",
     "cost": 0,
-    "tribe": "Undead",
+    "tribe": "Murloc/Undead",
     "attack": 2,
     "health": 7,
     "mechanics": [
       "VENOMOUS"
     ],
     "text": "Venomous",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 5,
@@ -3269,7 +3518,8 @@
       "AURA"
     ],
     "text": "[x]Has +2/+1 for each\nElemental you played this\n   game (wherever this is).",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 4,
@@ -3283,7 +3533,8 @@
       "STEALTH"
     ],
     "text": "Stealth",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 3,
@@ -3297,7 +3548,8 @@
       "BATTLECRY"
     ],
     "text": "Battlecry: Summon two 1/1 Skeletons.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 2,
@@ -3309,7 +3561,8 @@
     "health": 5,
     "mechanics": [],
     "text": "",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
@@ -3323,7 +3576,8 @@
       "POISONOUS"
     ],
     "text": "[x]Poisonous. When this\nattacks and kills a minion,\ngive its maximum stats to a\nminion in your hand.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 4,
@@ -3338,7 +3592,8 @@
       "REBORN"
     ],
     "text": "Reborn. Deathrattle: Give your minions +1/+1.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 4,
@@ -3352,7 +3607,8 @@
       "TRIGGER_VISUAL"
     ],
     "text": "Whenever you get 4 Pirates, increase your maximum Gold by 1. (4 left!)",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "log"
   },
   {
     "tier": 4,
@@ -3366,7 +3622,8 @@
       "BACON_RALLY"
     ],
     "text": "Rally: Get a plain copy of a random enemy minion.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 5,
@@ -3380,7 +3637,8 @@
       "DEATHRATTLE"
     ],
     "text": "Deathrattle: Get a Tomb Turning.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 2,
@@ -3394,7 +3652,8 @@
       "AVENGE"
     ],
     "text": "Avenge (4): Gain a free Refresh.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 2,
@@ -3408,7 +3667,8 @@
       "DEATHRATTLE"
     ],
     "text": "[x]This can't gain stats.\nDeathrattle: Give the minion\nthat killed this +5/+5.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 1,
@@ -3422,7 +3682,8 @@
       "BATTLECRY"
     ],
     "text": "Battlecry: Give a friendly minion +1/+1.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 1,
@@ -3436,7 +3697,8 @@
       "DEATHRATTLE"
     ],
     "text": "Deathrattle: Give a random friendly Undead +2/+1.",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 3,
@@ -3451,6 +3713,7 @@
       "TAUNT"
     ],
     "text": "Taunt\nReborn",
-    "auto_added": "from session logs (extend_pool.py)"
+    "auto_added": "from session logs (extend_pool.py)",
+    "tribe_src": "hearthstonejson"
   }
 ]

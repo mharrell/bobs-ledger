@@ -23,7 +23,7 @@ import re
 from value import shop_ranking
 from extract_game import MINION_ID
 import meta
-from tribes import normalize
+from tribes import overlaps, parts
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -154,8 +154,12 @@ def _rank_trinkets(options, board):
     db = _load_trinket_db()
     ann = meta.trinket_effects()
     board = board or []
-    tribes = [normalize(m.get("tribe")) for m in board if normalize(m.get("tribe"))]
-    dominant = max(set(tribes), key=tribes.count) if tribes else None
+    # Flattened canonical parts (compounds split, Amalgams count as every
+    # tribe — a board of Amalgams rewards any tribe-synergy trinket, which
+    # matches the game: Amalgams ARE each tribe).
+    board_parts = [p for m in board for p in parts(m.get("tribe"))]
+    dominant = (max(set(board_parts), key=board_parts.count)
+                if board_parts else None)
     board_keywords = set()
     for m in board:
         board_keywords.update(k.lower() for k in (m.get("keywords") or []))
@@ -178,7 +182,7 @@ def _rank_trinkets(options, board):
         syn = rec.get("synergy") or {}
         fit = False
         if syn and not syn.get("note"):
-            if dominant and any(normalize(tr) == dominant
+            if dominant and any(overlaps(dominant, tr)
                                 for tr in syn.get("tribes") or []):
                 fit = True
             for kw in syn.get("keywords") or []:
