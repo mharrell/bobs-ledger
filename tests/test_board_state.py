@@ -310,5 +310,125 @@ def _board_for(lines, friendly=1):
     return gs.board(friendly_player=friendly)[0]
 
 
+class TestBareEntityTagChanges(unittest.TestCase):
+    """The GameState stream prints the friendly player's own actions as bare
+    `TAG_CHANGE Entity=<id> tag=... value=...` (no bracket, so no player=).
+    These were matched by NAME_TAG's Entity=([^ ]+) and dropped, so plays
+    never left the tracked hand (2026-09-14 morning: "play four spells from
+    my hand when my hand was empty"; 586 bare ->PLAY writes in game 2)."""
+
+    @staticmethod
+    def _hand_card_lines(eid, cid, player=1):
+        return [f"{GS}    FULL_ENTITY - Creating ID={eid} CardID={cid}",
+                f"{GS}        tag=CONTROLLER value={player}",
+                f"{GS}        tag=ZONE value=HAND",
+                f"{GS}        tag=CARDTYPE value=SPELL",
+                f"{GS}        tag=ZONE_POSITION value=1"]
+
+    def test_bare_zone_play_empties_hand(self):
+        gs = GameState()
+        for line in self._hand_card_lines(7333, "BG36_520"):
+            gs.feed(line)
+        self.assertEqual(len(gs.hand(1)), 1)
+        # The exact 2026-09-14 shape: bare numeric entity, no bracket.
+        gs.feed(f"{GS}    TAG_CHANGE Entity=7333 tag=ZONE value=PLAY")
+        self.assertEqual(gs.hand(1), [])
+        self.assertEqual(gs.zone[7333], "PLAY")
+
+    def test_numeric_entity_not_swallowed_by_account_branch(self):
+        # RESOURCES-style writes live on NAMED entities; a numeric id must
+        # not be mistaken for one (and gold parsing must keep working).
+        gs = GameState()
+        for line in self._hand_card_lines(7333, "BG36_520"):
+            gs.feed(line)
+        gs.feed(f"{GS}    TAG_CHANGE Entity=7333 tag=COST value=2")
+        self.assertEqual(gs.cost[7333], 2)
+        gs.feed(f"{GS}    TAG_CHANGE Entity=Player#1234 "
+                f"tag=RESOURCES value=10")
+        self.assertEqual(gs.gold["Player#1234"], 10)
+
+    def test_damage_cap_on_numeric_gameentity(self):
+        # The authoritative GameState damage-cap write arrives on the
+        # bare-numeric GameEntity (`Entity=1`); it must survive the routing.
+        gs = GameState()
+        gs.feed(f"{GS}    TAG_CHANGE Entity=1 "
+                f"tag=BACON_COMBAT_DAMAGE_CAP value=15")
+        self.assertEqual(gs.damage_cap, 15)
+
+    def test_bare_entity_retargets_continuation_lines(self):
+        # The block's indented tag lines belong to the bare-entity, not to
+        # whatever entity current_entity was stale from.
+        gs = GameState()
+        for line in self._hand_card_lines(1111, "BG28_810"):
+            gs.feed(line)
+        gs.feed(f"{GS}    FULL_ENTITY - Creating ID=2222 CardID=BG26_135")
+        gs.feed(f"{GS}        tag=CONTROLLER value=1")
+        gs.feed(f"{GS}        tag=ZONE value=SETASIDE")
+        gs.feed(f"{GS}        tag=CARDTYPE value=MINION")
+        gs.feed(f"{GS}    TAG_CHANGE Entity=1111 tag=ZONE_POSITION value=2")
+        self.assertEqual(gs.zone_pos[1111], 2)
+
+
+class TestShowEntityBracketed(unittest.TestCase):
+    """GameState prints `SHOW_ENTITY - Updating Entity=[bracket] CardID=...`
+    (reveals); the block's indented tag lines must land on the bracketed
+    entity, not the stale current_entity (real-log shape: Bartend Bob /
+    hero-power reveals carrying tag=ZONE continuations, 2026-09-14)."""
+
+    def test_continuation_tags_land_on_revealed_entity(self):
+        gs = GameState()
+        for line in self._make_stale_current(999, "BG26_135"):
+            gs.feed(line)
+        gs.feed(f"{GS}    SHOW_ENTITY - Updating Entity=[entityName="
+                f"Slimy Shield id=1766 zone=SETASIDE zonePos=0 "
+                f"cardId=BG27_002t player=1] CardID=BG27_002t")
+        gs.feed(f"{GS}        tag=CONTROLLER value=1")
+        gs.feed(f"{GS}        tag=CARDTYPE value=SPELL")
+        gs.feed(f"{GS}        tag=ZONE value=HAND")
+        gs.feed(f"{GS}        tag=ZONE_POSITION value=3")
+        # 1766 is now a HAND spell of player 1; the stale 999 was untouched.
+        self.assertEqual(gs.card[1766], "BG27_002t")
+        self.assertEqual(gs.zone[1766], "HAND")
+        self.assertEqual(gs.zone_pos[1766], 3)
+        self.assertEqual(gs.zone[999], "SETASIDE")
+        self.assertEqual(gs.zone_pos.get(999), None)
+
+    @staticmethod
+    def _make_stale_current(eid, cid):
+        return [f"{GS}    FULL_ENTITY - Creating ID={eid} CardID={cid}",
+                f"{GS}        tag=CONTROLLER value=1",
+                f"{GS}        tag=ZONE value=SETASIDE",
+                f"{GS}        tag=CARDTYPE value=MINION"]
+
+
+class TestHandPositionZeroExit(unittest.TestCase):
+    """Discover options and next-opponent staging bursts transit zone=HAND
+    (bracketed, controller=friendly) for a few seconds, then leave via
+    ZONE_POSITION=0 with no ZONE write — the ghost cards the coach told the
+    player to cast all of game 2 t5 (2026-09-14). Position 0 = leaving."""
+
+    def test_position_zero_clears_hand(self):
+        gs = GameState()
+        for line in TestBareEntityTagChanges._hand_card_lines(1764,
+                                                              "BG35_951"):
+            gs.feed(line)
+        self.assertEqual(len(gs.hand(1)), 1)
+        gs.feed(f"{GS}    TAG_CHANGE Entity=[entityName=Might of Stormwind "
+                f"id=1764 zone=HAND zonePos=1 cardId=BG35_951 player=1] "
+                f"tag=ZONE_POSITION value=0")
+        self.assertEqual(gs.hand(1), [])
+
+    def test_real_hand_card_at_position_one_stays(self):
+        gs = GameState()
+        for line in TestBareEntityTagChanges._hand_card_lines(6396,
+                                                              "BG25_354"):
+            gs.feed(line)
+        gs.feed(f"{GS}    TAG_CHANGE Entity=[entityName=Titus Rivendare "
+                f"id=6396 zone=HAND zonePos=2 cardId=BG25_354 player=1] "
+                f"tag=ZONE_POSITION value=1")
+        self.assertEqual(len(gs.hand(1)), 1)
+        self.assertEqual(gs.hand(1)[0]["pos"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

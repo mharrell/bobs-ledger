@@ -22,7 +22,7 @@ from collections import defaultdict
 
 from extract_game import (
     ENTITY_TAG, FULL_ENTITY, FULL_ENTITY_UPDATING, FULL_TAG, NAME_HERO,
-    MINION_ID, ZONE_PLAIN, UPDATING_ENTITY_ID, HERO_CARD, TIMESTAMP,
+    MINION_ID, UPDATING_ENTITY_ID, HERO_CARD, TIMESTAMP,
     split_game_chunks, extract_game, _friendly_player,
 )
 
@@ -39,6 +39,27 @@ NAME_TAG = re.compile(r"Entity=([^ ]+) tag=(\w+) value=(\w+)")
 
 # SHOW_ENTITY - Updating Entity=<id> CardID=<card> (plain form).
 SHOW_ENTITY = re.compile(r"SHOW_ENTITY - Updating Entity=(\d+) CardID=(\w+)")
+
+# ... and its bracketed twin, which is what the GameState stream prints
+# (the plain form shows up only in extract_game-style scans). The block's
+# indented tag lines belong to the bracketed entity; without a retarget
+# they land on the stale current_entity and can move the WRONG card in or
+# out of the tracked hand (verified 2026-09-14: Bartend Bob / hero-power
+# reveals carry tag=ZONE continuations).
+SHOW_ENTITY_BRACKETED = re.compile(
+    r"SHOW_ENTITY - Updating Entity=\[(.*)\] CardID=(\S+)")
+
+# TAG_CHANGE on a bare numeric entity: `TAG_CHANGE Entity=7331 tag=ZONE
+# value=PLAY`. The GameState stream prints the friendly player's OWN actions
+# this way (brackets with a player= only appear for the other side), and for
+# many hand->PLAY exits the bare line is the ONLY record — the PowerTaskList
+# echo sometimes never re-prints the play bracketed at all (2026-09-14 APM
+# session: triple-reward hand dumps). Before this branch existed,
+# NAME_TAG's `Entity=([^ ]+)` matched the numeric id first and swallowed the
+# line, so played cards stayed in the tracked hand forever — the coach went
+# on recommending them ("play four spells from my hand when my hand was
+# empty", 2026-09-14 morning; 586 bare ->PLAY writes in game 2 alone).
+BARE_ENTITY_TAG = re.compile(r"TAG_CHANGE Entity=(\d+) tag=(\w+) value=(\w+)")
 
 # CHANGE_ENTITY - Updating Entity=[...] CardID=<new> — a full card swap on an
 # existing entity id. This is how the friendly's trinket placeholders become
@@ -139,6 +160,20 @@ class GameState:
             # account name -> hero entity; not needed for the board, skip.
             return
 
+        m = BARE_ENTITY_TAG.search(line)
+        if m:
+            # A numeric Entity= is an entity reference, not an account name —
+            # apply the tag to that entity directly (no bracket, so no
+            # entityName/player snapshot; the entity's known controller
+            # stands). Retarget current_entity too: this block's continuation
+            # tag lines belong to it, same convention as FULL_ENTITY -
+            # Updating. Must precede NAME_TAG, whose Entity=([^ ]+) would
+            # otherwise match the digits and drop the line.
+            eid = int(m.group(1))
+            self.current_entity = eid
+            self._apply(eid, m.group(2), m.group(3))
+            return
+
         m = NAME_TAG.search(line)
         if m:
             name, tag, value = m.groups()
@@ -156,18 +191,28 @@ class GameState:
                 # Game over: the end-of-game cleanup re-creates minions as
                 # enchantments for the leaderboard, so stop snapshotting here.
                 self._game_ended = True
-            elif tag == "BACON_COMBAT_DAMAGE_CAP":
-                # This season's per-combat damage cap, escalating by round
-                # (2/5/10/15 seen in the 2026-09-08 session; carried on the
-                # bare-numeric GameEntity, which only routes through this
-                # plain-entity branch). "One bad fight can end it" is only
-                # true when effective HP <= the current cap.
-                self.damage_cap = int(value)
             return
 
         m = SHOW_ENTITY.search(line)
         if m:
             self.card[int(m.group(1))] = m.group(2)
+            return
+
+        m = SHOW_ENTITY_BRACKETED.search(line)
+        if m:
+            # Same treatment as CHANGE_ENTITY below: retarget current_entity
+            # so the block's tag lines land on the revealed entity, and drop
+            # stale stats (the block re-prints what the card carries).
+            inner = UPDATING_ENTITY_ID.search(m.group(1))
+            if inner:
+                eid = int(inner.group(1))
+                self.current_entity = eid
+                self.card[eid] = m.group(2)
+                for tbl in (self.atk, self.health, self.tribe,
+                            self.tier, self.cost):
+                    tbl.pop(eid, None)
+                if self._game_ended:
+                    self._post_game.add(eid)
             return
 
         m = CHANGE_ENTITY.search(line)
@@ -217,10 +262,6 @@ class GameState:
                 self._apply(self.current_entity, tag, value)
             return
 
-        m = ZONE_PLAIN.search(line)
-        if m:
-            self.zone[int(m.group(1))] = m.group(2)
-
     def _apply(self, eid, tag, value):
         if tag == "ZONE":
             old = self.zone.get(eid)
@@ -244,6 +285,20 @@ class GameState:
                 self._record_snapshot()
         elif tag == "ZONE_POSITION":
             self.zone_pos[eid] = int(value)
+            # ZONE_POSITION=0 is the engine's "leaving the zone" marker; for
+            # hand cards it can be the ONLY exit record. Discover options and
+            # next-opponent staging bursts legitimately transit zone=HAND
+            # (bracketed, controller=friendly!) for a few seconds — six ghost
+            # cards sat in the tracked hand through all of game 2 t5
+            # (2026-09-14 06:41:55: "Cast Might of Stormwind x2 / Cast
+            # Enchanted Lasso / Play Flighty Scout" while the player's real
+            # hand was EMPTY) and only cleared when the engine flipped their
+            # controller ~10s later. Position 0 clears them the moment the
+            # cascade finishes. Real hand cards never sit at position 0
+            # (verified: multi-turn position shuffles stay >= 1), and PLAY
+            # entities legitimately hold zonePos 0 (Bob, heroes) — HAND only.
+            if (int(value) == 0 and self.zone.get(eid) == "HAND"):
+                self.zone[eid] = "SETASIDE"
         elif tag in ("CONTROLLER", "PLAYER"):
             # FULL_ENTITY blocks assign ownership via CONTROLLER (a
             # TAG_CHANGE carries it in the Entity=[...player=N] header) —
@@ -260,6 +315,15 @@ class GameState:
                 self.player[eid] = new
         elif tag == "CARDTYPE":
             self.cardtype[eid] = value
+        elif tag == "BACON_COMBAT_DAMAGE_CAP":
+            # This season's per-combat damage cap, escalating by round
+            # (2/5/10/15 seen in the 2026-09-08 session). "One bad fight can
+            # end it" is only true when effective HP <= the current cap.
+            # Lives here (the tag dispatcher) rather than in NAME_TAG: the
+            # authoritative GameState write arrives on the bare-numeric
+            # GameEntity (`Entity=1`, routed via the bare-entity branch) —
+            # only PTL's echo uses the named Entity=GameEntity form.
+            self.damage_cap = int(value)
         elif tag == "ATK":
             self.atk[eid] = int(value)
         elif tag == DARK_GIFT_HOST_TAG \
