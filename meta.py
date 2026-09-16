@@ -112,6 +112,22 @@ def engine_recipes():
     return _raw("engine_recipes.json") or {}
 
 
+def discover_sources():
+    """Curated reachability table for discover/generator sources
+    (dict key -> source), or {}. See meta/discover_sources.json and
+    analysis/engine_coaching.md Plan 2 Layer A.
+    """
+    return _raw("discover_sources.json") or {}
+
+
+def fuel_specs():
+    """Curated body-hunger fuel specs per engine (dict card id -> spec),
+    or {}. See meta/fuel_specs.json and analysis/engine_coaching.md
+    Plan 2 Layer B.
+    """
+    return _raw("fuel_specs.json") or {}
+
+
 def pool_sizes():
     """Shared-pool copy counts per tavern tier, or {} without the file.
 

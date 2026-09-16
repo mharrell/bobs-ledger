@@ -1369,6 +1369,59 @@ def _shop_name(cid, names):
     return names.get(cid, cid)
 
 
+def _fuel_line(analysis, card_db, spell_db, names, costs, spare):
+    """'feed the engine' advice (Plan 2 Layer B) or None.
+
+    Fires when a fuel engine (meta/fuel_specs.json) is ON BOARD, the
+    tavern is past the early tempo window (tier >= 4), and gold is idle
+    after the plan's real buys (spare >= 3 — every conversion costs at
+    least the flat 3). Conversions are the shop's fuel-tribe bodies (1
+    body per 3g) and body-generating spells (its live price), ranked
+    bodies-per-gold. A spend recommendation inside the committed build —
+    never a comp-target override; the caller never lets it displace a
+    real buy or an active hunt.
+    """
+    tier = analysis.get("tier")
+    if not tier or tier < 4 or spare is None or spare < MINION_BUY_PRICE:
+        return None
+    specs = meta.fuel_specs()
+    live = [specs[m["card"]] for m in analysis.get("board", [])
+            if m.get("card") in specs]
+    if not live:
+        return None
+    spec = live[0]
+    tribe = spec.get("fuel_tribe")
+    best = None  # (bodies_per_gold, text)
+    for cid, _score in analysis.get("shop_rank") or []:
+        price = costs.get(cid, MINION_BUY_PRICE)
+        if price > spare:
+            continue
+        if cid in spell_db:
+            # A body-generating spell: "summon"/"get a random"/Chef's
+            # Choice's "get a different minion" — mechanical text markers,
+            # one body per cast.
+            text = (spell_db[cid].get("text") or "").lower()
+            if any(k in text for k in ("summon", "get a random",
+                                       "get a different minion")):
+                cand = (1.0 / max(price, 1),
+                        f"cast {_shop_name(cid, names)} ({price}g)")
+                if best is None or cand[0] > best[0]:
+                    best = cand
+            continue
+        base = cid[:-2] if cid.endswith("_G") else cid
+        card = card_db.get(base)
+        if card and overlaps(normalize(card.get("race")
+                                       or card.get("tribe")), tribe):
+            cand = (1.0 / max(price, 1),
+                    f"buy {_shop_name(base, names)} ({price}g)")
+            if best is None or cand[0] > best[0]:
+                best = cand
+    if best is None:
+        return None
+    return (f"feed the engine — {best[1]}, {spec.get('why')} "
+            f"(quantity beats quality)")
+
+
 def _top_move_text(analysis):
     """Render top_move's numbered steps (the planner proper; see top_move)."""
     names = _load_bg_names()
@@ -1444,7 +1497,8 @@ def _top_move_text(analysis):
             # Q1 payoff: unowned pieces of the target comp, split by which
             # tavern tier holds them (copies of what we own don't count).
             next_core, here_core, next_any, here_any, above_core, above_any \
-                = _comp_needs_by_tier(analysis, card_db)
+                = _comp_needs_by_tier(analysis, card_db,
+                                      reach=analysis.get("reach_sources"))
             # Scout (gates 3+4): "their" = the next opponent's last-known
             # board when we've fought them (the exact buy-phase preview),
             # else the lobby median, else the corpus baseline. The "~" marks
@@ -1549,6 +1603,7 @@ def _top_move_text(analysis):
     # headline pick doesn't fit the post-level budget).
     shop_rank = analysis.get("shop_rank") or []
     bought = None
+    hunted = False  # a hunt step claimed the spare gold (the fuel line yields)
     analysis["buy_step_card"] = None
     analysis["buy_step_roll"] = None
     if analysis.get("buy_this"):
@@ -1651,7 +1706,8 @@ def _top_move_text(analysis):
                     (r, *_hunt_check(r, tier, analysis.get("turn"),
                                      analysis.get("shop_seen"),
                                      "shop_seen" in analysis,
-                                     analysis.get("own_pool")))
+                                     analysis.get("own_pool"),
+                                     reach=analysis.get("reach_sources")))
                     for r in missing]
                 feasible = [r for r, _ok, _why in evaluated if _ok]
                 if feasible:
@@ -1664,16 +1720,24 @@ def _top_move_text(analysis):
                     analysis["buy_step_roll"] = parts[-1]
                     analysis["buy_step_card"] = None
                     cid = None
+                    hunted = True
                 else:
                     # Every missing core is above the tavern or gone cold:
                     # the buy stands. Say why the hunt stopped, AFTER the buy
                     # step — the 2026-09-11 Morchie game said "roll — hunting
                     # Gem Rat" 11 turns running while the tier-3 core showed
                     # up twice all game; the plan needs to explain its change
-                    # of mind, not just silently buy.
+                    # of mind, not just silently buy. A tier/pool-blocked
+                    # piece gets the weak-mention footnote when a live
+                    # random generator of its tribe exists (Plan 2: RNG is
+                    # weak for a named hunt — mentioned, never gated on).
                     nm = ", ".join(r["name"] for r, _ok, _w in evaluated[:2])
-                    no_hunt_note = (f"no hunt — {nm} "
-                                    f"({evaluated[0][2] or 'not showing'})")
+                    why = evaluated[0][2] or "not showing"
+                    weak = ""
+                    if why.startswith(("needs tier", "pool dry")):
+                        weak = _weak_reach_note(analysis.get("reach_sources"),
+                                                missing)
+                    no_hunt_note = f"no hunt — {nm} ({why}{weak})"
         if cid is not None:
             bought = cid
             analysis["buy_step_card"] = cid
@@ -1705,6 +1769,17 @@ def _top_move_text(analysis):
                                  f"LEVEL next turn — {short}; roll meanwhile")
             if no_hunt_note:
                 parts.append(no_hunt_note)
+        # Feed the engine (Plan 2 Layer B): a live fuel engine on board +
+        # idle gold past the early tempo window -> explicit conversion
+        # advice. An active hunt owns the spare gold — the line yields to
+        # it (never two competing "spend it here" steps).
+        if not hunted:
+            spare_gold = (budget or 0) - (costs.get(bought) or 0) \
+                if bought is not None else None
+            fuel = _fuel_line(analysis, card_db, spell_db, names, costs,
+                              spare_gold)
+            if fuel:
+                parts.append(fuel)
     # 4. Sell only to make room: board full AND buying something that needs
     # the slot. If there's space, selling is unnecessary. Held cards are
     # exempt: the hand plan said "hold — a 3rd copy turns it golden", and
@@ -1952,7 +2027,7 @@ def combat_forecast(analysis):
     return f"behind — {bs} vs {int(theirs)}; don't take this fight{edge}"
 
 
-def _comp_needs_by_tier(analysis, card_db):
+def _comp_needs_by_tier(analysis, card_db, reach=None):
     """Unowned pieces of the target comp, split by tavern tier relative to
     the current one: (next_core, here_core, next_any, here_any, above_core,
     above_any) (Q1, analysis/LEVELING_MODEL.md — leveling lowers the odds of
@@ -1974,7 +2049,12 @@ def _comp_needs_by_tier(analysis, card_db):
     path to any piece above the current tier, while here-pieces stay
     findable after leveling. Missing pieces above therefore veto the stay;
     they never drive a level by themselves (they're not findable at
-    tier+1 yet either — the curve handles that)."""
+    tier+1 yet either — the curve handles that). Plan 2 Layer A exception
+    (`reach` = live reachability sources): a piece above that a live
+    DISCOVER/token source reaches from HERE no longer vetoes — leveling is
+    then not the only path (the 2026-09-15 Shudderwock game held tier 5
+    for a tier-6 payoff). Random generators do NOT lift the veto — a
+    pool-weighted maybe is not a path."""
     tc = analysis.get("target_cards")
     tier = analysis.get("tier")
     if not tc or tier is None:
@@ -1996,7 +2076,11 @@ def _comp_needs_by_tier(analysis, card_db):
                 if section == "core":
                     here_core += 1
                 here_any += 1
-            else:  # beyond tier+1: unfindable here, unfindable at tier+1
+            else:  # beyond tier+1: unfindable here, unfindable at tier+1 —
+                # unless a live discover/token source reaches it from here.
+                if any(_src_reaches(s, row.get("card"), t, tier)
+                       for s in reach or []):
+                    continue
                 if section == "core":
                     above_core += 1
                 above_any += 1
@@ -2047,34 +2131,131 @@ def _minion_tiers():
     return {m.get("id"): m.get("tier") for m in meta.minions()}
 
 
+def live_reach_sources(board=None, hand=None, trinkets=None, hero_name=None):
+    """Live reachability sources (Plan 2 Layer A, analysis/engine_coaching.md).
+
+    A source in meta/discover_sources.json is LIVE when its card is on the
+    board or in hand, held as a trinket (DB records — ids already resolved
+    from drifted log ids by live_coach), or when the hero entry matches the
+    current hero. Only mechanical-confidence entries come back; observed
+    rows sit inert (the recipes rule).
+    """
+    table = meta.discover_sources()
+    out = []
+    seen = set()
+
+    def _add(key, label):
+        if key in seen:
+            return  # the same card on board and in hand is one source
+        rec = table.get(key)
+        if rec and rec.get("confidence") == "mechanical":
+            seen.add(key)
+            out.append(dict(rec, source=key, name=rec.get("name") or label))
+
+    for m in list(board or []) + list(hand or []):
+        if isinstance(m, dict) and m.get("card"):
+            _add(m["card"], m.get("card"))
+    for t in trinkets or []:
+        _add(t.get("id") if isinstance(t, dict) else t, "trinket")
+    if hero_name:
+        _add(f"hero:{hero_name}", hero_name)
+    return out
+
+
+def _src_reaches(src, card_id, ctier, tavern_tier):
+    """Can THIS discover/token source produce the named piece?
+
+    Returns None for random_generate (a weak mention lives elsewhere —
+    never a gate) and bool otherwise. tier_cap 'tier+1'/'current' resolve
+    against the live tavern tier.
+    """
+    kind = src.get("kind")
+    if kind == "token":
+        return src.get("grants") == card_id
+    if kind != "discover":
+        return None
+    cap = src.get("tier_cap")
+    if cap == "tier+1":
+        cap = (tavern_tier or 0) + 1
+    elif cap == "current":
+        cap = tavern_tier
+    if isinstance(cap, int):
+        return ctier is not None and ctier <= cap
+    return None
+
+
+def _src_weak_hit(src, card_id, ctier):
+    """Could THIS random_generate source drop the piece (a mention, never
+    a gate)? True for unfiltered generators; tribe-filtered generators
+    need the piece's tribe to match."""
+    if src.get("kind") != "random_generate":
+        return False
+    cap = src.get("tier_cap")
+    if cap is not None and ctier is not None and ctier > cap:
+        return False
+    tribes = src.get("tribes") or []
+    if not tribes:
+        return True
+    card = _load_card_db().get(card_id) or {}
+    race = normalize(card.get("race") or card.get("tribe") or "")
+    return any(overlaps(race, tr) for tr in tribes)
+
+
+def _weak_reach_note(reach, missing_rows):
+    """Random-generator footnote for a blocked hunt: '...; Tavern Tempest
+    can still drop it'. Mention only — the hunt stays blocked (RNG identity
+    is weak for a named card), but the plan shouldn't pretend the piece is
+    unreachable while a live generator of its tribe exists."""
+    gens = []
+    for r in missing_rows:
+        ctier = _minion_tiers().get(r["card"])
+        for src in reach or []:
+            nm = src.get("name")
+            if nm and nm not in gens \
+                    and _src_weak_hit(src, r["card"], ctier):
+                gens.append(nm)
+    return f"; {', '.join(gens[:2])} can still drop it" if gens else ""
+
+
 # Buy phases a hunt stays alive after the missing core's last shop sighting.
 HUNT_SEEN_WINDOW = 4
 
 
-def _hunt_check(row, tavern_tier, turn, shop_seen, tracked, pool_held=None):
+def _hunt_check(row, tavern_tier, turn, shop_seen, tracked, pool_held=None,
+                reach=None):
     """(ready, reason) — can the tavern actually produce this missing core?
 
-    Three gates (the 2026-09-11 Morchie game: the coach hunted the tier-3 Gem
+    Four gates (the 2026-09-11 Morchie game: the coach hunted the tier-3 Gem
     Rat from a tier-5 tavern for 11 straight buy phases while its shop
     offered that card exactly twice all game — the player bought on-tier
     pieces, tripled four goldens and won):
-    - TIER: a core above the tavern can't appear at all. A core BELOW the
-      tavern is pool-weighted against hard, so it hunts only on recent
-      evidence (next gate).
+    - TIER: a core above the tavern can't appear at all — UNLESS a live
+      discover/token source reaches it from here (Plan 2 Layer A: discover
+      menus are tier-limited and trustworthy; a token generator is
+      deterministic). "needs tier N" then becomes a reachability why.
     - POOL: when we already hold every copy the pool has (own-side ledger,
-      pool.own_holdings — phase 1), no roll can ever produce it. Opponent
-      holdings join the ledger in phase 2.
+      pool.own_holdings — phase 1), no roll can ever produce it. Discover/
+      token sources bypass this — they don't roll the shared pool.
     - RECENCY: when the session tracks shop sightings (live_coach records
       every shop generation it sees), a core unseen for HUNT_SEEN_WINDOW buy
       phases is a lottery ticket, not a plan. Never-offered cores are the
-      strongest possible "don't hunt".
+      strongest possible "don't hunt". Applies to reachability too —
+      Layer A must not resurrect hunt-every-turn (the Morchie rule).
     Analyses without a shop_seen key (unit fixtures, the coach.py path) keep
     the old evidence-free hunt — the tier and pool gates still apply.
     """
     ctier = _minion_tiers().get(row["card"])
     if tavern_tier and ctier and ctier > tavern_tier:
+        for src in reach or []:
+            if _src_reaches(src, row["card"], ctier, tavern_tier):
+                return True, (f"reachable via your "
+                              f"{src.get('name') or 'discover sources'}")
         return False, f"needs tier {ctier}"
     if pool_held is not None and pool.left(row["card"], pool_held) == 0:
+        for src in reach or []:
+            if _src_reaches(src, row["card"], ctier, tavern_tier):
+                return True, (f"reachable via your "
+                              f"{src.get('name') or 'discover sources'}")
         return False, "pool dry — you hold every copy"
     if not tracked:
         return True, None

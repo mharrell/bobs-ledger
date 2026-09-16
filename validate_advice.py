@@ -64,14 +64,30 @@ CASES = [
         "buy_this": "Tavern Tempest",
     },
     {
-        "name": "game4-t12-recipe-active",
+        "name": "game4-t12-recipe-active-weak-reach-mention",
         "session": "Hearthstone_2026_09_15", "game": 4, "turn": 12,
         "recipes": ["shudderwock-sous-chef-battlecries"],
+        # Plan 2 Layer A: the tier-blocked hunt for the named piece stays
+        # BLOCKED (random generation is a weak mention, never a gate) but
+        # names the live generator instead of a bare "needs tier 6".
+        "top_contains": "needs tier 6; Tavern Tempest can still drop it",
     },
     {
-        "name": "game1-t8-no-false-recipe",
+        # Plan 2 Layer B positive: Unbound Tempest live on board, idle gold
+        # past the tempo window, a fuel conversion in the shop — the plan
+        # names the conversion instead of leaving gold unspent.
+        "name": "game4-t20-feed-the-engine",
+        "session": "Hearthstone_2026_09_15", "game": 4, "turn": 20,
+        "recipes": ["shudderwock-sous-chef-battlecries"],
+        "top_contains": "feed the engine",
+    },
+    {
+        "name": "game1-t8-no-false-recipe-no-fuel-line",
         "session": "Hearthstone_2026_09_15", "game": 1, "turn": 8,
         "recipes": [],
+        # Plan 2 Layer B negative: no fuel engine on board -> the
+        # feed-the-engine line must not exist.
+        "top_not_contains": "feed the engine",
     },
     {
         # Documents the "you're strong — convert it into a tier" push fired
@@ -97,8 +113,18 @@ CASES = [
         "recipes": [],
         "top_startswith": "LEVEL",
     },
-    # Plan 2 adds the Morchie over-hunt block case (the _hunt_check recency
-    # gate) when that plan's changes make it a live regression guard.
+    # The Morchie over-hunt guard (Plan 2 Layer A's rule: reachability must
+    # not resurrect hunt-every-turn). The 2026-09-11 game hunted the tier-3
+    # Gem Rat for 11 straight phases; since the feasibility gates, the plan
+    # says "no hunt" and buys on-tier pieces instead — and Layer A's new
+    # TIER-gate exception (discover/token reach) must NOT reopen it.
+    {
+        "name": "morchie-t9-over-hunt-stays-blocked",
+        "session": "Hearthstone_2026_09_11", "game": 2, "turn": 9,
+        "recipes": [],
+        "top_contains": "no hunt",
+        "top_not_contains": "hunting",
+    },
 ]
 
 
@@ -182,6 +208,11 @@ def _run_case(case, chunk, names):
         ok = case["top_contains"] in tm
         out.append((ok, f"top_move contains '{case['top_contains']}': "
                         f"{tm[:80]}"))
+    if case.get("top_not_contains"):
+        tm = a.get("top_move") or ""
+        ok = case["top_not_contains"] not in tm
+        out.append((ok, f"top_move must NOT contain "
+                        f"'{case['top_not_contains']}': {tm[:80]}"))
     return out
 
 

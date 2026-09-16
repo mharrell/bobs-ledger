@@ -1,0 +1,60 @@
+{
+ "_comment": "Curated reachability table for discover/generator sources (analysis/engine_coaching.md Plan 2 Layer A). Keyed by base card id (minions/trinkets DB ids) or 'hero:<Name>'. kind: 'discover' = a discover MENU, tier-limited and trustworthy -> the _hunt_check TIER gate passes when its cap reaches the piece, and it bypasses the POOL gate (a discover does not roll the shared pool). 'token' = a deterministic generator of a SPECIFIC card (also certain; bypasses POOL; carries 'grants'). 'random_generate' = pool-weighted randomness for a named card -> WEAK MENTION ONLY, never a gate (the design's asymmetry: RNG identity matters for specific hunts, not for fuel). tier_cap: int, or 'tier+1' / 'current' resolved against the live tavern tier. Every entry quotes the card's own text - the Butchering-fix pattern. Sources live when the card is on board, in hand, or held as a trinket; hero entries when the hero matches. Log ground truth 2026-09-15 game 4: a tier-6 Unbound Tempest materialized at tavern tier 5 from a 'get a random Elemental' source (tag BACON_SUBSET_ELEMENTALS + IS_BACON_POOL_MINION, TECH_LEVEL=6) - random generation is NOT player-tier-capped unless the text says so.",
+ "hero:Ambassador Faelin": {
+  "name": "Ambassador Faelin",
+  "kind": "discover", "tier_cap": 6, "persistence": "per_turn",
+  "text": "Skip your first turn. Discover minions from Tiers 6, 4, and 2 to get at those Tiers.",
+  "confidence": "mechanical"
+ },
+ "hero:A. F. Kay": {
+  "name": "A. F. Kay",
+  "kind": "discover", "tier_cap": 4, "persistence": "per_turn",
+  "text": "Skip your first two turns, then Discover a minion from Tier 3 and Tier 4.",
+  "confidence": "mechanical"
+ },
+ "hero:Elise Starseeker": {
+  "name": "Elise Starseeker",
+  "kind": "discover", "tier_cap": "current", "persistence": "per_turn",
+  "text": "Discover a minion from your Tier. Costs (1) more after each use.",
+  "confidence": "mechanical"
+ },
+ "hero:Infinite Toki": {
+  "name": "Infinite Toki",
+  "kind": "discover", "tier_cap": "tier+1", "persistence": "per_turn",
+  "text": "Refresh the Tavern. Include two minions from a Tier higher than yours.",
+  "confidence": "mechanical"
+ },
+ "BG30_MagicItem_4250": {
+  "name": "Azeroth Model Globe",
+  "kind": "discover", "tier_cap": 6, "persistence": "per_turn",
+  "text": "every 2 turns: 2 gold + Discover a Tier 6 (Azeroth Model Globe)",
+  "confidence": "mechanical"
+ },
+ "BG24_715": {
+  "name": "Patient Scout",
+  "kind": "discover", "tier_cap": 1, "persistence": "hand",
+  "text": "When you sell this, Discover a Tier 1 minion. (Improves each turn!)",
+  "confidence": "mechanical"
+ },
+ "BG32_MagicItem_172": {
+  "name": "Boom's Monster Portrait",
+  "kind": "token", "grants": "BG31_176", "tier_cap": 6,
+  "persistence": "per_turn",
+  "text": "Get a Dr. Boom's Monster. At the start of every turn, get another.",
+  "confidence": "mechanical"
+ },
+ "BGS_123": {
+  "name": "Tavern Tempest",
+  "kind": "random_generate", "tier_cap": null, "tribes": ["Elemental"],
+  "persistence": "per_play",
+  "text": "Battlecry: Get a random Elemental. (log-proven tier-uncapped: produced a tier-6 Unbound Tempest at tavern tier 5, 2026-09-15)",
+  "confidence": "mechanical"
+ },
+ "BG35_MagicItem_302": {
+  "name": "Stormcoil Sticker",
+  "kind": "random_generate", "tier_cap": null, "tribes": ["Mechanical"],
+  "persistence": "per_turn",
+  "text": "After 6 friendly minions die, get a random Mech.",
+  "confidence": "mechanical"
+ }
+}
