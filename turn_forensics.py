@@ -87,7 +87,7 @@ def _turn_set(spec, n):
 def forensics(chunk, names, cores, turns_filter=None):
     """{turn: [lines]} of distilled forensics for the requested turns."""
     game = extract_game(chunk)
-    friendly = _friendly_player(game["heroes"])
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
     hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
     hero_card = hero["card"] if hero else None
     account = next((n for n, c in game.get("account", {}).items()
@@ -305,7 +305,7 @@ def main():
         game_index = len(chunks)
     s, e = chunks[game_index - 1]
     game = extract_game(lines[s:e])
-    friendly = _friendly_player(game["heroes"])
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
     hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
     print(f"turn forensics — {os.path.basename(os.path.dirname(path))} "
           f"game {game_index}/{len(chunks)}, "

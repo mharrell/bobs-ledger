@@ -166,7 +166,7 @@ def main():
     chunk = lines[s:e]
 
     game = extract_game(chunk)
-    friendly = _friendly_player(game["heroes"])
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
     hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
     names = _load_bg_names()
     place = (hero or {}).get("place")

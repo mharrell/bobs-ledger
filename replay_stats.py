@@ -44,7 +44,7 @@ def _detect_comp(board, comps):
 def game_features(chunk):
     """Deterministic per-game features: hero, placement, implied comp, board, tier."""
     game = extract_game(chunk)
-    friendly = _friendly_player(game["heroes"])
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
     if friendly is None:
         return None
     hero = next((h for h in game["heroes"] if h["player"] == friendly), None)

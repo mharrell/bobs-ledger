@@ -85,7 +85,7 @@ def forensics(chunk, names, game_index=1, want_bursts=False, want_elim=False,
               want_tags=False):
     """Walk one game chunk; print the forensic report."""
     game = extract_game(chunk)
-    friendly = _friendly_player(game["heroes"])
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
     phases = _phases(chunk)
     # Window index for a line: (kind, turn). kind: buy/combat. Combat of turn t
     # runs from buy t's MAIN_END to buy t+1's MAIN_ACTION.
