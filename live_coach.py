@@ -32,7 +32,7 @@ from choices import _CHOICE_HEADER, _CHOICE_OPT, _CHOICE_SOURCE, _CHOSEN, choice
 from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
-    situation_line, sticky_comp_target, combat_forecast,
+    situation_line, sticky_comp_target, combat_forecast, active_recipes,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -238,6 +238,24 @@ def shop_cost_map(gs, offer_ids, eids=None):
                 cost_by_cid.setdefault(cid[:-2], cost)
     cost_by_cid.update(exact)  # the shop's own entities win
     return {c: cost_by_cid[c] for c in offer_ids if c in cost_by_cid}
+
+
+def _resolve_trinkets(records, by_id, by_name):
+    """Held-trinket sightings -> unique DB trinket records.
+
+    Id first, then the entity's bracket NAME: trinket ids drift across
+    patches (Sous Chef Sticker is BG35_MagicItem_801 in the 2026-09-15
+    log, BG35_MagicItem_8012 in the DB) and the old exact-id filter
+    silently dropped it — the W_TRINKET term, the simulator's
+    requires_trinket steps and the engine recipes all ran blind (the
+    choices.py lesson again: match trinkets by NAME).
+    """
+    out = []
+    for r in records:
+        t = by_id.get(r["cid"]) or by_name.get(r.get("name") or "")
+        if t and t not in out:
+            out.append(t)
+    return out
 
 
 class _LiveActions:
@@ -1042,16 +1060,25 @@ class LiveCoach:
         # synergy term. Both were dead code until this wiring — analyze()
         # never passed trinkets to anything (2026-09-08 audit).
         _trinkets_by_id = {t["id"]: t for t in meta.trinkets()}
+        _trinkets_by_name = {t["name"]: t for t in meta.trinkets()
+                             if t.get("name")}
         _trinket_ann = meta.trinket_effects()
-        held = [t for t in (self.gs.held_trinkets(self.friendly)
-                            if self.friendly else [])
-                if t in _trinkets_by_id]
+        held = _resolve_trinkets(
+            self.gs.held_trinket_records(self.friendly)
+            if self.friendly else [],
+            _trinkets_by_id, _trinkets_by_name)
         if held:
-            scenario["trinkets"] = [_trinkets_by_id[c]["name"] for c in held]
-            trinket_recs = [dict(_trinkets_by_id[c], **(_trinket_ann.get(c) or {}))
-                            for c in held]
+            scenario["trinkets"] = [t["name"] for t in held]
+            trinket_recs = [dict(t, **(_trinket_ann.get(t["id"]) or {}))
+                            for t in held]
         else:
             trinket_recs = []
+        # Engine recipes (analysis/engine_coaching.md Plan 1): hero power x
+        # trinket combos whose card text proves the loop (e.g. Shudderwock +
+        # Sous Chef Sticker -> every Battlecry minion is repeatable value).
+        # Mechanical-confidence entries only; they modulate shop ranking and
+        # advice naming, never comp targets or gates.
+        recipes = active_recipes(self.hero_name, trinket_recs)
         # Dark gifts: the Dark Discovery button grants a RANDOM gift (real
         # logs show ~3 markers per press — three minions each carrying one);
         # the log prints each gift's name on a MidGameEffect marker attached
@@ -1075,10 +1102,10 @@ class LiveCoach:
         # Opponent trinkets: the log reveals every player's chosen trinkets
         # (2026-09-08 ground truth) — free scout intel.
         opp_trinkets = sorted({
-            _trinkets_by_id[c]["name"]
+            t["name"]
             for p in set(self.gs.player.values()) if p != self.friendly
-            for c in self.gs.held_trinkets(p)
-            if c in _trinkets_by_id})
+            for t in _resolve_trinkets(self.gs.held_trinket_records(p),
+                                       _trinkets_by_id, _trinkets_by_name)})
         hero_power = _hero_power_text(self.hero_name)
         # Recent acquisitions (this turn's plays + buys, and the last
         # completed turn's) feed the pivot override — the board alone lags
@@ -1090,7 +1117,8 @@ class LiveCoach:
             self.actions.turn_plays[-1] if self.actions.turn_plays else [],
             self.actions.turn_buys[-1] if self.actions.turn_buys else [],
             friendly)
-        target = comp_target(board, self.playable, recent_cards=recent)
+        target = comp_target(board, self.playable, recent_cards=recent,
+                             trinkets=trinket_recs)
         # Sticky same-tribe direction (2026-09-06 Guff game: the target
         # churned 'Summon Beetles' -> 'Tasty Lobstah' phase-to-phase on
         # identical tribe evidence, reading as "which build am I doing?").
@@ -1147,7 +1175,7 @@ class LiveCoach:
                             self.allowed, hero_power=hero_power,
                             trinkets=trinket_recs, scenario=scenario,
                             recent_cards=recent, comp=target,
-                            hand=hand) if offer_ids else []
+                            hand=hand, recipes=recipes) if offer_ids else []
         shop_costs = shop_cost_map(self.gs, offer_ids, self.shop_eids)
         # Own-side pool ledger (phase 1, analysis/pool_availability.md):
         # everything we hold (board + hand, golden = 3) is out of the shared
@@ -1259,7 +1287,7 @@ class LiveCoach:
             # is how Lurking Leviathan (core of Beasts - Leviathan) headlined
             # as "comp fit" in a game committed to Tasty Lobstah (2026-09-11).
             pick_ranked = rank_choices(kind, c["options"], board, self.playable,
-                                       comp=target)
+                                       comp=target, hero=self.hero_name)
             choice_advice = {"kind": kind, "source": c["source"],
                              "ranked": pick_ranked}
         result = {
@@ -1288,6 +1316,11 @@ class LiveCoach:
             "loss_streak": loss_streak,
             "close_losses": close_losses,
             "board": board,
+            # Active engine recipes (Plan 1), minus the long evidence prose:
+            # ids feed the harness assertions; why/line/fuel/shop_boost feed
+            # the buy-step naming and the shop ranking that already ran.
+            "engine_recipes": [{k: v for k, v in r.items() if k != "evidence"}
+                               for r in recipes],
             # Own-side pool ledger (base cid -> held copies, golden = 3):
             # what the Market availability chips and the triple/hunt pool
             # gates are computed from. Dict, not Counter — the overlay
@@ -1357,7 +1390,8 @@ class LiveCoach:
             # commit threshold, so the UI can show direction BEFORE
             # comp_target declares a target (the pre-commit blind spot).
             "comp_progress": comp_progress(board, self.playable,
-                                           recent_cards=recent),
+                                           recent_cards=recent,
+                                           trinkets=trinket_recs),
             "sell_rank": ranked,
             "shop_rank": shop,
             "buy_this": shop[0][0] if shop else None,

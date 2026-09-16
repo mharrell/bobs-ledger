@@ -464,14 +464,14 @@ class GameState:
         opponent_board.sort(key=lambda m: m["card"])
         return friendly_board, opponent_board
 
-    def held_trinkets(self, friendly_player):
-        """Card ids of the friendly player's held trinkets (PLAY zone).
+    def held_trinket_records(self, friendly_player):
+        """[{"cid", "name"}] for a player's held trinkets (PLAY zone).
 
-        Trinket entities (BGxx_MagicItem_NNN) sit in PLAY once chosen. The
-        value function's W_TRINKET synergy term and the growth simulator's
-        requires_trinket steps need to know which are held — without this
-        both were dead code in the live loop (2026-09-08 audit). Zone
-        verified against live logs in the 2026-09-08 audit pass.
+        `name` is the entity's last bracket entityName (often absent —
+        FULL_ENTITY creates carry CardID only), so callers can resolve
+        patch-drifted card ids by NAME: this session's Sous Chef Sticker is
+        BG35_MagicItem_801 in the log but BG35_MagicItem_8012 in the DB,
+        and the old exact-id matching silently dropped it.
         """
         out = []
         for eid, cid in self.card.items():
@@ -481,8 +481,19 @@ class GameState:
                 continue
             if self.player.get(eid) != friendly_player:
                 continue
-            out.append(cid)
+            out.append({"cid": cid, "name": self.ename.get(eid)})
         return out
+
+    def held_trinkets(self, friendly_player):
+        """Card ids of the friendly player's held trinkets (PLAY zone).
+
+        Trinket entities (BGxx_MagicItem_NNN) sit in PLAY once chosen. The
+        value function's W_TRINKET synergy term and the growth simulator's
+        requires_trinket steps need to know which are held — without this
+        both were dead code in the live loop (2026-09-08 audit). Zone
+        verified against live logs in the 2026-09-08 audit pass.
+        """
+        return [r["cid"] for r in self.held_trinket_records(friendly_player)]
 
     def dark_gift_effects(self):
         """All granted dark-gift markers: [{eid, name, host, player,

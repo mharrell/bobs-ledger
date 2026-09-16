@@ -25,6 +25,12 @@ from extract_game import MINION_ID
 import meta
 from tribes import normalize, overlaps, parts
 
+# Pick-time synergy cap (analysis/engine_coaching.md Plan 1): ALL curated
+# synergy terms together — board fit, comp direction, hero-power engine —
+# add at most this much on the trinket scale (pick_rate 0-10, placement
+# ~3.5). Can flip a near-tie, never beat a dominant statistical favorite.
+SYN_CAP = 1.5
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 # GameState.DebugPrintEntityChoices() - id=8 Player=... TaskList=... ChoiceType=GENERAL CountMin=1 CountMax=1
@@ -106,21 +112,23 @@ def _locked_heroes():
         return set()
 
 
-def rank_choices(kind, options, board=None, comps=None, comp=None):
+def rank_choices(kind, options, board=None, comps=None, comp=None, hero=None):
     """Rank a pending choice's options. Returns [(name, card_id, score, why)].
 
     `options`: [(entity_name, card_id)] from the choice block. `board`/`comps`
     feed the synergy terms (dominant tribe, comp fit). `comp`: the SAME
     evidence-based target the caller displays (live_coach's sticky target) —
     discover scores AND labels key on it, so a pick panel can never bless a
-    card of a comp the overlay isn't showing. Locked heroes (the player's
-    list) are filtered out of hero rankings.
+    card of a comp the overlay isn't showing. `hero`: the current hero's
+    name — feeds the trinket ranker's capped hero-power engine term (an
+    offered trinket that completes a mechanical recipe for THIS hero).
+    Locked heroes (the player's list) are filtered out of hero rankings.
     """
     if kind == "hero":
         locked = _locked_heroes()
         return _rank_heroes([o for o in options if o[0] not in locked])
     if kind == "trinket":
-        return _rank_trinkets(options, board)
+        return _rank_trinkets(options, board, comp=comp, hero=hero)
     if kind == "discover":
         return _rank_discover(options, board, comps, comp)
     return [(n, c, None, "") for n, c in options]
@@ -141,15 +149,27 @@ def _rank_heroes(options):
     return ranked
 
 
-def _rank_trinkets(options, board):
-    """Rank trinkets by meta stats + curated board synergy.
+def _rank_trinkets(options, board, comp=None, hero=None):
+    """Rank trinkets by meta stats + curated synergy (capped).
 
     score = pick_rate/10 (0-10, hsreplay's population-weighted preference)
-    + (4.5 - avg_placement) — a trinket placing 1.0 adds ~3.5 — plus a flat
-    synergy bonus when the CURATED read (trinket_effects.json) says the
-    trinket rewards what the board actually is: a matching tribe, or a
-    keyword the board's minions carry (deathrattle/battlecry/magnetic/...).
-    Falls back to the description substring for unannotated trinkets.
+    + (4.5 - avg_placement) — a trinket placing 1.0 adds ~3.5 — plus
+    synergy, the SUM of curated fit terms CAPPED at SYN_CAP:
+
+    - board fit: the trinket rewards what the board actually is — a
+      matching tribe, or a keyword the board's minions carry
+      (deathrattle/battlecry/magnetic/...). Falls back to the description
+      substring for unannotated trinkets.
+    - comp direction (Plan 1): the trinket rewards the tribe we're
+      HEADING toward (the displayed comp target), not just the board we
+      have — the pick shapes the next several buys.
+    - hero-power engine (Plan 1): the offered trinket completes a
+      mechanical engine recipe for THIS hero (e.g. Sous Chef Sticker in a
+      Shudderwock game — extra power uses re-fire Battlecries).
+
+    Every term traces to card text; the why-label names each one that fit.
+    The cap keeps synergy a tie-breaker: it can flip a near-tie, never
+    beat a dominant statistical favorite. Hero pick ranking is untouched.
     """
     db = _load_trinket_db()
     ann = meta.trinket_effects()
@@ -163,6 +183,7 @@ def _rank_trinkets(options, board):
     board_keywords = set()
     for m in board:
         board_keywords.update(k.lower() for k in (m.get("keywords") or []))
+    comp_tribe = (comp or {}).get("tribe")
     ranked = []
     for name, cid in options:
         t = db.get(name)
@@ -180,22 +201,36 @@ def _rank_trinkets(options, board):
         # family shares one id across tribe variants, so also try by name.
         rec = ann.get(cid) or ann.get(_trinket_id_by_name(t)) or {}
         syn = rec.get("synergy") or {}
-        fit = False
+        terms = []  # (label, amount) — capped together at SYN_CAP
         if syn and not syn.get("note"):
             if dominant and any(overlaps(dominant, tr)
                                 for tr in syn.get("tribes") or []):
-                fit = True
+                terms.append(("fits your board", 1.5))
             for kw in syn.get("keywords") or []:
                 k = kw.lower()
                 if k in board_keywords or (k in desc and k in (
                         "deathrattle", "battlecry", "spell", "refresh",
                         "economy", "battlecry", "spellcraft")):
-                    fit = True
+                    terms.append(("fits your board", 1.5))
+                    break
         elif dominant and dominant.lower() in desc:
-            fit = True
-        if fit:
-            score += 1.5
-            why += " · fits your board"
+            terms.append(("fits your board", 1.5))
+        if comp_tribe and syn and not syn.get("note") and any(
+                overlaps(tr, comp_tribe) for tr in syn.get("tribes") or []):
+            terms.append(("fits your comp direction", 1.0))
+        if hero and t:
+            for rid, r in meta.engine_recipes().items():
+                if rid.startswith("_") \
+                        or r.get("confidence") != "mechanical" \
+                        or r.get("hero") != hero:
+                    continue
+                if t.get("id") in (r.get("trinkets") or []) \
+                        or cid in (r.get("trinkets") or []):
+                    terms.append(("amps your hero-power engine", 1.5))
+                    break
+        if terms:
+            score += min(sum(a for _l, a in terms), SYN_CAP)
+            why += " · " + " · ".join(l for l, _a in terms)
         ranked.append((name, cid, score, why.strip(" ·")))
     ranked.sort(key=lambda x: (-(x[2] or 0), x[0]))
     return ranked
