@@ -6,8 +6,13 @@
   "confidence": "mechanical",
   "evidence": "Shudderwock power: 'Trigger a friendly minion's Battlecry.' + Sous Chef Sticker: 'You can use your Hero Power an extra time each turn. After you use your Hero Power, gain (1) Gold.' Each extra power use re-fires a Battlecry, so Battlecry minions are repeatable value generators. Log-verified 2026-09-15 game 4 (Shudderwock, 1st place): Tavern Tempest bought every time it appeared was the build key; the coach never surfaced it.",
   "hero": "Shudderwock",
-  "trinkets": ["BG35_MagicItem_8012"],
-  "fuel": {"keyword": "battlecry"},
+  "trinkets": [
+   "BG35_MagicItem_801",
+   "BG35_MagicItem_8012"
+  ],
+  "fuel": {
+   "keyword": "battlecry"
+  },
   "shop_boost": 10.0,
   "why": "hero-power engine fuel",
   "line": "your hero power + Sous Chef Sticker re-fire Battlecries - {card} is build fuel (buy every copy)"
