@@ -1422,6 +1422,67 @@ def _fuel_line(analysis, card_db, spell_db, names, costs, spare):
             f"(quantity beats quality)")
 
 
+def _fuel_roll_mode(analysis):
+    """Plan 3's roll-for-fuel dial: does a live engine make rerolling beat
+    LEVEL this phase? Returns the live fuel spec or None.
+
+    Conservative gates (the design guardrail: recognized engines or
+    near-complete comps only): a fuel engine (meta/fuel_specs.json) ON
+    BOARD, tier >= 4 (the P2-B tempo floor), not dying, no loss streak and
+    no heavy recent hit (stabilize first), and — when a comp direction
+    exists — no more than 2 missing cores (near-complete). The engine
+    itself is a direction when the target is None: a banned-tribe build
+    rides its engine too (the 09-15 game-4 Elemental engine with no
+    targetable comp).
+    """
+    tier = analysis.get("tier")
+    if not tier or tier < 4:
+        return None
+    health = analysis.get("health")
+    if health is not None and health + (analysis.get("armor") or 0) \
+            <= DYING_HEALTH:
+        return None
+    if analysis.get("loss_streak"):
+        return None
+    if (analysis.get("damage_last") or 0) >= 10:
+        return None
+    specs = meta.fuel_specs()
+    live = [specs[m["card"]] for m in analysis.get("board", [])
+            if m.get("card") in specs]
+    if not live:
+        return None
+    if analysis.get("target_state") == "committing":
+        tc = analysis.get("target_cards") or {}
+        missing = [r for r in (tc.get("core") or [])
+                   if not r.get("owned") and not r.get("banned")]
+        if len(missing) > 2:
+            return None
+    return live[0]
+
+
+def _hunt_feasible(analysis, tier):
+    """Feasibility-evaluated missing cores of the target comp (Plan 3):
+    (feasible_rows, evaluated) — the one evaluation both the hunt block and
+    the roll-filler (pieces mode / anti-roll) consume. Empty when there is
+    no committing target."""
+    if analysis.get("target_state") != "committing" or not tier:
+        return [], []
+    tc = analysis.get("target_cards") or {}
+    missing = [r for r in (tc.get("core") or [])
+               if not r.get("owned") and not r.get("banned")]
+    if not missing:
+        return [], []
+    evaluated = [
+        (r, *_hunt_check(r, tier, analysis.get("turn"),
+                         analysis.get("shop_seen"),
+                         "shop_seen" in analysis,
+                         analysis.get("own_pool"),
+                         reach=analysis.get("reach_sources")))
+        for r in missing]
+    feasible = [r for r, ok, _w in evaluated if ok]
+    return feasible, evaluated
+
+
 def _top_move_text(analysis):
     """Render top_move's numbered steps (the planner proper; see top_move)."""
     names = _load_bg_names()
@@ -1464,6 +1525,7 @@ def _top_move_text(analysis):
     #    important minions as a result", 2026-09-03), the BUY leads and the
     #    level trails with its reason.
     level_lead = None
+    fuel_priority = None  # (tier, level_cost): the roll-lead's trailing step
     budget = gold
     level_next = None      # a LEVEL step that trails the buy instead of leading
     level_flip_why = None  # the stated reason the level deferred to the buy
@@ -1499,17 +1561,22 @@ def _top_move_text(analysis):
             next_core, here_core, next_any, here_any, above_core, above_any \
                 = _comp_needs_by_tier(analysis, card_db,
                                       reach=analysis.get("reach_sources"))
-            # Scout (gates 3+4): "their" = the next opponent's last-known
-            # board when we've fought them (the exact buy-phase preview),
-            # else the lobby median, else the corpus baseline. The "~" marks
-            # an estimate; the exact number is a last-known board.
+            # Scout (gates 3+4): "their" = the LOBBY PACE (Plan 3) — the
+            # stronger of the announced next opponent's fresh preview and
+            # the recent lobby median — never the next seat alone. The
+            # 2026-09-15 game-1 t9/t12 "you're strong" fired against a
+            # stale preview while the lobby had doubled (~51); a tier is
+            # only a conversion when the lobby can't punish it. The corpus
+            # baseline stays the last fallback, and the "~" estimate mark
+            # follows the anchor (a lobby median is an estimate too).
             board_stats = analysis.get("board_stats")
-            their = analysis.get("opp_stats")
-            approx = their is None
-            if their is None:
-                their = analysis.get("lobby_opp")
+            preview = analysis.get("opp_stats")
+            lobby = analysis.get("lobby_opp")
+            their = max((v for v in (preview, lobby) if v is not None),
+                        default=None)
             if their is None:
                 their = analysis.get("baseline_opp")
+            approx = their is None or their != preview
             strong = (board_stats is not None and their
                       and board_stats >= 1.5 * their
                       and not damage_last and not loss_streak)
@@ -1537,12 +1604,29 @@ def _top_move_text(analysis):
                             + "stabilize first")
             elif tier >= 3 and damage_last and damage_last >= 10:
                 flip_why = f"took {damage_last} last fight — stabilize first"
+            elif tier >= 4 and board_stats is not None and their \
+                    and board_stats < 0.7 * their:
+                # Plan 3 lobby-pace flip: a board behind the LOBBY (not just
+                # the next seat) buys stats before tiers from tier 4 up —
+                # no loss streak required (the 09-15 game-1 t9 won fights
+                # against a weak next seat and leveled into the Buzz-saw).
+                # Tier 3 and below stay curve-driven: early leveling is
+                # nearly always right (the 09-15 game-2 under-level guard).
+                flip_why = "your board is behind the lobby pace — buy stats first"
             if flip_why and opp_note(board_stats, their, approx):
                 flip_why += f"; {opp_note(board_stats, their, approx)}"
-            if (flip_why or core_pick) and locked_out:
+            if flip_why:
+                # A flip defers the LEVEL outright, not just when the buy
+                # locks the level out — "buy stats first" is the advice even
+                # when both would fit, and the buy section renders the level
+                # right after the buy when the purse covers both.
                 budget = gold  # the buy comes first, from the full purse
                 level_next = True
-                level_flip_why = flip_why or "the shop's top card is a comp core"
+                level_flip_why = flip_why
+            elif core_pick and locked_out:
+                budget = gold  # the buy comes first, from the full purse
+                level_next = True
+                level_flip_why = "the shop's top card is a comp core"
             elif (here_core > 0 and next_core == 0 and above_core == 0) or \
                     (here_core == 0 and next_core == 0 and above_any == 0
                      and here_any > 0):
@@ -1564,15 +1648,31 @@ def _top_move_text(analysis):
                 budget = gold
                 stay_note = True
             else:
-                if next_core > here_core:
-                    why = "the comp's next pieces live there"
-                elif strong:
-                    why = "you're strong — convert it into a tier"
+                fuel = _fuel_roll_mode(analysis)
+                if fuel is not None and next_core > here_core:
+                    fuel = None  # leveling UNLOCKS pieces — it stays first
+                if fuel is not None:
+                    # Plan 3 roll-for-fuel: a live engine on board beats
+                    # converting strength into a tier NOW — rolling produces
+                    # the bodies the build consumes (and pool-weighted
+                    # missing pieces). The dual output: the roll line leads,
+                    # the level trails as an explicit next-priority with its
+                    # exit condition (rendered after the buy section).
+                    level_lead = (f"consider rerolling for "
+                                  f"{(fuel.get('fuel_tribe') or 'fuel').lower()} "
+                                  f"bodies — {fuel.get('why')}")
+                    budget = gold  # rolls/buys spend the full purse
+                    fuel_priority = (tier, analysis.get("level_cost"))
                 else:
-                    why = "standard curve"
-                level_lead = (f"LEVEL to tier {tier + 1} ({why})"
-                              + (f" — {spare} left" if spare else ""))
-                budget = spare  # buys come out of the leftover, not the purse
+                    if next_core > here_core:
+                        why = "the comp's next pieces live there"
+                    elif strong:
+                        why = "you're strong — convert it into a tier"
+                    else:
+                        why = "standard curve"
+                    level_lead = (f"LEVEL to tier {tier + 1} ({why})"
+                                  + (f" — {spare} left" if spare else ""))
+                    budget = spare  # buys come out of the leftover, not the purse
         # else: the level is out of reach this turn. It stays OUT of the
         # numbered list — an upgrade the player can't make is not advice
         # (2026-09-04: "shouldn't be recommending I upgrade if it's
@@ -1663,13 +1763,45 @@ def _top_move_text(analysis):
                     analysis["activation_step"] = act[0]
                 elif budget:  # a roll costs 1 — with nothing left it isn't advice
                     # Gold doesn't carry over between turns, so spending the
-                    # last gold on a refresh beats passing; say WHAT didn't
-                    # fit, not "costs 3, 1 left" (read as "buy it" — the
-                    # 2026-09-06 user question).
+                    # last gold beats passing. Plan 3 gives the filler a
+                    # target when one exists (pieces: the hunt; fuel: the
+                    # engine) and says the anti-roll state OUT LOUD when
+                    # neither exists — the player's stated leak is gold
+                    # rolled away with no target, and the plan should name
+                    # that state every time it blesses a target-less roll.
                     when = " after the level" if level_next else ""
-                    roll = (f"roll — best shop card ({_shop_name(cid, names)}, "
-                            f"{cost}g) doesn't fit your {budget} gold left"
-                            f"{when}")
+                    feasible, _ev = _hunt_feasible(analysis, tier)
+                    fuel = _fuel_roll_mode(analysis)
+                    if feasible:
+                        specific = [r for r in feasible
+                                    if r["card"] not in _shared_utility_cores(
+                                        analysis.get("playable_comps") or {})]
+                        nm = ", ".join(r["name"]
+                                       for r in (specific or feasible)[:2])
+                        roll = (f"roll — hunting {nm} (best shop card "
+                                f"{_shop_name(cid, names)}, {cost}g, doesn't "
+                                f"fit your {budget} gold left{when})")
+                    elif fuel is not None:
+                        roll = (f"roll — feed the engine: "
+                                f"{(fuel.get('fuel_tribe') or 'fuel').lower()} "
+                                f"bodies ({fuel.get('why')})")
+                    else:
+                        tc = analysis.get("target_cards") or {}
+                        n_missing = sum(1 for r in (tc.get("core") or [])
+                                        if not r.get("owned")
+                                        and not r.get("banned")) \
+                            if analysis.get("target_state") == "committing" \
+                            else None
+                        if n_missing:
+                            target = (f"comp is {n_missing} "
+                                      f"{'piece' if n_missing == 1 else 'pieces'} "
+                                      f"short on tier {tier}")
+                        elif n_missing == 0:
+                            target = "comp complete, no engine live"
+                        else:
+                            target = "no comp direction yet"
+                        roll = (f"no reroll target — {target} · roll the "
+                                f"leftover anyway, gold doesn't carry")
                     parts.append(roll)
                     analysis["buy_step_roll"] = roll
                 cid = None  # nothing affordable — don't also say "Buy X"
@@ -1702,14 +1834,7 @@ def _top_move_text(analysis):
                 # this build's win condition — the hunt names what the BUILD
                 # is missing (2026-09-08: the hunt's second target read
                 # 'Balinda Stonehearth').
-                evaluated = [
-                    (r, *_hunt_check(r, tier, analysis.get("turn"),
-                                     analysis.get("shop_seen"),
-                                     "shop_seen" in analysis,
-                                     analysis.get("own_pool"),
-                                     reach=analysis.get("reach_sources")))
-                    for r in missing]
-                feasible = [r for r, _ok, _why in evaluated if _ok]
+                feasible, evaluated = _hunt_feasible(analysis, tier)
                 if feasible:
                     specific = [r for r in feasible
                                 if r["card"] not in _shared_utility_cores(
@@ -1780,6 +1905,11 @@ def _top_move_text(analysis):
                               spare_gold)
             if fuel:
                 parts.append(fuel)
+        if fuel_priority is not None:
+            p_tier, p_cost = fuel_priority
+            parts.append(f"next priority: LEVEL to tier {p_tier + 1} "
+                         f"({p_cost}g) — after the next triple or when the "
+                         f"shop stops producing")
     # 4. Sell only to make room: board full AND buying something that needs
     # the slot. If there's space, selling is unnecessary. Held cards are
     # exempt: the hand plan said "hold — a 3rd copy turns it golden", and

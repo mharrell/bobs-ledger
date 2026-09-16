@@ -82,6 +82,26 @@ CASES = [
         "top_contains": "feed the engine",
     },
     {
+        # Plan 3 validation: the engine (Unbound on board from t14) + a
+        # clean health sheet beats "you're strong — LEVEL": the roll-lead
+        # fires with the dual output - the roll line AND the level as an
+        # explicit next-priority with its exit condition. t13 stays LEVEL
+        # (the engine piece only hit the board mid-phase); t17 stays LEVEL
+        # (took 10 damage - stabilize first); t15 and t19 roll-lead.
+        "name": "game4-t15-roll-for-fuel-leads",
+        "session": "Hearthstone_2026_09_15", "game": 4, "turn": 15,
+        "recipes": ["shudderwock-sous-chef-battlecries"],
+        "top_contains": "consider rerolling for elemental bodies",
+        "top_contains2": "next priority: LEVEL to tier 6",
+    },
+    {
+        "name": "game4-t19-roll-for-fuel-leads",
+        "session": "Hearthstone_2026_09_15", "game": 4, "turn": 19,
+        "recipes": ["shudderwock-sous-chef-battlecries"],
+        "top_contains": "consider rerolling for",
+        "top_contains2": "next priority: LEVEL to tier 6",
+    },
+    {
         "name": "game1-t8-no-false-recipe-no-fuel-line",
         "session": "Hearthstone_2026_09_15", "game": 1, "turn": 8,
         "recipes": [],
@@ -90,10 +110,16 @@ CASES = [
         "top_not_contains": "feed the engine",
     },
     {
-        # Documents the "you're strong — convert it into a tier" push fired
-        # with the board measurably behind (23 vs ~51 the prior turn). Plan 3
-        # re-anchors strength to lobby pace and WILL flip this case — that
-        # flip must land as an edit here, never silently.
+        # Documents the "you're strong — convert it into a tier" push.
+        # Plan 3 re-anchored strength to the lobby pace, but THIS phase's
+        # board read is itself corrupted: the parse carries a PLAY-zone
+        # Nomi at ~1010 ATK (tavern-scaling leak into the warband read,
+        # the extract noise family) that inflates board_stats to ~1115 vs
+        # a real ~105 - so "you're strong" fires against ANY anchor. The
+        # case stays pinned to the current render as the visible gauge:
+        # when the board-contamination fix lands, THIS case flips to
+        # "buy stats" (flip_why: behind the lobby pace) and that edit is
+        # the fix's acceptance test.
         "name": "game1-t9-no-false-recipe_level-push-documented",
         "session": "Hearthstone_2026_09_15", "game": 1, "turn": 9,
         "recipes": [],
@@ -207,6 +233,11 @@ def _run_case(case, chunk, names):
         tm = a.get("top_move") or ""
         ok = case["top_contains"] in tm
         out.append((ok, f"top_move contains '{case['top_contains']}': "
+                        f"{tm[:80]}"))
+    if case.get("top_contains2"):
+        tm = a.get("top_move") or ""
+        ok = case["top_contains2"] in tm
+        out.append((ok, f"top_move contains '{case['top_contains2']}': "
                         f"{tm[:80]}"))
     if case.get("top_not_contains"):
         tm = a.get("top_move") or ""
