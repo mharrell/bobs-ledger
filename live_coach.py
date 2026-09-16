@@ -33,6 +33,7 @@ from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
     situation_line, sticky_comp_target, combat_forecast, active_recipes,
+    live_reach_sources,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -1163,6 +1164,12 @@ class LiveCoach:
         hand = [m for m in self.gs.hand(self.friendly)
                 if m.get("type") != "spell"
                 or m.get("card") in _load_spell_db()]
+        # Reachability sources (analysis/engine_coaching.md Plan 2 Layer A):
+        # discover menus / token generators / random generators live on the
+        # board, in hand, as held trinkets, or in the hero power. Feeds the
+        # hunt's TIER gate, the Q1 stay exception, and the no-hunt footnote.
+        reach_sources = live_reach_sources(board, hand, trinket_recs,
+                                           self.hero_name)
         # The shop = the DebugPrintOptions offers owned by anyone but the friendly
         # player (the player's own minions are shown as sell options, not offers).
         offer_ids = []
@@ -1321,6 +1328,10 @@ class LiveCoach:
             # the buy-step naming and the shop ranking that already ran.
             "engine_recipes": [{k: v for k, v in r.items() if k != "evidence"}
                                for r in recipes],
+            # Live reachability sources (Plan 2 Layer A): discover/token/
+            # random generators currently held. The planner's hunt gate,
+            # the Q1 stay exception, and the no-hunt footnote read these.
+            "reach_sources": reach_sources,
             # Own-side pool ledger (base cid -> held copies, golden = 3):
             # what the Market availability chips and the triple/hunt pool
             # gates are computed from. Dict, not Counter — the overlay

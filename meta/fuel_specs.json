@@ -1,0 +1,24 @@
+{
+ "_comment": "Curated body-hunger fuel specs per engine (analysis/engine_coaching.md Plan 2 Layer B). Keyed by the PAYOFF card id (the engine piece that must sit ON BOARD for the feed-the-engine line). fuel_tribe: the body type that feeds it; trigger: what action with a body pays out (play | sell | summon); payoff: 'quality_independent' means ANY body of the tribe pays - quantity beats quality (encoded from the payoff card's own text: Unbound Tempest gains the TAVERN's stats whatever Elemental you played; Meteorite Crasher's +4/+4 is per Elemental SOLD). The feed-the-engine line fires only when the engine piece is on board, the tavern is past the early tempo window (tier >= 4), and gold is idle after the plan's real buys - a spend recommendation inside the committed build, never a comp-target override.",
+ "BG36_352": {
+  "card": "Unbound Tempest",
+  "fuel_tribe": "Elemental", "trigger": "play",
+  "payoff": "quality_independent",
+  "text": "After you play 3 Elementals, gain the stats of the highest-Health minion in the Tavern.",
+  "why": "every Elemental played feeds Unbound Tempest"
+ },
+ "BG32_846": {
+  "card": "Unleashed Mana Surge",
+  "fuel_tribe": "Elemental", "trigger": "play",
+  "payoff": "quality_independent",
+  "text": "After you play an Elemental, give your Elementals +2/+3.",
+  "why": "every Elemental played feeds Unleashed Mana Surge"
+ },
+ "BG31_843": {
+  "card": "Meteorite Crasher",
+  "fuel_tribe": "Elemental", "trigger": "sell",
+  "payoff": "quality_independent",
+  "text": "After you sell an Elemental, gain +4/+4.",
+  "why": "every Elemental sold feeds Meteorite Crasher"
+ }
+}
