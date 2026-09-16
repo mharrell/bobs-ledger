@@ -1,0 +1,15 @@
+{
+ "_comment": "Curated hero-power x trinket engine recipes (analysis/engine_coaching.md Plan 1, 2026-09-15). A recipe names a hero + required trinkets + what card text counts as its fuel; when live, the coach says so LOUDLY at play time (shop ranking boost + buy advice naming the engine) and quiety at pick time (a required trinket offered while the hero is known gets a capped bonus). GUARDRAILS: recipes modulate, never originate - no comp targets, no hunt overrides, no level-gate flips. confidence: 'mechanical' (every claim quoted from card text, Butchering-fix pattern) activates; 'observed' (pattern noticed in replay data, not text-proven) sits INERT until corpus data justifies it. shop_boost is sized inside the existing W_ENGINE family (between addon +7 and core +14) - never a new dominant weight. The matching code lives in value.active_recipes / value.recipe_fuel_hit.",
+ "shudderwock-sous-chef-battlecries": {
+  "id": "shudderwock-sous-chef-battlecries",
+  "name": "Shudderwock x Sous Chef Sticker - repeated Battlecries",
+  "confidence": "mechanical",
+  "evidence": "Shudderwock power: 'Trigger a friendly minion's Battlecry.' + Sous Chef Sticker: 'You can use your Hero Power an extra time each turn. After you use your Hero Power, gain (1) Gold.' Each extra power use re-fires a Battlecry, so Battlecry minions are repeatable value generators. Log-verified 2026-09-15 game 4 (Shudderwock, 1st place): Tavern Tempest bought every time it appeared was the build key; the coach never surfaced it.",
+  "hero": "Shudderwock",
+  "trinkets": ["BG35_MagicItem_8012"],
+  "fuel": {"keyword": "battlecry"},
+  "shop_boost": 10.0,
+  "why": "hero-power engine fuel",
+  "line": "your hero power + Sous Chef Sticker re-fire Battlecries - {card} is build fuel (buy every copy)"
+ }
+}

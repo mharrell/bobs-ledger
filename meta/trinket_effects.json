@@ -87,7 +87,7 @@
   "BG35_MagicItem_3014": {"base_value": 12, "synergy": {"tribes": ["Mechanical"]}, "note": "random Magnetic Mech, another each turn (Scraper Sticker)"},
   "BG32_MagicItem_8315": {"base_value": 10, "synergy": {"tribes": ["Elemental"]}, "note": "Sellemental + one per turn (Sellemental Portrait)"},
   "BG32_MagicItem_4000": {"base_value": 8, "synergy": {"keywords": ["leveling"]}, "note": "one-shot: transform ALL minions into random T4 (Shrine of Evolution) — powerful but high variance"},
-  "BG35_MagicItem_8012": {"base_value": 10, "synergy": {"keywords": ["hero_power", "economy"]}, "note": "extra Hero Power use + 1 gold per use (Sous Chef Sticker)"},
+  "BG35_MagicItem_8012": {"base_value": 10, "synergy": {"keywords": ["hero_power", "economy"]}, "power": {"extra_uses": 1, "gold_per_use": 1}, "note": "extra Hero Power use + 1 gold per use (Sous Chef Sticker); 'power' is the structured hero-power boost (engine_recipes.json reads it)"},
   "BG30_MagicItem_8880": {"base_value": 10, "synergy": {"keywords": ["trinket"]}, "note": "becomes a copy of your Greater Trinket (Souvenir Stand)"},
   "BG32_MagicItem_1702": {"base_value": 8, "synergy": {"tribes": ["Mechanical"]}, "note": "per Magnetic played: cast Repair Job on a Mech (Spell-powered Wrench)"},
   "BG32_MagicItem_3502": {"base_value": 10, "synergy": {"keywords": ["golden", "economy"]}, "note": "at 15 gold: random GOLDEN Tier 5 (Splinter of Aurum, once)"},

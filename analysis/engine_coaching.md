@@ -28,7 +28,8 @@ Game 4 (Shudderwock 1st, 20 turns) — the positive case:
 - Coach never surfaced Tavern Tempest as the build key; its shop advice
   ranked by generic value only.
 
-Morning 09-14 games — the regression cases:
+Morning 09-15 games (same session, `Hearthstone_2026_09_15`) —
+the regression cases:
 
 - Game 1 (Tras'tath, 6th): t9/t12 "LEVEL — you're strong" while the board
   was behind the lobby (23 vs ~51 the prior turn) — strength read vs next

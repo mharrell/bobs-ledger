@@ -1,0 +1,9 @@
+{
+ "_comment": "Structured hero-power semantics (analysis/engine_coaching.md Plan 1). Keyed by hero NAME (log hero ids patch-drift; names match - the same rule as choices.py). 'text' QUOTES meta/heroes.json's hero_power field verbatim: tests/test_engine_recipes.py asserts the quote matches, so a patch that rewords a power flags the stale semantics instead of silently misfiring. Entries are added per need (a recipe or a synergy term that requires the trigger class) - each encoded by literally reading the power text, never by regex-on-text at runtime. trigger = the class of action the power repeats/consumes: 'battlecry' (re-fires a minion Battlecry), 'spell' (casts/rewinds spells), ... unlock_turn = when the power comes online when the text says so.",
+ "Shudderwock": {
+  "trigger": "battlecry",
+  "text": "Trigger a friendly minion's Battlecry. (Unlocks on Turn 3.)",
+  "unlock_turn": 3,
+  "confidence": "mechanical"
+ }
+}

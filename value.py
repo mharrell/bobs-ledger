@@ -55,6 +55,12 @@ W_MULT = 4.0        # multiplier glue (Balinda/Drakkari-class): worth what it
                     # amplifies, not its stats — never "safest to sell" glue
 W_SELL_FLOOR = 16.0  # comp glue can't rank into "safe to sell" (below the
                      # 15 filler threshold shared with top_move and the UI)
+W_RECIPE_FUEL = 10.0  # shop card that fuels an ACTIVE engine recipe (analysis/
+                      # engine_coaching.md Plan 1: hero power x trinket engines,
+                      # e.g. Shudderwock + Sous Chef Sticker -> every Battlecry
+                      # minion is repeatable value). Sized BETWEEN addon (+7)
+                      # and comp core (+14) inside the existing family — loud
+                      # at play time, but it can't outrank a missing core.
 
 # Hand-charge kits (2026-09-10 replay, curatively encoded per the card-text
 # discipline): a charger gains stats WHILE IN HAND and needs a deployer to
@@ -749,9 +755,71 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
     return [(c, v) for c, v, _ in scored]
 
 
+def active_recipes(hero_name, trinkets=None):
+    """Mechanical engine recipes live for THIS hero + held trinkets.
+
+    `trinkets`: held-trinket records — the DB records live_coach resolves
+    ("id"/"name"), the raw sighting dicts board_state returns ("cid"/
+    "name"), or plain id/name strings. A recipe activates only when ALL of
+    these hold: confidence == "mechanical" (observed rows sit inert until
+    corpus data justifies them), the hero matches by name, and every
+    trinket the recipe requires is held (matched by id or by name —
+    pick-block ids drift across patches, the same rule as choices.py).
+    Recipes modulate, never originate (analysis/engine_coaching.md): the
+    output is a shop boost + an advice naming, never a comp target or a
+    gate override.
+    """
+    held = set()
+    for t in trinkets or []:
+        if isinstance(t, str):
+            held.add(t)
+        else:
+            for k in ("id", "cid", "name"):
+                if t.get(k):
+                    held.add(t[k])
+    out = []
+    # Required trinkets expand to every string that identifies them — the
+    # DB id plus its stable name — so a sighting under a drifted log id
+    # (BG35_MagicItem_801) still completes a recipe written with the DB id
+    # (BG35_MagicItem_8012) via the name.
+    db_names = {t.get("id"): t.get("name") for t in meta.trinkets()}
+    for rid, rec in meta.engine_recipes().items():
+        if rid.startswith("_"):  # the _comment prose row
+            continue
+        if rec.get("confidence") != "mechanical":
+            continue
+        if rec.get("hero") != hero_name:
+            continue
+        need = set()
+        for tid in rec.get("trinkets") or []:
+            need.add(tid)
+            if db_names.get(tid):
+                need.add(db_names[tid])
+        if need and not need & held:
+            continue
+        out.append(dict(rec, id=rec.get("id", rid)))
+    return out
+
+
+def recipe_fuel_hit(card, recipe):
+    """Does THIS card's literal text match a recipe's fuel spec?
+
+    Mechanical only: the fuel keyword must appear in the card's own text
+    (the Butchering-fix pattern — quoted keyword in, no runtime inference),
+    so "Battlecry: Get a random Elemental." matches fuel {"keyword":
+    "battlecry"} while a plain body can't ride along.
+    """
+    if not card or not recipe:
+        return False
+    kw = (recipe.get("fuel") or {}).get("keyword")
+    if not kw:
+        return False
+    return kw.lower() in (card.get("text") or "").lower()
+
+
 def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                  hero_power=None, trinkets=None, scenario=None,
-                 recent_cards=None, comp=None, hand=None):
+                 recent_cards=None, comp=None, hand=None, recipes=None):
     """Rank the shop's tavern cards (minions AND spells) by value.
 
     `shop_cards`: list of card ids currently offered. `comps`: the playable comps
@@ -759,6 +827,8 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
     comp. `allowed_tribes`: canonical allowed tribes, or None when unknown (no
     penalty). `hero_power`/`trinkets`: the W_HERO / W_TRINKET synergy inputs.
     `scenario`: real per-turn trigger counts (feeds the spell fuel term).
+    `recipes`: ACTIVE engine recipes (value.active_recipes output) — a card
+    whose text feeds one gets its shop_boost (the loud play-time term).
     `recent_cards`/`comp`: the SAME comp evidence the target display uses —
     without them the ranking scored against an ARBITRARY comp (dict order)
     when there was no evidence yet, blessing that comp's core with +10 (the
@@ -878,6 +948,17 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
             # into per-combat bodies (plus the free-slot rule — the plan
             # text carries that).
             val += W_ENGINE_DEPLOY
+        # Active engine recipes (analysis/engine_coaching.md Plan 1): a card
+        # whose text feeds a live recipe (e.g. any Battlecry minion under
+        # Shudderwock + Sous Chef Sticker) is build fuel. Applied AFTER the
+        # committed-comp damp — the hero power re-fires the Battlecry
+        # regardless of tribe, so a fuel card the build doesn't share a
+        # tribe with still surfaces. The boost is sized under the core
+        # bonus: fuel never displaces a missing comp core.
+        for rec in recipes or []:
+            if recipe_fuel_hit(card, rec):
+                val += rec.get("shop_boost") or W_RECIPE_FUEL
+                break
         scored.append((raw_cid, val))
     scored.sort(key=lambda x: (-x[1], x[0]))
     return scored
@@ -1596,10 +1677,20 @@ def _top_move_text(analysis):
         if cid is not None:
             bought = cid
             analysis["buy_step_card"] = cid
+            recipes = analysis.get("engine_recipes") or []
             why = _buy_intention(cid, comp, card_db, spell_db,
                                  board=analysis.get("board"),
-                                 pool_held=analysis.get("own_pool"))
+                                 pool_held=analysis.get("own_pool"),
+                                 recipes=recipes)
             parts.append(f"Buy {_shop_name(cid, names)} ({why})")
+            # Name the engine once, right after the fuel buy (the 2026-09-15
+            # Shudderwock game's miss: the coach ranked Tavern Tempest but
+            # never said the hero power x trinket loop was the build).
+            for rec in recipes:
+                if recipe_fuel_hit(card_db.get(cid), rec):
+                    parts.append((rec.get("line") or "").format(
+                        card=_shop_name(cid, names)))
+                    break
             if level_next and tier and analysis.get("level_cost") is not None:
                 level_cost = analysis.get("level_cost")
                 leftover = (gold or 0) - (costs.get(cid) or 0)
@@ -1787,12 +1878,19 @@ def _triple_note(cid, board, pool_held=None):
 
 
 def _buy_intention(cid, comp, card_db, spell_db=None, board=None,
-                   pool_held=None):
+                   pool_held=None, recipes=None):
     """Why the coach recommends buying this card (a pre-set intention)."""
     note = _triple_note(cid, board, pool_held)
     note = f"; {note}" if note else ""
     if comp and cid in comp.get("core", []):
         return f"committing to {comp.get('tribe') or comp.get('name')}{note}"
+    # Active engine recipes name themselves BEFORE the generic reads (the
+    # 2026-09-15 Shudderwock game: "Buy Tavern Tempest (growth engine)"
+    # never said WHY it was an engine — the hero power + trinket loop was
+    # the whole point). Only comp core outranks it.
+    for rec in recipes or []:
+        if recipe_fuel_hit(card_db.get(cid), rec):
+            return f"{rec.get('why') or 'hero-power engine fuel'}{note}"
     if comp and cid in comp.get("addons", []):
         return f"part of growth cycle{note}"
     card = card_db.get(cid)
@@ -1999,7 +2097,26 @@ def _board_tribe_share(comp, board):
     return hits / len(board)
 
 
-def comp_progress(board, comps, recent_cards=None, top=4):
+def _trinket_nudge(comp, trinkets):
+    """Held-trinket comp-direction nudge (analysis/engine_coaching.md Plan 1's
+    reverse edge: trinket <-> comp is two-way). A trinket whose curated
+    synergy rewards a comp's tribe nudges that comp by HALF a core hit —
+    enough to tip a 1-hit tie, never to manufacture direction from nothing
+    (the meter still needs real board/recent evidence). Modulates, never
+    originates."""
+    tribe = (comp or {}).get("tribe")
+    if not tribe or not trinkets:
+        return 0.0
+    for t in trinkets:
+        if not isinstance(t, dict):
+            continue
+        for tr in (t.get("synergy") or {}).get("tribes") or []:
+            if overlaps(tr, tribe):
+                return 0.5
+    return 0.0
+
+
+def comp_progress(board, comps, recent_cards=None, top=4, trinkets=None):
     """Commit readiness per candidate comp — the meter behind comp_target's
     rule (UI: the "Comp direction" box shows how close each candidate is to
     the 2-core-hit commit threshold BEFORE comp_target declares a target).
@@ -2009,9 +2126,13 @@ def comp_progress(board, comps, recent_cards=None, top=4):
     (hits desc, then meta tier, capped at `top`); each row also carries
     `tribe_hits`, the tribe's total across its comps — the comp_target
     tribe rule (>=2 spread across comps of one tribe) is visible as tribe
-    momentum on the row even when no single comp hits alone.
-    Returns [{name, tribe, meta_tier, hits, ready, needs, tribe_hits}] —
-    needs is the unowned core (the shopping list that moves the meter).
+    momentum on the row even when no single comp hits alone. A held
+    trinket rewarding the comp's tribe adds a half-hit nudge to the ORDER
+    (rows carry trinket_fit for display) — never to `ready`, which stays
+    hits >= 2 of real evidence.
+    Returns [{name, tribe, meta_tier, hits, ready, needs, tribe_hits,
+    trinket_fit}] — needs is the unowned core (the shopping list that
+    moves the meter).
     """
     rc = list(recent_cards or [])
     board_cards = {m["card"] for m in board}
@@ -2031,6 +2152,7 @@ def comp_progress(board, comps, recent_cards=None, top=4):
                 "needs": [cid for cid in comp.get("core", [])
                           if cid in cores and cid not in board_cards
                           and cid not in blocked],
+                "trinket_fit": bool(_trinket_nudge(comp, trinkets)),
             })
     # Tribe evidence across comps (the comp_target tribe rule): a row whose
     # TRIBE gathers >=2 hits total is closer to a real direction than its
@@ -2046,12 +2168,15 @@ def comp_progress(board, comps, recent_cards=None, top=4):
     for r in rows:
         r["tribe_hits"] = tribe_total.get(r["tribe"])
     tier_rank = {"S": 0, "A": 1, "B": 2}
-    rows.sort(key=lambda r: (-r["hits"], tier_rank.get(r["meta_tier"], 3),
+    # Trinket nudge orders ties (1-hit rows), never flips `ready`.
+    rows.sort(key=lambda r: (-(r["hits"] + (0.5 if r.get("trinket_fit")
+                                            else 0.0)),
+                             tier_rank.get(r["meta_tier"], 3),
                              r["name"] or ""))
     return rows[:top]
 
 
-def comp_target(board, comps, recent_cards=None):
+def comp_target(board, comps, recent_cards=None, trinkets=None):
     """The comp to build toward, given evidence only.
 
     Commit requires EVIDENCE (2026-09-04 live note: "already has a
@@ -2068,7 +2193,10 @@ def comp_target(board, comps, recent_cards=None):
     commit, TRIBE-level evidence counts: >=2 core hits spread across comps
     of one tribe point at the tribe (the 2026-09-04 beasts game built
     Tasty Lobster + Banana Slamma — two beasts comps — and the coach stayed
-    comp-agnostic, headlining Naga cards, all game). Returns comp or
+    comp-agnostic, headlining Naga cards, all game). `trinkets` (held
+    trinket records) add the Plan-1 reverse edge: a trinket rewarding a
+    comp's tribe is a HALF-HIT nudge on ties — it can tip equal-evidence
+    comps, never create the >=2-hit evidence itself. Returns comp or
     None — None is meaningful ("no direction yet").
     """
     rc = list(recent_cards or [])  # copies count: a pivot is often 3x one core
@@ -2089,7 +2217,7 @@ def comp_target(board, comps, recent_cards=None):
         if overlap < 2:
             continue
         dominant = _board_tribe_share(comp, board) > 0.5
-        key = (overlap, dominant)
+        key = (overlap + _trinket_nudge(comp, trinkets), dominant)
         if committed is None or key > (committed[1], committed[2]):
             committed = (comp, overlap, dominant)
     if rc:
@@ -2122,7 +2250,8 @@ def comp_target(board, comps, recent_cards=None):
         tribe = comp.get("tribe")
         if not tribe:
             continue
-        tribe_total[tribe] = tribe_total.get(tribe, 0) + hits
+        tribe_total[tribe] = tribe_total.get(tribe, 0) + hits \
+            + _trinket_nudge(comp, trinkets)
         cur = tribe_best.get(tribe)
         if cur is None or hits > cur[1]:
             tribe_best[tribe] = (comp, hits)

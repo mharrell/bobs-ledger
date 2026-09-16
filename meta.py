@@ -93,6 +93,25 @@ def heroes():
     return _items("heroes.json")
 
 
+def hero_powers():
+    """Structured hero-power semantics (dict hero name -> semantics), or {}.
+
+    Curated per hero by literally reading the power text; each entry's
+    'text' quotes heroes.json so a test can catch semantic drift on a
+    patch. See meta/hero_powers.json.
+    """
+    return _raw("hero_powers.json") or {}
+
+
+def engine_recipes():
+    """Curated hero-power x trinket engine recipes (dict id -> recipe), or {}.
+
+    Only confidence == "mechanical" entries may activate anything; see
+    meta/engine_recipes.json and analysis/engine_coaching.md Plan 1.
+    """
+    return _raw("engine_recipes.json") or {}
+
+
 def pool_sizes():
     """Shared-pool copy counts per tavern tier, or {} without the file.
 
