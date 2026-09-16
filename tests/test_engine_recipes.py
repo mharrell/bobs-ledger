@@ -23,7 +23,7 @@ from value import (active_recipes, recipe_fuel_hit, shop_ranking,
                    _buy_intention, comp_target, comp_progress, W_RECIPE_FUEL)
 
 RECIPE_ID = "shudderwock-sous-chef-battlecries"
-SOUS_CHEF_DB_ID = "BG35_MagicItem_8012"
+SOUS_CHEF_DB_ID = "BG35_MagicItem_801"  # DB keyed by log ids since 2026-09-16
 SOUS_CHEF_LOG_ID = "BG35_MagicItem_801"  # the id the live log actually used
 
 
@@ -227,10 +227,11 @@ class TestCompNudge(unittest.TestCase):
 
 
 class TestHeldTrinketResolution(unittest.TestCase):
-    def test_drifted_log_id_resolves_by_bracket_name(self):
+    def test_log_id_resolves_directly(self):
         gs = GameState()
-        # The exact line shape the 2026-09-15 log used for the trinket pick
-        # (drifted 3-digit log id), in the standard bracket TAG_CHANGE form.
+        # The exact line shape the 2026-09-15 log used for the trinket pick.
+        # Since the 2026-09-16 refresh (refresh_trinkets.py) the DB is keyed
+        # by log ids, so this hits exactly — the drift workaround is history.
         gs.feed("D 11:00:00.0000000 GameState.DebugPrintPower() - "
                 "    TAG_CHANGE Entity=[entityName=Sous Chef Sticker "
                 "id=3104 zone=SETASIDE zonePos=0 cardId=BG35_MagicItem_801 "
@@ -241,7 +242,16 @@ class TestHeldTrinketResolution(unittest.TestCase):
         by_id = {t["id"]: t for t in meta.trinkets()}
         by_name = {t["name"]: t for t in meta.trinkets() if t.get("name")}
         resolved = _resolve_trinkets(recs, by_id, by_name)
-        self.assertEqual([t["id"] for t in resolved], [SOUS_CHEF_DB_ID])
+        self.assertEqual([t["id"] for t in resolved], [SOUS_CHEF_LOG_ID])
+
+    def test_unknown_cid_resolves_by_bracket_name(self):
+        """The bracket-name fallback stays for cids the DB doesn't know —
+        new trinkets before the next refresh, or future id drift."""
+        by_id = {t["id"]: t for t in meta.trinkets()}
+        by_name = {t["name"]: t for t in meta.trinkets() if t.get("name")}
+        recs = [{"cid": "BG99_MagicItem_999", "name": "Sous Chef Sticker"}]
+        resolved = _resolve_trinkets(recs, by_id, by_name)
+        self.assertEqual([t["id"] for t in resolved], [SOUS_CHEF_LOG_ID])
 
     def test_exact_id_still_resolves(self):
         by_id = {t["id"]: t for t in meta.trinkets()}
