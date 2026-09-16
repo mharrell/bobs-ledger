@@ -45,7 +45,7 @@ def analyze(path, game_index=1):
     chunk = lines[start:end]
 
     game = extract_game(chunk)
-    friendly = _friendly_player(game["heroes"])
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
     friendly_hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
     friendly_account = next((n for n, c in game["account"].items()
                              if c == friendly_hero["card"]), None)

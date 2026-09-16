@@ -590,7 +590,7 @@ def main():
     for idx, (start, end) in enumerate(chunks, 1):
         chunk = lines[start:end]
         game = extract_game(chunk)
-        friendly = _friendly_player(game["heroes"])
+        friendly = _friendly_player(game["heroes"], game.get("choice_players"))
 
         friendly_hero = None
         for h in game["heroes"]:

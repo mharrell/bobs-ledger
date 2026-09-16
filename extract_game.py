@@ -29,6 +29,13 @@ ENTITY_TAG = re.compile(
 )
 # Entity=<account> tag=HERO_ENTITY value=<id>  (friendly name -> hero entity)
 NAME_HERO = re.compile(r"Entity=([^ ]+) tag=HERO_ENTITY value=(\d+)")
+# An entity bracket on a GameState.DebugPrintEntityChoices line (hero pick,
+# trinket pick, discovers, dark gifts). The client only ever prints choices
+# for the LOCAL player, so a player= seen here is the friendly player's
+# bracket number outright — see _friendly_player. Option lines carry no
+# trailing tag=, so ENTITY_TAG passes over them; the header line's
+# "Player=<account>" is also not matched (it isn't player=<digits>]).
+CHOICE_PLAYER = re.compile(r"DebugPrintEntityChoices.*?player=(\d+)\]")
 # FULL_ENTITY - Creating ID=<id> CardID=<card>. CardID may be empty (enchantment
 # entities are created with no card id and revealed later via SHOW_ENTITY), so
 # \w* not \w+ — otherwise the block's tag lines get attributed to the previous
@@ -96,8 +103,14 @@ def extract_game(lines):
     tech = {}        # entity id -> final tech level (last value wins)
     hero_name = {}   # entity id -> entityName (hero display name)
     hero_entity_tags = {}  # account name -> list of hero entity ids (HERO_ENTITY)
+    choice_players = set()  # bracket numbers on DebugPrintEntityChoices lines
 
     for line in lines:
+        m = CHOICE_PLAYER.search(line)
+        if m:
+            choice_players.add(int(m.group(1)))
+            continue
+
         m = ENTITY_TAG.search(line)
         if m:
             ename, eid, cid, p, tag, value = m.groups()
@@ -164,7 +177,8 @@ def extract_game(lines):
                 account[name] = cid
                 break
 
-    return {"heroes": heroes, "account": account}
+    return {"heroes": heroes, "account": account,
+            "choice_players": choice_players}
 
 
 def extract_moves(lines, friendly_player):
@@ -264,16 +278,30 @@ def _fmt_tier_timing(hero, tier_reached):
     return " ".join(parts) if parts else "(no tier data)"
 
 
-def _friendly_player(heroes):
-    """The friendly player number: the one with the fewest heroes (1 vs 7).
+def _friendly_player(heroes, choice_players=None):
+    """The friendly player number, by two signals, strongest first.
 
-    Returns None if no heroes are parsed yet (e.g. the live coach analyzing a
-    game's very first lines, or end-of-game cleanup) — so callers don't crash on
-    an empty selection.
+    1. choice_players — bracket numbers seen on GameState's
+       DebugPrintEntityChoices lines. The client only ever prints choices
+       (hero pick, trinket, discovers, dark gifts) for the LOCAL player, so
+       this names the friendly player outright — and it lands at the hero
+       pick, long before any placement tag exists.
+    2. The "1 vs 7" split: the friendly hero alone under its bracket id
+       while all 7 opponents share the spectator id. Trusted only once the
+       split has actually materialized (min < max): on a partial parse the
+       first placement-tagged hero may be a lone OPPONENT (2026-09-16:
+       Vanndar's placement arrived first and Counter{16:1} -> min -> 16
+       locked the live coach to a dead opponent's health/board/tier for a
+       whole game), so an unsplit counter returns None and callers retry.
+
+    Returns None while no signal is usable yet (very early parse, spectator
+    logs, end-of-game cleanup) — so callers don't crash on an empty selection.
     """
     from collections import Counter
+    if choice_players and len(choice_players) == 1:
+        return next(iter(choice_players))
     counts = Counter(h["player"] for h in heroes)
-    if not counts:
+    if len(counts) < 2 or min(counts.values()) == max(counts.values()):
         return None
     return min(counts, key=lambda p: counts[p])
 
@@ -310,7 +338,7 @@ def main():
                 print(f"    {name!r} -> {cid}")
 
         if show_moves or show_compare:
-            friendly = _friendly_player(game["heroes"])
+            friendly = _friendly_player(game["heroes"], game.get("choice_players"))
             tier_reached, buys, sells = extract_moves(chunk, friendly)
             if show_moves:
                 print("\n  Tier timing:")

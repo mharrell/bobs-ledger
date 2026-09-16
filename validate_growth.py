@@ -64,7 +64,7 @@ def validate_game(path, game_index=1):
     chunk = lines[start:end]
 
     game = extract_game(chunk)
-    friendly = _friendly_player(game["heroes"])
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
     hero = next((h.get("card") for h in game["heroes"] if h["player"] == friendly), None)
 
     # Replay the log, snapshotting the friendly board at each buy phase.

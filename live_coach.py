@@ -803,7 +803,7 @@ class LiveCoach:
         if self.friendly is not None or not self.cur_lines:
             return
         game = extract_game(self.cur_lines)
-        friendly = _friendly_player(game["heroes"])
+        friendly = _friendly_player(game["heroes"], game.get("choice_players"))
         if friendly is None:
             return  # no heroes parsed yet (very early / end-of-game); retry next analyze
         self.meta = game

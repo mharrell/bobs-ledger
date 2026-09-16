@@ -332,7 +332,7 @@ def main():
     for idx, (start, end) in enumerate(chunks, 1):
         chunk = lines[start:end]
         game = extract_game(chunk)
-        friendly = _friendly_player(game["heroes"])
+        friendly = _friendly_player(game["heroes"], game.get("choice_players"))
         friendly_hero_card = next((h.get("card") for h in game["heroes"]
                                    if h["player"] == friendly), None)
         friendly_hero_name = next((h.get("hero_name") for h in game["heroes"]
