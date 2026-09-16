@@ -19,6 +19,8 @@ sys.path.insert(0, HERE)
 
 from config import HS_LOG_GLOB as LOG_GLOB  # noqa: E402
 
+import live_coach  # noqa: E402
+
 from extract_game import (  # noqa: E402
     CHOICE_PLAYER, _friendly_player, extract_game,
 )
@@ -133,6 +135,67 @@ class TestHeuristicFallback(unittest.TestCase):
             _friendly_player(game["heroes"], game["choice_players"]), 8)
 
 
+class TestLiveLockContract(unittest.TestCase):
+    """The live_coach._ensure_meta contract on top of _friendly_player.
+
+    The choice signal fires at the mulligan, before hero entities carry
+    placements. Locking the player number there captured a hero-less meta
+    that never re-parsed (2026-09-16 07:48 session: hero/tier/gold/health
+    None all game; the coach advised spell buys with no LEVEL machinery —
+    reported as "prioritizing spells over leveling"). The lock must wait
+    for the friendly player's hero record.
+    """
+
+    def _coach_with(self, *lines):
+        lc = live_coach.LiveCoach()
+        for line in lines:
+            lc.feed(line)
+        lc.ensure_meta()
+        return lc
+
+    def test_choices_alone_do_not_lock(self):
+        lc = self._coach_with(CHOICE_HEADER, CHOICE_OPTION)
+        self.assertIsNone(lc.friendly)
+        self.assertIsNone(lc.hero_card)
+        self.assertIsNone(lc.meta)
+
+    def test_hero_placement_completes_the_lock(self):
+        lc = self._coach_with(
+            CHOICE_HEADER, CHOICE_OPTION,
+            _place_line("Xyrella", 100, "BG20_HERO_101", 8, 6))
+        self.assertEqual(lc.friendly, 8)
+        self.assertEqual(lc.hero_card, "BG20_HERO_101")
+        self.assertEqual(lc.hero_name, "Xyrella")
+
+    def test_wrong_player_hero_still_waits(self):
+        """An opponent hero spawning first (the morning misfire's shape)
+        must not satisfy the gate either — the friendly's OWN hero is the
+        requirement."""
+        lc = self._coach_with(
+            CHOICE_HEADER, CHOICE_OPTION,
+            _place_line("Vanndar Stormpike", 180, "BG22_HERO_003", 16, 8))
+        self.assertIsNone(lc.friendly)
+        self.assertIsNone(lc.hero_card)
+
+    def test_late_lock_drains_pending_hero_stats(self):
+        """Armor/health writes that arrived before the lock are buffered in
+        _stat_pending and drained at lock time — a later lock must not lose
+        the opening health."""
+        lc = live_coach.LiveCoach()
+        for line in (CHOICE_HEADER, CHOICE_OPTION):
+            lc.feed(line)
+        # A friendly-hero ARMOR write, pre-lock.
+        lc.feed("D 06:28:06.0000000 PowerTaskList.DebugPrintPower() -     "
+                "TAG_CHANGE Entity=[entityName=Xyrella id=100 zone=HAND "
+                "zonePos=4 cardId=BG20_HERO_101 player=8] tag=ARMOR "
+                "value=10 \n")
+        self.assertTrue(lc._stat_pending)
+        lc.feed(_place_line("Xyrella", 100, "BG20_HERO_101", 8, 6))
+        lc.ensure_meta()
+        self.assertEqual(lc.friendly, 8)
+        self.assertEqual(lc._stat_pending, [])
+
+
 class TestRealLog(unittest.TestCase):
     def test_incremental_lock_matches_full_parse(self):
         """On every game of the newest real session, the friendly player the
@@ -156,13 +219,14 @@ class TestRealLog(unittest.TestCase):
                                     extract_game(buf)["choice_players"])
             if full is None:
                 continue
-            # Walk forward until heroes parse; that's the lock-in moment.
+            # Walk forward until the lock LANDS (non-None) — the contract is
+            # that whenever it lands, it equals the full parse. An opponent-
+            # only hero sighting must be waited out, not locked on.
             locked = None
             for n in range(1, len(buf) + 1):
                 g = extract_game(buf[:n])
-                if g["heroes"]:
-                    locked = _friendly_player(g["heroes"],
-                                              g["choice_players"])
+                locked = _friendly_player(g["heroes"], g["choice_players"])
+                if locked is not None:
                     break
             self.assertEqual(
                 locked, full,

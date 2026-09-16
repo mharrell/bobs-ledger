@@ -799,18 +799,26 @@ class LiveCoach:
             rec["zone"] = value
 
     def _ensure_meta(self):
-        """Compute per-game data once heroes are parsed; retry until they are."""
+        """Compute per-game data once the friendly HERO is parsed; retry until it is."""
         if self.friendly is not None or not self.cur_lines:
             return
         game = extract_game(self.cur_lines)
         friendly = _friendly_player(game["heroes"], game.get("choice_players"))
         if friendly is None:
-            return  # no heroes parsed yet (very early / end-of-game); retry next analyze
+            return  # no signal yet (very early / end-of-game); retry next analyze
+        hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
+        if hero is None:
+            # The player is identified (choice signal — it fires at the
+            # mulligan) but its hero entity carries no placement yet. Locking
+            # now would capture a hero-less meta and never re-parse: the
+            # 2026-09-16 07:48 session ran the whole game with hero/tier/
+            # gold/health None and advised spell buys with no level machinery.
+            # This lands seconds later, when game setup tags the placements.
+            return
         self.meta = game
         self.friendly = friendly
-        hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
-        self.hero_card = hero["card"] if hero else None
-        self.hero_name = hero["hero_name"] if hero else None
+        self.hero_card = hero["card"]
+        self.hero_name = hero["hero_name"]
         self.account = next((n for n, c in game["account"].items()
                              if c == self.hero_card), None)
         self.actions.friendly = self.friendly
