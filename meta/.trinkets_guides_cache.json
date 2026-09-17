@@ -1,0 +1,2092 @@
+{
+ "BG30_MagicItem_301": {
+  "guide": "Only pickable if you have one scaled [[Eternal Knight||95261]] already on board. Prefer to not have 2 of them on board, because the tripled version will scale less.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_303": {
+  "guide": "Auto pick if you're Teron, Lich King, or Akazamzarak, then commit Automaton comp.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_310": {
+  "guide": "Pick if you're committed to any comp that requires a Titus, such as [[Goldrinn, the Great Wolf||59955]] beasts or [[Catacomb Crasher]] Undeads.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_402": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_403": {
+  "guide": "Commit Back to Back comp",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_406": {
+  "guide": "Commit Attack Scaling Undead with spell power.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_407": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_410": {
+  "guide": "Best picked with [[Prickly Piper]] already, and use [[Glowgullet Warlord]] as your avenge unit. Commit Quils.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_410t2": {
+  "guide": "Good trinket with an avenge setup, usually with [[Glowgullet Warlord]] and [[Bristlebach]]",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_411": {
+  "guide": "Only pickable with scaled gems already (Prickly Piper).",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_414": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_414t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_416": {
+  "guide": "Mainly picked when you can immediately evolve a 4 drop into a 5 drop the turn you pick it, then the next turn you can evolve that 5 drop into a 6 drop.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_418": {
+  "guide": "Pick when you have a comp that needs Brann and you don't have it yet. For example, Murlocs or [[Kalecgos, Arcane Aspect||60630]] dragons.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_419": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_420": {
+  "guide": "Generally decent option to pick.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_420t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_422": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_422t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_423": {
+  "guide": "Mainly used to farm 6 drops on tavern 5. Don't level to 6 with this trinket.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_425": {
+  "guide": "Generally decent to pick.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_426": {
+  "guide": "All around good pick",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_426t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_427": {
+  "guide": "Best with RDU Beast Comp.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_427t": {
+  "guide": "Commit to RDU Beasts",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_429": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_430": {
+  "guide": "Decent pick to fill out your board while leveling.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_431": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_432": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_432t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_433": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_433t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_434": {
+  "guide": "Use this trinket is to duplicate triple rewards.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_435": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_437": {
+  "guide": "Commit Attack Scaling Undead.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_438t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_439": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_440": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_441": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_442": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_540": {
+  "guide": "Commit to Goldrinn Beasts or Leviathan Beasts Comp.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_541": {
+  "guide": "Fastest way to grow the pendant is [[Wrath Weaver||59670]] and a lot of econ.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_542": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_543": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_544": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_544t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_545": {
+  "guide": "Committed to Magnetic Mechs with [[Junk Jouster]].",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_546": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_547": {
+  "guide": "Commit Attack Scaling Undead, aim for a [[Drustfallen Butcher||120104]] setup",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_547t": {
+  "guide": "Use [[Ringbearer]] with this trinket",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_548": {
+  "guide": "Shield [[Heroic Underdog||126966]] in stat matchups.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_555": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_700": {
+  "guide": "Best if you're on tavern 4 already to discover 4 drop deathrattles such as [[Motley Phalanx||106487]] or [[Plaguewalker]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_701": {
+  "guide": "Great trinket when committed to Shop Buff Demons. Also want a [[Brann Bronzebeard||96786]] and [[Soul Rewinder||100949]] in your setup.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_702": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_703": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_705": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_706": {
+  "guide": "Strong pick when your board already has high quality units that you don't mind getting. ([[Eternal Knight||95261]], [[Ancestral Automaton||108432]])",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_707": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_709": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_709t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_710": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_711": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_713": {
+  "guide": "Only pick if you have a lot of summons on your board already, then commit attack scaling undead.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_714": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_777": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_801": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_803": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_804": {
+  "guide": "Good on Sylvanas and ETC, bad on Cenarius",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_821": {
+  "guide": "Only pick with a deathrattle setup that you plan on keeping. Commit to a deathrattle based comp.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_821t2": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_822": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_822t2": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_825": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_828": {
+  "guide": "Must be commited to [[Deep Blue Crooner]] comp already.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_841": {
+  "guide": "Meme comp with [[Famished Felbat]] and [[Drakkari Enchanter||101314]]",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_843t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_847": {
+  "guide": "Best if you have great tempo and need value.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_864": {
+  "guide": "Only pick if you're playing self damage beasts, building around [[Trigore the Lasher]] and [[Iridescent Skyblazer]]. That comp is underwhelming.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_868": {
+  "guide": "Best on Jaraxxus or with a [[Wrath Weaver||59670]] setup if you don't have [[Soul Rewinder||100949]] already.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_869": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_876": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_879": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_879t": {
+  "guide": "Commit shop buff Demons.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_880": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_880t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_886": {
+  "guide": "Commit to Attack Scaling Undead.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_888": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_891": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_900": {
+  "guide": "Concentrate stats onto one good dragon in the midgame.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_900t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_902": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_910": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_914": {
+  "guide": "Only pick with [[Flighty Scout||120677]]. Scale it using the trinket for the rest of the game.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_914t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_916": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_917": {
+  "guide": "Commit to some naga comp.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_918": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_919": {
+  "guide": "Commit to [[Groundbreaker||114816]] comp.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_920": {
+  "guide": "Best with Deep Blue Zesty Comp",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_921": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_923": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_924": {
+  "guide": "Concentrate stats onto only pirates you will keep ([[Private Investigator||132318]])",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_924t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_925": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_930": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_931": {
+  "guide": "Only pick if you have a lot of summons on your board already, with cards such as [[Forest Rover||115577]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_942": {
+  "guide": "Shield Reborn large demons for utility, sell the rest.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_943": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_944": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_951": {
+  "guide": "Use [[Brann Bronzebeard||96786]] to generate money and Nomi or Manasurge to scale.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_952": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_962": {
+  "guide": "Only pickable if you have [[Tarecgosa||72062]] on your board already. Hard roll on tavern 3 until you have 2 Tarecgosas, sell the rest of your board, and leave the two Tarecgosa as your only units. Do NOT triple the Tarecgosa, it does not benefit from the trinket. At some point, your Tarecgosa will be too big, then you fill the rest of your board with good ending units, such as [[Leeroy the Reckless||90425]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_970": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_970t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_971": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_972": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_973": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_978": {
+  "guide": "Only pickable if you're committed to Automaton comp. (You should really only be committed if you're playing Lich King, Teron, or Akazamarak.)",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_979": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_981": {
+  "guide": "Need neutral cards that you'd keep, most of the time with ETC's buddies.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_982": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_984": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_984t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_986": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_987": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_988": {
+  "guide": "Pick with gem generation already, maybe through [[Bristlemane Scrapsmith]]",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_988t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_989": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_989t": {
+  "guide": "Pick with an Attack Scaling Undead setup, insanely powerful for your next 1-2 fights.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_991": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_992": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_992t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_993": {
+  "guide": "Nagas and Pirates have the best 7 drops.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_994": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_995": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_996": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG30_MagicItem_998": {
+  "guide": "Decent pick if you have no 1 drop or 2 drop pairs that you want to triple. Once you've picked this trinket, you can no longer triple 1 drops or 2 drops, but your shops become much better.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG30_MagicItem_999": {
+  "guide": "Need econ + spell power ([[Tranquil Meditative||119942]])",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG31_MagicItem_903": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_111": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_170": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_171": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_172": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_179": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_200": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_204": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_205": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_230": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_231": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_231t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_232": {
+  "guide": "Commit Bounty APM Pirates and go infinite.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_270": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_270t": {
+  "guide": "Commit to Attack Scaling Undeads with [[Drustfallen Butcher||120104]].",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_271": {
+  "guide": "Generally solid",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_274": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_276": {
+  "guide": "Only pick if you have a bunch of Undead summons (Harmless Bonehead).",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_278": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_279": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_280": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_281": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_282": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_283": {
+  "guide": "Commit to Divine Shield Mechs",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_284": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_286": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_300": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_301": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_304": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_306": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_350": {
+  "guide": "MUST proc within Turn 7. Set this up by buying tokens ([[Patient Scout||97604]]) or [[Private Investigator||132318]] on turn 6.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_360": {
+  "guide": "Best with Attack scaling undead comp or [[Eternal Knight||95261]] opener",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_361": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_361t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_362": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_362t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_363": {
+  "guide": "Need to be committed dragons. Permanently Divine Shield dragons by putting them next to [[Persistent Poet||108463]].",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_364": {
+  "guide": "Commit to [[Fire-forged Evoker||120301]] spell dragons.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_365": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_366": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_367": {
+  "guide": "Good when committed to an end of turn comp like Back to Back.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_400": {
+  "guide": "Ok to pick with a board full of trash, such as when you're playing Rafaam.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_415": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_416": {
+  "guide": "Best if you have a battlecry in shop you're happy proccing ([[Refreshing Anomaly||64042]], [[Tavern Tempest||64077]]). Also best picked for 0 gold.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_417": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_419": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_428": {
+  "guide": "Always decent.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_700": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_801": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_801t": {
+  "guide": "Play APM Bounty Pirates",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_802": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_802t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_803": {
+  "guide": "Trigger strong battlecries such as [[Hunting Tiger Shark]]",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_804": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_806": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_807": {
+  "guide": "The Curator Amalgam is best when paired with reborn and Kangor's apprentice.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_808": {
+  "guide": "Pick with gem scaling ([[Gem Rat||116434]]). Best played with [[Balinda Stonehearth||130298]] later.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_808t": {
+  "guide": "Best played with [[Balinda Stonehearth||130298]] and already scaled gems.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_809": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_817": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_820": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_821": {
+  "guide": "Only pick if you have [[Soul Rewinder||100949]] already.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_822": {
+  "guide": "Only pick if you have [[Soul Rewinder||100949]] already.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_823": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_824": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_830": {
+  "guide": "Only pickable with demons in, then commit demons. Could use [[Rylak Metalhead]] to proc.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_831": {
+  "guide": "Lean into Manasurge or Nomi scaling with the elemental generation.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_832": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_832t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_844": {
+  "guide": "Only pick with a board full of trash you don't plan on keeping, usually 1 and 2 drops",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_858": {
+  "guide": "Fill out your board so you can be stable and level.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_860": {
+  "guide": "Use either [[Turquoise Skitterer||119255]] or [[Ravaging Scorpid||132949]] to scale beetles, then use [[Banana Slamma||98824]] to double their attack",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_860t": {
+  "guide": "Use either [[Turquoise Skitterer||119255]] or [[Ravaging Scorpid||132949]] to scale beetles, then use [[Banana Slamma||98824]] to multiply attack on them.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_862": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_862t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_864": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_864t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_887": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_888": {
+  "guide": "Every [[Sellemental||64038]] and [[Tavern Tempest||64077]]. Need [[Brann Bronzebeard||96786]] to be infinite.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_890": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_891": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_892": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_893": {
+  "guide": "Only pickable with [[Flighty Scout||120677]]. Even then, underwhelming.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_894": {
+  "guide": "Try to play into spell buff strategy with [[Gatekeeper Amalgam||133329]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_901": {
+  "guide": "Best picked when you guarantee have something good to golden in your shop.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_902": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_904": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_906": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_907": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_920": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_922": {
+  "guide": "This one is great if you have insane spell generation already. Really strong with Drakkari",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_925": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_926": {
+  "guide": "Steal their stats and summon it using [[Expert Aviator||126637]]",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_930": {
+  "guide": "Best picked with serious spell generation already. Then, use Balinda to double spells played",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_931": {
+  "guide": "Commit to a naga comp.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_932": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_933": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_934": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_935": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_944": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG32_MagicItem_950": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_951": {
+  "guide": "Golden premium cards such as [[Private Investigator||132318]] and [[Cagey Conjurer||132316]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_953": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_954": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_957": {
+  "guide": "Lean into APM Pirates with Bounties",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_960": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG32_MagicItem_998": {
+  "guide": "Play [[Nomi, Kitchen Nightmare||63626]] comp to scale Behemoth. Use Mounting Avalanche on your biggest elemental to print free stats on Behemoth.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_150": {
+  "guide": "Commit to shop buff demons.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_151": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_151t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_152": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_154": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_155": {
+  "guide": "Have [[Shadowdancer]] and cast shop buff spells at the end of your turn.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_156": {
+  "guide": "Must have large unit in shop already, typically with [[Air Revenant||126173]].",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_300": {
+  "guide": "Really good with [[Glambot||132893]] + [[Balinda Stonehearth||130298]] setup.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_300t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_301": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_302": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_303": {
+  "guide": "Auto win if you can duplicate it, such as with Sylvanas, Zerek, or Reno. Then commit to cycle comp, best one being demons.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_305": {
+  "guide": "Commit hand buff Murlocs with [[Bream Counter||98509]] stabilization.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_306": {
+  "guide": "Destroy [[Cadaver Caretaker||113158]] for triples.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_309": {
+  "guide": "Commit Family Murlocs with Brann and [[Cousin Errgl||131149]].",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_310": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_430": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_431t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_432": {
+  "guide": "Need decent sized gems. Best if you commit Smuggler quilboars with Rylak.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_433": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_434": {
+  "guide": "Commit Combat Scaling Quilboars. Run [[Bristlebach]] + Taunted/Divine Shielded/reborn [[Pufferquil]] as core cards.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_435": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_700": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_701": {
+  "guide": "Commit beasts, and run [[Banana Slamma||98824]] as your core card.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_702": {
+  "guide": "Pick with many beasts on board, then commit beasts.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_710": {
+  "guide": "Must use [[Proud Privateer||122520]] + Bounty generation.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_711": {
+  "guide": "Commit APM Bounty Pirates",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_712": {
+  "guide": "Commit APM Bounty Pirates.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_713": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_714": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_731": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_732": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_733": {
+  "guide": "Destroy stuff like [[Mummifier||108992]] and [[Wintergrasp Ghoul]].",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_740": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_741": {
+  "guide": "Use with [[Spark Snapper||132676]] and [[Scrap Scraper||98592]]. Play Magnetic Mechs comp.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_742": {
+  "guide": "Use [[Drakkari Enchanter||101314]] to ramp economy and [[Utility Drone||98588]] to scale.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_743": {
+  "guide": "Commit Magnetic Mechs",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_750": {
+  "guide": "Need Brann",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_752": {
+  "guide": "Commit Family Murlocs with [[Cousin Errgl||131149]] and [[Drakkari Enchanter||101314]] as core cards.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_753": {
+  "guide": "Need Brann",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_754": {
+  "guide": "Run a big [[Bream Counter||98509]]",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_755": {
+  "guide": "Pair with [[Brann Bronzebeard||96786]] for great economy.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_801": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_803": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_803t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_812": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_814": {
+  "guide": "Must plan to level to 6 within 2 turns.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_815": {
+  "guide": "Fill out your board so you can level and look for direction.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_816": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_816t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_817": {
+  "guide": "Best cards to copy are build defining cards such as [[Deep Blue Crooner]] or [[Ancestral Automaton||108432]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_818": {
+  "guide": "Generally solid pick, downside is worth the 10 gold.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_820": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_821": {
+  "guide": "Best 7 drop is Sea Witch Zar'jira.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_821t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_823": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_823t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_834": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_838": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_840": {
+  "guide": "Fill out your board with decent sized minions so you can level and find a comp. Best picked when it costs 0.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_840t": {
+  "guide": "Must have a Brann already, can help you become infinite.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_842": {
+  "guide": "[[Fire-forged Evoker||120301]] and [[Ring Bearer]] are the best ones, and commit to a spell based dragon comp.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_848t": {
+  "guide": "Best picks are [[Fire-forged Evoker||120301]] and [[Ringbearer]] depending on your setup.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_849": {
+  "guide": "Scale a [[Tarecgosa||72062]] on the right, and run deathrattle dragons such as [[Twilight Broodmother]] and [[Titus Rivendare||97408]].",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_850": {
+  "guide": "Commit Shop Buff Eles.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_850t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_851": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_852": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_861": {
+  "guide": "Could be good with [[Cataclysmic Harbinger||130884]] as Baller spell generation.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_862": {
+  "guide": "Once you have some [[Arcane Absorption]] generation, and you have HP to sacrifice, freeze the same shop every turn while buying everything else to double the stats in shop every turn.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_863": {
+  "guide": "Use Brann to cycle lots of cards and Avalanche cards buffed with either Nomi or Air Revenant.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_870": {
+  "guide": "Commit to Leapfrogger comp, need as many [[Titus Rivendare||97408]] and [[Monstrous Macaw]] as possible. Next best additions is [[Sewerlord||130996]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_871": {
+  "guide": "Only pick with multiple beast summons already ([[Forest Rover||115577]])",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_872": {
+  "guide": "Commit to a beast comp.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_890": {
+  "guide": "Great synergy with [[Proud Privateer||122520]]",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_920": {
+  "guide": "Play into a spell power comp such as End of turn/Spell buff comp with [[Fauna Whisperer||120905]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_921": {
+  "guide": "Best with the hero Guff to buy a lot of free cards.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_922": {
+  "guide": "Play into spell scaling ([[Tranquil Meditative||119942]])",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_923": {
+  "guide": "Best with Combat Scaling Nagas",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_924": {
+  "guide": "Commit to Groundbreaker comp, need [[Seafloor Recruiter||126916]].",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_925": {
+  "guide": "Pair with lesser trinket [[Archaic Scroll]], otherwise bad.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_930": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG35_MagicItem_931": {
+  "guide": "Only pick on tavern 4 so you're going to get its value immediately.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG35_MagicItem_931t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_200": {
+  "guide": "Have 2 rallies already on board to start farming rolls ASAP.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_201": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_202": {
+  "guide": "Best battlecry tribe is Elementals for battlecries such as [[Tavern Tempest||64077]] or [[Refreshing Anomaly||64042]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_203": {
+  "guide": "Decent with Chromadrake generation such as [[Bronze Timewalker||132955]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_204": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_205": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_206": {
+  "guide": "Best 4 drops are generally value generators such as [[Headhunter Gryphon||132800]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_208": {
+  "guide": "Very good with [[Balinda Stonehearth||130298]]. Most common deathrattle to trigger is [[Captain Cookie||133075]].",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_211": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_212": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_213": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_214": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_215": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_216": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_217": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_220": {
+  "guide": "Every turn gain 3-4 gold is great.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_300": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_301": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_302": {
+  "guide": "+4/2 a turn is decent on turn 6, +6/3 is amazing. Use tempo to comfortably level to 5.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_302t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_303": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_303t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_305": {
+  "guide": "Pick with some spell generation, commit to some naga comp.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_307": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_308": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_309": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_361": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_362": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_363": {
+  "guide": "Commit APM Pirates, try to go infinite ASAP and use [[Hooktusk, Master Marauder||132925]] to scale.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_370": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_371": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_372": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_373": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_380": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_390": {
+  "guide": "Scale the stats of your elementals so your ballers can benefit from them.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_400": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_402": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_403": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_403t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_404": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_404t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_406": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_407": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_408": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_409": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_410": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_411": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_412": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_412t2": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_414": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_416": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_417": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_418": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_423": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_423t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_424": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_430": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_450": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_600": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_602": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_606": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_609": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_610": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_611": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_800": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_801": {
+  "guide": "Have some Fodder setup with [[Trapped Clapper||132897]] to stabilize.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_810": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_810t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_811": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_812": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_820": {
+  "guide": "Must already have Flighty Scout. Buy cheap spells to scale them.",
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BG36_MagicItem_830": {
+  "guide": "Use [[Devilish Distractor||132901]] + [[Balinda Stonehearth||130298]] setup and this trinket for shop buff payoff.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_831": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_840": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_841": {
+  "guide": "With Automaton midgame, insanely powerful for the next 1-2 fights.",
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_850": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BG36_MagicItem_852": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_001": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_002": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_003": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_004": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_005": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_006": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_007": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_008": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_009": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_010": {
+  "guide": null,
+  "type": "Lesser",
+  "tribes": []
+ },
+ "BGDUO_MagicItem_010t": {
+  "guide": null,
+  "type": "Greater",
+  "tribes": []
+ }
+}
