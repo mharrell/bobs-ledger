@@ -1,11 +1,18 @@
-# Replay review — 2026-09-18 (Faelin 7th, Buttons 8th)
+# Replay review — 2026-09-18 (Faelin 7th, Buttons 8th, Gallywix 5th, Marin 1st)
 
-Session `Hearthstone_2026_09_18`, 2 games (07:20 session file
-closed ~10:48). Live coach ran **1f8492c** (current main — every gate
-from the 09-16/09-17 reviews live). **Game 1:** Ambassador Faelin,
-**7th**, 10 phases (t1 skipped by the hero power). **Game 2:** Buttons,
-**8th (last)**, 10 phases — died in the t10 fight after the plan's
-LEVEL-5-at-14-HP turn. BattleTag redacted.
+Session `Hearthstone_2026_09_18`, 4 games (closed ~11:46).
+Live coach ran **1f8492c** in games 1–2 and **099de10** from game 3
+(the comp double-count fix, restarted between games). **Game 1:**
+Ambassador Faelin, **7th**, 10 phases (t1 skipped by the hero power).
+**Game 2:** Buttons, **8th (last)**, 10 phases — died in the t10 fight
+after the plan's LEVEL-5-at-14-HP turn. **Game 3:** Trade Prince
+Gallywix, **5th** — held tier 3 through t6–t7 against three
+LEVEL-to-4 advices, fought back to a golden Tasty Lobster triple, died
+t11 behind at "126 vs their ~163". **Game 4:** Marin the Manager,
+**1st** — at 4 HP at t16 with a triple-golden Mech core the coach's
+label was stuck on "Nagas" (§7), and the spell-buff Nagas (Fauna
+Whisperer ×2 + Balinda) carried the fights to the win. BattleTag
+redacted.
 
 ## 1. TL;DR
 
@@ -113,3 +120,33 @@ the 09-15 reviews noted.
 3. (small, new) replay_review guard against live/growing session
    files (§5).
 4. Verify the turn-8 Greater Trinket choice renders for Buttons (§5).
+
+## 7. Postscript — same session, later games (landed live)
+
+Two more bugs were found mid-session and landed between games:
+
+- **One card committed a comp** (099de10): `_core_hits` counted a copy
+  BOTH as board presence and as a recent acquisition, so one Tasty
+  Lobster bought-and-played read as 2/2 hits (the whole commit
+  threshold). A copy in both places now counts once; 2 physical copies
+  or 2 distinct cores still commit. Found live in game 4's early
+  phases (and retroactively explains the same-phase commits in the
+  09-16/09-17 reviews).
+- **The DYING flip freeze outlived its evidence** (9203f18): game 4's
+  triple-golden Mech core (Utility Drone / Balinda / Glambot, all
+  golden, 4/6 board) stayed labeled "Nagas" at 4 HP because the
+  09-16 rule blocked ALL cross-tribe flips while dying — and the stuck
+  target was damping mech buys as off-comp. The freeze now holds only
+  when the new comp isn't better evidenced: strictly-more-hits flips,
+  and equal-hits board-dominant takeovers flip (commit corrections,
+  not churn).
+
+Mechanics footnote from game 4: Balinda Stonehearth is core in BOTH
+Mechs-Magnetics/Spells and Nagas-End-Of-Turn/SpellBuff (five tribes'
+comps total — hence her shared-utility exclusion), and Fauna
+Whisperer ×2 fed off the same spell package as Glambot. "Mechs with
+spells" and "Nagas spell-buff" were one engine with two names; the
+Naga half carried the 4-HP fights. The morning's pattern across all
+four games was mid-game tier pace (three declined LEVEL advices in
+games 2–3); the win came from the player's engine-building bailing
+out the tempo deficit.
