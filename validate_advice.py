@@ -197,7 +197,7 @@ def _run_case(case, chunk, names):
         if t > len(phases):
             return [(False, f"turn {t} > {len(phases)} buy phases in log")]
         lo, hi = phases[t - 1]
-        a, _ = _advise_point(chunk, lo, hi)
+        a, _, _saw_shop = _advise_point(chunk, lo, hi)
     if a is None:
         return [(False, "coach not ready at this moment")]
     got = {r.get("id") for r in (a.get("engine_recipes") or [])}

@@ -26,11 +26,10 @@ comp simply produced no level pressure. The game was lost in the
 t8→t9→t10 stretch (−10, −10) against scaling lobbies while the coach's
 "stabilize first" advice was broadly right but under-powered — the
 board it helped assemble (≈63 stats at t9, ≈94 by t10) was simply
-behind. The final phase (t11) lasted **7 seconds**: 10 gold, a full
-hand with a Tasty Lobster one copy from golden, zero actions, dead
-7th. The live coach never advised in that window (no decision record at
-t11) — a loop-cadence miss, and the one piece of coach behavior this
-review flags as a bug.
+behind. The apparent final phase (t11) was a **turn-rollover flash
+under the death combat** — see §3.1's same-day correction: no shop, no
+gold, no player decision ever existed there; the death combat resolved
+in the same log second.
 
 ## 2. Fight timeline (log ground truth)
 
@@ -46,7 +45,7 @@ Coach-visible hp is raw HEALTH (armor separate). Damage events are
 | t8 | 10 | 10 | 23 → 13 | LEVEL to 5 (declined by player — right) |
 | t9 | 10 | 10 | 13 → 3 | "took 10 last fight — stabilize first; your 52 vs their ~91" |
 | t10 | 0 | 0 | 3 → 3 | "too fragile to level; your 94 vs their ~170" |
-| t11 | 7 | 7 | 3 → **dead, 7th** | (live never advised — §3.1) |
+| t11 | 7 | 7 | 3 → **dead, 7th** | (no phase existed — §3.1) |
 
 The t8 fight was against **Snake Eyes** (same hero as the 2026-09-16
 evening game, seat p11 staging); per-fight opponent attribution beyond
@@ -55,18 +54,29 @@ opponent heroes share the `player=11` slot).
 
 ## 3. Findings (ranked)
 
-### 3.1 The live coach went silent for the final phase (t11)
+### 3.1 CORRECTION (same day): there was no t11 buy phase
 
-The t11 buy phase started 07:42:08 and ended 07:42:15 — 7 seconds, no
-actions, no live decision record. The offline re-analysis plan for that
-phase was exactly right: "Play Banana Slamma / Tasty Lobster / Sprightly
-Scarab (board is full — sell to make room) …" with the Lobster one copy
-from golden. Deploying even partially might not have saved 7th
-(3 HP vs a healthy lobby), but it is the difference between 7th and 6th
-more often than not. The incremental loop analyzed every other phase
-within seconds; the 7-second phase slipped past its cadence. Whatever
-the trigger ordering is (shop snapshot → analysis → throttling), a
-phase that short must still get one analysis pass.
+The morning version of this section accused the live coach of going
+silent for a "7-second final phase". Ground truth from the raw log
+(bounded extract, lines 141693–147913 of the session Power.log): the
+`STEP MAIN_ACTION` write at 07:42:15.816 is a **turn-rollover flash
+under the death combat** — the 6,220 lines between it and `MAIN_END`
+contain NO options block and NO RESOURCES write; they are the kill
+combat itself (the fatal `PREDAMAGE=7` lands at 07:42:15.816, the same
+timestamp). No shop existed, no gold was granted, and the player never
+had a t11 decision to make. The live coach's silence was correct
+behavior; this doc's original action item 7 (analyze very short
+phases) was void. The "10 gold, full hand" reading came from two tools
+carrying t10's state across a degenerate phase — replay_review now
+marks such phases "(no shop phase — transition/death turn)" instead of
+rendering advice for a decision that never existed. The t11
+"deploy your hand" plan the offline re-analysis produced was advice
+for a phase that never happened.
+
+The player-fact stands unchanged: they died 7th in the combat right
+after t10, at 3 HP, with a full hand and the Lobster one copy from
+golden — the regret is real, but it belongs to t10's fight and the
+−10s before it, not to a passed turn.
 
 ### 3.2 The −10/−10 stretch was priced honestly but coached passively
 
@@ -131,10 +141,12 @@ sell explicitly.
   15 armor = 0 through). The coach's `hp` field is raw HEALTH; the
   `DYING_HEALTH` comment says "effective (hp+armor)" — verify the live
   path actually adds armor before trusting the DYING threshold.
-- replay_review's t11 "gold 0" vs turn_forensics t11 "income 10" —
-  one of the two phase-start gold models is wrong (forensics shows no
-  gold actions in-phase, so phase-start gold should be 10). Resolve
-  before scoring any leftover-gold pass (buy-phase-timer rule).
+- RESOLVED (same day): replay_review's t11 "gold 0" vs turn_forensics
+  t11 "income 10" — neither model was wrong; the phase was never a
+  shopping turn (§3.1). Both numbers were t10 state carried across a
+  rollover that granted no RESOURCES and printed no options.
+  replay_review now prints "(no shop phase — transition/death turn)"
+  for such phases instead of a coach line off a stale purse.
 - The decision log carries the comp target in
   `analysis.target_cards.name`; `analysis.comps` is null in 1f6f968
   records — parse the right field.
@@ -156,21 +168,26 @@ sell explicitly.
 | 8 | LEVEL to 5 | beast buys (Scarab, Sky-hatch) | player right — enter −10 round with board, not tempo |
 | 9 | play hand; Buy Tasty Lobster (committing to Beast); "stabilize first" | Lobster + churn (5 sells) | ✓ commit taken; churn partly real juggling |
 | 10 | Titus + Sly Raptor; Hold Lobster; "too fragile to level" | 2nd Lobster path, sold golden Vermin, 4 rolls | commit followed; pivot cost §3.4 |
-| 11 | (offline) deploy full hand — sell for room | 7-second pass, 10 gold | §3.1 — live never advised; not scoreable as player mistake |
+| 11 | (no phase — see §3.1 correction) | died in the rollover combat | not a turn; nothing to score |
 
-## 7. Action items (carrying all six from 2026-09-16 evening + new)
+## 7. Action items (status as of the 2026-09-17 work session)
 
-1. (design-first) DYING hard gate on LEVEL — **still open** (§3.3).
-2. (bug) gold-gate cast steps in `top_move_steps` — untested today, open.
-3. (design-first) forecast honesty (snapshot age, no "favored" at ≤10
-   eff HP) — did not recur, still open as designed.
-4. (bug, small) comp-flip persistence — no flip observed today, open.
-5. (design-first) non-recipe hero-power fuel specs (Snake Eyes last
-   night; Reno's power never appeared in advice either) — open.
-6. (bug, known) player_actions sell artifact — open.
-7. (bug, new) **live loop must analyze a phase-start snapshot however
-   short the phase** — t11 (7 s) got zero live advice (§3.1).
-8. (tooling, new) per-fight opponent attribution needs lobby.py-style
-   grouping, not hero-tag windows (§5).
-9. (bug, new) reconcile replay_review vs turn_forensics phase-start
-   gold at t11 (§5).
+1. DYING hard gate on LEVEL — **LANDED** (value.py: the affordable
+   deferred branch is gated; see commit "Hard gates from the
+   09-16/09-17 reviews").
+2. Gold-gate cast steps — **LANDED** (casts spend their spell price,
+   demote to a hold when the purse can't cover them after the plan's
+   buy; the hand_plan "casts are free" docstring was the root claim and
+   is corrected).
+3. Forecast honesty — **LANDED** (estimates render "~" + "seen N
+   rounds ago"; "favored" caps to "ahead on paper" at ≤10 eff HP).
+4. Comp-flip persistence — **LANDED** (no cross-tribe flip while
+   DYING; evidence-free flips need >1 tribe unit on board).
+5. Non-recipe hero-power fuel specs (Snake Eyes, Reno) — open.
+6. Player_actions sell artifact — **LANDED** (magnetic plays excluded
+   from the sell backstop; mechanics field was already in minions.json).
+7. Live loop short-phase analysis — **VOID**: t11 was not a phase
+   (§3.1 correction). The live loop had nothing to advise on.
+8. Per-fight opponent attribution — open (tooling).
+9. Gold reconciliation — **RESOLVED** (§5): degenerate phase, both
+   tools carried t10 state; replay_review now marks it.
