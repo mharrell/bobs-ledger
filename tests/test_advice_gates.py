@@ -113,9 +113,46 @@ class TestCastGoldGate(unittest.TestCase):
 
 class TestStickyFlipRules(unittest.TestCase):
     def test_dying_blocks_cross_tribe_flip_even_with_evidence(self):
+        """Equal hits, empty board — nothing stronger to take over with."""
         self.assertIs(
-            sticky_comp_target(BEASTS, NAGAS, 0, 2, board=[], dying=True),
+            sticky_comp_target(BEASTS, NAGAS, 2, 2, board=[], dying=True),
             BEASTS)
+
+    def test_dying_takes_over_on_dominant_board(self):
+        """2026-09-18 regression: a triple-golden Mech core at 4 HP stayed
+        labeled "Nagas" all game — the dying flip freeze outlived its
+        evidence. Equal hits + the new comp's tribe is a board majority
+        while the prev's isn't = a commit correction, not churn."""
+        mechs = {"name": "Mechs - Magnetics/Spells", "tribe": "Mech",
+                 "core": ["BG26_152", "BG35_883", "BG36_853"]}
+        board = [{"card": "BG26_152", "tribe": "Mech"},
+                 {"card": "BG36_853", "tribe": "Mech"},
+                 {"card": "BG35_883", "tribe": "Mech"},
+                 {"card": "BG36_506", "tribe": "Mech"},
+                 {"card": "BG32_837", "tribe": "Naga"},
+                 {"card": "BG32_837", "tribe": "Naga"}]
+        self.assertIs(
+            sticky_comp_target(NAGAS, mechs, 2, 2, board=board, dying=True),
+            mechs)
+
+    def test_dying_still_holds_on_minority_evidence(self):
+        """Equal hits, the new comp a minority of the board (the t16
+        one-Naga-on-a-Beast-board shape): the freeze holds."""
+        board = [{"card": "X", "tribe": "Naga"},
+                 {"card": "Y", "tribe": "Beast"},
+                 {"card": "Y2", "tribe": "Beast"},
+                 {"card": "Y3", "tribe": "Beast"},
+                 {"card": "Y4", "tribe": "Beast"}]
+        self.assertIs(
+            sticky_comp_target(BEASTS, NAGAS, 2, 2, board=board, dying=True),
+            BEASTS)
+
+    def test_dying_flips_on_strictly_more_evidence(self):
+        self.assertIs(
+            sticky_comp_target(BEASTS, NAGAS, 0, 2,
+                               board=[{"card": "Y", "tribe": "Beast"}],
+                               dying=True),
+            NAGAS)
 
     def test_single_unit_board_blocks_evidence_free_flip(self):
         board = [{"tribe": "Naga"}, {"tribe": "Beast"},

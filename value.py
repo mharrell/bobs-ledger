@@ -1289,7 +1289,22 @@ def sticky_comp_target(prev, new, prev_hits, new_hits, board=None,
         return prev if prev_hits >= 1 else None
     if prev.get("tribe") != new.get("tribe"):
         if dying:
-            return prev
+            # The 2026-09-16 t16 rule: no flip while DYING. But a dying
+            # board that genuinely BECAME another build must still be
+            # recognized (2026-09-18: triple-golden Mech core stuck on
+            # "Nagas" at 4 HP — the flip freeze outlived its evidence).
+            # A flip passes when it is strictly better evidenced, or is a
+            # board-dominant takeover (majority tribe vs the prev's
+            # minority): those are commit corrections, not churn.
+            stronger = new_hits > prev_hits
+            takeover = (
+                new_hits == prev_hits and new_hits >= 2
+                and board is not None
+                and _board_tribe_share(new, board) > 0.5
+                and not _board_tribe_share(prev, board) > 0.5)
+            if not (stronger or takeover):
+                return prev
+            return new
         if new_hits <= prev_hits and board is not None \
                 and _board_tribe_units(board, new.get("tribe")) < 2:
             return prev
