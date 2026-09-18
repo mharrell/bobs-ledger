@@ -209,6 +209,28 @@ def forensics(chunk, names, cores, turns_filter=None):
                 # the shop the player saw between actions)
                 shops.append(pending_shop)
                 pending_shop = None
+
+    # Per-fight opponent attribution (2026-09-17 action item 8): staged
+    # opponents ALL share player=11, so hero-tag windows can't attribute a
+    # fight; the live pairing (turn -> BACON seat) joined with the scout's
+    # staged seat records can — a seat record is the board staged FOR that
+    # seat's fight, and it carries the seat hero's card id. Seat resolution
+    # normally runs inside analyze(), which this walk never calls — run it
+    # here as a post-pass (idempotent: resolved rounds are remembered).
+    coach._resolve_boards()
+    hero_by_cid = {h.get("card"): h.get("hero_name")
+                   for h in game["heroes"] if h.get("card")}
+    for t, seat in (getattr(coach, "_pairing", None) or {}).items():
+        rec = (coach._scout.seats or {}).get(seat)
+        if t not in out or not rec:
+            continue
+        hid = rec.get("hero")
+        nm = hero_by_cid.get(hid, hid)
+        if nm:
+            # Blended seats (two staged groups in one counter) are an upper
+            # bound, not a board — label them so nobody reads stats off them.
+            tag = ", blended" if rec.get("blended") else ""
+            out[t].insert(1, f"   opponent: {nm}{tag}")
     return out
 
 
