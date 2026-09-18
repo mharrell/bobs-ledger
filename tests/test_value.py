@@ -13,7 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import value
 import simulate_growth
-from value import _best_comp, minion_value, sell_reason, sell_recommendation
+from value import (_best_comp, _core_hits, minion_value, sell_reason,
+                   sell_recommendation)
 
 EL = "BG33_886"   # Tusked Camper (Beast, t1) — present in the real BG pool
 MECH = "BG29_503"  # a real mech in minions.json if present; tests skip if not
@@ -114,13 +115,23 @@ class TestNoEvidenceNoComp(unittest.TestCase):
         self.assertIs(value.comp_target(board, comps), comps["nagas"])
 
     def test_board_plus_recent_hits_commit(self):
-        """One core on the board + one among recent acquisitions is a commit
-        (a buy IS intention)."""
-        comps = {"nagas": {"name": "Nagas", "core": ["BG33_140"], "addons": []}}
+        """One core on the board + a DIFFERENT one among recent acquisitions
+        is a commit (a buy IS intention)."""
+        comps = {"nagas": {"name": "Nagas",
+                           "core": ["BG33_140", "BG33_141"], "addons": []}}
         board = [{"card": "BG33_140"}]
         self.assertIs(value.comp_target(board, comps,
-                                        recent_cards=["BG33_140"]),
+                                        recent_cards=["BG33_141"]),
                       comps["nagas"])
+
+    def test_same_card_in_board_and_recent_is_one_hit(self):
+        """2026-09-18 regression: one Tasty Lobster bought then played sat in
+        BOTH the board and the recent stream — the old count read 2/2 hits
+        and committed the comp off a single card."""
+        comps = {"nagas": {"name": "Nagas", "core": ["BG33_140"], "addons": []}}
+        board = [{"card": "BG33_140"}]
+        self.assertIsNone(value.comp_target(board, comps,
+                                            recent_cards=["BG33_140"]))
 
     def test_tribe_evidence_across_comps(self):
         """A build straddling two comps of one tribe (2026-09-04 beasts game:
@@ -1577,6 +1588,38 @@ class TestTribeLookups(unittest.TestCase):
                                       "core": [], "addons": []})
         self.assertEqual(on, "stats only — no comp role")
         self.assertEqual(off, "off-comp body")
+
+
+class TestCoreHitsNoDoubleCount(unittest.TestCase):
+    """A copy that is both on board and in the recent stream (bought, then
+    played) is ONE physical card. Counting it twice committed a comp off a
+    single core (2026-09-18 live: one Tasty Lobster read as 2/2 hits)."""
+
+    CORES = {"BG36_202"}  # Tasty Lobster
+
+    def test_bought_and_played_counts_once(self):
+        board = [{"card": "BG36_202"}]
+        rc = ["BG36_202"]  # the same copy, in the recent stream
+        self.assertEqual(_core_hits(board, rc, self.CORES), 1)
+
+    def test_second_copy_in_hand_still_counts(self):
+        board = [{"card": "BG36_202"}]
+        rc = ["BG36_202", "BG36_202"]  # bought 2, played 1
+        self.assertEqual(_core_hits(board, rc, self.CORES), 2)
+
+    def test_two_copies_in_hand_no_board(self):
+        rc = ["BG36_202", "BG36_202"]
+        self.assertEqual(_core_hits([], rc, self.CORES), 2)
+
+    def test_ambiguous_single_counts_are_conservative(self):
+        """board=1 + rc=1 can mean 'the same copy' (1 physical) or 'an old
+        board copy plus a new hand copy' (2). The recent window is this
+        turn + last, so a 3-turns-old board copy never appears in rc — the
+        first reading is the real one, and the formula errs to 1 (no
+        commit off ambiguous evidence)."""
+        board = [{"card": "BG36_202"}]
+        rc = ["BG36_202"]
+        self.assertEqual(_core_hits(board, rc, self.CORES), 1)
 
 
 if __name__ == "__main__":

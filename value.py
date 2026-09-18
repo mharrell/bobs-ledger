@@ -7,6 +7,7 @@ card is safest to sell?" via marginal contribution.
 Design: analysis/VALUE_FUNCTION.md. The weights (W_*) are initial guesses,
 intended to be tuned against real games.
 """
+import collections
 import functools
 import json
 import os
@@ -2308,9 +2309,22 @@ def _comp_needs_by_tier(analysis, card_db, reach=None):
 
 def _core_hits(board, rc, cores):
     """Core-card hits for one comp: board minions plus recent acquisitions
-    (copies count — a commit is often 2x/3x one core)."""
-    return (sum(1 for m in board if m["card"] in cores)
-            + sum(1 for c in rc if c in cores))
+    (copies count — a commit is often 2x/3x one core).
+
+    A copy that is BOTH on board and in the recent stream (bought, then
+    played) is ONE physical card and counts once: board_count +
+    max(0, recent_count - board_count). Counting it twice committed a
+    comp off a single core (2026-09-18 live: one Tasty Lobster, bought
+    and played, read as 2 hits — the whole commit threshold)."""
+    board_counts = collections.Counter(
+        c["card"] for c in board if c["card"] in cores)
+    rc_counts = collections.Counter(c for c in rc if c in cores)
+    total = 0
+    for cid in set(board_counts) | set(rc_counts):
+        b = board_counts.get(cid, 0)
+        r = rc_counts.get(cid, 0)
+        total += b + max(0, r - b)
+    return total
 
 
 def _shared_utility_cores(comps, min_tribes=4):
