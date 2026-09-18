@@ -88,6 +88,9 @@ SELL_FILLER_SCORE = 15.0  # a board/shop value under this reads as clear filler
                           # (top_move; the overlay keys its coloring off it too)
 DYING_HEALTH = 12  # effective health (hp+armor) at/below this = "dying" —
                    # leveling beats board (top_move's Q0 gate)
+FAVOR_HP_CEILING = 10  # at <= this effective HP the forecast never says
+                       # "favored" — "ahead on paper" (2026-09-16 evening:
+                       # 'favored — 895 vs 165' one minute before dying)
 
 # Keywords/phrases that mark a scaling/engine minion vs a plain body.
 _SCALING_MARKERS = ("end of turn", "whenever you play", "improves", "each",
@@ -1030,9 +1033,12 @@ def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
     when our own holdings already drained it, the hand copy plays instead.
     None (old callers, fixtures) keeps the evidence-free hold.
 
-    Casting a spell from hand costs NO gold and playing a minion stuck in
-    hand (full board) costs none either, so each card's whole effect is
-    profit. Spells rank by direct effect + cast-engine fuel (each cast
+    Playing a minion stuck in hand (full board) costs no gold — a free
+    body. Casting a spell from hand COSTS its spell price (log COST tag,
+    else the spell DB — the same price layer as the shop; the old
+    "casts are free" model here had cast steps leading plans at gold 0
+    three games running, 2026-09-16 evening t9/t14). Spells rank by
+    direct effect + cast-engine fuel (each cast
     feeds end-of-turn compounding, which counts casts made THIS turn);
     hand minions rank by their value as a free play — with triple
     awareness over REGULAR copies only (a golden never combines): 2 on
@@ -1242,7 +1248,19 @@ def _tribe_of(comp_name):
     return (comp_name or "").split(" - ")[0]
 
 
-def sticky_comp_target(prev, new, prev_hits, new_hits):
+def _board_tribe_units(board, tribe):
+    """Board minions sharing the comp's tribe — a cross-tribe flip needs
+    more than one (the 2026-09-16 evening t16 flip fired on a single
+    Naga). Same matching rule as _board_tribe_share."""
+    t = normalize(tribe or "")
+    if not t or not board:
+        return 0
+    return sum(1 for m in board
+               if normalize(m.get("tribe")) in t.split("/"))
+
+
+def sticky_comp_target(prev, new, prev_hits, new_hits, board=None,
+                       dying=False):
     """Which comp to SHOW as the build direction.
 
     The 2026-09-06 Guff game churned 'Summon Beetles' -> 'Tasty Lobstah'
@@ -1251,8 +1269,12 @@ def sticky_comp_target(prev, new, prev_hits, new_hits):
     When the new target shares the previous target's TRIBE, keep the
     previous comp unless the new one carries strictly more core evidence
     (board + recent hits, copies included — the caller computes both with
-    _core_hits). Cross-tribe pivots always pass through — stickiness must
-    never fight the pivot override.
+    _core_hits). Cross-tribe pivots pass through — stickiness must never
+    fight the pivot override — EXCEPT the two 2026-09-16 evening t16
+    rules: (a) no flip inside the DYING gate — the last phases of a dying
+    game don't swap builds; (b) a flip that isn't carried by strictly
+    more core evidence needs more than one tribe unit on board (the t16
+    flip fired with the board's ONLY Naga being Fauna Whisperer).
 
     Sub-threshold dips hold too (2026-09-07 Chromie game: a sold core
     dropped the target to None at t11-t14 — 'surviving until we can
@@ -1265,7 +1287,12 @@ def sticky_comp_target(prev, new, prev_hits, new_hits):
     if new is None:
         return prev if prev_hits >= 1 else None
     if prev.get("tribe") != new.get("tribe"):
-        return new  # a cross-tribe pivot is always shown
+        if dying:
+            return prev
+        if new_hits <= prev_hits and board is not None \
+                and _board_tribe_units(board, new.get("tribe")) < 2:
+            return prev
+        return new  # a cross-tribe pivot is shown
     return new if new_hits > prev_hits else prev
 
 
@@ -1883,7 +1910,22 @@ def _top_move_text(analysis):
             if level_next and tier and analysis.get("level_cost") is not None:
                 level_cost = analysis.get("level_cost")
                 leftover = (gold or 0) - (costs.get(cid) or 0)
-                if leftover >= level_cost:
+                _h_now = analysis.get("health")
+                _eff_now = (_h_now + (analysis.get("armor") or 0)
+                            if _h_now is not None else None)
+                if leftover >= level_cost and _eff_now is not None \
+                        and _eff_now <= DYING_HEALTH:
+                    # Hard DYING gate (2026-09-16 evening t16, 8 HP): the
+                    # level is AFFORDABLE and the flip ladder still refuses
+                    # it — but the deferred emission then rendered the
+                    # actionable "LEVEL to tier 6 — 1 left after" because
+                    # the purse covered both. At <=12 effective HP a
+                    # spendable tier is never advice; the gold buys stats.
+                    # Rendered as the deferred form, never the actionable
+                    # one, whatever the comp wants.
+                    why = level_flip_why or "too fragile to level first"
+                    parts.append(f"LEVEL next turn ({why}) — roll meanwhile")
+                elif leftover >= level_cost:
                     parts.append(f"LEVEL to tier {tier + 1} — "
                                  f"{leftover - level_cost} left after")
                 else:
@@ -1971,6 +2013,34 @@ def _top_move_text(analysis):
         demoted_ids = {id(s) for s in demoted}
         hand_entries[:] = [s for s in hand_entries
                            if id(s) not in demoted_ids] + demoted
+    # Casts spend gold: gate them on the live purse, cumulatively in plan
+    # order, and never let them eat the plan's committed buy (the buy walk
+    # priced it against the full purse, so casts must fit in what's left
+    # after it). At gold 0 nothing is castable — the 2026-09-16 evening
+    # games' "Cast Tavern Coin"/"Cast Repair Job"-at-gold-0 family. Plays
+    # and holds are free. An uncastable spell demotes to a hold, stated,
+    # moved last — the same honesty as the shop-buff demotion above. The
+    # gate is "castable NOW", not a ban: t16's Cast Repair Job x3 with a
+    # funded purse was correct advice and the player cast all three.
+    if gold is not None:
+        reserve = (costs.get(bought) or 0) if bought is not None else 0
+        spend = gold - reserve
+        gated = []
+        for s in hand_entries:
+            if s.get("verb") != "cast":
+                continue
+            price = costs.get(s.get("card"))
+            if price is not None and price <= spend:
+                spend -= price
+                continue
+            s["verb"] = "hold"
+            s["why"] = (f"needs {price}g to cast — no gold for it"
+                        if price is not None else "no gold to cast now")
+            gated.append(s)
+        if gated:
+            gated_ids = {id(s) for s in gated}
+            hand_entries[:] = ([s for s in hand_entries
+                                if id(s) not in gated_ids] + gated)
     if hand_entries:
         counts, order = {}, []
         for s in hand_entries:
@@ -2131,12 +2201,26 @@ def combat_forecast(analysis):
     of surprise). v1 limits: the opponent's keywords aren't tracked yet
     (their board reaches us as stat totals), and the estimate is a ratio,
     not a combat simulation.
+
+    Honesty marks (2026-09-16 evening §3.1: 'favored — 895 vs 165' one
+    minute before a 19-damage fight): an estimate anchor (lobby median /
+    baseline, not the fresh preview) renders with the '~' mark; a stale
+    anchor carries its age ('seen 2 rounds ago'); and at <=10 effective
+    HP the 'favored' label is capped to 'ahead on paper' — one bad fight
+    ends the game however far ahead the board reads.
     """
     bs = analysis.get("board_stats")
     theirs = analysis.get("opp_stats") or analysis.get("lobby_opp") \
         or analysis.get("baseline_opp")
     if bs is None or not theirs:
         return None
+    fresh = analysis.get("opp_stats")
+    approx = theirs != fresh
+    age = analysis.get("opp_age")
+    theirs_disp = f"{'~' if approx else ''}{int(theirs)}"
+    if age:
+        theirs_disp += (f", seen {age} round"
+                        f"{'s' if age != 1 else ''} ago")
     board = analysis.get("board") or []
     shields = sum(1 for m in board
                   if "DIVINE_SHIELD" in (m.get("keywords") or []))
@@ -2150,11 +2234,15 @@ def combat_forecast(analysis):
         edges.append("venomous")
     edge = f" (yours: {', '.join(edges)})" if edges else ""
     ratio = bs / max(theirs, 1)
+    _h = analysis.get("health")
+    eff = _h + (analysis.get("armor") or 0) if _h is not None else None
+    fragile = eff is not None and eff <= FAVOR_HP_CEILING
     if ratio >= 1.3:
-        return f"favored — {bs} vs {int(theirs)}{edge}"
+        label = ("ahead on paper" if fragile else "favored")
+        return f"{label} — {bs} vs {theirs_disp}{edge}"
     if ratio >= 0.8:
-        return f"close fight — {bs} vs {int(theirs)}{edge}"
-    return f"behind — {bs} vs {int(theirs)}; don't take this fight{edge}"
+        return f"close fight — {bs} vs {theirs_disp}{edge}"
+    return f"behind — {bs} vs {theirs_disp}; don't take this fight{edge}"
 
 
 def _comp_needs_by_tier(analysis, card_db, reach=None):
