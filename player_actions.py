@@ -202,10 +202,14 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             # counts minions the player actually played (in `played`) so effect
             # removals (e.g. Lock & Load removing a tavern minion) aren't sold.
             # Entities counted via the Drag To Sell block are skipped (a
-            # mid-phase sell prints both shapes).
+            # mid-phase sell prints both shapes). Magnetic minions are excluded:
+            # playing one onto a mech merges it into the host (leaves PLAY with
+            # no Drag To Sell block) — a real magnetic sell still goes through
+            # the Drag To Sell shape above.
             elif (p == friendly and eid in played and old_zone == "PLAY"
                   and z in ("SETASIDE", "GRAVEYARD") and step in SHOP_STEPS
-                  and eid not in sold_entities):
+                  and eid not in sold_entities
+                  and cid not in _load_bg_magnetic_ids()):
                 turns[-1]["sells"].append(cid)
             continue
 
@@ -230,6 +234,7 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
 
 
 _BG_MINION_IDS = None
+_BG_MAGNETIC_IDS = None
 
 
 def _load_bg_minion_ids():
@@ -238,6 +243,21 @@ def _load_bg_minion_ids():
     if _BG_MINION_IDS is None:
         _BG_MINION_IDS = {m.get("id") for m in meta.minions()}
     return _BG_MINION_IDS
+
+
+def _load_bg_magnetic_ids():
+    """Card ids of MAGNETIC minions (meta/minions.json mechanics), cached.
+
+    Playing a magnetic minion onto a mech merges it into the host: the played
+    entity leaves PLAY (SETASIDE/GRAVEYARD) with no Drag To Sell block, which
+    the zone-inference sell backstop would otherwise count as a sell.
+    """
+    global _BG_MAGNETIC_IDS
+    if _BG_MAGNETIC_IDS is None:
+        _BG_MAGNETIC_IDS = {
+            m.get("id") for m in meta.minions()
+            if "MAGNETIC" in (m.get("mechanics") or [])}
+    return _BG_MAGNETIC_IDS
 
 
 def _load_bg_pool():
