@@ -150,3 +150,53 @@ Naga half carried the 4-HP fights. The morning's pattern across all
 four games was mid-game tier pace (three declined LEVEL advices in
 games 2–3); the win came from the player's engine-building bailing
 out the tempo deficit.
+
+## 8. Afternoon session — George the Fallen 6th, A. F. Kay 3rd
+
+Session `Hearthstone_2026_09_18`, 2 games (closed 17:07),
+reviewed from a snapshot taken 17:09 (the §5 live-file guard, applied
+as practice). The live coach ran through the session (decision log
+written to 17:06; the rotation artifact `decision_unknown.jsonl`
+reappeared at the 16:17 launch, as expected from a05ceba).
+
+**Game 1 — George the Fallen, 6th, 13 phases.** Gates all held. The
+13–16 eff-HP band advice (§3.1, action item 1) fired correctly twice
+(t5 "lost 2 straight… buy stats first; your 4 vs their ~23"; t9 "lost
+3 straight… your 41 vs their ~91") — the player leveled anyway both
+times and the 6th is consistent with the warned line: mid-game churn
+(t8–t9 sold the Patient Scout/Shell Collector engine pieces; t12 sold
+eight) plus tier-5 stall while behind. The coach never committed a
+comp direction ("no comp direction yet" at t7, hunt honest: Titus
+Rivendare / Headhunter Gryphon "hasn't shown in the tavern").
+
+**Game 2 — A. F. Kay, 3rd, 14 phases.** The Murloc commit ran cleanly
+end to end: Q1 pass held (t1 bank with Wrath Weaver alternate), the
+coach hunted Papa Mrrglton for three consecutive turns and named the
+trap cards BEFORE the player bought them ("Primalfin Lookout is
+off-build" t12, "Time Management is off-build" t13 — bought anyway,
+recorded as player choice), and the endgame line was the coach's:
+board scaled to "your 918 vs their ~577" at t14 with the
+too-fragile-to-level clause attached. Third with a scaled board is the
+lobby math, not an advisory failure.
+
+**Session findings:**
+
+1. **No new bugs.** No phantom hand, no dead-opponent coaching, no
+   stuck-comp mislabels (the 9203f18 freeze never had to arbitrate),
+   no double-count commits (099de10 held). Parse clean in both games.
+2. **§6.1 (FRAGILE band) gets its live validation** — the clause fired
+   with correct numbers three times across the two games and the lost
+   fights matched the warnings. Keep as-is; no retuning.
+3. **Minor advisory tension (note only):** game 1 t5's single line
+   paired "Buy Mechagnome Interpreter (growth engine)" as top pick
+   with "buy stats first; your 4 vs their ~23" as pick 2's rationale —
+   the FRAGILE clause lives in pick 2 while pick 1 contradicts it.
+   Worth a ranking-weight look when the fragile-band design work
+   (§6.1) happens; no fix today.
+4. **Hunts vs buys:** the coach's roll-for-fuel advice was declined
+   four times across both games in favor of buying bodies; in game 2
+   the hunt was the winning line. Consistent with the 09-15 finding
+   (roll-vs-level dual output): the advice is right; the friction is
+   behavioral.
+
+Action items: none new. §6.1 design work absorbs item 3.
