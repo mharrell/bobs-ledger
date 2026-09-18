@@ -33,7 +33,7 @@ from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
     situation_line, sticky_comp_target, combat_forecast, active_recipes,
-    live_reach_sources,
+    live_reach_sources, DYING_HEALTH,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -1132,7 +1132,9 @@ class LiveCoach:
         # churned 'Summon Beetles' -> 'Tasty Lobstah' phase-to-phase on
         # identical tribe evidence, reading as "which build am I doing?").
         # Same tribe + no strictly more evidence -> keep showing the
-        # previous comp; cross-tribe pivots always pass through.
+        # previous comp; cross-tribe pivots pass through EXCEPT the
+        # 2026-09-16 evening t16 rules: no flip while DYING, and a flip
+        # without strictly more evidence needs >1 tribe unit on board.
         prev = self._sticky_target
         if prev is not None and self.playable is not None and not any(
                 c.get("name") == prev.get("name")
@@ -1143,6 +1145,11 @@ class LiveCoach:
             # sticky hold then kept showing Nagas AFTER Naga was banned).
             # A comp the filter removed can no longer be the direction.
             self._sticky_target = prev = None
+        _hm = self.gs.hero_meta.get(self.hero_card, {})
+        _hp = _hm.get("health")
+        _dying = (_hp is not None
+                  and _hp - (_hm.get("damage") or 0)
+                  + (_hm.get("armor") or 0) <= DYING_HEALTH)
         if prev is not None:
             # Same-tribe churn and sub-threshold dips both go through the
             # sticky rule; the prev hit count decides whether a dip holds
@@ -1152,7 +1159,8 @@ class LiveCoach:
             new_hits = _core_hits(board, recent,
                                   set(target.get("core", []))) \
                 if target else 0
-            target = sticky_comp_target(prev, target, prev_hits, new_hits)
+            target = sticky_comp_target(prev, target, prev_hits, new_hits,
+                                        board=board, dying=_dying)
         self._sticky_target = target
         # ONE comp target feeds sell + buy + display — the evidence-based
         # target. The old per-function comp picks (crude tribe overlap for
@@ -1305,6 +1313,18 @@ class LiveCoach:
                                        comp=target, hero=self.hero_name)
             choice_advice = {"kind": kind, "source": c["source"],
                              "ranked": pick_ranked}
+        # Forecast honesty age (2026-09-16 evening §3.1): rounds since the
+        # forecast's anchor was seen — the fresh preview's fight round, else
+        # the freshest lobby fight feeding the median. Baseline-only carries
+        # no age (None).
+        fresh_rec = self._opp_boards.get(self.next_opponent)
+        if fresh_rec and fresh_rec.get("turn", -99) >= turn - 2:
+            opp_age = turn - fresh_rec.get("turn", 0)
+        else:
+            opp_age = min((turn - r.get("turn", 0)
+                           for r in self._lobby_stats
+                           if turn - r.get("turn", 0) <= 2),
+                          default=None)
         result = {
             "hero": self.hero_name,
             # Hero-power text (meta/heroes.json): feeds value ranking AND the
@@ -1394,6 +1414,7 @@ class LiveCoach:
             "lobby_opp": _median([r["stats"] for r in
                                   [r for r in self._lobby_stats
                                    if turn - r.get("turn", 0) <= 2][-3:]]),
+            "opp_age": opp_age,
             "baseline_opp": _baseline_opp(turn),
             "banned": _banned(self.allowed),
             "playable_comps": self.playable,
