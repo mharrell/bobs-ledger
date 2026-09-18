@@ -229,3 +229,45 @@ coaching help" — coach-vs-player diffs on the same logs, pre and post.
    specs + feed-the-engine line (P2-B).
 3. roll_value/level_value comparison + three roll modes + dual coaching
    output (P3).
+
+## Plan 4 candidate — non-recipe hero-power gold timing (designed 2026-09-17, not built)
+
+From the 2026-09-16 evening (Snake Eyes) and 09-17 (Reno) reviews: heroes
+whose power mints gold never appear in the roll-vs-level walk — the walk
+only knows the coin purse and the lobby pace. The log ground truth (both
+sessions verified):
+
+- Hero powers live on their OWN entity (`BG28_HERO_400p` "Lucky Roll",
+  `TB_BaconShop_HP_046` "Gonna Be Rich!"), player-owned in PLAY.
+- **No countdown/lock tag exists** on the power entity: the visible tags
+  are `HEROPOWER_ACTIVATIONS_THIS_TURN`, `NUM_TURNS_IN_PLAY` (global
+  mirror), and statics. Snake Eyes' "locked N turns" state must be
+  MODELED, not read.
+- What IS readable: the activation (a PLAY/hero-power block on the power
+  entity) and the gold it minted (`TEMP_RESOURCES` writes on the friendly
+  player immediately after — Snake Eyes' die roll shows as the temp-gold
+  delta; Reno's Gonna Be Rich similarly).
+
+Proposed model (curated per hero, `meta/hero_powers.json` gains fields):
+
+    "Snake Eyes": {"trigger": "hero_power",
+                   "text": "<verbatim heroes.json>",
+                   "gold_die": [1, 6],
+                   "lock": "die_value",
+                   "confidence": "mechanical"}
+
+- The coach tracks `last_activation_turn` + `last_gold` from the log and
+  derives `unlock_turn = last_activation_turn + lock(last_gold)`.
+- The roll-vs-level walk consumes it `_fuel_roll_mode`-style: when the
+  power unlocks NEXT turn, the plan says so — "hero power unlocks next
+  turn (rolled 4 -> locked 4): a gold spike is coming; don't spend down
+  to zero if a level is close". A level the CURRENT purse can't afford
+  but the spike can is a "save, don't roll" line — the Snake Eyes game's
+  t5/t9 shape exactly.
+- Validation: replay the 09-16 evening Snake Eyes session; the walk
+  should flag the spike ahead and NOT change any advice in the Reno
+  09-17 session (no spike — regression).
+
+Deliberately NOT built yet: per breakoutBot discipline the lock model is
+a behavior guess until validated against a session where the player
+actually played around the spike.
