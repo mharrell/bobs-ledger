@@ -60,6 +60,7 @@ def _advise_point(lines, phase_lo, phase_hi):
     coach = live_coach.LiveCoach()
     stop = len(lines)
     armed = False
+    saw_offers = False
     prev_offers = None
     last_change = 0
     SETTLE = 20  # lines without new offers = the options block is complete
@@ -70,13 +71,15 @@ def _advise_point(lines, phase_lo, phase_hi):
         coach.feed(line)
         if armed:
             offers = tuple(coach.tavern_offers())
+            if offers:
+                saw_offers = True
             if offers != prev_offers:
                 prev_offers = offers
                 last_change = j
             elif offers and j - last_change >= SETTLE:
                 stop = j + 1
                 break
-    return coach.analyze(), stop
+    return coach.analyze(), stop, saw_offers
 
 
 def _advise_at(chunk, target):
@@ -206,12 +209,22 @@ def main():
     print(f"{len(phases)} buy phases\n")
     for t, (lo, hi) in enumerate(phases, 1):
         hi_eff = hi if hi is not None else None
-        a, _ = _advise_point(chunk, lo, hi_eff)
+        a, _, saw_shop = _advise_point(chunk, lo, hi_eff)
         acts_list = parse_actions(chunk[lo: hi_eff if hi_eff is not None else len(chunk)],
                                   friendly=friendly)
         actual = acts_list[0] if acts_list else {}
         if a is None:
             print(f"t{t}: (coach not ready — hero/seed not parsed yet)")
+            print(f"     actual: {_actual(actual, names)}")
+            continue
+        if not saw_shop:
+            # A MAIN_ACTION flash with no options block and no RESOURCES
+            # write is not a buy turn: the 2026-09-17 t11 was the death
+            # combat resolving under the turn-rollover STEP write. Rendering
+            # a coach line + a stale purse there invented advice for a
+            # decision that never existed.
+            print(f"t{t}  (no shop phase — transition/death turn, "
+                  f"no options block printed)")
             print(f"     actual: {_actual(actual, names)}")
             continue
         rec = a.get("top_move") or "-"
