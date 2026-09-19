@@ -59,3 +59,36 @@ decline, the board was already the argument.
    Methodical Madness / tavern-keyword mechanic itself lives in
    spell_effects/minion text already curated; only the engine *shape*
    is missing.
+
+## 5. Evening session (`Hearthstone_2026_09_19`): Marin 4th — died to divine shields at "602 vs ~163"
+
+Game 1 of the 17:15 session (game 2, Tavish, live at review time; live
+coach on current main). 13 buy phases, clean curve, heavy honest churn,
+t13 LEVEL-6 taken. Died 4th in the t13 fight.
+
+**The fight that killed us** (opponent staged board at the losing line,
+log ground truth): a **Deflect-o-Bot mech board carrying 4 DIVINE
+SHIELDs and 2 Reborns** (Deflect-o-Bot itself shielded — the card that
+gains stats as shields pop). The t12 forecast had said "**your 602 vs
+their ~163**" — a 4x raw-stat edge that lost.
+
+This is the third opponent-side forecast mispricing in a week (09-16
+evening: "895 vs 165" took 19; 09-19 morning games; now this), and the
+first where the mechanism is precisely identifiable: **the forecast
+prices stat totals; divine shields and reborn are stat multipliers the
+opponent gets for free.** The forecast's own docstring admits it ("the
+opponent's keywords aren't tracked yet — their board reaches us as
+stat totals"). The player's takeaway after the game — "Reborn and/or
+Divine Shield might be more important than I've previously given it
+credit for, or having truly massive stats" — is the same conclusion
+the data forces.
+
+Design direction (promotes the 09-16 §3.1 arc): the lobby scout
+already reads staged boards — the DIVINE_SHIELD/REBORN tags are in the
+same stream as the stats it collects (verified by hand this session:
+the keyword counts above came from the staged entities' tag writes).
+Pricing: eff = raw + shields x (a wasted hit ~= our average attack)
++ reborn x body. The forecast then owes the player the honest line:
+"their ~163 raw, but 4 shields + 2 reborn — closer to a wall than the
+ratio says", and at 4th-place stakes "602 vs 163" stops reading as
+unbeatable.
