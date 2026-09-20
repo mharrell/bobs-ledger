@@ -73,18 +73,6 @@
   },
   "note": "Temperature Shift, repeats after 11 Elementals (Baller Portrait)"
  },
- "BG36_MagicItem_390": {
-  "base_value": 8,
-  "synergy": {
-   "tribes": [
-    "Elemental"
-   ],
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "Temperature Shift, repeats after 11 Elementals (Baller Portrait)"
- },
  "BG30_MagicItem_705": {
   "base_value": 12,
   "synergy": {
@@ -167,15 +155,6 @@
   "note": "2 gold but no T1/T2 shop offers (Bob-blehead) — read for a higher-tier curve"
  },
  "BG30_MagicItem_420": {
-  "base_value": 14,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
- },
- "BG30_MagicItem_420t": {
   "base_value": 14,
   "synergy": {
    "keywords": [
@@ -401,15 +380,6 @@
   },
   "note": "random Choose One card + another per turn (Glass of Perspective)"
  },
- "BG36_MagicItem_303t": {
-  "base_value": 10,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "random Choose One card + another per turn (Glass of Perspective)"
- },
  "BG36_MagicItem_220": {
   "base_value": 10,
   "synergy": {
@@ -527,19 +497,6 @@
   },
   "note": "end of turn: 12/12 satellite, improves per spell cast (Inductive Gyroblade)"
  },
- "BG36_MagicItem_810t": {
-  "base_value": 16,
-  "synergy": {
-   "tribes": [
-    "Mechanical"
-   ],
-   "keywords": [
-    "spell",
-    "magnetic"
-   ]
-  },
-  "note": "end of turn: 12/12 satellite, improves per spell cast (Inductive Gyroblade)"
- },
  "BG30_MagicItem_423": {
   "base_value": 10,
   "synergy": {
@@ -575,15 +532,6 @@
   "note": "keyworded Blood Gem, repeats per turn (Jewelry Box)"
  },
  "BG35_MagicItem_821": {
-  "base_value": 10,
-  "synergy": {
-   "keywords": [
-    "leveling"
-   ]
-  },
-  "note": "Discover a Tier 7 minion, locked 2 turns (Kaleidoscope)"
- },
- "BG35_MagicItem_821t": {
   "base_value": 10,
   "synergy": {
    "keywords": [
@@ -703,25 +651,7 @@
   },
   "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
  },
- "BG30_MagicItem_914t": {
-  "base_value": 10,
-  "synergy": {
-   "keywords": [
-    "hand"
-   ]
-  },
-  "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
- },
  "BG30_MagicItem_544": {
-  "base_value": 12,
-  "synergy": {
-   "tribes": [
-    "Elemental"
-   ]
-  },
-  "note": "per Elemental played: Tavern Elementals +3/+2 permanently (Nomi Sticker)"
- },
- "BG30_MagicItem_544t": {
   "base_value": 12,
   "synergy": {
    "tribes": [
@@ -800,15 +730,6 @@
   },
   "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
  },
- "BG35_MagicItem_850t": {
-  "base_value": 14,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
- },
  "BG32_MagicItem_361": {
   "base_value": 14,
   "synergy": {
@@ -837,18 +758,6 @@
   "note": "craft a custom Undead, every 2 turns (Putricide Sticker)"
  },
  "BG30_MagicItem_410": {
-  "base_value": 8,
-  "synergy": {
-   "tribes": [
-    "Quilboar"
-   ],
-   "keywords": [
-    "blood_gem"
-   ]
-  },
-  "note": "Avenge(3): Blood Gems give extra +1 Health (Quilligraphy Set)"
- },
- "BG30_MagicItem_410t2": {
   "base_value": 8,
   "synergy": {
    "tribes": [
@@ -1109,6 +1018,15 @@
   },
   "note": "extra copy of the next 2 minions you buy (Transcribing Typewriter)"
  },
+ "BG35_MagicItem_931t": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "extra copy of the next 2 minions you buy (Transcribing Typewriter)"
+ },
  "BG30_MagicItem_891": {
   "base_value": 6,
   "synergy": {
@@ -1186,16 +1104,6 @@
    ]
   },
   "note": "a random spell now + 1 every turn (Colorful Compass)"
- },
- "BG30_MagicItem_426t": {
-  "base_value": 14,
-  "synergy": {
-   "keywords": [
-    "spell",
-    "economy"
-   ]
-  },
-  "note": "2 random spells now + 2 every turn (Colorful Compass variant)"
  },
  "BG30_MagicItem_442": {
   "base_value": 8,
@@ -1464,5 +1372,237 @@
    ]
   },
   "note": "every 5 Murlocs played -> 2 random Tavern spells (Cookie's Stirring Rod)"
+ },
+ "BG30_MagicItem_310": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "deathrattle"
+   ]
+  },
+  "note": "summons Titus Rivendare (deathrattles fire twice) and doubles his Health at combat start (Rivendare Portrait) — the deathrattle-comp enabler; the doubling only matters while Titus survives"
+ },
+ "BG30_MagicItem_541": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ]
+  },
+  "note": "Tavern minions +2/+2, improving on hero damage (Nether Pendant) — the buy-the-buff tavern engines (Nomi/Air Revenant class) are what turn it on"
+ },
+ "BG30_MagicItem_545": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "magnetic"
+   ]
+  },
+  "note": "Avenge (3): recurring random Magnetic minion (Fridge Magnet) — mech engine fuel and triple fodder"
+ },
+ "BG30_MagicItem_879": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ]
+  },
+  "note": "Tavern minions +2/+2, improving every 4 Refreshes (Dalaran Cheese Wheel) — same tavern-buff engine family as Nether Pendant, slower to improve"
+ },
+ "BG30_MagicItem_879t": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ]
+  },
+  "note": "Tavern minions +2/+2, improving every 4 Refreshes (Dalaran Cheese Wheel) — same tavern-buff engine family as Nether Pendant, slower to improve"
+ },
+ "BG30_MagicItem_996": {
+  "base_value": 20,
+  "synergy": {
+   "keywords": [
+    "economy",
+    "leveling"
+   ]
+  },
+  "note": "4 gold now + maximum gold 4 (Bob's Tip Jar) — Goblin Wallet-class compounding income, the strongest economy read in the DB"
+ },
+ "BG30_MagicItem_999": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "every 7 gold spent casts a free Shiny Ring (Fancy Spellbook) — cast-engine fuel that pays for itself in a normal shopping turn"
+ },
+ "BG32_MagicItem_172": {
+  "base_value": 14,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "a Dr. Boom's Monster now and another every turn (Boom's Monster Portrait) — permanent big bodies and easy triple progress"
+ },
+ "BG32_MagicItem_200": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Beast"
+   ]
+  },
+  "note": "Beast attacks give it +3 Attack and permanently improve this (All-Purpose Kibble) — the improvement is the permanent part; the in-combat buff evaporates (player rule)"
+ },
+ "BG32_MagicItem_362": {
+  "base_value": 18,
+  "synergy": {
+   "keywords": [
+    "leveling"
+   ]
+  },
+  "note": "two Tier-6 discovers set to 30/30 (Innkeeper's Hearth) — instant warband-carrying stats; strongest as a late pick"
+ },
+ "BG32_MagicItem_362t": {
+  "base_value": 18,
+  "synergy": {
+   "keywords": [
+    "leveling"
+   ]
+  },
+  "note": "two Tier-6 discovers set to 30/30 (Innkeeper's Hearth) — instant warband-carrying stats; strongest as a late pick"
+ },
+ "BG32_MagicItem_807": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "a golden Mishmash plus a 10/10 venomous Amalgam (Curator Sticker) — triple-reward progress and a poisonous body on pickup"
+ },
+ "BG32_MagicItem_920": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "two Thaumaturgists whose Spellcrafts become permanent (Thaumaturgist Portrait) — spell-engine amp that scales every turn"
+ },
+ "BG32_MagicItem_922": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "end of turn: left-most minion +3/+3, each cast improves it (Charming Panpipes) — spell-fueled growth; keep your scaler left-most"
+ },
+ "BG35_MagicItem_701": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Beast"
+   ]
+  },
+  "note": "+1/+1 to Beasts each combat, permanently improving per Beast summoned (Fang Anklet) — slow burn that rewards a beast-heavy warband"
+ },
+ "BG35_MagicItem_742": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "magnetic"
+   ]
+  },
+  "note": "end of turn: an Accord-o-Tron magnetized onto each edge Mech (Accord-o-Tron Portrait) — recurring stats; keep Mechs on the edges"
+ },
+ "BG35_MagicItem_743": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "magnetic",
+    "economy",
+    "refresh"
+   ]
+  },
+  "note": "Magnetic Mechs cost 2 and every Refresh offers an extra one (Electrode Attractor) — the one real price break in BG (vs the flat-3 rule): mech engine fuel"
+ },
+ "BG35_MagicItem_820": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "casts Ice Block + 5 gold (Safety Patch) — a stabilize tool for the fragile turns, not a growth engine"
+ },
+ "BG35_MagicItem_923": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "every cast: permanent +1/+1 to the whole warband, +2/+2 in combat (Bewitched Ribbon) — the spell-engine payoff; scales with cast volume"
+ },
+ "BG35_MagicItem_930": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "refresh",
+    "golden"
+   ]
+  },
+  "note": "one free Refresh of plain warband copies (Warband Whistle) — a triple hunt: buy the copies you're missing"
+ },
+ "BG36_MagicItem_361": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Naga"
+   ]
+  },
+  "note": "combat-start doubling of the edge Nagas' stats (Myrmidon Sticker) — position-dependent (edges) and combat-only"
+ },
+ "BG36_MagicItem_362": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "deathrattle"
+   ]
+  },
+  "note": "a Showy Cyclist whose Deathrattle stats become permanent (Cyclist Portrait) — pairs with Cyclist-recurring engines"
+ },
+ "BG36_MagicItem_373": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Tavern spells give an extra +1/+2, improving per different friendly minion type (Multilayered Shield) — rewards type-diverse spell engines"
+ },
+ "BG36_MagicItem_830": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "every Tavern spell adds a Fodder token to the next Refresh (Bloodfury Shield) — token generation feeding buys and triple progress in cast-heavy games"
  }
 }
