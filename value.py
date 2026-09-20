@@ -15,6 +15,7 @@ import re
 
 import meta
 import pool
+from player_actions import _load_bg_magnetic_ids
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
 from tribes import is_banned, matches, normalize, overlaps, parts
 
@@ -1405,6 +1406,12 @@ def _buy_prices(analysis):
     a price. Tavern spells keep their own per-spell price: the log's COST
     tag for spell entities, else the spell DB. Golden minion offers carry
     the "_G" id, priced identically to the base.
+
+    Held-trinket price overrides (2026-09-20 ruling: the coach models the
+    text-stated exceptions to flat-3): Electrode Attractor makes MAGNETIC
+    minions cost 2. Bazaar Sticker's health-cost spell is NOT priced here
+    — one spell per turn at a health price can't live in a flat map; the
+    plan walk discounts the one spell it would buy (see _top_move_text).
     """
     spell_db = _load_spell_db()
     costs = {c: MINION_BUY_PRICE for c in _load_card_db()}
@@ -1412,7 +1419,32 @@ def _buy_prices(analysis):
     costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
     costs.update({c: v for c, v in (analysis.get("shop_costs") or {}).items()
                   if c in spell_db})
+    held = (analysis.get("scenario") or {}).get("trinkets") or []
+    if "Electrode Attractor" in held:
+        for cid in _load_bg_magnetic_ids():
+            if cid in costs:
+                costs[cid] = 2
+                costs[cid + "_G"] = 2
     return costs
+
+
+def _health_cost_spell(analysis, cid, spell_db):
+    """(why, 0-price?) for Bazaar Sticker's health-cost spell, or None.
+
+    '1 Tavern spell/turn costs Health instead of Gold': the FIRST spell the
+    plan would buy this turn costs no gold (its price is paid in health
+    instead). Modeled in the walk only — a second spell buys at gold like
+    normal. Not while DYING: advising a health spend at <=12 effective HP
+    is how runs end (the same fragility that defers levels).
+    """
+    held = (analysis.get("scenario") or {}).get("trinkets") or []
+    if "Bazaar Sticker" not in held or cid not in spell_db:
+        return None
+    health = analysis.get("health")
+    if health is not None and health + (analysis.get("armor") or 0) \
+            <= DYING_HEALTH:
+        return None
+    return ("costs Health instead of gold (Bazaar Sticker)", True)
 
 
 def _shop_name(cid, names):
@@ -1693,10 +1725,12 @@ def _top_move_text(analysis):
             elif (here_core > 0 and next_core == 0 and above_core == 0) or \
                     (here_core == 0 and next_core == 0 and above_any == 0
                      and here_any > 0):
-                # Q1: what the comp is MISSING lives here — this tier or
-                # below — and nothing of it is out of reach above, so
-                # leveling would lower the odds of finding it WITHOUT
-                # unlocking anything. Cores dominate; addons only carry the
+                # Q1: what the comp is MISSING lives on THIS tier — and
+                # nothing of it is out of reach above, so leveling would
+                # lower the odds of finding it WITHOUT unlocking anything.
+                # Below-tier pieces don't count (2026-09-20 ruling: they
+                # stay findable after leveling, so they never hold the
+                # ladder back). Cores dominate; addons only carry the
                 # stay when they're all the shopping left. The old gate
                 # required tier+1 to hold NOTHING: any single addon there
                 # pulled LEVEL while missing cores sat here (2026-09-08) —
@@ -1805,6 +1839,16 @@ def _top_move_text(analysis):
                 else:
                     cid = alt_minion
         cost = costs.get(cid)
+        # Bazaar Sticker (2026-09-20 ruling: model the text-stated price
+        # exceptions): the ONE spell this plan would buy costs Health
+        # instead of gold — discount it here so the budget checks treat it
+        # as free, and say so in the buy line (the overlay's per-card price
+        # stays the gold figure; a flat map can't carry a once-per-turn
+        # discount honestly).
+        health_why = _health_cost_spell(analysis, cid, spell_db) \
+            if cid is not None else None
+        if health_why:
+            cost = 0
         if budget is not None and cost is not None and budget < cost:
             # Can't afford the headline pick — walk the ranking for one the
             # budget covers (known prices only; unknown = can't promise).
@@ -1934,6 +1978,8 @@ def _top_move_text(analysis):
                                  board=analysis.get("board"),
                                  pool_held=analysis.get("own_pool"),
                                  recipes=recipes)
+            if health_why:
+                why = f"{why}; {health_why[0]}"
             parts.append(f"Buy {_shop_name(cid, names)} ({why})")
             # Name the engine once, right after the fuel buy (the 2026-09-15
             # Shudderwock game's miss: the coach ranked Tavern Tempest but
@@ -2280,9 +2326,11 @@ def _comp_needs_by_tier(analysis, card_db, reach=None):
     shopping that's left (a lone addon at tier+1 used to pull LEVEL past
     missing cores on the current tier — the 2026-09-08 report: 'keeps
     saying to upgrade even if there are minions at this tier we still
-    need'). 'Here' includes LOWER tiers: a tier-3 core while at tier 4 is
-    still diluted by leveling (the pool's sub-tier share drops as the
-    tavern climbs).
+    need'). 'Here' = THIS tier only: below-tier pieces are neutral
+    (findable before and after leveling — they justify neither a stay
+    nor a level; 2026-09-20 ruling on the 09-11 review's objection). The
+    old 'this tier or below' let a tier-3 core hold the ladder back at
+    tier 4.
 
     'Above' = beyond tier+1 (tier-6 Fauna Whisperer while at tier 4). It
     used to be counted NOWHERE, and a missing core AT tier+1 tied evenly
@@ -2314,10 +2362,16 @@ def _comp_needs_by_tier(analysis, card_db, reach=None):
                 if section == "core":
                     next_core += 1
                 next_any += 1
-            elif t <= tier:
+            elif t == tier:
                 if section == "core":
                     here_core += 1
                 here_any += 1
+            elif t < tier:
+                pass  # below-tier: findable here AND after leveling — it
+                # justifies neither a stay nor a level (2026-09-20 ruling:
+                # the old "here = this tier or below" let a sub-tier core
+                # hold the ladder back; Mike confirmed the 09-11 review's
+                # objection)
             else:  # beyond tier+1: unfindable here, unfindable at tier+1 —
                 # unless a live discover/token source reaches it from here.
                 if any(_src_reaches(s, row.get("card"), t, tier)

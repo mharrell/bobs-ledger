@@ -180,6 +180,16 @@ class TestNeverWonLadder(unittest.TestCase):
         tm = top_move(a)
         self.assertNotIn("0 wins so far", tm)
 
+    def test_zero_wins_alarm_needs_a_sample(self):
+        """At turn 2 EVERY game is 0-wins — the defer must not fire before
+        the 3-turn sample or it would stall every early curve (audit F5.3:
+        the gate was only tested at turn 5)."""
+        a = _analysis(tier=3, turn=2, gold=7, level_cost=5,
+                      health=22, never_won=True, buy_this="BG25_016",
+                      shop_rank=[("BG25_016", 20.0)])
+        tm = top_move(a)
+        self.assertNotIn("0 wins so far", tm)
+
 
 class TestOpponentRunClause(unittest.TestCase):
     """Next-opponent pressure: rounds since the announced opponent's hero
