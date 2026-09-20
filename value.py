@@ -1644,6 +1644,14 @@ def _top_move_text(analysis):
             flip_why = None
             if dying:
                 flip_why = "too fragile to level first"
+            elif analysis.get("never_won") and (analysis.get("turn") or 0) >= 3:
+                # The 2026-09-19 Reno game: bled in every fight from t2 and
+                # the plan LEVELed through it (streak of 1 didn't trip the
+                # stabilize rules). Zero wins is the louder, simpler read:
+                # until a fight stops costing HP, the board comes first —
+                # at any tier (5k-MMR conservative stance).
+                flip_why = "0 wins so far — every fight has cost you HP; " \
+                           "buy stats first"
             elif tier >= 2 and loss_streak >= 2 and board_stats is not None \
                     and their and board_stats < 0.7 * their:
                 flip_why = (f"lost {loss_streak} straight and your board is "
@@ -2260,12 +2268,17 @@ def combat_forecast(analysis):
     _h = analysis.get("health")
     eff = _h + (analysis.get("armor") or 0) if _h is not None else None
     fragile = eff is not None and eff <= FAVOR_HP_CEILING
+    # Next-opponent pressure (2026-09-19, 5k stance): a silent hero is a
+    # scaling one — rounds since their last bleed reads as their win run.
+    quiet = analysis.get("opp_quiet")
+    run = f" · they haven't taken damage in {quiet} rounds" \
+        if quiet and quiet >= 2 else ""
     if ratio >= 1.3:
         label = ("ahead on paper" if fragile else "favored")
-        return f"{label} — {bs} vs {theirs_disp}{edge}"
+        return f"{label} — {bs} vs {theirs_disp}{edge}{run}"
     if ratio >= 0.8:
-        return f"close fight — {bs} vs {theirs_disp}{edge}"
-    return f"behind — {bs} vs {theirs_disp}; don't take this fight{edge}"
+        return f"close fight — {bs} vs {theirs_disp}{edge}{run}"
+    return f"behind — {bs} vs {theirs_disp}; don't take this fight{edge}{run}"
 
 
 def _comp_needs_by_tier(analysis, card_db, reach=None):
