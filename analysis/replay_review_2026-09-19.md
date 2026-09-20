@@ -92,3 +92,26 @@ Pricing: eff = raw + shields x (a wasted hit ~= our average attack)
 "their ~163 raw, but 4 shields + 2 reborn — closer to a wall than the
 ratio says", and at 4th-place stakes "602 vs 163" stops reading as
 unbeatable.
+
+## 6. Evening game 2 (Tavish, 7th): the three-way split and the late pivot
+
+The player's own read — "great position for Beasts or Elementals, tried
+to switch too late" — checks out against the comp-target trajectory:
+no direction t1-t7 (three tribes at ~1 core hit each: Beast pieces,
+Elemental pieces, and Lurking Lionfish/Kelp Keeper — which are NAGAS,
+the tribe mirage), Elementals commit t9 (Unbound Tempest at 2 hits,
+payoff at TIER 6 — the plan printed "needs tier 6" at t8 and t9 while
+the board was tier 3-4 at 25 HP), a flip to Nagas at t10 when the naga
+buys landed, then levels 4-5-6 chasing pieces to death at t13, 8 HP,
+7th. The box followed the pivot in real time; it did not resist.
+
+Coachable rule the game states: **commit to what you can reach at your
+current tier** — a comp whose cores live two tiers up is a lottery
+ticket, and a three-way split bleeds against a 5k-MMR lobby.
+
+Design candidate (pick-a-lane fork): when the box is committed and the
+shop's high-rankers point at a DIFFERENT tribe, name the fork in the
+plan — "the elemental commit needs tier 6 (two levels away at 25 HP),
+or the naga pieces in front of you are live now." The comp-flip gates
+(09-16/09-18) govern the label; this governs the PLAYER'S decision,
+which is the thing that actually died here.
