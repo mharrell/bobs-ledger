@@ -952,7 +952,10 @@ class LiveCoach:
             # that fail-opens on an empty set, but here an empty set means
             # "nothing confirmed YET", not "no ban info" — with it the
             # window played fail-open (2026-09-10 replay: seen=0 ->
-            # n_playable=21).
+            # n_playable=21). This is the designed mirror of
+            # bans.filter_comps_by_available_tribes, which fail-OPENS on
+            # no-info for the replay/panel layer — the pair is intentional,
+            # don't unify them (2026-09-19 test audit F3).
             confirmed = set(allowed or ())
 
             def window_ok(tribe):

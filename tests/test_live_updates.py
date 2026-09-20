@@ -156,7 +156,10 @@ class TestLevelCost(unittest.TestCase):
         self.assertEqual(c.level_cost(), 5)
 
     def test_price_drops_per_turn_at_tier(self):
-        """Wiki rule: tier+5 minus turns at the tier (2nd turn: 4)."""
+        """The upgrade starts at (target+3) gold and drops 1 per round
+        waited (CLAUDE.md indexing; the audit's F4 — the old docstring
+        wrote the same rule as 'tier+5 minus turns', a confusingly
+        different index). 1→2 costs 5; a second turn at tier 1: 4."""
         c = self._coach(1)
         c._tier_seen_turn = 0
         c.actions.turn = 2
@@ -354,17 +357,20 @@ class TestLevelGates(unittest.TestCase):
         self.assertNotIn("LEVEL", tm)
         self.assertIn("stay on tier 2", tm)
 
-    def test_lower_tier_core_counts_as_here(self):
-        """A tier-3 core while at tier 4: leveling dilutes sub-tier pool
-        shares too — 'here' is this tier OR below."""
+    def test_lower_tier_core_does_not_hold_the_stay(self):
+        """A tier-3 core while at tier 4 does NOT justify staying (2026-09-20
+        ruling on the 09-11 review's objection): below-tier pieces stay
+        findable after leveling, so they never hold the ladder back — the
+        old 'here = this tier or below' froze the curve on a sub-tier
+        core."""
         from value import _load_card_db
         db = _load_card_db()
         t3 = next(c for c, v in db.items() if v.get("tier") == 3)
         a, top_move = self._analysis(tier=4)
         a["target_cards"]["core"] = [{"card": t3, "name": t3, "owned": False}]
         tm = top_move(a)
-        self.assertNotIn("LEVEL", tm)
-        self.assertIn("stay on tier 4", tm)
+        self.assertNotIn("stay on tier 4", tm)
+        self.assertIn("LEVEL to tier 5", tm)
 
     def test_more_next_cores_than_here_levels(self):
         """The comp's missing cores live mostly one tier up: LEVEL states

@@ -160,22 +160,47 @@ F5.1–F5.2.
 
 | Action | Items |
 |---|---|
-| Ask player | F1 (below-tier Q1), F2 (flat-3 exceptions) |
-| New tests | F5.1 forecast scaling, F5.2 clock runout, F5.3 t2 boundary |
-| Comment cross-refs | F3 (fail-open/fail-closed both sites) |
-| Wording | F4 (level-cost formula docstring) |
-| Memory update | F1 outcome (mark the 09-11 follow-up resolved or reopen) |
+| Ask player | ~~F1 (below-tier Q1), F2 (flat-3 exceptions)~~ — ANSWERED 2026-09-20, see below |
+| New tests | F5.3 t2 boundary (LANDED); F5.1/F5.2 re-scoped — see below |
+| Comment cross-refs | F3 (fail-open/fail-closed both sites) — LANDED |
+| Wording | F4 (level-cost formula docstring) — LANDED |
+| Memory update | F1 outcome — LANDED (ruling: below-tier cores never justify staying) |
 | Keep as-is | everything else — no deletions, no rewrites |
 
-## Questionnaire for Mike
+## Rulings and what landed (2026-09-20)
 
-1. **Below-tier cores & the stay decision.** At tier 4 with a missing
-   comp core that lives at tier 3: should the coach treat "it's still in
-   my pool here" as a reason to STAY (current test says yes —
-   "leveling dilutes sub-tier shares"), or is that the defect the 09-11
-   review meant?
-2. **Flat-3 exceptions.** Minions cost flat 3 — but Electrode Attractor
-   makes Magnetic Mechs cost 2 and Bazaar Sticker makes one spell/turn
-   cost Health instead of gold. Should the coach model trinket-driven
-   price overrides when they're held (small fudge now, or a price-hook
-   later), or stay flat-3 always and accept the approximation?
+**Q1 ruling: below-tier cores do NOT justify staying.** The 09-11
+review's objection was right; the `here = this tier or below` test had
+enshrined the defect. Landed: `_stay_counts` now buckets `t == tier` as
+here and treats `t < tier` as neutral (findable before and after
+leveling — justifies neither a stay nor a level). Test rewritten
+(`test_lower_tier_core_does_not_hold_the_stay`: at tier 4 a missing tier-3
+core no longer freezes the curve). 588 tests green.
+
+**Flat-3 ruling: model the text-stated exceptions.** Landed:
+- `_buy_prices` applies Electrode Attractor ("Magnetic Mechs cost (2)")
+  to magnetic minions when held (overlay + walk share the layer).
+- Bazaar Sticker ("1 Tavern spell/turn costs Health instead of Gold")
+  can't live in a flat map: the plan walk discounts the ONE spell it
+  would buy, says "costs Health instead of gold (Bazaar Sticker)" in the
+  buy line, and refuses the discount while DYING (a health spend at ≤12
+  eff HP is how runs end). The overlay's per-card price stays the gold
+  figure. Tests: `TestPriceModifiers` (4 cases).
+
+**F5 re-scoped — the two "missing tests" were missing IMPLEMENTATION:**
+- F5.1 forecast opponent-scaling: the keyword pricing was a design
+  direction in the 09-19 review, never built (`combat_forecast`'s
+  docstring admits "the opponent's keywords aren't tracked yet"). A test
+  for unbuilt behavior is not writable — this is now the top design
+  candidate: lobby scout collects DIVINE_SHIELD/REBORN counts from the
+  staged stream (verified available there), prices
+  eff = raw + shields×avg-hit + reborn×body, and the forecast says the
+  honest line ("their ~163 raw, but 4 shields + 2 reborn — closer to a
+  wall than the ratio says"). Test lands with the feature.
+- F5.2 clock-runout: also a recorded rule with no code (leftover
+  gold/hand at phase end is currently scored nowhere in replay_review —
+  nothing to test). If it should be scored automatically, that's a
+  detector feature (phase-end + timer-gap detection), design first.
+- F5.3 landed: `test_zero_wins_alarm_needs_a_sample` pins the turn-2
+  boundary (at t2 every game is 0-wins; the defer must wait for the
+  3-turn sample).

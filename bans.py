@@ -195,6 +195,12 @@ def filter_comps_by_available_tribes(comps, card_races, allowed_tribes):
     ELEMENTAL/DEMON) are playable if *either* tribe is allowed.
     `allowed_tribes` None or empty = no ban info — fail OPEN and keep
     every comp (an unknown ban must not look like "all tribes banned").
+    NOTE the designed counter-point: the LIVE coach's detection window is
+    deliberately fail CLOSED (advisory list = confirmed-tribe comps only
+    until the 5/5 set lands — see live_coach._refresh_bans). These two
+    are a pair: the replay/panel layer must never read no-info as
+    all-banned, the live advisory must never read no-info as all-clear.
+    Don't unify them.
     """
     if not allowed_tribes:
         return dict(comps)
