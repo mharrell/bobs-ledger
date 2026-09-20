@@ -904,6 +904,105 @@ class TestBanGate(unittest.TestCase):
         self.assertEqual(c.allowed, allowed)
 
 
+class TestManualBans(unittest.TestCase):
+    """The overlay's tap-the-ban-screen picker (2026-09-19): the ban list is
+    provably not in any log (identical CREATE_GAME setup across different-ban
+    games), the pool inference converged at minute 12/14 in the evening
+    games, and a manual set is exact from t0. Manual bans are authoritative
+    for the rest of the game and reset with it."""
+
+    TEAMS = ["Beast", "Demon", "Dragon", "Elemental", "Mech"]
+
+    def _coach(self):
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
+                         "core": ["BG30_111"]},
+            "nagas-y": {"name": "Nagas - Y", "tribe": "Naga",
+                        "core": ["BG23_318"]},
+        }
+        c._card_races = {}
+        c.cur_lines = ["x"]
+        return c
+
+    def tearDown(self):
+        import coach_ui
+        coach_ui.store_manual_bans([])
+
+    def test_manual_set_is_authoritative(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c._bans_ready)
+        self.assertTrue(c.bans_manual)
+        self.assertEqual(c.allowed,
+                         ["Murloc", "Naga", "Pirate", "Quilboar", "Undead"])
+        self.assertEqual(set(c.playable), {"nagas-y"})
+        self.assertFalse(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 5)
+
+    def test_manual_beats_earlier_inference_lock(self):
+        """The inference locked 5/5 first (pool streamed fast), THEN the
+        player taps the reveal — the tap must still win (the reveal is the
+        ground truth; the inference's complement is only a guess until the
+        leaks argument, and the tap usually happens before it anyway)."""
+        import coach_ui
+        c = self._coach()
+        c.allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
+        c._bans_ready = True
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c.bans_manual)
+        self.assertEqual(c.allowed,
+                         ["Murloc", "Naga", "Pirate", "Quilboar", "Undead"])
+
+    def test_changing_the_taps_reapplies(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        coach_ui.store_manual_bans(["Beast", "Demon", "Dragon", "Elemental",
+                                    "Murloc"])
+        c._refresh_bans()
+        self.assertEqual(c.allowed,
+                         ["Mech", "Naga", "Pirate", "Quilboar", "Undead"])
+        self.assertEqual(set(c.playable), {"nagas-y"})
+
+    def test_clearing_reopens_detection(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        coach_ui.store_manual_bans([])
+        c._refresh_bans()
+        self.assertFalse(c.bans_manual)
+        self.assertFalse(c._bans_ready)
+        self.assertIsNone(c.allowed)
+        self.assertTrue(c.tribes_detecting)  # the inference retries
+
+    def test_store_validates_against_the_roster(self):
+        import coach_ui
+        self.assertEqual(coach_ui.store_manual_bans(
+            ["Beast", "Weird", "", None, "Elemental"]), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.latest_manual_bans(), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.store_manual_bans([]), [])  # empty = clear
+        self.assertIsNone(coach_ui.latest_manual_bans())
+
+    def test_reset_with_the_game(self):
+        """bans_manual rides _GAME_DEFAULTS: a new game resets it (the tap
+        was per-game; a stale manual set would poison the next lobby)."""
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c.bans_manual)
+        c._reset()
+        self.assertFalse(c.bans_manual)
+        self.assertIsNone(c._manual_key)
+
+
 class TestRenderJsonComps(unittest.TestCase):
     def test_playable_comps_become_rich_tier_rows(self):
         """The comps panel needs more than names: each playable comp row

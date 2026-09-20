@@ -1035,10 +1035,15 @@ def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
     None (old callers, fixtures) keeps the evidence-free hold.
 
     Playing a minion stuck in hand (full board) costs no gold — a free
-    body. Casting a spell from hand COSTS its spell price (log COST tag,
-    else the spell DB — the same price layer as the shop; the old
-    "casts are free" model here had cast steps leading plans at gold 0
-    three games running, 2026-09-16 evening t9/t14). Spells rank by
+    body. Casting a spell from hand is also FREE (player rule 2026-09-19,
+    confirmed by log ground truth: BlockType=PLAY blocks sourced from a
+    HAND-zone spell contain no RESOURCES_USED change, while shop-side
+    actions charge — the spell's price is paid when it is BOUGHT from the
+    tavern). The 2026-09-16 evening "cast gold gate" that priced hand
+    casts was a misdiagnosis of that evening's real complaint (a
+    low-effect Tavern Coin leading a gold-0 plan): gold-gain spells
+    already score ~2 points in _spell_effect, so they can't lead a real
+    plan, and no gold gate is needed. Spells rank by
     direct effect + cast-engine fuel (each cast
     feeds end-of-turn compounding, which counts casts made THIS turn);
     hand minions rank by their value as a free play — with triple
@@ -2044,34 +2049,17 @@ def _top_move_text(analysis):
         demoted_ids = {id(s) for s in demoted}
         hand_entries[:] = [s for s in hand_entries
                            if id(s) not in demoted_ids] + demoted
-    # Casts spend gold: gate them on the live purse, cumulatively in plan
-    # order, and never let them eat the plan's committed buy (the buy walk
-    # priced it against the full purse, so casts must fit in what's left
-    # after it). At gold 0 nothing is castable — the 2026-09-16 evening
-    # games' "Cast Tavern Coin"/"Cast Repair Job"-at-gold-0 family. Plays
-    # and holds are free. An uncastable spell demotes to a hold, stated,
-    # moved last — the same honesty as the shop-buff demotion above. The
-    # gate is "castable NOW", not a ban: t16's Cast Repair Job x3 with a
-    # funded purse was correct advice and the player cast all three.
-    if gold is not None:
-        reserve = (costs.get(bought) or 0) if bought is not None else 0
-        spend = gold - reserve
-        gated = []
-        for s in hand_entries:
-            if s.get("verb") != "cast":
-                continue
-            price = costs.get(s.get("card"))
-            if price is not None and price <= spend:
-                spend -= price
-                continue
-            s["verb"] = "hold"
-            s["why"] = (f"needs {price}g to cast — no gold for it"
-                        if price is not None else "no gold to cast now")
-            gated.append(s)
-        if gated:
-            gated_ids = {id(s) for s in gated}
-            hand_entries[:] = ([s for s in hand_entries
-                                if id(s) not in gated_ids] + gated)
+    # Hand casts are FREE (player rule + log ground truth, 2026-09-19: a
+    # BlockType=PLAY block sourced from a HAND-zone spell moves no
+    # RESOURCES_USED; the spell's price is charged at the tavern BUY). The
+    # 2026-09-16 evening gate that demoted casts the purse couldn't cover
+    # was a misdiagnosis of "Cast Tavern Coin led a gold-0 plan": the real
+    # fix is ranking, and gold-gain spells already score ~2 effect points
+    # in _spell_effect, so a low-value cast can't lead a real plan. No gold
+    # gating here — the shop-buff demotion above stays (that one is an
+    # effect-level rule: the buff dies with the shop, not a price).
+    # t16's Cast Repair Job x3 with a funded purse remains correct advice;
+    # so is casting at gold 0 when the spell is in hand.
     if hand_entries:
         counts, order = {}, []
         for s in hand_entries:

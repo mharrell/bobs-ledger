@@ -163,6 +163,13 @@ class TestBansFromLogCardRace(unittest.TestCase):
         self.assertEqual(len(games), 1)
         g = games[0]
         self.assertEqual(g["allowed"], ["Beast", "Quilboar"])
+        # Three-state honesty (2026-09-19): with only 2 confirmed tribes the
+        # rest is PENDING — nothing is called banned until the 5/5 set is
+        # known, because the log carries no ban list at all.
+        self.assertEqual(g["banned"], [])
+        self.assertEqual(g["pending"], ["Demon", "Dragon", "Elemental",
+                                        "Mech", "Murloc", "Naga", "Pirate",
+                                        "Undead"])
         # The neutral pool minion (no CARDRACE tag, unknown to the cache)
         # is correctly not counted as a tribe.
         self.assertNotIn("NEUTRAL", g["allowed"])
@@ -217,6 +224,28 @@ class TestBansFromLogGenerationLeaks(unittest.TestCase):
     def _assert_real_five(self, games):
         self.assertEqual(games[0]["allowed"],
                          ["Beast", "Dragon", "Elemental", "Murloc", "Pirate"])
+        # 5 confirmed -> the complement is the CONFIRMED ban set, and the
+        # pending list empties (the 2026-09-19 evening games only reached
+        # this at minute 12/14 — before that everything sat in pending).
+        self.assertEqual(games[0]["banned"],
+                         ["Demon", "Mech", "Naga", "Quilboar", "Undead"])
+        self.assertEqual(games[0]["pending"], [])
+
+    def test_partial_reveal_pending_not_banned(self):
+        """One tribe below the gate (2 distinct cards): allowed AND banned
+        both empty, everything pending — the old output called those tribes
+        'banned' on sub-gate evidence, which filter consumers then treated
+        as truth."""
+        from bans import bans_from_log
+        lines = (["D 12:00:00 GameState.DebugPrintPower() - GAME_SEED"
+                  " value=42\n"]
+                 + _pool_block(1, "PART_BEAST_A", "BEAST")
+                 + _pool_block(2, "PART_BEAST_B", "BEAST"))
+        games = bans_from_log(None, {}, lines=lines)
+        g = games[0]
+        self.assertEqual(g["allowed"], [])
+        self.assertEqual(g["banned"], [])
+        self.assertEqual(len(g["pending"]), 10)
 
     def test_singleton_leak_does_not_become_allowed(self):
         from bans import bans_from_log
