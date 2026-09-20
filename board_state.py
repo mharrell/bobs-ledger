@@ -353,6 +353,15 @@ class GameState:
             if HERO_CARD.match(cid):
                 self.hero_meta[cid]["damage"] = int(value)
                 self.hero_stat_log.append((cid, "DAMAGE", int(value)))
+        elif tag == "PREDAMAGE":
+            # Pending damage THIS COMBAT on the hero (written n -> 0 per
+            # hit; 2026-09-19). The never-won alarm reads it: a fight we
+            # took predamage in is a fight we lost (the winner takes 0),
+            # independent of the armor-grant/copy-reset noise that blinds
+            # the true-HP series.
+            cid = self.card.get(eid, "")
+            if HERO_CARD.match(cid):
+                self.hero_stat_log.append((cid, "PREDAMAGE", int(value)))
         elif tag == "CARDRACE":
             self.tribe[eid] = value
         elif tag == "TECH_LEVEL":

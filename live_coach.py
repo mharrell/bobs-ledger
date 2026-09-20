@@ -408,6 +408,7 @@ _GAME_DEFAULTS = {
     "_last_tier": None,
     "_tier_seen_turn": None,  # turn the current tier was reached
     "_armor_hist": dict,     # turn -> {af, al, hf, hl} first/last armor+HP
+    "_predamage_turns": set,  # turn buckets where our hero took predamage
     "_stat_seen": 0,         # hero_stat_log entries already drained
     "_stat_pending": list,   # (turn, cid, tag, value) before hero parse
     "next_opponent": None,   # announced NEXT_OPPONENT_PLAYER_ID
@@ -725,6 +726,13 @@ class LiveCoach:
                 rec["al"] = v
             elif tag == "DAMAGE":
                 rec["dl"] = v
+            elif tag == "PREDAMAGE":
+                # Any predamage this turn bucket = we LOST the fight the
+                # winner takes 0 (ties too) — the never-won alarm's raw
+                # signal, immune to the armor-grant/copy-reset noise the
+                # true-HP series chokes on (2026-09-19 Reno game).
+                if v > 0:
+                    self._predamage_turns.add(turn)
             else:
                 rec["hl"] = v  # last write wins
 
@@ -1293,6 +1301,19 @@ class LiveCoach:
                     t -= 1
                 else:
                     break
+        # The never-won alarm (2026-09-19 Reno game: bled in every fight
+        # from t2 and died 8th — no line ever said the one true thing,
+        # and the plan was LEVELing through it). Read from the PREDAMAGE
+        # buckets, not the true-HP series: the series showed a phantom
+        # 0-damage fight here (armor-grant/copy-reset noise), while a
+        # predamage>0 bucket is an unambiguous lost fight (the winner
+        # takes 0; ties take 0). A streak resets; zero wins does not.
+        # Attribution: combat detail prints under the NEXT phase's
+        # MAIN_ACTION (the same print-order fact as the death-window
+        # finding), so the fight after buy k stamps bucket k+1 — the
+        # completed fights before this phase are buckets 2..turn.
+        never_won = turn >= 3 and all(
+            t in self._predamage_turns for t in range(2, turn + 1))
         # The pending pick (hero / trinket / discover), ranked against the
         # current board and comp. Its rows are (name, cid, score, why) — a
         # DIFFERENT shape from the sell ranking's (cid, score). They used to
@@ -1349,6 +1370,7 @@ class LiveCoach:
             "damage_cap": damage_cap,
             "damage_last": damage_last,
             "loss_streak": loss_streak,
+            "never_won": never_won,
             "close_losses": close_losses,
             "board": board,
             # Active engine recipes (Plan 1), minus the long evidence prose:

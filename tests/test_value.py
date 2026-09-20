@@ -824,6 +824,25 @@ class TestSituationLine(unittest.TestCase):
              "target_comp": None}
         self.assertIsNone(value.situation_line(a))
 
+    def test_never_won_alarm_subsumes_streak(self):
+        """2026-09-19 Reno game: bled in every fight from t2 and died 8th —
+        no line ever said the one true thing, and the plan LEVELed through
+        it. Zero wins in N fights is louder than 'lost N straight' and
+        replaces it (when never_won, streak == all fights)."""
+        a = {"board_stats": 40, "lobby_opp": 60, "health": 12, "armor": 0,
+             "turn": 6, "loss_streak": 5, "never_won": True}
+        line = value.situation_line(a)
+        self.assertIn("0 wins in 5 fights", line)
+        self.assertIn("buy stats, not tiers", line)
+        self.assertNotIn("lost 5 straight", line)
+
+    def test_never_won_needs_three_turns(self):
+        """One lost fight is just a loss — the alarm needs a sample."""
+        a = {"board_stats": 40, "lobby_opp": 60, "health": 22, "armor": 0,
+             "turn": 2, "loss_streak": 1, "never_won": True}
+        line = value.situation_line(a)
+        self.assertNotIn("0 wins", line)
+
 
 class TestStickyCompTarget(unittest.TestCase):
     """Same-tribe target churn (Summon Beetles -> Tasty Lobstah phase to

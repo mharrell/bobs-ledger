@@ -1347,7 +1347,14 @@ def situation_line(analysis):
             label = "behind baseline" if source_is_baseline else "behind"
             bits.append(f"{label} ({bs} vs {mark}{int(theirs)})")
     streak = analysis.get("loss_streak") or 0
-    if streak >= 2:
+    if analysis.get("never_won") and (analysis.get("turn") or 0) >= 3:
+        # 2026-09-19 Reno game: bled in every fight from t2 and died 8th
+        # — no line ever said the one true thing. A loss streak resets
+        # and armor-soaked hits read as noise; zero wins does not.
+        # Subsumes the streak clause (when never_won, streak == fights).
+        bits.append(f"0 wins in {(analysis.get('turn') or 0) - 1} fights "
+                    "— every fight has cost you HP; buy stats, not tiers")
+    elif streak >= 2:
         bits.append(f"lost {streak} straight")
     health = analysis.get("health")
     armor = analysis.get("armor") or 0
