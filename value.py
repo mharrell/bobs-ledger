@@ -1380,7 +1380,7 @@ def situation_line(analysis):
         elif cap and eff <= 2 * cap and lobby >= 100:
             bits.append(f"{eff} HP vs a {cap} damage cap — "
                         "two lost fights end it")
-        elif eff <= 12:
+        elif eff <= DYING_HEALTH:
             bits.append(f"DYING at {health}"
                         + (f"+{armor}" if armor else "") + " — buy board now")
         elif eff <= 30 and lobby >= 100:
@@ -1931,7 +1931,8 @@ def _top_move_text(analysis):
             no_hunt_note = None
             if missing and off_build \
                     and analysis.get("target_state") == "committing" \
-                    and (budget or 0) >= 1 and eff_health > 12 \
+                    and (budget or 0) >= 1 \
+                    and eff_health > DYING_HEALTH \
                     and (analysis.get("turn") or 99) > 2:
                 # Feasibility first (2026-09-11): hunt only cores the tavern
                 # can actually produce at this tier, with recent evidence
