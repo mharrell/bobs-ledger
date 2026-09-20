@@ -409,6 +409,7 @@ _GAME_DEFAULTS = {
     "_tier_seen_turn": None,  # turn the current tier was reached
     "_armor_hist": dict,     # turn -> {af, al, hf, hl} first/last armor+HP
     "_predamage_turns": set,  # turn buckets where our hero took predamage
+    "_opp_fights": dict,     # hero cid -> turn buckets their hero bled
     "_stat_seen": 0,         # hero_stat_log entries already drained
     "_stat_pending": list,   # (turn, cid, tag, value) before hero parse
     "next_opponent": None,   # announced NEXT_OPPONENT_PLAYER_ID
@@ -710,6 +711,12 @@ class LiveCoach:
         DAMAGE) or every loss streak reads zero (2026-09-08 Guff session:
         11 damage invisible all game)."""
         for turn, cid, tag, value in entries:
+            if tag == "PREDAMAGE" and value > 0:
+                # EVERY hero's fight record, friendly or not (the winner
+                # takes 0): the announced next opponent's quiet streak —
+                # rounds since they last bled — reads from this (the
+                # 2026-09-19 5k stance: look at who you're about to fight).
+                self._opp_fights.setdefault(cid, set()).add(turn)
             if self.hero_card and cid != self.hero_card:
                 continue
             v = int(value)
@@ -1314,6 +1321,18 @@ class LiveCoach:
         # completed fights before this phase are buckets 2..turn.
         never_won = turn >= 3 and all(
             t in self._predamage_turns for t in range(2, turn + 1))
+        # Next-opponent pressure (2026-09-19, the 5k stance: look at who
+        # you're about to fight): rounds since the announced opponent's
+        # hero last bled — each silent round is a likely win for them
+        # (the winner takes 0). Hero cid from the scout's staged seat
+        # record; exact id match for v1 (skin drift may miss — the
+        # honest failure is "unknown", never a made-up streak).
+        _seat = self._scout.seats.get(self.next_opponent) or {}
+        _opp_hcid = _seat.get("hero")
+        opp_quiet = None
+        if _opp_hcid and turn >= 3:
+            _bled = self._opp_fights.get(_opp_hcid) or set()
+            opp_quiet = (turn - max(_bled)) if _bled else turn
         # The pending pick (hero / trinket / discover), ranked against the
         # current board and comp. Its rows are (name, cid, score, why) — a
         # DIFFERENT shape from the sell ranking's (cid, score). They used to
@@ -1371,6 +1390,7 @@ class LiveCoach:
             "damage_last": damage_last,
             "loss_streak": loss_streak,
             "never_won": never_won,
+            "opp_quiet": opp_quiet,
             "close_losses": close_losses,
             "board": board,
             # Active engine recipes (Plan 1), minus the long evidence prose:

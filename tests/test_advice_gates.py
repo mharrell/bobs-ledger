@@ -154,6 +154,48 @@ class TestStickyFlipRules(unittest.TestCase):
                                dying=True),
             NAGAS)
 
+
+class TestNeverWonLadder(unittest.TestCase):
+    """The 5k stance (2026-09-19 Reno game): bled in every fight from t2
+    and the plan LEVELed through it — a streak of 1 didn't trip the
+    stabilize rules. Zero wins defers the level at ANY tier."""
+
+    def test_zero_wins_defers_level_at_any_tier(self):
+        a = _analysis(tier=3, turn=5, gold=7, level_cost=5,
+                      health=22, never_won=True, buy_this="BG25_016",
+                      shop_rank=[("BG25_016", 20.0)])
+        tm = top_move(a)
+        self.assertIn("LEVEL next turn (0 wins so far", tm)
+        self.assertNotIn("LEVEL to tier 4", tm)
+
+    def test_a_win_breaks_the_alarm(self):
+        a = _analysis(tier=3, turn=5, gold=10, level_cost=5,
+                      never_won=False, buy_this=None, shop_rank=[])
+        tm = top_move(a)
+        self.assertNotIn("0 wins so far", tm)
+
+
+class TestOpponentRunClause(unittest.TestCase):
+    """Next-opponent pressure: rounds since the announced opponent's hero
+    last bled reads as their win run (the winner takes 0)."""
+
+    def test_run_clause_renders(self):
+        fc = combat_forecast({"board_stats": 100, "opp_stats": 90,
+                              "opp_quiet": 3, "health": 30, "armor": 0,
+                              "board": []})
+        self.assertIn("they haven't taken damage in 3 rounds", fc)
+
+    def test_no_run_clause_without_quiet(self):
+        fc = combat_forecast({"board_stats": 100, "opp_stats": 90,
+                              "health": 30, "armor": 0, "board": []})
+        self.assertNotIn("haven't taken damage", fc)
+
+    def test_fresh_bleed_no_clause(self):
+        fc = combat_forecast({"board_stats": 100, "opp_stats": 90,
+                              "opp_quiet": 1, "health": 30, "armor": 0,
+                              "board": []})
+        self.assertNotIn("haven't taken damage", fc)
+
     def test_single_unit_board_blocks_evidence_free_flip(self):
         board = [{"tribe": "Naga"}, {"tribe": "Beast"},
                  {"tribe": "Beast"}, {"tribe": "Beast"}]
