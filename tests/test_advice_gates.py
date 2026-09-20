@@ -3,9 +3,12 @@
 - DYING hard gate: an affordable LEVEL is still not advice at <=12 eff HP
   (t16 last night: "LEVEL to tier 6 — 1 left after" at 8 HP; the player
   followed it and died 3rd).
-- Cast gold gate: hand-spell casts spend the spell price and demote to a
-  hold when the purse can't cover them after the plan's buy ("Cast Tavern
-  Coin" led plans at gold 0 three games running).
+- Hand casts are free (2026-09-19 player report + log ground truth: a
+  PLAY block from a HAND-zone spell moves no RESOURCES_USED). The old
+  "cast gold gate" priced hand casts and demoted them ("needs Ng to
+  cast") — that was a misdiagnosis of the 2026-09-16 evening complaint
+  (a low-effect Tavern Coin led a gold-0 plan); ranking, not pricing,
+  was the problem, and _spell_effect already scores gold-gain spells low.
 - Comp-flip persistence: no cross-tribe flip while DYING, and no
   evidence-free flip onto a board with a single tribe unit (t16: Mechs ->
   Nagas on one Fauna Whisperer).
@@ -68,36 +71,39 @@ class TestDyingHardGate(unittest.TestCase):
 
 
 class TestCastGoldGate(unittest.TestCase):
+    """Hand casts are FREE — the price gate that demoted them is gone
+    (2026-09-19 player report; PLAY-block log ground truth)."""
+
     def _spell_id(self):
         for cid, v in _load_spell_db().items():
             if isinstance(v.get("cost"), int) and v["cost"] >= 1:
                 return cid
         self.fail("no priced spell in the DB")
 
-    def test_gold_zero_demotes_cast(self):
-        """The evening bug: gold 0, the plan's only step was 'Cast X'."""
+    def test_gold_zero_cast_survives(self):
+        """The old gate demoted a hand cast at gold 0 ('no gold to cast') —
+        a hand cast costs nothing, so it keeps its step."""
         cid = self._spell_id()
         a = _analysis(gold=0, hand_plan=[
             {"card": cid, "name": "Test Spell", "verb": "cast",
              "score": 5.0, "why": None}])
         tm = top_move(a)
-        self.assertNotIn("1. Cast", tm)
-        self.assertIn("no gold", tm)
+        self.assertIn("1. Cast Test Spell", tm)
+        self.assertNotIn("no gold to cast", tm)
+        self.assertNotIn("g to cast", tm)
 
-    def test_cast_may_not_eat_the_committed_buy(self):
-        """A cast that would outspend the plan's buy demotes with its price."""
+    def test_cast_never_eats_or_demotes_on_the_buy(self):
+        """A hand cast rides along with the committed buy — no pricing
+        interaction between them (the buy walk owns the gold)."""
         cid = self._spell_id()
-        cost = _load_spell_db()[cid]["cost"]
-        # gold covers the 3g buy + cost-1: the cast is 1 short of the
-        # post-buy purse, so it must demote while the buy stays.
-        a = _analysis(gold=2 + cost, buy_this="BG25_016",
+        a = _analysis(gold=3, buy_this="BG25_016",
                       shop_rank=[("BG25_016", 20.0)],
                       hand_plan=[
                           {"card": cid, "name": "Test Spell", "verb": "cast",
                            "score": 5.0, "why": None}])
         tm = top_move(a)
-        self.assertIn("Buy ", tm)
-        self.assertIn("needs", tm)
+        self.assertIn("Cast Test Spell", tm)
+        self.assertNotIn("needs", tm)
 
     def test_funded_cast_survives(self):
         """'Castable NOW', not a ban: a funded cast keeps its step."""
