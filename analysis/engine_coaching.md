@@ -271,3 +271,45 @@ Proposed model (curated per hero, `meta/hero_powers.json` gains fields):
 Deliberately NOT built yet: per breakoutBot discipline the lock model is
 a behavior guess until validated against a session where the player
 actually played around the spike.
+
+## Plan 5 candidate — top-4 conversion at 5k+ (framed 2026-09-20)
+
+The player crossed 5,000 MMR (2026-09-19). The session ledger since:
+4th, 7th, 8th, then **1st, 1st** on the fixed coach, then 5th, 5th,
+5th (the last: Mister Clocksworth, 13 phases, tier 5, the never-won
+alarm never armed — a game won-or-tied throughout, lost in the
+endgame). The survival phase is solved enough that its remaining 5ths
+are LATE 5ths: contested top-5 at t13, dead in the last 3-4 turns.
+The player's framing, agreed as the next phase of coaching: **getting
+to 4th+ after 5k.**
+
+Levers, ranked by evidence and cost:
+
+1. **Standing-aware risk posture** (cheap, new signal). Current
+   placement is IN THE LOG mid-game (`PLAYER_LEADERBOARD_PLACE` writes
+   on our hero entity — final placements are the last of them). The
+   situation line should carry it: "5th of 7 alive" changes the correct
+   play more than HP does — at 5th-6th alive the spike is mandatory,
+   at 1st-2nd preservation beats greed. Consumed by the situation line
+   first; the roll-vs-level dial second.
+2. **Growth-aware forecast** (cheap, all inputs exist). board_stats per
+   phase is already recorded; the lobby median per round too. The
+   forecast compares LEVELS ("602 vs 163") but the endgame question is
+   SLOPES: "you gain ~+40/round, the lobby ~+70/round — you lose that
+   race; this fight is your window" vs "you out-scale — level safely."
+   A two-phase delta on existing data.
+3. **Opponent keyword pricing** (filed 2026-09-19 evening; the
+   Deflect-o-Bot game). board_state's staged-hero entity registration
+   drops most copies' card ids — fix that and the DIVINE_SHIELD/REBORN
+   counts flow into the forecast's opponent line.
+4. **Opponent engine-becoming** (the 09-16 morning gap, mirrored):
+   the friendly side has recipes/fuel; the opponent side is still stat
+   totals. Their staged boards + the bleed record (already collected
+   for the streak read) hint at comp identity — v2.
+5. **Positioning** (deferred): taunt/attack-order coaching vs poison
+   and divine shields is the real endgame skill but the biggest scope;
+   revisit after 1-3.
+
+Validation: the 5th-place corpus is accumulating (five 5ths across
+09-19/09-20); outcome_audit scores advice vs the NEXT fight's damage
+and can be sliced to endgame phases (t10+) for before/after.
