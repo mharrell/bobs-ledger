@@ -89,7 +89,11 @@
     "common_enablers": "Glambot to stabilize",
     "representative_card": "BG36_853",
     "tribe": "Mech",
-    "guide": "guides/mechs-magnetics-spells.md"
+    "guide": "guides/mechs-magnetics-spells.md",
+    "enable": [
+      "BG26_148"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "elementals-stat-scaling": {
     "name": "Elementals - Stat scaling",
@@ -137,7 +141,11 @@
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BG36_202",
     "tribe": "Beast",
-    "guide": "guides/beasts-tasty-lobstah.md"
+    "guide": "guides/beasts-tasty-lobstah.md",
+    "enable": [
+      "BG25_806"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "murlocs-venom-scam": {
     "name": "Murlocs - Venom Scam",
@@ -160,7 +168,11 @@
     "common_enablers": "Getting outscaled",
     "representative_card": "BG33_318",
     "tribe": "Murloc",
-    "guide": "guides/murlocs-venom-scam.md"
+    "guide": "guides/murlocs-venom-scam.md",
+    "enable": [
+      "BGS_020"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "murlocs-apm": {
     "name": "Murlocs - APM",
@@ -183,7 +195,11 @@
     "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
     "representative_card": "BG36_704",
     "tribe": "Murloc",
-    "guide": "guides/murlocs-apm.md"
+    "guide": "guides/murlocs-apm.md",
+    "enable": [
+      "BGS_020"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "pirates-apm-golden": {
     "name": "Pirates - APM Golden",
@@ -205,7 +221,11 @@
     "common_enablers": "Enterprising Escapee",
     "representative_card": "BG36_523",
     "tribe": "Pirate",
-    "guide": "guides/pirates-apm-golden.md"
+    "guide": "guides/pirates-apm-golden.md",
+    "enable": [
+      "BG25_354"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "demons-shop-buff": {
     "name": "Demons - Shop Buff",
@@ -275,7 +295,11 @@
     "when_to_commit": "Falling Sky Golem + Kangor's Apprentice",
     "common_enablers": "Big Falling Sky Golem",
     "representative_card": "BG35_342",
-    "tribe": "Mech"
+    "tribe": "Mech",
+    "enable": [
+      "BG26_148"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "quilboar-bristlemane": {
     "name": "Quilboar - Bristlemane",
@@ -319,7 +343,11 @@
     "when_to_commit": "Early Lurking Leviathan + Beast summons (Sewer Lord)",
     "common_enablers": "Beast summons midgame (beetles)",
     "representative_card": "BG35_602",
-    "tribe": "Beast"
+    "tribe": "Beast",
+    "enable": [
+      "BG25_806"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "quilboar-choose-one": {
     "name": "Quilboar - Choose One",
@@ -366,7 +394,11 @@
     "common_enablers": "Magnetic Generation (Scrap Scraper)",
     "representative_card": "BG26_148",
     "tribe": "Mech",
-    "guide": "guides/mechs-magnetics.md"
+    "guide": "guides/mechs-magnetics.md",
+    "enable": [
+      "BG26_148"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "demons-apm-shop-buff": {
     "name": "Demons - APM Shop Buff",
@@ -412,7 +444,11 @@
     "when_to_commit": "Early Cousin Errgl + Brann Bronzebeard",
     "common_enablers": "Early Cousin Errgl\nBrann Bronzebeard",
     "representative_card": "BG35_142",
-    "tribe": "Murloc"
+    "tribe": "Murloc",
+    "enable": [
+      "BGS_020"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "pirates-apm-undead": {
     "name": "Pirates - APM Undead",
@@ -434,7 +470,11 @@
     "when_to_commit": "Bounty Generation (Sky Admiral Rogers) + Proud Privateer + Forsaken Weaver",
     "common_enablers": "Sky Admiral Rogers",
     "representative_card": "BG33_823",
-    "tribe": "Pirate"
+    "tribe": "Pirate",
+    "enable": [
+      "BG25_354"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "dragons-battlecries": {
     "name": "Dragons - Battlecries",
@@ -480,7 +520,11 @@
     "when_to_commit": "Early Ravaging Scorpid or Turquoise Skitterer",
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BG36_209",
-    "tribe": "Beast"
+    "tribe": "Beast",
+    "enable": [
+      "BG25_806"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "demons-self-damage": {
     "name": "Demons - Self Damage",
@@ -503,7 +547,12 @@
     "when_to_commit": "Ashen Corruptor + self damage (Wrath Weaver or Malchezaar, Prince of Dance) + payoff (Tichondrius or Eredar Escapist)",
     "common_enablers": "Wrath Weaver + Soul Rewinder demon midgame",
     "representative_card": "BG32_873",
-    "tribe": "Demon"
+    "tribe": "Demon",
+    "enable": [
+      "BGS_004",
+      "BG26_174"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
   },
   "dragons-apm-evoker": {
     "name": "Dragons - APM Evoker",
@@ -549,6 +598,11 @@
     "when_to_commit": "Headhunter Gryphon + Deathstrider + Goldrinn, the Great Wolf",
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BGS_018",
-    "tribe": "Beast"
-  }
+    "tribe": "Beast",
+    "enable": [
+      "BG25_806"
+    ],
+    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+  },
+  "_enable_note": "enable = pieces that OPEN the direction (lean); core = the commit point (Jeef, 'Direction' video: enablers are not commit points). Partial curation 2026-09-20 — the video's full table references older-season names that don't resolve against the current pool (dragons: Smuggler/Bran; elementals: Genie/Wraith; nagas: Orgozoa -> Lord of Gains/A.F. Kay; undead: Sore Loser -> Champion of the Primus/Sister Death Speaker; quilboar: Boogie/Spearhide -> Piper). Verify against the current card list before adding."
 }

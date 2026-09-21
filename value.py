@@ -1381,8 +1381,25 @@ def situation_line(analysis):
             # Armor is just extra health (player-corrected 2026-09-08) — the
             # signal is TOTAL effective HP vs the lobby's damage output
             # (t7-t12 of the Guff game were all wins, then one fight ended
-            # it).
-            bits.append(f"{eff} HP left — one bad fight can end it")
+            # it). The 2026-09-19 Jeef guides add the second axis: at this
+            # HP, STABILIZED vs not decides what the next buy is for —
+            # a fight-winner when not stabilized, scaling when you are.
+            full = len(analysis.get("board") or []) >= 7
+            stable = full or (bs is not None and theirs is not None
+                              and bs >= theirs)
+            tail = ("stabilized — scaling is safe" if stable else
+                    "not stabilized — the next buy should win a fight")
+            bits.append(f"{eff} HP left — one bad fight can end it ({tail})")
+    # Standing (Plan 5 lever 1): the live leaderboard, late. "5th of 7"
+    # changes the correct play more than HP does — the spike is mandatory,
+    # preservation is for 1st-2nd. Only from t8: early standings are the
+    # seating order, not a signal.
+    place = analysis.get("current_place")
+    if place and place >= 5 and (analysis.get("turn") or 0) >= 8:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(place % 10, "th") \
+            if not 10 <= place % 100 <= 20 else "th"
+        bits.append(f"currently {place}{suffix} — a top-4 finish needs a "
+                    "spike, not greed")
     if not bits:
         return None
     return " · ".join(bits[:3])
