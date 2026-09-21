@@ -117,6 +117,47 @@ class TestCastGoldGate(unittest.TestCase):
         self.assertIn("1. Cast Test Spell", tm)
 
 
+class TestLevelPrice(unittest.TestCase):
+    """The LEVEL step carries its price when pricey (2026-09-20 design,
+    Mike-approved: clause only when pricey, inform-only, verdict +
+    evidence). Silence means the curve level is normal. The corpus loop
+    priced followed mid-curve levels at -4.6 mean, worst stalls -9..-15.
+
+    Deliberately no '~N next fight' number: the forecast still prices raw
+    stat totals (shields/reborn unbuilt), so a numeric price would be
+    false precision — the '895 vs 165' trap."""
+
+    def test_price_clause_behind_lobby(self):
+        # Tier 3 is the clause's niche: the lobby-pace flip guards tier >=4
+        # (behind-lobby levels there already defer to 'buy stats first'),
+        # but tiers 1-3 stay curve-driven with no behind-lobby signal —
+        # the corpus's -10 stall at t8/tier 3 (Tavish) was exactly here.
+        a = _analysis(tier=3, health=20, board_stats=40, lobby_opp=90)
+        tm = top_move(a)
+        self.assertIn("prices high", tm)
+        self.assertIn("boards ~40 vs lobby ~90", tm)
+        self.assertIn("the fight after a level", tm)
+
+    def test_no_clause_when_level_is_cheap(self):
+        a = _analysis(health=20, board_stats=60, lobby_opp=65)
+        tm = top_move(a)
+        self.assertNotIn("prices high", tm)
+
+    def test_price_clause_comp_pieces_short(self):
+        a = _analysis(health=20, target_state="committing", target_cards={
+            "core": [{"card": "A", "owned": False},
+                     {"card": "B", "owned": False},
+                     {"card": "C", "owned": True}],
+            "addons": []})
+        tm = top_move(a)
+        self.assertIn("the comp is 2 pieces short", tm)
+
+    def test_price_clause_recent_damage(self):
+        a = _analysis(health=20, damage_last=8)
+        tm = top_move(a)
+        self.assertIn("took 8 last fight", tm)
+
+
 class TestStickyFlipRules(unittest.TestCase):
     def test_dying_blocks_cross_tribe_flip_even_with_evidence(self):
         """Equal hits, empty board — nothing stronger to take over with."""

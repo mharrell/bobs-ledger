@@ -1,7 +1,21 @@
 # Design candidate: price the LEVEL in the plan
 
-2026-09-20 · status: DRAFT for Mike's sign-off · author: the corpus loop
+2026-09-20 · status: APPROVED + LANDED (Mike: clause only when pricey,
+inform-only, verdict + evidence) · author: the corpus loop
 (`outcome_audit.py`, `analysis/advisory_outcomes_2026-09-20.md`)
+
+## Implementation notes (2026-09-20)
+
+- `_level_price_clause` renders on the actionable LEVEL lead and the
+  affordable trail form; the deferred forms keep their own reasons.
+- Scope discovery while implementing: the lobby-pace flip ALREADY
+  defers behind-lobby levels at tier >= 4 (`board_stats < 0.7x`), so
+  the clause's behind-lobby niche is tiers 1-3 (explicitly
+  curve-driven, previously unguarded) plus the damage/comp-short
+  signals at any tier. No double-speak: where the flip fires, no level
+  step renders.
+- Tests: `TestLevelPrice` (behind-lobby at t3, cheap-silence,
+  comp-short, recent damage).
 
 ## Problem
 

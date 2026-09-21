@@ -1570,6 +1570,39 @@ def _hunt_feasible(analysis, tier):
     return feasible, evaluated
 
 
+def _level_price_clause(analysis):
+    """The price of taking the level this turn, or None when normal.
+
+    2026-09-20 design (analysis/level_pricing.md, Mike-approved: clause
+    only when pricey, inform-only, verdict + evidence). Silence means the
+    curve level is normal — recurring no-information clauses train the
+    player to skip the line. Pricey = behind the lobby's boards (>=25%),
+    a committing comp 2+ missing cores, or real recent damage (>=5):
+    the fight AFTER a level is the one you skip, and those are the
+    stalls the corpus loop priced at -9..-15 (outcome_audit, 09-20).
+    Deliberately NO damage forecast — the forecast still prices raw
+    stat totals, so a "~N next fight" number would be false precision.
+    """
+    ours = analysis.get("board_stats")
+    anchor = analysis.get("lobby_opp") or analysis.get("baseline_opp")
+    bits = []
+    if ours is not None and anchor and ours < 0.75 * anchor:
+        bits.append(f"boards ~{ours:.0f} vs lobby ~{anchor:.0f}")
+    tc = analysis.get("target_cards")
+    if tc and analysis.get("target_state") == "committing":
+        n = sum(1 for r in (tc.get("core") or [])
+                if not r.get("owned") and not r.get("banned"))
+        if n >= 2:
+            bits.append(f"the comp is {n} pieces short")
+    dmg = analysis.get("damage_last")
+    if (dmg or 0) >= 5:
+        bits.append(f"took {dmg} last fight and lobbies scale up")
+    if not bits:
+        return None
+    return ("prices high — " + "; ".join(bits)
+            + " — and the fight after a level is the one you skip")
+
+
 def _top_move_text(analysis):
     """Render top_move's numbered steps (the planner proper; see top_move)."""
     names = _load_bg_names()
@@ -1769,6 +1802,9 @@ def _top_move_text(analysis):
                         why = "standard curve"
                     level_lead = (f"LEVEL to tier {tier + 1} ({why})"
                                   + (f" — {spare} left" if spare else ""))
+                    price = _level_price_clause(analysis)
+                    if price:
+                        level_lead += f" — {price}"
                     budget = spare  # buys come out of the leftover, not the purse
         # else: the level is out of reach this turn. It stays OUT of the
         # numbered list — an upgrade the player can't make is not advice
@@ -2009,8 +2045,12 @@ def _top_move_text(analysis):
                     why = level_flip_why or "too fragile to level first"
                     parts.append(f"LEVEL next turn ({why}) — roll meanwhile")
                 elif leftover >= level_cost:
-                    parts.append(f"LEVEL to tier {tier + 1} — "
-                                 f"{leftover - level_cost} left after")
+                    trail = (f"LEVEL to tier {tier + 1} — "
+                             f"{leftover - level_cost} left after")
+                    price = _level_price_clause(analysis)
+                    if price:
+                        trail += f"; {price}"
+                    parts.append(trail)
                 else:
                     short = f"{level_cost - leftover} short after the buy"
                     parts.append((f"LEVEL next turn ({level_flip_why}) — "
