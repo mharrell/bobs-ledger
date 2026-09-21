@@ -1,0 +1,451 @@
+Hi guys, I'm Jeief, current rank one on
+the NA leaderboards and the only NA
+player to have ever hit 20K MR. And I
+compiled 10 of what I think are the most
+important tips to help you guys climb to
+10K. Wow. I know I've made this guide
+before, but it's been a year since the
+last guide, and I just felt like some of
+the things in the meta changed a lot,
+and also I've become a much better
+player. So, I wanted to update you guys
+with better information. This time we're
+going to start with some early game tips
+and move on to the end game. This video
+will only cover the fundamentals, so no
+trinket specific tips. Let's jump
+straight into it. Starting off with our
+first early game tip. Do not roll if you
+don't have to. Your mind should not even
+be thinking about what comp to play and
+should be more focused on how to build
+the strongest board possible to preserve
+HP. In the first five turns, it's way
+too early to look for specific units in
+the shop, and the gold spent rolling for
+them could be spent on tavern spells or
+even leveling. You really shouldn't be
+rolling more than once in the early
+game. The stronger your board is, the
+easier it is to level in the mid game
+and start looking for that higher tavern
+tier direction. Here's an example. It's
+very common that you buy turn one and
+then level turn two and turn three rolls
+around. If you have a supplemental or
+patient scout in your shop, you can buy
+that unit, sell off the token, and then
+buy another good unit without rolling,
+leaving you with three fighting units on
+your board. If instead you have a two
+cost spell in your shop, you can buy the
+two cost spell plus the best unit in
+your shop. And if you have none of the
+above, then of course, it's not really
+possible to play the turn efficiently.
+So, you may just have to buy one unit
+and then buy the oneclass spell in your
+shop and roll once. You can also choose
+to level to tavern three on turn three
+in this case. In any case, if you have a
+play that utilizes all of your gold
+without rolling, that's probably the
+best play. My tip number two for the
+early game is to not buy trash and just
+level instead. Let me explain. A unit is
+good if it has good synergy or
+standalone tempo. Crackling Cyclone and
+Glow Gullet are generally good cards
+that have insane standalone tempo
+because they can trade two for one with
+minions of the opposite team.
+Synergistic combos are also quite strong
+in the early game, such as Party
+Elemental and Molten Rock. Every
+elemental then played will make your
+board quite strong for the early game.
+And even though you're not necessarily
+committed to playing elemental, it'll
+definitely save you a lot of HP so you
+can level fast. Apart from synergies and
+tempo units, econ minions are quite good
+as well. Cards such as elemental, shell
+collector, and word of vault are cards
+that I value highly because they are
+cheap to buy while putting a minion on
+your board. If you find yourself with a
+shop with no synergistic combos, no
+standalone minions, and no econ minions,
+the chances are you just want to level.
+I think it's a disaster outcome if you
+buy these trash units like these cord
+pullers that do nothing and your board
+is guaranteed mediocre in the mid game
+whereas leveling gives you a high chance
+of recovering after buying good units.
+Moving on to midame, my third tip is to
+pick a turn to stabilize. 10% of the
+time you get the god opener in the early
+game such as lava lurker plus the turis
+plus zesty shaker or something and your
+board is so stable the entire mid game
+you can just level to five or even six
+without taking damage. 90% of games are
+not like this and you're going to need
+to stabilize. So what does this actually
+mean? those one drops and two drops you
+bought the first five turns, you need to
+replace those units with better cards or
+at least buff your board so that your
+units can fight. If you have less than
+seven units, you really want to buy
+standalone cards or synergistic good
+cards to spike your board. Humongas and
+Bonker are typical examples of
+stabilization cards because they just
+individually add a ton of stats to your
+board. Cards such as time management or
+defender rights are also very common
+stabilizing cards. Note that stabilizing
+cards probably will not end up on your
+final board, but they might be the
+difference between taking 15 damage
+versus taking seven or even zero damage.
+Basically, the goal of stabilizing is to
+try to not lose the fight, stay above
+damage cap so you can level to five
+safely and keep looking for direction.
+So now the question is which tavern tier
+do you actually want to stabilize on?
+Well, this one is just a bit complicated
+to answer because it varies a lot. But
+I'll give you the most important factor
+when choosing which tavern tier to
+stabilize on. Ask yourself, am I going
+to fall below 15 HP if I level? If the
+answer is yes, then you definitely want
+to stay down, stabilize, and try to stay
+above 15 HP. 15 HP is a really important
+break point in Battlegrounds because the
+damage cap system prevents you from
+taking more than 15 HP before it's top
+four, making you effectively have two
+lives. You're going to want to do
+everything in your power and stay above
+damage cap, which means stabilizing
+whenever you're at risk of falling below
+it. Let's say you skipped the
+stabilization step and directly started
+looking for core pieces of your cop.
+Even if you landed the core pieces of
+your the best direction in the game
+immediately, your comp will still need
+time to scale. And because you played
+very risky with a bad board, you'll
+probably just die anyways. This is why
+if your board is mediocre and you're at
+16 HP and you need to choose between
+something like an Arid Atrocity that
+will win you the fight or an electron
+with no mech setup whatsoever, you just
+have to pick the atrocity to stabilize.
+On the other hand, if you're at 16 HP
+and you've already stabilized and will
+probably win the fight, go for the mega
+scaling direction which is more likely
+to win the game. And in this case, that
+is electron. My tip number four is to
+only commit to a direction if you've
+enabled it. Remember when I said you're
+going to pick a turn to stabilize? Well,
+odds are those cards that helped you
+stabilize enabled some sort of
+direction. If you bought Reborn plus
+Turquoise Skater, you have some reason
+to go beasts. If you bought Cadaavver
+caretaker, you've enabled both versions
+of undead cops. I guess what I'm saying
+is you're not going out of your way to
+enable a specific direction, but you'll
+naturally have some direction enabled as
+a result of your stabilization turn and
+board state. This is the key part of
+playing what you're given. And the
+moment you hit your commit point for any
+one of these comps you've enabled,
+congrats, you found your direction. What
+you desperately want to avoid is picking
+the shimmer moth without any beast setup
+whatsoever and saying that's your
+direction. You need to have a reason to
+pick the shimmer. And that brings me to
+commit points. Do not mix up enablers
+and commit points. Let's say you have
+that turquoise skitter from early on. It
+turns out that a single turquoise
+skitter is not enough to commit beast.
+It just simply opens up the option for
+you to go beasts. If you want to win
+with beast, you're going to need far
+better scaling, such as the scaling from
+shimmer moth plus bird buddy. That is
+why the commit point is usually just
+going to be your giga scaling engine.
+The role of turquoise skitter is to make
+it slightly easier for you to pick up
+those commit points pieces. It'll then
+be more natural to fit in a bird buddy
+on your board and also more natural to
+go into beasts. Tip number five is to
+focus on large improvements for your
+comp over small ones. Most of the time,
+you have to know what the big
+improvements are for your board before
+you start rolling, so you're able to
+skip the small improvements. Let's say
+you play combat scaling coboards. Bonker
+is a tier 4 coilboard that's mainly used
+for stabilizing, but it hardly defines a
+cop. If you buy a bonker with a three
+little quillboard Titus setup, that
+improvement is way too small to justify
+spending your precious gold on. Focus
+more on the core part of your comp,
+which is Croner, Titus, more three
+little claws, etc. I would consider
+upgrading a card from a useless minion
+to an add-on minion such as Pokey, a
+meaningful upgrade, and replacing an
+add-on minion to a core minion such as
+Corrupted Bristler, also a meaningful
+upgrade. Any upgrade that doesn't fall
+into those categories is too small of an
+improvement. Another example is
+elementals. With light spawn plus dari,
+which is the commit point for
+elementals, you may be tempted to start
+buying party elementals and molten rock
+and also start buying random elementals.
+However, those are just not significant
+board upgrades. And the only way you win
+with elementals are finding your juicy
+scalers such as Localar and Mana Surge.
+Finding a single localar would be more
+of an upgrade than buying every single
+elemental in your shop and is definitely
+the way to win the game. I hope you get
+the point. Knowing what the juicy
+upgrades are and skipping the irrelevant
+upgrades in favor of big ones. Usually
+the big upgrades are the core cards of
+the comp, which I have a list of all of
+them in my comp guide, which is pretty
+much in the description of every single
+one of my videos. So go check it out if
+you haven't seen it.
+My tip number six is to concentrate
+stats over spreading them out. In
+general, you may be tempted to make sure
+all of your minions are equally sized so
+you aren't a one or two minion Andy.
+However, there's way more upside in
+concentrating stats onto one or two
+units if you can. There's two reasons
+for this. Reason number one is that
+bigger units value trade midsize units.
+Suppose player A didn't concentrate
+stats and has a board full of 100 100s.
+However, player B listened to my advice,
+built two 300 300 units, and also filled
+out the rest of their board with Leroys
+and Deadly Sports. Who wins? Well, it's
+always going to be the person with the
+concentrated stats who wins. The 300
+300s can each value trade multiple
+midsize units while the Leroys will
+still always one for one something.
+Reason number two on why concentrated
+stats is important is that it makes it
+much easier to sell bad units. By
+spreading out your stats, player A has a
+hard time selling any of his 100 units,
+making it tough for him to win on stats.
+However, player B can easily sell his
+support units that were used to make big
+units and replace them with proper
+ending units. An example of a comp that
+loves concentrating stats is
+groundbreaker nagas. And an example of a
+comp that spreads out stats over the
+whole entire board is Aissa Nagas or
+Lord of Gains Nagas while they were
+still in the game. Groundbreaker was
+almost always superior for this reason.
+So the next time you feel that your
+whole board needs big stats to win, just
+think about the power of concentrating
+stats. Tip number seven is to have
+proper time management to climb.
+Eventually, you're going to need to
+master high APM comps such as demons,
+murlocs, or pirates, which require a lot
+of quick decision making. Even if you're
+not playing an APM comp, this tip will
+come in handy. If you played a rodeo
+performer and you're deciding between a
+hired head hunter and a road less
+traveled, sure, one of them might be
+slightly better on average, but it's
+pretty marginal. Just pick one and move
+on with your life. you'll lose so many
+more stats perfecting every single
+discovery and stat point. However, you
+don't always want to pick the wrong
+discovery while playing fast. Let's say
+you picked wrong and realize afterwards.
+Just make a mental note and next time
+you're in that situation, you'll
+instantly recognize the correct pick.
+This is why practice is so important for
+playing these types of APM comps. It
+takes many reps, even for me, to execute
+them without making any mistakes. Don't
+expect to play perfectly first try, but
+the more you play, the better you'll get
+at the game. Eventually, executing these
+comps will be secondhand nature, and
+they're quite fun to pilot as well. Tip
+number eight is to go allin at the right
+times. This one is actually quite an
+important one, so pay attention. You
+don't really want to go out of the game
+with a two four brand on your board and
+the Leroy in your hand. You'd much
+rather die happy knowing that you gave
+it all your all and put the Lero on the
+board. There are a couple of reasons why
+you might want to cut your Bran or
+Jakari early and replace them with
+strong ending units. The most common
+reason is that you know that your
+opponent is pretty strong and you're on
+the verge of death. Selling the brand
+and slotting in Leroy, Belure, or even
+Blaster can very well be the difference
+between living and dying. and those two
+placements that you save just net you 50
+MMR. There are also cases where you
+might even go allin while playing for
+the win. If you scouted the entire lobby
+and you find that your current opponent
+is the largest threat to deny your first
+place, you might want to eliminate them
+as soon as possible without risking
+getting outskilled. Maybe I'm playing a
+demon comp, but I know that my elemental
+player opponent outscales me, and in
+that case, I may want to sell my scaling
+unit to eliminate them right now,
+guaranteeing a first place if they are
+knocked out. Moving on to something a
+bit simpler, my tip number nine is to
+prepare your final board early on. Bran
+and Jakari are some of the best units in
+the game, but they are also some of the
+worst ending units in the game. So, what
+does your final board actually look like
+if not Bran or Dakari? Well, if you're
+playing Murlocs, then your final board
+will likely have base skills, Belur, and
+maybe Leroys. In a brand comp, your end
+game is almost always going to have you
+replacing your brand with cards such as
+Leroy. That means instead of hoping that
+you hit Leroy on your last turn,
+anticipate needing Leroy for your final
+fight and buy it in advance. Same thing
+with Jakari comps that can't scale the
+Jakari. Leroy is such a game warping
+card that I'm pretty sure every single
+statbased comp wants two Leroys on their
+final board if possible because it just
+guaranteed trades one for one on their
+board. However, Leroy isn't good into
+every matchup. You want to anticipate
+what your next few matchups will be and
+evaluate whether you need the Leroy or
+not. If you anticipate stats based
+matchups, definitely buy and hold
+Leroys. But against beasts and undeads,
+Leroys will not be necessary. And
+finally, let's cover tip number 10. Look
+for opportunities to pivot. You can be a
+good player by properly committing to a
+top four direction and never pivoting
+out of it. You can be a great player by
+pivoting out of a top four direction
+into a top one direction in some spots.
+There are two conditions to pivoting.
+One, you must pivot into a better
+scaling comp. And two, you need to be in
+a good spot. The first condition is
+pretty straightforward. How likely is
+your current scaling going to win the
+game? If you're playing Nala or Pirates,
+something with relatively low cap
+scaling, chances are not very high. But
+let's say the current meta's best tribes
+are mechs, and you stumbled upon copies
+of the core cards for this meta comp,
+which is Electron. Well, suddenly you'll
+be able to pivot into a much better
+scaling engine. It's not always that
+straightforward, though. Most of the
+time, if you sell your non-mechs to put
+in puny mechs on your board and try to
+start scaling them, you're dead. Which
+brings me to my second point. Your spot
+needs to be really good. Good enough to
+be able to ditch your top four scaling
+for potential top one scaling. Usually,
+this is a combination of high HP total
+and lots of economy. You need to be
+confident that during your pivot turn
+after you take 15, you can still recover
+from it and build a board that is
+already stronger than your previous
+scaling. If you can't guarantee that
+you'll get stronger within two turns of
+pivoting, just don't bother pivoting. An
+example of the most common pivot in the
+history of battlegrounds are pivots from
+APM pirates into the best comp.
+Historically, pirates are a very
+economyheavy tribe with a lack of major
+scaling. So even with 30 gold a turn,
+they can still be outscaled. However,
+using that 30 gold a turn to pivot into
+say demons, a much higher cap scaling
+comp is how you guarantee yourself top
+one, whereas sticking to pirates will
+usually not be good enough for top one.
+Demons and murlocs are generally good
+tribes to pivot into because of their
+explosive scaling, meaning that with a
+brand, they can get really big within
+one to two turns. On the other hand,
+Jakari comps are not so good to pivot
+into because of their reliance on their
+end of turn scaling. So, you'll need to
+scale across multiple turns to get
+really strong. Thus, be sure you have a
+clear game plan of what to pivot into
+and think about how big you'll get. This
+is the end of the guide. Hope you
+enjoyed. If you haven't watched my 2025
+updated leveling guide yet, I highly
+recommend you do so. It goes even more
+in-depth than this video. It should help
+you a ton with your journey to 10K. Of
+course, subscribe if you like this
+content and want more.
