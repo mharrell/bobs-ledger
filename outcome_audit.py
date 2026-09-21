@@ -200,24 +200,79 @@ def _summarize(rows, min_followed):
               f"tier {r['tier']} at {r['eff_hp']} HP -> "
               f"{r['hp_delta_next_fight']:+d} ({r['hero']}, "
               f"placed {r['placement']})")
+    _placement_correlation(rows)
+
+
+def _placement_correlation(rows):
+    """Level-adherence vs placement, per game (direction only until n is
+    real — a top-4 weight would need hundreds of games)."""
+    games = {}
+    for r in rows:
+        g = games.setdefault((r["session"], r["game"]),
+                             {"place": r["placement"], "leads": 0,
+                              "followed": 0, "deltas": []})
+        if r["lead"] == "level":
+            g["leads"] += 1
+            if r["followed_level"]:
+                g["followed"] += 1
+            if r["hp_delta_next_fight"] is not None:
+                g["deltas"].append(r["hp_delta_next_fight"])
+    table = [(g["place"], g["followed"], g["leads"],
+              mean(g["deltas"]) if g["deltas"] else None)
+             for g in games.values()
+             if g["leads"] and g["place"] is not None]
+    if not table:
+        return
+    print("\n== level adherence vs placement (per game) ==")
+    for place, f, l, d in sorted(table):
+        print(f"  placed {place:>2}: followed {f}/{l} level leads"
+              + (f", mean {d:+.1f}/fight" if d is not None else ""))
+
+
+def _dump_json(rows, path):
+    import json
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(rows, f, ensure_ascii=False, indent=1)
+    print(f"rows written: {path}")
 
 
 def main():
     argv = [a for a in sys.argv[1:]]
     min_followed = 4
+    json_path = None
+    archive = None
     if "--min-followed" in argv:
         i = argv.index("--min-followed")
         min_followed = int(argv[i + 1])
         argv = argv[:i] + argv[i + 2:]
+    if "--json" in argv:
+        i = argv.index("--json")
+        json_path = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]
+    if "--archive" in argv:
+        i = argv.index("--archive")
+        archive = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]
     paths = argv or sorted(glob.glob(HS_LOG_GLOB),
                            key=os.path.getmtime, reverse=True)
     now = time.time()
+    live_glob = os.path.dirname(HS_LOG_GLOB) if HS_LOG_GLOB else None
     all_rows = []
     for path in paths:
-        if now - os.path.getmtime(path) < 1800:
+        # the freshness guard exists for the LIVE session dir only (an
+        # in-progress Power.log) — explicit paths (archives) always run
+        if live_glob and os.path.abspath(path).startswith(
+                os.path.abspath(live_glob)) \
+                and now - os.path.getmtime(path) < 1800:
             print(f"(skipping live file: {path})")
             continue
         session = os.path.basename(os.path.dirname(path))
+        if archive:
+            os.makedirs(archive, exist_ok=True)
+            dst = os.path.join(archive, f"{session}__Power.log")
+            if not os.path.exists(dst):
+                import shutil
+                shutil.copy2(path, dst)
         with open(path, encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
         for gi, (s, e) in enumerate(split_game_chunks(lines), 1):
@@ -230,6 +285,8 @@ def main():
     print(f"\ntotal advised phases: {len(all_rows)} "
           f"across {len({(r['session'], r['game']) for r in all_rows})} games")
     _summarize(all_rows, min_followed)
+    if json_path:
+        _dump_json(all_rows, json_path)
     return 0
 
 

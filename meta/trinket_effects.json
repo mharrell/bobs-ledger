@@ -163,6 +163,15 @@
   },
   "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
  },
+ "BG30_MagicItem_420t": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
+ },
  "BG30_MagicItem_924": {
   "base_value": 14,
   "synergy": {
@@ -690,15 +699,6 @@
   },
   "note": "get a random Lesser Trinket (Orb of the Unknown)"
  },
- "BG35_MagicItem_816t": {
-  "base_value": 6,
-  "synergy": {
-   "keywords": [
-    "trinket"
-   ]
-  },
-  "note": "get a random Lesser Trinket (Orb of the Unknown)"
- },
  "BG32_MagicItem_271": {
   "base_value": 8,
   "synergy": {
@@ -986,15 +986,6 @@
   },
   "note": "discover a 2-cost Minor Timewarp minion (Timeworn Candelabra)"
  },
- "BG35_MagicItem_823t": {
-  "base_value": 6,
-  "synergy": {
-   "keywords": [
-    "economy"
-   ]
-  },
-  "note": "discover a 2-cost Minor Timewarp minion (Timeworn Candelabra)"
- },
  "BG30_MagicItem_416": {
   "base_value": 10,
   "synergy": {
@@ -1096,6 +1087,16 @@
   "note": "Wheel of Yogg-Saron, re-spins each turn (Yogg-Tastic Pastry)"
  },
  "BG30_MagicItem_426": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell",
+    "economy"
+   ]
+  },
+  "note": "a random spell now + 1 every turn (Colorful Compass)"
+ },
+ "BG30_MagicItem_426t": {
   "base_value": 10,
   "synergy": {
    "keywords": [
@@ -1604,5 +1605,14 @@
    ]
   },
   "note": "every Tavern spell adds a Fodder token to the next Refresh (Bloodfury Shield) — token generation feeding buys and triple progress in cast-heavy games"
+ },
+ "BG35_MagicItem_700": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Beast"
+   ]
+  },
+  "note": "every 6 Beast summons: a random Beast (Wildfeather Duster) — recurring body/triple fodder that feeds itself in a summon-heavy beast build"
  }
 }
