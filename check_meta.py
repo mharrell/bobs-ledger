@@ -111,6 +111,8 @@ def main():
     # --- comps schema -------------------------------------------------------
     comp_ids = set()
     for slug, comp in comps.items():
+        if slug.startswith("_"):
+            continue  # file-level notes (_enable_note), not comps
         if not comp.get("tribe"):
             warnings.append(f"comps.json: {slug} has no tribe field")
         if not comp.get("core"):
@@ -149,7 +151,8 @@ def main():
         for e in errors:
             print(f"ERROR: {e}", file=sys.stderr)
         return 1
-    print(f"meta OK: {len(comps)} comps, {len(cards)} cards, {len(minions)} "
+    print(f"meta OK: {sum(1 for s in comps if not s.startswith('_'))} comps, "
+          f"{len(cards)} cards, {len(minions)} "
           f"minions; comp tribes {sorted(comp_tribes)}")
     return 0
 

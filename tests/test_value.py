@@ -843,6 +843,37 @@ class TestSituationLine(unittest.TestCase):
         line = value.situation_line(a)
         self.assertNotIn("0 wins", line)
 
+    def test_standing_clause_late_and_low(self):
+        """Plan 5 lever 1: the live leaderboard from t8 — at 5th+ the spike
+        is mandatory, preservation is for 1st-2nd."""
+        a = {"board_stats": 100, "lobby_opp": 120, "health": 25, "armor": 0,
+             "turn": 10, "current_place": 6}
+        line = value.situation_line(a)
+        self.assertIn("currently 6th — a top-4 finish needs a spike", line)
+
+    def test_standing_quiet_early_or_top(self):
+        a = {"board_stats": 100, "lobby_opp": 120, "health": 25, "armor": 0,
+             "turn": 5, "current_place": 6}
+        self.assertNotIn("currently", value.situation_line(a) or "")
+        a["turn"] = 10
+        a["current_place"] = 2
+        self.assertNotIn("currently", value.situation_line(a) or "")
+
+    def test_stabilized_axis_in_mortality_band(self):
+        """Jeef's second axis at low HP: stabilized -> scaling is safe;
+        not stabilized -> the next buy should win a fight."""
+        base = {"lobby_opp": 120, "health": 25, "armor": 0,
+                "target_comp": None}
+        a = dict(base, board_stats=130,
+                 board=[{"card": f"X{i}"} for i in range(7)])
+        line = value.situation_line(a)
+        self.assertIn("stabilized — scaling is safe", line)
+        a = dict(base, board_stats=40,
+                 board=[{"card": f"X{i}"} for i in range(4)])
+        line = value.situation_line(a)
+        self.assertIn("not stabilized — the next buy should win a fight",
+                      line)
+
 
 class TestStickyCompTarget(unittest.TestCase):
     """Same-tribe target churn (Summon Beetles -> Tasty Lobstah phase to

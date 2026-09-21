@@ -68,7 +68,11 @@ def spell_effects():
 
 
 def comps():
-    return _raw("comps.json") or {}
+    # Dict of comp dicts; `_`-prefixed keys are file-level notes (e.g.
+    # _enable_note) and are stripped here so every consumer can assume
+    # dict values (value.py's comp loops crash on a bare string).
+    return {k: v for k, v in (_raw("comps.json") or {}).items()
+            if not k.startswith("_")}
 
 
 def cards():

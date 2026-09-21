@@ -39,6 +39,11 @@ from value import (
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
                  "play_tier3_or_lower", "discover")
 _GAME_START = re.compile(r"GameState\.DebugPrintPower.*CREATE_GAME")
+# Current standing: PLAYER_LEADERBOARD_PLACE on a hero entity (last write
+# wins — the live leaderboard, not the game-end value).
+_PLACE = re.compile(
+    r"TAG_CHANGE Entity=\[.*?cardId=(\S+)[^\]]*?player=(\d+)\] "
+    r"tag=PLAYER_LEADERBOARD_PLACE value=(\d+)")
 _SEED = re.compile(r"GAME_SEED value=(\d+)")
 # A spell cast = a PLAY block on a non-minion card. Captures entityName so shop
 # buttons (Refresh/Freeze/Tavern Tier/Drag To Buy/Dark Discovery) are excluded by
@@ -414,6 +419,8 @@ _GAME_DEFAULTS = {
     "_stat_pending": list,   # (turn, cid, tag, value) before hero parse
     "next_opponent": None,   # announced NEXT_OPPONENT_PLAYER_ID
     "_pair_cand": None,      # pairing announced during the open buy phase
+    "_place_writes": list,   # (cardId, player, place) buffered standing writes
+    "current_place": None,   # our live leaderboard standing (last write)
     "_pairing": dict,        # turn -> opponent id announced for its fight
     "_snap_by_turn": dict,   # turn -> [(player, stat_total), ...] snapshots
     "_resolved": set,        # turns already committed to the lobby stats
@@ -666,6 +673,16 @@ class LiveCoach:
             # when its buy phase never re-announces — the tag only logs on
             # change); the pairing snapshot happens when the buy phase ends.
             self._pair_cand = self.next_opponent
+        # Current standing (Plan 5 lever 1): PLAYER_LEADERBOARD_PLACE on the
+        # friendly hero is the LIVE leaderboard — it updates as eliminations
+        # resolve, so the last write is where we sit right now (the 09-19
+        # evening tail showed low-HP heroes' places churning 6<->7).
+        # Buffered: hero/friendly parse late (offline walks feed everything
+        # before analyze), so the resolve runs in analyze() over the buffer.
+        m = _PLACE.search(line)
+        if m:
+            self._place_writes.append(
+                (m.group(1), m.group(2), int(m.group(3))))
         # Armor flow (Q0): stamp every friendly-hero ARMOR/HEALTH write with
         # the turn it arrived in, keeping first/last per turn — combat
         # damage = first minus last (the buy-phase state vs post-combat).
@@ -1390,6 +1407,10 @@ class LiveCoach:
             "damage_last": damage_last,
             "loss_streak": loss_streak,
             "never_won": never_won,
+            "current_place": next(
+                (v for c, p, v in reversed(self._place_writes)
+                 if c == self.hero_card and p == str(self.friendly)),
+                self.current_place),
             "opp_quiet": opp_quiet,
             "close_losses": close_losses,
             "board": board,
