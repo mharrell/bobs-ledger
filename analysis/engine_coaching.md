@@ -310,6 +310,13 @@ Levers, ranked by evidence and cost:
    and divine shields is the real endgame skill but the biggest scope;
    revisit after 1-3.
 
+Evidence base: analysis/endgame_transcript_digest.md (2026-09-20) —
+the existing 136-transcript corpus mined for endgame advice; strongest
+single source yhult8FLYM4 (Shadybunny, "five skills to 8k"). The corpus's
+own advice already states lever 1's hole (no placement+HP-keyed swing
+rule exists in human guides either) and lever 2's core ("just barely over
+the bar" — GeuRrFYtsZo).
+
 Validation: the 5th-place corpus is accumulating (five 5ths across
 09-19/09-20); outcome_audit scores advice vs the NEXT fight's damage
 and can be sliced to endgame phases (t10+) for before/after.
