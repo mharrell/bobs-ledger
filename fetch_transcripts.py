@@ -8,10 +8,16 @@ mine into per-comp engine guides).
 
 Usage:
     python fetch_transcripts.py [comp_slug ...]   # default: all comps
+    python fetch_transcripts.py <video_id> [<video_id> ...]
+                                                  # direct YouTube ids
+                                                  (guides found by search
+                                                  that aren't on the
+                                                  comps index at all)
 """
 import glob
 import json
 import os
+import re
 import sys
 
 import requests
@@ -69,8 +75,15 @@ def download_transcript(video_id):
 def main():
     with open(COMPS, encoding="utf-8") as f:
         comps = json.load(f)
-    slugs = sys.argv[1:] or list(comps)
-    for slug in slugs:
+    args = sys.argv[1:]
+    # A bare 11-char video id downloads directly — guides found by search
+    # may never appear on the comps index (Plan 5 endgame-mining inputs).
+    vids = [a for a in args if re.fullmatch(r"[A-Za-z0-9_-]{11}", a)]
+    slugs = [a for a in args if a not in vids]
+    for vid in vids:
+        path = download_transcript(vid)
+        print(f"  {vid} [{'ok' if path else 'FAILED'}]")
+    for slug in slugs or (list(comps) if not vids else []):
         try:
             cid = resolve_comp_id(slug)
         except Exception as e:  # noqa: BLE001
