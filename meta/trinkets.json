@@ -120,6 +120,25 @@
   "guide": "Generally decent option to pick."
  },
  {
+  "id": "BG30_MagicItem_420t",
+  "name": "Book of Medivh",
+  "description": "Discover 2 Tavern spells. At the start of each turn, Discover 2 more.",
+  "pick_rate": 18.8,
+  "avg_placement": 4.36,
+  "placement_distribution": {
+   "1": 14.82,
+   "2": 12.77,
+   "3": 11.95,
+   "4": 12.24,
+   "5": 12.63,
+   "6": 12.5,
+   "7": 12.3,
+   "8": 10.77
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG30_MagicItem_422",
   "name": "Lorewalker Scroll",
   "description": "Whenever you cast a spell on a minion, give it +4/+4.",
@@ -362,6 +381,16 @@
    "8": 14.06
   },
   "guide": null
+ },
+ {
+  "id": "BG30_MagicItem_426t",
+  "name": "Colorful Compass",
+  "description": "Get 2 random 92. At the start of each turn, get 2 more.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_430",
@@ -1767,6 +1796,16 @@
   "guide": "Commit Combat Scaling Quilboars. Run [[Bristlebach]] + Taunted/Divine Shielded/reborn [[Pufferquil]] as core cards."
  },
  {
+  "id": "BG35_MagicItem_700",
+  "name": "Wildfeather Duster",
+  "description": "After you summon 6 Beasts, get a random Beast. (6 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_701",
   "name": "Fang Anklet",
   "description": "Start of Combat: Your Beasts have +1/+1 this combat. After you summon a Beast, improve this permanently.",
@@ -1919,25 +1958,6 @@
   "guide": null
  },
  {
-  "id": "BG35_MagicItem_816t",
-  "name": "Orb of the Unknown",
-  "description": "Get a random Greater Trinket and 4 Gold.",
-  "pick_rate": 16.5,
-  "avg_placement": 4.41,
-  "placement_distribution": {
-   "1": 14.94,
-   "2": 12.21,
-   "3": 11.69,
-   "4": 12.26,
-   "5": 12.0,
-   "6": 12.65,
-   "7": 12.49,
-   "8": 11.76
-  },
-  "guide": null,
-  "type": "Greater"
- },
- {
   "id": "BG35_MagicItem_817",
   "name": "Lens Case",
   "description": "Get a Duplicating Lens. At the start of every 2 turns, repeat this. (2 turns left!)",
@@ -2019,25 +2039,6 @@
    "8": 12.82
   },
   "guide": null
- },
- {
-  "id": "BG35_MagicItem_823t",
-  "name": "Timeworn Candelabra",
-  "description": "Discover a 2-Cost minion from the Major Timewarp.",
-  "pick_rate": 33.3,
-  "avg_placement": 4.63,
-  "placement_distribution": {
-   "1": 12.11,
-   "2": 11.07,
-   "3": 11.22,
-   "4": 12.37,
-   "5": 12.98,
-   "6": 13.68,
-   "7": 13.75,
-   "8": 12.82
-  },
-  "guide": null,
-  "type": "Greater"
  },
  {
   "id": "BG35_MagicItem_840",

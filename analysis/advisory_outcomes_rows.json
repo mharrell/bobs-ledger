@@ -1,0 +1,781 @@
+[
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 0,
+  "turn": 1,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 1,
+  "gold": 3,
+  "eff_hp": 37,
+  "hp_delta_next_fight": 0,
+  "lead": "buy",
+  "card": "BG28_966",
+  "card_name": "Them Apples",
+  "followed_buy": true,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG28_966",
+   "BG36_345"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 0,
+   "sells": [],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 1,
+  "turn": 2,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 1,
+  "gold": 4,
+  "eff_hp": 37,
+  "hp_delta_next_fight": 0,
+  "lead": "level",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 0,
+   "sells": [],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 2,
+  "turn": 3,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 2,
+  "gold": 5,
+  "eff_hp": 37,
+  "hp_delta_next_fight": 0,
+  "lead": "buy",
+  "card": "BG31_803",
+  "card_name": "BG31_803",
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG24_715",
+   "BG35_150"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 1,
+   "sells": [],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 3,
+  "turn": 4,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 2,
+  "gold": 6,
+  "eff_hp": 37,
+  "hp_delta_next_fight": 0,
+  "lead": "level",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 0,
+   "sells": [],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 4,
+  "turn": 5,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 3,
+  "gold": 7,
+  "eff_hp": 37,
+  "hp_delta_next_fight": -10,
+  "lead": "level",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG_DEEP_015"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 1,
+   "sells": [],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 5,
+  "turn": 6,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 3,
+  "gold": 7,
+  "eff_hp": 27,
+  "hp_delta_next_fight": 0,
+  "lead": "play",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG24_715",
+   "BG23_357",
+   "BG24_715",
+   "BG26_174"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 1,
+   "sells": [
+    "BG24_715",
+    "BG24_715"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 6,
+  "turn": 7,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 3,
+  "gold": 9,
+  "eff_hp": 27,
+  "hp_delta_next_fight": 0,
+  "lead": "play",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [
+   "BG26_174",
+   "BG35_150",
+   "BG36_731"
+  ],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 2,
+   "sells": [
+    "BG31_803",
+    "BG26_802",
+    "BG_DEEP_015",
+    "BG36_345"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 7,
+  "turn": 8,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 4,
+  "gold": 10,
+  "eff_hp": 27,
+  "hp_delta_next_fight": 0,
+  "lead": "hold",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG26_525",
+   "BG26_174"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 5,
+   "sells": [
+    "BG26_525"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 8,
+  "turn": 9,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 4,
+  "gold": 10,
+  "eff_hp": 27,
+  "hp_delta_next_fight": -14,
+  "lead": "play",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [
+   "BG31_886"
+  ],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 2,
+   "sells": [
+    "BG24_715",
+    "BG36_181",
+    "BG23_357"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 1,
+  "phase": 9,
+  "turn": 10,
+  "hero": "Sindragosa",
+  "placement": 5,
+  "tier": 5,
+  "gold": 10,
+  "eff_hp": 13,
+  "hp_delta_next_fight": null,
+  "lead": "cast",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG28_966",
+   "BG21_004"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 5,
+   "sells": [
+    "BG35_150_G"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 0,
+  "turn": 1,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 1,
+  "gold": 3,
+  "eff_hp": 44,
+  "hp_delta_next_fight": 0,
+  "lead": "buy",
+  "card": "BG28_300",
+  "card_name": "BG28_300",
+  "followed_buy": true,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG35_814"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 0,
+   "sells": [],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 2,
+  "turn": 3,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 1,
+  "gold": 4,
+  "eff_hp": 44,
+  "hp_delta_next_fight": 0,
+  "lead": "level",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 0,
+   "sells": [],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 3,
+  "turn": 4,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 2,
+  "gold": 5,
+  "eff_hp": 44,
+  "hp_delta_next_fight": -4,
+  "lead": "buy",
+  "card": "BG24_715",
+  "card_name": "BG24_715",
+  "followed_buy": true,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG24_715",
+   "BG31_924"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 0,
+   "sells": [
+    "BG35_814"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 4,
+  "turn": 5,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 2,
+  "gold": 6,
+  "eff_hp": 40,
+  "hp_delta_next_fight": -6,
+  "lead": "level",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 1,
+   "sells": [],
+   "freezes": 1
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 5,
+  "turn": 6,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 3,
+  "gold": 7,
+  "eff_hp": 34,
+  "hp_delta_next_fight": 0,
+  "lead": "buy",
+  "card": "BG23_009",
+  "card_name": "BG23_009",
+  "followed_buy": true,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG23_007",
+   "BG23_009"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 1,
+   "sells": [],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 6,
+  "turn": 7,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 3,
+  "gold": 8,
+  "eff_hp": 34,
+  "hp_delta_next_fight": -10,
+  "lead": "level",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [
+   "BG23_007"
+  ],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 0,
+   "sells": [
+    "BG28_309"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 7,
+  "turn": 8,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 4,
+  "gold": 9,
+  "eff_hp": 24,
+  "hp_delta_next_fight": 0,
+  "lead": "buy",
+  "card": "BG25_022",
+  "card_name": "BG25_022",
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG34_925",
+   "BG28_827"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 0,
+   "sells": [
+    "BG24_715"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 8,
+  "turn": 9,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 4,
+  "gold": 10,
+  "eff_hp": 24,
+  "hp_delta_next_fight": 0,
+  "lead": "play",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [
+   "BG36_884"
+  ],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 3,
+   "sells": [
+    "BG23_002",
+    "BG23_000"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 10,
+  "turn": 11,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 5,
+  "gold": 8,
+  "eff_hp": 24,
+  "hp_delta_next_fight": 0,
+  "lead": "play",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG25_022_G"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 1,
+   "sells": [
+    "BG23_007_G",
+    "BG25_022_G",
+    "BG36_243",
+    "BG33_319"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 11,
+  "turn": 12,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 5,
+  "gold": 10,
+  "eff_hp": 24,
+  "hp_delta_next_fight": -15,
+  "lead": "play",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": true,
+  "followed_roll": false,
+  "player_buys": [
+   "BG28_503"
+  ],
+  "player_actions": {
+   "upgrades": 1,
+   "refreshes": 5,
+   "sells": [
+    "BG31_924",
+    "BG23_009",
+    "BG23_007",
+    "BGS_041",
+    "BG36_508",
+    "BG35_921",
+    "BG23_009",
+    "BG23_008",
+    "BG23_004"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 12,
+  "turn": 13,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 6,
+  "gold": 10,
+  "eff_hp": 9,
+  "hp_delta_next_fight": 0,
+  "lead": "cast",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG32_821",
+   "BG35_922",
+   "BG28_810"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 6,
+   "sells": [
+    "BG34_925",
+    "BG23_008"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 13,
+  "turn": 14,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 6,
+  "gold": 10,
+  "eff_hp": 9,
+  "hp_delta_next_fight": 0,
+  "lead": "cast",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG32_821",
+   "BG28_884",
+   "BG31_924"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 5,
+   "sells": [
+    "BG31_925",
+    "BG26_505",
+    "BG23_009",
+    "BG36_622",
+    "BG26_505",
+    "BG28_595"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 15,
+  "turn": 16,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 6,
+  "gold": 13,
+  "eff_hp": 9,
+  "hp_delta_next_fight": 0,
+  "lead": "cast",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG28_845",
+   "BG35_921",
+   "BG28_504"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 6,
+   "sells": [
+    "BG34_925",
+    "BG27_080",
+    "BG23_008",
+    "BG31_924",
+    "BG31_924",
+    "BG31_925"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 16,
+  "turn": 17,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 6,
+  "gold": 10,
+  "eff_hp": 9,
+  "hp_delta_next_fight": 0,
+  "lead": "hold",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG36_640",
+   "BG32_837",
+   "BG35_883"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 3,
+   "sells": [
+    "BG31_925",
+    "BG23_000"
+   ],
+   "freezes": 0
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 17,
+  "turn": 18,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 6,
+  "gold": 11,
+  "eff_hp": 9,
+  "hp_delta_next_fight": 0,
+  "lead": "hold",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG28_169",
+   "BG36_624"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 5,
+   "sells": [],
+   "freezes": 1
+  }
+ },
+ {
+  "session": "logs_archive",
+  "game": 2,
+  "phase": 18,
+  "turn": 19,
+  "hero": "Silas Darkmoon",
+  "placement": 1,
+  "tier": 6,
+  "gold": 11,
+  "eff_hp": 9,
+  "hp_delta_next_fight": null,
+  "lead": "hold",
+  "card": null,
+  "card_name": null,
+  "followed_buy": false,
+  "followed_level": false,
+  "followed_roll": false,
+  "player_buys": [
+   "BG35_921",
+   "BG31_330",
+   "BG36_884"
+  ],
+  "player_actions": {
+   "upgrades": 0,
+   "refreshes": 4,
+   "sells": [
+    "BG31_035"
+   ],
+   "freezes": 0
+  }
+ }
+]
