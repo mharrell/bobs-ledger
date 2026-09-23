@@ -803,3 +803,40 @@ The first dry run — against the script as committed — reported the saved ros
 (no write); the second one **corroborates** this update's `Y'Shaarj` (tier 3) and
 `BG36_360t6 Dark Paradox` (tier 3) rows. `meta/pool_roster.json` itself was not rewritten by this
 update.
+
+### 6. Correction — what actually landed for trinkets (2026-09-22, same day)
+
+The numbers in §1 and the two "still unresolved" notes at the end of §4 are **superseded**; they
+described a hand path that was abandoned in favour of the project's own tool, on a base that was
+already stale.
+
+`meta/trinkets.json` is a **generated** file: `refresh_trinkets.py` rebuilds it log-id addressed,
+pulls the offered-history superset from every local session's pick menus, takes name/description
+from a fresh hearthstonejson download, and types Lesser/Greater from the hsreplay pages. The right
+move after a patch is to run it and curate whatever `NEED CURATION` prints — which is what happened,
+on the branch that already contained an earlier refresh. Final state on main:
+
+| file | landed | how |
+|---|---|---|
+| `meta/trinkets.json` | **191** entries | `refresh_trinkets.py` (175 → 191, 23 added, 16 retired ids re-keyed by name) |
+| `meta/trinket_effects.json` | **182** curated reads | the tool's re-key plus 9 hand-curated `NEED CURATION` reads |
+| `meta/minions.json` | **326** entries | §1 (unchanged by this correction) |
+
+So the bidirectional gate passes and the failure in §5 is gone: the suite is **651 tests, OK**.
+
+Two things this correction settles:
+
+- **The `type` gap is closed** — the tool typed the new trinkets from the hsreplay Lesser/Greater
+  pages, independently confirming the `CREATOR_DBID` split (`116614` Greater / `116510` Lesser) that
+  §4 could only record as a lead.
+- **A second, parallel refresh was discarded.** The same tool run from the older 159-entry base
+  produced 187 entries and a 15-item curation list, including 6 ids the newer base already covered
+  and 5 reads that disagreed with the ones landed (e.g. Hammer of Twilight 16 here vs 10 there,
+  Aggem Sticker 14 vs 10, Jarred Frostling 10 vs 8, Rascal Sticker 12 vs 8, Recycling Sticker
+  12 vs 10). The landed values stand; the divergence is recorded here rather than silently dropped,
+  because two independent card-text reads of the same trinket disagreeing by 2–6 points is exactly
+  the kind of thing the next tuning pass should look at. Related caution the parallel run surfaced:
+  a few Lesser/Greater pairs share one curated read through the name join (Booty Bay Brew's Greater
+  row carrying the Lesser's "+3/+3" note), which is pre-existing practice in that file and worth a
+  deliberate decision if per-variant numbers are ever wanted.
+
