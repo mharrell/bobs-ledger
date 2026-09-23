@@ -139,11 +139,14 @@ def _spell_names():
 def main():
     argv = sys.argv[1:]
     at_spec = None
+    at_value_idx = None
     if "--at" in argv:
         i = argv.index("--at")
         if i + 1 < len(argv):
             at_spec = argv[i + 1]
-    args = [a for a in argv if not a.startswith("--")]
+            at_value_idx = i + 1
+    args = [a for idx, a in enumerate(argv)
+            if idx != at_value_idx and not a.startswith("--")]
     latest = "--latest" in argv
     if latest or not args:
         logs = sorted(glob.glob(HS_LOG_GLOB),
