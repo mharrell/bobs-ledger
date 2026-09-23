@@ -15,6 +15,7 @@ import re
 
 import meta
 import pool
+from player_actions import _load_bg_magnetic_ids
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
 from tribes import is_banned, matches, normalize, overlaps, parts
 
@@ -1035,10 +1036,15 @@ def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
     None (old callers, fixtures) keeps the evidence-free hold.
 
     Playing a minion stuck in hand (full board) costs no gold — a free
-    body. Casting a spell from hand COSTS its spell price (log COST tag,
-    else the spell DB — the same price layer as the shop; the old
-    "casts are free" model here had cast steps leading plans at gold 0
-    three games running, 2026-09-16 evening t9/t14). Spells rank by
+    body. Casting a spell from hand is also FREE (player rule 2026-09-19,
+    confirmed by log ground truth: BlockType=PLAY blocks sourced from a
+    HAND-zone spell contain no RESOURCES_USED change, while shop-side
+    actions charge — the spell's price is paid when it is BOUGHT from the
+    tavern). The 2026-09-16 evening "cast gold gate" that priced hand
+    casts was a misdiagnosis of that evening's real complaint (a
+    low-effect Tavern Coin leading a gold-0 plan): gold-gain spells
+    already score ~2 points in _spell_effect, so they can't lead a real
+    plan, and no gold gate is needed. Spells rank by
     direct effect + cast-engine fuel (each cast
     feeds end-of-turn compounding, which counts casts made THIS turn);
     hand minions rank by their value as a free play — with triple
@@ -1374,7 +1380,7 @@ def situation_line(analysis):
         elif cap and eff <= 2 * cap and lobby >= 100:
             bits.append(f"{eff} HP vs a {cap} damage cap — "
                         "two lost fights end it")
-        elif eff <= 12:
+        elif eff <= DYING_HEALTH:
             bits.append(f"DYING at {health}"
                         + (f"+{armor}" if armor else "") + " — buy board now")
         elif eff <= 30 and lobby >= 100:
@@ -1400,6 +1406,12 @@ def _buy_prices(analysis):
     a price. Tavern spells keep their own per-spell price: the log's COST
     tag for spell entities, else the spell DB. Golden minion offers carry
     the "_G" id, priced identically to the base.
+
+    Held-trinket price overrides (2026-09-20 ruling: the coach models the
+    text-stated exceptions to flat-3): Electrode Attractor makes MAGNETIC
+    minions cost 2. Bazaar Sticker's health-cost spell is NOT priced here
+    — one spell per turn at a health price can't live in a flat map; the
+    plan walk discounts the one spell it would buy (see _top_move_text).
     """
     spell_db = _load_spell_db()
     costs = {c: MINION_BUY_PRICE for c in _load_card_db()}
@@ -1407,7 +1419,32 @@ def _buy_prices(analysis):
     costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
     costs.update({c: v for c, v in (analysis.get("shop_costs") or {}).items()
                   if c in spell_db})
+    held = (analysis.get("scenario") or {}).get("trinkets") or []
+    if "Electrode Attractor" in held:
+        for cid in _load_bg_magnetic_ids():
+            if cid in costs:
+                costs[cid] = 2
+                costs[cid + "_G"] = 2
     return costs
+
+
+def _health_cost_spell(analysis, cid, spell_db):
+    """(why, 0-price?) for Bazaar Sticker's health-cost spell, or None.
+
+    '1 Tavern spell/turn costs Health instead of Gold': the FIRST spell the
+    plan would buy this turn costs no gold (its price is paid in health
+    instead). Modeled in the walk only — a second spell buys at gold like
+    normal. Not while DYING: advising a health spend at <=12 effective HP
+    is how runs end (the same fragility that defers levels).
+    """
+    held = (analysis.get("scenario") or {}).get("trinkets") or []
+    if "Bazaar Sticker" not in held or cid not in spell_db:
+        return None
+    health = analysis.get("health")
+    if health is not None and health + (analysis.get("armor") or 0) \
+            <= DYING_HEALTH:
+        return None
+    return ("costs Health instead of gold (Bazaar Sticker)", True)
 
 
 def _shop_name(cid, names):
@@ -1531,6 +1568,39 @@ def _hunt_feasible(analysis, tier):
         for r in missing]
     feasible = [r for r, ok, _w in evaluated if ok]
     return feasible, evaluated
+
+
+def _level_price_clause(analysis):
+    """The price of taking the level this turn, or None when normal.
+
+    2026-09-20 design (analysis/level_pricing.md, Mike-approved: clause
+    only when pricey, inform-only, verdict + evidence). Silence means the
+    curve level is normal — recurring no-information clauses train the
+    player to skip the line. Pricey = behind the lobby's boards (>=25%),
+    a committing comp 2+ missing cores, or real recent damage (>=5):
+    the fight AFTER a level is the one you skip, and those are the
+    stalls the corpus loop priced at -9..-15 (outcome_audit, 09-20).
+    Deliberately NO damage forecast — the forecast still prices raw
+    stat totals, so a "~N next fight" number would be false precision.
+    """
+    ours = analysis.get("board_stats")
+    anchor = analysis.get("lobby_opp") or analysis.get("baseline_opp")
+    bits = []
+    if ours is not None and anchor and ours < 0.75 * anchor:
+        bits.append(f"boards ~{ours:.0f} vs lobby ~{anchor:.0f}")
+    tc = analysis.get("target_cards")
+    if tc and analysis.get("target_state") == "committing":
+        n = sum(1 for r in (tc.get("core") or [])
+                if not r.get("owned") and not r.get("banned"))
+        if n >= 2:
+            bits.append(f"the comp is {n} pieces short")
+    dmg = analysis.get("damage_last")
+    if (dmg or 0) >= 5:
+        bits.append(f"took {dmg} last fight and lobbies scale up")
+    if not bits:
+        return None
+    return ("prices high — " + "; ".join(bits)
+            + " — and the fight after a level is the one you skip")
 
 
 def _top_move_text(analysis):
@@ -1688,10 +1758,12 @@ def _top_move_text(analysis):
             elif (here_core > 0 and next_core == 0 and above_core == 0) or \
                     (here_core == 0 and next_core == 0 and above_any == 0
                      and here_any > 0):
-                # Q1: what the comp is MISSING lives here — this tier or
-                # below — and nothing of it is out of reach above, so
-                # leveling would lower the odds of finding it WITHOUT
-                # unlocking anything. Cores dominate; addons only carry the
+                # Q1: what the comp is MISSING lives on THIS tier — and
+                # nothing of it is out of reach above, so leveling would
+                # lower the odds of finding it WITHOUT unlocking anything.
+                # Below-tier pieces don't count (2026-09-20 ruling: they
+                # stay findable after leveling, so they never hold the
+                # ladder back). Cores dominate; addons only carry the
                 # stay when they're all the shopping left. The old gate
                 # required tier+1 to hold NOTHING: any single addon there
                 # pulled LEVEL while missing cores sat here (2026-09-08) —
@@ -1730,6 +1802,9 @@ def _top_move_text(analysis):
                         why = "standard curve"
                     level_lead = (f"LEVEL to tier {tier + 1} ({why})"
                                   + (f" — {spare} left" if spare else ""))
+                    price = _level_price_clause(analysis)
+                    if price:
+                        level_lead += f" — {price}"
                     budget = spare  # buys come out of the leftover, not the purse
         # else: the level is out of reach this turn. It stays OUT of the
         # numbered list — an upgrade the player can't make is not advice
@@ -1800,6 +1875,16 @@ def _top_move_text(analysis):
                 else:
                     cid = alt_minion
         cost = costs.get(cid)
+        # Bazaar Sticker (2026-09-20 ruling: model the text-stated price
+        # exceptions): the ONE spell this plan would buy costs Health
+        # instead of gold — discount it here so the budget checks treat it
+        # as free, and say so in the buy line (the overlay's per-card price
+        # stays the gold figure; a flat map can't carry a once-per-turn
+        # discount honestly).
+        health_why = _health_cost_spell(analysis, cid, spell_db) \
+            if cid is not None else None
+        if health_why:
+            cost = 0
         if budget is not None and cost is not None and budget < cost:
             # Can't afford the headline pick — walk the ranking for one the
             # budget covers (known prices only; unknown = can't promise).
@@ -1882,7 +1967,8 @@ def _top_move_text(analysis):
             no_hunt_note = None
             if missing and off_build \
                     and analysis.get("target_state") == "committing" \
-                    and (budget or 0) >= 1 and eff_health > 12 \
+                    and (budget or 0) >= 1 \
+                    and eff_health > DYING_HEALTH \
                     and (analysis.get("turn") or 99) > 2:
                 # Feasibility first (2026-09-11): hunt only cores the tavern
                 # can actually produce at this tier, with recent evidence
@@ -1929,6 +2015,8 @@ def _top_move_text(analysis):
                                  board=analysis.get("board"),
                                  pool_held=analysis.get("own_pool"),
                                  recipes=recipes)
+            if health_why:
+                why = f"{why}; {health_why[0]}"
             parts.append(f"Buy {_shop_name(cid, names)} ({why})")
             # Name the engine once, right after the fuel buy (the 2026-09-15
             # Shudderwock game's miss: the coach ranked Tavern Tempest but
@@ -1957,8 +2045,12 @@ def _top_move_text(analysis):
                     why = level_flip_why or "too fragile to level first"
                     parts.append(f"LEVEL next turn ({why}) — roll meanwhile")
                 elif leftover >= level_cost:
-                    parts.append(f"LEVEL to tier {tier + 1} — "
-                                 f"{leftover - level_cost} left after")
+                    trail = (f"LEVEL to tier {tier + 1} — "
+                             f"{leftover - level_cost} left after")
+                    price = _level_price_clause(analysis)
+                    if price:
+                        trail += f"; {price}"
+                    parts.append(trail)
                 else:
                     short = f"{level_cost - leftover} short after the buy"
                     parts.append((f"LEVEL next turn ({level_flip_why}) — "
@@ -2044,34 +2136,17 @@ def _top_move_text(analysis):
         demoted_ids = {id(s) for s in demoted}
         hand_entries[:] = [s for s in hand_entries
                            if id(s) not in demoted_ids] + demoted
-    # Casts spend gold: gate them on the live purse, cumulatively in plan
-    # order, and never let them eat the plan's committed buy (the buy walk
-    # priced it against the full purse, so casts must fit in what's left
-    # after it). At gold 0 nothing is castable — the 2026-09-16 evening
-    # games' "Cast Tavern Coin"/"Cast Repair Job"-at-gold-0 family. Plays
-    # and holds are free. An uncastable spell demotes to a hold, stated,
-    # moved last — the same honesty as the shop-buff demotion above. The
-    # gate is "castable NOW", not a ban: t16's Cast Repair Job x3 with a
-    # funded purse was correct advice and the player cast all three.
-    if gold is not None:
-        reserve = (costs.get(bought) or 0) if bought is not None else 0
-        spend = gold - reserve
-        gated = []
-        for s in hand_entries:
-            if s.get("verb") != "cast":
-                continue
-            price = costs.get(s.get("card"))
-            if price is not None and price <= spend:
-                spend -= price
-                continue
-            s["verb"] = "hold"
-            s["why"] = (f"needs {price}g to cast — no gold for it"
-                        if price is not None else "no gold to cast now")
-            gated.append(s)
-        if gated:
-            gated_ids = {id(s) for s in gated}
-            hand_entries[:] = ([s for s in hand_entries
-                                if id(s) not in gated_ids] + gated)
+    # Hand casts are FREE (player rule + log ground truth, 2026-09-19: a
+    # BlockType=PLAY block sourced from a HAND-zone spell moves no
+    # RESOURCES_USED; the spell's price is charged at the tavern BUY). The
+    # 2026-09-16 evening gate that demoted casts the purse couldn't cover
+    # was a misdiagnosis of "Cast Tavern Coin led a gold-0 plan": the real
+    # fix is ranking, and gold-gain spells already score ~2 effect points
+    # in _spell_effect, so a low-value cast can't lead a real plan. No gold
+    # gating here — the shop-buff demotion above stays (that one is an
+    # effect-level rule: the buff dies with the shop, not a price).
+    # t16's Cast Repair Job x3 with a funded purse remains correct advice;
+    # so is casting at gold 0 when the spell is in hand.
     if hand_entries:
         counts, order = {}, []
         for s in hand_entries:
@@ -2292,9 +2367,11 @@ def _comp_needs_by_tier(analysis, card_db, reach=None):
     shopping that's left (a lone addon at tier+1 used to pull LEVEL past
     missing cores on the current tier — the 2026-09-08 report: 'keeps
     saying to upgrade even if there are minions at this tier we still
-    need'). 'Here' includes LOWER tiers: a tier-3 core while at tier 4 is
-    still diluted by leveling (the pool's sub-tier share drops as the
-    tavern climbs).
+    need'). 'Here' = THIS tier only: below-tier pieces are neutral
+    (findable before and after leveling — they justify neither a stay
+    nor a level; 2026-09-20 ruling on the 09-11 review's objection). The
+    old 'this tier or below' let a tier-3 core hold the ladder back at
+    tier 4.
 
     'Above' = beyond tier+1 (tier-6 Fauna Whisperer while at tier 4). It
     used to be counted NOWHERE, and a missing core AT tier+1 tied evenly
@@ -2326,10 +2403,16 @@ def _comp_needs_by_tier(analysis, card_db, reach=None):
                 if section == "core":
                     next_core += 1
                 next_any += 1
-            elif t <= tier:
+            elif t == tier:
                 if section == "core":
                     here_core += 1
                 here_any += 1
+            elif t < tier:
+                pass  # below-tier: findable here AND after leveling — it
+                # justifies neither a stay nor a level (2026-09-20 ruling:
+                # the old "here = this tier or below" let a sub-tier core
+                # hold the ladder back; Mike confirmed the 09-11 review's
+                # objection)
             else:  # beyond tier+1: unfindable here, unfindable at tier+1 —
                 # unless a live discover/token source reaches it from here.
                 if any(_src_reaches(s, row.get("card"), t, tier)

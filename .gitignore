@@ -40,3 +40,4 @@ hearth-coach/corpus_out/
 hearth-coach/patch_reports/
 hearth-coach/meta/.patch_state.json
 hearth-coach/meta/.patch_config.json
+hearth-coach/logs_archive/

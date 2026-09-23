@@ -154,6 +154,7 @@ def main():
     new_db = []
     rekey = {}    # old id -> {new log ids} (for the effects re-key)
     covered_names = set()
+    seen_names = set()
     for old in old_db:
         nm = old.get("name")
         ids = sorted(name_to_ids.get(nm, ()))
@@ -165,6 +166,14 @@ def main():
         entry["guide"] = old.get("guide") or next(
             (g["guide"] for i in ids if (g := guides.get(i)))
             , None)
+        if nm and nm in seen_names:
+            # Variant rows (Avenge 3 vs Avenge 4 — tier upgrades) share a
+            # name; re-keying each to the same log id made duplicate-id
+            # rows (2026-09-19). Consumers are name-keyed and read one row
+            # anyway — collapse to the first.
+            continue
+        if nm:
+            seen_names.add(nm)
         new_db.append(entry)
 
     added = []

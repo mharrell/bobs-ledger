@@ -156,7 +156,10 @@ class TestLevelCost(unittest.TestCase):
         self.assertEqual(c.level_cost(), 5)
 
     def test_price_drops_per_turn_at_tier(self):
-        """Wiki rule: tier+5 minus turns at the tier (2nd turn: 4)."""
+        """The upgrade starts at (target+3) gold and drops 1 per round
+        waited (CLAUDE.md indexing; the audit's F4 — the old docstring
+        wrote the same rule as 'tier+5 minus turns', a confusingly
+        different index). 1→2 costs 5; a second turn at tier 1: 4."""
         c = self._coach(1)
         c._tier_seen_turn = 0
         c.actions.turn = 2
@@ -354,17 +357,20 @@ class TestLevelGates(unittest.TestCase):
         self.assertNotIn("LEVEL", tm)
         self.assertIn("stay on tier 2", tm)
 
-    def test_lower_tier_core_counts_as_here(self):
-        """A tier-3 core while at tier 4: leveling dilutes sub-tier pool
-        shares too — 'here' is this tier OR below."""
+    def test_lower_tier_core_does_not_hold_the_stay(self):
+        """A tier-3 core while at tier 4 does NOT justify staying (2026-09-20
+        ruling on the 09-11 review's objection): below-tier pieces stay
+        findable after leveling, so they never hold the ladder back — the
+        old 'here = this tier or below' froze the curve on a sub-tier
+        core."""
         from value import _load_card_db
         db = _load_card_db()
         t3 = next(c for c, v in db.items() if v.get("tier") == 3)
         a, top_move = self._analysis(tier=4)
         a["target_cards"]["core"] = [{"card": t3, "name": t3, "owned": False}]
         tm = top_move(a)
-        self.assertNotIn("LEVEL", tm)
-        self.assertIn("stay on tier 4", tm)
+        self.assertNotIn("stay on tier 4", tm)
+        self.assertIn("LEVEL to tier 5", tm)
 
     def test_more_next_cores_than_here_levels(self):
         """The comp's missing cores live mostly one tier up: LEVEL states
@@ -902,6 +908,105 @@ class TestBanGate(unittest.TestCase):
                 mock.patch("live_coach.top_move", return_value=""):
             a = c.analyze()
         self.assertEqual(c.allowed, allowed)
+
+
+class TestManualBans(unittest.TestCase):
+    """The overlay's tap-the-ban-screen picker (2026-09-19): the ban list is
+    provably not in any log (identical CREATE_GAME setup across different-ban
+    games), the pool inference converged at minute 12/14 in the evening
+    games, and a manual set is exact from t0. Manual bans are authoritative
+    for the rest of the game and reset with it."""
+
+    TEAMS = ["Beast", "Demon", "Dragon", "Elemental", "Mech"]
+
+    def _coach(self):
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
+                         "core": ["BG30_111"]},
+            "nagas-y": {"name": "Nagas - Y", "tribe": "Naga",
+                        "core": ["BG23_318"]},
+        }
+        c._card_races = {}
+        c.cur_lines = ["x"]
+        return c
+
+    def tearDown(self):
+        import coach_ui
+        coach_ui.store_manual_bans([])
+
+    def test_manual_set_is_authoritative(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c._bans_ready)
+        self.assertTrue(c.bans_manual)
+        self.assertEqual(c.allowed,
+                         ["Murloc", "Naga", "Pirate", "Quilboar", "Undead"])
+        self.assertEqual(set(c.playable), {"nagas-y"})
+        self.assertFalse(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 5)
+
+    def test_manual_beats_earlier_inference_lock(self):
+        """The inference locked 5/5 first (pool streamed fast), THEN the
+        player taps the reveal — the tap must still win (the reveal is the
+        ground truth; the inference's complement is only a guess until the
+        leaks argument, and the tap usually happens before it anyway)."""
+        import coach_ui
+        c = self._coach()
+        c.allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
+        c._bans_ready = True
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c.bans_manual)
+        self.assertEqual(c.allowed,
+                         ["Murloc", "Naga", "Pirate", "Quilboar", "Undead"])
+
+    def test_changing_the_taps_reapplies(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        coach_ui.store_manual_bans(["Beast", "Demon", "Dragon", "Elemental",
+                                    "Murloc"])
+        c._refresh_bans()
+        self.assertEqual(c.allowed,
+                         ["Mech", "Naga", "Pirate", "Quilboar", "Undead"])
+        self.assertEqual(set(c.playable), {"nagas-y"})
+
+    def test_clearing_reopens_detection(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        coach_ui.store_manual_bans([])
+        c._refresh_bans()
+        self.assertFalse(c.bans_manual)
+        self.assertFalse(c._bans_ready)
+        self.assertIsNone(c.allowed)
+        self.assertTrue(c.tribes_detecting)  # the inference retries
+
+    def test_store_validates_against_the_roster(self):
+        import coach_ui
+        self.assertEqual(coach_ui.store_manual_bans(
+            ["Beast", "Weird", "", None, "Elemental"]), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.latest_manual_bans(), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.store_manual_bans([]), [])  # empty = clear
+        self.assertIsNone(coach_ui.latest_manual_bans())
+
+    def test_reset_with_the_game(self):
+        """bans_manual rides _GAME_DEFAULTS: a new game resets it (the tap
+        was per-game; a stale manual set would poison the next lobby)."""
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c.bans_manual)
+        c._reset()
+        self.assertFalse(c.bans_manual)
+        self.assertIsNone(c._manual_key)
 
 
 class TestRenderJsonComps(unittest.TestCase):
