@@ -146,6 +146,27 @@ class TestRegistryAgainstRoster(unittest.TestCase):
         self.assertNotIn("Naga", roster["tribes_present"])
         self.assertIn("Aberration", roster["tribes_present"])
 
+    def test_shipped_roster_records_dark_paradox_off_pool(self):
+        """The known pool-tag gap is RECORDED, not silently dropped or mixed in.
+
+        Dark Paradox is buyable and in the pool, but the game materialises its
+        per-game variant through a creator, so it never carries
+        IS_BACON_POOL_MINION. It must appear in `created` and must NOT appear in
+        `cards` — promoting it into the pool would be exactly the mistake that
+        once put tier-0 tokens in the roster.
+        """
+        roster = playable.load_roster()
+        created = roster.get("created") or {}
+        paradox = [cid for cid, c in created.items()
+                   if (c.get("name") or "") == "Dark Paradox"]
+        self.assertTrue(paradox, "Dark Paradox should be recorded in `created`")
+        for cid in paradox:
+            self.assertNotIn(cid, roster["cards"])
+        # ...and the tokens the same signal drags in are recorded alongside it,
+        # which is why `created` is a lead list and not a second pool.
+        names = {(c.get("name") or "") for c in created.values()}
+        self.assertIn("Beetle", names)
+
     def test_validator_flags_an_out_of_play_card_in_the_pool(self):
         doc = {"patch": "test", "tribes": {}, "cards": {
             "BGS_071": {"name": "Deflect-o-Bot", "kind": "minion",
@@ -233,6 +254,46 @@ class TestPoolRosterScan(unittest.TestCase):
             ["D 12:00:00 GameState.DebugPrintPower() - CREATE_GAME\n",
              "D 12:00:00 GameState.DebugPrintPower() - CREATE_GAME\n"])
         self.assertEqual(scan["games"], 2)
+
+    def test_pool_tagged_and_created_entities_are_separated(self):
+        """The pool and creator-made minions must never be mixed.
+
+        36.6.1's Dark Paradox is a REAL buyable card that never carries
+        IS_BACON_POOL_MINION — the game picks one of its variants per game and
+        materialises it through an evolution creator, so it only shows the
+        triple-upgrade id. Summoned tokens show that tag too (Beetle, Aberrant
+        Tentacle), so a triple-only entity goes to `created` — a lead list —
+        and `cards` (the pool) stays exactly what the game tagged as the pool.
+        """
+        created_block = [
+            "D 12:00:00 GameState.DebugPrintPower() -     FULL_ENTITY"
+            " - Creating ID=7659 CardID=BG36_360t6\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=CARDTYPE value=MINION\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=TECH_LEVEL value=3\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=ATK value=2\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=HEALTH value=2\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=CARDRACE value=ALL\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=AURA value=1\n",
+            "D 12:00:00 GameState.DebugPrintPower() -"
+            "         tag=BACON_TRIPLE_UPGRADE_MINION_ID value=134711\n",
+        ]
+        scan = self._scan(_pool_block(330, "BGS_004", "DEMON") + created_block)
+        self.assertIn("BGS_004", scan["cards"])
+        self.assertNotIn("BG36_360t6", scan["cards"])
+        self.assertIn("BG36_360t6", scan["created"])
+        self.assertEqual(scan["created"]["BG36_360t6"]["tier"], 3)
+
+    def test_a_minion_without_either_signal_is_ignored(self):
+        """A plain summoned token carries neither tag — it is not a card."""
+        token = [
+            "D 12:00:00 GameState.DebugPrintPower() -     FULL_ENTITY"
+            " - Creating ID=99 CardID=BGXX_999t\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=CARDTYPE value=MINION\n",
+            "D 12:00:00 GameState.DebugPrintPower() -         tag=TECH_LEVEL value=1\n",
+        ]
+        scan = self._scan(token)
+        self.assertEqual(scan["cards"], {})
+        self.assertEqual(scan["created"], {})
 
 
 class TestPureTribesAndEpoch(unittest.TestCase):

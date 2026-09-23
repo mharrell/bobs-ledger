@@ -22,6 +22,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 2,
       "health": 1,
@@ -33,6 +34,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 2,
       "health": 4,
@@ -44,6 +46,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 2,
       "health": 7,
@@ -55,6 +58,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 4,
       "health": 6,
@@ -66,6 +70,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 4,
       "health": 4,
@@ -75,6 +80,7 @@
     },
     "BG23_318": {
       "races": [],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 6,
       "health": 2,
@@ -86,6 +92,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 2,
@@ -95,6 +102,7 @@
     },
     "BG24_018": {
       "races": [],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 6,
@@ -106,6 +114,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 2,
@@ -115,6 +124,7 @@
     },
     "BG24_715": {
       "races": [],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 1,
       "health": 1,
@@ -126,6 +136,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 2,
       "health": 1,
@@ -137,6 +148,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 4,
       "health": 2,
@@ -148,6 +160,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 8,
       "health": 1,
@@ -157,6 +170,7 @@
     },
     "BG25_016": {
       "races": [],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 4,
@@ -168,6 +182,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 2,
       "health": 1,
@@ -179,6 +194,7 @@
       "races": [
         "ALL"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 1,
       "health": 7,
@@ -190,6 +206,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 3,
       "health": 1,
@@ -201,6 +218,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 2,
       "health": 2,
@@ -212,6 +230,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 3,
@@ -223,6 +242,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 4,
       "health": 5,
@@ -234,6 +254,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 4,
       "health": 2,
@@ -245,6 +266,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 4,
       "health": 4,
@@ -256,6 +278,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 4,
       "health": 3,
@@ -267,6 +290,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 4,
@@ -278,6 +302,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 6,
@@ -289,6 +314,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 1,
       "health": 4,
@@ -300,6 +326,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 2,
       "health": 6,
@@ -311,6 +338,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 2,
@@ -322,6 +350,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 4,
@@ -331,6 +360,7 @@
     },
     "BG26_ICC_901": {
       "races": [],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 1,
       "health": 5,
@@ -340,6 +370,7 @@
     },
     "BG27_000": {
       "races": [],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 2,
       "health": 2,
@@ -351,6 +382,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 1,
       "health": 4,
@@ -362,6 +394,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 1,
@@ -373,6 +406,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 1,
       "health": 1,
@@ -384,6 +418,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 5,
       "health": 2,
@@ -393,6 +428,7 @@
     },
     "BG28_550": {
       "races": [],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 3,
       "health": 4,
@@ -404,6 +440,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 3,
@@ -415,6 +452,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 2,
       "health": 6,
@@ -426,6 +464,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 1,
       "health": 1,
@@ -437,6 +476,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 2,
       "health": 3,
@@ -448,6 +488,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 2,
       "health": 8,
@@ -459,6 +500,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 1,
       "health": 4,
@@ -470,6 +512,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 7,
@@ -481,6 +524,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 2,
       "health": 4,
@@ -492,6 +536,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 1,
@@ -503,6 +548,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 2,
       "health": 2,
@@ -514,6 +560,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 5,
       "health": 7,
@@ -525,6 +572,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 4,
       "health": 4,
@@ -536,6 +584,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 5,
@@ -547,6 +596,7 @@
       "races": [
         "NAGA"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 2,
       "health": 1,
@@ -558,6 +608,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 1,
       "health": 1,
@@ -569,6 +620,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 1,
       "health": 1,
@@ -580,6 +632,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 5,
       "health": 5,
@@ -591,6 +644,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 3,
       "health": 3,
@@ -602,6 +656,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 4,
       "health": 3,
@@ -613,6 +668,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 4,
@@ -624,6 +680,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 8,
       "health": 8,
@@ -635,6 +692,7 @@
       "races": [
         "ALL"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 3,
       "health": 3,
@@ -646,6 +704,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 2,
       "health": 2,
@@ -655,6 +714,7 @@
     },
     "BG32_237": {
       "races": [],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 4,
@@ -666,6 +726,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 5,
@@ -675,6 +736,7 @@
     },
     "BG32_341": {
       "races": [],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 5,
       "health": 5,
@@ -686,6 +748,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 5,
       "health": 5,
@@ -697,6 +760,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 6,
       "health": 5,
@@ -708,6 +772,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 6,
       "health": 6,
@@ -719,6 +784,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 4,
       "health": 4,
@@ -730,6 +796,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 2,
       "health": 5,
@@ -741,6 +808,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 6,
@@ -752,6 +820,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 8,
       "health": 8,
@@ -763,6 +832,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 5,
       "health": 5,
@@ -774,6 +844,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 3,
       "health": 8,
@@ -785,6 +856,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 2,
       "health": 3,
@@ -796,6 +868,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 1,
       "health": 5,
@@ -807,6 +880,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 1,
@@ -818,6 +892,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 1,
       "health": 3,
@@ -829,6 +904,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 3,
@@ -840,6 +916,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 5,
       "health": 2,
@@ -851,6 +928,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 5,
@@ -860,6 +938,7 @@
     },
     "BG34_604": {
       "races": [],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 1,
       "health": 10,
@@ -871,6 +950,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 7,
       "health": 4,
@@ -882,6 +962,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 6,
       "health": 2,
@@ -893,6 +974,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 5,
       "health": 3,
@@ -904,6 +986,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 3,
@@ -915,6 +998,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 2,
@@ -926,6 +1010,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 5,
       "health": 1,
@@ -937,6 +1022,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 3,
       "health": 6,
@@ -948,6 +1034,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 5,
       "health": 5,
@@ -957,6 +1044,7 @@
     },
     "BG35_123": {
       "races": [],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 6,
       "health": 10,
@@ -968,6 +1056,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 4,
@@ -979,6 +1068,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 8,
       "health": 8,
@@ -990,6 +1080,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 5,
@@ -1001,6 +1092,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 3,
       "health": 9,
@@ -1012,6 +1104,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 4,
       "health": 6,
@@ -1023,6 +1116,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 3,
       "health": 3,
@@ -1034,6 +1128,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 6,
@@ -1045,6 +1140,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 3,
       "health": 9,
@@ -1056,6 +1152,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 3,
       "health": 2,
@@ -1067,6 +1164,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 4,
@@ -1078,6 +1176,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 1,
       "health": 3,
@@ -1089,6 +1188,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 1,
       "health": 1,
@@ -1100,6 +1200,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 4,
       "health": 8,
@@ -1111,6 +1212,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 6,
       "health": 3,
@@ -1122,6 +1224,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 8,
       "health": 4,
@@ -1133,6 +1236,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 4,
@@ -1144,6 +1248,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 1,
@@ -1155,6 +1260,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 6,
       "health": 8,
@@ -1166,6 +1272,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 2,
       "health": 3,
@@ -1177,6 +1284,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 3,
@@ -1188,6 +1296,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 2,
       "health": 1,
@@ -1199,6 +1308,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 6,
@@ -1210,6 +1320,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 7,
       "health": 4,
@@ -1221,6 +1332,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 2,
       "health": 2,
@@ -1232,6 +1344,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 5,
@@ -1243,6 +1356,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 6,
       "health": 6,
@@ -1254,6 +1368,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 1,
       "health": 4,
@@ -1265,6 +1380,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 4,
@@ -1276,6 +1392,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 2,
       "health": 1,
@@ -1287,6 +1404,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 5,
@@ -1298,6 +1416,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 5,
@@ -1309,6 +1428,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 6,
@@ -1320,6 +1440,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 10,
       "health": 11,
@@ -1331,6 +1452,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 6,
@@ -1342,6 +1464,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 2,
       "health": 7,
@@ -1353,6 +1476,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 5,
@@ -1364,6 +1488,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 8,
       "health": 9,
@@ -1375,6 +1500,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 5,
@@ -1386,6 +1512,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 7,
@@ -1397,6 +1524,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 2,
       "health": 4,
@@ -1408,6 +1536,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 6,
       "health": 3,
@@ -1419,6 +1548,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 2,
@@ -1430,6 +1560,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 4,
@@ -1441,6 +1572,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 6,
       "health": 2,
@@ -1452,6 +1584,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 5,
       "health": 5,
@@ -1463,6 +1596,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 8,
       "health": 8,
@@ -1474,6 +1608,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 4,
       "health": 5,
@@ -1485,6 +1620,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 6,
@@ -1496,6 +1632,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 4,
@@ -1507,6 +1644,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 8,
       "health": 8,
@@ -1518,6 +1656,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 2,
       "health": 3,
@@ -1527,6 +1666,7 @@
     },
     "BG36_345": {
       "races": [],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 3,
       "health": 3,
@@ -1536,6 +1676,7 @@
     },
     "BG36_346": {
       "races": [],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 3,
       "health": 6,
@@ -1545,6 +1686,7 @@
     },
     "BG36_354": {
       "races": [],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 4,
@@ -1554,6 +1696,7 @@
     },
     "BG36_356": {
       "races": [],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 10,
       "health": 10,
@@ -1565,6 +1708,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 5,
       "health": 3,
@@ -1576,6 +1720,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 3,
       "health": 3,
@@ -1587,6 +1732,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 4,
       "health": 8,
@@ -1598,6 +1744,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 6,
       "health": 6,
@@ -1609,6 +1756,7 @@
       "races": [
         "QUILBOAR"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 10,
       "health": 10,
@@ -1618,6 +1766,7 @@
     },
     "BG36_372": {
       "races": [],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 5,
       "health": 5,
@@ -1629,6 +1778,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 3,
       "health": 5,
@@ -1640,6 +1790,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 5,
       "health": 2,
@@ -1651,6 +1802,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 2,
@@ -1662,6 +1814,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 6,
       "health": 3,
@@ -1673,6 +1826,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 7,
       "health": 7,
@@ -1682,6 +1836,7 @@
     },
     "BG36_620": {
       "races": [],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 5,
       "health": 10,
@@ -1693,6 +1848,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 8,
       "health": 8,
@@ -1704,6 +1860,7 @@
       "races": [
         "ALL"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 6,
       "health": 6,
@@ -1715,6 +1872,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 2,
       "health": 2,
@@ -1726,6 +1884,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 2,
@@ -1737,6 +1896,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 6,
       "health": 8,
@@ -1748,6 +1908,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 4,
       "health": 7,
@@ -1759,6 +1920,7 @@
       "races": [
         "PIRATE"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 5,
       "health": 5,
@@ -1770,6 +1932,7 @@
       "races": [
         "MURLOC"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 6,
       "health": 5,
@@ -1781,6 +1944,7 @@
       "races": [
         "UNDEAD"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 5,
       "health": 10,
@@ -1792,6 +1956,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 7,
       "health": 7,
@@ -1803,6 +1968,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 5,
       "health": 5,
@@ -1814,6 +1980,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 4,
       "health": 4,
@@ -1825,6 +1992,7 @@
       "races": [
         "MECHANICAL"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 2,
       "health": 1,
@@ -1836,6 +2004,7 @@
       "races": [
         "ABERRATION"
       ],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 3,
       "health": 6,
@@ -1847,6 +2016,7 @@
       "races": [
         "DEMON"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 1,
       "health": 3,
@@ -1858,6 +2028,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 7,
       "health": 7,
@@ -1869,6 +2040,7 @@
       "races": [
         "BEAST"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 7,
       "health": 7,
@@ -1880,6 +2052,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 2,
       "health": 1,
@@ -1889,6 +2062,7 @@
     },
     "BGS_040": {
       "races": [],
+      "pool_src": "pool",
       "tier": 6,
       "attack": 8,
       "health": 4,
@@ -1900,6 +2074,7 @@
       "races": [
         "DRAGON"
       ],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 4,
       "health": 12,
@@ -1911,6 +2086,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 2,
       "attack": 3,
       "health": 3,
@@ -1922,6 +2098,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 1,
       "attack": 2,
       "health": 1,
@@ -1933,6 +2110,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 4,
       "attack": 2,
       "health": 2,
@@ -1944,6 +2122,7 @@
       "races": [
         "ELEMENTAL"
       ],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 6,
       "health": 3,
@@ -1953,6 +2132,7 @@
     },
     "BGS_131": {
       "races": [],
+      "pool_src": "pool",
       "tier": 3,
       "attack": 1,
       "health": 1,
@@ -1962,12 +2142,108 @@
     },
     "BG_LOE_077": {
       "races": [],
+      "pool_src": "pool",
       "tier": 5,
       "attack": 2,
       "health": 4,
       "name": "Brann Bronzebeard",
       "tribe": null,
       "tribe_src": null
+    }
+  },
+  "created": {
+    "BG19_010": {
+      "races": [
+        "BEAST"
+      ],
+      "pool_src": "triple",
+      "tier": 2,
+      "attack": 3,
+      "health": 2,
+      "name": "Sewer Rat"
+    },
+    "BG19_010t": {
+      "races": [
+        "BEAST"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 2,
+      "health": 3,
+      "name": "Half-Shell"
+    },
+    "BG28_603t": {
+      "races": [
+        "BEAST"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 2,
+      "health": 2,
+      "name": "Beetle"
+    },
+    "BG29_864t": {
+      "races": [],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 5,
+      "health": 5,
+      "name": "Deserted Golem"
+    },
+    "BG35_150t": {
+      "races": [
+        "DEMON"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 2,
+      "health": 2,
+      "name": "Demon Fodder"
+    },
+    "BG36_360t3": {
+      "races": [],
+      "pool_src": "triple",
+      "tier": 2,
+      "attack": 2,
+      "health": 4,
+      "name": "Dark Paradox"
+    },
+    "BG36_360t6": {
+      "races": [],
+      "pool_src": "triple",
+      "tier": 3,
+      "attack": 2,
+      "health": 2,
+      "name": "Dark Paradox"
+    },
+    "BGFYM_002t": {
+      "races": [
+        "ABERRATION"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "health": 2,
+      "name": "Aberrant Tentacle"
+    },
+    "BGFYM_011": {
+      "races": [
+        "ABERRATION"
+      ],
+      "pool_src": "triple",
+      "tier": 3,
+      "attack": 1,
+      "health": 1,
+      "name": "Y'Shaarj"
+    },
+    "BG_BOT_312t": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 1,
+      "health": 1,
+      "name": "Microbot"
     }
   }
 }
