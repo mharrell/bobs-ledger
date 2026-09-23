@@ -1953,5 +1953,14 @@
    ]
   },
   "note": "Get 5 Blood Gems and your Blood Gems give an extra +3/+3 (Great Boar Sticker, Greater; the Lesser BG30_MagicItem_988 is 3 gems and +2/+1, read at 12). More gems AND a bigger per-gem rider, so 14."
+ },
+ "BG30_MagicItem_701": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "Every fourth card you buy costs Health instead of Gold, three times (The Eye of Sargeras, Greater; guide: a Shop-Buff-Demon pick). Priced as economy: at 4-6 buys a turn that is roughly one free 3-gold minion per turn for three turns, with the other Shop-Buff peers (Booty Bay Brew 14 per gold spent, Quartermaster's Hook 10). The Health cost is NOT modelled in base_value - it is small early and dangerous in the 13-16 fragility band, where the plan's own danger clause is the thing that should veto it."
  }
 }
