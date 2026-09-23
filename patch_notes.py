@@ -25,6 +25,8 @@ import os
 import re
 import sys
 
+import requests
+
 import coach_llm
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -75,9 +77,16 @@ def fetch_text(url):
 
 
 def html_to_text(t):
-    """Crude HTML -> text: keep headings and list items as structure."""
-    t = re.sub(r"<h[23][^>]*>", "\n\n## ", t, flags=re.I)
-    t = re.sub(r"</h[23]>", "\n", t, flags=re.I)
+    """Crude HTML -> text: keep headings and list items as structure.
+
+    Headings keep their LEVEL (h2 -> "## ", h3 -> "### ", ...), so a section
+    that contains sub-headings stays distinguishable from the next top-level
+    section. Collapsing every heading to "## " made every sub-heading look
+    like the end of its parent section.
+    """
+    t = re.sub(r"<h([1-6])[^>]*>",
+               lambda m: "\n\n" + "#" * int(m.group(1)) + " ", t, flags=re.I)
+    t = re.sub(r"</h[1-6]>", "\n", t, flags=re.I)
     t = re.sub(r"<li[^>]*>", "\n- ", t, flags=re.I)
     t = re.sub(r"<br\s*/?>", "\n", t, flags=re.I)
     t = re.sub(r"<[^>]+>", "", t)
@@ -87,15 +96,45 @@ def html_to_text(t):
     return t.strip()
 
 
+def _heading_level(line):
+    """Return the markdown heading level of a line ("## x" -> 2), else None."""
+    m = re.match(r"#{1,6}(?!#)\s+\S", line)
+    return len(m.group(0)) - len(m.group(0).lstrip("#")) if m else None
+
+
+def _battlegrounds_heading(lines):
+    """Index + level of the top-most 'Battlegrounds' heading, else (None, None).
+
+    Prefer the highest heading in the hierarchy (an h2 beats a nested h3),
+    then the earliest one.
+    """
+    found = []
+    for i, line in enumerate(lines):
+        lvl = _heading_level(line)
+        if lvl and re.match(r"#{1,6}(?!#)\s*Battlegrounds\b", line, flags=re.I):
+            found.append((lvl, i))
+    if not found:
+        return None, None
+    lvl, i = min(found)
+    return i, lvl
+
+
 def extract_bg_section(text):
-    """Return the Battlegrounds section (until the next same-level heading)."""
-    m = re.search(r"##\s*Battlegrounds\b", text, flags=re.I)
-    if not m:
+    """Return the Battlegrounds section, up to the next SAME-OR-HIGHER heading.
+
+    Sub-headings (### ...) belong to the section; only an h2 (or h1) ends it.
+    """
+    lines = text.split("\n")
+    start, level = _battlegrounds_heading(lines)
+    if start is None:
         return None
-    rest = text[m.end():]
-    nxt = re.search(r"\n##\s+", rest)
-    end = nxt.start() if nxt else len(rest)
-    return rest[:end].strip()
+    body = []
+    for line in lines[start + 1:]:
+        lvl = _heading_level(line)
+        if lvl is not None and lvl <= level:
+            break
+        body.append(line)
+    return "\n".join(body).strip()
 
 
 def _version_key(title):
