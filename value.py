@@ -62,6 +62,13 @@ W_RECIPE_FUEL = 10.0  # shop card that fuels an ACTIVE engine recipe (analysis/
                       # minion is repeatable value). Sized BETWEEN addon (+7)
                       # and comp core (+14) inside the existing family — loud
                       # at play time, but it can't outrank a missing core.
+W_OUT_OF_PLAY = 8.0   # shop card that is OUT OF PLAY entirely (removed by a
+                      # patch, or a tribe rotated out of the pool — see
+                      # meta/out_of_play.json + playable.py). Deliberately
+                      # heavier than the banned-tribe penalty (-2): "banned in
+                      # this game" still exists next game, "out of play" does
+                      # not exist at all. Only reachable from a stale shop, i.e.
+                      # a historical replay reviewed under current rules.
 
 # Hand-charge kits (2026-09-10 replay, curatively encoded per the card-text
 # discipline): a charger gains stats WHILE IN HAND and needs a deployer to
@@ -696,6 +703,23 @@ def _trinket_synergy_hit(trinket, race, card_text, mechanics=()):
     return False
 
 
+def _out_of_play_reason(card_id, card):
+    """Out-of-play explanation for a shop card, or None (fail-open).
+
+    Thin wrapper over `playable.out_of_play_reason` so `value.py` has no hard
+    dependency on the registry being present, and honours the
+    `HEARTH_OUT_OF_PLAY=0` kill switch (used by historical replay reviews, which
+    must be judged under the rules the game was played with).
+    """
+    try:
+        import playable
+    except ImportError:  # pragma: no cover
+        return None
+    card = card or {}
+    return playable.out_of_play_reason(
+        card_id, card.get("name"), card.get("tribe"))
+
+
 def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None,
                         hero_power=None, trinkets=None, comp=None):
     """Rank board minions from safest-to-sell to most-valuable.
@@ -947,6 +971,14 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                     val -= W_GROWTH * growth * 0.75
         if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0  # banned-tribe minion can't grow
+        if W_OUT_OF_PLAY and _out_of_play_reason(cid, m):
+            # Out of play entirely (removed by a patch, or a rotated-out tribe):
+            # the card cannot be bought, so it must never headline a shop.
+            # Sized above the banned-tribe penalty because "banned in this game"
+            # still leaves the card existing elsewhere, while this does not.
+            # Only reachable from a stale shop (a historical replay reviewed
+            # under current rules) — the live game never offers these.
+            val -= W_OUT_OF_PLAY
         if cid in deployers_wanted:
             # The deployer re-arms the engine: chargers in hand turn back
             # into per-combat bodies (plus the free-slot rule — the plan

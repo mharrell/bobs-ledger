@@ -2,6 +2,7 @@
 import os
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -108,13 +109,22 @@ class TestTribeBanKillsComps(unittest.TestCase):
     }
 
     def _filter(self, allowed):
+        """Per-game ban filtering only.
+
+        Out-of-play enforcement is switched OFF here on purpose: these synthetic
+        comps are Naga, and since 36.6.1 Naga is rotated out of the pool
+        (meta/out_of_play.json), so the out-of-play layer would drop them before
+        the ban rule under test ever ran. The two layers are orthogonal and the
+        out-of-play layer has its own tests (tests/test_playable.py).
+        """
         from bans import filter_comps_by_available_tribes
         races = {"BG32_821": ["Demon"], "BG26_ICC_901": None,
                  "BG36_640": None, "BG32_837": ["Naga"], "BG35_883": None,
                  "BG31_035": ["Naga"], "BG36_243": ["Dragon"],
                  "BG34_925": ["Naga"], "BG36_202": ["Beast"]}
-        return filter_comps_by_available_tribes(self.COMPS, races,
-                                                allowed)
+        with mock.patch.dict(os.environ, {"HEARTH_OUT_OF_PLAY": "0"}):
+            return filter_comps_by_available_tribes(self.COMPS, races,
+                                                    allowed)
 
     def test_banned_tribe_drops_all_its_comps(self):
         # Naga banned: BOTH naga comps die — even the one with only 1 of 5
