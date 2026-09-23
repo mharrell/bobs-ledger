@@ -592,5 +592,93 @@
     "when_to_commit": "Brann Bronzebeard + lots of economy + Shamanic Tidecaller",
     "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
     "representative_card": "BG36_704"
+  },
+  "aberrations-deity-feed": {
+    "name": "Aberrations - Deity Feed",
+    "tribe": "Aberration",
+    "meta_tier": null,
+    "difficulty": null,
+    "core": [
+      "BG36_318",
+      "BG36_103"
+    ],
+    "addons": [
+      "BG25_354",
+      "BG36_320",
+      "BG36_109",
+      "BG36_115",
+      "BG36_114",
+      "BG35_883"
+    ],
+    "provisional": true,
+    "source": "own replay corpus (comp_miner.py)",
+    "summary": "Feed the Deity: Faceless Converter and N'raqi Sapper both pay the Deity on Deathrattle (Sapper hands you Energizing Chambers, +7/+7 each, cast twice if discarded), with Titus Rivendare doubling those triggers and Mysterious K'Thir / The Shadow of Doubt / Parasitic Fleshling as the discard and hand-add payoffs. Mined from our own Aberration-dominant boards, not published anywhere.",
+    "when_to_commit": "When the board is majority Aberration and two or more of the core cards are held or bought.",
+    "evidence": {
+      "games": 4,
+      "top4": 2,
+      "floor": 3,
+      "built": "2026-09-23",
+      "core": [
+        {
+          "card": "BG36_318",
+          "name": "Faceless Converter",
+          "games": 3,
+          "share": 0.75,
+          "avg_place": 2.67
+        },
+        {
+          "card": "BG36_103",
+          "name": "N'raqi Sapper",
+          "games": 3,
+          "share": 0.75,
+          "avg_place": 4.67
+        }
+      ],
+      "addons": [
+        {
+          "card": "BG25_354",
+          "name": "Titus Rivendare",
+          "games": 2,
+          "share": 0.5,
+          "avg_place": 1.0
+        },
+        {
+          "card": "BG36_320",
+          "name": "Mysterious K'Thir",
+          "games": 2,
+          "share": 0.5,
+          "avg_place": 1.0
+        },
+        {
+          "card": "BG36_109",
+          "name": "The Shadow of Doubt",
+          "games": 2,
+          "share": 0.5,
+          "avg_place": 3.5
+        },
+        {
+          "card": "BG36_115",
+          "name": "Nightmare Corroder",
+          "games": 2,
+          "share": 0.5,
+          "avg_place": 4.0
+        },
+        {
+          "card": "BG36_114",
+          "name": "Parasitic Fleshling",
+          "games": 2,
+          "share": 0.5,
+          "avg_place": 6.5
+        },
+        {
+          "card": "BG35_883",
+          "name": "Balinda Stonehearth",
+          "games": 1,
+          "share": 0.25,
+          "avg_place": 1.0
+        }
+      ]
+    }
   }
 }

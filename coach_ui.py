@@ -675,11 +675,19 @@ function render(a) {
   app.appendChild(box('Sell', sellBody));
 
   // TARGET COMP — what you're hunting: horizontal tiles, missing pieces
-  // fully opaque, owned pieces faded.
+  // fully opaque, owned pieces faded. A PROVISIONAL target (mined from our own
+  // games, no published comp exists for the tribe) is labelled here and in the
+  // comp-direction rows: the plan coaches it, but the player must be able to
+  // tell it apart from a published comp at a glance.
   if (a.target_comp) {
     const pivot = a.target_state === 'pivot';
+    const ev = a.target_comp_evidence || {};
     const body = el('div', 'target',
-      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp);
+      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp
+      + (a.target_comp_provisional
+         ? '  [provisional' + (ev.games ? ' — ' + ev.games + ' of our games' : '')
+           + (ev.top4 != null ? ', top4 ' + ev.top4 : '') + ']'
+         : ''));
     const tc = a.target_cards || {};
     const list = el('div', 'tiles');
     [['core', 'core'], ['addons', 'addons']].forEach(([_label, key]) => {
@@ -711,7 +719,8 @@ function render(a) {
       }
       if (r.hits > 2) pips.appendChild(el('span', 'full', '×' + r.hits));
       row.appendChild(pips);
-      row.appendChild(el('span', 'mname', r.name));
+      row.appendChild(el('span', 'mname',
+        r.name + (r.provisional ? ' [prov]' : '')));
       row.appendChild(el('span', 'mstat',
         r.name === a.target_comp
           ? (a.target_state === 'pivot' ? 'pivoting — committed' : 'committed')
@@ -800,11 +809,16 @@ function render(a) {
   if (a.comps && a.comps.length) {
     let lastTier = null;
     a.comps.forEach(c => {
-      const tier = c.meta_tier || '?';
+      // A provisional (mined) comp has no published tier by definition: label
+      // the group "Provisional" instead of letting a null read as "Unranked",
+      // which would look like a real comp whose tier is merely unknown.
+      const tier = c.provisional ? 'prov' : (c.meta_tier || '?');
       if (tier !== lastTier) {
         lastTier = tier;
         compsBody.appendChild(el('div', 'cptier',
-          tier === '?' ? 'Unranked' : tier + ' tier'));
+          tier === '?' ? 'Unranked'
+            : tier === 'prov' ? 'Provisional (mined from our own games)'
+            : tier + ' tier'));
       }
       compsBody.appendChild(compRow(c));
     });
@@ -1046,6 +1060,12 @@ def render_json(analysis):
             "slug": slug,
             "name": comp["name"],
             "meta_tier": comp.get("meta_tier"),
+            # Mined from our own corpus rather than published (value.
+            # _is_provisional): the panel groups these under "Provisional"
+            # instead of a tier, and they sort LAST — a comp with no published
+            # tier must never appear above a real S/A/B comp.
+            "provisional": bool(comp.get("provisional")),
+            "evidence": comp.get("evidence"),
             # Tribe confirmed in this lobby? Absent (True) once the bans
             # resolve; False only inside the detection window, where the
             # panel dims the could-still-be-banned rows.
@@ -1053,7 +1073,8 @@ def render_json(analysis):
             "core": rows(comp.get("core")),
             "addons": rows(comp.get("addons")),
         })
-    comp_rows.sort(key=lambda c: (tier_rank.get(c["meta_tier"], 3),
+    comp_rows.sort(key=lambda c: (1 if c["provisional"] else 0,
+                                  tier_rank.get(c["meta_tier"], 3),
                                   c["name"] or ""))
     a["comps"] = comp_rows
     # The Buy box mirrors the top move's actual buy/roll step (buy_step_card /

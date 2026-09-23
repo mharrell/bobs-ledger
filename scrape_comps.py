@@ -304,6 +304,26 @@ def fetch_youtube_links(comp_id):
     return data if isinstance(data, list) else data.get("results", [])
 
 
+def prune_unlisted(comps, keep_slugs):
+    """Drop comps the source no longer lists — but NEVER a provisional one.
+
+    A provisional comp (comp_miner.py --promote) exists precisely because this
+    source has nothing for its tribe, so pruning "what the source no longer
+    lists" would delete it on every run and silently take the only direction the
+    coach has for that tribe with it. Returns (pruned, kept) slugs.
+    """
+    pruned, kept = [], []
+    for key in list(comps):
+        if key in keep_slugs:
+            continue
+        if (comps[key] or {}).get("provisional"):
+            kept.append(key)
+            continue
+        del comps[key]
+        pruned.append(key)
+    return pruned, kept
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("comp_ids", nargs="*", help="comp ids or slugs to scrape")
@@ -386,10 +406,11 @@ def main():
               f"core={len(comp['core'])} addons={len(comp['addons'])}")
 
     if args.prune and keep_slugs is not None:
-        for key in list(comps):
-            if key not in keep_slugs:
-                del comps[key]
-                print(f"  pruned {key}")
+        pruned, kept = prune_unlisted(comps, keep_slugs)
+        for key in pruned:
+            print(f"  pruned {key}")
+        for key in kept:
+            print(f"  kept {key} (provisional — not owned by this source)")
 
     if args.dry_run:
         # --diff SHOWS differences, it does not prevent writes: running

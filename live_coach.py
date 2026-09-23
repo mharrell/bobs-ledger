@@ -35,7 +35,7 @@ from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
     situation_line, sticky_comp_target, combat_forecast, active_recipes,
-    live_reach_sources, DYING_HEALTH, comp_gap,
+    live_reach_sources, DYING_HEALTH, comp_gap, comp_label,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -1215,10 +1215,12 @@ class LiveCoach:
             friendly)
         target = comp_target(board, self.playable, recent_cards=recent,
                              trinkets=trinket_recs)
-        # A board dominated by a tribe the coach has NO comp for (Aberration
-        # since 36.6.1, until the comp source catches up): carry the gap so the
-        # plan and the overlay can SAY it, instead of implying a direction the
-        # comp list cannot justify.
+        # A board dominated by a tribe the coach has NO PUBLISHED comp for
+        # (Aberration since 36.6.1, until the comp source catches up): carry the
+        # gap so the plan and the overlay can SAY it, instead of implying a
+        # direction the comp list cannot justify. A provisional (mined) comp for
+        # that tribe does not close the gap — it fills it, labelled — so both
+        # fields travel together and the UI can show "provisional".
         gap = comp_gap(board, self.playable)
         # Sticky same-tribe direction (2026-09-06 Guff game: the target
         # churned 'Summon Beetles' -> 'Tasty Lobstah' phase-to-phase on
@@ -1567,6 +1569,13 @@ class LiveCoach:
             "buy_this": shop[0][0] if shop else None,
             "choice": choice_advice,
             "target_comp": target["name"] if target else None,
+            # Provisional = mined from our own corpus, not published (see
+            # value._is_provisional). The label carries the marker and the
+            # sample size; the evidence rides along so the overlay can show
+            # WHY it is being coached toward.
+            "target_comp_label": comp_label(target),
+            "target_comp_provisional": bool(target and target.get("provisional")),
+            "target_comp_evidence": (target or {}).get("evidence"),
             # The dominant tribe with no comp defined, or None. Named so the
             # plan can say "no comp published for Aberration yet" instead of
             # quietly having no direction.
