@@ -1,0 +1,48 @@
+{
+  "_comment": "Cards the change list names that the meta DB genuinely cannot carry, each with the evidence that closed the question. check_patch_db.py reports these as ACCEPTED and does not fail on them, so a NEW gap still fails the gate instead of the tool being permanently red. Every entry needs a reason AND the evidence that established it - an entry with no evidence is a gap someone talked themselves out of.",
+  "patch": "36.6.1",
+  "updated": "2026-09-22",
+  "expected_missing": [
+    {
+      "kind": "minion",
+      "name": "C'Thun",
+      "tier": 3,
+      "stats": "1/1",
+      "text": "Deity. After this awakens, give this minion's stats split amongst your other minions.",
+      "reason": "no card id for the Battlegrounds card exists anywhere on this machine",
+      "evidence": "absent from the log-mined pool (meta/pool_roster.json, 181 cards over 3 games); absent from every Power.log session on disk; the hearthstonejson cache holds 11 cards named C'Thun and none of them is this one (a HERO skin and two Mercenaries minions only); the client ships no dbfid-to-card-id map. value._buy_prices indexes the minion DB by id, so an id-less row raises rather than degrading, which is why it is not simply added by name."
+    },
+    {
+      "kind": "minion",
+      "name": "Sha of Fear",
+      "tier": 7,
+      "stats": "9/12",
+      "reason": "no card id exists anywhere on this machine",
+      "evidence": "0 hearthstonejson entries by that exact name; absent from every local Power.log and from the 36.6.1 log-mined pool. It is the article's positional split point between the Aberration block and the other-tribes block, which is part of why its tribe is left null rather than inferred from position."
+    },
+    {
+      "kind": "minion",
+      "name": "Greedy Conniver",
+      "tier": 3,
+      "stats": "7/7",
+      "reason": "no card id exists anywhere on this machine",
+      "evidence": "0 hearthstonejson entries by that exact name; absent from every local Power.log and from the 36.6.1 log-mined pool."
+    },
+    {
+      "kind": "minion",
+      "name": "Sewer Escapee",
+      "tier": 4,
+      "stats": "4/5",
+      "reason": "no card id exists anywhere on this machine",
+      "evidence": "0 hearthstonejson entries by that exact name; absent from every local Power.log and from the 36.6.1 log-mined pool."
+    }
+  ],
+  "out_of_scope": [
+    {
+      "kind": "duos_minions",
+      "names": ["Voidpriest Cloner", "C'Thrax Wrecker"],
+      "reason": "Duos-only cards; the coach coaches SOLO Battlegrounds",
+      "evidence": "Duos is a separate mode with its own card surface, and a Duos-only row in the solo DB could be recommended in a solo shop where it can never appear. The two changed Duos minions (Man'ari Messenger, Transport Reactor) are excluded for the same reason. Recorded here rather than silently dropped: Voidpriest Cloner's text ('Whenever you discard a card, Pass a copy of it. (2 times per turn.)') is the only published per-turn cap on discard triggers, and C'Thrax Wrecker's ('Give your team's Deities +4/+4') confirms Deity is a card type rather than one card - both were fed to the discard-engine work."
+    }
+  ]
+}
