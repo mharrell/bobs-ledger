@@ -3195,5 +3195,25 @@
   "placement_distribution": null,
   "guide": "Great trinket when committed to Shop Buff Demons. Also want a [[Brann Bronzebeard||96786]] and [[Soul Rewinder||100949]] in your setup.",
   "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_411",
+  "name": "Reinvigorating Light",
+  "description": "Discover a second Hero Power. Gain 3 Gold.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_414",
+  "name": "Weighted Gauntlet",
+  "description": "At the end of your turn, give your minions +1/+1. (Doubles at the start of each turn!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
  }
 ]

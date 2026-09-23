@@ -1962,5 +1962,24 @@
    ]
   },
   "note": "Every fourth card you buy costs Health instead of Gold, three times (The Eye of Sargeras, Greater; guide: a Shop-Buff-Demon pick). Priced as economy: at 4-6 buys a turn that is roughly one free 3-gold minion per turn for three turns, with the other Shop-Buff peers (Booty Bay Brew 14 per gold spent, Quartermaster's Hook 10). The Health cost is NOT modelled in base_value - it is small early and dangerous in the 13-16 fragility band, where the plan's own danger clause is the thing that should veto it."
+ },
+ "BG36_MagicItem_411": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "hero_power",
+    "economy"
+   ]
+  },
+  "note": "Discover a SECOND Hero Power and gain 3 Gold (Reinvigorating Light, Lesser). A second power is a whole extra engine per turn whose value depends on which powers the lobby offers - taken at the two-hero-power entries' scale (8) with the 3 Gold read as economy (gold 2/gold)."
+ },
+ "BG36_MagicItem_414": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "end_of_turn"
+   ]
+  },
+  "note": "End of turn: your minions get +1/+1, and the amount DOUBLES at the start of each turn (Weighted Gauntlet, Lesser) - so turn N gives +2^(N-1)/+2^(N-1) board-wide. Priced at 12 like the other end-of-turn board scalers (Gold Mallet 12) rather than by the printed +1/+1: it needs turns to compound, which is exactly what the current value model discounts."
  }
 }
