@@ -79,6 +79,42 @@ class TestOfferedCoverage(unittest.TestCase):
         self.assertFalse(
             missing, f"trinkets offered in logs but absent from DB: {missing}")
 
+    #: Any trinket id the log prints, not only the ones in a choice list. The
+    #: offered-only rule above passed for months while 13 trinkets that were
+    #: GRANTED (not offered) went unrecorded — a granted trinket still drives
+    #: stats and still shows in the overlay, and choices.py can only rank what
+    #: this DB knows.
+    SEEN_ANY = re.compile(r"cardId=(BG\d+_MagicItem_\w+)")
+
+    def test_every_trinket_seen_in_a_log_is_in_the_db(self):
+        logs = sorted(glob.glob(os.path.join(
+            r"C:\Program Files (x86)\Hearthstone\Logs",
+            "Hearthstone_*", "Power.log")), key=os.path.getmtime,
+            reverse=True)[:6]
+        if not logs:
+            self.skipTest("no Hearthstone session log found")
+        seen = set()
+        for path in logs:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    seen.update(self.SEEN_ANY.findall(line))
+        if not seen:
+            self.skipTest("no trinket ids in recent logs")
+        ids = {t["id"] for t in meta.trinkets()}
+        # `...e` is the trinket's own enchantment, not a trinket: BG36_MagicItem_403e
+        # is the aura Hammer of Twilight applies. Its base must be known, which
+        # is what makes the exemption safe rather than a blanket suffix skip.
+        # Anything else is a gap UNLESS it is recorded in meta/patch_gaps.json
+        # as deliberately not carried (BG30_MagicItem_442t is the Blood Golem
+        # TOKEN its sticker summons) — the registry keeps the evidence, so a
+        # new token-shaped id still fails here.
+        from logquery import _answered_gaps
+        recorded = _answered_gaps()
+        missing = sorted(c for c in seen - ids - recorded
+                         if not (c.endswith("e") and c[:-1] in ids))
+        self.assertFalse(
+            missing, f"trinkets seen in logs but absent from DB: {missing}")
+
 
 if __name__ == "__main__":
     unittest.main()

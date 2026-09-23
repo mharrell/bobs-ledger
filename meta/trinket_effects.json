@@ -1724,13 +1724,41 @@
   "note": "A free Refresh every time you play an Elemental (Recycling Sticker) — an APM/economy enabler, priced against Gold-plated Compass (5 free Refreshes + a golden, 12). Grows with Elemental throughput, so it is a build-around, not a flat buff."
  },
  "BG36_MagicItem_403": {
-  "base_value": 16,
+  "base_value": 6,
   "synergy": {
    "keywords": [
     "discard"
    ]
   },
-  "note": "Your minions have +2/+1, improved by every card discarded this game (Hammer of Twilight, Greater). Board-wide: on the spell-point scale (1 stat point = 1 pt) a 6-minion board is ~18 and grows with the discard count, discounted to 16 because the buff needs a wide board to pay off. First entry to use the 36.6.1 `discard` keyword — the Aberration tribe's theme."
+  "note": "Your minions have +1 Attack, improved by every card discarded this game (Hammer of Twilight, LESSER). Read from the client card data rather than the name: BG36_MagicItem_403 is the Lesser (+1 Attack, type Lesser) and BG36_MagicItem_403t the Greater (+2/+1). The two shared a name AND a read until 2026-09-23 — exactly the Lesser/Greater aliasing risk the discard doc logged as assumption A3 — so the Lesser now carries its own floor. Board-wide on the spell-point scale: 6 minions x 1 Attack = 6, growing with the discard count, undiscounted because the floor is already low."
+ },
+ "BG36_MagicItem_404": {
+  "base_value": 4,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "After you cast a Tavern spell, give your Deity +4/+4 (Corrupted Baton, LESSER; the Greater BG36_MagicItem_404t is +10/+10 and the two shared a read until 2026-09-23). Same shape as the Greater read — spell-fuelled DEITY POOL, not board stats, paid out only when the Deity awakens — scaled to the printed numbers (4 vs 10)."
+ },
+ "BG36_MagicItem_416": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "reborn"
+   ]
+  },
+  "note": "After your Deity awakens, give it Reborn (Evil Experiment, Greater). Reborn on the build's payoff body: priced with the other Reborn-on-a-body trinkets (Converter Portrait 8, Eternal Portrait 8, Ophidian Staff 8), discounted to 6 because it does nothing until the Deity awakens (three friendly Aberration deaths, and the 50/50 head)."
+ },
+ "BG36_MagicItem_430": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "discard",
+    "spell"
+   ]
+  },
+  "note": "Get a Sludge Corrosion, and another after every card you discard (Sludge Portrait, Greater). Priced with the recurring generators (Shath'Yar Shrine 10 for a random Aberration per discarded spell) but one lower: what it generates is a fixed +1/+1 spell (BG36_301t, which casts twice if the trinket's own copies are discarded), so the payoff is smaller than a random-Aberration stream — 8 for the immediate copy plus the discard-rate stream."
  },
  "BG36_MagicItem_403t": {
   "base_value": 16,
@@ -1739,7 +1767,7 @@
     "discard"
    ]
   },
-  "note": "Your minions have +2/+1, improved by every card discarded this game (Hammer of Twilight, Greater). Board-wide: on the spell-point scale (1 stat point = 1 pt) a 6-minion board is ~18 and grows with the discard count, discounted to 16 because the buff needs a wide board to pay off. First entry to use the 36.6.1 `discard` keyword — the Aberration tribe's theme."
+  "note": "Your minions have +2/+1, improved by every card discarded this game (Hammer of Twilight, Greater; the Lesser BG36_MagicItem_403 is +1 Attack, read separately since 2026-09-23). Board-wide: on the spell-point scale (1 stat point = 1 pt) a 6-minion board is ~18 and grows with the discard count, discounted to 16 because the buff needs a wide board to pay off. First entry to use the 36.6.1 `discard` keyword — the Aberration tribe's theme."
  },
  "BG36_MagicItem_424": {
   "base_value": 12,
@@ -1841,5 +1869,89 @@
    ]
   },
   "note": "Get 2 random Tavern spells; playing one discards the other; repeats every turn (Willbreaker Sticker, Lesser). Sits with Book of Medivh (2 Tavern spells a turn, 14) and adds a guaranteed discard every turn, so it is also the cheapest way to keep a discard outlet fed."
+ },
+ "BG35_MagicItem_712": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "Get a Proud Privateer and 2 random Bounties, then 2 more Bounties every turn (Privateer Portrait, Greater). An immediate body plus a compounding income stream, priced with the Pirate economy engines it feeds (Booty Bay Brew 14 for every gold spent, Gold-plated Compass 12)."
+ },
+ "BG35_MagicItem_732": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "deathrattle"
+   ]
+  },
+  "note": "Start of Combat: destroy your 3 left-most minions; after your last minion dies, resummon them (Soul Fermenter, Greater). A Deathrattle enabler that pays a real price - it deletes three bodies up front - so it is priced BELOW the plain stat trinkets (10-12) and reads as a build-around: it is worth it only when those three deaths are themselves the plan."
+ },
+ "BG35_MagicItem_754": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Murloc"
+   ]
+  },
+  "note": "Start of Combat: your Murlocs take the Attack of the highest-Attack minion in your hand (Dramaloc Sticker, Greater). Tribe-gated AND needs a big hand minion, so 8: a genuine swing inside a Murloc build, dead weight outside one."
+ },
+ "BG35_MagicItem_924": {
+  "base_value": 10,
+  "note": "Get a Groundbreaker; your Groundbreakers then also give stats to the minion on their left (Groundbreaker Portrait). Priced with the other portrait+amp trinkets (Converter Portrait 8 for a body plus Reborn, Flaming Portrait 14 for a tavern-engine amp): 10 for a body plus a positional doubler."
+ },
+ "BG36_MagicItem_204": {
+  "base_value": 10,
+  "note": "Get a Plaguerunner; after you destroy one outside combat, get a plain copy (Plaguerunner Portrait, Greater). Body plus a repeatable-destruction generator, priced with the other generator portraits (Shath'Yar Shrine 10)."
+ },
+ "BG36_MagicItem_402": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Get a Vicious Mindslasher; your Vicious Mindslashers then also buff adjacent minions (Mindslasher Portrait, LESSER - the Greater variant is +stats to the whole board shape). A spell-cast payoff body, priced at the Lesser tier with Manipulator Portrait (6)."
+ },
+ "BG36_MagicItem_408": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "Spend 50 Gold to replace this with a random Greater Pirate Trinket (Quartermaster's Hook, Lesser). A delayed upgrade rather than a stat gain, priced like Splinter of Aurum (10: at 15 gold, a random GOLDEN Tier 5, once) - it converts a Lesser slot into a Greater one, so it is only worth a Lesser pick in a long game."
+ },
+ "BG36_MagicItem_602": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "Make your Deity Golden this game (Mask of Ancient Ones, Greater). Golden doubles a minion's stats, and on the Deity that is the build's whole payoff pool doubled, so it is priced with the golden-makers (Gold Pendant 12, Gold-plated Compass 12) rather than the 8-point bodies. It does nothing until the Deity awakens (three friendly Aberration deaths, 50/50 which head) - the discount for that is already inside the 12."
+ },
+ "BG36_MagicItem_417t": {
+  "base_value": 6,
+  "note": "Choose a minion; after it gains stats outside combat this turn, your Deity also gains them (Makeshift Master, LESSER - the Greater BG36_MagicItem_417 has the same effect behind Spellcraft and is read at 12). The same Deity-fuel doubling, a slot cheaper and without the Spellcraft cast, so half the Greater's read."
+ },
+ "BG30_MagicItem_914t": {
+  "base_value": 16,
+  "synergy": {
+   "keywords": [
+    "hand"
+   ]
+  },
+  "note": "Per minion played: the left-most minion in your hand gains +6/+6 (Nerglish Phrasebook, Greater; the Lesser BG30_MagicItem_914 is +3/+3 and read at 10). More than double the Lesser's pump but not double the value - the target is still a single hand minion - hence 16 rather than 20."
+ },
+ "BG30_MagicItem_988t": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "blood_gem"
+   ]
+  },
+  "note": "Get 5 Blood Gems and your Blood Gems give an extra +3/+3 (Great Boar Sticker, Greater; the Lesser BG30_MagicItem_988 is 3 gems and +2/+1, read at 12). More gems AND a bigger per-gem rider, so 14."
  }
 }
