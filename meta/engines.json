@@ -302,5 +302,113 @@
    }
   ],
   "note": "Unmodeled recursive term: Eternal Knight gains +4/+2 permanently for each Knight that died (Eternal Summoner supplies them), so late-game growth compounds harder than this model shows."
+ },
+ "aberrations-discard-deity": {
+  "name": "Aberrations — Discard / Deity",
+  "tribe": "ABERRATION",
+  "trigger": "discard",
+  "chain": [
+   {
+    "source": "Mindbender Ghur'sha",
+    "per_trigger": {
+     "atk": 3,
+     "hp": 3
+    },
+    "applies_to": "all",
+    "count_from": "primary",
+    "note": "CARD TEXT (BG36_097): 'Whenever you discard a card, give your other minions +3/+3'. Once per discarded card per copy on the board. SCOPE CAVEAT: the printed 'other minions' excludes the source, but the simulator's 'all' scope counts it, so this step over-states by one minion per copy (flagged, not silently corrected — there is no self-excluding scope yet)."
+   },
+   {
+    "source": "Cutthroat K'Thir",
+    "per_trigger": {
+     "atk": 4,
+     "hp": 4
+    },
+    "applies_to": "target",
+    "count_from": "primary",
+    "note": "CARD TEXT (BG36_106): 'Whenever you discard a card, give this and your Deity +4/+4'. This step is the 'this' half — persistent stats on the K'Thir itself. The 'your Deity' half is the deity_pool step further down; the same card contributes to both, which is what its text says."
+   },
+   {
+    "source": "Mysterious K'Thir",
+    "per_trigger": {
+     "atk": 8,
+     "hp": 8
+    },
+    "applies_to": "target",
+    "count_from": "turn",
+    "per_turn": 3,
+    "note": "CARD TEXT (BG36_320): 'At the end of your turn, discard your 3 left-most Tavern spells. Gain +8/+8 for each discarded.' = +8/+8 x the printed maximum 3 = +24/+24 a turn on itself, once per copy. count_from 'turn': this discard is the card's OWN, end of turn, so it fires with NO outlet on the board — which is why the model runs it outside the discard counter. ASSUMPTION: 3 Tavern spells are held every turn (the real cap is holding 3, which the board snapshot cannot show). Its 3 discards are NOT added to the scenario's discard count, so the 'whenever you discard' payoffs are UNDER-credited on a K'Thir board — pass an explicit scenario['discard'] to include them."
+   },
+   {
+    "source": "Hammer of Twilight",
+    "per_trigger": {
+     "atk": 2,
+     "hp": 1
+    },
+    "applies_to": "all",
+    "count_from": "primary",
+    "requires_trinket": "Hammer of Twilight",
+    "note": "CARD TEXT (Greater trinket, BG36_MagicItem_403t): 'Your minions have +2/+1. (Improved by each card you've discarded this game!)'. The +2/+1 is printed. ASSUMPTION (the largest single term in this engine): how much EACH DISCARDED CARD adds is not printed anywhere — the parenthetical names no number and the patch notes give none — so this step charges ONE printed application per discarded card. It is a model, not card text. The trinket's baseline aura is not credited separately (charging both the aura and one application per discard would double count the same numbers). The Lesser row prints '+1 Attack' under the same NAME and the scenario passes trinket names, so a Lesser holder is over-credited (flagged)."
+   },
+   {
+    "source": "Brain Rotter",
+    "type": "deity_pool",
+    "per_trigger": {
+     "atk": 2,
+     "hp": 2
+    },
+    "count_from": "self",
+    "note": "CARD TEXT (BG36_099): 'Activate (0): Discard a card to give your Deity +2/+2.' count_from 'self': each copy Activates once per turn, so this copy discards min(copies, the turn's discards) times. Brain Rotter is also an OUTLET (value._is_discard_outlet reads exactly this Activate shape), so it raises the board-derived discard count."
+   },
+   {
+    "source": "Cutthroat K'Thir",
+    "type": "deity_pool",
+    "per_trigger": {
+     "atk": 4,
+     "hp": 4
+    },
+    "count_from": "primary",
+    "note": "CARD TEXT (BG36_106), the 'your Deity' half: one pool application per discarded card per copy. Banked, never added to board stats."
+   },
+   {
+    "source": "Harbinger Aph'lass",
+    "type": "deity_pool",
+    "per_trigger": {
+     "atk": 1,
+     "hp": 1
+    },
+    "count_from": "primary",
+    "note": "CARD TEXT (BGFYM_005): 'Whenever you discard a card, give your Deity +1/+1 and improve this.' The +1/+1 is text. UNMODELED: 'and improve this' — the size of the self-improvement is not printed, so the compounding self-buff is left out; this step is a floor."
+   },
+   {
+    "source": "N'raqi Sapper",
+    "type": "deity_pool",
+    "per_trigger": {
+     "atk": 14,
+     "hp": 14
+    },
+    "count_from": "self",
+    "note": "CARD TEXT: N'raqi Sapper (BG36_103) 'Battlecry and Deathrattle: Get an Energizing Chamber.' + Energizing Chamber (BG36_371) 'Give your Deity +7/+7. If you discard this, cast it twice.' = 7+7 twice = 14 stat points to the Deity per discarded Chamber. count_from 'self' = min(copies, the turn's discards). ASSUMPTIONS (flagged): one Chamber per Sapper per turn is discarded — the card grants TWO (battlecry and deathrattle) and the model charges one — and that discard is spent from the turn's discard budget, which is why it is capped by the primary count."
+   },
+   {
+    "source": "Corrupted Baton",
+    "type": "deity_pool",
+    "per_trigger": {
+     "atk": 4,
+     "hp": 4
+    },
+    "count_from": "self",
+    "requires_trinket": "Corrupted Baton",
+    "note": "CARD TEXT (Lesser trinket): 'After you cast a Tavern spell, give your Deity +4/+4.' The Greater row prints +10/+10 under the same name; the scenario passes names, so this step uses the Lesser number and UNDER-credits a Greater holder (flagged). Its trigger is a Tavern-spell CAST, not a discard — the only link is that a discarded spell is itself cast ('If you discard this, cast it twice'), which the simulator does not trace as a cast event. MODELLED AS: one Tavern spell cast per discard-turn (count_from 'self' = min(1 trinket, discards)), i.e. the printed +4/+4 charged once per turn as a conservative floor — an ASSUMPTION."
+   }
+  ],
+  "deity": {
+   "sacrifices": 3,
+   "awakenings_per_turn": 1,
+   "payoff_share": 0.5,
+   "requires_tribe": "ABERRATION",
+   "note": "CARD TEXT (patch 36.6.1 overview, analysis/patch_3661_changes.md section 1): 'Each time a friendly Aberration dies, it advances your Deity's progress. ... Once three sacrifices have been made, your Deity joins the fight with a game-changing effect.' The Deity is a PER-COMBAT appearance, not a permanent board minion, so the pool it carries is combat power and is returned apart from `gain`. ASSUMPTIONS (all flagged): (1) awakenings_per_turn 1 — a combat happens once per turn and the third Aberration death triggers the awakening; the sacrifice counter itself is NOT modelled beyond requiring an Aberration on the board, so a board that cannot produce three deaths is over-credited; (2) payoff_share 0.5 — 'C'Thun or Y'Shaarj is chosen at random per game' (two heads, assumed equal odds); only C'Thun's awakening ('give this minion's stats split amongst your other minions') pays the pool out — Y'Shaarj's deathrattle re-summons your first 2 dead Aberrations and does not use it at all, so its 50% is credited as zero for the pool while its real (non-stat) value is not modelled; (3) the pool is treated as a per-turn FLOW (this turn's contributions realised in every combat the Deity awakens). That equals the steady-state flow whether or not the game consumes the pool at awakening — the card text says neither, and the logs cannot show it (analysis/discard_mechanic.md)."
+  },
+  "note": "Patch 36.6.1's discard/Deity tribe. The discard RATE is modelled, not measured: no discard event exists in any Power.log (the only discard-ish tag is CANT_DISCARD), so the scenario's `discard` count is board-derived — one discard per Activate-discard outlet per turn — and CLAMPED to value.DISCARD_RATE_CAP (7 = one discard per board slot per turn), because the game's own wording shows discard triggers are capped per turn (Voidpriest Cloner, DUOS-ONLY and deliberately absent from the solo meta/minions.json, prints '(2 times per turn.)'); no cap for the Activate outlets is published, so the board-slot ceiling is used (analysis/discard_mechanic.md). NOT MODELED here, all flagged: (a) the Deity pool's non-discard feeders — Joyous (Battlecry +2/+2), Drifting Sacrifice (+2/+1 per death), Faceless Converter (+1/+1 per death, improved by Tavern spells cast), The Shadow of Doubt (+3/+4 per card added to hand), Sha of Fear and Vicious Mindslasher (per Tavern spell), Makeshift Master (trinket) — so the pool is a floor; (b) Y'Shaarj's awakening payoff (re-summon 2 Aberrations) is not stat-shaped; (c) discard sources that need a held card, a hero power or a trinket slot the board cannot show: Writhing Tentacles, Shath'Yar Shrine, Sludge Portrait, Tome of the Ancients, Willbreaker Sticker, Drest'agath's Incubate, Kith'ix's Dark Ritual, and the 'when you play one, discard the other' pair-generators (Wandering Willbreaker, Faceless Operative). Pass an explicit scenario['discard'] to count those; (d) Mindbender Ghur'sha's 'other minions' self-exclusion."
  }
 }
