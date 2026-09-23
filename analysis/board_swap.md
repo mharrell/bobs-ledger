@@ -1,9 +1,36 @@
 # Board swaps — naming the card you sell, and proving it is worth it
 
-**Status: design (2026-09-23). Nothing implemented.** Written because this is the
-next piece coaching needs to be *actionable* at the board limit, and because the
-machinery to do it already exists in pieces — the work is an arbiter, not a new
-simulator.
+**Status: stage 1 IMPLEMENTED (2026-09-23).** Stages 2 (combat "now" term) and 3
+(simulator "future" term) are designed below and not built. `value.slot_swaps`,
+the guards, the plan wiring and `tests/test_board_swap.py` are the stage-1
+deliverable.
+
+### Stage-1 result, measured across all local sessions (44 full-board phases)
+
+| | |
+|---|---|
+| full-board phases with a comparable incoming card | **17** |
+| best candidate **take** (Δ ≥ 3) | 8 |
+| best candidate **close** (0 ≤ Δ < 3) | 1 |
+| best candidate **veto** (Δ < 0 — the card is not worth the slot) | **8** |
+| plans that now **name** the trade with its numbers | 9 |
+| invariant *"never advise a take with a negative delta"* | **holds** |
+
+Roughly half of the phases where the coach wanted a card on a full board were
+swaps the numbers do not support, and it used to advise them anyway. The veto
+examples now read:
+
+```
+don't buy Boom-in-a-Box — it would cost the Imp-lusionist (6.5 vs 6.6)
+don't buy Vicious Mindslasher — it would cost the N'raqi Frostcaller (11.4 vs 28.8)
+Hold Drifting Sacrifice (hold — 5.3 vs the 5.6 Fetid Corroder it would cost)
+Swap: play Parasitic Fleshling, sell Fetid Corroder (34.5 vs 5.6 — clearly better)
+```
+
+The 27 phases that stay silent are ones with nothing to compare (a spell buy
+needs no slot; no sell candidate survived the guards) — silence there is the
+honest answer, and the old unmatched "sell to make room" wording still stands for
+the filler-only case.
 
 ---
 
@@ -160,25 +187,31 @@ surfaces cannot disagree (the 2026-09-01 rule that the Buy box mirrors the plan)
 
 ## 5. Tests and validation
 
-**Unit fixtures** (the answers are not in dispute):
-- a 1/1 token on board + a real minion in hand → sells the token;
-- the comp's core vs a big vanilla body → sells the vanilla body;
-- the held golden-hunt card is never the outgoing card;
-- the −4.2 case as a fixture → verdict `veto`, and `veto (fragile)` in the band;
-- two hand plays + one slot → exactly one `take`, the other a hold.
+**Unit fixtures** (`tests/test_board_swap.py`, stage 1 — 14 tests): a winning
+swap is named with its numbers; a marginal one says so; a losing one is vetoed
+and the hand entry demoted to a hold with the comparison that decided it; two
+plays and one slot choose one and hold the other; the comp's core, a multiplier
+on the board, and anything the plan HOLDS are never the outgoing card; spells do
+not compete for a slot; a board with space asks no swap question; nothing
+sellable means no sell advice; a losing shop buy is argued against and flagged
+for the overlay; a marginal swap is vetoed at DYING but merely "close" at
+FRAGILE (that band is stage 2's).
 
-**Corpus counterfactuals** (`replay_review` over the cached sessions):
-- the arbiter must never emit a `take` whose Δ < 0 (the invariant that would have
-  caught the Faceless Converter advice);
-- report the distribution of verdicts per phase, so "how often does the coach want
-  a swap and how often is it close" is a number, not an impression;
-- compare `take` against what the player actually did (adherence ≠ correctness —
-  the player may be right; the point is to see the disagreements).
+**The corpus counterfactual, run** (all local sessions, 44 full-board phases):
+the invariant `never emit a take with a negative delta` **holds**, and the
+verdict split (8 take / 1 close / 8 veto) is in the header above. Re-run it with
+`value.slot_swaps` over `replay_review._advise_at` per phase.
 
-**What would falsify the design**: if the arbiter's verdicts disagree with the
-hand-written reviews' cases (where a human judged the sold card wrong), the
-currency is wrong and stage 2/3 order changes. The 09-04 Balinda and 09-16 Reno
-cases are the labelled examples to check against.
+**Still to check against the labelled human cases** (09-04 Balinda, 09-16 Reno):
+the verdicts must agree with the reviews' judgement, or the currency is wrong and
+stages 2/3 change order. Not yet done — it needs the reviews' per-phase tables
+mapped onto phases programmatically.
+
+### What would falsify the design
+
+If the arbiter's verdicts disagree with the hand-written reviews' cases where a
+human judged the sold card wrong, the currency is wrong and stage 2/3 order
+changes.
 
 ## 6. Open questions
 
