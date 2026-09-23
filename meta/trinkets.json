@@ -3215,5 +3215,25 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Lesser"
+ },
+ {
+  "id": "BG30_MagicItem_943",
+  "name": "Surveyor Portrait",
+  "description": "Get a Hot-Air Surveyor. Blood Gems played from your hand give an extra +6/+6.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_301",
+  "name": "Bassgill Portrait",
+  "description": "Get a Bassgill. After you summon a Murloc in combat, give it Divine Shield.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  }
 ]

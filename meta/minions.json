@@ -4689,5 +4689,35 @@
     "text": "Avenge (1): Gain +1/+2 permanently.",
     "tribe_src": "hearthstonejson",
     "auto_added": "from session logs (extend_pool.py)"
+  },
+  {
+    "tier": 3,
+    "id": "BG26_350",
+    "name": "Bassgill",
+    "cost": 3,
+    "tribe": "Murloc",
+    "attack": 5,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Summon the highest-Health Murloc\nfrom your hand for this combat only.",
+    "tribe_src": "hearthstonejson",
+    "auto_added": "from session logs (extend_pool.py)"
+  },
+  {
+    "tier": 1,
+    "id": "BG_EX1_170",
+    "name": "Emperor Cobra",
+    "cost": 3,
+    "tribe": "Beast",
+    "attack": 2,
+    "health": 3,
+    "mechanics": [
+      "POISONOUS"
+    ],
+    "text": "Poisonous",
+    "tribe_src": "hearthstonejson",
+    "auto_added": "from session logs (extend_pool.py)"
   }
 ]
