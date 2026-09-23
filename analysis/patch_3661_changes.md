@@ -629,3 +629,177 @@ Finally, `meta/minions.json` still contains **22 Naga-tagged minions** (20 `Naga
 `Seafloor Recruiter`, `Shell Collector`, `Showy Cyclist`, `Thaumaturgist`, `Torrential Ruiner`,
 `Tranquil Meditative`, `Waverider`, `Zesty Shaker` — and **no minion tagged `Aberration`**. The Naga
 rotation and the Aberration tribe are both still to be reflected there.
+
+---
+
+## DB update applied (2026-09-22)
+
+This is the record of what the 36.6.1 card-DB update actually wrote. Everything below was derived
+offline from files on this machine; no network fetch was made. Paths are relative to `hearth-coach/`.
+
+### 1. Counts
+
+| File | Before | After | Added | Changed |
+|---|---|---|---|---|
+| `meta/minions.json` | 263 | **326** | **63** | **1** (`Drone Duplicator` text) |
+| `meta/trinkets.json` | 159 | **178** | **19** | 0 |
+
+`meta/minions.json` — the 63 additions by source group:
+
+| Group | Rows | Source of id / tier / stats / tribe | Source of text + mechanics |
+|---|---|---|---|
+| New Aberrations | 24 | `meta/pool_roster.json` (log-mined pool) | §4.1 of this document |
+| New other-tribe minions | 8 | `meta/pool_roster.json` | §4.3 of this document |
+| `Y'Shaarj` + 5 × `Dark Paradox` | 6 | Power.log entity blocks (`BGFYM_011`, `BG36_360t3/t6/t5/t4/t9`) + this document's tier/stats; the id strings were existence-checked against the client's `carddef*.unity3d` GameObject names | §4.1 / §4.2 of this document |
+| Returning minions | 25 | 12 from `meta/pool_roster.json`; 13 from the hearthstonejson snapshot `.cards_full.json` (main checkout, 2026-08-27), of which `Auto Accelerator` is absent from the post-patch roster | hearthstonejson, except the six returning-and-changed cards (§5.2) and `Hackerfin` |
+
+Only **one existing row was edited**: `BG36_506 Drone Duplicator`, whose `text` now carries §5.2's
+new text **exactly as printed, typo included** (`Magnzetization`; flagged in Appendix A.5 — decide
+once, then either keep the typo or fix it repo-wide). The other six changed minions
+(`Iron Groundskeeper`, `Mangled Bandit`, `Ghastcoiler`, `Bronze Warden`, `Dune Dweller`,
+`Hackerfin`) were absent from the DB, so their change is expressed by the values on their new rows
+(tier/stats from the log roster, text from §5.2).
+
+Tribe totals after the update: **Aberration 25** (24 new cards + `Y'Shaarj`), **`All` 11**
+(6 existing + 5 `Dark Paradox`), Naga 22 — the Naga rows are **kept** as the historical record and
+are marked unusable by `meta/out_of_play.json`, not deleted.
+
+`meta/trinkets.json` — the 19 additions: **14** with `id` + `name` from the Power.log
+(`entityName=` beside `cardId=`) and `description`/`cost` from hearthstonejson; **5** that are new
+in 36.6.1 (`BG36_MagicItem_403t`, `_424`, `_600`, `_610`, `_611`) with `name` from the log and
+`description`/`cost`/`type` from §9 of this document. All 19 get the DB's "no history" shape
+(`pick_rate` / `avg_placement` / `placement_distribution` = `null`, `guide` = `""`) — **no pick rate
+or average placement was invented**; hsreplay history for these ids is not on this machine.
+
+### 2. Field-by-field provenance
+
+`meta/minions.json` rows added or changed:
+
+| Field | Source |
+|---|---|
+| `id`, `tier`, `attack`, `health`, `tribe` | `meta/pool_roster.json` (game's own pool dump) for the 44 roster cards; `.cards_full.json` (`techLevel`/`attack`/`health`/`races`, canonicalised through `tribes.tribes_from_races`) for the 13 returning cards absent from the roster; Power.log entity tags for `Y'Shaarj` and the two observed `Dark Paradox` variants; this document for the three unobserved `Dark Paradox` variants' tier/stats |
+| `text` | this document (verbatim) for every 36.6.1 new/changed card; hearthstonejson for the unchanged returning cards (HTML tags stripped, `[x]`/line breaks kept — the same transform `parse_minions.py` uses) |
+| `mechanics` | derived **only** from keyword text printed in this document (Battlecry / Deathrattle / Divine Shield / Taunt / Reborn / Rally / Start of Combat / At the end of your turn / Spellcraft / Avenge / Whenever-“After-”At the start of your turn → `TRIGGER_VISUAL`). `Activate (N)` and pure "When you sell this" triggers get **no** mechanic — matching the existing DB (e.g. `BG36_345 Suspicious Prisonguard`). `Dark Paradox`'s "Has +2/+2 for each Battlecry you've triggered" is deliberately **not** tagged `BATTLECRY` (passive counter, not a Battlecry) |
+| `cost` | `3` on every added row — the flat minion buy price (CLAUDE.md) and the convention of the 245 paste-derived rows; hearthstonejson reports `0` for BG minions and `extend_pool.py` inherited that, which is why the 18 older `auto_added` rows carry `0` |
+| `tribe_src` | `"log"` for log-derived tribes (261 rows), `"hearthstonejson"` for the 14 that came from the cache, `null` where the tribe is genuinely unknown (`Iron Groundskeeper`, `Holy Vanguard`, `Nadina the Red` — the log printed no `CARDRACE`). **`"paste"` is never used on a new row** |
+| `auto_added` | provenance marker on every added row, in the shape the 18 `extend_pool.py` rows established: `36.6.1 DB update (log-mined pool)` / `(hearthstonejson)` / `(patch article + carddef id check)` |
+
+Row order: added rows are inserted in the file's established `(tier, name)` order inside the sorted
+region (rows 0-244); the four pre-existing tier-change anomalies (`Cagey Conjurer`, `Fearless
+Foodie`, `Hoarding Hyena`, `Goldrinn, the Great Wolf`) and the legacy `extend_pool.py` tail are left
+exactly where they were, so the file still has only its 15 original order breaks.
+
+### 3. Log vs. article — every disagreement, and how it was resolved
+
+1. **`Oozeling Gladiator` (§5.1 "now an Aberration" vs §6 "Removed").** The log wins: `BG27_002` is
+   absent from the post-patch `pool_roster.json` and from every local Power.log, and
+   `meta/out_of_play.json` lists it as removed. **Nothing was changed**: the row stays at its
+   historical values and is **not** tagged `Aberration`; `playable.py` keeps it out of play.
+2. **`Faceless Manipulator` (`BG_EX1_564`), `Faceless Taverngoer` (id unknown), `Orgozoa, the
+   Tender` (`BG23_015`).** The article says "now Aberrations", but the log shows no post-patch
+   version of any of them: none is in the post-patch pool, a raw substring scan of all five session
+   logs (4.1 M lines) finds no entity of these names, and none of the three is in `minions.json`.
+   Per "the log wins", **no row was added and nothing was tagged `Aberration`** — there is no
+   Aberration version of these cards with its own card id to key on. Unresolved; needs card data
+   from another machine or the next patch's log.
+3. **`Dark Paradox`'s minion type (Appendix A.1).** The log settles it: the entity prints
+   `CARDRACE value=ALL`, `CLASS value=NEUTRAL`, `HAS_DARK_GIFT value=1`,
+   `BACON_EVOLUTION_CARD_ID value=134401` (the article's base id). `Dark Paradox` is an **All-type**
+   (Amalgam-class) minion, **not** an Aberration — its placement in the article's Aberration block
+   is positional only. All five rows are tagged `"All"` with `tribe_src: "log"`.
+4. **`Dark Paradox` id ↔ version pairing (Appendix A.6).** Resolved for two of five directly from
+   the log, and the resolution *confirms* the article's positional pairing: `BG36_360t3` prints
+   `TECH_LEVEL value=2` and carries `BACON_TRIPLE_UPGRADE_MINION_ID=134705`, the golden of 134704 =
+   article version 1 (tier 2, 2/4); `BG36_360t6` prints `TECH_LEVEL value=3` with golden 134711 =
+   134710 = article version 2 (tier 3, 2/2). The remaining three follow the same pairing
+   (`t5`→tier 4 2/6 Rally, `t4`→tier 5 8/4 Divine Shield, `t9`→tier 6 10/2 Deathrattle); those id
+   strings come from §4.2's image-order note and were existence-checked in the client's carddef
+   assets. On-board stats in the log are buffed/Dark-Gift-modified (the `t6` entity shows 10/2), so
+   stats are taken from the article, never from the board.
+   **Two independent confirmations arrived while this update was being written.** (a) The entity's
+   own `FULL_ENTITY` definitions give base stats **2/4 (tier 2)** and **2/2 (tier 3)** — exactly the
+   article's version 1 and version 2; the 10/10 later seen on a `t6` copy is that card's own
+   "Has +2/+2 for each Battlecry you've triggered this game" ability (4 Battlecries = +8/+8).
+   (b) The sibling workstream's `pool_roster.py` change (commit `dc493d4`, its `created` section)
+   independently mines `BG36_360t3 = tier 2 2/4`, `BG36_360t6 = tier 3 2/2` and
+   `BGFYM_011 Y'Shaarj = tier 3 1/1 ABERRATION` — agreeing with every row written here.
+5. **`Geomagus Roogug`** (`BG28_583`): the article calls it returning, but it is **absent from the
+   post-patch pool dump** while 22 other Quilboar are present — and it *was* a pool minion
+   (`IS_BACON_POOL_MINION value=1`, tier 4, 4/6, Quilboar) in the three pre-patch sessions. Added
+   (only the patch notes can establish pool membership; a roster proves presence, not absence), with
+   tier/stats/tribe from the pre-patch log block, which agrees with hearthstonejson. **Flagged: its
+   current tier/stats are not verified against the post-patch pool.**
+6. **`Auto Accelerator`** (`BG34_170`): same situation — the article says returning, the post-patch
+   pool dump has its three Volumizer tokens (`BG34_170t/t2/t3`) but not the base card. Added from
+   hearthstonejson (tier 3, 3/3, Mech), flagged the same way.
+7. **`Hammer of Twilight` (trinket, `BG36_MagicItem_403t`).** The article prints the name twice —
+   Lesser (cost 1, "Your minions have +1 Attack.") and Greater (cost 1, "Your minions have +2/+1.")
+   — and gives no trinket ids. The log resolves it: the entity carries `CREATOR_DBID value=116614`
+   (the Greater-slot offer; `116510` is the Lesser one — cross-checked against the DB's own
+   known-`Lesser`/`Greater` rows) and `TAG_SCRIPT_DATA_NUM_1=2`, `TAG_SCRIPT_DATA_NUM_2=1`, i.e. the
+   Greater "+2/+1". Transcribed as the **Greater** row (`type: "Greater"`, cost 1).
+8. **The article's `Magnzetization` typo (Appendix A.5).** Transcribed as printed. If a later pass
+   decides to "fix" it, it must change the DB row and this document together.
+9. **Article group placement vs. the roster.** The article never says which new card is an
+   Aberration (§4); the roster tags 24 of the 28 names in that block `ABERRATION`. `Sha of Fear` is
+   not in the roster, so its `tribe` is left **null** (unknown) rather than inferred from its
+   position in the article.
+10. **Roster size.** The brief expected "181 minions with 20 Aberration cards"; the committed roster
+    actually carries **24** `ABERRATION` cards. All 24 are in `minions.json`.
+
+### 4. Still unresolved
+
+- **Four new minions are not in the DB**: `C'Thun` (tier 3, 1/1), `Sha of Fear` (tier 7, 9/12),
+  `Greedy Conniver` (tier 3, 7/7), `Sewer Escapee` (tier 4, 4/5). All four are known only from this
+  document: no card id exists for them anywhere on this machine — not in the post-patch pool, not in
+  any of the five Power.logs (verified by substring scan), not in hearthstonejson's
+  `.cards_full.json`, and the client ships no dbfid→card-id map (`carddef*.unity3d` GameObjects carry
+  ids only; there is no `cardxml`/`CardDefs.xml` in the install). An **id-less row is not an
+  option**: `value._buy_prices` indexes the minion DB by id and `None + "_G"` raises
+  `TypeError` (109 test errors when such rows were written). Add only their text/tier/stats when an
+  id is obtainable.
+- **Three of the four "now Aberration" cards** (`Faceless Manipulator`, `Faceless Taverngoer`,
+  `Orgozoa, the Tender`) are unverified — see disagreement 2.
+- **`Dark Paradox` carries five rows under one name.** `patch_notes.py`'s name index aliases
+  duplicates (the same hazard the trinket homonyms have), so a future name-keyed patch update must
+  be disambiguated by tier.
+- **14 new trinkets have no `type`** and no hsreplay history. The log's `CREATOR_DBID` looks like it
+  encodes the offer tier (`116510` = Lesser, `116614` = Greater across every known row, and all 14
+  carry `116614`), and `BG36_MagicItem_424 Rascal Sticker` carries `116510`, matching its Lesser row
+  in §9.1 — but that mapping is documented nowhere in the repo, so it is recorded here as a **lead**
+  rather than written into the DB.
+- **`meta/trinket_effects.json` was not touched** (out of this update's file scope). Its
+  bidirectional coverage gate (`tests/test_choices.py::TestCuratedTrinkets::test_all_trinkets_annotated`)
+  requires one curated read per trinket id, so after this update that test reports the 19 new ids as
+  unannotated: `BG30_MagicItem_541`, `BG30_MagicItem_924t`, `BG30_MagicItem_942`,
+  `BG30_MagicItem_952`, `BG32_MagicItem_284`, `BG32_MagicItem_362t`, `BG32_MagicItem_808t`,
+  `BG32_MagicItem_888`, `BG35_MagicItem_701`, `BG35_MagicItem_930`, `BG35_MagicItem_931t`,
+  `BG36_MagicItem_302t`, `BG36_MagicItem_362`, `BG36_MagicItem_403t`, `BG36_MagicItem_424`,
+  `BG36_MagicItem_600`, `BG36_MagicItem_610`, `BG36_MagicItem_611`, `BG36_MagicItem_830`. Closing it
+  means a card-text curation pass (text for 14 of them is now in `trinkets.json`; the other 5 are in
+  §9), exactly what `refresh_trinkets.py` reports as `NEED CURATION` and refuses to invent.
+- **`Geomagus Roogug` / `Auto Accelerator`** tier and stats are pre-patch values pending a
+  post-patch observation (disagreements 5 and 6).
+
+### 5. Verification run (2026-09-22)
+
+```
+python check_meta.py                 -> exit 0: meta OK: 24 comps, 89 cards, 326 minions
+python -m unittest discover -s tests -> Ran 620 tests, FAILED (failures=1)
+                                        test_choices.TestCuratedTrinkets.test_all_trinkets_annotated
+                                        (the trinket_effects.json gate above; the trinket-coverage
+                                         failure this update was for is fixed:
+                                         tests.test_trinket_meta = 4 tests, OK)
+python playable.py                   -> validation: 0 conflict(s)
+python pool_roster.py                -> dry run, no writes, exit 0
+```
+
+`pool_roster.py` was edited **concurrently by another workstream while this update was being made**
+(its `scan_log` gained a `BACON_TRIPLE_UPGRADE_MINION_ID` admission signal for `Dark Paradox`).
+The first dry run — against the script as committed — reported the saved roster as identical
+(+0 / -0 / ~0); the final dry run, against the new admission logic, additionally lists
+`+ BG36_360t6 Dark Paradox (tier 3)`, `+ BGFYM_002t Aberrant Tentacle (tier 1)`,
+`+ BGFYM_011 Y'Shaarj (tier 3)`, `+ BG_BOT_312t Microbot (tier 1)`. Both runs are clean dry runs
+(no write); the second one **corroborates** this update's `Y'Shaarj` (tier 3) and
+`BG36_360t6 Dark Paradox` (tier 3) rows. `meta/pool_roster.json` itself was not rewritten by this
+update.
