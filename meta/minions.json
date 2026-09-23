@@ -1242,6 +1242,19 @@
     "tribe_src": "article"
   },
   {
+    "tier": 3,
+    "id": "BG36_369",
+    "name": "Greedy Conniver",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 7,
+    "health": 7,
+    "mechanics": [],
+    "text": "If this is Golden when you sell it, Discover a Tier 7 minion.",
+    "auto_added": "36.6.1 DB update (patch article + log entityName/cardId)",
+    "tribe_src": "article"
+  },
+  {
     "tier": 4,
     "id": "BG36_508",
     "name": "Cagey Conjurer",

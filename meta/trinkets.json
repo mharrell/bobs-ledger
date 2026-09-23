@@ -3185,5 +3185,15 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Lesser"
+ },
+ {
+  "id": "BG30_MagicItem_701",
+  "name": "The Eye of Sargeras",
+  "description": "Every fourth card you buy costs Health instead of Gold. (3 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Great trinket when committed to Shop Buff Demons. Also want a [[Brann Bronzebeard||96786]] and [[Soul Rewinder||100949]] in your setup.",
+  "type": "Greater"
  }
 ]

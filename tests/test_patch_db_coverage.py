@@ -32,7 +32,7 @@ EXPECTED_COUNTS = {
     "new_heroes": 2,
 }
 
-ACCEPTED_GAP_NAMES = {"Sha of Fear", "Greedy Conniver", "Sewer Escapee"}
+ACCEPTED_GAP_NAMES = {"Sha of Fear", "Sewer Escapee"}
 
 
 class TestPatchDbCoverage(unittest.TestCase):
@@ -80,6 +80,21 @@ class TestPatchDbCoverage(unittest.TestCase):
         self.assertTrue(cthun, "the resolution must be recorded, not dropped")
         self.assertEqual(cthun[0].get("id"), "BGFYM_000")
         self.assertTrue(cthun[0].get("resolution"))
+
+    def test_greedy_conniver_closed_by_a_live_offer(self):
+        """The second gap to close, and the reason the pre-flight is worth
+        running: the card was offered in a live game on 2026-09-23 and the log
+        printed its id (`BG36_369`)."""
+        import meta
+        doc = meta._raw("patch_gaps.json") or {}
+        names = {g.get("name") for g in doc.get("expected_missing") or []}
+        self.assertNotIn("Greedy Conniver", names)
+        ids = {m["id"] for m in meta.minions()}
+        self.assertIn("BG36_369", ids)
+        resolved = [r for r in (doc.get("resolved") or [])
+                    if r.get("name") == "Greedy Conniver"]
+        self.assertTrue(resolved)
+        self.assertEqual(resolved[0].get("id"), "BG36_369")
 
     def test_seafood_stew_is_now_in_the_db(self):
         """The one returning spell that WAS missing (no id in any log).
