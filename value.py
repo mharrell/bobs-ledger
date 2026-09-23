@@ -52,6 +52,17 @@ W_SHOP_GOLDEN = 25.0  # a GOLDEN shop minion (player-confirmed 2026-09-08): stil
                       # reward outranks a missing comp core (+14). Matches the
                       # hand plan's play-now golden score (hand_plan +25.0).
 W_SPELL_FUEL = 0.3  # per stat of marginal engine growth one spell cast buys
+W_DISCARD_FUEL = 0.3  # per stat of marginal engine growth one more discard per
+                      # turn buys — the discard mirror of W_SPELL_FUEL (patch
+                      # 36.6.1: an Activate-discard outlet is worth the engine
+                      # growth it turns on, exactly as a spell cast is for the
+                      # cast-spell engines). The discard RATE itself is modelled,
+                      # not measured: analysis/discard_mechanic.md.
+W_DEITY_COMBAT = 0.25  # per stat of the Deity's realised pool. The Deity joins
+                       # ONE combat and leaves, so its stats are one-fight power
+                       # — worth less than a persistent board stat (player rule
+                       # 2026-09-11). Deliberately under W_DISCARD_FUEL so a
+                       # combat-only stat can never outrank a permanent one.
 W_OFF_COMP = -2.0   # shop card whose tribe fights a COMMITTED comp (damping)
 W_MULT = 4.0        # multiplier glue (Balinda/Drakkari-class): worth what it
                     # amplifies, not its stats — never "safest to sell" glue
@@ -467,6 +478,146 @@ def _spell_score(spell, board_minions, names, scenario=None):
     fuel = _spell_fuel_bonus(board_minions, names, scenario,
                              extra_casts=_extra_casts(spell))
     return points / max(cost, 1) + W_SPELL_FUEL * fuel
+
+
+# --- Discard / Deity (patch 36.6.1, analysis/discard_mechanic.md) -----------
+# An OUTLET is a card that SPENDS a discard. The printed shape is
+# "Activate (N): Discard a card ..." (Brain Rotter, Abyssal Envoy, Mangled
+# Bandit, Mindbending Recruiter, N'raqi Frostcaller). The check below reads the
+# card's own text rather than an id list — the project's card-text discipline —
+# but it is deliberately NARROW, because several 36.6.1 cards mention discard
+# without being outlets:
+#   "If you discard this, cast it twice."          -> the spell WANTS to be
+#                                                     discarded (fuel, not an
+#                                                     outlet)
+#   "Whenever you discard a card, give ..."        -> a payoff
+#   "discard your 3 left-most Tavern spells"       -> discards its OWN, at end
+#                                                     of turn, with no outlet
+#                                                     needed
+# so a bare "discard" in the text would count all of them as outlets.
+_DISCARD_OUTLET_RE = re.compile(r"activate \(\d+\):\s*discard")
+
+# The per-turn discard COUNT is bounded, and the cap in this model is stated
+# rather than left implicit. Evidence that the game caps discard triggers at all:
+# 36.6.1's Voidpriest Cloner prints "Whenever you discard a card, Pass a copy of
+# it. **(2 times per turn.)**" — the parenthetical repeat-cap the game uses (that
+# card is DUOS-ONLY, id 134693, and is deliberately NOT in the solo
+# meta/minions.json: see analysis/discard_mechanic.md). No published number
+# exists for the Activate outlets, so the ceiling used here is the one a solo
+# board can actually produce: every outlet occupies a slot and a warband holds 7
+# minions, i.e. at most one discard per slot per turn. Without a ceiling the
+# count would grow linearly with outlets forever; with it, `_discard_scenario`
+# can never model a rate the board cannot reach.
+DISCARD_RATE_CAP = 7
+
+
+def _clamp_discards(n):
+    """Bound a per-turn discard count (DISCARD_RATE_CAP)."""
+    if not DISCARD_RATE_CAP:
+        return n
+    return min(max(n, 0), DISCARD_RATE_CAP)
+
+
+def _is_discard_outlet(card):
+    """True if the card's OWN Activate power spends a discard."""
+    if not card:
+        return False
+    return bool(_DISCARD_OUTLET_RE.search(_flat_text(card).lower()))
+
+
+def _discard_outlets(board_minions, card_db=None):
+    """The board's discard outlets, in board order (card ids).
+
+    Each Activate power is usable once per turn, so the NUMBER of outlets is
+    this turn's discard count — the model behind `_discard_scenario`.
+    """
+    db = _load_card_db() if card_db is None else card_db
+    return [m["card"] for m in (board_minions or [])
+            if _is_discard_outlet(db.get(m.get("card")))]
+
+
+def _discard_scenario(board_minions, scenario=None):
+    """Per-turn trigger counts for the discard engine.
+
+    `discard` = how many cards are discarded this turn. It is NOT measurable
+    from the game's logs — no discard event is written (analysis/
+    discard_mechanic.md) — so it is derived from the BOARD: one discard per
+    Activate-discard outlet, because an Activate power is usable once per turn.
+    An explicit scenario["discard"] wins, and is the only way to count discard
+    sources the board snapshot cannot show (Drest'agath's hero power, Kith'ix's
+    Dark Ritual, a held pair-generator card, a trinket like Willbreaker
+    Sticker).
+
+    Either way the result is CLAMPED to DISCARD_RATE_CAP: the per-turn discard
+    count is a bounded quantity (the game prints per-turn trigger caps — see the
+    constant), never "one more per outlet, forever".
+    """
+    sc = dict(scenario or _DEFAULT_SCENARIO)
+    if not sc.get("discard"):
+        sc["discard"] = len(_discard_outlets(board_minions))
+    sc["discard"] = _clamp_discards(sc["discard"])
+    return sc
+
+
+def _sim_points(result):
+    """Board-stat-equivalent points of a simulator result.
+
+    The persistent `gain`, plus the Deity's realised pool discounted to
+    W_DEITY_COMBAT: the Deity's stats pay out inside ONE combat (C'Thun splits
+    them across your other minions) and are gone at its end, so they are combat
+    power, not growth (player rule 2026-09-11). Adding them at full weight is
+    exactly the "as if they were always online" error this term exists to
+    prevent.
+    """
+    g = result.get("gain") or {}
+    pts = (g.get("atk") or 0) + (g.get("hp") or 0)
+    r = ((result.get("deity") or {}).get("realised")) or {}
+    return pts + W_DEITY_COMBAT * ((r.get("atk") or 0) + (r.get("hp") or 0))
+
+
+def _discard_fuel_bonus(board_minions, names, scenario=None, extra_discards=0):
+    """Marginal growth one extra discard per turn buys on the board's discard engine.
+
+    The mirror of `_spell_fuel_bonus`: for each running engine whose trigger is
+    `discard`, run the simulator at the board-derived per-turn discard count and
+    at +1; the delta is what one more discard — i.e. one more outlet — is worth
+    as engine fuel. Returns the best single-engine delta (one outlet is one
+    outlet; outlets don't stack into a single card). Unlike a spell cast, the
+    trigger count comes from the BOARD (the outlets), not from the trigger-count
+    corpus: nothing in a log records a discard (analysis/discard_mechanic.md).
+
+    `extra_discards`: a card whose own power discards several cards at once
+    (Mysterious K'Thir's three Tavern spells) adds its k to the +1. The engine
+    model runs K'Thir's own discard inside the engine (count_from "turn"), so
+    callers normally leave this at 0.
+
+    The +1 probe is clamped like the base count: a turn already at
+    DISCARD_RATE_CAP cannot discard more, so one more outlet is worth nothing
+    new (the cap is a per-turn ceiling on discards, not a count of outlets).
+    """
+    if not board_minions:
+        return 0.0
+    sc = _discard_scenario(board_minions, scenario)
+    n = sc.get("discard", 0)
+    outlets = bool(_discard_outlets(board_minions))
+    best = 0.0
+    for slug, engine in _load_engines().items():
+        if slug.startswith("_") or engine.get("trigger") != "discard":
+            continue
+        # The board has to be in the discard business at all: an outlet, or one
+        # of the engine's pieces (the discard payoffs and the trinkets that
+        # piggyback on discards). This is the `_spell_fuel_bonus` core-piece
+        # gate, widened by the outlets.
+        if not (outlets or any(_has_card(board_minions, s["source"], names)
+                               for s in engine["chain"])):
+            continue
+        enriched = [dict(m, name=names.get(m["card"], "")) for m in board_minions]
+        base = simulate_growth(enriched, dict(sc, discard=n), engine)
+        plus = simulate_growth(
+            enriched,
+            dict(sc, discard=_clamp_discards(n + 1 + extra_discards)), engine)
+        best = max(best, _sim_points(plus) - _sim_points(base))
+    return best
 
 
 def _detect_role(minion, card):
@@ -903,6 +1054,13 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
         comp = comp_target(board_minions or [], comps, recent_cards=recent_cards)
     engine_bonus = _engine_growth_bonus(board_minions, names) if board_minions else {}
     board_ids = {m["card"] for m in (board_minions or [])}
+    # Discard fuel (patch 36.6.1) — the mirror of the tavern-spell path just
+    # below: a cast spell is one trigger for the cast-spell engines, and an
+    # Activate-discard outlet is one trigger per turn for the discard engine.
+    # Computed lazily (it re-runs the simulator), and only for a shop card that
+    # actually carries that power — a card that merely mentions discard gets
+    # nothing (value._is_discard_outlet).
+    discard_fuel = None
     # A hand-charge kit wants its deployer back (2026-09-10: the Forager
     # died, the chargers kept growing in hand, and no shop advice ever
     # pointed at re-buying the engine).
@@ -940,6 +1098,13 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
             # ...and playing it pays the triple reward NOW — super-duper high
             # value (player rule), above a missing comp core (+14).
             val += W_SHOP_GOLDEN
+        if _is_discard_outlet(card):
+            # This card turns the discard engine ON (or adds one more discard a
+            # turn to it): worth the engine's marginal per-discard growth, the
+            # same way a bought spell is worth its cast-engine fuel.
+            if discard_fuel is None:
+                discard_fuel = _discard_fuel_bonus(board_minions, names, scenario)
+            val += W_DISCARD_FUEL * discard_fuel
         # Committed mode (2026-09-07, user principle: "once committed to a
         # comp, the calculation changes — we're maximizing this comp, not
         # just purchasing the best card from whatever is available"): the
@@ -2915,7 +3080,24 @@ _DEFAULT_SCENARIO = {
     "play_naga": 3,
     "deathrattle": 4,
     "play_tier3_or_lower": 4,
+    # No discard count can be assumed: 0 means "derive it from the board's
+    # Activate-discard outlets" (_discard_scenario), the one rate this model
+    # cannot take from the logs.
+    "discard": 0,
 }
+
+
+def _scenario_for_engine(engine, board_minions, names):
+    """Default per-turn trigger counts for ONE engine when the caller passes none.
+
+    Every other engine's trigger is countable from the action/tag stream, so the
+    tunable `_DEFAULT_SCENARIO` is the fallback. The discard engine's is not:
+    nothing in a Power.log records a discard, so its count comes from the board
+    (analysis/discard_mechanic.md).
+    """
+    if engine.get("trigger") == "discard":
+        return _discard_scenario(board_minions)
+    return {engine["trigger"]: _DEFAULT_SCENARIO.get(engine["trigger"], 3)}
 
 
 @functools.lru_cache(maxsize=1)
@@ -2995,12 +3177,16 @@ def _engine_growth_bonus(board_minions, names, scenario=None):
         core_steps = [s for s in engine["chain"] if s.get("counts_as")] or engine["chain"]
         if not any(_has_card(board_minions, s["source"], names) for s in core_steps):
             continue
-        sc = scenario or {engine["trigger"]: _DEFAULT_SCENARIO.get(engine["trigger"], 3)}
+        sc = scenario or _scenario_for_engine(engine, board_minions, names)
         # simulate_growth matches engine pieces by name; board_state minions only
         # carry card IDs, so enrich the board with names from the BG pool.
         enriched = [dict(m, name=names.get(m["card"], "")) for m in board_minions]
         result = simulate_growth(enriched, sc, engine)
-        total = result["gain"]["atk"] + result["gain"]["hp"]
+        # Engine growth, plus the Deity's per-combat pool discounted as combat
+        # power (`_sim_points`): a discard engine's payoff lands on the Deity
+        # first, and crediting it at full weight would price one-fight power as
+        # persistent growth.
+        total = _sim_points(result)
         if total <= 0:
             continue
         factor = 1.0
