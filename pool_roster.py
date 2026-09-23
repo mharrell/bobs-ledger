@@ -66,6 +66,7 @@ NAME_RE = re.compile(
 SEED_RE = re.compile(r"GAME_SEED value=(\d+)")
 CARDID_RE = re.compile(r"CardID=([A-Za-z0-9_]+)")
 CARD_TYPE_RE = re.compile(r"tag=CARDTYPE value=MINION")
+TRIPLE_ID_RE = re.compile(r"tag=BACON_TRIPLE_UPGRADE_MINION_ID value=\d+")
 RACE_RE = re.compile(r"tag=CARDRACE value=([A-Z]+)")
 _TAG_RES = {
     "tier": re.compile(r"tag=TECH_LEVEL value=(-?\d+)"),
@@ -90,6 +91,7 @@ def scan_log(path):
     """
     names = {}
     cards = {}
+    created = {}
     with open(path, encoding="utf-8", errors="replace") as f:
         lines = f.readlines()
     games = sum(1 for line in lines
@@ -127,7 +129,7 @@ def scan_log(path):
 
         for cid, text in segments:
             body = "\n".join(text)
-            if cid is None or "BACON_POOL_MINION" not in body:
+            if cid is None:
                 continue
             # IS_BACON_POOL_MINION also rides on non-minion entities that the
             # pool machinery creates (tokens, enchantments, spell entities:
@@ -136,18 +138,38 @@ def scan_log(path):
             # until CARDTYPE was required.
             if not CARD_TYPE_RE.search(body):
                 continue
-            if cid in cards:
+            # Two admission signals, recorded SEPARATELY on purpose.
+            #
+            # `IS_BACON_POOL_MINION` is the pool. It is the authoritative answer
+            # to "what is in the shop this patch" and it is what `cards` holds.
+            #
+            # `BACON_TRIPLE_UPGRADE_MINION_ID` (a minion's golden/triple-reward
+            # id) catches a real buyable card the pool tag MISSES: 36.6.1's Dark
+            # Paradox never carries the pool tag, because the game picks one of
+            # its variants per game and materialises it through an evolution
+            # creator (`CREATOR`, `AURA value=1`, `BACON_EVOLUTION_CARD_ID`).
+            # But the same tag also rides on summoned TOKENS (Beetle, Aberrant
+            # Tentacle, Microbot, Half-Shell), so a triple-only entity is NOT
+            # proof of a pool minion and must not be mixed into `cards` — that
+            # is how the roster grew tier-0 "minions" the first time round. It
+            # goes in `created`, which the coach reads as "known card, not
+            # necessarily buyable", and which a human reconciles.
+            if cid in cards or cid in created:
                 continue  # first (unbuffed) definition wins
+            pooled = "BACON_POOL_MINION" in body
+            if not pooled and not TRIPLE_ID_RE.search(body):
+                continue
             races = [r for r in RACE_RE.findall(body) if r in ALL_TRIBES]
-            card = {"races": sorted(set(races))}
+            card = {"races": sorted(set(races)),
+                    "pool_src": "pool" if pooled else "triple"}
             for key, rx in _TAG_RES.items():
                 m = rx.search(body)
                 if m:
                     card[key] = int(m.group(1))
-            cards[cid] = card
+            (cards if pooled else created)[cid] = card
         i = j
 
-    return {"games": games, "cards": cards, "names": names}
+    return {"games": games, "cards": cards, "created": created, "names": names}
 
 
 def load_sessions(log_dir=DEFAULT_LOG_DIR):
@@ -268,8 +290,19 @@ def enrich_from_meta(cards, meta_path=None):
 
 
 def build_roster(epoch, patch=None):
-    """Merge epoch sessions into the roster document."""
+    """Merge epoch sessions into the roster document.
+
+    Two card sets come out, deliberately unmixed (see `scan_log`):
+
+    - `cards` — the POOL: what the game put in the shop this patch.
+    - `created` — minions the game materialised through a creator/evolution
+      that the pool tag misses. It contains real cards Dark Paradox-style AND
+      summoned tokens, so it is a lead list for a human, never a pool.
+
+    Cards that are already in `cards` are never re-listed in `created`.
+    """
     cards = {}
+    created = {}
     names = {}
     for s in epoch:
         names.update({k: v for k, v in s["scan"]["names"].items()
@@ -278,10 +311,19 @@ def build_roster(epoch, patch=None):
             if cid in cards:
                 continue
             cards[cid] = card
+        for cid, card in s["scan"].get("created", {}).items():
+            if cid in created or cid in cards:
+                continue
+            created[cid] = card
     for cid, card in cards.items():
         card["name"] = names.get(cid)
         card["tribe"] = tribes_from_races(card.get("races") or [])
         card["tribe_src"] = "log" if card["tribe"] else None
+    for cid, card in created.items():
+        # Names/tier only. No tribe resolution and no meta enrichment: these
+        # are a lead list, and dressing them up as curated cards is exactly how
+        # a token gets mistaken for a pool minion.
+        card["name"] = names.get(cid)
     widened = enrich_from_meta(cards)
     return {
         "patch": patch,
@@ -291,6 +333,7 @@ def build_roster(epoch, patch=None):
         "tribes_present": sorted(pure_tribes(cards)),
         "tribes_widened_from_meta": widened,
         "cards": dict(sorted(cards.items())),
+        "created": dict(sorted(created.items())),
     }
 
 
@@ -388,6 +431,12 @@ def main():
     print("  tribes seen in pool: " + ", ".join(roster["tribes_present"]))
     untribed = [c for c, v in roster["cards"].items() if not v.get("tribe")]
     print(f"  untribed (neutral): {len(untribed)}")
+    created = roster.get("created") or {}
+    if created:
+        print(f"  created by a creator/evolution (pool tag MISSED — leads, "
+              f"not pool members): {len(created)}")
+        for cid, c in list(created.items())[:12]:
+            print(f"      {cid} {c.get('name') or '?'} (tier {c.get('tier')})")
     noname = [c for c, v in roster["cards"].items() if not v.get("name")]
     if noname:
         print(f"  WARN {len(noname)} card(s) with no name observed: "
