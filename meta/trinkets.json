@@ -120,25 +120,6 @@
   "guide": "Generally decent option to pick."
  },
  {
-  "id": "BG30_MagicItem_420t",
-  "name": "Book of Medivh",
-  "description": "Discover 2 Tavern spells. At the start of each turn, Discover 2 more.",
-  "pick_rate": 18.8,
-  "avg_placement": 4.36,
-  "placement_distribution": {
-   "1": 14.82,
-   "2": 12.77,
-   "3": 11.95,
-   "4": 12.24,
-   "5": 12.63,
-   "6": 12.5,
-   "7": 12.3,
-   "8": 10.77
-  },
-  "guide": null,
-  "type": "Greater"
- },
- {
   "id": "BG30_MagicItem_422",
   "name": "Lorewalker Scroll",
   "description": "Whenever you cast a spell on a minion, give it +4/+4.",
@@ -2806,9 +2787,69 @@
   "type": "Lesser"
  },
  {
+  "id": "BG36_MagicItem_400",
+  "name": "Corrupted Coin Portrait",
+  "description": "Get 2 Corrupted Coins.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_403",
+  "name": "Hammer of Twilight",
+  "description": "Your minions have +2/+1. (Improved by each card you've discarded this game!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG36_MagicItem_403t",
   "name": "Hammer of Twilight",
   "description": "Your minions have +2/+1. (Improved by each card you've discarded this game!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_404t",
+  "name": "Corrupted Baton",
+  "description": "After you cast a Tavern spell, give your Deity +10/+10.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_406",
+  "name": "Shath'Yar Shrine",
+  "description": "After you discard a spell, get a random Aberration.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_417",
+  "name": "Makeshift Master",
+  "description": "Spellcraft: Choose a minion. After it gains stats outside combat this turn, your Deity also gains them.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_418",
+  "name": "Tome of the Ancients",
+  "description": "After you discard 3 cards, your Tavern spells give an extra +1/+1 this game. (3 left!)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -2834,6 +2875,16 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_609",
+  "name": "Trickster's Sleeve",
+  "description": "After you buy a minion, gain 1 Gold. (Then swap to Tavern spell!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
  },
  {
   "id": "BG36_MagicItem_610",
@@ -2984,5 +3035,15 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_852",
+  "name": "Willbreaker Sticker",
+  "description": "Get 2 random Tavern spells. When you play one, discard the other. At the start of your turn, repeat this.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
  }
 ]

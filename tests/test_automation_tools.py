@@ -181,5 +181,63 @@ class TestPatchDay(unittest.TestCase):
             os.remove(path)
 
 
+REAL_LOG = (r"C:\Program Files (x86)\Hearthstone\Logs"
+            r"\Hearthstone_2026_09_23\Power.log")
+
+
+@unittest.skipUnless(os.path.exists(REAL_LOG), "no recorded session on disk")
+class TestAgainstARealSession(unittest.TestCase):
+    """The bugs a test drive found in minutes, pinned so they stay fixed.
+
+    Every one of these failed the first time a tool met real input: `stats`
+    reported `hp: None` for every turn, and `board` returned zero rows because
+    `GameState.board` is a METHOD taking the friendly player and returning a
+    (friendly, opponents) tuple. Synthetic fixtures would not have caught any of
+    them, which is the argument for driving the tools on a real session.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.sess = logquery.Session(REAL_LOG)
+
+    def _args(self, **kw):
+        return type("A", (), {"game": kw.get("game"), "turn": kw.get("turn"),
+                              "tag": None, "top": 50})()
+
+    def test_games_reports_placements_and_heroes(self):
+        rows = logquery.q_games(self.sess, self._args())
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(all(r["hero"] for r in rows))
+        self.assertTrue(all(r["place"] for r in rows))
+
+    def test_stats_reports_real_hp_not_none(self):
+        rows = logquery.q_stats(self.sess, self._args(game=1))
+        self.assertTrue(rows, "hero stat series must not be empty")
+        self.assertTrue(any(r["hp"] is not None for r in rows),
+                        "base health comes from the FULL_ENTITY block; a regex "
+                        "over cardId-tagged writes misses it entirely")
+        self.assertTrue(any(r["armor"] is not None for r in rows))
+
+    def test_board_returns_minion_dicts(self):
+        rows = logquery.q_board(self.sess, self._args(game=2, turn=13))
+        self.assertTrue(rows, "the board query must not return an empty list")
+        for r in rows:
+            self.assertIsInstance(r, dict)
+            self.assertIn("card", r)
+            self.assertIsNotNone(r.get("atk"))
+
+    def test_board_without_a_turn_uses_the_final_board(self):
+        self.assertTrue(logquery.q_board(self.sess, self._args(game=2)))
+
+    def test_show_moments_slices_only_the_requested_phases(self):
+        text = ("header\nt5  tier 2  gold 6  board 2\n     coach: A\n"
+                "t6  tier 2  gold 6  board 2\n     coach: B\n"
+                "t7  (no shop phase — transition/death turn)\n")
+        got = review_kit.show_moments(text, [6])
+        self.assertIn("coach: B", got)
+        self.assertNotIn("coach: A", got)
+        self.assertIn("no such phase", review_kit.show_moments(text, [99]))
+
+
 if __name__ == "__main__":
     unittest.main()

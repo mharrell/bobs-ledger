@@ -188,15 +188,6 @@
   },
   "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
  },
- "BG30_MagicItem_420t": {
-  "base_value": 14,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
- },
  "BG30_MagicItem_924": {
   "base_value": 14,
   "synergy": {
@@ -1732,6 +1723,15 @@
   },
   "note": "A free Refresh every time you play an Elemental (Recycling Sticker) — an APM/economy enabler, priced against Gold-plated Compass (5 free Refreshes + a golden, 12). Grows with Elemental throughput, so it is a build-around, not a flat buff."
  },
+ "BG36_MagicItem_403": {
+  "base_value": 16,
+  "synergy": {
+   "keywords": [
+    "discard"
+   ]
+  },
+  "note": "Your minions have +2/+1, improved by every card discarded this game (Hammer of Twilight, Greater). Board-wide: on the spell-point scale (1 stat point = 1 pt) a 6-minion board is ~18 and grows with the discard count, discounted to 16 because the buff needs a wide board to pay off. First entry to use the 36.6.1 `discard` keyword — the Aberration tribe's theme."
+ },
  "BG36_MagicItem_403t": {
   "base_value": 16,
   "synergy": {
@@ -1774,5 +1774,72 @@
   "base_value": 10,
   "synergy": {},
   "note": "Get a Menagerie Tableware, and another every turn (Tableware Portrait) — a recurring minion generator priced with its peers Sellemental Portrait (10) and Baller Portrait (8). No keyword: the value is the body per turn, and a Menagerie payoff needs the board the trinket does not itself supply."
+ },
+ "BG36_MagicItem_400": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "economy",
+    "discard"
+   ]
+  },
+  "note": "Get 2 Corrupted Coins (Corrupted Coin Portrait, Lesser). Two 2-cost spells = 4 gold of value at 2 pts/gold = 8. Keyword `discard` because each Coin's better half is its discard line (+2 maximum Gold), so the portrait is fuel for a discard outlet too."
+ },
+ "BG36_MagicItem_404t": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "After you cast a Tavern spell, give your Deity +10/+10 (Corrupted Baton, Greater; the Lesser is +4/+4). Priced as spell-fuelled DEITY POOL, not board stats: the pool only pays out when the Deity awakens (three Aberration deaths, 50/50 which head, per combat), so it is discounted well below what the raw +10/+10 per cast would be on a board."
+ },
+ "BG36_MagicItem_406": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "discard"
+   ]
+  },
+  "note": "After you discard a spell, get a random Aberration (Shath'Yar Shrine, Greater). A recurring minion generator, priced with its peers (Sellemental Portrait 10) rather than higher, because the trigger is narrow: it needs a discarded SPELL specifically, not any card."
+ },
+ "BG36_MagicItem_417": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Spellcraft: choose a minion; after it gains stats outside combat this turn, your Deity also gains them (Makeshift Master, Greater). Doubles a stat pump into Deity fuel - the strongest of the Deity-fuel trinkets, but still pool value behind the awakening, so it sits under a permanent board buff."
+ },
+ "BG36_MagicItem_418": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "discard",
+    "spell"
+   ]
+  },
+  "note": "After you discard 3 cards, your Tavern spells give an extra +1/+1 this game (Tome of the Ancients, Greater). Priced with Quilligraphy Set (Avenge 3: Blood Gems +1 Health, 8) - the same shape: a one-time quest for a permanent, board-wide upgrade."
+ },
+ "BG36_MagicItem_609": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "economy",
+    "spell"
+   ]
+  },
+  "note": "After you buy a minion, gain 1 Gold, then it swaps to a Tavern spell (Trickster's Sleeve, Lesser). Priced against Rascal Sticker (1 Gold per Golden per turn, 12): per-BUY is worth at least as much early, but it is a one-shot ladder that ends in a single spell, not a recurring payout."
+ },
+ "BG36_MagicItem_852": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "spell",
+    "discard"
+   ]
+  },
+  "note": "Get 2 random Tavern spells; playing one discards the other; repeats every turn (Willbreaker Sticker, Lesser). Sits with Book of Medivh (2 Tavern spells a turn, 14) and adds a guaranteed discard every turn, so it is also the cheapest way to keep a discard outlet fed."
  }
 }
