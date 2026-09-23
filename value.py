@@ -1424,28 +1424,41 @@ def situation_line(analysis):
     # is not the lobby you're about to fight.
     lobby = analysis.get("opp_stats") or analysis.get("lobby_opp")
     cap = analysis.get("damage_cap")
+    mortality = None
     if health is not None and lobby:
         eff = health + armor
         if cap and eff <= cap:
             # This season caps per-combat damage (BACON_COMBAT_DAMAGE_CAP,
             # escalating by round) — "one bad fight can end it" is literally
             # true only at or under the cap.
-            bits.append(f"{eff} HP vs a {cap} damage cap — "
-                        "one bad fight ends it, buy board now")
+            mortality = (f"{eff} HP vs a {cap} damage cap — "
+                         "one bad fight ends it, buy board now")
         elif cap and eff <= 2 * cap and lobby >= 100:
-            bits.append(f"{eff} HP vs a {cap} damage cap — "
-                        "two lost fights end it")
+            mortality = (f"{eff} HP vs a {cap} damage cap — "
+                         "two lost fights end it")
         elif eff <= DYING_HEALTH:
-            bits.append(f"DYING at {health}"
-                        + (f"+{armor}" if armor else "") + " — buy board now")
+            mortality = (f"DYING at {health}"
+                         + (f"+{armor}" if armor else "") + " — buy board now")
         elif eff <= 30 and lobby >= 100:
             # Armor is just extra health (player-corrected 2026-09-08) — the
             # signal is TOTAL effective HP vs the lobby's damage output
             # (t7-t12 of the Guff game were all wins, then one fight ended
             # it).
-            bits.append(f"{eff} HP left — one bad fight can end it")
+            mortality = f"{eff} HP left — one bad fight can end it"
+        if mortality:
+            bits.append(mortality)
     if not bits:
         return None
+    if len(bits) <= 3:
+        return " · ".join(bits)
+    # The mortality read is the one clause that changes the decision ("one bad
+    # fight ends it, buy board now") and it is appended LAST, so plain bits[:3]
+    # dropped it exactly when the player was about to die. The 2026-09-22
+    # morning session rendered "Demons build — scaling · behind (100 vs ~166) ·
+    # lost 3 straight" at 7 HP with the cap clause landing 4th — and the player
+    # died in that fight. Reserve a slot for it instead of trusting the order.
+    if mortality and mortality in bits:
+        return " · ".join(bits[:2] + [mortality])
     return " · ".join(bits[:3])
 
 
