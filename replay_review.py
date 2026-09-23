@@ -55,6 +55,22 @@ def _advise_point(lines, phase_lo, phase_hi):
     was never actually shown live (the t9/t15 one-card rankings were this
     artifact). Fire once the offer set has been stable for a stretch, like the
     settled state the live loop actually advises on.
+
+    The coach is ALSO analyzed at each buy-phase boundary while feeding, exactly
+    as live.py does, and that is not cosmetic: `analyze()` is what assigns
+    hero_card/account/friendly (via _ensure_meta), and feed()'s NEXT_OPPONENT
+    pairing is gated on identifying the friendly player — so a single analyze()
+    at the END of the feed discards EVERY opponent pairing. Measured on the
+    2026-09-22 evening session: live cadence resolves the pairing
+    ({1: 5, 2: 5, 3: 2, 4: 6, 5: 8, 6: 1, ...}) while an end-only analyze
+    leaves it all-None, and because _opp_boards/_lobby_stats are pairing-keyed,
+    every forecast then falls through to the 9-game corpus baseline
+    (meta/turn_baseline.json). That is why the review docs' "your X vs their
+    ~163" lines repeated a constant across unrelated games: the harness was
+    quoting a degraded reconstruction, not the coach. Reconstructed in live
+    order, the 09-22 evening game 2 fatal turn flips from
+    "ahead on paper — 346 vs ~163" to "behind — 346 vs ~872, seen 1 round ago;
+    don't take this fight".
     """
     import live_coach
     coach = live_coach.LiveCoach()
@@ -68,6 +84,9 @@ def _advise_point(lines, phase_lo, phase_hi):
         line = lines[j]
         if j >= phase_lo and "tag=STEP value=MAIN_ACTION" in line:
             armed = True
+            # Live cadence: seed the meta at the phase boundary so the pairing
+            # guard can identify the friendly player for this phase's lines.
+            coach.analyze()
         coach.feed(line)
         if armed:
             offers = tuple(coach.tavern_offers())
