@@ -73,6 +73,41 @@ why is coachable; opaque advice teaches nothing):
    → stabilize first; with a strong board or a known winnable next fight
    (ghosting / scouted weaker opponent) → level anyway.
 
+## The FRAGILE band and damage memory (implemented 2026-09-23)
+
+Both of these are design candidates from `replay_review_2026-09-18.md` §3.1,
+where the survival gate was *satisfied* and the game was still lost:
+
+> t10, 14 HP, having bled 10 in two of the last three fights: the plan led with
+> board deploys then "LEVEL to tier 5 (standard curve) — 1 left". **The player
+> read it as the build being one level from taking off — and died 8th in the
+> fight, 10 gold unspent.** The DYING gate (≤12) correctly did not fire; the
+> forecast cap fires at ≤10; the flip ladder saw no loss streak (t9's won/tied
+> fight reset it) and no last-fight damage (0). Every gate legal.
+
+**(a) FRAGILE band (13–16 effective HP) — presentation, not a new veto.** The
+level still renders (deferring it might be the wrong call, and the gates above
+are legal by construction), but it renders *with* the fragility clause, and the
+band has its own line in the overlay: effective HP, the last hit taken, the hit
+size that kills, and the bleed over three fights. `value.fragility()` is the
+single source; the plan, the situation line ("direction, strength, danger") and
+the overlay's danger widget all read it. Below 12 HP the DYING gate still wins
+outright.
+
+**(b) Damage memory — a gate that a won round cannot reset.** The flip ladder
+now weighs the last **three fights' damage** (`damage_recent3`, sum ≥ 15 at tier
+3+) alongside the streak. A streak resets on a win or a tie; that is precisely
+how the 09-18 game slipped through — it had bled 10 in two of the last three
+fights and t9 was won, so every streak-based gate read clean. Three fights is
+longer than a streak, and the reason is stated on the plan ("bled 20 over the
+last 3 fights — buy stats first"), including on the roll line when there is
+nothing affordable to buy, which is the last place the reason could have
+appeared and the line the Buy box mirrors.
+
+The 18–30 HP range keeps the older "one/two bad fights" wording; the band's job
+is the window where the *cap* (15 this season) is bigger than the HP left and the
+gates are still all legal.
+
 ## Signals we have vs need
 
 Have: turn, gold, live level cost (button price, −1/turn waited), tier,
