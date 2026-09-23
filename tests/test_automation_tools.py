@@ -15,6 +15,7 @@ sys.path.insert(0, HERE)
 
 import doctor  # noqa: E402
 import logquery  # noqa: E402
+import patch_day  # noqa: E402
 import review_kit  # noqa: E402
 
 GS = "D 12:00:00 GameState.DebugPrintPower() -"
@@ -119,6 +120,65 @@ class TestDoctor(unittest.TestCase):
         level, detail = doctor.check_art()
         self.assertIn("aberration", detail)
         self.assertIn(level, (doctor.OK, doctor.WARN))
+
+
+class TestPatchDay(unittest.TestCase):
+    """The canaries' helpers. Each pins a failure this project actually had."""
+
+    def test_bg_overview_link_is_absolutised(self):
+        html = ('<a href="/en-us/news/24302091">full Battlegrounds overview</a>')
+        url, label = patch_day._bg_overview_url(html, "x")
+        self.assertEqual(url, "https://hearthstone.blizzard.com/en-us/news/24302091")
+        self.assertIn("overview", label.lower())
+
+    def test_absolute_overview_link_is_left_alone(self):
+        html = '<a href="https://example.com/a">Battlegrounds overview</a>'
+        url, _ = patch_day._bg_overview_url(html, "x")
+        self.assertEqual(url, "https://example.com/a")
+
+    def test_no_link_returns_none(self):
+        self.assertEqual(patch_day._bg_overview_url("<p>nothing</p>", "x"),
+                         (None, None))
+
+    def test_card_names_from_the_numbered_table(self):
+        text = ("| # | Name | Tier |\n|---|---|---|\n"
+                "| 1 | **Joyous** | 1 |\n| 2 | **Zoatroid** | 1 |\n")
+        names, method = patch_day._card_names(text)
+        self.assertEqual(names, ["Joyous", "Zoatroid"])
+        self.assertEqual(method, "numbered table")
+
+    def test_card_names_fall_back_to_bullets(self):
+        text = "- **Drest'agath**\n- **Kith'ix**\n"
+        names, method = patch_day._card_names(text)
+        self.assertEqual(names, ["Drest'agath", "Kith'ix"])
+        self.assertEqual(method, "bolded bullets")
+
+    def test_card_names_fall_back_to_tier_lines_then_report_nothing(self):
+        """The real overview is neither a table nor bolded bullets."""
+        names, method = patch_day._card_names("- [Tier 3] 1/1. Deity.\n")
+        self.assertEqual(len(names), 1)
+        self.assertIn("[Tier N] stat lines", method)
+        names, method = patch_day._card_names("<p>prose only</p>")
+        self.assertEqual(names, [])
+        self.assertEqual(method, "nothing matched")
+
+    def test_the_truncation_threshold_is_far_above_the_known_bug(self):
+        """The 2026-09-22 bug extracted 92 chars of a thousands-char section."""
+        self.assertGreater(patch_day.MIN_BG_CHARS, 92 * 2)
+
+    def test_report_can_be_written_and_names_its_next_steps(self):
+        result = {"date": "2026-09-22", "db_patch": "36.6.1",
+                  "patch": "36.6.1 Test", "url": "u", "overview": "o",
+                  "bg_chars": 1169, "card_names": 38,
+                  "canaries": [patch_day._canary("C1 bg section", "ok", "1169 chars")],
+                  "art": {"got": 1, "total": 1}}
+        path = patch_day._write_report(result)
+        try:
+            body = open(path, encoding="utf-8").read()
+            self.assertIn("**ok** C1 bg section", body)
+            self.assertIn("check_patch_db.py", body)
+        finally:
+            os.remove(path)
 
 
 if __name__ == "__main__":

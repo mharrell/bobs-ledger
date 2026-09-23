@@ -156,7 +156,32 @@ def _spell_names():
 
 
 def main():
+    """Entry point. `--summary` prints a <=8 line digest instead of the table.
+
+    Implemented by capturing this tool's own output and letting review_kit
+    reduce it, rather than by threading a flag through every print: the review
+    logic is the part that must not change, and this is a presentation concern.
+    The full text is still produced (and cached) — the point is that an agent
+    does not have to READ it.
+    """
     argv = sys.argv[1:]
+    if "--summary" not in argv:
+        return _run(argv)
+    import contextlib
+    import io
+    import review_kit
+    argv = [a for a in argv if a != "--summary"]
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc = _run(argv)
+    text = buf.getvalue()
+    if not text.strip():
+        return rc
+    print(review_kit.summarise_text(text))
+    return rc
+
+
+def _run(argv):
     at_spec = None
     at_value_idx = None
     if "--at" in argv:
