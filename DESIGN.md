@@ -238,11 +238,11 @@ Design, evidence and the remaining gaps: `analysis/pool_and_out_of_play.md`.
 |------|----------|
 | `comps.json` | 20 comps (tier, difficulty, core/addon cards, how-to-play, when-to-commit) |
 | `cards.json` | 89 curated cards (name, tier, tribe, atk/health) |
-| `trinkets.json` | 121 Lesser Trinkets (pick rate, avg placement, distribution, guide) |
+| `trinkets.json` | 212 trinket rows (Lesser/Greater/variants; pick rate, avg placement, distribution, guide) |
 | `dark_gifts.json` | 43 dark gifts (name, description) |
-| `heroes.json` | 115 heroes (hero power, pick rate) |
-| `minions.json` | 245 minions by tavern tier, with full card details |
-| `tavern_spells.json` | 72 tavern spells by tier, with cost + text |
+| `heroes.json` | 117 heroes (hero power, pick rate) |
+| `minions.json` | 328 minions by tavern tier, with full card details |
+| `tavern_spells.json` | 77 tavern spells by tier, with cost + text |
 | `guides/` | comp guides mined from commentary transcripts |
 
 ### Honest design notes

@@ -37,10 +37,10 @@ Verbatim from the official 36.6.1 overview (transcribed in
 
 The two heads:
 
-| Deity | Tier | Stats | Text (verbatim) |
-|---|---|---|---|
-| **C'Thun** | 3 | 1/1 | *Deity.* After this awakens, give this minion's stats split amongst your other minions. |
-| **Y'Shaarj** | 3 | 1/1 | *Deity.* Deathrattle: Summon your first 2 Aberrations that died this combat with their maximum stats (except Deities). |
+| Deity | Id | Tier | Stats | Text (verbatim) |
+|---|---|---|---|---|
+| **C'Thun** | `BGFYM_000` | 3 | 1/1 | *Deity.* After this awakens, give this minion's stats split amongst your other minions. |
+| **Y'Shaarj** | `BGFYM_011` | 3 | 1/1 | *Deity.* Deathrattle: Summon your first 2 Aberrations that died this combat with their maximum stats (except Deities). |
 
 **The structural consequence for any model:** the Deity is not a board minion.
 It is a per-combat appearance whose stats (for C'Thun) are handed out inside one
@@ -57,16 +57,30 @@ persist unless the text says so*).
 Card ids below are from `meta/minions.json` / `meta/tavern_spells.json` /
 `meta/trinkets.json` (all three were re-read on 2026-09-22 for this document).
 
-**Trinket coverage caveat.** Of the discard-relevant trinkets named in the
-36.6.1 change list, only **Hammer of Twilight** (`BG36_MagicItem_403t`) is
-present in `meta/trinkets.json` today — the other rows in §2.2 with a `—` id
-(Corrupted Baton, Sludge Portrait, Shath'Yar Shrine, Writhing Tentacles, Tome of
-the Ancients, Makeshift Master, Mask of Ancient Ones, Evil Experiment) are known
-only from the patch article's text (§9 of `patch_3661_changes.md`), not from the
-DB. The engine gates those steps on the trinket's **name** as the live game
-passes it, so the chain is not blocked by the DB gap — but a trinket that is not
-in the DB will not appear in the live coach's trinket list either, and that gap
-belongs to the next `refresh_trinkets.py` pass, not to this document.
+**Trinket coverage — resolved 2026-09-23.** This section originally said only
+**Hammer of Twilight** was in `meta/trinkets.json` and that the other
+discard-relevant trinkets were known only from the patch article's text. That was
+a **detector** gap, not a data gap: the ids were in the local Power.logs the
+whole time, paired with their names on the same entity lines
+(`entityName=Evil Experiment ... cardId=BG36_MagicItem_416`). The DB was being
+checked against the hsreplay scrape and against the trinket *choice list* only,
+so a trinket that was **granted** (SETASIDE, HIDE_ENTITY) rather than offered was
+invisible to coverage checks.
+
+Status now: Corrupted Baton (`404`/`404t`), Sludge Portrait (`430`), Shath'Yar
+Shrine (`406`), Tome of the Ancients (`418`), Makeshift Master (`417t`/`417`),
+Mask of Ancient Ones (`602`) and Evil Experiment (`416`) are all in
+`meta/trinkets.json` by log id with curated reads in `trinket_effects.json`
+(the seven that arrived via `refresh_trinkets.py` plus three added by hand from
+the cache on 2026-09-23: `404`, `416`, `430`). **Writhing Tentacles is the one
+still unsourced**: the name occurs in none of the 5 local sessions, so it stays a
+`—` row until a game offers it — and `tests/test_trinket_meta.py::
+test_every_trinket_seen_in_a_log_is_in_the_db` now fails the moment any
+trinket-shaped id appears in a log without a DB row, so that day it lands by
+itself. Two related corrections from the same pass: `BG36_MagicItem_403` is the
+**Lesser** Hammer of Twilight (+1 Attack) and had been sharing the Greater's row
+and read (the aliasing risk logged as assumption A3), and the Deities are pinned
+by id (`C'Thun` = `BGFYM_000`, `Y'Shaarj` = `BGFYM_011`).
 
 **Duos scope caveat (a mode decision, not an oversight).** This coach coaches
 **solo** Battlegrounds, so the two new Duos minions (`Voidpriest Cloner`
@@ -103,10 +117,10 @@ turn**, which is the fact the modelled rate rests on.
 | Harbinger Aph'lass | `BGFYM_005` | Whenever you discard a card, give your Deity +1/+1 and improve this. |
 | Mysterious K'Thir | `BG36_320` | At the end of your turn, discard your 3 left-most Tavern spells. Gain +8/+8 for each discarded. |
 | Parasitic Fleshling | `BG36_114` | At the end of your turn, give your left-most minion +2/+2. (Improved by each card you've discarded this game!) |
-| Hammer of Twilight (Greater trinket) | `BG36_MagicItem_403t` | Your minions have +2/+1. (Improved by each card you've discarded this game!) |
-| Corrupted Baton (Lesser / Greater) | — | After you cast a Tavern spell, give your Deity +4/+4 / +10/+10. |
-| Sludge Portrait (Greater trinket) | — | Get a Sludge Corrosion. After you discard a card, get a Sludge Corrosion. |
-| Shath'Yar Shrine (Greater trinket) | — | After you discard a spell, get a random Aberration. |
+| Hammer of Twilight (Lesser / Greater trinket) | `BG36_MagicItem_403` / `403t` | Your minions have +1 Attack / +2/+1. (Improved by each card you've discarded this game!) |
+| Corrupted Baton (Lesser / Greater trinket) | `BG36_MagicItem_404` / `404t` | After you cast a Tavern spell, give your Deity +4/+4 / +10/+10. |
+| Sludge Portrait (Greater trinket) | `BG36_MagicItem_430` | Get a Sludge Corrosion. After you discard a card, get a Sludge Corrosion. |
+| Shath'Yar Shrine (Greater trinket) | `BG36_MagicItem_406` | After you discard a spell, get a random Aberration. |
 | Writhing Tentacles (Greater trinket) | — | After you discard your first minion each turn, get a copy of it with double stats. (1 left!) |
 
 ### 2.3 Deity fuel — everything that gives the Deity stats
@@ -124,10 +138,10 @@ turn**, which is the fact the modelled rate rests on.
 | Sha of Fear | *(no id in DB)* | Whenever you cast a Tavern spell, give your minions and Deity +4/+3. | spell cast |
 | Energizing Chamber | `BG36_371` | Give your Deity +7/+7. If you discard this, cast it twice. | spell (+2 casts when discarded) |
 | N'raqi Sapper | `BG36_103` | Battlecry and Deathrattle: Get an Energizing Chamber. | supplier |
-| Corrupted Baton | — | After you cast a Tavern spell, give your Deity +4/+4 (Greater +10/+10). | spell cast |
-| Makeshift Master (Greater trinket) | — | Spellcraft: Choose a minion. After it gains stats outside combat this turn, your Deity also gains them. | stat gain |
-| Mask of Ancient Ones (Greater trinket) | — | Make your Deity Golden this game. | — |
-| Evil Experiment (Greater trinket) | — | After your Deity awakens, give it Reborn. | — |
+| Corrupted Baton (Lesser / Greater) | `BG36_MagicItem_404` / `404t` | After you cast a Tavern spell, give your Deity +4/+4 (Greater +10/+10). | spell cast |
+| Makeshift Master (Lesser / Greater trinket) | `BG36_MagicItem_417t` / `417` | Choose a minion. After it gains stats outside combat this turn, your Deity also gains them (Greater adds Spellcraft). | stat gain |
+| Mask of Ancient Ones (Greater trinket) | `BG36_MagicItem_602` | Make your Deity Golden this game. | — |
+| Evil Experiment (Greater trinket) | `BG36_MagicItem_416` | After your Deity awakens, give it Reborn. | — |
 | C'Thrax Wrecker (**Duos-only**) | `134695` | Battlecry, Deathrattle, and Rally: Give your **team's Deities** +4/+4. | — |
 | Voidpriest Cloner (**Duos-only**) | `134693` | Whenever you discard a card, Pass a copy of it. **(2 times per turn.)** | discard |
 
@@ -249,6 +263,24 @@ count is modelled (§4.3).
 | `BACON_EVOLUTION_CARD_OVERWRITE_ATK` / `_HEALTH` | 720 tag lines; values `1` and `3`, reset to `0` at combat end |
 | Deity entering play | `Y'Shaarj` (`BGFYM_011`) entities appear in `zone=SETASIDE` and then `zone=PLAY` — the awakening is observable |
 | `C'Thun` | **never** seen in this session's three games |
+
+**2026-09-23 addendum (the next session's two games, measured).** C'Thun did
+appear — and the pair gave the id that `meta/patch_gaps.json` had recorded as
+unfindable: `entityName=C'Thun ... cardId=BGFYM_000` (now in `meta/minions.json`
+alongside `Y'Shaarj` = `BGFYM_011`). Zone transitions for the Deity entity, per
+game:
+
+| Game | Deity | `->PLAY` | `->GRAVEYARD` | `->REMOVEDFROMGAME` |
+|---|---|---|---|---|
+| 1 | C'Thun `BGFYM_000` | 7 | 7 | 40 |
+| 2 | Y'Shaarj `BGFYM_011` (golden `_G` once) | 12 | 6 | 59 |
+
+Two facts for the model: the awakening happens **more than once per game** (7
+entries into `PLAY` in a single game, not one), and `PLAY` entries are **not
+1:1 with awakenings** — Y'Shaarj entered play 12 times but died 6, so something
+(presumably a resummon/re-entry inside a combat) also writes `PLAY`. `A7`
+(`awakenings_per_turn = 1`) therefore stays an assumption, but it is no longer
+unbounded: the per-game counts above are the measurement to refine it with.
 
 What that means for the model:
 
@@ -407,7 +439,7 @@ fails the suite instead of silently changing the modelled rate.
 | A1 | **discards per turn = outlets on the board** (each Activate once per turn) | model. The "once per turn" part is game rules; the *rate* is not measured (§3.1) |
 | A1b | **the rate is capped at 7** (= one discard per board slot per turn) | model. *That* discard triggers are capped per turn is card-text evidence (Voidpriest Cloner's "(2 times per turn.)", Duos-only, §4.4); the cap *number* for Activate outlets is unpublished, so the board-slot ceiling is used and stated |
 | A2 | Hammer of Twilight's "improved by each card you've discarded" adds **one printed application (+2/+1) per discarded card** | **assumption** — the increment is not printed anywhere. Largest single term in the engine |
-| A3 | Hammer of Twilight / Corrupted Baton are recognised by **name**, so the Lesser variant (+1 Attack / +4/+4) is credited as the Greater (+2/+1 / +10/+10) or vice versa | assumption: the scenario passes trinket *names*, and the two rows share a name (`patch_3661_changes.md` §9.7). Documented in each step's note |
+| A3 | Hammer of Twilight / Corrupted Baton are recognised by **name**, so the Lesser variant (+1 Attack / +4/+4) is credited as the Greater (+2/+1 / +10/+10) or vice versa | assumption: the scenario passes trinket *names*, and the two rows share a name (`patch_3661_changes.md` §9.7). Documented in each step's note. **Half-closed 2026-09-23**: both halves now exist in `meta/trinkets.json` under their own ids with their own curated reads (`403` Lesser +1 Attack vs `403t` Greater +2/+1; `404` +4/+4 vs `404t` +10/+10), so the ambiguity is resolved wherever a caller passes an **id**; the name-keyed steps keep the assumption until they take ids |
 | A4 | Corrupted Baton's per-cast effect uses **one Tavern-spell cast per discard-turn** as a floor, and its trigger is a *cast*, not a discard | assumption, stated in the step note; the only link is that a discarded spell is cast |
 | A5 | N'raqi Sapper: **one** Energizing Chamber per Sapper per turn is discarded (the card grants two — battlecry + deathrattle) | assumption |
 | A6 | Mysterious K'Thir: the printed maximum of **3** Tavern spells is discarded every turn | assumption (the real cap is holding 3, invisible to a board snapshot) |
