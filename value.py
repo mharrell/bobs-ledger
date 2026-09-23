@@ -1553,7 +1553,9 @@ def situation_line(analysis):
         tribe = _tribe_of(target)
         state = analysis.get("target_state")
         bits.append(f"{tribe} build — "
-                    + ("scaling" if state == "committing" else "hunting pieces"))
+                    + ("scaling" if state == "committing" else "hunting pieces")
+                    + (" (provisional)" if analysis.get("target_comp_provisional")
+                       else ""))
     bs = analysis.get("board_stats")
     theirs = analysis.get("opp_stats")
     source_is_baseline = False
@@ -2185,6 +2187,15 @@ def _top_move_text(analysis):
                                       f"short on tier {tier}")
                         elif n_missing == 0:
                             target = "comp complete, no engine live"
+                        elif analysis.get("target_comp_provisional"):
+                            # A mined comp IS the direction here, so the honest
+                            # line names it and its sample instead of claiming
+                            # there is no comp at all.
+                            ev = analysis.get("target_comp_evidence") or {}
+                            target = (f"{analysis.get('target_comp')} "
+                                      f"(provisional — {ev.get('games')} of our "
+                                      f"games) is the only package for this "
+                                      f"tribe; hunt its pieces")
                         elif analysis.get("comp_gap"):
                             # The board is a <tribe> build and no comp exists for
                             # that tribe yet (Aberration, 36.6.1): say what is
@@ -2929,6 +2940,8 @@ def comp_progress(board, comps, recent_cards=None, top=4, trinkets=None):
                 "name": comp.get("name"),
                 "tribe": comp.get("tribe"),
                 "meta_tier": comp.get("meta_tier"),
+                "provisional": _is_provisional(comp),
+                "evidence": comp.get("evidence"),
                 "hits": hits,
                 "ready": hits >= 2,
                 "needs": [cid for cid in comp.get("core", [])
@@ -2967,8 +2980,21 @@ def _board_tribe_parts(board):
     return counts
 
 
+def _is_provisional(comp):
+    """Is this comp mined from our own corpus rather than published?
+
+    Provisional comps (comp_miner.py --promote) fill a tribe the comp source
+    does not cover at all — Aberration since 36.6.1. They are real direction but
+    weak evidence: n games, no published tier, no pick rate. Everything that
+    ranks or gates comps must treat them as second class (see comp_target,
+    comp_gap, tribes_without_comps), and everything that DISPLAYS one must say
+    so (comp_label).
+    """
+    return bool((comp or {}).get("provisional"))
+
+
 def comp_gap(board, comps):
-    """The board's dominant tribe when NO comp exists for it, else None.
+    """The board's dominant tribe when NO PUBLISHED comp exists for it, else None.
 
     Patch 36.6.1 added the Aberration tribe, and the comp source (hsreplay) has
     no Aberration comps yet — so a board can be dominated by a tribe the coach
@@ -2981,6 +3007,12 @@ def comp_gap(board, comps):
     game that was won. The rule below requires a real MAJORITY (more than half
     the tribed minions, at least three of them) so a mixed board is not
     mislabelled as a tribe build.
+
+    A provisional comp does NOT close this gap: the gap is about the published
+    source, and callers use it to say "no comp published for <tribe> yet" and to
+    segment advice-quality measurement. `comp_target` still coaches the
+    provisional package (see the gap branch there), so the player gets a
+    direction AND the honest label.
     """
     counts = _board_tribe_parts(board)
     if not counts:
@@ -2990,8 +3022,48 @@ def comp_gap(board, comps):
     if total < 3 or n * 2 <= total:
         return None
     defined = {normalize(c.get("tribe")) for c in (comps or {}).values()
-               if isinstance(c, dict) and c.get("tribe")}
+               if isinstance(c, dict) and c.get("tribe")
+               and not _is_provisional(c)}
     return None if tribe in defined else tribe
+
+
+def _provisional_for_tribe(tribe, comps, board):
+    """The best provisional comp for `tribe`, or None.
+
+    "Best" = the one whose core the board already carries, then the one with
+    more games behind it. A provisional comp is only ever reached through the
+    gap branch of comp_target, so this never competes with a published comp.
+    """
+    board_cards = {m.get("card") for m in board or []}
+    best = None
+    for comp in (comps or {}).values():
+        if not isinstance(comp, dict) or not _is_provisional(comp):
+            continue
+        if normalize(comp.get("tribe")) != normalize(tribe):
+            continue
+        overlap = len(set(comp.get("core") or []) & board_cards)
+        games = ((comp.get("evidence") or {}).get("games") or 0)
+        key = (overlap, games)
+        if best is None or key > best[0]:
+            best = (key, comp)
+    return best[1] if best else None
+
+
+def comp_label(comp):
+    """Display name, with the provisional marker and its sample size attached.
+
+    Detail views (the shopping list, the UI comp box) use this so a mined comp
+    can never read like a published one: "Aberrations - Deity Feed
+    (provisional — 4 of our games)".
+    """
+    if not comp:
+        return None
+    name = comp.get("name")
+    if not _is_provisional(comp):
+        return name
+    games = (comp.get("evidence") or {}).get("games")
+    return (f"{name} (provisional — {games} of our games)"
+            if games else f"{name} (provisional)")
 
 
 def _tribe_hits(board, rc, comp, tribe, shared, db):
@@ -3058,6 +3130,12 @@ def comp_target(board, comps, recent_cards=None, trinkets=None):
 
     committed = None   # (comp, overlap, board_dominant)
     for comp in comps.values():
+        if _is_provisional(comp):
+            # Second-class evidence: a mined comp must never outrank a published
+            # one, so it is not a candidate for the >=2-hit commit at all. It has
+            # its own path below, reached only when the tribe has no published
+            # comp (the 2026-09-23 Aberration case).
+            continue
         # Copies count (a commit is often 2x/3x one core, same as a pivot).
         # Ties break on BOARD DOMINANCE: a comp whose tribe is a strict
         # majority of the board is the live build (2026-09-07: a five-dragon
@@ -3073,6 +3151,8 @@ def comp_target(board, comps, recent_cards=None, trinkets=None):
     if rc:
         best_recent = None
         for comp in comps.values():
+            if _is_provisional(comp):
+                continue  # see the commit loop: mined comps are second class
             if committed and comp is committed[0]:
                 continue  # more of the same comp is not a pivot
             cores = set(comp.get("core", [])) - shared
@@ -3090,18 +3170,23 @@ def comp_target(board, comps, recent_cards=None, trinkets=None):
             return best_recent[0]
     if committed:
         return committed[0]
-    # A board dominated by a tribe the coach has NO comp for: "no direction" is
-    # the truth, and the weak tribe-level path below must not manufacture one.
+    # A board dominated by a tribe the coach has NO PUBLISHED comp for: the weak
+    # tribe-level path below must not manufacture one (the Banana Slamma failure),
+    # but a PROVISIONAL comp mined from our own corpus is a real, labelled
+    # direction — and for Aberration it is the only one that exists.
     # (The strong >=2-hit commit above already returned, so a genuine off-tribe
     # pivot is unaffected.)
-    if comp_gap(board, comps):
-        return None
+    gap = comp_gap(board, comps)
+    if gap:
+        return _provisional_for_tribe(gap, comps, board)
     # Tribe-level evidence: core hits spread across comps of one tribe, counting
     # only hits whose card actually belongs to that tribe.
     tribe_best = {}
     tribe_total = {}
     db = _load_card_db()
     for comp in comps.values():
+        if _is_provisional(comp):
+            continue  # provisional comps never set the direction on their own
         tribe = normalize(comp.get("tribe")) if comp.get("tribe") else None
         if not tribe:
             continue
@@ -3149,7 +3234,9 @@ def comp_cards(target, board):
                 for cid in ids]
 
     return {
-        "name": target.get("name"),
+        "name": comp_label(target),
+        "provisional": _is_provisional(target),
+        "evidence": target.get("evidence"),
         "core": rows(target.get("core", [])),
         "addons": rows(target.get("addons", [])),
     }
