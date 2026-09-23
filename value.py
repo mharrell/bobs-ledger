@@ -1422,9 +1422,178 @@ def top_move(analysis):
         kind = next((k for prefix, k in _STEP_KINDS if body.startswith(prefix)),
                     "note")
         card = analysis.get("buy_step_card") if kind == "buy" else None
-        steps.append({"text": body, "kind": kind, "card": card})
+        step = {"text": body, "kind": kind, "card": card}
+        step.update(split_step(body))
+        steps.append(step)
     analysis["top_move_steps"] = steps
     return text
+
+
+#: Suffixes that mark a plan step's own parentheses as a TAG rather than part of
+#: the action: "Buy Glambot (growth engine)" -> action "Buy Glambot", tag
+#: "growth engine". Anything else (a "(hold — 1 regular on board; a 3rd copy
+#: turns it golden)" clause) stays where it is and is split as rationale.
+def _split_clauses(text, sep):
+    """Split on `sep` only OUTSIDE parentheses.
+
+    The plan's steps embed rationale inside parentheses that themselves contain
+    em dashes and semicolons ("(hold — 1 regular on board; a 3rd copy turns it
+    golden)"), so a flat re.split mangles exactly the longest rows — the ones
+    this exists to shorten.
+    """
+    out, depth, cur, i = [], 0, [], 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth = max(0, depth - 1)
+        m = sep.match(text, i) if depth == 0 else None
+        if m:
+            out.append("".join(cur))
+            cur = []
+            i = m.end()
+            continue
+        cur.append(ch)
+        i += 1
+    out.append("".join(cur))
+    return [p.strip() for p in out if p.strip()]
+
+
+_DASH_SEP = re.compile(r"\s+—\s+")
+_SEMI_SEP = re.compile(r";\s*")
+#: A trailing parenthetical that reads as a label, not a sentence: short, no
+#: comma/semicolon/em dash inside. "(growth engine)" yes, "(hold — 1 regular on
+#: board; ...)" no.
+_STEP_TAG = re.compile(r"\(([^();—]{1,40})\)\s*$")
+
+
+#: A clause that is really a COST/quantity note, not a reason: "3 left",
+#: "0 left after", "costs 5g". The overlay shows one reason under the action, and
+#: "0 left after" as that reason wastes the slot — the number belongs with the
+#: action, the WHY belongs in the reason line.
+_COST_CLAUSE = re.compile(r"^(\d+\s*left(\s+after)?|\d+\s*gold|costs?\b|\d+g\b)",
+                          re.I)
+#: A clause that must be READ, not hovered: the flip/bleed caution and the
+#: fragility warning. These get the reason slot ahead of any ambient note.
+_CAUTION_CLAUSE = re.compile(r"^(only after the buy|⚠|too fragile|bled \d)", re.I)
+
+
+def split_step(text):
+    """One plan step -> {action, tag, reason, details}.
+
+    The plan's steps accumulated rationale inline until the worst row measured
+    174 characters carrying four clauses ("LEVEL to tier 4 (standard curve) —
+    5 left — prices high — boards ~23 vs lobby ~35; took 6 last fight and
+    lobbies scale up — ..."). Over the 154 cached coach lines: median 2 steps
+    per line, a third of the lines with more than three, p90 step length 123.
+
+    This is a PRESENTATION split, not a model change: the rendered string stays
+    exactly what it was (console, reviews and tests unchanged), and the overlay
+    can put the action first, one reason under it, and the rest behind hover.
+    Returns {"action", "tag", "reason", "details": [...]} — `reason` is the
+    first clause that is a REASON rather than a cost figure, `details` the rest
+    in their original order.
+    """
+    body = re.sub(r"^\d+\.\s*", "", (text or "").strip())
+    parts = _split_clauses(body, _DASH_SEP)
+    head = parts[0] if parts else body
+    tag = None
+    m = _STEP_TAG.search(head)
+    if m:
+        tag = m.group(1).strip()
+        head = head[:m.start()].strip()
+    clauses = []
+    if not tag:
+        # A LONG trailing parenthetical is a clause BLOCK, not part of the
+        # action. Real phases (2026-09-23, tiers 4-5) render rows like "Play
+        # Thorned Trailblazer (golden body — goldens never combine — sell to
+        # make room)": 76 characters of rationale welded to a 3-word action,
+        # which is the exact thing this split exists to fix.
+        lm = re.search(r"\(([^()]*[—;][^()]*)\)\s*$", head)
+        if lm:
+            inner = lm.group(1)
+            head = head[:lm.start()].strip()
+            clauses.extend(_split_clauses(inner, _DASH_SEP))
+            semi = []
+            for c in clauses:
+                semi.extend(_split_clauses(c, _SEMI_SEP))
+            clauses = semi
+            # Drop a leading clause that just repeats the verb ("Hold X (hold —
+            # ...)") — it is noise in the reason slot.
+            if clauses and head.split(" ")[0].lower() == \
+                    clauses[0].strip().lower():
+                clauses.pop(0)
+    for part in parts[1:]:
+        clauses.extend(_split_clauses(part, _SEMI_SEP))
+    # Which clause is THE reason? Priority, not position: a caution ("only
+    # after the buy (bled 21 over the last 3 fights — buy stats first)", or the
+    # ⚠ fragility clause) is what the player must read, so it outranks the
+    # ambient notes; a bare cost figure is never a reason.
+    reason = next((c for c in clauses if _CAUTION_CLAUSE.match(c)), None)
+    if reason is None:
+        reason = next((c for c in clauses if not _COST_CLAUSE.match(c)),
+                      clauses[0] if clauses else None)
+    return {"action": head or body, "tag": tag, "reason": reason,
+            "details": [c for c in clauses if c != reason]}
+
+
+# ---------------------------------------------------------------------------
+# Fragility: the 13-16 HP band where every level gate is legal and you die
+# ---------------------------------------------------------------------------
+
+#: Effective health at or below `DYING_HEALTH` (module constant, 12) is the
+#: DYING hard gate in the flip ladder; the band above it is what this adds.
+#: The band ABOVE it where the 2026-09-18 loss happened: every gate legal, the
+#: plan pointed a one-hit-from-death board at a tier purchase, and the player
+#: read the level as "the build is about to take off" and died 8th with 10 gold
+#: unspent. The design candidate from that review: "a FRAGILE band (13-16):
+#: LEVEL renders only with the fragility clause ('you die to a 10-hit - the
+#: board comes first'), mirroring the flip text".
+FRAGILE_HEALTH = 16
+#: Bleed over the last three fights that counts as a pattern rather than a bad
+#: round (design candidate (b): "the ladder weighs last-3-fights damage
+#: (sum >= 15 => stabilize-first) instead of streak-resettable signals").
+FRAGILE_BLEED = 15
+
+
+def fragility(analysis):
+    """How close is this hero to dying, and to WHAT.
+
+    Returns {band, eff_health, health, armor, last_hit, recent3, cap, note} or
+    None when the log has no health for this hero. band is "dying" (<= 12),
+    "fragile" (13-16) or "steady".
+
+    The number that matters is not the HP but the NEXT HIT: at 14 effective
+    health a 14-damage combat ends the game, and in Battlegrounds that is one
+    lost fight, not a slow decline. `cap` is the log's own combat damage cap
+    (BACON_COMBAT_DAMAGE_CAP) where the game printed it.
+    """
+    health = analysis.get("health")
+    if health is None:
+        return None
+    armor = analysis.get("armor") or 0
+    eff = health + armor
+    last_hit = analysis.get("damage_last")
+    recent3 = analysis.get("damage_recent3")
+    cap = analysis.get("damage_cap")
+    if eff <= DYING_HEALTH:
+        band = "dying"
+    elif eff <= FRAGILE_HEALTH:
+        band = "fragile"
+    else:
+        band = "steady"
+    note = None
+    if band != "steady":
+        bits = [f"{eff} effective HP"]
+        if last_hit:
+            bits.append(f"took {last_hit} last fight")
+        bits.append(f"a {eff}-hit ends it")
+        if recent3:
+            bits.append(f"bled {recent3} over the last 3 fights")
+        note = ", ".join(bits)
+    return {"band": band, "eff_health": eff, "health": health, "armor": armor,
+            "last_hit": last_hit, "recent3": recent3, "cap": cap, "note": note}
 
 
 MINION_BUY_PRICE = 3   # the patch's flat default for ALL tiers of minions
@@ -1593,7 +1762,12 @@ def situation_line(analysis):
     lobby = analysis.get("opp_stats") or analysis.get("lobby_opp")
     cap = analysis.get("damage_cap")
     mortality = None
-    if health is not None and lobby:
+    # NOTE the missing `and lobby`: the 2026-09-23 sweep found whole games where
+    # the log never announced an opponent ("no opponent information, ever"), and
+    # gating the mortality clause on a lobby read meant the ONE line about dying
+    # simply did not render in those games. The cap and the health are both
+    # local facts; only the "two lost fights" variant needs the lobby.
+    if health is not None:
         eff = health + armor
         if cap and eff <= cap:
             # This season caps per-combat damage (BACON_COMBAT_DAMAGE_CAP,
@@ -1601,18 +1775,28 @@ def situation_line(analysis):
             # true only at or under the cap.
             mortality = (f"{eff} HP vs a {cap} damage cap — "
                          "one bad fight ends it, buy board now")
-        elif cap and eff <= 2 * cap and lobby >= 100:
+        elif cap and eff <= 2 * cap and lobby and lobby >= 100:
             mortality = (f"{eff} HP vs a {cap} damage cap — "
                          "two lost fights end it")
         elif eff <= DYING_HEALTH:
             mortality = (f"DYING at {health}"
                          + (f"+{armor}" if armor else "") + " — buy board now")
-        elif eff <= 30 and lobby >= 100:
+        elif eff <= 30 and lobby and lobby >= 100:
             # Armor is just extra health (player-corrected 2026-09-08) — the
             # signal is TOTAL effective HP vs the lobby's damage output
             # (t7-t12 of the Guff game were all wins, then one fight ended
             # it).
             mortality = f"{eff} HP left — one bad fight can end it"
+        else:
+            # The 13-16 band: no hard gate fires, the plan is legal, and this is
+            # the line that has to carry the risk (2026-09-18: "you die to a
+            # 10-hit — the board comes first"). Last because every louder
+            # signal above it is a better warning. Recomputed rather than read
+            # from `analysis["fragility"]`: that copy is written by the plan,
+            # and a stale band here would be a wrong alarm.
+            fra = fragility(analysis)
+            if fra and fra["band"] == "fragile":
+                mortality = (f"{fra['note']}; the board comes first, not a tier")
         if mortality:
             bits.append(mortality)
     if not bits:
@@ -1849,6 +2033,12 @@ def _top_move_text(analysis):
     tier = analysis.get("tier")
     gold = analysis.get("gold")
     parts = []
+    # How close this hero is to dying, and to WHAT — computed once, side-written
+    # so the overlay can render it as its own widget rather than mining the plan
+    # text for it (the 2026-09-18 misread: every level gate legal, the danger
+    # only implicit in clause 3 of a 174-character row).
+    analysis["fragility"] = fragility(analysis)
+    frag = analysis["fragility"]
 
     # Turn-structure hero powers lead: a power that skips opening turns means
     # those turns don't exist — the power IS the turn. The old planner read
@@ -1968,6 +2158,17 @@ def _top_move_text(analysis):
                 # at any tier (5k-MMR conservative stance).
                 flip_why = "0 wins so far — every fight has cost you HP; " \
                            "buy stats first"
+            elif tier >= 3 and (analysis.get("damage_recent3") or 0) >= FRAGILE_BLEED:
+                # DAMAGE MEMORY, design candidate (b) from the 2026-09-18
+                # review: "the ladder weighs last-3-fights damage (sum >= 15 =>
+                # stabilize-first) instead of streak-resettable signals". That
+                # game had bled 10 in two of the last three fights, but t9's
+                # won/tied fight reset the streak, so every streak-based gate
+                # stayed legal and the plan pointed a one-10-hit-from-death
+                # board at a tier purchase. Three fights is longer than a
+                # streak and cannot be reset by one good round.
+                flip_why = (f"bled {analysis['damage_recent3']} over the last "
+                            f"3 fights — buy stats first")
             elif tier >= 2 and loss_streak >= 2 and board_stats is not None \
                     and their and board_stats < 0.7 * their:
                 flip_why = (f"lost {loss_streak} straight and your board is "
@@ -2051,6 +2252,16 @@ def _top_move_text(analysis):
                     price = _level_price_clause(analysis)
                     if price:
                         level_lead += f" — {price}"
+                    # FRAGILE band (design candidate (a), 2026-09-18): the
+                    # level still renders — every gate here is legal by
+                    # construction — but it renders WITH the fragility clause,
+                    # mirroring the flip text. That game: 14 HP, bled 10 in two
+                    # of the last three fights, plan led with "LEVEL to tier 5
+                    # (standard curve) — 1 left", the player read it as the
+                    # build taking off, and died 8th with 10 gold unspent.
+                    if frag and frag["band"] == "fragile":
+                        level_lead += (f" — ⚠ {frag['note']}; the board comes "
+                                       f"first")
                     budget = spare  # buys come out of the leftover, not the purse
         # else: the level is out of reach this turn. It stays OUT of the
         # numbered list — an upgrade the player can't make is not advice
@@ -2312,6 +2523,12 @@ def _top_move_text(analysis):
                     price = _level_price_clause(analysis)
                     if price:
                         trail += f"; {price}"
+                    if level_flip_why:
+                        # The level is affordable AND deferred (a flip fired):
+                        # without the reason this trail reads as a plain
+                        # go-ahead, and the flip's whole point is "the buy
+                        # comes first, and here is why".
+                        trail += f"; only after the buy ({level_flip_why})"
                     parts.append(trail)
                 else:
                     short = f"{level_cost - leftover} short after the buy"
@@ -2436,6 +2653,13 @@ def _top_move_text(analysis):
     if stay_note and tier:
         parts.append(f"stay on tier {tier} — your comp's missing cores are "
                      f"on this tier or below; leveling would lower the odds")
+    # A flip whose reason never found a home: the level was deferred because of
+    # a bleed/fragility, the buy section rendered something else, and the plan
+    # then reads as a go-ahead. The reason is the most important sentence of the
+    # turn — say it rather than dropping it on the floor.
+    if level_flip_why and parts \
+            and not any(level_flip_why in p for p in parts):
+        parts.append(f"stabilize first — {level_flip_why}")
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
     # right move is to pass and let the engine grow — casting the hand first
     # (end-of-turn effects count the casts made this turn).
@@ -2460,9 +2684,15 @@ def _top_move_text(analysis):
         analysis["activation_step"] = act[0]
         return msg
     if gold is not None and gold >= 1:
+        # When a flip fired, the roll line is the LAST place the reason can
+        # appear — and it is the line the Buy box mirrors, so it must carry it
+        # ("roll — nothing in the shop beats your gold; level needs saving" said
+        # nothing about WHY the level was deferred).
         msg = ("roll — hunt more " + target + " to scale it"
                if scaling else
-               "roll — nothing in the shop beats your gold; level needs saving")
+               (f"stabilize / roll — {level_flip_why}"
+                if level_flip_why else
+                "roll — nothing in the shop beats your gold; level needs saving"))
         analysis["buy_step_roll"] = msg
         return msg
     # Otherwise point at the comp so the advice stays actionable instead of

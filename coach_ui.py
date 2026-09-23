@@ -156,6 +156,32 @@ _HTML = r"""<!doctype html>
   /* The situation read: the plan's one-line thread. */
   .instructions .situation { font-size:14px; font-weight:600;
                              color:var(--warn); padding:2px 0 3px; }
+  /* DANGER: the fragility band as its own line. The 2026-09-18 loss was a
+     misread of a legal-looking plan at 14 HP, so this must not be buried in
+     the row above it. */
+  .instructions .danger { font-size:15px; font-weight:700; padding:4px 6px;
+                          margin:2px 0 4px; border-radius:3px; }
+  .instructions .danger.fragile { color:#ffd479; background:#3a2d10;
+                                  border:1px solid #6b5217; }
+  .instructions .danger.dying { color:#ffd7d7; background:#4a1414;
+                                border:1px solid #8c2b2b; }
+  #statebar .warn { color:var(--warn); font-weight:700; }
+  /* Plan steps render from structured data: action first, the tag and the ONE
+     reason under it, the remaining clauses behind hover (the "…"). */
+  .instructions .step .stepbody { display:inline-block; }
+  .instructions .step .act { font-weight:700; }
+  .instructions .step .tag { color:var(--dim); font-size:12px; font-weight:600;
+                             margin-left:6px; border:1px solid #2c2f36;
+                             border-radius:3px; padding:0 4px; }
+  .instructions .step .why { color:var(--dim); font-size:13px;
+                             font-weight:400; line-height:1.3; }
+  .instructions .step .more { cursor:help; color:var(--dim); opacity:.6; }
+  .instructions .step.k-level .act { color:#8fb8ff; }
+  .instructions .step.k-buy .act { color:var(--good); }
+  .instructions .step.k-pick .act { color:var(--gold); }
+  .instructions .step.k-sell .act { color:#e0a06a; }
+  .instructions .step.k-roll .act { color:var(--dim); }
+  .instructions .step.k-cast .act, .instructions .step.k-play .act { color:#cbb2ff; }
   /* Horizontal game-like card tiles: thumb on top, name below. */
   .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
   .tile { display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -478,9 +504,11 @@ function render(a) {
   tier.appendChild(el('span', null, String(a.tier ?? '?')));
   statebar.appendChild(tier);
   if (a.health != null) {
-    const dying = a.health + (a.armor || 0) <= 12;
+    const fr = a.fragility || {};
+    const dying = (a.health + (a.armor || 0)) <= 12;
     const hp = el('span', null); hp.appendChild(el('span', 'lbl', 'HP '));
-    hp.appendChild(el('span', dying ? 'bad' : null,
+    hp.appendChild(el('span', dying ? 'bad'
+      : (fr.band === 'fragile' ? 'warn' : null),
       a.health + (a.armor ? '+' + a.armor : '')));
     statebar.appendChild(hp);
   }
@@ -526,6 +554,22 @@ function render(a) {
   // The situation read: the plan's thread (direction, strength, danger) in
   // one line, so the numbered steps read as a story instead of a list.
   if (a.situation) instr.appendChild(el('div', 'situation', a.situation));
+  // DANGER — its own line, not clause three of a long row. The 2026-09-18 loss
+  // is the reason it exists: 14 HP, bled 10 in two of three fights, every level
+  // gate legal by construction, and the plan read as "the build is about to
+  // take off" — 8th place with 10 gold unspent. The number that decides the turn
+  // is not the HP but the NEXT HIT, so that is what this says.
+  if (a.fragility && a.fragility.band !== 'steady') {
+    const fr = a.fragility;
+    const danger = el('div', 'danger ' + fr.band,
+      (fr.band === 'dying' ? 'DYING — ' : 'FRAGILE — ')
+      + fr.eff_health + ' effective HP'
+      + (fr.last_hit ? ', took ' + fr.last_hit + ' last fight' : '')
+      + ' — a ' + fr.eff_health + '-hit ends it'
+      + (fr.recent3 ? ' · bled ' + fr.recent3 + ' over the last 3 fights' : '')
+      + (fr.cap ? ' · damage cap ' + fr.cap : ''));
+    instr.appendChild(danger);
+  }
   // The empty-shop gap (after a buy/roll the offers vanish from the log for
   // a second or two before the game re-prints them) holds the old plan —
   // saying so makes the lag legible instead of looking like a freeze
@@ -555,12 +599,31 @@ function render(a) {
     instr.appendChild(alts);
   }
   if (a.top_move) {
-    a.top_move.split(' · ').forEach(step => {
+    // Render from the STRUCTURED steps (value.split_step, carried on
+    // top_move_steps) instead of re-parsing the string: the action is the line,
+    // the tag and the ONE reason sit under it, and the remaining clauses go
+    // behind hover. Measured before this: median 2 steps per row but a third of
+    // the plans with more than three, and a p90 step length of 123 characters
+    // (worst 174) with four rationale clauses in one string.
+    const structured = a.top_move_steps || [];
+    a.top_move.split(' · ').forEach((step, i) => {
       const m = step.match(/^(\d+)\. (.*)$/);
-      const line = el('div', 'step');
+      const s = structured[i] || {};
+      const line = el('div', 'step' + (s.kind ? ' k-' + s.kind : ''));
       if (m) {
         line.appendChild(el('span', 'stepnum', m[1]));
-        line.appendChild(el('span', null, m[2]));
+        const body = el('span', 'stepbody');
+        body.appendChild(el('span', 'act', s.action || m[2]));
+        if (s.tag) body.appendChild(el('span', 'tag', s.tag));
+        if (s.reason) body.appendChild(el('div', 'why', s.reason));
+        if ((s.details || []).length) {
+          // Hover rather than on-screen: the reasons are real, they are just
+          // not all worth a row while you have 30 seconds to spend gold.
+          const more = el('div', 'why more', '…');
+          more.title = s.details.join(' · ');
+          body.appendChild(more);
+        }
+        line.appendChild(body);
       } else {
         line.textContent = step;
       }
