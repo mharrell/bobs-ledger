@@ -275,5 +275,37 @@ class TestAgainstARealSession(unittest.TestCase):
         self.assertIn("no such phase", review_kit.show_moments(text, [99]))
 
 
+class TestPoolIdFamilies(unittest.TestCase):
+    """extend_pool's id filter: BG reprints are pool minions, tokens are not.
+
+    The 2026-09-23 Drest'agath game rendered `BG_EX1_170` (Emperor Cobra, a BG
+    reprint that keeps its Blackrock Mountain id) as a raw id in the coach's own
+    advice, because the tool's `BG<nn>_<num>` shape filter could not see it. The
+    fix has to stay narrow: the card cache calls tokens, buddies and warp
+    variants MINIONs with a techLevel too, so widening to "cache says MINION"
+    pulled in 15 rows of junk on the first try.
+    """
+
+    def test_a_bg_reprint_is_a_pool_id(self):
+        import extend_pool
+        self.assertTrue(extend_pool._REPRINT_ID.match("BG_EX1_170"))
+        self.assertTrue(extend_pool.MINION_ID.match("BG26_350"))
+
+    def test_tokens_buddies_and_machinery_are_not_reprints(self):
+        import extend_pool
+        for cid in ("BG19_010t", "BG28_603t", "BG30_MagicItem_442t",
+                    "BG34_634t", "BG_ICC_026t", "BG34_Giant_015",
+                    "TB_BaconUps_079", "TB_BaconShop_HERO_33_Buddy",
+                    "EX1_093"):
+            with self.subTest(cid=cid):
+                self.assertIsNone(extend_pool._REPRINT_ID.match(cid))
+
+    def test_the_reprint_is_in_the_db_now(self):
+        import meta
+        ids = {m["id"] for m in meta.minions()}
+        self.assertIn("BG_EX1_170", ids, "Emperor Cobra was rendered raw in play")
+        self.assertIn("BG26_350", ids, "Bassgill was rendered raw in play")
+
+
 if __name__ == "__main__":
     unittest.main()

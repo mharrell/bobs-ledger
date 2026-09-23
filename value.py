@@ -2732,12 +2732,16 @@ def _top_move_text(analysis):
             # The buy step already rendered: rewrite it rather than leave a
             # go-ahead the numbers contradict, and record the veto so the
             # overlay's Buy box cannot bless a card the plan just argued against.
+            # Phrased as an ACTION, not just a refusal: in the 2026-09-23
+            # Drest'agath win the whole shop scored 2.7 / -1.0 / -2.4 / -2.7 and
+            # the plan named the 2.7 card, then talked itself out of it — the
+            # player needs to know to roll, not only what not to buy.
             for i, p in enumerate(parts):
                 if p.startswith("Buy ") and best["name"] in p:
-                    parts[i] = (f"don't buy {best['name']} — it would cost the "
-                                f"{best['outgoing_name']} "
-                                f"({best['incoming_score']:.1f} vs "
-                                f"{best['outgoing_score']:.1f})")
+                    parts[i] = (f"roll instead — {best['name']} "
+                                f"({best['incoming_score']:.1f}) isn't worth "
+                                f"losing the {best['outgoing_name']} "
+                                f"({best['outgoing_score']:.1f})")
                     analysis["buy_step_swap_veto"] = best["name"]
                     break
     elif bought is not None and len(analysis.get("board", [])) >= 7 \

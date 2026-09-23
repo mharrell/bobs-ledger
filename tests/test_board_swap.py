@@ -164,13 +164,15 @@ class TestTheDecisionBoundaries(unittest.TestCase):
         self.assertEqual(value.slot_swaps(b)[0]["verdict"], "close",
                          "the FRAGILE band is stage 2's, not this rule's")
 
-    def test_a_shop_buy_that_loses_the_slot_is_argued_against(self):
+    def test_a_shop_buy_that_loses_the_slot_becomes_roll_advice(self):
         a = analysis(gold=20, level_cost=9, shop_rank=[("BG36_116", 3.4)],
                      buy_this="BG36_116", buy_step_card="BG36_116")
         line = value.top_move(a)
         # The buy step renders and is then REWRITTEN by the arbiter: leaving
-        # "Buy X" up would be a go-ahead the numbers contradict.
-        self.assertIn("don't buy Underrot Spawn", line)
+        # "Buy X" up would be a go-ahead the numbers contradict, and a bare
+        # refusal leaves the player nothing to do with the gold.
+        self.assertIn("roll instead", line)
+        self.assertNotIn("Buy Underrot Spawn", line)
         self.assertNotIn("Swap:", line)
         self.assertEqual(a.get("buy_step_swap_veto"), "Underrot Spawn",
                          "the overlay's Buy box must know, or it keeps glowing")
