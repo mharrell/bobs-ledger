@@ -704,6 +704,29 @@ def _trinket_synergy_hit(trinket, race, card_text, mechanics=()):
     return False
 
 
+#: "Skip your first turn" / "Skip your first two turns" — the count is
+#: optional in the wording (Ambassador Faelin omits it, A. F. Kay says "two").
+_SKIP_TURNS_RE = re.compile(
+    r"skip your first(?:\s+(one|two|three|four|\d+))?\s+turns?", re.I)
+_WORD_NUMBERS = {"one": 1, "two": 2, "three": 3, "four": 4}
+
+
+def _skipped_turn_count(hero_power):
+    """How many opening turns this hero power skips (0 = it skips none).
+
+    Read from the curated power text in meta/heroes.json — a wording read, not
+    a behaviour guess — so a hero that skips two turns is not silently treated
+    as skipping one.
+    """
+    m = _SKIP_TURNS_RE.search(hero_power or "")
+    if not m:
+        return 0
+    token = (m.group(1) or "").lower()
+    if not token:
+        return 1
+    return int(token) if token.isdigit() else _WORD_NUMBERS.get(token, 0)
+
+
 def _out_of_play_reason(card_id, card):
     """Out-of-play explanation for a shop card, or None (fail-open).
 
@@ -1646,17 +1669,27 @@ def _top_move_text(analysis):
     gold = analysis.get("gold")
     parts = []
 
-    # Turn-structure hero powers lead: "Skip your first turn" (Ambassador
-    # Faelin) can't act on turn 1 — the power IS the turn. The old planner
-    # read "LEVEL (access to tier 2) / Buy Flighty Scout" for a turn that
-    # doesn't exist (2026-09-11 Faelin game t1; gold is also unparseable
-    # there — a skipped turn writes no RESOURCES tag at all). The phrase is
-    # matched against the power's own text in meta/heroes.json — the curated
-    # wording, not a behavior guess.
+    # Turn-structure hero powers lead: a power that skips opening turns means
+    # those turns don't exist — the power IS the turn. The old planner read
+    # "LEVEL (access to tier 2) / Buy Flighty Scout" for a turn that doesn't
+    # exist (2026-09-11 Faelin game t1; gold is also unparseable there — a
+    # skipped turn writes no RESOURCES tag at all).
+    #
+    # The COUNT is parsed from the power text, never hardcoded. The guard used
+    # to be `turn == 1 and "skip your first turn" in hp.lower()`, which A. F.
+    # Kay's wording ("Skip your first TWO turns, then Discover...") does not
+    # contain — so both of her skipped turns rendered a full plan:
+    # "1. LEVEL (access to tier 2) · 2. Buy Buzzing Vermin" on t1 and
+    # "1. LEVEL (access to tier 2)" again on t3 (2026-09-21 live decision log,
+    # decision_Power.log.jsonl). It also means the "Q1 pass held" note in
+    # analysis/replay_review_2026-09-18.md was wrong: that session shows the
+    # same unexecutable t1 LEVEL line.
     hp = analysis.get("hero_power") or ""
-    if (analysis.get("turn") or 0) == 1 and "skip your first turn" in hp.lower():
-        return (f"pass — {analysis.get('hero') or 'this hero'} skips turn 1 "
-                f"(hero power)")
+    turn = analysis.get("turn") or 0
+    skip = _skipped_turn_count(hp)
+    if turn and turn <= skip:
+        return (f"pass — {analysis.get('hero') or 'this hero'} skips "
+                f"turn {turn} (hero power)")
 
     # 0. The hand (free actions, in ranked order): cast spells, play stuck
     #    minions. Copies group ("x2"); beyond three the rest summarize so the
