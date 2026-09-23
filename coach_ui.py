@@ -123,6 +123,11 @@ _HTML = r"""<!doctype html>
   #statebar .good { color:var(--good); font-weight:400; font-size:12px; }
   #statebar .bad { color:var(--bad); font-weight:400; font-size:12px; }
   #statebar .banned { color:var(--dim); font-weight:400; font-size:12px; }
+  /* Out-of-play tribes (rotated by a patch: Naga since 36.6.1) are a THIRD
+     state, not a ban — struck through and warn-colored so "Naga — out of
+     play" never reads as "Naga was banned this game". */
+  #statebar .oop { color:var(--warn); font-weight:400; font-size:12px;
+                   text-decoration:line-through; }
   /* Ban picker (2026-09-19): tap the 5 banned tribes from the reveal
      screen — the log never carries the ban list, the inference takes
      minutes, a manual set is exact from turn 1. */
@@ -505,6 +510,13 @@ function render(a) {
     statebar.appendChild(el('span', 'lbl', 'Banned:'));
     a.banned.forEach(t => statebar.appendChild(el('span', 'banned', t)));
   }
+  // Out of play (rotated by a patch): NOT banned this game — the pool cannot
+  // offer it in any lobby (Naga since 36.6.1). Its own labeled, struck-through
+  // state, so a rotated tribe never reads as a ban the player could undo.
+  if (a.out_of_pool && a.out_of_pool.length) {
+    statebar.appendChild(el('span', 'lbl', 'Out of play:'));
+    a.out_of_pool.forEach(t => statebar.appendChild(el('span', 'oop', t)));
+  }
 
   // INSTRUCTIONS — the explicit, do-this-now panel. A pending pick gates
   // everything, so it reads first; then the numbered plan steps; then the
@@ -770,7 +782,10 @@ function render(a) {
         + 'tap the 5 banned tribes to set them now:');
     compsBody.appendChild(line);
     const chips = el('div', 'banchips');
-    (a.tribe_roster || []).forEach(t => {
+    // The reveal screen lists the CURRENT pool's tribes, so an out-of-play
+    // tribe (Naga since 36.6.1) is not on it and is not tappable here either.
+    const oopSet = new Set(a.out_of_pool || []);
+    (a.tribe_roster || []).filter(t => !oopSet.has(t)).forEach(t => {
       const c = el('span', 'chip' + (_banPick.has(t) ? ' picked' : ''), t);
       c.onclick = () => {
         if (_banPick.has(t)) _banPick.delete(t); else _banPick.add(t);

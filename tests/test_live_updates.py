@@ -915,18 +915,35 @@ class TestManualBans(unittest.TestCase):
     provably not in any log (identical CREATE_GAME setup across different-ban
     games), the pool inference converged at minute 12/14 in the evening
     games, and a manual set is exact from t0. Manual bans are authoritative
-    for the rest of the game and reset with it."""
+    for the rest of the game and reset with it.
+
+    Three states since 36.6.1 (2026-09-22): the reveal screen offers the
+    CURRENT pool's tribes (Aberration is on it, Naga is not), so the manual
+    complement is the 11-tribe roster minus the taps minus the out-of-play
+    tribes — still exactly 5 allowed, which is the invariant the inference
+    path's 5/5 gate is built on."""
 
     TEAMS = ["Beast", "Demon", "Dragon", "Elemental", "Mech"]
 
     def _coach(self):
         from live_coach import LiveCoach
         c = LiveCoach()
+        # Two IN-PLAY comps (Murloc, Mech) next to the Beast one, plus the
+        # rotated Naga one: the taps must be what moves the in-play comps,
+        # while the Naga comp is dead by ROTATION whatever the taps say
+        # (out of play — see meta/out_of_play.json). Core ids are real pool
+        # minions that are still in play (Flighty Scout / Cord Puller —
+        # BG33_140 River Skipper is a Murloc but was itself removed in
+        # 36.6.1, so a comp built on it would drop for the wrong reason).
         c._comps = {
             "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
                          "core": ["BG30_111"]},
             "nagas-y": {"name": "Nagas - Y", "tribe": "Naga",
                         "core": ["BG23_318"]},
+            "murlocs-z": {"name": "Murlocs - Z", "tribe": "Murloc",
+                          "core": ["BG32_330"]},
+            "mechs-w": {"name": "Mechs - W", "tribe": "Mech",
+                        "core": ["BG29_611"]},
         }
         c._card_races = {}
         c.cur_lines = ["x"]
@@ -943,9 +960,17 @@ class TestManualBans(unittest.TestCase):
         c._refresh_bans()
         self.assertTrue(c._bans_ready)
         self.assertTrue(c.bans_manual)
-        self.assertEqual(c.allowed,
-                         ["Murloc", "Naga", "Pirate", "Quilboar", "Undead"])
-        self.assertEqual(set(c.playable), {"nagas-y"})
+        # Allowed = the in-play tribes (the 11-tribe roster minus out-of-play
+        # Naga) minus the 5 taps -> 5, and the rotated tribe is reported as
+        # out of play rather than as a 6th ban.
+        self.assertEqual(c.allowed, ["Aberration", "Murloc", "Pirate",
+                                     "Quilboar", "Undead"])
+        self.assertEqual(c.out_of_pool, ["Naga"])
+        # The manual set reached the comp filter: the Beast and Mech comps are
+        # out (tapped), the Naga comp is out by ROTATION, the Murloc comp —
+        # whose tribe is NOT tapped — is the one that survives.
+        self.assertEqual(set(c.playable), {"murlocs-z"})
+        self.assertNotIn("nagas-y", c.playable)
         self.assertFalse(c.tribes_detecting)
         self.assertEqual(c.tribes_seen, 5)
 
@@ -961,20 +986,24 @@ class TestManualBans(unittest.TestCase):
         coach_ui.store_manual_bans(self.TEAMS)
         c._refresh_bans()
         self.assertTrue(c.bans_manual)
-        self.assertEqual(c.allowed,
-                         ["Murloc", "Naga", "Pirate", "Quilboar", "Undead"])
+        self.assertEqual(c.allowed, ["Aberration", "Murloc", "Pirate",
+                                     "Quilboar", "Undead"])
 
     def test_changing_the_taps_reapplies(self):
         import coach_ui
         c = self._coach()
         coach_ui.store_manual_bans(self.TEAMS)
         c._refresh_bans()
+        self.assertEqual(set(c.playable), {"murlocs-z"})  # Mech tapped
         coach_ui.store_manual_bans(["Beast", "Demon", "Dragon", "Elemental",
                                     "Murloc"])
         c._refresh_bans()
-        self.assertEqual(c.allowed,
-                         ["Mech", "Naga", "Pirate", "Quilboar", "Undead"])
-        self.assertEqual(set(c.playable), {"nagas-y"})
+        self.assertEqual(c.allowed, ["Aberration", "Mech", "Pirate",
+                                     "Quilboar", "Undead"])
+        # The survivor FLIPS with the taps: Murloc is banned now and Mech is
+        # not, while the Beast comp stays banned and the Naga comp stays
+        # rotated out of the pool either way.
+        self.assertEqual(set(c.playable), {"mechs-w"})
 
     def test_clearing_reopens_detection(self):
         import coach_ui
