@@ -959,6 +959,149 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
     return [(c, v) for c, v, _ in scored]
 
 
+# ---------------------------------------------------------------------------
+# The board slot: name what you sell, and prove the trade
+# (design: analysis/board_swap.md — stage 1 of three)
+# ---------------------------------------------------------------------------
+
+#: A swap must clear this much keep-score to be worth advising at all; below it
+#: the trade is inside the model's own noise. A starting value, stated as an
+#: assumption, to be calibrated once verdict capture exists (board_swap.md §6.4).
+SWAP_TAKE = 3.0
+
+
+def _slot_comp(analysis):
+    """The evidence-based target comp dict, resolved from the analysis.
+
+    `analysis["target_comp"]` is the comp's NAME (what the overlay renders), so
+    the dict is looked up by name; `playable_comps` arrives as either a
+    slug->comp dict or a list of comps depending on the caller.
+    """
+    name = analysis.get("target_comp")
+    if not name:
+        return None
+    comps = analysis.get("playable_comps") or {}
+    items = comps.values() if isinstance(comps, dict) else comps
+    for comp in items:
+        if isinstance(comp, dict) and comp.get("name") == name:
+            return comp
+    return None
+
+
+def _swap_guards(analysis):
+    """{card_id: why} for board cards a swap must never sell.
+
+    Every one of these earned its place from a review: the comp's own pieces
+    (2026-09-04: "sell Balinda (making room)" three phases running — she IS
+    nagas core), a card the plan is HOLDING for a triple (2026-09-06 Guff t12:
+    "Hold Sewer Lord" and "sell Sewer Lord" in the same plan), and multipliers
+    (Brann/Drakkari/Titus-class), whose value is what they amplify rather than
+    what they are.
+    """
+    guards = {}
+    comp = _slot_comp(analysis)
+    if comp:
+        for cid in comp.get("core") or []:
+            guards.setdefault(cid, "it is the comp's core")
+        for cid in comp.get("addons") or []:
+            guards.setdefault(cid, "it is part of the comp")
+    for s in analysis.get("hand_plan") or []:
+        # ANY hold, not just the golden hunt: one plan, one direction. The
+        # original case (2026-09-06 Guff t12) was "Hold Sewer Lord — a 3rd copy
+        # turns it golden" beside "sell Sewer Lord"; the same rule covers a
+        # hand-charge kit holding its summon slot, and a hold whose reason the
+        # caller did not fill in (the fixture that caught this in review).
+        if s.get("verb") == "hold":
+            guards.setdefault(s.get("card"), "the plan is holding it")
+    card_db = _load_card_db()
+    for m in analysis.get("board") or []:
+        if _is_multiplier(card_db.get(m.get("card"))):
+            guards.setdefault(m.get("card"), "it multiplies the board's effects")
+    return guards
+
+
+def slot_swaps(analysis):
+    """Rank the ways to spend a full board's free slot, best first.
+
+    The player's report this answers, verbatim: "the coach will frequently say
+    that a card should be played, and something else must be sold to make room
+    for it. But it doesn't say *which* card, or state if/how the value of the new
+    card will be greater than the one you'll need to sell." Measured over the
+    cached corpus: 37 of 154 phases have a full board, 34 of those advise a play
+    or a buy, and 16 of those 34 said "sell to make room" without naming a card.
+
+    Both sides are scored in the SAME currency already (`minion_value`): the hand
+    plan scores hand cards with it and `sell_recommendation` scores the board
+    with it, so the comparison is a subtraction, not a new model. Returns
+    [{incoming, incoming_name, from, incoming_score, entry, outgoing,
+      outgoing_name, outgoing_score, delta, verdict, why}] sorted best-first;
+    `entry` is the shared hand-plan dict when the candidate came from hand, so
+    the caller can demote it in place.
+
+    Verdicts: "take" (delta >= SWAP_TAKE), "close" (0 <= delta < SWAP_TAKE),
+    "veto" (delta < 0 — the card is not worth the slot it costs). At DYING
+    effective health a marginal swap becomes a veto: a body is worth more than a
+    small upgrade when the next fight ends the game (the stage-1 slice of
+    contract item 4 in board_swap.md).
+    """
+    board = analysis.get("board") or []
+    if len(board) < 7:
+        return []
+    names = _load_bg_names()
+    guards = _swap_guards(analysis)
+    outgoing = next(((c, s) for c, s in (analysis.get("sell_rank") or [])
+                     if c not in guards), None)
+    if outgoing is None:
+        return []
+    out_card, out_score = outgoing
+    card_db = _load_card_db()
+    incoming = []
+    for s in analysis.get("hand_plan") or []:
+        cid = s.get("card")
+        if s.get("verb") != "play" or s.get("score") is None:
+            continue
+        if cid not in card_db:
+            continue
+        incoming.append({"card": cid, "from": "hand", "score": float(s["score"]),
+                         "entry": s,
+                         "name": s.get("name") or names.get(cid, cid)})
+    buy = analysis.get("buy_step_card")
+    if buy and buy in card_db and buy not in {i["card"] for i in incoming}:
+        rank = dict(analysis.get("shop_rank") or [])
+        if buy in rank:
+            incoming.append({"card": buy, "from": "shop", "score": float(rank[buy]),
+                             "entry": None, "name": names.get(buy, buy)})
+    band = (analysis.get("fragility") or {}).get("band")
+    rows = []
+    for inc in sorted(incoming, key=lambda i: -i["score"]):
+        delta = inc["score"] - out_score
+        if delta < 0:
+            verdict = "veto"
+        elif delta < SWAP_TAKE:
+            verdict = "close"
+        else:
+            verdict = "take"
+        if verdict == "close" and band == "dying":
+            verdict = "veto"
+        why = (f"{inc['score']:.1f} vs the {out_score:.1f} "
+               f"{names.get(out_card, out_card)} it would cost")
+        if verdict == "close":
+            why += " — marginal"
+        elif verdict == "take":
+            why += " — clearly better"
+        rows.append({
+            "card": inc["card"], "name": inc["name"], "from": inc["from"],
+            "entry": inc.get("entry"),
+            "incoming_score": inc["score"],
+            "incoming_name": inc["name"],
+            "outgoing": out_card,
+            "outgoing_name": names.get(out_card, out_card),
+            "outgoing_score": out_score,
+            "delta": delta, "verdict": verdict, "why": why,
+        })
+    return rows
+
+
 def active_recipes(hero_name, trinkets=None):
     """Mechanical engine recipes live for THIS hero + held trinkets.
 
@@ -1395,9 +1538,9 @@ def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
 
 _STEP_KINDS = (("LEVEL", "level"), ("PICK ", "pick"), ("Buy ", "buy"),
                ("sell ", "sell"), ("roll", "roll"), ("Cast ", "cast"),
-               ("Play ", "play"), ("Hold ", "hold"), ("stay on tier", "note"),
-               ("wait for end of turn", "note"), ("pass", "note"),
-               ("stabilize", "note"))
+               ("Play ", "play"), ("Hold ", "hold"), ("Swap: ", "swap"),
+               ("stay on tier", "note"), ("wait for end of turn", "note"),
+               ("pass", "note"), ("stabilize", "note"))
 
 
 def top_move(analysis):
@@ -2554,14 +2697,57 @@ def _top_move_text(analysis):
             parts.append(f"next priority: LEVEL to tier {p_tier + 1} "
                          f"({p_cost}g) — after the next triple or when the "
                          f"shop stops producing")
-    # 4. Sell only to make room: board full AND buying something that needs
-    # the slot. If there's space, selling is unnecessary. Held cards are
-    # exempt: the hand plan said "hold — a 3rd copy turns it golden", and
-    # the same panel must not also say to sell it (2026-09-06 Guff t12:
-    # "3. Hold Sewer Lord" + "6. sell Sewer Lord" in one plan). If the only
-    # filler is held, the golden hunt outranks the slot — no sell step.
-    if bought is not None and len(analysis.get("board", [])) >= 7 \
+    # 4. THE SLOT (design: analysis/board_swap.md). Board full + something wants
+    # in (a hand play or a minion buy): name the card that goes, state the
+    # comparison, and veto a swap that loses. This replaces the old
+    # "sell X (making room)" path, which (a) named nothing when every board card
+    # scored above SELL_FILLER_SCORE — 16 of 34 full-board phases in the cached
+    # corpus told the player to make room without saying what to cut — (b) only
+    # ever fired for a BUY, never for a hand play, and (c) never compared the two
+    # cards, so it happily blessed the 2026-09-23 case of playing a 16.0 body
+    # over a 20.2 one. A spell buy needs no slot, which the old path also missed.
+    swaps = slot_swaps(analysis)
+    if swaps:
+        best = swaps[0]
+        if best["verdict"] != "veto":
+            # FRONT of `parts`: the render is hand_steps + parts, so this lands
+            # right under the play it belongs to and above LEVEL/buys.
+            parts.insert(0,
+                         f"Swap: play {best['incoming_name']}, sell "
+                         f"{best['outgoing_name']} "
+                         f"({best['incoming_score']:.1f} vs "
+                         f"{best['outgoing_score']:.1f} — "
+                         f"{'clearly better' if best['verdict'] == 'take' else 'marginal'})")
+        for s in swaps:
+            entry = s.get("entry")
+            if entry is None or (s is best and best["verdict"] != "veto"):
+                continue  # the winner keeps its play verb
+            # Losers — and every candidate when the best option is a veto — are
+            # HOLDS, each with the comparison that decided it. Mutating the
+            # shared hand-plan entries is the established pattern (the cast
+            # demotion below does the same), so the overlay's hand box agrees.
+            entry["verb"] = "hold"
+            entry["why"] = f"hold — {s['why']}"
+        if best["verdict"] == "veto" and best["from"] == "shop":
+            # The buy step already rendered: rewrite it rather than leave a
+            # go-ahead the numbers contradict, and record the veto so the
+            # overlay's Buy box cannot bless a card the plan just argued against.
+            for i, p in enumerate(parts):
+                if p.startswith("Buy ") and best["name"] in p:
+                    parts[i] = (f"don't buy {best['name']} — it would cost the "
+                                f"{best['outgoing_name']} "
+                                f"({best['incoming_score']:.1f} vs "
+                                f"{best['outgoing_score']:.1f})")
+                    analysis["buy_step_swap_veto"] = best["name"]
+                    break
+    elif bought is not None and len(analysis.get("board", [])) >= 7 \
             and analysis.get("sell_rank"):
+        # No comparable incoming card (a spell buy needs no slot; or every
+        # candidate was filtered as a guard): fall back to the old filler-only
+        # naming, which at least points at the cheapest body. Held cards are
+        # exempt — the hand plan said "hold — a 3rd copy turns it golden", and
+        # the same panel must not also say to sell it (2026-09-06 Guff t12:
+        # "3. Hold Sewer Lord" + "6. sell Sewer Lord" in one plan).
         held = {s["card"] for s in (analysis.get("hand_plan") or [])
                 if s.get("verb") == "hold"}
         for worst in analysis["sell_rank"]:
