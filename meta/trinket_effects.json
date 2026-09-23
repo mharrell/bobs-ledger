@@ -1,5 +1,5 @@
 {
- "_comment": "Curated per-trinket reads (card-text pass phase 2, 2026-09-08: 'literally read the text of each card'). base_value = intrinsic power read on the spell-point scale (1 gold = 2 pts, +2/+2 on one minion = 4, recurring per-turn effects priced over ~5-6 turns). synergy = what board/keyword features reward holding this trinket: tribes (canonical), keywords (deathrattle/battlecry/magnetic/divine_shield/reborn/taunt/blood_gem/spell/refresh/economy/leveling/golden/trinket/dark_gift/hero_power/hand/yogg). Consumed by choices._rank_trinkets (precise synergy instead of the substring read) and value.minion_value (W_TRINKET term).",
+ "_comment": "Curated per-trinket reads (card-text pass phase 2, 2026-09-08: 'literally read the text of each card'). base_value = intrinsic power read on the spell-point scale (1 gold = 2 pts, +2/+2 on one minion = 4, recurring per-turn effects priced over ~5-6 turns). synergy = what board/keyword features reward holding this trinket: tribes (canonical), keywords (deathrattle/battlecry/magnetic/divine_shield/reborn/taunt/blood_gem/spell/refresh/economy/leveling/golden/trinket/dark_gift/hero_power/hand/yogg/discard). Consumed by choices._rank_trinkets (precise synergy instead of the substring read) and value.minion_value (W_TRINKET term).",
  "BG30_MagicItem_804": {
   "base_value": 8,
   "synergy": {
@@ -73,6 +73,18 @@
   },
   "note": "Temperature Shift, repeats after 11 Elementals (Baller Portrait)"
  },
+ "BG36_MagicItem_390": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ],
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Temperature Shift, repeats after 11 Elementals (Baller Portrait)"
+ },
  "BG30_MagicItem_705": {
   "base_value": 12,
   "synergy": {
@@ -135,6 +147,19 @@
   },
   "note": "4 spells -> Blood Gems on all minions (Bloodbound Earrings)"
  },
+ "BG32_MagicItem_808t": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Quilboar"
+   ],
+   "keywords": [
+    "spell",
+    "blood_gem"
+   ]
+  },
+  "note": "4 spells -> Blood Gems on all minions (Bloodbound Earrings)"
+ },
  "BG32_MagicItem_893": {
   "base_value": 8,
   "synergy": {
@@ -173,6 +198,15 @@
   "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
  },
  "BG30_MagicItem_924": {
+  "base_value": 14,
+  "synergy": {
+   "tribes": [
+    "Pirate"
+   ]
+  },
+  "note": "every gold spend: two Pirates +3/+3 (Booty Bay Brew)"
+ },
+ "BG30_MagicItem_924t": {
   "base_value": 14,
   "synergy": {
    "tribes": [
@@ -389,6 +423,15 @@
   },
   "note": "random Choose One card + another per turn (Glass of Perspective)"
  },
+ "BG36_MagicItem_303t": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "random Choose One card + another per turn (Glass of Perspective)"
+ },
  "BG36_MagicItem_220": {
   "base_value": 10,
   "synergy": {
@@ -417,6 +460,15 @@
   "note": "end of turn: maximum gold +1 (Goblin Wallet) — compounding income"
  },
  "BG36_MagicItem_302": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "end of turn: board +1/+1, improves with goldens played (Gold Mallet)"
+ },
+ "BG36_MagicItem_302t": {
   "base_value": 12,
   "synergy": {
    "keywords": [
@@ -699,6 +751,15 @@
   },
   "note": "get a random Lesser Trinket (Orb of the Unknown)"
  },
+ "BG35_MagicItem_816t": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "trinket"
+   ]
+  },
+  "note": "get a random Lesser Trinket (Orb of the Unknown)"
+ },
  "BG32_MagicItem_271": {
   "base_value": 8,
   "synergy": {
@@ -722,6 +783,15 @@
   "note": "one Demon each turn costs Health instead of Gold (Pilgrimp Sticker)"
  },
  "BG35_MagicItem_850": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
+ },
+ "BG35_MagicItem_850t": {
   "base_value": 14,
   "synergy": {
    "keywords": [
@@ -978,6 +1048,15 @@
   "note": "Discover a T3 Darkmoon Prize, every 3 turns (Tickatus Sticker)"
  },
  "BG35_MagicItem_823": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "discover a 2-cost Minor Timewarp minion (Timeworn Candelabra)"
+ },
+ "BG35_MagicItem_823t": {
   "base_value": 6,
   "synergy": {
    "keywords": [
@@ -1413,15 +1492,6 @@
   },
   "note": "Tavern minions +2/+2, improving every 4 Refreshes (Dalaran Cheese Wheel) — same tavern-buff engine family as Nether Pendant, slower to improve"
  },
- "BG30_MagicItem_879t": {
-  "base_value": 8,
-  "synergy": {
-   "tribes": [
-    "Elemental"
-   ]
-  },
-  "note": "Tavern minions +2/+2, improving every 4 Refreshes (Dalaran Cheese Wheel) — same tavern-buff engine family as Nether Pendant, slower to improve"
- },
  "BG30_MagicItem_996": {
   "base_value": 20,
   "synergy": {
@@ -1614,5 +1684,95 @@
    ]
   },
   "note": "every 6 Beast summons: a random Beast (Wildfeather Duster) — recurring body/triple fodder that feeds itself in a summon-heavy beast build"
+ },
+ "BG30_MagicItem_942": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "magnetic"
+   ],
+   "tribes": [
+    "Mech",
+    "Demon"
+   ]
+  },
+  "note": "2 random Magnetic Mecha-Demons now and every turn (Mecha-Jaraxxus Sticker) — priced between Scraper Sticker (1 Magnetic Mech/turn, 12) and Azsharan Statuette (3 spells/turn, 16). Tribes read from the card's own name (Mecha-Demons are Mech/Demon), not from a card-text tribe line."
+ },
+ "BG30_MagicItem_952": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ],
+   "keywords": [
+    "deathrattle"
+   ]
+  },
+  "note": "Start of Combat: 2 friendly Elementals gain 'Deathrattle: Summon a Flourishing Frostling' (Jarred Frostling) — the direct Elemental twin of Hoggy Bank (Quilboar, 10). Combat-only bodies, so it prices as a fight-swing, not an engine."
+ },
+ "BG32_MagicItem_284": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "blood_gem"
+   ]
+  },
+  "note": "End of turn: plays 7 Blood Gems, one on a friendly minion of each type (Aggem Sticker). Priced above Bloodbound Earrings / Jar o' Gems (10) because it fires every turn unconditionally, and above Great Boar Sticker (12) on volume. No tribe tag on purpose: it rewards a MENAGERIE board (a minion of each type), not Quilboars."
+ },
+ "BG32_MagicItem_888": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ],
+   "keywords": [
+    "refresh",
+    "economy"
+   ]
+  },
+  "note": "A free Refresh every time you play an Elemental (Recycling Sticker) — an APM/economy enabler, priced against Gold-plated Compass (5 free Refreshes + a golden, 12). Grows with Elemental throughput, so it is a build-around, not a flat buff."
+ },
+ "BG36_MagicItem_403t": {
+  "base_value": 16,
+  "synergy": {
+   "keywords": [
+    "discard"
+   ]
+  },
+  "note": "Your minions have +2/+1, improved by every card discarded this game (Hammer of Twilight, Greater). Board-wide: on the spell-point scale (1 stat point = 1 pt) a 6-minion board is ~18 and grows with the discard count, discounted to 16 because the buff needs a wide board to pay off. First entry to use the 36.6.1 `discard` keyword — the Aberration tribe's theme."
+ },
+ "BG36_MagicItem_424": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden",
+    "economy"
+   ]
+  },
+  "note": "1 Gold per friendly Golden minion at the start of every turn (Rascal Sticker). Sits under Goblin Wallet (max Gold +1/turn, compounding, 16) and beside Gold Pendant (a golden each turn, 12): the payout is proportional to how many goldens the build already holds, so it is a win-more economy piece."
+ },
+ "BG36_MagicItem_600": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "reborn"
+   ]
+  },
+  "note": "Get a Faceless Converter; Start of Combat: your Faceless Converters gain Reborn (Converter Portrait) — mechanically identical in shape to Eternal Portrait (8), which is what it is priced against. Deliberately NO tribe tag: the article does not state the Faceless Converter's minion type and it has not been seen in a mined pool, so guessing Aberration would be invention."
+ },
+ "BG36_MagicItem_610": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden",
+    "dark_gift"
+   ]
+  },
+  "note": "Discover a Golden minion of your most common type WITH a Dark Gift, no Triple Reward (Sinister Invitation) — one-shot but it delivers a golden body plus a gift in a single purchase, priced against Gold Pendant (a golden each turn, 12) and Maldraxxus Dagger (a Dark Gift copy each turn, 10)."
+ },
+ "BG36_MagicItem_611": {
+  "base_value": 10,
+  "synergy": {},
+  "note": "Get a Menagerie Tableware, and another every turn (Tableware Portrait) — a recurring minion generator priced with its peers Sellemental Portrait (10) and Baller Portrait (8). No keyword: the value is the body per turn, and a Menagerie payoff needs the board the trinket does not itself supply."
  }
 }
