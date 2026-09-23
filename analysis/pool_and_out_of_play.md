@@ -166,16 +166,17 @@ never have seen a card list. Both are fixed and regression-tested.
   Shadybunny warns about. The coach can now *see* Aberration cards (tribe,
   tier, stats) but has no comp to build toward; comps should come from observed
   play over the next days, not from this document. **Still open.**
-- ~~**The Deity mechanic is not modeled.**~~ **Closed.** `meta/engines.json`
-  gained an `aberrations-discard-deity` engine (trigger `discard`) and
-  `value.py` a comp-independent detector alongside `_spell_fuel_bonus`. The
-  discarded rate is modeled, not measured, and the Deity half is grounded in the
-  only log state that exists for it (`BACON_DEITY_SIGIL` on the `BG_OldGod`
-  "Secret Deity [DNT]" entity, re-created per combat). The full account — every
-  card-text number, every assumption, and what would falsify the model — is in
-  `analysis/discard_mechanic.md`. Note the mechanic has **no discard event in the
-  log at all**: the only tag is `CANT_DISCARD`, and `hand -> GRAVEYARD` cannot
-  separate a discard from casting a spell (in the Faelin win, all three
+- **The Deity mechanic — implemented, NOT yet in main.** Branch
+  `worktree-discard-engine` adds an `aberrations-discard-deity` engine to
+  `meta/engines.json` (trigger `discard`) and a comp-independent detector in
+  `value.py` alongside `_spell_fuel_bonus`, with `analysis/discard_mechanic.md`
+  and tests. Named here as a branch, not a commit, because **if it is not in
+  main it is not done** — flip this line when it lands. The discarded rate is
+  modeled, not measured, and the Deity half is grounded in the only log state
+  that exists for it (`BACON_DEITY_SIGIL` on the `BG_OldGod` "Secret Deity
+  [DNT]" entity, re-created per combat). Note the mechanic has **no discard event
+  in the log at all**: the only tag is `CANT_DISCARD`, and `hand -> GRAVEYARD`
+  cannot separate a discard from casting a spell (in the Faelin win, all three
   hand-to-graveyard cards were spells the player *cast*).
 - **Two cards a `no carddef` boundary, not an oversight:** `BGFYM_005` and
   `BGFYM_011` (the Y'Shaarj family) have **no card definition in the installed
