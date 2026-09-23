@@ -32,8 +32,7 @@ EXPECTED_COUNTS = {
     "new_heroes": 2,
 }
 
-ACCEPTED_GAP_NAMES = {"C'Thun", "Sha of Fear", "Greedy Conniver",
-                      "Sewer Escapee"}
+ACCEPTED_GAP_NAMES = {"Sha of Fear", "Greedy Conniver", "Sewer Escapee"}
 
 
 class TestPatchDbCoverage(unittest.TestCase):
@@ -60,13 +59,27 @@ class TestPatchDbCoverage(unittest.TestCase):
     def test_no_unrecorded_gaps(self):
         self.assertEqual(self.result["problems"], [])
 
-    def test_the_four_known_gaps_are_recorded_with_evidence(self):
+    def test_the_known_gaps_are_recorded_with_evidence(self):
         got = {name for name, _ in self.result["accepted"]}
         self.assertEqual(got, ACCEPTED_GAP_NAMES)
         for _name, entry in self.result["accepted"]:
             self.assertTrue(entry.get("reason"), "a gap needs a reason")
             self.assertTrue(entry.get("evidence"),
                             "a gap needs the evidence that closed the question")
+
+    def test_a_closed_gap_is_recorded_as_resolved(self):
+        """C'Thun left the gap list on 2026-09-23 — its id was in the logs all
+        along (`BGFYM_000`). A gap that closes silently teaches nothing, so the
+        resolution and its evidence stay in meta/patch_gaps.json."""
+        import meta
+        doc = meta._raw("patch_gaps.json") or {}
+        names = {g.get("name") for g in doc.get("expected_missing") or []}
+        self.assertNotIn("C'Thun", names, "C'Thun is in minions.json now")
+        resolved = doc.get("resolved") or []
+        cthun = [r for r in resolved if r.get("name") == "C'Thun"]
+        self.assertTrue(cthun, "the resolution must be recorded, not dropped")
+        self.assertEqual(cthun[0].get("id"), "BGFYM_000")
+        self.assertTrue(cthun[0].get("resolution"))
 
     def test_seafood_stew_is_now_in_the_db(self):
         """The one returning spell that WAS missing (no id in any log).

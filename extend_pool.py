@@ -89,7 +89,11 @@ def main():
             "tier": card.get("techLevel"),
             "id": cid,
             "name": card.get("name"),
-            "cost": card.get("cost"),
+            # Minions cost a FLAT 3 gold at every tier (CLAUDE.md; player-
+            # confirmed 2026-09-06) — hearthstonejson's `cost` is the mana cost
+            # and reports 0 for BG minions, which is why the 18 older
+            # auto_added rows carry a 0 that _buy_prices must not trust.
+            "cost": 3,
             # Full lookup via tribes.tribes_from_races: compounds preserved,
             # Amalgams -> "All" (the old races[0] truncated both).
             "tribe": tribes_from_races(races),
@@ -97,6 +101,7 @@ def main():
             "health": card.get("health"),
             "mechanics": card.get("mechanics", []),
             "text": re.sub(r"<[^>]+>", "", card.get("text") or "").strip(),
+            "tribe_src": "hearthstonejson",
             "auto_added": "from session logs (extend_pool.py)",
         })
     for a in additions:

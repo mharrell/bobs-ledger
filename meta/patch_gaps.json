@@ -1,24 +1,15 @@
 {
-  "_comment": "Cards the change list names that the meta DB genuinely cannot carry, each with the evidence that closed the question. check_patch_db.py reports these as ACCEPTED and does not fail on them, so a NEW gap still fails the gate instead of the tool being permanently red. Every entry needs a reason AND the evidence that established it - an entry with no evidence is a gap someone talked themselves out of.",
+  "_comment": "Cards the change list names that the meta DB genuinely cannot carry, each with the evidence that closed the question. check_patch_db.py reports these as ACCEPTED and does not fail on them, so a NEW gap still fails the gate instead of the tool being permanently red. Every entry needs a reason AND the evidence that established it - an entry with no evidence is a gap someone talked themselves out of. `seen_not_carried` holds the same kind of entry for cards NO change list names, found instead by the log pre-flight (logquery._unresolved_ids); logquery consults it so the pre-flight stops re-reporting a question that is already answered.",
   "patch": "36.6.1",
-  "updated": "2026-09-22",
+  "updated": "2026-09-23",
   "expected_missing": [
-    {
-      "kind": "minion",
-      "name": "C'Thun",
-      "tier": 3,
-      "stats": "1/1",
-      "text": "Deity. After this awakens, give this minion's stats split amongst your other minions.",
-      "reason": "no card id for the Battlegrounds card exists anywhere on this machine",
-      "evidence": "absent from the log-mined pool (meta/pool_roster.json, 181 cards over 3 games); absent from every Power.log session on disk; the hearthstonejson cache holds 11 cards named C'Thun and none of them is this one (a HERO skin and two Mercenaries minions only); the client ships no dbfid-to-card-id map. value._buy_prices indexes the minion DB by id, so an id-less row raises rather than degrading, which is why it is not simply added by name."
-    },
     {
       "kind": "minion",
       "name": "Sha of Fear",
       "tier": 7,
       "stats": "9/12",
       "reason": "no card id exists anywhere on this machine",
-      "evidence": "0 hearthstonejson entries by that exact name; absent from every local Power.log and from the 36.6.1 log-mined pool. It is the article's positional split point between the Aberration block and the other-tribes block, which is part of why its tribe is left null rather than inferred from position."
+      "evidence": "0 hearthstonejson entries by that exact name; the name appears in NO entityName of any of the 5 Power.log sessions on disk (scanned 2026-09-23 by pairing entityName= with cardId= on every TAG_CHANGE line - the method that DID find C'Thun's id, see below); absent from the 36.6.1 log-mined pool. It is the article's positional split point between the Aberration block and the other-tribes block, which is part of why its tribe is left null rather than inferred from position."
     },
     {
       "kind": "minion",
@@ -26,7 +17,7 @@
       "tier": 3,
       "stats": "7/7",
       "reason": "no card id exists anywhere on this machine",
-      "evidence": "0 hearthstonejson entries by that exact name; absent from every local Power.log and from the 36.6.1 log-mined pool."
+      "evidence": "0 hearthstonejson entries by that exact name; the name appears in NO entityName of any of the 5 local Power.log sessions (entityName/cardId scan, 2026-09-23); absent from the 36.6.1 log-mined pool."
     },
     {
       "kind": "minion",
@@ -34,7 +25,23 @@
       "tier": 4,
       "stats": "4/5",
       "reason": "no card id exists anywhere on this machine",
-      "evidence": "0 hearthstonejson entries by that exact name; absent from every local Power.log and from the 36.6.1 log-mined pool."
+      "evidence": "0 hearthstonejson entries by that exact name; the name appears in NO entityName of any of the 5 local Power.log sessions (entityName/cardId scan, 2026-09-23); absent from the 36.6.1 log-mined pool."
+    }
+  ],
+  "seen_not_carried": [
+    {
+      "kind": "spell",
+      "id": "BG31_893",
+      "name": "Gem Day",
+      "reason": "the client card data carries no tier, and the log never puts it in a hand or a shop: it is game machinery, not a tavern spell the coach can price or buy",
+      "evidence": "hearthstonejson has it as type SPELL (not BATTLEGROUND_SPELL), cost 0, no techLevel, no isBattlegroundsPoolSpell flag at all; in every one of the 1580 log lines naming it (5 sessions) it is created in zone=SETASIDE for player 7/8 and never enters HAND, PLAY or a shop; no TECH_LEVEL or COST tag is ever printed for it. tavern_spells.json feeds shop pricing and every entry must carry a curated read (tests/test_spells.py::test_all_spells_annotated), so carrying it means inventing a tier and an effect read for a card that can never appear in the shop. The pre-flight keeps reporting it until this entry exists - it is the 'genuine unknown' logquery._NON_CARD deliberately does not hide."
+    },
+    {
+      "kind": "trinket_token",
+      "id": "BG30_MagicItem_442t",
+      "name": "Blood Golem",
+      "reason": "a trinket-SHAPED id that is not a trinket: it is the Golem token BG30_MagicItem_442 (Blood Golem Sticker) summons",
+      "evidence": "the client card data gives it an empty description while every real trinket (and every Lesser/Greater `t` variant: BG36_MagicItem_403t, BG36_MagicItem_417t, BG30_MagicItem_914t, BG30_MagicItem_988t) carries text; its name differs from its base's ('Blood Golem' vs 'Blood Golem Sticker') where the Lesser/Greater pairs share a name; and no choice list ever offers it. Carrying it would put a token in the trinket pool, where choices.py ranks picks by trinket effects. tests/test_trinket_meta.py::test_every_trinket_seen_in_a_log_is_in_the_db consults this entry, so a NEW token-shaped id still fails the gate."
     }
   ],
   "out_of_scope": [
@@ -44,5 +51,15 @@
       "reason": "Duos-only cards; the coach coaches SOLO Battlegrounds",
       "evidence": "Duos is a separate mode with its own card surface, and a Duos-only row in the solo DB could be recommended in a solo shop where it can never appear. The two changed Duos minions (Man'ari Messenger, Transport Reactor) are excluded for the same reason. Recorded here rather than silently dropped: Voidpriest Cloner's text ('Whenever you discard a card, Pass a copy of it. (2 times per turn.)') is the only published per-turn cap on discard triggers, and C'Thrax Wrecker's ('Give your team's Deities +4/+4') confirms Deity is a card type rather than one card - both were fed to the discard-engine work."
     }
+  ],
+  "resolved": [
+    {
+      "kind": "minion",
+      "name": "C'Thun",
+      "id": "BGFYM_000",
+      "was": "listed under expected_missing: 'no card id for the Battlegrounds card exists anywhere on this machine'",
+      "resolution": "the id was in the logs the whole time. Pairing entityName= with cardId= on the TAG_CHANGE lines of the 2026-09-23 session yields entityName=C'Thun cardId=BGFYM_000 (1913 lines; its enchant is BGFYM_000e 'Eye See You'). The sibling Deity Y'Shaarj was already carried as BGFYM_011, and BGFYM_000 is not in the hearthstonejson cache at all - which is exactly why a cache-only (or name-only) search could never find it. Added to meta/minions.json (tier 3, 1/1, Aberration, cost 3) on 2026-09-23."
+    }
   ]
 }
+
