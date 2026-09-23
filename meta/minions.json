@@ -15,6 +15,21 @@
   },
   {
     "tier": 1,
+    "id": "BG31_149",
+    "name": "Bubble Gunner",
+    "cost": 3,
+    "tribe": "Murloc",
+    "attack": 2,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Gain a random Bonus Keyword.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 1,
     "id": "BG31_803",
     "name": "Buzzing Vermin",
     "cost": 3,
@@ -56,6 +71,21 @@
       "WINDFURY"
     ],
     "text": "Divine Shield\nWindfury",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 1,
+    "id": "BG31_815",
+    "name": "Dune Dweller",
+    "cost": 3,
+    "tribe": "Elemental",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "[x]Battlecry: Give Elementals\nin the Tavern +1/+1\nthis game.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -127,6 +157,21 @@
       "DEATHRATTLE"
     ],
     "text": "Deathrattle: Summon\ntwo 1/1 Skeletons.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 1,
+    "id": "BG36_110",
+    "name": "Joyous",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 2,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Give your Deity +2/+2.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -297,6 +342,19 @@
     "tribe_src": "log"
   },
   {
+    "tier": 1,
+    "id": "BG36_098",
+    "name": "Zoatroid",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 3,
+    "health": 2,
+    "mechanics": [],
+    "text": "When you sell this, get a 0/2 Tentacle with Taunt.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
     "tier": 2,
     "id": "BG_TTN_401",
     "name": "Ancestral Automaton",
@@ -326,6 +384,50 @@
   },
   {
     "tier": 2,
+    "id": "BG34_170t2",
+    "name": "Blue Volumizer",
+    "cost": 3,
+    "tribe": "Mech",
+    "attack": 1,
+    "health": 3,
+    "mechanics": [
+      "MAGNETIC"
+    ],
+    "text": "[x]Magnetic. The first time this is\nplayed or Magnetized, your\nVolumizers have +3 Health this\n     game (wherever they are).",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 2,
+    "id": "BG36_099",
+    "name": "Brain Rotter",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [],
+    "text": "Activate (0): Discard a card to give your Deity +2/+2.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 2,
+    "id": "BGS_034",
+    "name": "Bronze Warden",
+    "cost": 3,
+    "tribe": "Dragon",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "REBORN"
+    ],
+    "text": "Divine Shield\nReborn",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 2,
     "id": "BG36_342",
     "name": "Clever Castaway",
     "cost": 3,
@@ -348,6 +450,19 @@
       "CHOOSE_ONE"
     ],
     "text": "Choose One - Get 2 Blood Gems; or Get a Gem Day.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 2,
+    "id": "BG36_360t3",
+    "name": "Dark Paradox",
+    "cost": 3,
+    "tribe": "All",
+    "attack": 2,
+    "health": 4,
+    "mechanics": [],
+    "text": "Whenever you play a card, gain +2 Attack.",
+    "auto_added": "36.6.1 DB update (patch article + carddef id check)",
     "tribe_src": "log"
   },
   {
@@ -431,6 +546,21 @@
       "DEATHRATTLE"
     ],
     "text": "[x]Battlecry: Your Beetles\nhave +2/+1 this game.\nDeathrattle: Summon a\n2/2 Beetle.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 2,
+    "id": "BG34_170t3",
+    "name": "Green Volumizer",
+    "cost": 3,
+    "tribe": "Mech",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "MAGNETIC"
+    ],
+    "text": "[x]Magnetic. The first time this is\nplayed or Magnetized, your\nVolumizers have +1/+1 this\n     game (wherever they are).",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -602,6 +732,21 @@
   },
   {
     "tier": 2,
+    "id": "BG34_170t",
+    "name": "Red Volumizer",
+    "cost": 3,
+    "tribe": "Mech",
+    "attack": 3,
+    "health": 1,
+    "mechanics": [
+      "MAGNETIC"
+    ],
+    "text": "[x]Magnetic. The first time this is\nplayed or Magnetized, your\nVolumizers have +3 Attack this\n     game (wherever they are).",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 2,
     "id": "BG20_101",
     "name": "Roadboar",
     "cost": 3,
@@ -753,6 +898,36 @@
   },
   {
     "tier": 2,
+    "id": "BG36_116",
+    "name": "Underrot Spawn",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Summon a 0/2 Tentacle with Taunt. Give your minions +1 Attack.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 2,
+    "id": "BG36_101",
+    "name": "Unwilling Slacker",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Get a random 1-Cost Tavern spell.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 2,
     "id": "BG29_300",
     "name": "Very Hungry Winterfinner",
     "cost": 3,
@@ -764,6 +939,19 @@
       "TRIGGER_VISUAL"
     ],
     "text": "Taunt\nWhenever this takes damage, give a minion in your hand +2/+1.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BG36_311",
+    "name": "Abyssal Envoy",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 3,
+    "health": 4,
+    "mechanics": [],
+    "text": "Activate (0): Discard a card to get a random Tavern spell.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -812,6 +1000,21 @@
     ],
     "text": "Magnetic\nDivine Shield\nTaunt",
     "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BG34_170",
+    "name": "Auto Accelerator",
+    "cost": 3,
+    "tribe": "Mech",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get a random Magnetic Volumizer.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 3,
@@ -879,6 +1082,150 @@
       "DEATHRATTLE"
     ],
     "text": "Deathrattle: Summon three 1/1 Skeletons.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BG36_360t6",
+    "name": "Dark Paradox",
+    "cost": 3,
+    "tribe": "All",
+    "attack": 2,
+    "health": 2,
+    "mechanics": [],
+    "text": "Has +2/+2 for each Battlecry you've triggered this game (wherever this is).",
+    "auto_added": "36.6.1 DB update (patch article + carddef id check)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BG36_113",
+    "name": "Drifting Sacrifice",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 2,
+    "health": 1,
+    "mechanics": [
+      "REBORN",
+      "DEATHRATTLE"
+    ],
+    "text": "Reborn. Deathrattle: Give your Deity +2/+1.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BG36_112",
+    "name": "Fetid Corroder",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get a Sludge Corrosion.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BG27_000",
+    "name": "Iron Groundskeeper",
+    "cost": 3,
+    "tribe": null,
+    "attack": 2,
+    "health": 2,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get 2 copies of Fortify.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": null
+  },
+  {
+    "tier": 3,
+    "id": "BG28_582",
+    "name": "Mangled Bandit",
+    "cost": 3,
+    "tribe": "Quilboar",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [],
+    "text": "Activate (0): Discard a card to get 3 Blood Gems.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BG34_405",
+    "name": "Relentless Deflector",
+    "cost": 3,
+    "tribe": "Mech",
+    "attack": 5,
+    "health": 4,
+    "mechanics": [
+      "AURA",
+      "AVENGE"
+    ],
+    "text": "Has Taunt while this has Divine Shield. Avenge (3): Gain Divine Shield.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 3,
+    "id": "BG32_860",
+    "name": "Shoalfin Mystic",
+    "cost": 3,
+    "tribe": "Murloc",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [],
+    "text": "[x]When you sell this,\nyour Tavern spells give an\n   extra +1/+1 this game.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 3,
+    "id": "BG36_108",
+    "name": "Vicious Mindslasher",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 3,
+    "health": 1,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you cast a Tavern spell, give this and your Deity +1/+3.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BG36_100",
+    "name": "Wandering Willbreaker",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 1,
+    "health": 3,
+    "mechanics": [],
+    "text": "When you sell this, get 2 random Tavern spells. When you play one, discard the other.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 3,
+    "id": "BGFYM_011",
+    "name": "Y'Shaarj",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deity. Deathrattle: Summon your first 2 Aberrations that died this combat with their maximum stats (except Deities).",
+    "auto_added": "36.6.1 DB update (patch article + carddef id check)",
     "tribe_src": "log"
   },
   {
@@ -1579,6 +1926,51 @@
   },
   {
     "tier": 4,
+    "id": "BG34_171",
+    "name": "Conveyor Construct",
+    "cost": 3,
+    "tribe": "Mech",
+    "attack": 5,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Get a random Magnetic Volumizer.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
+    "id": "BG36_106",
+    "name": "Cutthroat K'Thir",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 4,
+    "health": 4,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you discard a card, give this and your Deity +4/+4.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
+    "id": "BG36_360t5",
+    "name": "Dark Paradox",
+    "cost": 3,
+    "tribe": "All",
+    "attack": 2,
+    "health": 6,
+    "mechanics": [
+      "BACON_RALLY"
+    ],
+    "text": "Rally: Get a random minion of your most common type.",
+    "auto_added": "36.6.1 DB update (patch article + carddef id check)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
     "id": "BG36_511",
     "name": "Dead Bellringer",
     "cost": 3,
@@ -1615,7 +2007,7 @@
     "mechanics": [
       "DIVINE_SHIELD"
     ],
-    "text": "[x]Divine Shield\nActivate (1): The next\nMagnetization to this minion\nthis turn is doubled.",
+    "text": "Divine Shield. Activate (1): The next Magnzetization to this minion this turn happens an extra time.",
     "tribe_src": "log"
   },
   {
@@ -1663,6 +2055,19 @@
   },
   {
     "tier": 4,
+    "id": "BG36_308",
+    "name": "Faceless Operative",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 4,
+    "health": 2,
+    "mechanics": [],
+    "text": "When you sell this, get 2 random Aberrations. When you play one, discard the other.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
     "id": "BG34_500",
     "name": "Flaming Enforcer",
     "cost": 3,
@@ -1705,6 +2110,22 @@
   },
   {
     "tier": 4,
+    "id": "BG28_583",
+    "name": "Geomagus Roogug",
+    "cost": 3,
+    "tribe": "Quilboar",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "[x]Divine Shield. Whenever a\nBlood Gem is played on this,\nthis plays a Blood Gem on a\n  different friendly minion.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 4,
     "id": "BG36_853",
     "name": "Glambot",
     "cost": 3,
@@ -1730,6 +2151,23 @@
     ],
     "text": "[x]Deathrattle: Your\nElementals give an extra\n+2 Health this game.",
     "tribe_src": "log"
+  },
+  {
+    "tier": 4,
+    "id": "BG32_336",
+    "name": "Gormling Gourmet",
+    "cost": 3,
+    "tribe": "Murloc",
+    "attack": 4,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE",
+      "TAUNT"
+    ],
+    "text": "Taunt\nBattlecry and Deathrattle: Get a Seafood Stew.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 4,
@@ -1776,6 +2214,36 @@
   },
   {
     "tier": 4,
+    "id": "BG36_372",
+    "name": "Holy Vanguard",
+    "cost": 3,
+    "tribe": null,
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "DIVINE_SHIELD"
+    ],
+    "text": "Divine Shield. Has +15/+15 while you have 15 or less Health.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": null
+  },
+  {
+    "tier": 4,
+    "id": "BG30_121",
+    "name": "Hot-Air Surveyor",
+    "cost": 3,
+    "tribe": "Quilboar",
+    "attack": 3,
+    "health": 7,
+    "mechanics": [
+      "AURA"
+    ],
+    "text": "Blood Gems played\nfrom your hand cast an extra time.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
     "id": "BG32_341",
     "name": "Humon'gozz",
     "cost": 3,
@@ -1788,6 +2256,22 @@
     ],
     "text": "[x]Divine Shield\nYour Tavern spells give\nan extra +1/+2.",
     "tribe_src": null
+  },
+  {
+    "tier": 4,
+    "id": "BG31_812",
+    "name": "Ichoron the Protector",
+    "cost": 3,
+    "tribe": "Elemental",
+    "attack": 3,
+    "health": 1,
+    "mechanics": [
+      "DIVINE_SHIELD",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Divine Shield\nWhenever you play an Elemental, give it Divine Shield until next turn.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 4,
@@ -1827,6 +2311,22 @@
     "health": 5,
     "mechanics": [],
     "text": "Activate (1): Trigger a friendly minion's Battlecry.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
+    "id": "BG35_881",
+    "name": "Leyline Surfacer",
+    "cost": 3,
+    "tribe": "Elemental",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "Battlecry and Deathrattle: Get an Arcane Absorption.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -1885,6 +2385,19 @@
   },
   {
     "tier": 4,
+    "id": "BG36_312",
+    "name": "Mindbending Recruiter",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 6,
+    "health": 2,
+    "mechanics": [],
+    "text": "Activate (0): Discard a card to get a random Aberration.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
     "id": "BG27_080",
     "name": "Motley Phalanx",
     "cost": 3,
@@ -1896,6 +2409,36 @@
       "TAUNT"
     ],
     "text": "[x]Taunt\nDeathrattle: Give a friendly\nminion of each type\n  +3/+3 permanently.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
+    "id": "BG36_115",
+    "name": "Nightmare Corroder",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 7,
+    "health": 4,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Get a Sludge Corrosion.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
+    "id": "BG36_114",
+    "name": "Parasitic Fleshling",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 4,
+    "health": 6,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "At the end of your turn, give your left-most minion +2/+2. (Improved by each card you've discarded this game!)",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -1983,6 +2526,21 @@
       "TRIGGER_VISUAL"
     ],
     "text": "Start of Combat: Cast Shiny Ring twice.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 4,
+    "id": "BG36_362",
+    "name": "Sacrificial Wrathguard",
+    "cost": 3,
+    "tribe": "Demon",
+    "attack": 5,
+    "health": 3,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Give minions in the Tavern +2/+2 this game. Activate (1): Improve this.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -2266,6 +2824,21 @@
   },
   {
     "tier": 5,
+    "id": "BG36_360t4",
+    "name": "Dark Paradox",
+    "cost": 3,
+    "tribe": "All",
+    "attack": 8,
+    "health": 4,
+    "mechanics": [
+      "DIVINE_SHIELD"
+    ],
+    "text": "Divine Shield. This minion's Divine Shield takes 3 hits to break.",
+    "auto_added": "36.6.1 DB update (patch article + carddef id check)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
     "id": "BG31_920",
     "name": "Darkcrest Strategist",
     "cost": 3,
@@ -2278,6 +2851,21 @@
       "TRIGGER_VISUAL"
     ],
     "text": "Spellcraft: Get a random Tier 1 Naga. (Improves each turn!)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_102",
+    "name": "De-volition-ist",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 4,
+    "health": 8,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After this attacks, deal damage equal to this minion's Attack to the highest-Health enemy minion.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -2365,6 +2953,21 @@
   },
   {
     "tier": 5,
+    "id": "BG32_231",
+    "name": "Elite Navigator",
+    "cost": 3,
+    "tribe": "Pirate",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Make a friendly Pirate from Tier 4 or below Golden.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 5,
     "id": "BG36_523",
     "name": "Enterprising Escapee",
     "cost": 3,
@@ -2375,6 +2978,21 @@
       "TRIGGER_VISUAL"
     ],
     "text": "[x]After you spend 5 Gold, get\na Lockbox. If you already have\none, it opens 1 turns sooner\ninstead. (5 Gold left!)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_318",
+    "name": "Faceless Converter",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 5,
+    "health": 5,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Give your Deity +1/+1. (Improved by each Tavern spell you've cast this game!)",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -2407,6 +3025,21 @@
   },
   {
     "tier": 5,
+    "id": "BG35_882",
+    "name": "Firelands Fugitive",
+    "cost": 3,
+    "tribe": "Elemental",
+    "attack": 5,
+    "health": 7,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Get a Conflagration.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 5,
     "id": "BG32_820",
     "name": "Firescale Hoarder",
     "cost": 3,
@@ -2418,6 +3051,21 @@
       "DEATHRATTLE"
     ],
     "text": "Battlecry and Deathrattle: Get a Shiny Ring.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BGS_008",
+    "name": "Ghastcoiler",
+    "cost": 3,
+    "tribe": "Beast",
+    "attack": 7,
+    "health": 7,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Summon\n2 random Deathrattle minions.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -2448,6 +3096,36 @@
       "BACON_RALLY"
     ],
     "text": "Rally: Summon a Tasty Lobster.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG31_148",
+    "name": "Hackerfin",
+    "cost": 3,
+    "tribe": "Murloc",
+    "attack": 5,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY"
+    ],
+    "text": "Battlecry: Give your other minions +3/+2. (Improved by each different Bonus Keyword in your warband!)",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_364",
+    "name": "Hopebringer",
+    "cost": 3,
+    "tribe": "Dragon",
+    "attack": 3,
+    "health": 3,
+    "mechanics": [
+      "START_OF_COMBAT"
+    ],
+    "text": "Start of Combat: Give your minions +3/+3. (Permanently improves after a friendly minion loses Divine Shield!)",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -2509,6 +3187,36 @@
   },
   {
     "tier": 5,
+    "id": "BG36_848",
+    "name": "Lichling Hoarder",
+    "cost": 3,
+    "tribe": "Undead",
+    "attack": 5,
+    "health": 10,
+    "mechanics": [
+      "AVENGE"
+    ],
+    "text": "Avenge (4): Get a plain copy of a different minion that started in your warband this combat.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG28_707",
+    "name": "Living Azerite",
+    "cost": 3,
+    "tribe": "Elemental",
+    "attack": 6,
+    "health": 5,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you cast a Tavern spell, give Elementals in the Tavern +3/+2 this game.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 5,
     "id": "BG35_602",
     "name": "Lurking Leviathan",
     "cost": 3,
@@ -2519,6 +3227,65 @@
       "TRIGGER_VISUAL"
     ],
     "text": "Whenever you summon a Beast, give it +3 Attack and improve this permanently.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_097",
+    "name": "Mindbender Ghur'sha",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 3,
+    "health": 9,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you discard a card, give your other minions +3/+3.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_320",
+    "name": "Mysterious K'Thir",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 8,
+    "health": 8,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "At the end of your turn, discard your 3 left-most Tavern spells. Gain +8/+8 for each discarded.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_300",
+    "name": "N'raqi Frostcaller",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 6,
+    "health": 3,
+    "mechanics": [],
+    "text": "Activate (0): Discard a card for your Tavern spells to give an extra +1/+1 this game.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_103",
+    "name": "N'raqi Sapper",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 6,
+    "health": 3,
+    "mechanics": [
+      "BATTLECRY",
+      "DEATHRATTLE"
+    ],
+    "text": "Battlecry and Deathrattle: Get an Energizing Chamber.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -2591,6 +3358,21 @@
       "BACON_RALLY"
     ],
     "text": "Rally: This plays 3 permanent Blood Gems on itself.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 5,
+    "id": "BG36_366",
+    "name": "Resourceful Robot",
+    "cost": 3,
+    "tribe": "Mech",
+    "attack": 4,
+    "health": 8,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "At the end of your turn, Magnetize a random Volumizer to this. Get a copy of it.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -2794,6 +3576,21 @@
   },
   {
     "tier": 6,
+    "id": "BG36_367",
+    "name": "Auto Reveille",
+    "cost": 3,
+    "tribe": "Mech",
+    "attack": 6,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "After you buy 3 cards, get a random Magnetic Volumizer. (3 left!)",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 6,
     "id": "BG35_883",
     "name": "Balinda Stonehearth",
     "cost": 3,
@@ -2834,6 +3631,36 @@
       "DIVINE_SHIELD"
     ],
     "text": "Divine Shield\nRally: Cast Mighty Dragonbreath.",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 6,
+    "id": "BG36_360t9",
+    "name": "Dark Paradox",
+    "cost": 3,
+    "tribe": "All",
+    "attack": 10,
+    "health": 2,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Summon a Golem with this minion's stats.",
+    "auto_added": "36.6.1 DB update (patch article + carddef id check)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 6,
+    "id": "BG36_104",
+    "name": "Dark Puppeteer",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 8,
+    "health": 4,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Your Tavern spells give an extra +4 Health this game.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
     "tribe_src": "log"
   },
   {
@@ -3010,6 +3837,38 @@
   },
   {
     "tier": 6,
+    "id": "BGFYM_005",
+    "name": "Harbinger Aph'lass",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 3,
+    "health": 6,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever you discard a card, give your Deity +1/+1 and improve this.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 6,
+    "id": "BG36_849",
+    "name": "Heroic Broodmother",
+    "cost": 3,
+    "tribe": "Dragon",
+    "attack": 7,
+    "health": 7,
+    "mechanics": [
+      "BACON_RALLY",
+      "DIVINE_SHIELD",
+      "START_OF_COMBAT"
+    ],
+    "text": "Rally: Gain Divine Shield. Start of Combat: Attack immediately.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 6,
     "id": "BG36_344",
     "name": "Hooktusk, Master Marauder",
     "cost": 3,
@@ -3063,6 +3922,21 @@
     ],
     "text": "[x]Rally: Your Elementals\ngive an extra +2/+2\nthis game.",
     "tribe_src": "log"
+  },
+  {
+    "tier": 6,
+    "id": "BGS_040",
+    "name": "Nadina the Red",
+    "cost": 3,
+    "tribe": null,
+    "attack": 8,
+    "health": 4,
+    "mechanics": [
+      "DEATHRATTLE"
+    ],
+    "text": "Deathrattle: Give 3 friendly Dragons Divine Shield.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": null
   },
   {
     "tier": 6,
@@ -3152,6 +4026,21 @@
   },
   {
     "tier": 6,
+    "id": "BG36_109",
+    "name": "The Shadow of Doubt",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 6,
+    "health": 8,
+    "mechanics": [
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Whenever a card is added to your hand, give your Deity +3/+4.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 6,
     "id": "BG36_622",
     "name": "Torrential Ruiner",
     "cost": 3,
@@ -3203,6 +4092,22 @@
     "mechanics": [],
     "text": "Activate (1): Set another minion's stats to 50/50.",
     "tribe_src": null
+  },
+  {
+    "tier": 6,
+    "id": "BG31_810",
+    "name": "Ultraviolet Ascendant",
+    "cost": 3,
+    "tribe": "Elemental",
+    "attack": 6,
+    "health": 3,
+    "mechanics": [
+      "START_OF_COMBAT",
+      "TRIGGER_VISUAL"
+    ],
+    "text": "Start of Combat: Give your other Elementals +3/+2. (Improves after you play an Elemental!)",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 6,
@@ -3262,6 +4167,19 @@
   },
   {
     "tier": 6,
+    "id": "BG36_370",
+    "name": "Victorious Geomant",
+    "cost": 3,
+    "tribe": "Quilboar",
+    "attack": 10,
+    "health": 10,
+    "mechanics": [],
+    "text": "Activate (2): Get 6 Blood Gems. Cast any that can't fit on your left-most minion.",
+    "auto_added": "36.6.1 DB update (log-mined pool)",
+    "tribe_src": "log"
+  },
+  {
+    "tier": 6,
     "id": "BG24_004",
     "name": "Warpwing",
     "cost": 3,
@@ -3271,6 +4189,21 @@
     "mechanics": [],
     "text": "Immune while attacking.",
     "tribe_src": "log"
+  },
+  {
+    "tier": 6,
+    "id": "BG22_403",
+    "name": "Young Murk-Eye",
+    "cost": 3,
+    "tribe": "Murloc",
+    "attack": 9,
+    "health": 6,
+    "mechanics": [
+      "END_OF_TURN_TRIGGER"
+    ],
+    "text": "[x]At the end of your turn,\ntrigger the Battlecry of\nan adjacent minion.",
+    "auto_added": "36.6.1 DB update (hearthstonejson)",
+    "tribe_src": "hearthstonejson"
   },
   {
     "tier": 7,
