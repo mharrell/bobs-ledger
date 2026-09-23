@@ -17,7 +17,8 @@ import meta
 import pool
 from player_actions import _load_bg_magnetic_ids
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
-from tribes import is_banned, matches, normalize, overlaps, parts
+from tribes import (ALL_MARKER, is_banned, matches, normalize, overlaps,
+                    parts)
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -2184,6 +2185,13 @@ def _top_move_text(analysis):
                                       f"short on tier {tier}")
                         elif n_missing == 0:
                             target = "comp complete, no engine live"
+                        elif analysis.get("comp_gap"):
+                            # The board is a <tribe> build and no comp exists for
+                            # that tribe yet (Aberration, 36.6.1): say what is
+                            # true rather than implying a direction.
+                            target = (f"no comp published for "
+                                      f"{analysis['comp_gap']} yet — build the "
+                                      f"{analysis['comp_gap']} package")
                         else:
                             target = "no comp direction yet"
                         roll = (f"no reroll target — {target} · roll the "
@@ -2950,6 +2958,74 @@ def comp_progress(board, comps, recent_cards=None, top=4, trinkets=None):
     return rows[:top]
 
 
+def _board_tribe_parts(board):
+    """Counter of canonical tribe PARTS across the board's tribed minions."""
+    counts = collections.Counter()
+    for m in board or []:
+        for p in parts(normalize((m or {}).get("tribe"))):
+            counts[p] += 1
+    return counts
+
+
+def comp_gap(board, comps):
+    """The board's dominant tribe when NO comp exists for it, else None.
+
+    Patch 36.6.1 added the Aberration tribe, and the comp source (hsreplay) has
+    no Aberration comps yet — so a board can be dominated by a tribe the coach
+    has no recipe for at all. Reporting that is the honest read.
+
+    Why this exists, measured on the 2026-09-23 win: a 6-of-7 Aberration board,
+    no comps defined for Aberration, and `comp_target` returned "Beasts - Tasty
+    Lobstah" off TWO single incidental hits in two different Beast comps. The
+    plan then advised buying Banana Slamma onto an all-Aberration board, in a
+    game that was won. The rule below requires a real MAJORITY (more than half
+    the tribed minions, at least three of them) so a mixed board is not
+    mislabelled as a tribe build.
+    """
+    counts = _board_tribe_parts(board)
+    if not counts:
+        return None
+    tribe, n = counts.most_common(1)[0]
+    total = sum(counts.values())
+    if total < 3 or n * 2 <= total:
+        return None
+    defined = {normalize(c.get("tribe")) for c in (comps or {}).values()
+               if isinstance(c, dict) and c.get("tribe")}
+    return None if tribe in defined else tribe
+
+
+def _tribe_hits(board, rc, comp, tribe, shared, db):
+    """Core hits whose CARD actually belongs to `tribe` (copies count).
+
+    The tribe-level fallback used to sum raw hits across comps of one tribe, so a
+    single card sitting in several comps' cores gave EVERY tribe a phantom hit —
+    two comps x one hit = "the tribe has evidence". Measured on the 2026-09-23
+    win: that is what turned a 6-of-7 Aberration board into "Beasts - Tasty
+    Lobstah".
+
+    ALL-TRIBE cards (Amalgams: Titus Rivendare is `All` and core in several
+    comps) are excluded from CREATING tribe evidence. By the canonical rule an
+    Amalgam counts as every tribe, which is right for a comp-fit test but wrong
+    here: "the player owns Titus" is not evidence of which tribe they are
+    building. They still count toward a comp's own >=2-hit commit, which is
+    comp-specific evidence.
+    """
+    cores = set(comp.get("core", [])) - shared
+    if not cores:
+        return 0
+    present = {c["card"] for c in board if c.get("card")} | set(rc or [])
+    matched = set()
+    for cid in present:
+        if cid not in cores:
+            continue
+        card_tribe = (db.get(cid) or {}).get("race")
+        if card_tribe == ALL_MARKER:
+            continue  # fits any build, so it says nothing about the direction
+        if matches(card_tribe, tribe):
+            matched.add(cid)
+    return _core_hits(board, rc, matched)
+
+
 def comp_target(board, comps, recent_cards=None, trinkets=None):
     """The comp to build toward, given evidence only.
 
@@ -3014,15 +3090,23 @@ def comp_target(board, comps, recent_cards=None, trinkets=None):
             return best_recent[0]
     if committed:
         return committed[0]
-    # Tribe-level evidence: core hits spread across comps of one tribe.
+    # A board dominated by a tribe the coach has NO comp for: "no direction" is
+    # the truth, and the weak tribe-level path below must not manufacture one.
+    # (The strong >=2-hit commit above already returned, so a genuine off-tribe
+    # pivot is unaffected.)
+    if comp_gap(board, comps):
+        return None
+    # Tribe-level evidence: core hits spread across comps of one tribe, counting
+    # only hits whose card actually belongs to that tribe.
     tribe_best = {}
     tribe_total = {}
+    db = _load_card_db()
     for comp in comps.values():
-        hits = core_hits(comp)
-        if not hits:
-            continue
-        tribe = comp.get("tribe")
+        tribe = normalize(comp.get("tribe")) if comp.get("tribe") else None
         if not tribe:
+            continue
+        hits = _tribe_hits(board, rc, comp, tribe, shared, db)
+        if not hits:
             continue
         tribe_total[tribe] = tribe_total.get(tribe, 0) + hits \
             + _trinket_nudge(comp, trinkets)

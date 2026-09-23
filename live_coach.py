@@ -35,7 +35,7 @@ from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
     situation_line, sticky_comp_target, combat_forecast, active_recipes,
-    live_reach_sources, DYING_HEALTH,
+    live_reach_sources, DYING_HEALTH, comp_gap,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -1215,6 +1215,11 @@ class LiveCoach:
             friendly)
         target = comp_target(board, self.playable, recent_cards=recent,
                              trinkets=trinket_recs)
+        # A board dominated by a tribe the coach has NO comp for (Aberration
+        # since 36.6.1, until the comp source catches up): carry the gap so the
+        # plan and the overlay can SAY it, instead of implying a direction the
+        # comp list cannot justify.
+        gap = comp_gap(board, self.playable)
         # Sticky same-tribe direction (2026-09-06 Guff game: the target
         # churned 'Summon Beetles' -> 'Tasty Lobstah' phase-to-phase on
         # identical tribe evidence, reading as "which build am I doing?").
@@ -1562,6 +1567,10 @@ class LiveCoach:
             "buy_this": shop[0][0] if shop else None,
             "choice": choice_advice,
             "target_comp": target["name"] if target else None,
+            # The dominant tribe with no comp defined, or None. Named so the
+            # plan can say "no comp published for Aberration yet" instead of
+            # quietly having no direction.
+            "comp_gap": gap,
             "target_state": target_state(target, board),
             "target_cards": comp_cards(target, board),
             "hand": hand_steps,
