@@ -182,6 +182,7 @@ _HTML = r"""<!doctype html>
   .instructions .step.k-sell .act { color:#e0a06a; }
   .instructions .step.k-roll .act { color:var(--dim); }
   .instructions .step.k-cast .act, .instructions .step.k-play .act { color:#cbb2ff; }
+  .instructions .step.k-swap .act { color:var(--warn); }
   /* Horizontal game-like card tiles: thumb on top, name below. */
   .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
   .tile { display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -819,16 +820,26 @@ function render(a) {
   // opponent holdings aren't subtracted yet, so this is a floor, not a
   // lobby total (analysis/pool_availability.md).
   if (a.shop_rank && a.shop_rank.length) {
+    const body = el('div');
+    // A buy the slot arbiter vetoed: the shop tile must not keep glowing gold
+    // for a card the plan just argued against (board_swap.md).
+    const vetoed = a.buy_step_swap_veto || null;
+    if (vetoed) {
+      body.appendChild(el('div', 'none',
+        'not worth a board slot this turn: ' + vetoed
+        + ' — see the swap line in Do this now'));
+    }
     const tiles = el('div', 'tiles');
     a.shop_rank.forEach(s => {
       const sub = (s.price != null ? s.price + 'g · ' : '') + s.score.toFixed(0)
         + (s.tag ? ' · ' + s.tag : '')
         + (s.pool ? ' · ' + s.pool : '');
       tiles.appendChild(tile(s.card, s.name, sub,
-                             {cls: s.card === stepCard ? 'buynow' : null,
+                             {cls: (s.card === stepCard && !vetoed) ? 'buynow' : null,
                               golden: s.golden}));
     });
-    app.appendChild(box('Tavern (ranked)', tiles));
+    body.appendChild(tiles);
+    app.appendChild(box('Tavern (ranked)', body));
   } else {
     app.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
@@ -1144,6 +1155,10 @@ def render_json(analysis):
     # buy_step_roll are written by value.top_move), so the two can't disagree.
     a["buy_step_card"] = analysis.get("buy_step_card")
     a["buy_roll_text"] = analysis.get("buy_step_roll")
+    # A buy the SLOT arbiter talked the plan out of (analysis/board_swap.md):
+    # value.top_move rewrites its step and records the card here, so the Buy box
+    # cannot keep blessing a card the numbers just argued against.
+    a["buy_step_swap_veto"] = analysis.get("buy_step_swap_veto")
     # Structured steps from value.top_move — [{text, kind, card}]. The JS
     # still renders from the top_move string today; migrating it onto these
     # (one entry per step, kind-tagged, buy card attached) is the planned
