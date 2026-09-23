@@ -210,6 +210,29 @@ reviews the report and applies with `patch_notes.py <url> --apply`.
 **Per-decision fetch:** the coach loads the relevant subset per decision (e.g.,
 comps filtered by the family ban; the hero-rank list on hero-select).
 
+### The current pool and out-of-play (added 2026-09-22) — LOCKED
+
+The snapshot above has no concept of a card *leaving*, which is why a removed
+card stayed recommendable forever. Patch 36.6.1 (a new minion type, Aberrations;
+Naga rotated out) forced the issue, and two data layers now answer it:
+
+- **`meta/pool_roster.json`** — the **current pool**, mined from the machine's
+  own Power.logs by `pool_roster.py`. The game dumps its pool at game start
+  (every in-pool minion as a `FULL_ENTITY` with `TECH_LEVEL`, `ATK`/`HEALTH`,
+  `CARDRACE`, `IS_BACON_POOL_MINION`), so this is authoritative, offline and
+  patch-proof where the paste is a hand-refreshed snapshot. Sessions group into
+  content **epochs**; the boundary is read from content, not `BuildNumber`
+  (which did not change across 36.6.1).
+- **`meta/out_of_play.json`** — the **registry** of what is not in play
+  (rotated tribes, removed cards), each with reason/patch/date and a `history`
+  block. Enforced by **`playable.py`**, which is also the review gate:
+  `validate()` cross-checks the official removal lists against the mined pool
+  and reports disagreements rather than hiding them. `HEARTH_OUT_OF_PLAY=0`
+  disables enforcement so a historical replay review is judged under the rules
+  it was played with.
+
+Design, evidence and the remaining gaps: `analysis/pool_and_out_of_play.md`.
+
 ### The assets (`meta/`)
 | File | Contents |
 |------|----------|
