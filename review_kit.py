@@ -83,31 +83,86 @@ def _classify(verdict):
     return "other"
 
 
-def summarise_game(log, game, chunk, refresh=False):
-    """One game's skeleton row."""
-    text, cache_path = _full_output(log, game, refresh)
+def parse_text(text):
+    """`replay_review` output -> the facts a reviewer actually needs.
+
+    One parser for both entry points: `review_kit.py` here, and
+    `replay_review.py --summary` (which captures its own output and calls
+    `summarise_text`). Two parsers would drift.
+    """
     header = HEADER.search(text)
-    hero = header.group(3) if header else "?"
-    place = int(header.group(4)) if header else None
-    phases = [int(m.group(1)) for m in PHASE.finditer(text)]
-    verdicts = [m.group(1) for m in VERDICT.finditer(text)]
+    count = PHASES.search(text)
+    return {
+        "game": int(header.group(1)) if header else None,
+        "hero": header.group(3) if header else "?",
+        "place": int(header.group(4)) if header else None,
+        # `phases` is only the rows that rendered a coach line (a transition
+        # turn or an unparsed-hero phase prints none), so it is NOT the buy-phase
+        # count — keep both, and label them apart, or the adherence percentage
+        # quietly divides by the wrong denominator.
+        "phases": [int(m.group(1)) for m in PHASE.finditer(text)],
+        "phase_count": int(count.group(1)) if count else None,
+        "verdicts": [m.group(1) for m in VERDICT.finditer(text)],
+    }
+
+
+def _adherence(verdicts):
     split = {"taken": 0, "passed": 0, "not_applicable": 0, "other": 0}
     for v in verdicts:
         split[_classify(v)] += 1
-    unresolved = logquery._unresolved_ids(chunk)
-    # Phases worth opening: every mismatch (passed / other), plus the last phase.
-    mismatch = [t for t, v in zip(phases, verdicts)
+    return split
+
+
+def _compact_line(facts, split, unresolved=None, cache=None):
+    rounds = facts.get("phase_count") or len(facts["phases"])
+    n = len(facts["verdicts"])
+    pct = round(100.0 * split["taken"] / n) if n else None
+    out = [f"g{facts['game']} {str(facts['hero'])[:20]:20} "
+           f"place={facts['place']} phases={rounds} "
+           f"taken={split['taken']}/{n} ({pct}%) "
+           f"passed={split['passed']} n/a={split['not_applicable']}"]
+    mismatch = [t for t, v in zip(facts["phases"], facts["verdicts"])
                 if _classify(v) in ("passed", "other")]
-    moments = sorted(set(mismatch[:6] + phases[-1:]))
+    moments = sorted(set(mismatch[:6] + facts["phases"][-1:]))
+    out.append(f"   open first: turns {moments or '-'}")
+    if unresolved:
+        out.append(f"   UNRESOLVED ids (advice renders raw): "
+                   f"{', '.join(unresolved[:5])}")
+    if cache:
+        out.append(f"   full text: {os.path.relpath(cache, _HERE)}")
+    return "\n".join(out)
+
+
+def summarise_text(text):
+    """The digest `replay_review --summary` prints: facts, no table."""
+    facts = parse_text(text)
+    if not facts["phases"] and not facts["verdicts"]:
+        # `--at` mode prints a single moment, not a phase table.
+        first = next((ln for ln in text.splitlines() if ln.startswith("at ")),
+                     "no phases parsed")
+        return f"(single moment) {first}"
+    return _compact_line(facts, _adherence(facts["verdicts"]))
+
+
+def summarise_game(log, game, chunk, refresh=False):
+    """One game's skeleton row, with the pre-flight and the cache path."""
+    text, cache_path = _full_output(log, game, refresh)
+    facts = parse_text(text)
+    unresolved = [c for c, _ in logquery._unresolved_ids(chunk)]
     return {
-        "game": game, "hero": hero, "place": place,
-        "phases": len(phases), "adherence": split,
-        "adherence_pct": (round(100.0 * split["taken"] / len(verdicts))
-                          if verdicts else None),
-        "unresolved": [c for c, _ in unresolved],
-        "moments": moments,
+        "game": game, "hero": facts["hero"], "place": facts["place"],
+        "phases": len(facts["phases"]), "adherence": _adherence(facts["verdicts"]),
+        "unresolved": unresolved,
+        "moments": _moments(facts),
         "cache": cache_path,
     }
+
+
+def _moments(facts):
+    mismatch = [t for t, v in zip(facts["phases"], facts["verdicts"])
+                if _classify(v) in ("passed", "other")]
+    return sorted(set(mismatch[:6] + facts["phases"][-1:]))
+
 
 
 def main():
@@ -141,7 +196,8 @@ def main():
     print(f"{os.path.basename(os.path.dirname(path))}: {len(rows)} game(s)")
     for r in rows:
         a = r["adherence"]
-        pct = f"{r['adherence_pct']}%" if r["adherence_pct"] is not None else "?"
+        pct = (f"{round(100.0 * a['taken'] / r['phases'])}%"
+               if r["phases"] else "?")
         print(f"  g{r['game']} {str(r['hero'])[:20]:20} place={r['place']} "
               f"phases={r['phases']} taken={a['taken']}/{r['phases']} ({pct}) "
               f"passed={a['passed']} n/a={a['not_applicable']}")
