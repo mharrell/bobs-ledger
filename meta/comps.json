@@ -253,8 +253,8 @@
     ],
     "summary": "Summon high attack Undeads",
     "when_to_commit": "Attack Scaling (Drustfallen Butcher) + summons (Handless Forsaken)",
-    "common_enablers": "Deathly Striker \nUndead midgame (Plaguerunner/Dustbone Devastator)",
-    "representative_card": "BG31_835",
+    "common_enablers": "Deathly Striker \nUndead midgame (Plaguerunner)",
+    "representative_card": "BG32_324",
     "tribe": "Undead",
     "guide": "guides/undead-attack-scaling.md"
   },
@@ -550,5 +550,47 @@
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BGS_018",
     "tribe": "Beast"
+  },
+  "undead-apm-undead": {
+    "name": "Undead - APM Undead",
+    "difficulty": "Easy",
+    "meta_tier": "A",
+    "core": [
+      "BG25_010",
+      "BG33_823",
+      "BG33_825",
+      "BG34_692",
+      "BG36_515"
+    ],
+    "how_to_play": "[[Sky Admiral Rogers||122516]] combined with [[Proud Privateer||122520]] gives you lots of gold to hit more of your setup.  Additional cards that help you become infinite include [[Enterprising Escapee||132762]] and [[Brann Bronzebeard||96786]], but can be cut once you commit more undeads to your board. Cycle every single free card ([[Refreshing Anomaly||64042]]) so you stay infinite. After you're infinite, scale undead attack using bounties + [[Forsaken Weaver||126733]]. Run a reborn golden [[Handless Forsaken||95265]] to be strong. Also use [[Snazzy Phantom||133083]] and cycle every single destroy undead effect such as [[Maw Caster||121508]] and [[Disguised Graverobber||104610]] to destroy reborns and give snazzy permanent stats.",
+    "addons": [
+      "BG36_523",
+      "BG_LOE_077"
+    ],
+    "summary": "Scale undead attack with infinite gold",
+    "when_to_commit": "Bounty Generation (Sky Admiral Rogers) + Proud Privateer + Forsaken Weaver",
+    "common_enablers": "Sky Admiral Rogers",
+    "representative_card": "BG34_692"
+  },
+  "murlocs-tidecaller": {
+    "name": "Murlocs - Tidecaller",
+    "difficulty": "Medium",
+    "meta_tier": "A",
+    "core": [
+      "BG26_354",
+      "BG27_556",
+      "BG33_891",
+      "BG35_883",
+      "BG36_704",
+      "BG_LOE_077"
+    ],
+    "how_to_play": "First, have a ton of economy, typically starting from golden [[Brann Bronzebeard||96786]] or Brann + [[Magicfin Mycologist||122277]], remembering premium economy spells such as Cloning Conch or Battlecry Discovery. Then, your payoff card for all that economy is [[Shamanic Tidecaller||133026]]. Paired with [[Balinda Stonehearth||130298]], play as many spells on the tidecaller as possible, which could be bloodgems or [[Oozeling Gladiator||103670]] spells. Scale premium murlocs in hand such as [[Bile Spitter||122219]] and [[Expert Aviator||126637]] so you can summon them and also [[Choral Mrrrglr||98948]] can capture all of the stats of the murlocs in your hand.",
+    "addons": [
+      "BG33_318"
+    ],
+    "summary": "Play spells to scale Murlocs.",
+    "when_to_commit": "Brann Bronzebeard + lots of economy + Shamanic Tidecaller",
+    "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
+    "representative_card": "BG36_704"
   }
 }
