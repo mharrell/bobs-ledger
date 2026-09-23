@@ -182,7 +182,9 @@ def filter_comps_by_available_tribes(comps, card_races, allowed_tribes):
     every comp (an unknown ban must not look like "all tribes banned").
     """
     if not allowed_tribes:
-        return dict(comps)
+        # No ban info: fail OPEN on the per-game ban — but out-of-play is a
+        # PATCH-level fact, not a per-game one, so it still applies.
+        return _drop_out_of_play(dict(comps))
     allowed = set(allowed_tribes)
     playable = {}
     for slug, comp in comps.items():
@@ -210,7 +212,36 @@ def filter_comps_by_available_tribes(comps, card_races, allowed_tribes):
         if blocked:
             comp = dict(comp, _blocked_core=blocked)  # copy: meta dicts are shared
         playable[slug] = comp
-    return playable
+    return _drop_out_of_play(playable)
+
+
+def _drop_out_of_play(comps_in):
+    """Remove comps that are out of play entirely (rotated/removed by a patch).
+
+    The ban filter above answers "is this comp legal in THIS game"; out-of-play
+    answers "does this comp still exist at all". Both are reasons the coach must
+    not build toward it — on 2026-09-22 (36.6.1) Naga left the pool, and without
+    this the coach would keep offering Naga comps in every lobby.
+
+    Delegates to `playable.OutOfPlay.filter_comps` (which owns the compound
+    rule: a comp is out only when every core piece is out, and an untribed or
+    unknown card fails open). Honours `HEARTH_OUT_OF_PLAY=0`, so a historical
+    replay review is judged under the rules it was played with.
+
+    The imported module is aliased deliberately: this function's argument used to
+    be called `playable`, and `import playable` rebound it to the module, so
+    `filter_comps` received a module and died on `.items()` — caught by
+    test_tribes / test_live_updates the moment it landed.
+    """
+    try:
+        import playable as playable_mod
+    except ImportError:  # pragma: no cover — playable ships with the coach
+        return comps_in
+    oop = playable_mod.enforcement()
+    if oop is None:
+        return comps_in
+    kept, _dropped = oop.filter_comps(comps_in)
+    return kept
 
 
 if __name__ == "__main__":
