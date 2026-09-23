@@ -157,28 +157,58 @@ never have seen a card list. Both are fixed and regression-tested.
 
 ## 6. What is still missing (deliberately)
 
+> Updated 2026-09-22 (same day), after the follow-up work. Two of the gaps below
+> are now closed and are kept here with the resolution so the record shows what
+> changed and why; the rest stand.
+
 - **No Aberration comps.** `meta/comps.json` has none, and inventing them from
   a one-day-old patch would be exactly the "checklist comp from turn 1" habit
   Shadybunny warns about. The coach can now *see* Aberration cards (tribe,
   tier, stats) but has no comp to build toward; comps should come from observed
-  play over the next days, not from this document.
-- **The Deity mechanic is not modeled.** Each friendly Aberration death advances
-  the Deity; C'Thun or Y'Shaarj is chosen at random per game; after three
-  sacrifices the Deity joins that combat. Nothing in `simulate_growth`'s engine
-  model expresses "progress toward a per-combat payoff" yet.
+  play over the next days, not from this document. **Still open.**
+- ~~**The Deity mechanic is not modeled.**~~ **Closed.** `meta/engines.json`
+  gained an `aberrations-discard-deity` engine (trigger `discard`) and
+  `value.py` a comp-independent detector alongside `_spell_fuel_bonus`. The
+  discarded rate is modeled, not measured, and the Deity half is grounded in the
+  only log state that exists for it (`BACON_DEITY_SIGIL` on the `BG_OldGod`
+  "Secret Deity [DNT]" entity, re-created per combat). The full account — every
+  card-text number, every assumption, and what would falsify the model — is in
+  `analysis/discard_mechanic.md`. Note the mechanic has **no discard event in the
+  log at all**: the only tag is `CANT_DISCARD`, and `hand -> GRAVEYARD` cannot
+  separate a discard from casting a spell (in the Faelin win, all three
+  hand-to-graveyard cards were spells the player *cast*).
+- **Two cards a `no carddef` boundary, not an oversight:** `BGFYM_005` and
+  `BGFYM_011` (the Y'Shaarj family) have **no card definition in the installed
+  client**, so no art can be extracted for them; `BG30_MagicItem_4262`
+  (Colorful Compass) has no portrait under its base id because its 10 tribe
+  variants share one id, so the overlay cannot resolve art for it and falls back
+  to the placeholder. Both were confirmed by asking the running overlay for the
+  image, not by inspecting paths.
+- **Four patch-named minions exist with no card id anywhere on this machine** —
+  C'Thun, Sha of Fear, Greedy Conniver, Sewer Escapee. Recorded with evidence in
+  `meta/patch_gaps.json` so `check_patch_db.py` reports them as *accepted* gaps
+  while still failing on a new one. An id-less row is not an option:
+  `value._buy_prices` indexes by id and `None + "_G"` raises.
 - **`Dark Paradox`'s minion type is never stated** in the article (its image
   code is `NEUTRAL_BG36_360`, and it mentions neither a Deity nor discarding),
-  and it did not appear in the three mined games. Unresolved rather than
-  guessed.
+  and it did not appear in the three mined games. The log settles it as an
+  **All-type (Amalgam-class)** minion, so this is now resolved by observation
+  rather than left to the prose.
 - **`Oozeling Gladiator` is listed twice by the article** — "now an Aberration"
   *and* "Removed". The log settles it: `BG27_002` is absent from the post-patch
   pool, so the registry treats it as removed. If a distinct Aberration version
   exists under another id, it will appear in a future roster and the
   `validate()` cross-check will surface it.
+- **Duos is out of scope on purpose.** The patch also changed 2 Duos-only
+  minions and added 2 more. The coach coaches *solo* Battlegrounds, and a
+  Duos-only row in the solo DB could be recommended in a solo shop where it can
+  never appear. Recorded in `meta/patch_gaps.json` under `out_of_scope` rather
+  than dropped silently.
 - **Naga-specific heroes are not enumerated** anywhere official, so
   `out_of_play.heroes` is empty on purpose. The hero/tribe restrictions that
   *were* published (7 heroes banned from Aberrations, 4 of them Y'Shaarj-only)
   are recorded under `hero_constraints` for the pick ranker.
+
 
 ## 7. How to refresh on the next patch
 
@@ -191,9 +221,32 @@ python pool_roster.py                            # mine the new epoch (dry run)
 python pool_roster.py --apply --patch <version>  # write meta/pool_roster.json
 # hand-edit meta/out_of_play.json from the official notes (tribes + card lists)
 python playable.py                               # registry vs roster: must be 0
+python check_patch_db.py                         # change list vs DB: must be 0 gaps
+python refresh_trinkets.py                       # regenerate, then curate its list
+python hearth_art_extract.py                     # new card art from the client
 python check_meta.py && python -m unittest discover -s tests
 ```
 
-`playable.py`'s report is the review gate: a non-empty conflict list means the
-official removal list and the observed pool disagree, and a human decides which
-one is wrong.
+Three of those are gates, not just reports, and each one caught something real
+the first time it ran on 36.6.1:
+
+- **`playable.py`** — the official removal list vs the observed pool. A non-empty
+  conflict list means they disagree and a human decides which is wrong.
+- **`check_patch_db.py`** — the change list vs the meta DB. Every name the patch
+  labels must be reflected (present, or in the registry) or be recorded in
+  `meta/patch_gaps.json` with a reason AND the evidence that closed it. This is
+  the one that proved the non-Aberration lists were covered while finding the
+  one returning spell that was missing, and it now self-checks by comparing each
+  section's parsed count against the count the heading claims — because its first
+  version silently audited 34 of 35 removed minions.
+- **`refresh_trinkets.py`** — the trinket ids offered in local logs must all be
+  in the DB, and the trinket `<->` effects join must stay bidirectional. It had
+  simply not been run since 2026-09-13, which is what the "missing trinkets"
+  failure actually was both times it appeared.
+
+After `hearth_art_extract.py`, check coverage rather than assuming it: on 36.6.1
+it went from 0/25 Aberration minions to 24/25 and 83/191 trinkets to 181/191, and
+the stragglers were `no carddef` in the client rather than extraction failures.
+The cheapest way to confirm the overlay actually serves an id is to ask it —
+start `coach_ui.start_server(port)` and GET `/img/<id>.png`.
+
