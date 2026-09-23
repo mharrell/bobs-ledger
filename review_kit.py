@@ -165,10 +165,28 @@ def _moments(facts):
 
 
 
+def show_moments(text, turns):
+    """Just the phase blocks for `turns` out of a full cached review.
+
+    The skeleton says "open first: turns [5, 8, 13]" — this is how you open
+    them without reading the rest. Found by using the tool: the digest named
+    the turns and then left no cheap way to look at only those.
+    """
+    blocks = {}
+    for block in re.split(r"\n(?=t\d+[ (])", text):
+        m = re.match(r"t(\d+)", block)
+        if m:
+            blocks[int(m.group(1))] = block.rstrip()
+    return "\n".join(blocks.get(t, f"t{t}: (no such phase in the cached text)")
+                     for t in turns)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("log", nargs="?", default=None)
     ap.add_argument("--games", default=None, help="comma list, e.g. 1,3")
+    ap.add_argument("--show", default=None,
+                    help="print only these turns from the cache, e.g. --show 5,13")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--refresh", action="store_true")
     args = ap.parse_args()
@@ -182,6 +200,14 @@ def main():
     chunks = list(eg.split_game_chunks(lines))
     want = ([int(x) for x in args.games.split(",")] if args.games
             else list(range(1, len(chunks) + 1)))
+
+    if args.show:
+        turns = [int(x) for x in args.show.split(",")]
+        for g in want:
+            text, _ = _full_output(path, g, args.refresh)
+            print(f"--- game {g} ---")
+            print(show_moments(text, turns))
+        return 0
 
     rows = []
     for g in want:

@@ -153,20 +153,30 @@ def q_actions(sess, args):
 
 
 def q_board(sess, args):
+    """Board at the end of turn N (`--turn`), else the final board.
+
+    `GameState.board(friendly)` returns a TUPLE (friendly, opponents), is a
+    METHOD, and needs the friendly player number — the first version of this
+    query got all three wrong (attribute, no argument, and iterating the tuple),
+    which returned an empty list on real input. Usage copied from live_coach.
+    """
     chunk, friendly, mine = sess.game(args.game or 1)
     gs = GameState()
     target_turn = args.turn
     turn = 0
-    last = None
     for line in chunk:
         if "GameState.DebugPrintPower" in line and STEP_TURN.search(line):
             turn += 1
             if target_turn and turn > target_turn:
                 break
         gs.feed(line)
-        if target_turn and turn == target_turn:
-            last = True
-    board = gs.final_board if (not target_turn and gs.final_board) else gs.board
+    board = None
+    if not target_turn and gs.final_board:
+        board = gs.final_board(friendly)
+    if not board:
+        board = gs.board(friendly)
+    if isinstance(board, tuple):  # (friendly_board, opponent_board)
+        board = board[0]
     out = []
     for m in board or []:
         if not isinstance(m, dict):
@@ -181,31 +191,43 @@ def q_board(sess, args):
 def q_stats(sess, args):
     """Per-turn HP / armor / effective HP and the damage taken that turn.
 
-    Reads the friendly hero's own HEALTH and ARMOR writes directly rather than
-    going through the live coach: last write in a turn is the post-combat value,
-    so damage = previous turn's effective HP minus this turn's.
+    Built on `board_state.GameState.hero_stat_log`, NOT on a regex of my own.
+    The first version matched `cardId=<hero> ... tag=HEALTH` and returned
+    `hp: None` for every turn of a real game: a hero's BASE health comes from its
+    FULL_ENTITY creation block, where the tag lines carry no card id at all, and
+    that game's per-turn writes on the hero were ARMOR-only. `board_state`
+    already knows every spelling — including the bare-numeric and DAMAGE forms —
+    so this asks it instead of re-deriving, which is the point of the shared
+    layer.
     """
-    chunk, friendly, mine = sess.game(args.game or 1)
+    chunk, _friendly, mine = sess.game(args.game or 1)
     hero_card = (mine or {}).get("card")
     if not hero_card:
         return []
+    gs = GameState()
     turn = 0
+    seen = 0
     per_turn = OrderedDict()
     for line in chunk:
         if "GameState.DebugPrintPower" in line and STEP_TURN.search(line):
             turn += 1
-        m = HP_OR_ARMOR.search(line)
-        if m and m.group(3) == hero_card:
-            per_turn.setdefault(turn, {})[m.group(4).lower()] = int(m.group(5))
+        gs.feed(line)
+        if len(gs.hero_stat_log) > seen:
+            for cid, tag, val in gs.hero_stat_log[seen:]:
+                if cid == hero_card:
+                    per_turn.setdefault(turn, {})[tag.lower()] = int(val)
+            seen = len(gs.hero_stat_log)
     rows, prev = [], None
     hp = armor = None
     for t, vals in per_turn.items():
         hp = vals.get("health", hp)
         armor = vals.get("armor", armor)
-        eff = (hp or 0) + (armor or 0)
+        eff = None if hp is None else hp + (armor or 0)
         rows.append(OrderedDict(turn=t, hp=hp, armor=armor, eff=eff,
-                                took=None if prev is None else prev - eff))
-        prev = eff
+                                took=None if (prev is None or eff is None)
+                                else prev - eff))
+        if eff is not None:
+            prev = eff
     return rows
 
 
