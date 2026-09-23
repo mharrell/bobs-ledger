@@ -231,6 +231,13 @@
     "text": "[x]Choose One - Give your\nminions +2/+2; or At the\nstart of your next turn, give\nyour minions +2/+2 twice."
   },
   {
+    "tier": 3,
+    "id": "BG32_337",
+    "name": "Seafood Stew",
+    "cost": 2,
+    "text": "Give a minion +1/+1. Repeat for each different Bonus Keyword in your warband."
+  },
+  {
     "tier": 4,
     "id": "BG28_603",
     "name": "Boon of Beetles",
