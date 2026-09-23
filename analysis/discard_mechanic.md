@@ -68,6 +68,17 @@ passes it, so the chain is not blocked by the DB gap — but a trinket that is n
 in the DB will not appear in the live coach's trinket list either, and that gap
 belongs to the next `refresh_trinkets.py` pass, not to this document.
 
+**Duos scope caveat (a mode decision, not an oversight).** This coach coaches
+**solo** Battlegrounds, so the two new Duos minions (`Voidpriest Cloner`
+`134693`, `C'Thrax Wrecker` `134695`) and the two changed ones (`Man'ari
+Messenger` `106320`, `Transport Reactor` `117359`) are deliberately **kept out of
+`meta/minions.json`** — a Duos-only card in the solo DB could be recommended in a
+solo shop, where it can never appear. Verified 2026-09-22: none of the four
+names, nor any of their article-side ids, occurs anywhere in
+`meta/minions.json`. They are cited in this document **as Duos-only evidence**
+(for the per-turn cap wording and for "Deity" being a plural family), never as
+solo-pool cards, and they are not part of the engine chain.
+
 ### 2.1 Discard outlets — the cards that SPEND a discard
 
 | Card | Id | Text (verbatim) |
@@ -117,7 +128,19 @@ turn**, which is the fact the modelled rate rests on.
 | Makeshift Master (Greater trinket) | — | Spellcraft: Choose a minion. After it gains stats outside combat this turn, your Deity also gains them. | stat gain |
 | Mask of Ancient Ones (Greater trinket) | — | Make your Deity Golden this game. | — |
 | Evil Experiment (Greater trinket) | — | After your Deity awakens, give it Reborn. | — |
-| C'Thrax Wrecker (Duos) | `134695` | Battlecry, Deathrattle, and Rally: Give your team's Deities +4/+4. | — |
+| C'Thrax Wrecker (**Duos-only**) | `134695` | Battlecry, Deathrattle, and Rally: Give your **team's Deities** +4/+4. | — |
+| Voidpriest Cloner (**Duos-only**) | `134693` | Whenever you discard a card, Pass a copy of it. **(2 times per turn.)** | discard |
+
+Two facts this last pair carries, beyond its own numbers:
+
+- **"Deity" is a card type/family, not one card.** C'Thrax Wrecker says "your
+  **team's Deities**" (plural, in a Duos team of two). That matches the model's
+  treatment: the Deity is a game-level entity per player, not a board minion —
+  which is exactly why its stats are banked apart from the board (§4.3).
+- **Discard triggers are capped per turn, and the game prints the cap.** The
+  "(2 times per turn.)" parenthetical is the idiom the game uses for a
+  repeat-trigger cap, which is the evidence behind the modelled per-turn bound
+  (§4.4).
 
 ### 2.4 Discard sources that need something the board cannot show
 
@@ -312,10 +335,11 @@ This is the decision this document exists to record.
   nothing from it. The pool still accumulates in the report — that is the honest
   distinction between "banked" and "realised".
 
-### 4.4 The discard rate
+### 4.4 The discard rate, and its per-turn bound
 
 ```python
-_discard_scenario(board)  # {'discard': len(outlets on the board), ...}
+_discard_scenario(board)  # {'discard': min(outlets on the board, DISCARD_RATE_CAP), ...}
+DISCARD_RATE_CAP = 7
 ```
 
 - An `Activate` power is usable once per turn, so **discards per turn = the
@@ -327,6 +351,29 @@ _discard_scenario(board)  # {'discard': len(outlets on the board), ...}
   per turn), Kith'ix's Dark Ritual, a held pair-generator card, a trinket, or
   Mysterious K'Thir's own three discards (which the engine models inside step 3
   but does **not** add to the counter).
+
+**The rate is bounded, and the bound is stated rather than implied.** The
+evidence that the game caps discard triggers at all is 36.6.1's **Voidpriest
+Cloner** — *"Whenever you discard a card, Pass a copy of it. **(2 times per
+turn.)**"* (that card is **Duos-only**, id `134693`, deliberately not in the
+solo DB — see §2). The parenthetical is the game's repeat-trigger cap idiom, so
+a per-turn discard count is a bounded quantity rather than a quantity that grows
+with every outlet added.
+
+What is **not** published is the cap for the *Activate outlets*. The model
+therefore uses the ceiling a solo board can actually produce, and says so:
+`DISCARD_RATE_CAP = 7` — one discard per board slot per turn, since each outlet
+occupies one of the warband's seven slots. Consequences, all tested:
+
+- the derived count is clamped (`min(outlets, 7)`; a board cannot hold more than
+  seven outlets anyway, so the clamp is a stated guarantee rather than a
+  behaviour change for real boards);
+- an explicit `scenario["discard"]` is clamped the same way, so no caller can
+  model nine discards in a turn;
+- `_discard_fuel_bonus` clamps its `+1` probe too: a turn already at the cap
+  cannot discard more, so **one more outlet is credited nothing new**
+  (`test_discard.py::TestDiscardScenario::test_rate_is_bounded_per_turn`,
+  `::test_fuel_is_zero_at_the_cap`).
 
 ### 4.5 Outlet recognition reads card text, not an id list
 
@@ -358,6 +405,7 @@ fails the suite instead of silently changing the modelled rate.
 | # | Assumption | Provenance |
 |---|---|---|
 | A1 | **discards per turn = outlets on the board** (each Activate once per turn) | model. The "once per turn" part is game rules; the *rate* is not measured (§3.1) |
+| A1b | **the rate is capped at 7** (= one discard per board slot per turn) | model. *That* discard triggers are capped per turn is card-text evidence (Voidpriest Cloner's "(2 times per turn.)", Duos-only, §4.4); the cap *number* for Activate outlets is unpublished, so the board-slot ceiling is used and stated |
 | A2 | Hammer of Twilight's "improved by each card you've discarded" adds **one printed application (+2/+1) per discarded card** | **assumption** — the increment is not printed anywhere. Largest single term in the engine |
 | A3 | Hammer of Twilight / Corrupted Baton are recognised by **name**, so the Lesser variant (+1 Attack / +4/+4) is credited as the Greater (+2/+1 / +10/+10) or vice versa | assumption: the scenario passes trinket *names*, and the two rows share a name (`patch_3661_changes.md` §9.7). Documented in each step's note |
 | A4 | Corrupted Baton's per-cast effect uses **one Tavern-spell cast per discard-turn** as a floor, and its trigger is a *cast*, not a discard | assumption, stated in the step note; the only link is that a discarded spell is cast |
@@ -409,6 +457,7 @@ cards' texts (DB); every other number in the chain (card text, quoted per step).
 | Claim | Cheapest falsifier |
 |---|---|
 | "Discards per turn = outlets on the board" (A1) | A session where the count of `Discard Minion`/`Discard Paired Cards` blocks plus Activate uses visibly exceeds or trails the outlet count — or a decoded `4741`/`1068` tag that turns out to *be* the discard marker (§3.1). If those tags decode, the rate becomes measurable and the derivation should be replaced |
+| "The rate is capped at 7" (A1b) | A published cap for the Activate outlets (a card-text parenthetical, a patch note, or a tooltip) replacing the board-slot ceiling; or a game in which a discard count above 7 is observable at all, which would mean the ceiling is wrong |
 | "One awakening per turn" (A7) | Count `BACON_DEITY_SIGIL` 0→1 flips per combat, or `Y'Shaarj`/`C'Thun` `SETASIDE -> PLAY` transitions, in a session where the player actually had an Aberration board; a rate near 0 or well above 1 falsifies it |
 | "C'Thun and Y'Shaarj are equally likely" (A8) | A few dozen games' Deity identities (the entity/`PLAY` appearance is logged). This session rolled Y'Shaarj 3/3 — no information at that sample size |
 | "Hammer of Twilight adds +2/+1 per discarded card" (A2) | The trinket's live numbers across a game: read the board's stat gain against the discard count (`BACON_EVOLUTION_CARD_OVERWRITE_*` or the minions' `ATK`/`HEALTH` deltas) |
@@ -467,6 +516,9 @@ python simulate_growth.py                 # the Aberration demo above
 - New Activate-discard card? `test_outlet_set_is_reviewed_when_the_pool_changes`
   fails until the set is extended — which is the point: the modelled discard
   **rate** changes with the outlet set.
+- A **published per-turn discard cap** (a card-text parenthetical, a patch note,
+  a tooltip) should replace `DISCARD_RATE_CAP`'s board-slot ceiling and be
+  recorded in §5 as card text rather than a model bound.
 - Numbers arriving for any currently-assumed magnitude (Hammer of Twilight's
   increment, the Deity's awakening rate, the pool's persistence) should replace
   the corresponding `note`'s assumption and be recorded in §5 with its source.

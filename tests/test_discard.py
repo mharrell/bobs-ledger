@@ -269,6 +269,50 @@ class TestDiscardScenario(unittest.TestCase):
         sc = value._scenario_for_engine(cast, board(ROTTER), {})
         self.assertEqual(sc, {"cast_spell": 4})
 
+    def test_rate_is_bounded_per_turn(self):
+        """The per-turn discard count is capped, not one-more-per-outlet forever.
+
+        The game prints per-turn caps for repeat triggers (Voidpriest Cloner,
+        Duos-only: "(2 times per turn.)"); no cap for the Activate outlets is
+        published, so the model states its own ceiling: one discard per board
+        slot, i.e. 7.
+        """
+        self.assertEqual(value.DISCARD_RATE_CAP, 7)
+        full = board(*([ROTTER] * value.DISCARD_RATE_CAP))
+        self.assertEqual(len(value._discard_outlets(full)), value.DISCARD_RATE_CAP)
+        self.assertEqual(value._discard_scenario(full)["discard"],
+                         value.DISCARD_RATE_CAP)
+        # A board the model should never see (or a caller passing too many)
+        # cannot push the rate past the ceiling.
+        over = board(*([ROTTER] * (value.DISCARD_RATE_CAP + 1)))
+        self.assertEqual(value._discard_scenario(over)["discard"],
+                         value.DISCARD_RATE_CAP)
+        self.assertEqual(
+            value._discard_scenario([], {"discard": 99})["discard"],
+            value.DISCARD_RATE_CAP)
+        # ...and the engine's output saturates with it.
+        capped = value._discard_scenario(board(GHURSHA, ROTTER), {"discard": 7})
+        beyond = value._discard_scenario(board(GHURSHA, ROTTER), {"discard": 99})
+        self.assertEqual(capped, beyond)
+        self.assertEqual(sim((GHURSHA, ROTTER), capped),
+                         sim((GHURSHA, ROTTER), beyond))
+
+    def test_fuel_is_zero_at_the_cap(self):
+        """A turn already discarding the maximum gains nothing from one more
+        outlet — the cap is a per-turn ceiling on discards."""
+        names = value._load_bg_names()
+        engine_board = board(GHURSHA, ROTTER, KTHIR, SAPPER)
+        # Below the cap: one more discard is worth its marginal (33.0).
+        self.assertGreater(value._discard_fuel_bonus(engine_board, names), 0.0)
+        # Pinned at the cap: the same board, but the turn already discards the
+        # maximum the model allows, so an extra outlet buys no extra discard.
+        pinned = {"discard": value.DISCARD_RATE_CAP}
+        self.assertEqual(
+            value._discard_scenario(engine_board, pinned)["discard"],
+            value.DISCARD_RATE_CAP)
+        self.assertEqual(
+            value._discard_fuel_bonus(engine_board, names, pinned), 0.0)
+
 
 class TestDiscardFuelBonus(unittest.TestCase):
     """The marginal value of one more discard per turn."""
