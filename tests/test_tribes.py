@@ -154,7 +154,14 @@ class TestBansFromLogCardRace(unittest.TestCase):
     print no race tag, and the observed map is returned so callers can
     merge it over the cache for the comp-ban marks. Each tribe contributes
     MIN_PURE_POOL_CARDS distinct cards here — a tribe only counts as
-    allowed once it clears that bar (see TestBansFromLogGenerationLeaks)."""
+    allowed once it clears that bar (see TestBansFromLogGenerationLeaks).
+
+    The fixture is a SYNTHETIC log (fake NEWSET_* ids) with no patch
+    identity; its expectations are read against TODAY's roster, so the
+    post-36.6.1 tribes appear by name — Aberration (added) is in the pending
+    universe, Naga (out of play) is not. That is the honest reading: an old
+    log judged under the current roster puts a tribe that did not exist yet
+    into the ban set and reports the rotated one as out of play."""
 
     LINES = (
         ["D 12:00:00 GameState.DebugPrintPower() - GAME_SEED value=42\n"]
@@ -176,10 +183,14 @@ class TestBansFromLogCardRace(unittest.TestCase):
         # Three-state honesty (2026-09-19): with only 2 confirmed tribes the
         # rest is PENDING — nothing is called banned until the 5/5 set is
         # known, because the log carries no ban list at all.
+        # The pending universe is the 11-tribe roster MINUS the out-of-play
+        # tribes (Naga since 36.6.1): a rotated-out tribe is neither allowed
+        # nor pending, it does not exist in this patch's pool at all.
         self.assertEqual(g["banned"], [])
-        self.assertEqual(g["pending"], ["Demon", "Dragon", "Elemental",
-                                        "Mech", "Murloc", "Naga", "Pirate",
-                                        "Undead"])
+        self.assertEqual(g["pending"], ["Aberration", "Demon", "Dragon",
+                                        "Elemental", "Mech", "Murloc",
+                                        "Pirate", "Undead"])
+        self.assertEqual(g["out_of_pool"], ["Naga"])
         # The neutral pool minion (no CARDRACE tag, unknown to the cache)
         # is correctly not counted as a tribe.
         self.assertNotIn("NEUTRAL", g["allowed"])
@@ -214,7 +225,13 @@ class TestBansFromLogGenerationLeaks(unittest.TestCase):
     tribes pushed the set to 6-8, the live coach's 5/5 gate failed OPEN and
     the comps panel listed banned comps all game. A tribe therefore only
     counts as allowed with MIN_PURE_POOL_CARDS distinct pure pool minions —
-    real allowed tribes show 10+ within minutes; observed leaks are 1-2."""
+    real allowed tribes show 10+ within minutes; observed leaks are 1-2.
+
+    The fixtures below are SYNTHETIC pre-36.6.1-shaped games (5 revealed
+    tribes, fake REAL_*/LEAK_* ids). Read against today's 11-tribe roster,
+    Aberration therefore lands in `banned` (harmless and correct: there were
+    no Aberrations then) and Naga lands in `out_of_pool` (the registry is
+    patch-level, so it applies to every game including old ones)."""
 
     def _lines(self, leaks):
         """5 real tribes x 3 cards each, plus `leaks` — (race, count) pairs
@@ -237,9 +254,15 @@ class TestBansFromLogGenerationLeaks(unittest.TestCase):
         # 5 confirmed -> the complement is the CONFIRMED ban set, and the
         # pending list empties (the 2026-09-19 evening games only reached
         # this at minute 12/14 — before that everything sat in pending).
+        # The complement is the 11-tribe roster MINUS the out-of-play tribes:
+        # Aberration (36.6.1's new tribe) is in-universe and unrevealed here,
+        # so it is banned-this-game; Naga is out of the pool entirely, so it
+        # is NOT — it reads "Naga: rotated out", never "Naga: banned"
+        # (2026-09-22; the ban universe grew to 11 when Aberration landed).
         self.assertEqual(games[0]["banned"],
-                         ["Demon", "Mech", "Naga", "Quilboar", "Undead"])
+                         ["Aberration", "Demon", "Mech", "Quilboar", "Undead"])
         self.assertEqual(games[0]["pending"], [])
+        self.assertEqual(games[0]["out_of_pool"], ["Naga"])
 
     def test_partial_reveal_pending_not_banned(self):
         """One tribe below the gate (2 distinct cards): allowed AND banned
@@ -255,7 +278,12 @@ class TestBansFromLogGenerationLeaks(unittest.TestCase):
         g = games[0]
         self.assertEqual(g["allowed"], [])
         self.assertEqual(g["banned"], [])
+        # 10 = the in-universe tribes (the 11-tribe roster minus out-of-play
+        # Naga). Naga is not pending: out of play is a different state from
+        # "could still be banned or just unsampled".
         self.assertEqual(len(g["pending"]), 10)
+        self.assertNotIn("Naga", g["pending"])
+        self.assertEqual(g["out_of_pool"], ["Naga"])
 
     def test_singleton_leak_does_not_become_allowed(self):
         from bans import bans_from_log
@@ -275,9 +303,16 @@ class TestBansFromLogGenerationLeaks(unittest.TestCase):
         from bans import bans_from_log
         # A 6th tribe with exactly MIN_PURE_POOL_CARDS distinct cards IS
         # plausible (5/5 mode then reads 6 -> the live gate's fail-open);
-        # the detector must report it, not swallow it.
+        # the detector must report it, not swallow it. The leak here is Naga,
+        # which today is out of play: `allowed` is still the log's OWN ground
+        # truth (3 distinct Naga cards prove Naga was in that lobby, and a
+        # pre-patch log is exactly that game), so the out-of-play registry
+        # never subtracts it from `allowed` — it only keeps it out of `banned`.
         games = bans_from_log(None, {}, lines=self._lines([("NAGA", 3)]))
         self.assertEqual(len(games[0]["allowed"]), 6)
+        self.assertIn("Naga", games[0]["allowed"])
+        self.assertNotIn("Naga", games[0]["banned"])
+        self.assertEqual(games[0]["out_of_pool"], ["Naga"])
 
     def test_repeat_copies_do_not_pad_the_count(self):
         from bans import bans_from_log
@@ -287,6 +322,51 @@ class TestBansFromLogGenerationLeaks(unittest.TestCase):
         games = bans_from_log(None, {}, lines=lines)
         self._assert_real_five(games)
         self.assertEqual(games[0]["races"]["LEAK_D"], ["DEMON"])
+
+
+class TestOutOfPoolUniverse(unittest.TestCase):
+    """The ban universe is the tribes the patch still offers (2026-09-22).
+
+    A tribe that is OUT OF PLAY (rotated by a patch — Naga since 36.6.1) is
+    neither allowed, nor pending, nor banned: it rides its own `out_of_pool`
+    key. That is a PATCH-level fact owned by meta/out_of_play.json, not by the
+    log, and it must fail OPEN — an unavailable registry gives the full
+    ALL_TRIBES universe, because a smaller universe would silently turn
+    unknown tribes into bans. A game with nothing revealed yet shows the
+    universe as its `pending` list.
+    """
+
+    LINES = ["D 12:00:00 GameState.DebugPrintPower() - GAME_SEED value=42\n"]
+
+    def test_universe_excludes_rotated_tribes(self):
+        from bans import ALL_TRIBES, bans_from_log
+        g = bans_from_log(None, {}, lines=self.LINES)[0]
+        self.assertEqual(g["out_of_pool"], ["Naga"])
+        self.assertEqual(len(g["pending"]), len(ALL_TRIBES) - 1)
+        self.assertNotIn("Naga", g["pending"])
+        self.assertIn("Aberration", g["pending"])   # the new tribe IS in play
+
+    def test_registry_unavailable_fails_open(self):
+        """A registry that cannot be read (or crashes) must not shrink the
+        universe: no tribes are called out of play and nothing new gets
+        banned."""
+        from bans import ALL_TRIBES, bans_from_log, out_of_pool_tribes
+        with mock.patch("playable.enforcement",
+                        side_effect=RuntimeError("registry gone")):
+            self.assertEqual(out_of_pool_tribes(), set())
+            g = bans_from_log(None, {}, lines=self.LINES)[0]
+        self.assertEqual(g["out_of_pool"], [])
+        self.assertEqual(len(g["pending"]), len(ALL_TRIBES))
+
+    def test_registry_switch_off_fails_open(self):
+        """HEARTH_OUT_OF_PLAY=0 (historical replay review) restores the full
+        roster, so an old game is judged under the pool it was played with."""
+        from bans import ALL_TRIBES, bans_from_log
+        with mock.patch.dict(os.environ, {"HEARTH_OUT_OF_PLAY": "0"}):
+            g = bans_from_log(None, {}, lines=self.LINES)[0]
+        self.assertEqual(g["out_of_pool"], [])
+        self.assertEqual(len(g["pending"]), len(ALL_TRIBES))
+        self.assertIn("Naga", g["pending"])
 
 
 class TestTribesFromRaces(unittest.TestCase):

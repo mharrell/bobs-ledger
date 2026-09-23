@@ -18,7 +18,8 @@ import re
 from board_state import GameState
 from extract_game import extract_game, _friendly_player, MINION_ID
 from tribes import normalize
-from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
+from bans import (bans_from_log, filter_comps_by_available_tribes,
+                  out_of_pool_tribes, _load_card_races, _HERE)
 import meta
 import pool
 import lobby
@@ -118,12 +119,17 @@ _NEXT_OPP = re.compile(
     r"[^\]]*?player=(\d+)\]|(\S+)) tag=NEXT_OPPONENT_PLAYER_ID value=(\d+)")
 
 
-def _banned(allowed):
+def _banned(allowed, out_of_pool=()):
     # Unknown ban info (None) shows as no banned tribes, never "all banned"
     # (the old code listed all 10 for None — the 2026-09-04 Guff overlay).
+    # Out-of-play tribes are NOT banned: they are absent from the pool in
+    # every lobby of this patch (Naga since 36.6.1), so the strip lists them
+    # separately ("out of play") instead of calling a rotated tribe banned.
     if not allowed:
         return []
-    return [t for t in DISPLAY_TRIBES if t not in set(allowed)]
+    out = set(out_of_pool)
+    return [t for t in DISPLAY_TRIBES
+            if t not in set(allowed) and t not in out]
 
 
 def _median(values):
@@ -460,6 +466,10 @@ class LiveCoach:
         self.allowed = None
         self.playable = None
         self.game_comps = None   # the comps panel's game-level list
+        # Tribes out of play entirely (rotated by a patch — Naga since 36.6.1).
+        # A patch-level fact from the registry, not per-game: it keeps the
+        # strip reading "Naga: out of play" instead of "Naga: banned".
+        self.out_of_pool = []
 
     def _reset(self):
         self.gs = GameState()
@@ -887,6 +897,14 @@ class LiveCoach:
         list. Each row carries _tribe_confirmed (its tribe in the
         confirmed set?) so the UI dims the could-still-be-banned ones
         instead of hiding them.
+
+        Three states (2026-09-22, patch 36.6.1): in play, banned THIS game, or
+        out of play entirely. Only the second is "banned", so the ban universe
+        is ALL_TRIBES minus the out-of-play tribes (bans.out_of_pool_tribes —
+        Naga since 36.6.1; fail-open to empty when the registry is off or
+        unreadable). `self.out_of_pool` rides the payload so the strip can
+        label a rotated tribe as such instead of banned; the manual path
+        subtracts the same set, keeping its 5-allowed invariant intact.
         """
         if self._comps is None or not self.cur_lines:
             return
@@ -900,8 +918,18 @@ class LiveCoach:
             if not (self.bans_manual and self._manual_key == key):
                 self._manual_key = key
                 self.bans_manual = True
-                self.allowed = sorted(
-                    t for t in DISPLAY_TRIBES if t not in set(manual))
+                # allowed = the tribes the pool CAN offer minus the tapped
+                # bans. Out-of-play tribes are subtracted too: the reveal
+                # screen offers the current pool's tribes (Naga is not on it,
+                # 36.6.1), so tapping 5 bans must leave 5 allowed, not 6 —
+                # otherwise the manual path breaks the very 5/5 invariant the
+                # inference path is built on. Fail-open (empty) when the
+                # registry is unavailable.
+                self.out_of_pool = sorted(out_of_pool_tribes())
+                oop = set(self.out_of_pool)
+                self.allowed = sorted(t for t in DISPLAY_TRIBES
+                                      if t not in set(manual)
+                                      and t not in oop)
                 self._bans_ready = True
                 self.tribes_seen = len(self.allowed)
                 self.tribes_detecting = False
@@ -920,13 +948,23 @@ class LiveCoach:
             return
         allowed = None
         observed = {}
+        found = None
         if self._seed is not None:
             for g in bans_from_log(None, self._card_races,
                                    lines=self.cur_lines):
                 if g["seed"] == self._seed:
+                    found = g
                     allowed = g["allowed"]
                     observed = g.get("races") or {}
                     break
+        # Out of play is PATCH-level, not per-game (the registry's rotated
+        # tribes), so it is refreshed even before this game's bans resolve —
+        # and it is what keeps Naga out of the strip's banned list. The
+        # payload's own key wins when present; otherwise ask the registry
+        # directly (fail-open to empty — see bans.out_of_pool_tribes).
+        oop = (found or {}).get("out_of_pool")
+        self.out_of_pool = sorted(oop if oop is not None
+                                  else out_of_pool_tribes())
         if observed:
             # The log's own CARDRACE tags (see bans_from_log): patch-proof
             # tribes for the comp filter too, not just the 5-tribe gate —
@@ -1492,7 +1530,11 @@ class LiveCoach:
                                    if turn - r.get("turn", 0) <= 2][-3:]]),
             "opp_age": opp_age,
             "baseline_opp": _baseline_opp(turn),
-            "banned": _banned(self.allowed),
+            "banned": _banned(self.allowed, self.out_of_pool),
+            # Tribes out of play entirely (rotated by a patch — Naga since
+            # 36.6.1): never in `banned` (they are not banned THIS game, they
+            # do not exist in this patch's pool), shown as their own state.
+            "out_of_pool": list(self.out_of_pool),
             "playable_comps": self.playable,
             # The comps panel's list (game-level; playable_comps is the
             # advisory filter, evidence-only while the bans stream in).
