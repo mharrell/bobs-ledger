@@ -2799,12 +2799,12 @@
  {
   "id": "BG36_MagicItem_403",
   "name": "Hammer of Twilight",
-  "description": "Your minions have +2/+1. (Improved by each card you've discarded this game!)",
+  "description": "Your minions have +1 Attack. (Improved by each card you've discarded this game!)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
   "guide": null,
-  "type": "Greater"
+  "type": "Lesser"
  },
  {
   "id": "BG36_MagicItem_403t",
@@ -2815,6 +2815,16 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_404",
+  "name": "Corrupted Baton",
+  "description": "After you cast a Tavern spell, give your Deity +4/+4.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
  },
  {
   "id": "BG36_MagicItem_404t",
@@ -2830,6 +2840,26 @@
   "id": "BG36_MagicItem_406",
   "name": "Shath'Yar Shrine",
   "description": "After you discard a spell, get a random Aberration.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_416",
+  "name": "Evil Experiment",
+  "description": "After your Deity awakens, give it Reborn.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_430",
+  "name": "Sludge Portrait",
+  "description": "Get a Sludge Corrosion. After you discard a card, get a Sludge Corrosion.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -3040,6 +3070,116 @@
   "id": "BG36_MagicItem_852",
   "name": "Willbreaker Sticker",
   "description": "Get 2 random Tavern spells. When you play one, discard the other. At the start of your turn, repeat this.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG35_MagicItem_712",
+  "name": "Privateer Portrait",
+  "description": "Get a Proud Privateer and 2 random Bounties. At the start of each turn, get another 2 Bounties.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_732",
+  "name": "Soul Fermenter",
+  "description": "Start of Combat: Destroy your 3 left-most minions. After your last minion dies, resummon them.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_754",
+  "name": "Dramaloc Sticker",
+  "description": "Start of Combat: Give your Murlocs the Attack of the highest-Attack minion in your hand.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_924",
+  "name": "Groundbreaker Portrait",
+  "description": "Get a Groundbreaker. Your Groundbreakers also give stats to the minion to their left.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_204",
+  "name": "Plaguerunner Portrait",
+  "description": "Get a Plaguerunner. After you destroy a Plaguerunner outside combat, get a plain copy.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_402",
+  "name": "Mindslasher Portrait",
+  "description": "Get a Vicious Mindslasher. Your Vicious Mindslashers also give stats to adjacent minions.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_408",
+  "name": "Quartermaster's Hook",
+  "description": "After you spend 50 Gold, replace this with a random Greater Pirate Trinket. (50 Gold left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_602",
+  "name": "Mask of Ancient Ones",
+  "description": "Make your Deity Golden this game.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_914t",
+  "name": "Nerglish Phrasebook",
+  "description": "After you play a minion, give the left-most minion in your hand +6/+6.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_988t",
+  "name": "Great Boar Sticker",
+  "description": "Get 5 Blood Gems. Your Blood Gems give an extra +3/+3.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_417t",
+  "name": "Makeshift Master",
+  "description": "Choose a minion. After it gains stats outside combat this turn, your Deity also gains them.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
