@@ -152,3 +152,47 @@ cache/name-based search could not see it) and **Hungering Abomination
 found and healed after that tool was corrected to write `cost: 3` (the flat
 minion price) instead of hearthstonejson's mana cost `0`.
 
+## 6. The Aberration comp: mined, promoted, and what it moved
+
+Item 1 of §3 ("still no Aberration comp") is now closed in the only honest way
+available — the source has nothing, so we measured our own boards.
+
+**Scale of the hole first.** Across the 12 games in the local corpus, **4 ended
+on an Aberration-dominant final board** (`comp_miner.scan()`: Aberration 4, Demon
+3, Quilboar 2, Elemental 1, Beast 1, Pirate 1), and counting the "no target comp"
+placeholders in the cached reviews — `surviving until we can commit`,
+`no comp direction yet`, `no reroll target` — they run **36–60% of the coach's
+lines in a typical game**. Those games are also *structurally unmeasurable*: a
+player cannot follow a direction that does not exist, which is why a blended
+adherence figure was misleading.
+
+**What the corpus actually supports** (n=4, top4=2, floor 3): core **Faceless
+Converter** (3/4, avg place 2.67) and **N'raqi Sapper** (3/4, avg 4.67), with
+Titus Rivendare, Mysterious K'Thir, The Shadow of Doubt, Nightmare Corroder,
+Parasitic Fleshling and Balinda Stonehearth at 2/4. That reads as a **Deity-fuel
+package** — Converter and Sapper both pay the Deity on Deathrattle (Sapper hands
+over Energizing Chambers, +7/+7 each, twice if discarded), Titus doubles those
+triggers, and K'Thir / Shadow of Doubt / Fleshling are the discard and hand-add
+payoffs — which is what the promoted entry says, in its own words, rather than a
+marketing name.
+
+Promoted as **`aberrations-deity-feed`** ("Aberrations - Deity Feed"), marked
+`provisional` with its evidence attached, second class in every ranking path,
+labelled everywhere it can reach the player (see `DESIGN.md` §"Provisional
+comps").
+
+**Measured effect on the win it was mined from** (09-23 game 2, re-run with
+`review_kit --refresh`): buy-plan **taken 5/16 (31%) → 7/16 (44%)**, no-plan
+phases **5 → 4**. The plan line that changed is exactly the one this feature
+exists for:
+
+```
+6. no reroll target — Aberrations - Deity Feed (provisional — 4 of our games)
+   is the only package for this tribe; hunt its pieces · roll the leftover anyway
+```
+
+One game is not evidence of better advice; it is evidence that the placeholder
+was replaced by a labelled direction, which is the precondition for measuring
+these games at all.
+
+

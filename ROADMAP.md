@@ -80,6 +80,14 @@ winner from loser.
       manual paste; tavern-spell tier from the wiki.
 - [x] Family-ban extraction: `bans.py` (5 allowed / 5 banned per game from a
       Power.log) + comp filter.
+- [x] **Provisional comps for tribes the source does not cover** (2026-09-23):
+      `comp_miner.py --promote` mines our own boards and writes a marked entry
+      into `comps.json` (`provisional: true` + evidence, no invented meta tier,
+      second class in every ranking path, labelled everywhere it shows, safe
+      from `scrape_comps.py --prune`). First entry: `aberrations-deity-feed` for
+      the Aberration tribe 36.6.1 added (n=4, top4=2). Retire it once hsreplay
+      publishes an Aberration comp — `--promote` reports the shadowing. See
+      DESIGN.md §"Provisional comps".
 - [x] Patch-notes updater: `patch_notes.py <url>` fetches official patch notes,
       LLM-extracts before/after changes, and (with `--apply`) writes them into
       `meta/`. Dry-runs by default; new cards flagged for manual entry.
