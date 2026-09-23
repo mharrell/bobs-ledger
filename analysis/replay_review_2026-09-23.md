@@ -103,3 +103,52 @@ test could see.
 That is five API/assumption bugs across two tools, every one caught within a
 minute of running them on real data — which is the argument for the test drive
 rather than more unit tests.
+
+## 5. Follow-up the same day: the three DB gaps above, closed
+
+Item 3 of §3 named three missing tavern spells. Working through them showed the
+gap was never really about the spells:
+
+- **`BG35_910` Conflagration** (tier 4, cost 2) and **`BG35_911` Arcane
+  Absorption** (tier 4, cost 1) are now in `meta/tavern_spells.json` with curated
+  reads in `spell_effects.json` and art in the cache. Both are real tavern spells
+  the client data carries (`spellSchool TAVERN`, `techLevel 4`) that the patch
+  notes never listed — the change list's three new spells are the discard batch
+  (`BG36_301t`/`303`/`371`), all long since in the DB. They arrive in hand
+  **generated**, not bought: the log shows Arcane Absorption spawned by Leyline
+  Surfacer (`BG35_881`) via `SUB_SPELL_START`, and Conflagration created in
+  SETASIDE and cast for free. That is why `isBattlegroundsPoolSpell` is false for
+  both — and why the flag is not a usable filter (it is also false for Seafood
+  Stew, a *returning* spell that is in the pool).
+- **`BG31_893` Gem Day** is recorded in `meta/patch_gaps.json`
+  (`seen_not_carried`) rather than added: no tier exists in the client data, and
+  in all 1580 log lines naming it, across 5 sessions, it is created in
+  `zone=SETASIDE` for a non-friendly player and never reaches a hand or a shop.
+  `logquery` now consults that registry, so the pre-flight stops re-reporting an
+  answered question.
+- The pre-flight itself was also lying by omission: `BG36_330_Gt`/`_Gt2` (a
+  golden triple's tokens, declared `CARDTYPE=SPELL` by the game) were reported as
+  unknown cards while only a bare `_G` suffix was being stripped. Fixed, and the
+  newest game's pre-flight is now **empty** — which is what a clean game should
+  look like.
+
+The same sweep found and fixed a much larger gap of the same shape: **13 trinkets
+that appeared in the last six sessions were absent from `meta/trinkets.json`**,
+including the seven "unsourceable" discard trinkets §2.2 of
+`discard_mechanic.md` listed with `—` ids. They were never unsourceable — the log
+prints `entityName=Evil Experiment ... cardId=BG36_MagicItem_416` on the same
+line, and the coverage test only looked at *offered* trinkets (a choice list),
+not at granted ones. Eleven rows and their curated reads were added
+(`404`, `416`, `430`, `602`, `417t`, `914t`, `988t`, `712`, `732`, `754`, `924`,
+`204`, `402`, `408`), the offered-only test now also checks every trinket-shaped
+id seen in a log, and the one genuinely unsourced name (**Writhing Tentacles**)
+fails that test the day it is offered, so it will not be missed again.
+
+Two more finds from the same pass, both pinned by id now:
+**C'Thun is `BGFYM_000`** (the `patch_gaps.json` entry claimed no id existed
+anywhere on this machine — the id was in 1913 log lines; only the
+cache/name-based search could not see it) and **Hungering Abomination
+`BG25_014`** was missing from the minion DB altogether, which `extend_pool.py`
+found and healed after that tool was corrected to write `cost: 3` (the flat
+minion price) instead of hearthstonejson's mana cost `0`.
+
