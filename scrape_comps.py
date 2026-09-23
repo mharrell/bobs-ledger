@@ -311,7 +311,9 @@ def main():
     ap.add_argument("--prune", action="store_true",
                     help="(with --top) drop comps no longer in the top-N visible set")
     ap.add_argument("--diff", action="store_true",
-                    help="print a per-comp change report (tier, cards, text edits)")
+                    help="print a per-comp change report (tier, cards, text edits). NOTE: writes")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="scrape and report, but never write meta/comps.json")
     ap.add_argument("--youtube", action="store_true", help="fetch YouTube links too")
     ap.add_argument("--cards-cache", default=DEFAULT_CARDS_CACHE)
     args = ap.parse_args()
@@ -388,6 +390,14 @@ def main():
             if key not in keep_slugs:
                 del comps[key]
                 print(f"  pruned {key}")
+
+    if args.dry_run:
+        # --diff SHOWS differences, it does not prevent writes: running
+        # `--top 40 --diff` believing it was a dry run modified comps.json on
+        # 2026-09-23. This is the flag that actually does not write.
+        print(f"\ndry run — {len(comps)} comps would be written to {COMPS_PATH} "
+              f"(nothing written)")
+        return
 
     with open(COMPS_PATH, "w", encoding="utf-8") as f:
         json.dump(comps, f, indent=2, ensure_ascii=False)
