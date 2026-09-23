@@ -15,6 +15,7 @@ sys.path.insert(0, HERE)
 
 import doctor  # noqa: E402
 import logquery  # noqa: E402
+import meta  # noqa: E402
 import patch_day  # noqa: E402
 import review_kit  # noqa: E402
 
@@ -77,6 +78,41 @@ class TestUnresolvedPreflight(unittest.TestCase):
         ]
         got = [c for c, _ in logquery._unresolved_ids(chunk)]
         self.assertEqual(got, ["BG36_999"])
+
+    def test_golden_and_triple_golden_variants_are_not_unknowns(self):
+        """BG36_330_Gt/_Gt2 were two phantom gaps in a 2026-09-23 game. The log
+        calls those token entities CARDTYPE=SPELL, so the MINION token rule
+        never saw them, and only a bare `_G` suffix was being stripped — the
+        base BG36_330 (Sly Infiltrator) was in the DB all along."""
+        known = {"BG36_330"}
+        self.assertFalse(logquery._plausible_card("BG36_330_Gt", "SPELL", known))
+        self.assertFalse(logquery._plausible_card("BG36_330_Gt2", "SPELL", known))
+        self.assertFalse(logquery._plausible_card("BG36_330_G", "MINION", known))
+        self.assertTrue(logquery._plausible_card("BG36_331_Gt", "SPELL", known),
+                        "an unknown base is a real gap and must survive")
+
+    def test_an_answered_gap_is_not_reported_again(self):
+        """meta/patch_gaps.json is the registry of questions already answered
+        (Gem Day has no tier anywhere and never leaves SETASIDE). A pre-flight
+        that re-reports answered ids is one nobody reads."""
+        self.assertFalse(logquery._plausible_card("BG31_893", "SPELL", set()))
+        self.assertTrue(logquery._plausible_card("BG36_777", "SPELL", set()))
+
+    def test_every_registered_gap_carries_a_reason_and_evidence(self):
+        """The file's own contract, enforced here: 'an entry with no evidence
+        is a gap someone talked themselves out of.'"""
+        doc = meta._raw("patch_gaps.json") or {}
+        for section in ("expected_missing", "seen_not_carried"):
+            for row in (doc.get(section) or []):
+                with self.subTest(section=section, name=row.get("name")):
+                    self.assertTrue(row.get("reason"))
+                    self.assertTrue(row.get("evidence"))
+                    if section == "seen_not_carried":
+                        self.assertTrue(row.get("id"), "an id is what the "
+                                        "pre-flight matches on")
+
+    def test_the_registry_is_what_the_preflight_reads(self):
+        self.assertIn("BG31_893", logquery._ANSWERED_GAPS)
 
 
 class TestReviewKit(unittest.TestCase):

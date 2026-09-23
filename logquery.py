@@ -339,6 +339,28 @@ def _meta_ids():
     return ids
 
 
+def _answered_gaps():
+    """Card ids whose "why is this unknown?" question is already answered.
+
+    `meta/patch_gaps.json` holds cards the DB genuinely cannot carry, each with
+    the evidence that closed the question. The change-list gate
+    (check_patch_db.py) has always honoured it; the log pre-flight did not, so
+    it re-reported the same answered ids every session — which is how a
+    pre-flight stops being read. `seen_not_carried` is the section for ids the
+    pre-flight itself found (no change list names them).
+    """
+    doc = meta._raw("patch_gaps.json") or {}
+    out = set()
+    for section in ("seen_not_carried", "expected_missing"):
+        for row in (doc.get(section) or []):
+            if isinstance(row, dict) and row.get("id"):
+                out.add(row["id"])
+    return out
+
+
+_ANSWERED_GAPS = _answered_gaps()
+
+
 #: CARDTYPEs that represent a card a player can see and the coach might name.
 #: Enchantments and internal tokens are excluded on purpose: the first version of
 #: this query reported 169 "unresolved" ids for a single game, and all but a
@@ -361,9 +383,32 @@ _TOKEN_SUFFIX = re.compile(r"t\d*$")
 #:
 #: Deliberately NOT excluded: `BG31_893` ("Gem Day", a real SPELL with no
 #: TECH_LEVEL or COST in the log, so probably generated rather than shop-bought).
-#: It is a genuine unknown and the pre-flight is supposed to surface it.
+#: It is a genuine unknown and the pre-flight is supposed to surface it — until
+#: the question is ANSWERED, which since 2026-09-23 lives in
+#: `meta/patch_gaps.json` (`seen_not_carried`). An answered id is excluded by
+#: `_plausible_card`, not by widening this regex: the registry keeps the
+#: evidence, a regex only hides the id.
 _NON_CARD = re.compile(r"(MidGameEffect|OldGod|^EBG_|_HERO_\d+p|_GEM|Quest)",
                        re.I)
+
+#: Golden / triple-golden suffix as the log spells it: `_G`, `_Gt`, `_Gt2`.
+#: `_G` alone was handled; `_Gt`/`_Gt2` (the triple's golden variants, e.g.
+#: BG36_330_Gt for a known BG36_330) slipped through and showed up in the
+#: pre-flight as three phantom unknowns in one 2026-09-23 game.
+_GOLDEN_SUFFIX = re.compile(r"_G(?:t\d*)?$")
+
+
+def _base_card(cid):
+    """The plain card id behind a golden/triple/token variant, best effort.
+
+    BG36_330_Gt -> BG36_330_G -> BG36_330, and BGS_115t -> BGS_115, so a
+    variant is only disqualifying when its BASE is already known.
+    """
+    for pattern in (_GOLDEN_SUFFIX, _TOKEN_SUFFIX):
+        m = pattern.search(cid)
+        if m:
+            cid = cid[:m.start()]
+    return cid
 
 
 def _plausible_card(cid, ctype, known):
@@ -372,18 +417,24 @@ def _plausible_card(cid, ctype, known):
     Four exclusions, each earned by watching the query be useless at the
     previous setting: `TB_*` Battlegrounds machinery (`TB_Baconups_079`,
     `TB_BaconShop_CheckTriples`), summoned MINION tokens (`BGS_115t`), a
-    `t`/`t2` variant whose base card IS known, and non-card entities. The count
-    went 169 -> 27 -> 19 across three passes on one game; a pre-flight that
-    buries four real gaps under 165 non-cards is not a pre-flight.
+    `t`/`t2`/`_G`/`_Gt` variant whose base card IS known, and non-card entities.
+    The count went 169 -> 27 -> 19 across three passes on one game; a pre-flight
+    that buries four real gaps under 165 non-cards is not a pre-flight.
+
+    A fifth exclusion is not a shape rule but a bookkeeping one: an id recorded
+    in `meta/patch_gaps.json` has already been investigated and the answer is
+    "the DB cannot carry it" (see `_answered_gaps`). Re-reporting it every
+    session is how a pre-flight trains its reader to ignore it.
     """
+    if cid in _ANSWERED_GAPS:
+        return False
     if _NON_CARD.search(cid):
         return False
     if cid.upper().startswith("TB_"):
         return False
     if ctype == "MINION" and _TOKEN_SUFFIX.search(cid):
         return False
-    m = _TOKEN_SUFFIX.search(cid)
-    if m and cid[:m.start()] in known:
+    if cid != _base_card(cid) and _base_card(cid) in known:
         return False
     return ctype in _DISPLAYABLE
 
