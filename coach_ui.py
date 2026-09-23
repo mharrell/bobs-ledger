@@ -123,6 +123,15 @@ _HTML = r"""<!doctype html>
   #statebar .good { color:var(--good); font-weight:400; font-size:12px; }
   #statebar .bad { color:var(--bad); font-weight:400; font-size:12px; }
   #statebar .banned { color:var(--dim); font-weight:400; font-size:12px; }
+  /* Ban picker (2026-09-19): tap the 5 banned tribes from the reveal
+     screen — the log never carries the ban list, the inference takes
+     minutes, a manual set is exact from turn 1. */
+  .banchips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .banchips .chip { border:1px solid #2c2f36; border-radius:12px;
+                    padding:2px 10px; font-size:12px; cursor:pointer;
+                    color:var(--dim); user-select:none; }
+  .banchips .chip.picked { border-color:var(--bad); color:var(--bad);
+                           text-decoration:line-through; }
   /* One priority column: explicit instructions first, then the horizontal
      card rows (game-like), then reference chips. */
   #app { display:flex; flex-direction:column; gap:8px; min-width:0; }
@@ -430,6 +439,21 @@ function render(a) {
   app.innerHTML = '';
   statebar.innerHTML = '';
   if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
+  // Ban-picker sync (see the state block near the bottom): a new game
+  // reseeds from the server; a settled manual set overwrites stale local
+  // taps (unless we tapped in the last 3s — the POST may still be in
+  // flight); while the player is mid-tapping during detection, local wins.
+  const gameNo = a.game_no ?? null;
+  if (gameNo !== _banPickGame) {
+    _banPickGame = gameNo;
+    _banPick = new Set(a.bans_manual ? (a.banned || []) : []);
+    _banPickAt = 0;
+  } else if (a.bans_manual && Date.now() - _banPickAt > 3000) {
+    const srv = new Set(a.banned || []);
+    if (srv.size !== _banPick.size || [...srv].some(t => !_banPick.has(t))) {
+      _banPick = srv;
+    }
+  }
   // Pre-warm the /card renders for everything on screen so hovers are
   // instant (one-time per card: the server caches downloads in
   // img_cache/card/, and misses are remembered server-side).
@@ -734,10 +758,29 @@ function render(a) {
   // of not-yet-confirmed tribes; the header says so the full list doesn't
   // read as "all tribes confirmed".
   const compsBody = el('div');
-  if (a.tribes_detecting) {
-    compsBody.appendChild(el('div', 'none', 'bans still resolving — '
-      + (a.tribes_seen || 0) + '/5 tribes confirmed · dimmed comps could '
-      + 'still be banned'));
+  if (a.tribes_detecting || a.bans_manual) {
+    // Ban picker: the reveal screen shows the 5 banned tribes at t0 and
+    // the pool inference only converges minutes later — tapping them here
+    // makes every downstream comp filter exact for the whole game
+    // (2026-09-19; the ban list is provably not in any log).
+    const line = el('div', 'none', a.bans_manual
+      ? 'bans set by you — tap to correct'
+      : 'bans still resolving — ' + (a.tribes_seen || 0)
+        + '/5 tribes confirmed · dimmed comps could still be banned · '
+        + 'tap the 5 banned tribes to set them now:');
+    compsBody.appendChild(line);
+    const chips = el('div', 'banchips');
+    (a.tribe_roster || []).forEach(t => {
+      const c = el('span', 'chip' + (_banPick.has(t) ? ' picked' : ''), t);
+      c.onclick = () => {
+        if (_banPick.has(t)) _banPick.delete(t); else _banPick.add(t);
+        _banPickAt = Date.now();
+        c.classList.toggle('picked');
+        postBans([..._banPick]);
+      };
+      chips.appendChild(c);
+    });
+    compsBody.appendChild(chips);
   }
   if (a.comps && a.comps.length) {
     let lastTier = null;
@@ -755,6 +798,18 @@ function render(a) {
   }
   app.appendChild(box('Playable comps', compsBody));
 }
+// Ban-picker state, deliberately OUTSIDE render(): the app rebuilds every
+// poll second and would wipe in-progress taps. Per game: when the payload's
+// game_no changes, seed from the server (a fresh game clears manual bans).
+// Once tapping, local state wins for 3s so a poll can't flicker the chip
+// back before the POST lands; after that the server (via bans_manual) is
+// authoritative and self-heals any missed POST.
+let _banPick = new Set(), _banPickGame = null, _banPickAt = 0;
+function postBans(list) {
+  fetch('/bans', {method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({banned: list})});
+}
 setInterval(poll, 1000);
 poll();
 </script>
@@ -767,9 +822,36 @@ class _State:
     def __init__(self):
         self.lock = threading.Lock()
         self.analysis = None
+        # The player-set banned tribes (POST /bans), or None when not set.
+        # The ban reveal is on screen at t0 and the pool inference needs
+        # minutes to converge, so a 5-tap override at hero pick is the
+        # precise path (2026-09-19; the list itself is not in any log).
+        self.manual_bans = None
 
 
 _state = _State()
+
+
+def store_manual_bans(tribes):
+    """Set the manual banned-tribe list; an empty list clears it.
+
+    Only canonical display names (tribes.DISPLAY_TRIBES) are accepted;
+    everything else is dropped. Returns the list that stuck (sorted).
+    """
+    from tribes import DISPLAY_TRIBES
+    roster = set(DISPLAY_TRIBES)
+    clean = sorted({t for t in (tribes or [])
+                    if isinstance(t, str) and t in roster})
+    with _state.lock:
+        _state.manual_bans = clean if clean else None
+    return clean
+
+
+def latest_manual_bans():
+    """The manual banned tribes, or None when the player hasn't set any."""
+    with _state.lock:
+        return list(_state.manual_bans) if _state.manual_bans is not None \
+            else None
 
 
 def render_json(analysis):
@@ -1087,6 +1169,20 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send(404, "text/plain", b"no card render cached")
                 return
             self._send(200, "text/html; charset=utf-8", _HTML.encode())
+
+    def do_POST(self):
+        if self.path.rstrip("/") == "/bans":
+            n = int(self.headers.get("Content-Length") or 0)
+            try:
+                payload = json.loads(self.rfile.read(n) or b"{}")
+            except ValueError:
+                self._send(400, "application/json", b'{"error":"bad json"}')
+                return
+            banned = store_manual_bans(payload.get("banned"))
+            self._send(200, "application/json",
+                       json.dumps({"ok": True, "banned": banned}).encode())
+            return
+        self._send(404, "text/plain", b"no such endpoint")
 
     def _send(self, code, ctype, body):
         self.send_response(code)

@@ -158,6 +158,57 @@ class TestTopMoveAffordability(unittest.TestCase):
         self.assertEqual(a["buy_step_card"], spell)
 
 
+class TestPriceModifiers(unittest.TestCase):
+    """Held-trinket price overrides (2026-09-20 ruling: the coach models
+    the text-stated exceptions to flat-3). Electrode Attractor: 'Magnetic
+    Mechs cost (2)'. Bazaar Sticker: '1 Tavern spell/turn costs Health
+    instead of Gold' — one spell per turn can't live in a flat price map,
+    so the plan walk discounts the one spell it would buy and says so."""
+
+    def test_electrode_attractor_magnetics_cost_two(self):
+        from player_actions import _load_bg_magnetic_ids
+        mag = sorted(_load_bg_magnetic_ids())[0]
+        plain = next(c for c in value._load_card_db()
+                     if c not in _load_bg_magnetic_ids())
+        self.assertEqual(value._buy_prices({})[mag], 3)
+        held = value._buy_prices(
+            {"scenario": {"trinkets": ["Electrode Attractor"]}})
+        self.assertEqual(held[mag], 2)
+        self.assertEqual(held[mag + "_G"], 2)
+        self.assertEqual(held[plain], 3)  # non-magnetic stays flat 3
+
+    def _spell_analysis(self, health=20):
+        spell_db = value._load_spell_db()
+        cid = next(c for c, v in spell_db.items()
+                   if (v or {}).get("cost", 0) >= 1)
+        return cid, {"gold": 0, "buy_this": cid, "shop_costs": {cid: 3},
+                     "shop_rank": [[cid, 5.0]], "board": [], "turn": 9,
+                     "health": health, "armor": 0,
+                     "scenario": {"trinkets": ["Bazaar Sticker"]}}
+
+    def test_bazaar_sticker_first_spell_costs_health_not_gold(self):
+        """Gold 0 and the spell priced 3: the plan still buys it — the
+        Sticker pays its price in health — and says so."""
+        cid, a = self._spell_analysis()
+        text = value.top_move(a)
+        self.assertEqual(a["buy_step_card"], cid)
+        self.assertIn("Health instead of gold", text)
+
+    def test_bazaar_sticker_not_while_dying(self):
+        """At <=12 effective HP a health spend is how runs end — the
+        discount is refused and the spell stays unaffordable at 0 gold."""
+        cid, a = self._spell_analysis(health=8)
+        text = value.top_move(a)
+        self.assertIsNone(a["buy_step_card"])
+        self.assertNotIn("Health instead of gold", text)
+
+    def test_spell_needs_gold_without_the_sticker(self):
+        cid, a = self._spell_analysis()
+        a["scenario"] = {}
+        value.top_move(a)
+        self.assertIsNone(a["buy_step_card"])
+
+
 class TestShopCostMapEntityExact(unittest.TestCase):
     """shop_cost_map must price the shop's OWN entities: the 2026-09-05 Holmes
     game priced a shop Waverider 31g off a discovery-pool copy's COST write

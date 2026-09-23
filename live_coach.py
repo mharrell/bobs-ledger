@@ -22,6 +22,7 @@ from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_rac
 import meta
 import pool
 import lobby
+from coach_ui import latest_manual_bans
 from meta import hero_power as _hero_power_text
 from tribes import DISPLAY_TRIBES, matches, normalize
 from player_actions import (
@@ -426,6 +427,8 @@ _GAME_DEFAULTS = {
     "_bans_ready": False,
     "tribes_detecting": False,  # 5/5 ban set not confirmed yet (window state)
     "tribes_seen": 0,        # pure tribes the pool reveal has shown so far
+    "bans_manual": False,    # the player set the bans in the overlay
+    "_manual_key": None,     # tuple of the applied manual ban list
     "_card_races": None,
     "_seed": None,
     "_comps": None,
@@ -885,7 +888,35 @@ class LiveCoach:
         confirmed set?) so the UI dims the could-still-be-banned ones
         instead of hiding them.
         """
-        if self._bans_ready or self._comps is None or not self.cur_lines:
+        if self._comps is None or not self.cur_lines:
+            return
+        # Manual bans (overlay tap-the-ban-screen picker) are authoritative:
+        # the reveal is exact at t0 while the pool inference needs minutes
+        # (2026-09-19: minute 12/14 in the evening games). Applied once per
+        # distinct list; clearing the taps falls back to the inference.
+        manual = latest_manual_bans()
+        if manual:
+            key = tuple(manual)
+            if not (self.bans_manual and self._manual_key == key):
+                self._manual_key = key
+                self.bans_manual = True
+                self.allowed = sorted(
+                    t for t in DISPLAY_TRIBES if t not in set(manual))
+                self._bans_ready = True
+                self.tribes_seen = len(self.allowed)
+                self.tribes_detecting = False
+                self.playable = filter_comps_by_available_tribes(
+                    self._comps, self._card_races, self.allowed)
+                self.game_comps = self.playable
+            return
+        if self.bans_manual:
+            # Manual taps were cleared mid-game — reopen the detection
+            # window instead of stranding a stale manual set.
+            self.bans_manual = False
+            self._manual_key = None
+            self._bans_ready = False
+            self.allowed = None
+        if self._bans_ready:
             return
         allowed = None
         observed = {}
@@ -921,7 +952,10 @@ class LiveCoach:
             # that fail-opens on an empty set, but here an empty set means
             # "nothing confirmed YET", not "no ban info" — with it the
             # window played fail-open (2026-09-10 replay: seen=0 ->
-            # n_playable=21).
+            # n_playable=21). This is the designed mirror of
+            # bans.filter_comps_by_available_tribes, which fail-OPENS on
+            # no-info for the replay/panel layer — the pair is intentional,
+            # don't unify them (2026-09-19 test audit F3).
             confirmed = set(allowed or ())
 
             def window_ok(tribe):
@@ -1468,6 +1502,13 @@ class LiveCoach:
             # instead of implying every tribe shown is confirmed (2026-09-10).
             "tribes_detecting": self.tribes_detecting,
             "tribes_seen": self.tribes_seen,
+            # Manual bans landed (overlay picker): the panel shows the
+            # picker in "set by you" mode and every filter is exact.
+            "bans_manual": self.bans_manual,
+            # The picker's tap list (canonical display names) + per-game id
+            # so the UI can reset its local picker state on a new game.
+            "tribe_roster": DISPLAY_TRIBES,
+            "game_no": self.game_no,
             # Commit-readiness meter: how close each candidate comp is to the
             # commit threshold, so the UI can show direction BEFORE
             # comp_target declares a target (the pre-commit blind spot).

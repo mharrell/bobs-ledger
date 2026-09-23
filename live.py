@@ -22,6 +22,7 @@ from choices import choice_kind, rank_choices
 from coach import describe
 from config import HS_LOG_GLOB
 from live_coach import LiveCoach
+from tribes import DISPLAY_TRIBES
 import coach_ui
 import decision_log
 
@@ -59,10 +60,12 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     c = coach.choice
     if not c or c.get("picked") is not None or not c.get("options"):
         return
-    # Dedup BEFORE ranking: rank_choices runs the full shop-ranking pipeline,
-    # and this fires every poll tick while the pick sits on screen — checked
-    # after ranking it re-ranked ~3x/second for as long as the pick waited.
-    state = ("pick", c.get("source"), tuple(c["options"]))
+    # The ban reveal is on screen EXACTLY during this pick, and the pool
+    # inference needs minutes — the picker must surface here (2026-09-19).
+    # The manual bans ride the dedup key so a tap re-pushes immediately.
+    manual = coach_ui.latest_manual_bans() or []
+    state = ("pick", c.get("source"), tuple(c["options"]), tuple(manual),
+             getattr(coach, "_bans_ready", False))
     if state == _last_state:
         return
     kind = choice_kind(c["ctype"], c["source"], c["options"])
@@ -74,8 +77,16 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     # "1. PICK Entities[0]" read as advice (2026-09-08 hero-power stance
     # discover). Say the options carry no ranking instead.
     base = {"hero": None, "tier": None, "gold": None, "board": [],
-            "banned": [], "sell_rank": [], "shop_rank": [], "scenario": {},
-            "target_cards": None, "comps": [],
+            "banned": list(manual), "sell_rank": [], "shop_rank": [],
+            "scenario": {}, "target_cards": None, "comps": [],
+            # The coach's ban state may not exist yet this early (comps load
+            # only once the hero parses) — force the detecting flag so the
+            # picker shows through the pick-time minimal payload.
+            "tribes_detecting": not getattr(coach, "_bans_ready", False),
+            "tribes_seen": getattr(coach, "tribes_seen", 0) or 0,
+            "bans_manual": bool(manual),
+            "tribe_roster": DISPLAY_TRIBES,
+            "game_no": getattr(coach, "game_no", None),
             "choice": {"kind": kind, "source": c["source"], "ranked": ranked}}
     if best[2] is None:
         a = dict(base, top_move="no data on these options — your call")

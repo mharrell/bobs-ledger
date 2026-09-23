@@ -59,21 +59,30 @@ def _load_card_races(cache_path):
 
 
 def bans_from_log(powerlog_path, card_races=None, lines=None):
-    """Return a list of per-game dicts: {seed, allowed, banned, races}.
+    """Return a list of per-game dicts:
+    {seed, allowed, banned, pending, races}.
 
-    `allowed`/`banned` are lists of canonical tribe names (e.g. "Mech",
-    "Dragon"). Games with no pool minions (non-Battlegrounds) are skipped.
-    A tribe counts as allowed only with MIN_PURE_POOL_CARDS DISTINCT pure
-    pool minions: card effects summon banned-tribe pool minions mid-game
-    (2026-09-10: BG34_500 Flaming Enforcer, a Demon created by a spell with
-    an opponent, carried IS_BACON_POOL_MINION + a single CARDRACE), so
-    counting SEEN tribes made the seen-set reach 6-8 and the live coach's
-    5/5 gate failed OPEN all game — every comp listed, banned tribes
-    included. Real allowed tribes reveal 10+ distinct pure minions within
-    the first minutes (every lobby shop cycle); effect-generated leaks are
-    1-2 cards. Validated: with the 3-card gate, all 9 BG games across the
-    2026-09-08..10 sessions resolve to exactly 5 tribes and every observed
-    leak sits below it.
+    `allowed`/`banned`/`pending` are lists of canonical tribe names (e.g.
+    "Mech", "Dragon"). Games with no pool minions (non-Battlegrounds) are
+    skipped. A tribe counts as allowed only with MIN_PURE_POOL_CARDS
+    DISTINCT pure pool minions: card effects summon banned-tribe pool
+    minions mid-game (2026-09-10: BG34_500 Flaming Enforcer, a Demon
+    created by a spell with an opponent, carried IS_BACON_POOL_MINION + a
+    single CARDRACE), so counting SEEN tribes made the seen-set reach 6-8
+    and the live coach's 5/5 gate failed OPEN all game — every comp
+    listed, banned tribes included. Real allowed tribes reveal 10+
+    distinct pure minions within the first minutes (every lobby shop
+    cycle); effect-generated leaks are 1-2 cards. Validated: with the
+    3-card gate, all 9 BG games across the 2026-09-08..10 sessions resolve
+    to exactly 5 tribes and every observed leak sits below it.
+
+    Three-state honesty (2026-09-19): the ban list itself is NOT in the
+    log (identical CREATE_GAME setup across different-ban games), so
+    "banned" is only the confirmed complement once 5 tribes have crossed
+    the gate. Before that, sub-gate and unseen tribes are `pending` —
+    could still be banned or just unsampled — and `banned` is empty.
+    (The 2026-09-19 games' allowed set only completed at minute 12/14,
+    so the pending state is the normal early-game reality, not an edge.)
     `races` is the card->races map observed from the log itself: each pool
     minion's FULL_ENTITY block prints its own `tag=CARDRACE` at creation —
     ground truth, unlike the upstream hearthstonejson cache, which lags the
@@ -154,9 +163,15 @@ def bans_from_log(powerlog_path, card_races=None, lines=None):
         pure_tribes = {t for t, cids in info["pure"].items()
                        if len(cids) >= MIN_PURE_POOL_CARDS}
         allowed = sorted(canon(t) for t in pure_tribes)
-        banned = sorted(canon(t) for t in ALL_TRIBES if t not in pure_tribes)
+        others = sorted(canon(t) for t in ALL_TRIBES if t not in pure_tribes)
+        if len(allowed) >= 5:
+            banned, pending = others, []
+        else:
+            # Not yet a confirmed 5/5: nothing is called banned (the log
+            # carries no ban list — see docstring); the rest is pending.
+            banned, pending = [], others
         result.append({"seed": seed, "allowed": allowed, "banned": banned,
-                       "races": info["races"]})
+                       "pending": pending, "races": info["races"]})
     return result
 
 
@@ -180,6 +195,12 @@ def filter_comps_by_available_tribes(comps, card_races, allowed_tribes):
     ELEMENTAL/DEMON) are playable if *either* tribe is allowed.
     `allowed_tribes` None or empty = no ban info — fail OPEN and keep
     every comp (an unknown ban must not look like "all tribes banned").
+    NOTE the designed counter-point: the LIVE coach's detection window is
+    deliberately fail CLOSED (advisory list = confirmed-tribe comps only
+    until the 5/5 set lands — see live_coach._refresh_bans). These two
+    are a pair: the replay/panel layer must never read no-info as
+    all-banned, the live advisory must never read no-info as all-clear.
+    Don't unify them.
     """
     if not allowed_tribes:
         return dict(comps)
@@ -228,4 +249,6 @@ if __name__ == "__main__":
         print(json.dumps(games, indent=2))
     else:
         for g in games:
-            print(f"seed {g['seed']}: allowed={g['allowed']} banned={g['banned']}")
+            extra = (f" pending={g['pending']}" if g["pending"] else "")
+            print(f"seed {g['seed']}: allowed={g['allowed']} "
+                  f"banned={g['banned']}{extra}")
