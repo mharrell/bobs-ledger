@@ -135,7 +135,15 @@ def rank_choices(kind, options, board=None, comps=None, comp=None, hero=None):
 
 
 def _rank_heroes(options):
-    """Rank hero options by hsreplay pick_rate; surface each hero power."""
+    """Rank hero options by hsreplay pick_rate; surface each hero power.
+
+    A hero with no population data still shows its POWER TEXT. Dropping it left
+    the pick panel with a blank column and nothing to reason about, which is the
+    worst case for exactly the heroes that need it most: the 36.6.1 heroes
+    (Drest'agath, Kith'ix) have no hsreplay rate yet but are guaranteed in EVERY
+    game until 2026-10-06, so the player meets them constantly. An unknown hero
+    the DB has never seen keeps the empty row.
+    """
     db = _load_hero_db()
     ranked = []
     for name, cid in options:
@@ -144,7 +152,9 @@ def _rank_heroes(options):
             ranked.append((name, cid, hero["pick_rate"] / 10.0,
                            (hero.get("hero_power") or "").strip()))
         else:
-            ranked.append((name, cid, None, ""))
+            ranked.append((name, cid, None,
+                           (hero.get("hero_power") or "").strip()
+                           if hero else ""))
     ranked.sort(key=lambda x: (-(x[2] or 0), x[0]))
     return ranked
 

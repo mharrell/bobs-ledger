@@ -350,6 +350,13 @@
     "text": "Get a Fire Baller and a Snow Baller."
   },
   {
+    "tier": 4,
+    "id": "BG36_301t",
+    "name": "Sludge Corrosion",
+    "cost": 1,
+    "text": "Give your minions +1/+1. If you discard this, cast it twice."
+  },
+  {
     "tier": 5,
     "id": "BG34_889",
     "name": "Brood of Nozdormu",
@@ -460,6 +467,20 @@
     "name": "Golden Touch",
     "cost": 5,
     "text": "Make a random minion in the Tavern Golden."
+  },
+  {
+    "tier": 5,
+    "id": "BG36_303",
+    "name": "Corrupted Coin",
+    "cost": 2,
+    "text": "Gain 2 Gold. If you discard this, increase your maximum Gold by 2."
+  },
+  {
+    "tier": 5,
+    "id": "BG36_371",
+    "name": "Energizing Chamber",
+    "cost": 1,
+    "text": "Give your Deity +7/+7. If you discard this, cast it twice."
   },
   {
     "tier": 6,
