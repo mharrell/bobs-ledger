@@ -1229,6 +1229,19 @@
     "tribe_src": "log"
   },
   {
+    "tier": 3,
+    "id": "BGFYM_000",
+    "name": "C'Thun",
+    "cost": 3,
+    "tribe": "Aberration",
+    "attack": 1,
+    "health": 1,
+    "mechanics": [],
+    "text": "Deity. After this awakens, give this minion's stats split amongst your other minions.",
+    "auto_added": "36.6.1 DB update (patch article + log entityName/cardId)",
+    "tribe_src": "article"
+  },
+  {
     "tier": 4,
     "id": "BG36_508",
     "name": "Cagey Conjurer",
@@ -4648,5 +4661,20 @@
     "text": "Taunt\nReborn",
     "auto_added": "from session logs (extend_pool.py)",
     "tribe_src": "hearthstonejson"
+  },
+  {
+    "tier": 5,
+    "id": "BG25_014",
+    "name": "Hungering Abomination",
+    "cost": 3,
+    "tribe": "Undead",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [
+      "AVENGE"
+    ],
+    "text": "Avenge (1): Gain +1/+2 permanently.",
+    "tribe_src": "hearthstonejson",
+    "auto_added": "from session logs (extend_pool.py)"
   }
 ]
