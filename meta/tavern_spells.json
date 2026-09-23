@@ -288,6 +288,20 @@
   },
   {
     "tier": 4,
+    "id": "BG35_910",
+    "name": "Conflagration",
+    "cost": 2,
+    "text": "Give a minion +4/+4. (Improved by each Elemental you played this turn!)"
+  },
+  {
+    "tier": 4,
+    "id": "BG35_911",
+    "name": "Arcane Absorption",
+    "cost": 1,
+    "text": "Give a friendly Elemental half the stats of the highest-Health minion in the Tavern."
+  },
+  {
+    "tier": 4,
     "id": "BG36_246",
     "name": "Mighty Dragonbreath",
     "cost": 2,
