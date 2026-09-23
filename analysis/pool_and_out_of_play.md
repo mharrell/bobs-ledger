@@ -166,18 +166,41 @@ never have seen a card list. Both are fixed and regression-tested.
   Shadybunny warns about. The coach can now *see* Aberration cards (tribe,
   tier, stats) but has no comp to build toward; comps should come from observed
   play over the next days, not from this document. **Still open.**
-- **The Deity mechanic — implemented, NOT yet in main.** Branch
-  `worktree-discard-engine` adds an `aberrations-discard-deity` engine to
-  `meta/engines.json` (trigger `discard`) and a comp-independent detector in
-  `value.py` alongside `_spell_fuel_bonus`, with `analysis/discard_mechanic.md`
-  and tests. Named here as a branch, not a commit, because **if it is not in
-  main it is not done** — flip this line when it lands. The discarded rate is
-  modeled, not measured, and the Deity half is grounded in the only log state
-  that exists for it (`BACON_DEITY_SIGIL` on the `BG_OldGod` "Secret Deity
-  [DNT]" entity, re-created per combat). Note the mechanic has **no discard event
-  in the log at all**: the only tag is `CANT_DISCARD`, and `hand -> GRAVEYARD`
-  cannot separate a discard from casting a spell (in the Faelin win, all three
-  hand-to-graveyard cards were spells the player *cast*).
+- **The Deity mechanic is modelled** (landed in main, `fb01b1b`, merged `85b3928`).
+  `meta/engines.json` has an `aberrations-discard-deity` engine (trigger
+  `discard`, 9 steps, every number citing its card text) and `value.py` detects it
+  comp-independently alongside `_spell_fuel_bonus` — necessary because
+  `comps.json` has no Aberration comp to key an engine on. The discarded rate is
+  **modelled, not measured**, and the Deity half is grounded in the log state that
+  actually exists for it: the "Secret Deity [DNT]" entity (`BG_OldGod`,
+  `zone=SECRET`) re-created once per round, carrying `QUEST_PROGRESS` 0→1→2 with
+  `QUEST_PROGRESS_TOTAL value=3` — the game prints the three-sacrifice rule. Note
+  the mechanic has **no discard event in the log at all**: `CANT_DISCARD` is the
+  only discard tag, and `hand -> GRAVEYARD` cannot separate a discard from casting
+  a spell (in the Faelin win, all three of that game's hand-to-graveyard cards
+  were spells the player *cast*). Assumptions and falsifiers:
+  `analysis/discard_mechanic.md`.
+  **Honest outcome:** on the real win board the engine is small — Faelin's final
+  board holds no Activate-discard outlet, so a bought outlet is worth ~1 point of
+  shop credit. Most of the mechanic's payoff is per-combat power behind a 50/50
+  Deity roll, and the model is deliberately arranged so that never outranks a
+  permanent stat.
+- **Most 36.6.1 discard trinkets are not in `meta/trinkets.json` yet.** Only
+  Hammer of Twilight is; Writhing Tentacles, Shath'Yar Shrine, Sludge Portrait,
+  Corrupted Baton, Mask of Ancient Ones, Evil Experiment, Kiri's Double Eclipse
+  and Weighted Gauntlet are known from the article text alone. The engine gates
+  them by name so the chain works either way, but the DB rows belong to a
+  `refresh_trinkets.py` pass — and that tool derives its universe from the
+  trinkets **offered in local logs** plus the hsreplay guide list, so a card has
+  to be offered in a session before it can be captured. Verified by dry run: the
+  next refresh would add 15 entries, and none of them is a discard trinket, so
+  this gap closes only when one is actually offered (or the guides catch up).
+  **Still open, and not hand-patchable** — hand-adding rows to a generated file
+  is what had to be reverted once already during the 36.6.1 update.
+  *Hazard for whoever runs it next:* the tool reported "191 -> 192 entries
+  (15 added)" from a 191-entry file, i.e. it wants to remove about as many as it
+  adds, so a re-run is not obviously idempotent. Understand that before running
+  it for real, and diff the 14 it would drop against the curated reads.
 - **Two cards a `no carddef` boundary, not an oversight:** `BGFYM_005` and
   `BGFYM_011` (the Y'Shaarj family) have **no card definition in the installed
   client**, so no art can be extracted for them; `BG30_MagicItem_4262`
