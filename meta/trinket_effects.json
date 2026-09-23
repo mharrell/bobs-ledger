@@ -1981,5 +1981,29 @@
    ]
   },
   "note": "End of turn: your minions get +1/+1, and the amount DOUBLES at the start of each turn (Weighted Gauntlet, Lesser) - so turn N gives +2^(N-1)/+2^(N-1) board-wide. Priced at 12 like the other end-of-turn board scalers (Gold Mallet 12) rather than by the printed +1/+1: it needs turns to compound, which is exactly what the current value model discounts."
+ },
+ "BG30_MagicItem_943": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "blood_gem"
+   ],
+   "tribes": [
+    "Quilboar"
+   ]
+  },
+  "note": "Get a Hot-Air Surveyor; Blood Gems played from your hand give an extra +6/+6 (Surveyor Portrait, Greater). Two payoffs at once - a body plus a large per-gem rider - priced with the strong Blood Gem trinkets (Aggem Sticker 14, Great Boar Sticker +3/+3 14) at 12 because it only pays on gems played FROM HAND."
+ },
+ "BG32_MagicItem_301": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "deathrattle"
+   ],
+   "tribes": [
+    "Murloc"
+   ]
+  },
+  "note": "Get a Bassgill; after you summon a Murloc in combat, give it Divine Shield (Bassgill Portrait, Greater). A Murloc-gated combat amp: Divine Shield on each summoned body is real protection, but only in a Murloc build, so 10 against the tribe-agnostic portraits' 8."
  }
 }
