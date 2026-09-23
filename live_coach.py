@@ -35,7 +35,7 @@ from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
     situation_line, sticky_comp_target, combat_forecast, active_recipes,
-    live_reach_sources, DYING_HEALTH, comp_gap, comp_label,
+    live_reach_sources, DYING_HEALTH, comp_gap, comp_label, fragility,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -1371,6 +1371,23 @@ class LiveCoach:
         damage_last = None
         loss_streak = 0
         close_losses = False  # every loss in the streak was by 1-2
+        # DAMAGE MEMORY (design candidate (b), 2026-09-18 review): the sum of the
+        # last three fights' damage. A lost streak RESETS on a win or a tie, and
+        # that is exactly how the 09-18 game slipped every stabilize gate: it had
+        # bled 10 in two of the last three fights, t9 was won/tied, so the streak
+        # read 0 and the plan pointed a one-10-hit-from-death board at a tier.
+        # Three fights is longer than a streak and cannot be reset by one round.
+        damage_recent3 = 0
+        seen_fights = 0
+        for t in (turn - 1, turn - 2, turn - 3):
+            d3 = _combat_damage(t)
+            if d3 is None:
+                continue
+            seen_fights += 1
+            if d3 > 0:
+                damage_recent3 += d3
+        if not seen_fights:
+            damage_recent3 = None
         d = _combat_damage(turn - 1)
         if d is not None and d > 0:
             damage_last = d
@@ -1387,8 +1404,7 @@ class LiveCoach:
                     t -= 1
                 else:
                     break
-        # The never-won alarm (2026-09-19 Reno game: bled in every fight
-        # from t2 and died 8th — no line ever said the one true thing,
+        # The never-won alarm (2026-09-19 Reno game: bled in every fight        # from t2 and died 8th — no line ever said the one true thing,
         # and the plan was LEVELing through it). Read from the PREDAMAGE
         # buckets, not the true-HP series: the series showed a phantom
         # 0-damage fight here (armor-grant/copy-reset noise), while a
@@ -1580,6 +1596,11 @@ class LiveCoach:
             # plan can say "no comp published for Aberration yet" instead of
             # quietly having no direction.
             "comp_gap": gap,
+            # Damage memory rides the analysis so the plan's bleed gate can see
+            # it; `fragility` (the band + the note the overlay shows) is derived
+            # just below, once, for every consumer.
+            "damage_recent3": damage_recent3,
+            "damage_last": damage_last,
             "target_state": target_state(target, board),
             "target_cards": comp_cards(target, board),
             "hand": hand_steps,
@@ -1590,6 +1611,10 @@ class LiveCoach:
             # instead of advising a reroll with the last gold.
             "activations": [{"cid": c} for c in self.activations],
         }
+        # One computation of the fragility band for every consumer: the plan
+        # (the 13-16 HP clause + the bleed gate), the situation line's mortality
+        # read, and the overlay's danger widget.
+        result["fragility"] = fragility(result)
         result["situation"] = situation_line(result)
         result["forecast"] = combat_forecast(result)
         result["top_move"] = top_move(result)
