@@ -1080,6 +1080,24 @@ class TestRenderJsonComps(unittest.TestCase):
         self.assertFalse(a["comps"][0]["core"][0]["banned"])
         self.assertEqual(a["buy_step_card"], None)
 
+    def test_dark_gifts_are_not_in_the_payload(self):
+        """Player call, 2026-09-23: "remove that list of Dark gifts on the
+        coaching page. That is accomplishing nothing." The overlay listed gifts
+        the player already owns and the game already shows, so the payload stops
+        carrying them — but the ANALYSIS keeps the field, because the corpus and
+        telemetry record it."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "dark_gifts": [{"name": "Spectral Sight",
+                                    "description": "Discover a spell"}],
+                    "opp_trinkets": ["Flaming Portrait"]}
+        a = render_json(analysis)
+        self.assertNotIn("dark_gifts", a)
+        self.assertEqual(a["opp_trinkets"], ["Flaming Portrait"],
+                         "the opponents' trinkets line stays — it is intel the "
+                         "player cannot see in game")
+        self.assertIn("dark_gifts", analysis, "the analysis still records them")
+
     def test_game_comps_preferred_tribe_flag_rides(self):
         """The panel renders game_comps (the live coach's game-level list)
         over playable_comps (the evidence-only advisory filter), and the
