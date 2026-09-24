@@ -3235,5 +3235,25 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_367",
+  "name": "Ghastly Sticker",
+  "description": "Your end of turn effects trigger an extra time.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Good when committed to an end of turn comp like Back to Back.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_215",
+  "name": "Dragon's Eye",
+  "description": "Your Dragons' Battlecries trigger an extra time.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  }
 ]
