@@ -682,10 +682,14 @@ function render(a) {
 
   // HAND — casts from hand are free, stuck minions play free; the ranked
   // order here is the plan's hand steps (they're numbered in the panel too).
+  // A `discard` verb (2026-09-23): the plan is feeding this card to a board
+  // outlet that discards it, because the card's own text says discarding beats
+  // casting it — it must not render as "play".
   if (a.hand && a.hand.length) {
     const tiles = el('div', 'tiles');
     a.hand.forEach(s => {
-      const sub = (s.verb === 'cast' ? 'cast' : s.verb === 'hold' ? 'hold' : 'play')
+      const sub = (s.verb === 'cast' ? 'cast' : s.verb === 'hold' ? 'hold'
+                   : s.verb === 'discard' ? 'discard' : 'play')
         + (s.score != null ? ' · ' + s.score.toFixed(0) : '');
       tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
     });
@@ -1159,6 +1163,9 @@ def render_json(analysis):
     # value.top_move rewrites its step and records the card here, so the Buy box
     # cannot keep blessing a card the numbers just argued against.
     a["buy_step_swap_veto"] = analysis.get("buy_step_swap_veto")
+    # Which card the plan is feeding to a discard outlet, and why (analysis/
+    # discard_mechanic.md): the hand box and the plan must name the same card.
+    a["discard_target"] = analysis.get("discard_target")
     # Structured steps from value.top_move — [{text, kind, card}]. The JS
     # still renders from the top_move string today; migrating it onto these
     # (one entry per step, kind-tagged, buy card attached) is the planned
