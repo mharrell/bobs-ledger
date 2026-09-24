@@ -114,6 +114,15 @@ class TestUnresolvedPreflight(unittest.TestCase):
     def test_the_registry_is_what_the_preflight_reads(self):
         self.assertIn("BG31_893", logquery._ANSWERED_GAPS)
 
+    def test_a_golden_variant_of_an_answered_gap_is_also_answered(self):
+        """The log prints the golden copy with a `_G` suffix (BGFYM_002t_G for
+        the Aberrant Tentacle token). Registering the token must silence its
+        golden too, or the question never actually closes."""
+        self.assertIn("BGFYM_002t", logquery._ANSWERED_GAPS)
+        self.assertFalse(logquery._plausible_card("BGFYM_002t_G", "MINION", set()))
+        self.assertTrue(logquery._plausible_card("BGFYM_999_G", "MINION", set()),
+                        "an unregistered variant is still a gap")
+
 
 class TestReviewKit(unittest.TestCase):
     def test_verdict_classification(self):

@@ -3734,17 +3734,38 @@ def comp_target(board, comps, recent_cards=None, trinkets=None):
             # lags, the buys lead). A board-dominant commit holds on a tie
             # — the thing actually fighting stays the direction.
             return best_recent[0]
-    if committed:
-        return committed[0]
-    # A board dominated by a tribe the coach has NO PUBLISHED comp for: the weak
-    # tribe-level path below must not manufacture one (the Banana Slamma failure),
-    # but a PROVISIONAL comp mined from our own corpus is a real, labelled
-    # direction — and for Aberration it is the only one that exists.
-    # (The strong >=2-hit commit above already returned, so a genuine off-tribe
-    # pivot is unaffected.)
+    # THE BOARD'S OWN TRIBE WINS over an incidental published match. A board
+    # dominated by a tribe with NO published comp (Aberration since 36.6.1) has a
+    # provisional package instead, and that package IS the build — even when some
+    # published comp happens to match two cores on it. Measured failure
+    # (2026-09-23 Galakrond game): a 4-of-6 Aberration board whose target
+    # flip-flopped between "Demons - Shop Buff", "Mechs - Deathrattle" and
+    # "Beasts - Tasty Lobstah" while `comp_gap` said Aberration the whole time, so
+    # the plan hunted Tasty Lobster at the player's own build. The
+    # recent-acquisition check ABOVE still gets a real pivot its say — buys lead a
+    # lagging board — which is why this sits after it, not before.
     gap = comp_gap(board, comps)
     if gap:
-        return _provisional_for_tribe(gap, comps, board)
+        provisional = _provisional_for_tribe(gap, comps, board)
+        if provisional:
+            # ...unless the published commit is being ACTIVELY built right now:
+            # two or more of its cores bought this turn is a pivot in progress
+            # (buys lead the board), and it keeps the direction. Without that
+            # check an incidental pair sitting on the board outranks the tribe
+            # the player is actually playing.
+            active_pivot = False
+            if committed:
+                cores = set(committed[0].get("core", [])) - shared
+                active_pivot = sum(1 for c in (rc or []) if c in cores) >= 2
+            if not active_pivot:
+                return provisional
+    if committed:
+        return committed[0]
+    if gap:
+        # No provisional package for that tribe either: "no direction" is the
+        # truth, and the weak tribe-level path below must not manufacture one
+        # (the Banana Slamma failure).
+        return None
     # Tribe-level evidence: core hits spread across comps of one tribe, counting
     # only hits whose card actually belongs to that tribe.
     tribe_best = {}

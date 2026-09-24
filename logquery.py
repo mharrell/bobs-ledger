@@ -428,6 +428,12 @@ def _plausible_card(cid, ctype, known):
     """
     if cid in _ANSWERED_GAPS:
         return False
+    # A golden VARIANT of an answered gap is the same card: the registry names
+    # the token (`BGFYM_002t` Aberrant Tentacle) and the log prints `BGFYM_002t_G`
+    # for its golden copy, which used to keep the question alive after it was
+    # answered.
+    if cid.endswith("_G") and cid[:-2] in _ANSWERED_GAPS:
+        return False
     if _NON_CARD.search(cid):
         return False
     if cid.upper().startswith("TB_"):
