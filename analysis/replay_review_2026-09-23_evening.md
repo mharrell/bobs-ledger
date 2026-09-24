@@ -57,6 +57,17 @@ fingerprint-tagged list) into the review text, so a phase shows the plan at each
 decision point and adherence is scored against the advice the player actually
 had. This is the same capture the in-overlay verdict toggle would give.
 
+**Adding to that blind spot (2026-09-23, from the discard work below): the
+reconstruction also cannot reproduce ACTIVATION advice.** `activations` ride the
+live settled-shop state (`live_coach` line 1062), and driving a game with
+`replay_review._advise_at` yields `activations == []` for every phase — including
+the two phases in the cache that DID advise an activation (09-22 evening g3
+*"Activate Brain Rotter (discard a card to give your deity +2/+2)"*, 09-23 morning
+g1 *"Activate Mindbending Recruiter (discard a card to get a random aberration)"*).
+So a fix to activation advice can be unit-tested but not re-measured against the
+corpus until the capture exists. Worth pinning first: whatever fills
+`_pending_activations` is not reached by the review harness's window.
+
 ### 3.2 A vetoed buy must become actionable advice
 
 The t15/t16 shops scored 2.7 / 4.9 at the top, the plan named that card as the

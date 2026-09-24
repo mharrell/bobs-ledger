@@ -1539,6 +1539,7 @@ def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
 _STEP_KINDS = (("LEVEL", "level"), ("PICK ", "pick"), ("Buy ", "buy"),
                ("sell ", "sell"), ("roll", "roll"), ("Cast ", "cast"),
                ("Play ", "play"), ("Hold ", "hold"), ("Swap: ", "swap"),
+               ("Discard ", "discard"), ("Activate ", "discard"),
                ("stay on tier", "note"), ("wait for end of turn", "note"),
                ("pass", "note"), ("stabilize", "note"))
 
@@ -1763,10 +1764,120 @@ def activation_of(card):
             "effect": m.group(2).strip().replace("\n", " ").rstrip(".")}
 
 
+#: An activation that SPENDS a card ("Activate (0): Discard a card to get a
+#: random Aberration"). The 2026-09-23 report: "I'm getting coaching to activate
+#: a minion to discard a card when I don't have any cards to discard." The effect
+#: text is the only place that says so — the activation's own card text says
+#: nothing about what is in hand.
+_DISCARD_EFFECT = re.compile(r"\bdiscard\b", re.I)
+#: Cards that are BETTER discarded than cast: Energizing Chamber ("Give your Deity
+#: +7/+7. If you discard this, cast it twice."), Sludge Corrosion, Corrupted Coin.
+#: Throwing one away is a GAIN, which is the whole point of the discard build
+#: (analysis/discard_mechanic.md §2.2).
+_DISCARD_IMPROVED = re.compile(r"if (?:you )?discard(?:ed)?\s+this", re.I)
+
+
+#: A hand card worth less than this is expendable to a discard outlet; above it,
+#: the outlet is not worth the card (a fresh body or a real spell stays in hand).
+#: A starting value, stated as an assumption like SWAP_TAKE — the hand scores it
+#: compares come from the same `minion_value`/spell-effect scale the shop uses.
+DISCARD_FODDER_MAX = 12.0
+
+
+def discard_fodder(analysis):
+    """The card to discard for a discard outlet: {card, name, why, improved} or None.
+
+    Preference, because these are not equivalent:
+
+    1. **improved** — a card whose own text says discarding it is better
+       (Energizing Chamber casts twice, Sludge Corrosion casts twice, Corrupted
+       Coin raises max Gold). Discarding one is a GAIN, so it wins even when the
+       plan was going to cast it;
+    2. **safe** — otherwise the least valuable hand card, provided it is worth
+       less than `DISCARD_FODDER_MAX`: a 2-gold Tavern Coin is fodder, a 40-point
+       Aberration body is not. Skipping the same guards the swap arbiter uses:
+       comp core and addons, a card held for a triple, a golden body.
+
+    Returns None when nothing is safe to throw — and the caller must then DROP
+    the activation advice rather than suggest an impossible or harmful discard.
+    """
+    hand = analysis.get("hand_plan")
+    if hand is None:
+        hand = analysis.get("hand") or []
+    if not hand:
+        return None
+    names = _load_bg_names()
+    card_db = _load_card_db()
+    spell_db = _load_spell_db()
+    guards = _swap_guards(analysis)
+
+    def label(cid):
+        return names.get(cid) or (card_db.get(cid) or {}).get("name") \
+            or (spell_db.get(cid) or {}).get("name") or cid
+
+    improved = []
+    safe = []
+    for s in hand:
+        cid = s.get("card")
+        if not cid:
+            continue
+        card = card_db.get(cid) or spell_db.get(cid) or {}
+        text = card.get("text") or ""
+        if _DISCARD_IMPROVED.search(text):
+            improved.append({"card": cid, "name": s.get("name") or label(cid),
+                             "improved": True,
+                             "why": _discard_why_improved(text)})
+            continue
+        if cid in guards:
+            continue                      # a comp piece or a held triple
+        score = s.get("score")
+        if score is None or score > DISCARD_FODDER_MAX:
+            continue                      # worth more than the outlet buys
+        safe.append({"card": cid, "name": s.get("name") or label(cid),
+                     "improved": False, "score": score,
+                     "why": "least useful card in hand"})
+    if improved:
+        return improved[0]
+    if safe:
+        safe.sort(key=lambda r: r["score"])
+        return safe[0]
+    return None
+
+
+def _discard_why_improved(text):
+    """Why discarding this card is better — the clause the card prints."""
+    m = re.search(r"[Ii]f (?:you )?discard(?:ed)? this,?\s*([^.;]+)", text)
+    if m:
+        clause = m.group(1).strip().rstrip(".")
+        return f"discarding it is better — {clause}"
+    return "discarding it is better than casting it"
+
+
+def activation_text(act):
+    """Render 'Activate X (effect) — beats a reroll', naming the discard.
+
+    Shared by both call sites: the plan's roll fallback and the Buy box, which
+    must not disagree (2026-09-01).
+    """
+    cid, name, cost, effect = act[:4]
+    fodder = act[4] if len(act) > 4 else None
+    if fodder:
+        return (f"Activate {name} — discard {fodder['name']} "
+                f"({fodder['why']}) — beats a reroll")
+    return f"Activate {name} ({effect}) — beats a reroll"
+
+
 def _affordable_activation(analysis, budget):
     """The best available board activation the budget covers, as
-    (cid, name, cost, effect) — None when none fits. `budget` None means
-    unknown gold: don't promise an activation."""
+    (cid, name, cost, effect, fodder) — None when none fits. `budget` None means
+    unknown gold: don't promise an activation.
+
+    An activation that DISCARDS is only advice when a card can safely be spent:
+    `discard_fodder` supplies the target and refuses when the hand has nothing to
+    give, in which case this walks on to the next activation rather than
+    suggesting the player throw away a card they do not have (or break their
+    board to pay for it).
+    """
     card_db = _load_card_db()
     names = _load_bg_names()
     seen = set()
@@ -1776,8 +1887,14 @@ def _affordable_activation(analysis, budget):
             continue
         seen.add(cid)
         info = activation_of(card_db.get(cid))
-        if info and budget is not None and info["cost"] <= budget:
-            return (cid, names.get(cid, cid), info["cost"], info["effect"])
+        if not info or budget is None or info["cost"] > budget:
+            continue
+        fodder = None
+        if _DISCARD_EFFECT.search(info["effect"] or ""):
+            fodder = discard_fodder(analysis)
+            if fodder is None:
+                continue          # nothing to discard: not advice this turn
+        return (cid, names.get(cid, cid), info["cost"], info["effect"], fodder)
     return None
 
 
@@ -2501,9 +2618,11 @@ def _top_move_text(analysis):
                     # vs a refresh that can only find 1-cost spells (the
                     # 2026-09-06 live game: Prisonguard sat unused at 1
                     # gold while the coach said roll).
-                    parts.append(f"Activate {act[1]} ({act[3]}) — beats a reroll")
+                    parts.append(activation_text(act))
                     analysis["buy_step_roll"] = parts[-1]
                     analysis["activation_step"] = act[0]
+                    if act[4]:
+                        analysis["discard_target"] = act[4]
                 elif budget:  # a roll costs 1 — with nothing left it isn't advice
                     # Gold doesn't carry over between turns, so spending the
                     # last gold beats passing. Plan 3 gives the filler a
@@ -2817,6 +2936,30 @@ def _top_move_text(analysis):
     # t16's Cast Repair Job x3 with a funded purse remains correct advice;
     # so is casting at gold 0 when the spell is in hand.
     if hand_entries:
+        # THE DISCARD LOOP (decided here, where `budget` is known and the hand is
+        # about to render). A board outlet that discards ("Activate (0): Discard a
+        # card to get a random Aberration") plus a card whose own text says
+        # discarding it is BETTER (Energizing Chamber casts twice, Sludge
+        # Corrosion casts twice, Corrupted Coin raises max Gold) is a strict gain:
+        # the outlet's payoff AND the upgraded spell. The plan used to cast such a
+        # card once and never mention the outlet — the 2026-09-23 Drest'agath win
+        # held four Energizing Chambers with a Mindbending Recruiter on board for
+        # five straight phases and the plan never connected them.
+        #
+        # Demoting the hand entry (rather than adding a second step) keeps ONE
+        # line naming both halves: "Discard Energizing Chamber (via Mindbending
+        # Recruiter — discarding it is better — cast it twice)".
+        _act = _affordable_activation(
+            analysis, budget if budget is not None else gold)
+        if _act and _act[4] and _act[4]["improved"]:
+            _fodder = _act[4]
+            for s in hand_entries:
+                if s.get("card") == _fodder["card"] and s.get("verb") != "hold":
+                    s["verb"] = "discard"
+                    s["why"] = f"via {_act[1]} — {_fodder['why']}"
+                    analysis["activation_step"] = _act[0]
+                    analysis["discard_target"] = _fodder
+                    break
         counts, order = {}, []
         for s in hand_entries:
             key = (s["verb"], s["card"])
@@ -2827,7 +2970,8 @@ def _top_move_text(analysis):
         for key in order:
             n, s = counts[key]
             label = {"cast": "Cast ", "play": "Play ",
-                     "hold": "Hold "}.get(s["verb"], "Play ") + s["name"]
+                     "hold": "Hold ", "discard": "Discard "}.get(s["verb"],
+                                                                 "Play ") + s["name"]
             if n > 1:
                 label += f" x{n}"
             if s.get("why"):
@@ -2869,9 +3013,11 @@ def _top_move_text(analysis):
     scaling = target and analysis.get("target_state") == "committing"
     act = _affordable_activation(analysis, gold)
     if act and gold is not None and gold >= act[2]:
-        msg = f"Activate {act[1]} ({act[3]}) — beats a reroll"
+        msg = activation_text(act)
         analysis["buy_step_roll"] = msg
         analysis["activation_step"] = act[0]
+        if act[4]:
+            analysis["discard_target"] = act[4]
         return msg
     if gold is not None and gold >= 1:
         # When a flip fired, the roll line is the LAST place the reason can
