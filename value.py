@@ -15,8 +15,10 @@ import re
 
 import meta
 import pool
+from player_actions import _load_bg_magnetic_ids
 from simulate_growth import _MULTIPLIERS, _load_engines, simulate_growth
-from tribes import is_banned, matches, normalize, overlaps, parts
+from tribes import (ALL_MARKER, is_banned, matches, normalize, overlaps,
+                    parts)
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -51,6 +53,17 @@ W_SHOP_GOLDEN = 25.0  # a GOLDEN shop minion (player-confirmed 2026-09-08): stil
                       # reward outranks a missing comp core (+14). Matches the
                       # hand plan's play-now golden score (hand_plan +25.0).
 W_SPELL_FUEL = 0.3  # per stat of marginal engine growth one spell cast buys
+W_DISCARD_FUEL = 0.3  # per stat of marginal engine growth one more discard per
+                      # turn buys — the discard mirror of W_SPELL_FUEL (patch
+                      # 36.6.1: an Activate-discard outlet is worth the engine
+                      # growth it turns on, exactly as a spell cast is for the
+                      # cast-spell engines). The discard RATE itself is modelled,
+                      # not measured: analysis/discard_mechanic.md.
+W_DEITY_COMBAT = 0.25  # per stat of the Deity's realised pool. The Deity joins
+                       # ONE combat and leaves, so its stats are one-fight power
+                       # — worth less than a persistent board stat (player rule
+                       # 2026-09-11). Deliberately under W_DISCARD_FUEL so a
+                       # combat-only stat can never outrank a permanent one.
 W_OFF_COMP = -2.0   # shop card whose tribe fights a COMMITTED comp (damping)
 W_MULT = 4.0        # multiplier glue (Balinda/Drakkari-class): worth what it
                     # amplifies, not its stats — never "safest to sell" glue
@@ -62,6 +75,13 @@ W_RECIPE_FUEL = 10.0  # shop card that fuels an ACTIVE engine recipe (analysis/
                       # minion is repeatable value). Sized BETWEEN addon (+7)
                       # and comp core (+14) inside the existing family — loud
                       # at play time, but it can't outrank a missing core.
+W_OUT_OF_PLAY = 8.0   # shop card that is OUT OF PLAY entirely (removed by a
+                      # patch, or a tribe rotated out of the pool — see
+                      # meta/out_of_play.json + playable.py). Deliberately
+                      # heavier than the banned-tribe penalty (-2): "banned in
+                      # this game" still exists next game, "out of play" does
+                      # not exist at all. Only reachable from a stale shop, i.e.
+                      # a historical replay reviewed under current rules.
 
 # Hand-charge kits (2026-09-10 replay, curatively encoded per the card-text
 # discipline): a charger gains stats WHILE IN HAND and needs a deployer to
@@ -461,6 +481,146 @@ def _spell_score(spell, board_minions, names, scenario=None):
     return points / max(cost, 1) + W_SPELL_FUEL * fuel
 
 
+# --- Discard / Deity (patch 36.6.1, analysis/discard_mechanic.md) -----------
+# An OUTLET is a card that SPENDS a discard. The printed shape is
+# "Activate (N): Discard a card ..." (Brain Rotter, Abyssal Envoy, Mangled
+# Bandit, Mindbending Recruiter, N'raqi Frostcaller). The check below reads the
+# card's own text rather than an id list — the project's card-text discipline —
+# but it is deliberately NARROW, because several 36.6.1 cards mention discard
+# without being outlets:
+#   "If you discard this, cast it twice."          -> the spell WANTS to be
+#                                                     discarded (fuel, not an
+#                                                     outlet)
+#   "Whenever you discard a card, give ..."        -> a payoff
+#   "discard your 3 left-most Tavern spells"       -> discards its OWN, at end
+#                                                     of turn, with no outlet
+#                                                     needed
+# so a bare "discard" in the text would count all of them as outlets.
+_DISCARD_OUTLET_RE = re.compile(r"activate \(\d+\):\s*discard")
+
+# The per-turn discard COUNT is bounded, and the cap in this model is stated
+# rather than left implicit. Evidence that the game caps discard triggers at all:
+# 36.6.1's Voidpriest Cloner prints "Whenever you discard a card, Pass a copy of
+# it. **(2 times per turn.)**" — the parenthetical repeat-cap the game uses (that
+# card is DUOS-ONLY, id 134693, and is deliberately NOT in the solo
+# meta/minions.json: see analysis/discard_mechanic.md). No published number
+# exists for the Activate outlets, so the ceiling used here is the one a solo
+# board can actually produce: every outlet occupies a slot and a warband holds 7
+# minions, i.e. at most one discard per slot per turn. Without a ceiling the
+# count would grow linearly with outlets forever; with it, `_discard_scenario`
+# can never model a rate the board cannot reach.
+DISCARD_RATE_CAP = 7
+
+
+def _clamp_discards(n):
+    """Bound a per-turn discard count (DISCARD_RATE_CAP)."""
+    if not DISCARD_RATE_CAP:
+        return n
+    return min(max(n, 0), DISCARD_RATE_CAP)
+
+
+def _is_discard_outlet(card):
+    """True if the card's OWN Activate power spends a discard."""
+    if not card:
+        return False
+    return bool(_DISCARD_OUTLET_RE.search(_flat_text(card).lower()))
+
+
+def _discard_outlets(board_minions, card_db=None):
+    """The board's discard outlets, in board order (card ids).
+
+    Each Activate power is usable once per turn, so the NUMBER of outlets is
+    this turn's discard count — the model behind `_discard_scenario`.
+    """
+    db = _load_card_db() if card_db is None else card_db
+    return [m["card"] for m in (board_minions or [])
+            if _is_discard_outlet(db.get(m.get("card")))]
+
+
+def _discard_scenario(board_minions, scenario=None):
+    """Per-turn trigger counts for the discard engine.
+
+    `discard` = how many cards are discarded this turn. It is NOT measurable
+    from the game's logs — no discard event is written (analysis/
+    discard_mechanic.md) — so it is derived from the BOARD: one discard per
+    Activate-discard outlet, because an Activate power is usable once per turn.
+    An explicit scenario["discard"] wins, and is the only way to count discard
+    sources the board snapshot cannot show (Drest'agath's hero power, Kith'ix's
+    Dark Ritual, a held pair-generator card, a trinket like Willbreaker
+    Sticker).
+
+    Either way the result is CLAMPED to DISCARD_RATE_CAP: the per-turn discard
+    count is a bounded quantity (the game prints per-turn trigger caps — see the
+    constant), never "one more per outlet, forever".
+    """
+    sc = dict(scenario or _DEFAULT_SCENARIO)
+    if not sc.get("discard"):
+        sc["discard"] = len(_discard_outlets(board_minions))
+    sc["discard"] = _clamp_discards(sc["discard"])
+    return sc
+
+
+def _sim_points(result):
+    """Board-stat-equivalent points of a simulator result.
+
+    The persistent `gain`, plus the Deity's realised pool discounted to
+    W_DEITY_COMBAT: the Deity's stats pay out inside ONE combat (C'Thun splits
+    them across your other minions) and are gone at its end, so they are combat
+    power, not growth (player rule 2026-09-11). Adding them at full weight is
+    exactly the "as if they were always online" error this term exists to
+    prevent.
+    """
+    g = result.get("gain") or {}
+    pts = (g.get("atk") or 0) + (g.get("hp") or 0)
+    r = ((result.get("deity") or {}).get("realised")) or {}
+    return pts + W_DEITY_COMBAT * ((r.get("atk") or 0) + (r.get("hp") or 0))
+
+
+def _discard_fuel_bonus(board_minions, names, scenario=None, extra_discards=0):
+    """Marginal growth one extra discard per turn buys on the board's discard engine.
+
+    The mirror of `_spell_fuel_bonus`: for each running engine whose trigger is
+    `discard`, run the simulator at the board-derived per-turn discard count and
+    at +1; the delta is what one more discard — i.e. one more outlet — is worth
+    as engine fuel. Returns the best single-engine delta (one outlet is one
+    outlet; outlets don't stack into a single card). Unlike a spell cast, the
+    trigger count comes from the BOARD (the outlets), not from the trigger-count
+    corpus: nothing in a log records a discard (analysis/discard_mechanic.md).
+
+    `extra_discards`: a card whose own power discards several cards at once
+    (Mysterious K'Thir's three Tavern spells) adds its k to the +1. The engine
+    model runs K'Thir's own discard inside the engine (count_from "turn"), so
+    callers normally leave this at 0.
+
+    The +1 probe is clamped like the base count: a turn already at
+    DISCARD_RATE_CAP cannot discard more, so one more outlet is worth nothing
+    new (the cap is a per-turn ceiling on discards, not a count of outlets).
+    """
+    if not board_minions:
+        return 0.0
+    sc = _discard_scenario(board_minions, scenario)
+    n = sc.get("discard", 0)
+    outlets = bool(_discard_outlets(board_minions))
+    best = 0.0
+    for slug, engine in _load_engines().items():
+        if slug.startswith("_") or engine.get("trigger") != "discard":
+            continue
+        # The board has to be in the discard business at all: an outlet, or one
+        # of the engine's pieces (the discard payoffs and the trinkets that
+        # piggyback on discards). This is the `_spell_fuel_bonus` core-piece
+        # gate, widened by the outlets.
+        if not (outlets or any(_has_card(board_minions, s["source"], names)
+                               for s in engine["chain"])):
+            continue
+        enriched = [dict(m, name=names.get(m["card"], "")) for m in board_minions]
+        base = simulate_growth(enriched, dict(sc, discard=n), engine)
+        plus = simulate_growth(
+            enriched,
+            dict(sc, discard=_clamp_discards(n + 1 + extra_discards)), engine)
+        best = max(best, _sim_points(plus) - _sim_points(base))
+    return best
+
+
 def _detect_role(minion, card):
     text = (card or {}).get("text") or ""
     mech = (card or {}).get("mechanics") or []
@@ -696,6 +856,46 @@ def _trinket_synergy_hit(trinket, race, card_text, mechanics=()):
     return False
 
 
+#: "Skip your first turn" / "Skip your first two turns" — the count is
+#: optional in the wording (Ambassador Faelin omits it, A. F. Kay says "two").
+_SKIP_TURNS_RE = re.compile(
+    r"skip your first(?:\s+(one|two|three|four|\d+))?\s+turns?", re.I)
+_WORD_NUMBERS = {"one": 1, "two": 2, "three": 3, "four": 4}
+
+
+def _skipped_turn_count(hero_power):
+    """How many opening turns this hero power skips (0 = it skips none).
+
+    Read from the curated power text in meta/heroes.json — a wording read, not
+    a behaviour guess — so a hero that skips two turns is not silently treated
+    as skipping one.
+    """
+    m = _SKIP_TURNS_RE.search(hero_power or "")
+    if not m:
+        return 0
+    token = (m.group(1) or "").lower()
+    if not token:
+        return 1
+    return int(token) if token.isdigit() else _WORD_NUMBERS.get(token, 0)
+
+
+def _out_of_play_reason(card_id, card):
+    """Out-of-play explanation for a shop card, or None (fail-open).
+
+    Thin wrapper over `playable.out_of_play_reason` so `value.py` has no hard
+    dependency on the registry being present, and honours the
+    `HEARTH_OUT_OF_PLAY=0` kill switch (used by historical replay reviews, which
+    must be judged under the rules the game was played with).
+    """
+    try:
+        import playable
+    except ImportError:  # pragma: no cover
+        return None
+    card = card or {}
+    return playable.out_of_play_reason(
+        card_id, card.get("name"), card.get("tribe"))
+
+
 def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None,
                         hero_power=None, trinkets=None, comp=None):
     """Rank board minions from safest-to-sell to most-valuable.
@@ -757,6 +957,156 @@ def sell_recommendation(board_minions, comps, allowed_tribes=None, scenario=None
         scored.append((m["card"], val, comp))
     scored.sort(key=lambda x: (x[1], x[0]))
     return [(c, v) for c, v, _ in scored]
+
+
+# ---------------------------------------------------------------------------
+# The board slot: name what you sell, and prove the trade
+# (design: analysis/board_swap.md — stage 1 of three)
+# ---------------------------------------------------------------------------
+
+#: A swap must clear this much keep-score to be worth advising at all; below it
+#: the trade is inside the model's own noise. A starting value, stated as an
+#: assumption, to be calibrated once verdict capture exists (board_swap.md §6.4).
+SWAP_TAKE = 3.0
+
+
+def _slot_comp(analysis):
+    """The evidence-based target comp dict, resolved from the analysis.
+
+    `analysis["target_comp"]` is the comp's NAME (what the overlay renders), so
+    the dict is looked up by name; `playable_comps` arrives as either a
+    slug->comp dict or a list of comps depending on the caller.
+    """
+    name = analysis.get("target_comp")
+    if not name:
+        return None
+    comps = analysis.get("playable_comps") or {}
+    items = comps.values() if isinstance(comps, dict) else comps
+    for comp in items:
+        if isinstance(comp, dict) and comp.get("name") == name:
+            return comp
+    return None
+
+
+def _swap_guards(analysis):
+    """{card_id: why} for board cards a swap must never sell.
+
+    Every one of these earned its place from a review: the comp's own pieces
+    (2026-09-04: "sell Balinda (making room)" three phases running — she IS
+    nagas core), a card the plan is HOLDING for a triple (2026-09-06 Guff t12:
+    "Hold Sewer Lord" and "sell Sewer Lord" in the same plan), multipliers
+    (Brann/Drakkari/Titus-class), whose value is what they amplify rather than
+    what they are, and — since the 2026-09-23 conflict report — the discard
+    outlet the plan is about to activate ("2 Swap: play Brann, sell Mindbending
+    Recruiter" beside "3 Activate Mindbending Recruiter": the plan sold the card
+    its own next step needed).
+    """
+    guards = {}
+    comp = _slot_comp(analysis)
+    if comp:
+        for cid in comp.get("core") or []:
+            guards.setdefault(cid, "it is the comp's core")
+        for cid in comp.get("addons") or []:
+            guards.setdefault(cid, "it is part of the comp")
+    for s in analysis.get("hand_plan") or []:
+        # ANY hold, not just the golden hunt: one plan, one direction. The
+        # original case (2026-09-06 Guff t12) was "Hold Sewer Lord — a 3rd copy
+        # turns it golden" beside "sell Sewer Lord"; the same rule covers a
+        # hand-charge kit holding its summon slot, and a hold whose reason the
+        # caller did not fill in (the fixture that caught this in review).
+        if s.get("verb") == "hold":
+            guards.setdefault(s.get("card"), "the plan is holding it")
+    card_db = _load_card_db()
+    for m in analysis.get("board") or []:
+        if _is_multiplier(card_db.get(m.get("card"))):
+            guards.setdefault(m.get("card"), "it multiplies the board's effects")
+    return guards
+
+
+def slot_swaps(analysis, reserved_outlet=None):
+    """Rank the ways to spend a full board's free slot, best first.
+
+    The player's report this answers, verbatim: "the coach will frequently say
+    that a card should be played, and something else must be sold to make room
+    for it. But it doesn't say *which* card, or state if/how the value of the new
+    card will be greater than the one you'll need to sell." Measured over the
+    cached corpus: 37 of 154 phases have a full board, 34 of those advise a play
+    or a buy, and 16 of those 34 said "sell to make room" without naming a card.
+
+    Both sides are scored in the SAME currency already (`minion_value`): the hand
+    plan scores hand cards with it and `sell_recommendation` scores the board
+    with it, so the comparison is a subtraction, not a new model. Returns
+    [{incoming, incoming_name, from, incoming_score, entry, outgoing,
+      outgoing_name, outgoing_score, delta, verdict, why}] sorted best-first;
+    `entry` is the shared hand-plan dict when the candidate came from hand, so
+    the caller can demote it in place.
+
+    Verdicts: "take" (delta >= SWAP_TAKE), "close" (0 <= delta < SWAP_TAKE),
+    "veto" (delta < 0 — the card is not worth the slot it costs). At DYING
+    effective health a marginal swap becomes a veto: a body is worth more than a
+    small upgrade when the next fight ends the game (the stage-1 slice of
+    contract item 4 in board_swap.md).
+    """
+    board = analysis.get("board") or []
+    if len(board) < 7:
+        return []
+    names = _load_bg_names()
+    guards = _swap_guards(analysis)
+    if reserved_outlet:
+        # The plan is activating this outlet this turn (step 3b), so it is not a
+        # candidate to sell (step 4) — the 2026-09-23 conflict.
+        guards.setdefault(reserved_outlet, "the plan is activating it")
+    outgoing = next(((c, s) for c, s in (analysis.get("sell_rank") or [])
+                     if c not in guards), None)
+    if outgoing is None:
+        return []
+    out_card, out_score = outgoing
+    card_db = _load_card_db()
+    incoming = []
+    for s in analysis.get("hand_plan") or []:
+        cid = s.get("card")
+        if s.get("verb") != "play" or s.get("score") is None:
+            continue
+        if cid not in card_db:
+            continue
+        incoming.append({"card": cid, "from": "hand", "score": float(s["score"]),
+                         "entry": s,
+                         "name": s.get("name") or names.get(cid, cid)})
+    buy = analysis.get("buy_step_card")
+    if buy and buy in card_db and buy not in {i["card"] for i in incoming}:
+        rank = dict(analysis.get("shop_rank") or [])
+        if buy in rank:
+            incoming.append({"card": buy, "from": "shop", "score": float(rank[buy]),
+                             "entry": None, "name": names.get(buy, buy)})
+    band = (analysis.get("fragility") or {}).get("band")
+    rows = []
+    for inc in sorted(incoming, key=lambda i: -i["score"]):
+        delta = inc["score"] - out_score
+        if delta < 0:
+            verdict = "veto"
+        elif delta < SWAP_TAKE:
+            verdict = "close"
+        else:
+            verdict = "take"
+        if verdict == "close" and band == "dying":
+            verdict = "veto"
+        why = (f"{inc['score']:.1f} vs the {out_score:.1f} "
+               f"{names.get(out_card, out_card)} it would cost")
+        if verdict == "close":
+            why += " — marginal"
+        elif verdict == "take":
+            why += " — clearly better"
+        rows.append({
+            "card": inc["card"], "name": inc["name"], "from": inc["from"],
+            "entry": inc.get("entry"),
+            "incoming_score": inc["score"],
+            "incoming_name": inc["name"],
+            "outgoing": out_card,
+            "outgoing_name": names.get(out_card, out_card),
+            "outgoing_score": out_score,
+            "delta": delta, "verdict": verdict, "why": why,
+        })
+    return rows
 
 
 def active_recipes(hero_name, trinkets=None):
@@ -855,6 +1205,13 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
         comp = comp_target(board_minions or [], comps, recent_cards=recent_cards)
     engine_bonus = _engine_growth_bonus(board_minions, names) if board_minions else {}
     board_ids = {m["card"] for m in (board_minions or [])}
+    # Discard fuel (patch 36.6.1) — the mirror of the tavern-spell path just
+    # below: a cast spell is one trigger for the cast-spell engines, and an
+    # Activate-discard outlet is one trigger per turn for the discard engine.
+    # Computed lazily (it re-runs the simulator), and only for a shop card that
+    # actually carries that power — a card that merely mentions discard gets
+    # nothing (value._is_discard_outlet).
+    discard_fuel = None
     # A hand-charge kit wants its deployer back (2026-09-10: the Forager
     # died, the chargers kept growing in hand, and no shop advice ever
     # pointed at re-buying the engine).
@@ -892,6 +1249,13 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
             # ...and playing it pays the triple reward NOW — super-duper high
             # value (player rule), above a missing comp core (+14).
             val += W_SHOP_GOLDEN
+        if _is_discard_outlet(card):
+            # This card turns the discard engine ON (or adds one more discard a
+            # turn to it): worth the engine's marginal per-discard growth, the
+            # same way a bought spell is worth its cast-engine fuel.
+            if discard_fuel is None:
+                discard_fuel = _discard_fuel_bonus(board_minions, names, scenario)
+            val += W_DISCARD_FUEL * discard_fuel
         # Committed mode (2026-09-07, user principle: "once committed to a
         # comp, the calculation changes — we're maximizing this comp, not
         # just purchasing the best card from whatever is available"): the
@@ -947,6 +1311,14 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                     val -= W_GROWTH * growth * 0.75
         if is_banned(m.get("tribe"), allowed_tribes):
             val -= 2.0  # banned-tribe minion can't grow
+        if W_OUT_OF_PLAY and _out_of_play_reason(cid, m):
+            # Out of play entirely (removed by a patch, or a rotated-out tribe):
+            # the card cannot be bought, so it must never headline a shop.
+            # Sized above the banned-tribe penalty because "banned in this game"
+            # still leaves the card existing elsewhere, while this does not.
+            # Only reachable from a stale shop (a historical replay reviewed
+            # under current rules) — the live game never offers these.
+            val -= W_OUT_OF_PLAY
         if cid in deployers_wanted:
             # The deployer re-arms the engine: chargers in hand turn back
             # into per-combat bodies (plus the free-slot rule — the plan
@@ -1035,10 +1407,15 @@ def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
     None (old callers, fixtures) keeps the evidence-free hold.
 
     Playing a minion stuck in hand (full board) costs no gold — a free
-    body. Casting a spell from hand COSTS its spell price (log COST tag,
-    else the spell DB — the same price layer as the shop; the old
-    "casts are free" model here had cast steps leading plans at gold 0
-    three games running, 2026-09-16 evening t9/t14). Spells rank by
+    body. Casting a spell from hand is also FREE (player rule 2026-09-19,
+    confirmed by log ground truth: BlockType=PLAY blocks sourced from a
+    HAND-zone spell contain no RESOURCES_USED change, while shop-side
+    actions charge — the spell's price is paid when it is BOUGHT from the
+    tavern). The 2026-09-16 evening "cast gold gate" that priced hand
+    casts was a misdiagnosis of that evening's real complaint (a
+    low-effect Tavern Coin leading a gold-0 plan): gold-gain spells
+    already score ~2 points in _spell_effect, so they can't lead a real
+    plan, and no gold gate is needed. Spells rank by
     direct effect + cast-engine fuel (each cast
     feeds end-of-turn compounding, which counts casts made THIS turn);
     hand minions rank by their value as a free play — with triple
@@ -1168,9 +1545,10 @@ def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
 
 _STEP_KINDS = (("LEVEL", "level"), ("PICK ", "pick"), ("Buy ", "buy"),
                ("sell ", "sell"), ("roll", "roll"), ("Cast ", "cast"),
-               ("Play ", "play"), ("Hold ", "hold"), ("stay on tier", "note"),
-               ("wait for end of turn", "note"), ("pass", "note"),
-               ("stabilize", "note"))
+               ("Play ", "play"), ("Hold ", "hold"), ("Swap: ", "swap"),
+               ("Discard ", "discard"), ("Activate ", "discard"),
+               ("stay on tier", "note"), ("wait for end of turn", "note"),
+               ("pass", "note"), ("stabilize", "note"))
 
 
 def top_move(analysis):
@@ -1195,9 +1573,178 @@ def top_move(analysis):
         kind = next((k for prefix, k in _STEP_KINDS if body.startswith(prefix)),
                     "note")
         card = analysis.get("buy_step_card") if kind == "buy" else None
-        steps.append({"text": body, "kind": kind, "card": card})
+        step = {"text": body, "kind": kind, "card": card}
+        step.update(split_step(body))
+        steps.append(step)
     analysis["top_move_steps"] = steps
     return text
+
+
+#: Suffixes that mark a plan step's own parentheses as a TAG rather than part of
+#: the action: "Buy Glambot (growth engine)" -> action "Buy Glambot", tag
+#: "growth engine". Anything else (a "(hold — 1 regular on board; a 3rd copy
+#: turns it golden)" clause) stays where it is and is split as rationale.
+def _split_clauses(text, sep):
+    """Split on `sep` only OUTSIDE parentheses.
+
+    The plan's steps embed rationale inside parentheses that themselves contain
+    em dashes and semicolons ("(hold — 1 regular on board; a 3rd copy turns it
+    golden)"), so a flat re.split mangles exactly the longest rows — the ones
+    this exists to shorten.
+    """
+    out, depth, cur, i = [], 0, [], 0
+    while i < len(text):
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth = max(0, depth - 1)
+        m = sep.match(text, i) if depth == 0 else None
+        if m:
+            out.append("".join(cur))
+            cur = []
+            i = m.end()
+            continue
+        cur.append(ch)
+        i += 1
+    out.append("".join(cur))
+    return [p.strip() for p in out if p.strip()]
+
+
+_DASH_SEP = re.compile(r"\s+—\s+")
+_SEMI_SEP = re.compile(r";\s*")
+#: A trailing parenthetical that reads as a label, not a sentence: short, no
+#: comma/semicolon/em dash inside. "(growth engine)" yes, "(hold — 1 regular on
+#: board; ...)" no.
+_STEP_TAG = re.compile(r"\(([^();—]{1,40})\)\s*$")
+
+
+#: A clause that is really a COST/quantity note, not a reason: "3 left",
+#: "0 left after", "costs 5g". The overlay shows one reason under the action, and
+#: "0 left after" as that reason wastes the slot — the number belongs with the
+#: action, the WHY belongs in the reason line.
+_COST_CLAUSE = re.compile(r"^(\d+\s*left(\s+after)?|\d+\s*gold|costs?\b|\d+g\b)",
+                          re.I)
+#: A clause that must be READ, not hovered: the flip/bleed caution and the
+#: fragility warning. These get the reason slot ahead of any ambient note.
+_CAUTION_CLAUSE = re.compile(r"^(only after the buy|⚠|too fragile|bled \d)", re.I)
+
+
+def split_step(text):
+    """One plan step -> {action, tag, reason, details}.
+
+    The plan's steps accumulated rationale inline until the worst row measured
+    174 characters carrying four clauses ("LEVEL to tier 4 (standard curve) —
+    5 left — prices high — boards ~23 vs lobby ~35; took 6 last fight and
+    lobbies scale up — ..."). Over the 154 cached coach lines: median 2 steps
+    per line, a third of the lines with more than three, p90 step length 123.
+
+    This is a PRESENTATION split, not a model change: the rendered string stays
+    exactly what it was (console, reviews and tests unchanged), and the overlay
+    can put the action first, one reason under it, and the rest behind hover.
+    Returns {"action", "tag", "reason", "details": [...]} — `reason` is the
+    first clause that is a REASON rather than a cost figure, `details` the rest
+    in their original order.
+    """
+    body = re.sub(r"^\d+\.\s*", "", (text or "").strip())
+    parts = _split_clauses(body, _DASH_SEP)
+    head = parts[0] if parts else body
+    tag = None
+    m = _STEP_TAG.search(head)
+    if m:
+        tag = m.group(1).strip()
+        head = head[:m.start()].strip()
+    clauses = []
+    if not tag:
+        # A LONG trailing parenthetical is a clause BLOCK, not part of the
+        # action. Real phases (2026-09-23, tiers 4-5) render rows like "Play
+        # Thorned Trailblazer (golden body — goldens never combine — sell to
+        # make room)": 76 characters of rationale welded to a 3-word action,
+        # which is the exact thing this split exists to fix.
+        lm = re.search(r"\(([^()]*[—;][^()]*)\)\s*$", head)
+        if lm:
+            inner = lm.group(1)
+            head = head[:lm.start()].strip()
+            clauses.extend(_split_clauses(inner, _DASH_SEP))
+            semi = []
+            for c in clauses:
+                semi.extend(_split_clauses(c, _SEMI_SEP))
+            clauses = semi
+            # Drop a leading clause that just repeats the verb ("Hold X (hold —
+            # ...)") — it is noise in the reason slot.
+            if clauses and head.split(" ")[0].lower() == \
+                    clauses[0].strip().lower():
+                clauses.pop(0)
+    for part in parts[1:]:
+        clauses.extend(_split_clauses(part, _SEMI_SEP))
+    # Which clause is THE reason? Priority, not position: a caution ("only
+    # after the buy (bled 21 over the last 3 fights — buy stats first)", or the
+    # ⚠ fragility clause) is what the player must read, so it outranks the
+    # ambient notes; a bare cost figure is never a reason.
+    reason = next((c for c in clauses if _CAUTION_CLAUSE.match(c)), None)
+    if reason is None:
+        reason = next((c for c in clauses if not _COST_CLAUSE.match(c)),
+                      clauses[0] if clauses else None)
+    return {"action": head or body, "tag": tag, "reason": reason,
+            "details": [c for c in clauses if c != reason]}
+
+
+# ---------------------------------------------------------------------------
+# Fragility: the 13-16 HP band where every level gate is legal and you die
+# ---------------------------------------------------------------------------
+
+#: Effective health at or below `DYING_HEALTH` (module constant, 12) is the
+#: DYING hard gate in the flip ladder; the band above it is what this adds.
+#: The band ABOVE it where the 2026-09-18 loss happened: every gate legal, the
+#: plan pointed a one-hit-from-death board at a tier purchase, and the player
+#: read the level as "the build is about to take off" and died 8th with 10 gold
+#: unspent. The design candidate from that review: "a FRAGILE band (13-16):
+#: LEVEL renders only with the fragility clause ('you die to a 10-hit - the
+#: board comes first'), mirroring the flip text".
+FRAGILE_HEALTH = 16
+#: Bleed over the last three fights that counts as a pattern rather than a bad
+#: round (design candidate (b): "the ladder weighs last-3-fights damage
+#: (sum >= 15 => stabilize-first) instead of streak-resettable signals").
+FRAGILE_BLEED = 15
+
+
+def fragility(analysis):
+    """How close is this hero to dying, and to WHAT.
+
+    Returns {band, eff_health, health, armor, last_hit, recent3, cap, note} or
+    None when the log has no health for this hero. band is "dying" (<= 12),
+    "fragile" (13-16) or "steady".
+
+    The number that matters is not the HP but the NEXT HIT: at 14 effective
+    health a 14-damage combat ends the game, and in Battlegrounds that is one
+    lost fight, not a slow decline. `cap` is the log's own combat damage cap
+    (BACON_COMBAT_DAMAGE_CAP) where the game printed it.
+    """
+    health = analysis.get("health")
+    if health is None:
+        return None
+    armor = analysis.get("armor") or 0
+    eff = health + armor
+    last_hit = analysis.get("damage_last")
+    recent3 = analysis.get("damage_recent3")
+    cap = analysis.get("damage_cap")
+    if eff <= DYING_HEALTH:
+        band = "dying"
+    elif eff <= FRAGILE_HEALTH:
+        band = "fragile"
+    else:
+        band = "steady"
+    note = None
+    if band != "steady":
+        bits = [f"{eff} effective HP"]
+        if last_hit:
+            bits.append(f"took {last_hit} last fight")
+        bits.append(f"a {eff}-hit ends it")
+        if recent3:
+            bits.append(f"bled {recent3} over the last 3 fights")
+        note = ", ".join(bits)
+    return {"band": band, "eff_health": eff, "health": health, "armor": armor,
+            "last_hit": last_hit, "recent3": recent3, "cap": cap, "note": note}
 
 
 MINION_BUY_PRICE = 3   # the patch's flat default for ALL tiers of minions
@@ -1224,10 +1771,125 @@ def activation_of(card):
             "effect": m.group(2).strip().replace("\n", " ").rstrip(".")}
 
 
+#: An activation that SPENDS a card ("Activate (0): Discard a card to get a
+#: random Aberration"). The 2026-09-23 report: "I'm getting coaching to activate
+#: a minion to discard a card when I don't have any cards to discard." The effect
+#: text is the only place that says so — the activation's own card text says
+#: nothing about what is in hand.
+_DISCARD_EFFECT = re.compile(r"\bdiscard\b", re.I)
+#: Cards that are BETTER discarded than cast: Energizing Chamber ("Give your Deity
+#: +7/+7. If you discard this, cast it twice."), Sludge Corrosion, Corrupted Coin.
+#: Throwing one away is a GAIN, which is the whole point of the discard build
+#: (analysis/discard_mechanic.md §2.2).
+_DISCARD_IMPROVED = re.compile(r"if (?:you )?discard(?:ed)?\s+this", re.I)
+
+
+#: A hand card worth less than this is expendable to a discard outlet; above it,
+#: the outlet is not worth the card. A starting value, stated as an assumption
+#: like SWAP_TAKE, on the same scale the shop uses.
+#:
+#: 12 was too generous and produced the 2026-09-23 conflict report: the plan
+#: played a 7.6 Brann Bronzebeard and, one step later, offered to DISCARD it for
+#: a random Aberration ("least useful card in hand" — a 7.6 card is not filler).
+#: 6 keeps the intended class: cheap spells (Tavern Coin 2), summons and small
+#: bodies you were never going to build with.
+DISCARD_FODDER_MAX = 6.0
+
+
+def discard_fodder(analysis):
+    """The card to discard for a discard outlet: {card, name, why, improved} or None.
+
+    Preference, because these are not equivalent:
+
+    1. **improved** — a card whose own text says discarding it is better
+       (Energizing Chamber casts twice, Sludge Corrosion casts twice, Corrupted
+       Coin raises max Gold). Discarding one is a GAIN, so it wins even when the
+       plan was going to cast it;
+    2. **safe** — otherwise the least valuable hand card, provided it is worth
+       less than `DISCARD_FODDER_MAX`: a 2-gold Tavern Coin is fodder, a 40-point
+       Aberration body is not. Skipping the same guards the swap arbiter uses:
+       comp core and addons, a card held for a triple, a golden body.
+
+    Returns None when nothing is safe to throw — and the caller must then DROP
+    the activation advice rather than suggest an impossible or harmful discard.
+    """
+    hand = analysis.get("hand_plan")
+    if hand is None:
+        hand = analysis.get("hand") or []
+    if not hand:
+        return None
+    names = _load_bg_names()
+    card_db = _load_card_db()
+    spell_db = _load_spell_db()
+    guards = _swap_guards(analysis)
+
+    def label(cid):
+        return names.get(cid) or (card_db.get(cid) or {}).get("name") \
+            or (spell_db.get(cid) or {}).get("name") or cid
+
+    improved = []
+    safe = []
+    for s in hand:
+        cid = s.get("card")
+        if not cid:
+            continue
+        card = card_db.get(cid) or spell_db.get(cid) or {}
+        text = card.get("text") or ""
+        if _DISCARD_IMPROVED.search(text):
+            improved.append({"card": cid, "name": s.get("name") or label(cid),
+                             "improved": True,
+                             "why": _discard_why_improved(text)})
+            continue
+        if cid in guards:
+            continue                      # a comp piece or a held triple
+        score = s.get("score")
+        if score is None or score > DISCARD_FODDER_MAX:
+            continue                      # worth more than the outlet buys
+        safe.append({"card": cid, "name": s.get("name") or label(cid),
+                     "improved": False, "score": score,
+                     "why": "least useful card in hand"})
+    if improved:
+        return improved[0]
+    if safe:
+        safe.sort(key=lambda r: r["score"])
+        return safe[0]
+    return None
+
+
+def _discard_why_improved(text):
+    """Why discarding this card is better — the clause the card prints."""
+    m = re.search(r"[Ii]f (?:you )?discard(?:ed)? this,?\s*([^.;]+)", text)
+    if m:
+        clause = m.group(1).strip().rstrip(".")
+        return f"discarding it is better — {clause}"
+    return "discarding it is better than casting it"
+
+
+def activation_text(act):
+    """Render 'Activate X (effect) — beats a reroll', naming the discard.
+
+    Shared by both call sites: the plan's roll fallback and the Buy box, which
+    must not disagree (2026-09-01).
+    """
+    cid, name, cost, effect = act[:4]
+    fodder = act[4] if len(act) > 4 else None
+    if fodder:
+        return (f"Activate {name} — discard {fodder['name']} "
+                f"({fodder['why']}) — beats a reroll")
+    return f"Activate {name} ({effect}) — beats a reroll"
+
+
 def _affordable_activation(analysis, budget):
     """The best available board activation the budget covers, as
-    (cid, name, cost, effect) — None when none fits. `budget` None means
-    unknown gold: don't promise an activation."""
+    (cid, name, cost, effect, fodder) — None when none fits. `budget` None means
+    unknown gold: don't promise an activation.
+
+    An activation that DISCARDS is only advice when a card can safely be spent:
+    `discard_fodder` supplies the target and refuses when the hand has nothing to
+    give, in which case this walks on to the next activation rather than
+    suggesting the player throw away a card they do not have (or break their
+    board to pay for it).
+    """
     card_db = _load_card_db()
     names = _load_bg_names()
     seen = set()
@@ -1237,8 +1899,14 @@ def _affordable_activation(analysis, budget):
             continue
         seen.add(cid)
         info = activation_of(card_db.get(cid))
-        if info and budget is not None and info["cost"] <= budget:
-            return (cid, names.get(cid, cid), info["cost"], info["effect"])
+        if not info or budget is None or info["cost"] > budget:
+            continue
+        fodder = None
+        if _DISCARD_EFFECT.search(info["effect"] or ""):
+            fodder = discard_fodder(analysis)
+            if fodder is None:
+                continue          # nothing to discard: not advice this turn
+        return (cid, names.get(cid, cid), info["cost"], info["effect"], fodder)
     return None
 
 
@@ -1326,7 +1994,9 @@ def situation_line(analysis):
         tribe = _tribe_of(target)
         state = analysis.get("target_state")
         bits.append(f"{tribe} build — "
-                    + ("scaling" if state == "committing" else "hunting pieces"))
+                    + ("scaling" if state == "committing" else "hunting pieces")
+                    + (" (provisional)" if analysis.get("target_comp_provisional")
+                       else ""))
     bs = analysis.get("board_stats")
     theirs = analysis.get("opp_stats")
     source_is_baseline = False
@@ -1363,21 +2033,27 @@ def situation_line(analysis):
     # is not the lobby you're about to fight.
     lobby = analysis.get("opp_stats") or analysis.get("lobby_opp")
     cap = analysis.get("damage_cap")
-    if health is not None and lobby:
+    mortality = None
+    # NOTE the missing `and lobby`: the 2026-09-23 sweep found whole games where
+    # the log never announced an opponent ("no opponent information, ever"), and
+    # gating the mortality clause on a lobby read meant the ONE line about dying
+    # simply did not render in those games. The cap and the health are both
+    # local facts; only the "two lost fights" variant needs the lobby.
+    if health is not None:
         eff = health + armor
         if cap and eff <= cap:
             # This season caps per-combat damage (BACON_COMBAT_DAMAGE_CAP,
             # escalating by round) — "one bad fight can end it" is literally
             # true only at or under the cap.
-            bits.append(f"{eff} HP vs a {cap} damage cap — "
-                        "one bad fight ends it, buy board now")
-        elif cap and eff <= 2 * cap and lobby >= 100:
-            bits.append(f"{eff} HP vs a {cap} damage cap — "
-                        "two lost fights end it")
-        elif eff <= 12:
-            bits.append(f"DYING at {health}"
-                        + (f"+{armor}" if armor else "") + " — buy board now")
-        elif eff <= 30 and lobby >= 100:
+            mortality = (f"{eff} HP vs a {cap} damage cap — "
+                         "one bad fight ends it, buy board now")
+        elif cap and eff <= 2 * cap and lobby and lobby >= 100:
+            mortality = (f"{eff} HP vs a {cap} damage cap — "
+                         "two lost fights end it")
+        elif eff <= DYING_HEALTH:
+            mortality = (f"DYING at {health}"
+                         + (f"+{armor}" if armor else "") + " — buy board now")
+        elif eff <= 30 and lobby and lobby >= 100:
             # Armor is just extra health (player-corrected 2026-09-08) — the
             # signal is TOTAL effective HP vs the lobby's damage output
             # (t7-t12 of the Guff game were all wins, then one fight ended
@@ -1389,7 +2065,19 @@ def situation_line(analysis):
                               and bs >= theirs)
             tail = ("stabilized — scaling is safe" if stable else
                     "not stabilized — the next buy should win a fight")
-            bits.append(f"{eff} HP left — one bad fight can end it ({tail})")
+            mortality = f"{eff} HP left — one bad fight can end it ({tail})"
+        else:
+            # The 13-16 band: no hard gate fires, the plan is legal, and this is
+            # the line that has to carry the risk (2026-09-18: "you die to a
+            # 10-hit — the board comes first"). Last because every louder
+            # signal above it is a better warning. Recomputed rather than read
+            # from `analysis["fragility"]`: that copy is written by the plan,
+            # and a stale band here would be a wrong alarm.
+            fra = fragility(analysis)
+            if fra and fra["band"] == "fragile":
+                mortality = (f"{fra['note']}; the board comes first, not a tier")
+        if mortality:
+            bits.append(mortality)
     # Standing (Plan 5 lever 1): the live leaderboard, late. "5th of 7"
     # changes the correct play more than HP does — the spike is mandatory,
     # preservation is for 1st-2nd. Only from t8: early standings are the
@@ -1402,6 +2090,16 @@ def situation_line(analysis):
                     "spike, not greed")
     if not bits:
         return None
+    if len(bits) <= 3:
+        return " · ".join(bits)
+    # The mortality read is the one clause that changes the decision ("one bad
+    # fight ends it, buy board now") and it is appended LAST, so plain bits[:3]
+    # dropped it exactly when the player was about to die. The 2026-09-22
+    # morning session rendered "Demons build — scaling · behind (100 vs ~166) ·
+    # lost 3 straight" at 7 HP with the cap clause landing 4th — and the player
+    # died in that fight. Reserve a slot for it instead of trusting the order.
+    if mortality and mortality in bits:
+        return " · ".join(bits[:2] + [mortality])
     return " · ".join(bits[:3])
 
 
@@ -1417,6 +2115,12 @@ def _buy_prices(analysis):
     a price. Tavern spells keep their own per-spell price: the log's COST
     tag for spell entities, else the spell DB. Golden minion offers carry
     the "_G" id, priced identically to the base.
+
+    Held-trinket price overrides (2026-09-20 ruling: the coach models the
+    text-stated exceptions to flat-3): Electrode Attractor makes MAGNETIC
+    minions cost 2. Bazaar Sticker's health-cost spell is NOT priced here
+    — one spell per turn at a health price can't live in a flat map; the
+    plan walk discounts the one spell it would buy (see _top_move_text).
     """
     spell_db = _load_spell_db()
     costs = {c: MINION_BUY_PRICE for c in _load_card_db()}
@@ -1424,7 +2128,32 @@ def _buy_prices(analysis):
     costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
     costs.update({c: v for c, v in (analysis.get("shop_costs") or {}).items()
                   if c in spell_db})
+    held = (analysis.get("scenario") or {}).get("trinkets") or []
+    if "Electrode Attractor" in held:
+        for cid in _load_bg_magnetic_ids():
+            if cid in costs:
+                costs[cid] = 2
+                costs[cid + "_G"] = 2
     return costs
+
+
+def _health_cost_spell(analysis, cid, spell_db):
+    """(why, 0-price?) for Bazaar Sticker's health-cost spell, or None.
+
+    '1 Tavern spell/turn costs Health instead of Gold': the FIRST spell the
+    plan would buy this turn costs no gold (its price is paid in health
+    instead). Modeled in the walk only — a second spell buys at gold like
+    normal. Not while DYING: advising a health spend at <=12 effective HP
+    is how runs end (the same fragility that defers levels).
+    """
+    held = (analysis.get("scenario") or {}).get("trinkets") or []
+    if "Bazaar Sticker" not in held or cid not in spell_db:
+        return None
+    health = analysis.get("health")
+    if health is not None and health + (analysis.get("armor") or 0) \
+            <= DYING_HEALTH:
+        return None
+    return ("costs Health instead of gold (Bazaar Sticker)", True)
 
 
 def _shop_name(cid, names):
@@ -1550,6 +2279,39 @@ def _hunt_feasible(analysis, tier):
     return feasible, evaluated
 
 
+def _level_price_clause(analysis):
+    """The price of taking the level this turn, or None when normal.
+
+    2026-09-20 design (analysis/level_pricing.md, Mike-approved: clause
+    only when pricey, inform-only, verdict + evidence). Silence means the
+    curve level is normal — recurring no-information clauses train the
+    player to skip the line. Pricey = behind the lobby's boards (>=25%),
+    a committing comp 2+ missing cores, or real recent damage (>=5):
+    the fight AFTER a level is the one you skip, and those are the
+    stalls the corpus loop priced at -9..-15 (outcome_audit, 09-20).
+    Deliberately NO damage forecast — the forecast still prices raw
+    stat totals, so a "~N next fight" number would be false precision.
+    """
+    ours = analysis.get("board_stats")
+    anchor = analysis.get("lobby_opp") or analysis.get("baseline_opp")
+    bits = []
+    if ours is not None and anchor and ours < 0.75 * anchor:
+        bits.append(f"boards ~{ours:.0f} vs lobby ~{anchor:.0f}")
+    tc = analysis.get("target_cards")
+    if tc and analysis.get("target_state") == "committing":
+        n = sum(1 for r in (tc.get("core") or [])
+                if not r.get("owned") and not r.get("banned"))
+        if n >= 2:
+            bits.append(f"the comp is {n} pieces short")
+    dmg = analysis.get("damage_last")
+    if (dmg or 0) >= 5:
+        bits.append(f"took {dmg} last fight and lobbies scale up")
+    if not bits:
+        return None
+    return ("prices high — " + "; ".join(bits)
+            + " — and the fight after a level is the one you skip")
+
+
 def _top_move_text(analysis):
     """Render top_move's numbered steps (the planner proper; see top_move)."""
     names = _load_bg_names()
@@ -1560,18 +2322,34 @@ def _top_move_text(analysis):
     tier = analysis.get("tier")
     gold = analysis.get("gold")
     parts = []
+    # How close this hero is to dying, and to WHAT — computed once, side-written
+    # so the overlay can render it as its own widget rather than mining the plan
+    # text for it (the 2026-09-18 misread: every level gate legal, the danger
+    # only implicit in clause 3 of a 174-character row).
+    analysis["fragility"] = fragility(analysis)
+    frag = analysis["fragility"]
 
-    # Turn-structure hero powers lead: "Skip your first turn" (Ambassador
-    # Faelin) can't act on turn 1 — the power IS the turn. The old planner
-    # read "LEVEL (access to tier 2) / Buy Flighty Scout" for a turn that
-    # doesn't exist (2026-09-11 Faelin game t1; gold is also unparseable
-    # there — a skipped turn writes no RESOURCES tag at all). The phrase is
-    # matched against the power's own text in meta/heroes.json — the curated
-    # wording, not a behavior guess.
+    # Turn-structure hero powers lead: a power that skips opening turns means
+    # those turns don't exist — the power IS the turn. The old planner read
+    # "LEVEL (access to tier 2) / Buy Flighty Scout" for a turn that doesn't
+    # exist (2026-09-11 Faelin game t1; gold is also unparseable there — a
+    # skipped turn writes no RESOURCES tag at all).
+    #
+    # The COUNT is parsed from the power text, never hardcoded. The guard used
+    # to be `turn == 1 and "skip your first turn" in hp.lower()`, which A. F.
+    # Kay's wording ("Skip your first TWO turns, then Discover...") does not
+    # contain — so both of her skipped turns rendered a full plan:
+    # "1. LEVEL (access to tier 2) · 2. Buy Buzzing Vermin" on t1 and
+    # "1. LEVEL (access to tier 2)" again on t3 (2026-09-21 live decision log,
+    # decision_Power.log.jsonl). It also means the "Q1 pass held" note in
+    # analysis/replay_review_2026-09-18.md was wrong: that session shows the
+    # same unexecutable t1 LEVEL line.
     hp = analysis.get("hero_power") or ""
-    if (analysis.get("turn") or 0) == 1 and "skip your first turn" in hp.lower():
-        return (f"pass — {analysis.get('hero') or 'this hero'} skips turn 1 "
-                f"(hero power)")
+    turn = analysis.get("turn") or 0
+    skip = _skipped_turn_count(hp)
+    if turn and turn <= skip:
+        return (f"pass — {analysis.get('hero') or 'this hero'} skips "
+                f"turn {turn} (hero power)")
 
     # 0. The hand (free actions, in ranked order): cast spells, play stuck
     #    minions. Copies group ("x2"); beyond three the rest summarize so the
@@ -1669,6 +2447,17 @@ def _top_move_text(analysis):
                 # at any tier (5k-MMR conservative stance).
                 flip_why = "0 wins so far — every fight has cost you HP; " \
                            "buy stats first"
+            elif tier >= 3 and (analysis.get("damage_recent3") or 0) >= FRAGILE_BLEED:
+                # DAMAGE MEMORY, design candidate (b) from the 2026-09-18
+                # review: "the ladder weighs last-3-fights damage (sum >= 15 =>
+                # stabilize-first) instead of streak-resettable signals". That
+                # game had bled 10 in two of the last three fights, but t9's
+                # won/tied fight reset the streak, so every streak-based gate
+                # stayed legal and the plan pointed a one-10-hit-from-death
+                # board at a tier purchase. Three fights is longer than a
+                # streak and cannot be reset by one good round.
+                flip_why = (f"bled {analysis['damage_recent3']} over the last "
+                            f"3 fights — buy stats first")
             elif tier >= 2 and loss_streak >= 2 and board_stats is not None \
                     and their and board_stats < 0.7 * their:
                 flip_why = (f"lost {loss_streak} straight and your board is "
@@ -1705,10 +2494,12 @@ def _top_move_text(analysis):
             elif (here_core > 0 and next_core == 0 and above_core == 0) or \
                     (here_core == 0 and next_core == 0 and above_any == 0
                      and here_any > 0):
-                # Q1: what the comp is MISSING lives here — this tier or
-                # below — and nothing of it is out of reach above, so
-                # leveling would lower the odds of finding it WITHOUT
-                # unlocking anything. Cores dominate; addons only carry the
+                # Q1: what the comp is MISSING lives on THIS tier — and
+                # nothing of it is out of reach above, so leveling would
+                # lower the odds of finding it WITHOUT unlocking anything.
+                # Below-tier pieces don't count (2026-09-20 ruling: they
+                # stay findable after leveling, so they never hold the
+                # ladder back). Cores dominate; addons only carry the
                 # stay when they're all the shopping left. The old gate
                 # required tier+1 to hold NOTHING: any single addon there
                 # pulled LEVEL while missing cores sat here (2026-09-08) —
@@ -1747,6 +2538,19 @@ def _top_move_text(analysis):
                         why = "standard curve"
                     level_lead = (f"LEVEL to tier {tier + 1} ({why})"
                                   + (f" — {spare} left" if spare else ""))
+                    price = _level_price_clause(analysis)
+                    if price:
+                        level_lead += f" — {price}"
+                    # FRAGILE band (design candidate (a), 2026-09-18): the
+                    # level still renders — every gate here is legal by
+                    # construction — but it renders WITH the fragility clause,
+                    # mirroring the flip text. That game: 14 HP, bled 10 in two
+                    # of the last three fights, plan led with "LEVEL to tier 5
+                    # (standard curve) — 1 left", the player read it as the
+                    # build taking off, and died 8th with 10 gold unspent.
+                    if frag and frag["band"] == "fragile":
+                        level_lead += (f" — ⚠ {frag['note']}; the board comes "
+                                       f"first")
                     budget = spare  # buys come out of the leftover, not the purse
         # else: the level is out of reach this turn. It stays OUT of the
         # numbered list — an upgrade the player can't make is not advice
@@ -1817,6 +2621,16 @@ def _top_move_text(analysis):
                 else:
                     cid = alt_minion
         cost = costs.get(cid)
+        # Bazaar Sticker (2026-09-20 ruling: model the text-stated price
+        # exceptions): the ONE spell this plan would buy costs Health
+        # instead of gold — discount it here so the budget checks treat it
+        # as free, and say so in the buy line (the overlay's per-card price
+        # stays the gold figure; a flat map can't carry a once-per-turn
+        # discount honestly).
+        health_why = _health_cost_spell(analysis, cid, spell_db) \
+            if cid is not None else None
+        if health_why:
+            cost = 0
         if budget is not None and cost is not None and budget < cost:
             # Can't afford the headline pick — walk the ranking for one the
             # budget covers (known prices only; unknown = can't promise).
@@ -1833,9 +2647,11 @@ def _top_move_text(analysis):
                     # vs a refresh that can only find 1-cost spells (the
                     # 2026-09-06 live game: Prisonguard sat unused at 1
                     # gold while the coach said roll).
-                    parts.append(f"Activate {act[1]} ({act[3]}) — beats a reroll")
+                    parts.append(activation_text(act))
                     analysis["buy_step_roll"] = parts[-1]
                     analysis["activation_step"] = act[0]
+                    if act[4]:
+                        analysis["discard_target"] = act[4]
                 elif budget:  # a roll costs 1 — with nothing left it isn't advice
                     # Gold doesn't carry over between turns, so spending the
                     # last gold beats passing. Plan 3 gives the filler a
@@ -1873,6 +2689,22 @@ def _top_move_text(analysis):
                                       f"short on tier {tier}")
                         elif n_missing == 0:
                             target = "comp complete, no engine live"
+                        elif analysis.get("target_comp_provisional"):
+                            # A mined comp IS the direction here, so the honest
+                            # line names it and its sample instead of claiming
+                            # there is no comp at all.
+                            ev = analysis.get("target_comp_evidence") or {}
+                            target = (f"{analysis.get('target_comp')} "
+                                      f"(provisional — {ev.get('games')} of our "
+                                      f"games) is the only package for this "
+                                      f"tribe; hunt its pieces")
+                        elif analysis.get("comp_gap"):
+                            # The board is a <tribe> build and no comp exists for
+                            # that tribe yet (Aberration, 36.6.1): say what is
+                            # true rather than implying a direction.
+                            target = (f"no comp published for "
+                                      f"{analysis['comp_gap']} yet — build the "
+                                      f"{analysis['comp_gap']} package")
                         else:
                             target = "no comp direction yet"
                         roll = (f"no reroll target — {target} · roll the "
@@ -1899,7 +2731,8 @@ def _top_move_text(analysis):
             no_hunt_note = None
             if missing and off_build \
                     and analysis.get("target_state") == "committing" \
-                    and (budget or 0) >= 1 and eff_health > 12 \
+                    and (budget or 0) >= 1 \
+                    and eff_health > DYING_HEALTH \
                     and (analysis.get("turn") or 99) > 2:
                 # Feasibility first (2026-09-11): hunt only cores the tavern
                 # can actually produce at this tier, with recent evidence
@@ -1946,6 +2779,8 @@ def _top_move_text(analysis):
                                  board=analysis.get("board"),
                                  pool_held=analysis.get("own_pool"),
                                  recipes=recipes)
+            if health_why:
+                why = f"{why}; {health_why[0]}"
             parts.append(f"Buy {_shop_name(cid, names)} ({why})")
             # Name the engine once, right after the fuel buy (the 2026-09-15
             # Shudderwock game's miss: the coach ranked Tavern Tempest but
@@ -1974,8 +2809,18 @@ def _top_move_text(analysis):
                     why = level_flip_why or "too fragile to level first"
                     parts.append(f"LEVEL next turn ({why}) — roll meanwhile")
                 elif leftover >= level_cost:
-                    parts.append(f"LEVEL to tier {tier + 1} — "
-                                 f"{leftover - level_cost} left after")
+                    trail = (f"LEVEL to tier {tier + 1} — "
+                             f"{leftover - level_cost} left after")
+                    price = _level_price_clause(analysis)
+                    if price:
+                        trail += f"; {price}"
+                    if level_flip_why:
+                        # The level is affordable AND deferred (a flip fired):
+                        # without the reason this trail reads as a plain
+                        # go-ahead, and the flip's whole point is "the buy
+                        # comes first, and here is why".
+                        trail += f"; only after the buy ({level_flip_why})"
+                    parts.append(trail)
                 else:
                     short = f"{level_cost - leftover} short after the buy"
                     parts.append((f"LEVEL next turn ({level_flip_why}) — "
@@ -2000,14 +2845,94 @@ def _top_move_text(analysis):
             parts.append(f"next priority: LEVEL to tier {p_tier + 1} "
                          f"({p_cost}g) — after the next triple or when the "
                          f"shop stops producing")
-    # 4. Sell only to make room: board full AND buying something that needs
-    # the slot. If there's space, selling is unnecessary. Held cards are
-    # exempt: the hand plan said "hold — a 3rd copy turns it golden", and
-    # the same panel must not also say to sell it (2026-09-06 Guff t12:
-    # "3. Hold Sewer Lord" + "6. sell Sewer Lord" in one plan). If the only
-    # filler is held, the golden hunt outranks the slot — no sell step.
-    if bought is not None and len(analysis.get("board", [])) >= 7 \
+    # 3b. THE DISCARD LOOP — decided BEFORE the slot, so the two cannot collide.
+    # A board outlet that discards ("Activate (0): Discard a card to get a random
+    # Aberration") plus a card whose own text says discarding it is BETTER
+    # (Energizing Chamber casts twice, Sludge Corrosion casts twice, Corrupted
+    # Coin raises max Gold) is a strict gain: the outlet's payoff AND the upgraded
+    # spell. Cast once and never mentioning the outlet was the old behaviour — the
+    # 2026-09-23 Drest'agath win held four Energizing Chambers with a Mindbending
+    # Recruiter on board for five straight phases and the plan never connected
+    # them.
+    #
+    # ORDER IS THE FIX for the 2026-09-23 conflict report, which read:
+    #   1 Play Brann Bronzebeard (board is full)
+    #   2 Swap: play Brann Bronzebeard, sell Mindbending Recruiter (7.6 vs 3.0)
+    #   3 Activate Mindbending Recruiter — discard Brann Bronzebeard
+    # — the plan sold the outlet the third step needed and spent the card the
+    # first step was playing. The discard decision now claims its card first (so
+    # the swap can no longer offer to play it) and reserves the outlet, which the
+    # swap's guards treat as unsellable.
+    discard_outlet = None
+    _act = _affordable_activation(analysis, budget if budget is not None else gold)
+    if _act and _act[4]:
+        discard_outlet = _act[0]
+        _fodder = _act[4]
+        analysis["activation_step"] = _act[0]
+        analysis["discard_target"] = _fodder
+        # Demoting the hand entry (rather than adding a second step) keeps ONE
+        # line naming both halves: "Discard Energizing Chamber (via Mindbending
+        # Recruiter — discarding it is better — cast it twice)".
+        for s in analysis.get("hand_plan") or []:
+            if s.get("card") == _fodder["card"] and s.get("verb") != "hold":
+                s["verb"] = "discard"
+                s["why"] = f"via {_act[1]} — {_fodder['why']}"
+                break
+    # 4. THE SLOT (design: analysis/board_swap.md). Board full + something wants
+    # in (a hand play or a minion buy): name the card that goes, state the
+    # comparison, and veto a swap that loses. This replaces the old
+    # "sell X (making room)" path, which (a) named nothing when every board card
+    # scored above SELL_FILLER_SCORE — 16 of 34 full-board phases in the cached
+    # corpus told the player to make room without saying what to cut — (b) only
+    # ever fired for a BUY, never for a hand play, and (c) never compared the two
+    # cards, so it happily blessed the 2026-09-23 case of playing a 16.0 body
+    # over a 20.2 one. A spell buy needs no slot, which the old path also missed.
+    swaps = slot_swaps(analysis, reserved_outlet=discard_outlet)
+    if swaps:
+        best = swaps[0]
+        if best["verdict"] != "veto":
+            # FRONT of `parts`: the render is hand_steps + parts, so this lands
+            # right under the play it belongs to and above LEVEL/buys.
+            parts.insert(0,
+                         f"Swap: play {best['incoming_name']}, sell "
+                         f"{best['outgoing_name']} "
+                         f"({best['incoming_score']:.1f} vs "
+                         f"{best['outgoing_score']:.1f} — "
+                         f"{'clearly better' if best['verdict'] == 'take' else 'marginal'})")
+        for s in swaps:
+            entry = s.get("entry")
+            if entry is None or (s is best and best["verdict"] != "veto"):
+                continue  # the winner keeps its play verb
+            # Losers — and every candidate when the best option is a veto — are
+            # HOLDS, each with the comparison that decided it. Mutating the
+            # shared hand-plan entries is the established pattern (the cast
+            # demotion below does the same), so the overlay's hand box agrees.
+            entry["verb"] = "hold"
+            entry["why"] = f"hold — {s['why']}"
+        if best["verdict"] == "veto" and best["from"] == "shop":
+            # The buy step already rendered: rewrite it rather than leave a
+            # go-ahead the numbers contradict, and record the veto so the
+            # overlay's Buy box cannot bless a card the plan just argued against.
+            # Phrased as an ACTION, not just a refusal: in the 2026-09-23
+            # Drest'agath win the whole shop scored 2.7 / -1.0 / -2.4 / -2.7 and
+            # the plan named the 2.7 card, then talked itself out of it — the
+            # player needs to know to roll, not only what not to buy.
+            for i, p in enumerate(parts):
+                if p.startswith("Buy ") and best["name"] in p:
+                    parts[i] = (f"roll instead — {best['name']} "
+                                f"({best['incoming_score']:.1f}) isn't worth "
+                                f"losing the {best['outgoing_name']} "
+                                f"({best['outgoing_score']:.1f})")
+                    analysis["buy_step_swap_veto"] = best["name"]
+                    break
+    elif bought is not None and len(analysis.get("board", [])) >= 7 \
             and analysis.get("sell_rank"):
+        # No comparable incoming card (a spell buy needs no slot; or every
+        # candidate was filtered as a guard): fall back to the old filler-only
+        # naming, which at least points at the cheapest body. Held cards are
+        # exempt — the hand plan said "hold — a 3rd copy turns it golden", and
+        # the same panel must not also say to sell it (2026-09-06 Guff t12:
+        # "3. Hold Sewer Lord" + "6. sell Sewer Lord" in one plan).
         held = {s["card"] for s in (analysis.get("hand_plan") or [])
                 if s.get("verb") == "hold"}
         for worst in analysis["sell_rank"]:
@@ -2061,34 +2986,17 @@ def _top_move_text(analysis):
         demoted_ids = {id(s) for s in demoted}
         hand_entries[:] = [s for s in hand_entries
                            if id(s) not in demoted_ids] + demoted
-    # Casts spend gold: gate them on the live purse, cumulatively in plan
-    # order, and never let them eat the plan's committed buy (the buy walk
-    # priced it against the full purse, so casts must fit in what's left
-    # after it). At gold 0 nothing is castable — the 2026-09-16 evening
-    # games' "Cast Tavern Coin"/"Cast Repair Job"-at-gold-0 family. Plays
-    # and holds are free. An uncastable spell demotes to a hold, stated,
-    # moved last — the same honesty as the shop-buff demotion above. The
-    # gate is "castable NOW", not a ban: t16's Cast Repair Job x3 with a
-    # funded purse was correct advice and the player cast all three.
-    if gold is not None:
-        reserve = (costs.get(bought) or 0) if bought is not None else 0
-        spend = gold - reserve
-        gated = []
-        for s in hand_entries:
-            if s.get("verb") != "cast":
-                continue
-            price = costs.get(s.get("card"))
-            if price is not None and price <= spend:
-                spend -= price
-                continue
-            s["verb"] = "hold"
-            s["why"] = (f"needs {price}g to cast — no gold for it"
-                        if price is not None else "no gold to cast now")
-            gated.append(s)
-        if gated:
-            gated_ids = {id(s) for s in gated}
-            hand_entries[:] = ([s for s in hand_entries
-                                if id(s) not in gated_ids] + gated)
+    # Hand casts are FREE (player rule + log ground truth, 2026-09-19: a
+    # BlockType=PLAY block sourced from a HAND-zone spell moves no
+    # RESOURCES_USED; the spell's price is charged at the tavern BUY). The
+    # 2026-09-16 evening gate that demoted casts the purse couldn't cover
+    # was a misdiagnosis of "Cast Tavern Coin led a gold-0 plan": the real
+    # fix is ranking, and gold-gain spells already score ~2 effect points
+    # in _spell_effect, so a low-value cast can't lead a real plan. No gold
+    # gating here — the shop-buff demotion above stays (that one is an
+    # effect-level rule: the buff dies with the shop, not a price).
+    # t16's Cast Repair Job x3 with a funded purse remains correct advice;
+    # so is casting at gold 0 when the spell is in hand.
     if hand_entries:
         counts, order = {}, []
         for s in hand_entries:
@@ -2100,7 +3008,8 @@ def _top_move_text(analysis):
         for key in order:
             n, s = counts[key]
             label = {"cast": "Cast ", "play": "Play ",
-                     "hold": "Hold "}.get(s["verb"], "Play ") + s["name"]
+                     "hold": "Hold ", "discard": "Discard "}.get(s["verb"],
+                                                                 "Play ") + s["name"]
             if n > 1:
                 label += f" x{n}"
             if s.get("why"):
@@ -2116,6 +3025,13 @@ def _top_move_text(analysis):
     if stay_note and tier:
         parts.append(f"stay on tier {tier} — your comp's missing cores are "
                      f"on this tier or below; leveling would lower the odds")
+    # A flip whose reason never found a home: the level was deferred because of
+    # a bleed/fragility, the buy section rendered something else, and the plan
+    # then reads as a go-ahead. The reason is the most important sentence of the
+    # turn — say it rather than dropping it on the floor.
+    if level_flip_why and parts \
+            and not any(level_flip_why in p for p in parts):
+        parts.append(f"stabilize first — {level_flip_why}")
     # Nothing pressing: if the board is full and has end-of-turn scaling, the
     # right move is to pass and let the engine grow — casting the hand first
     # (end-of-turn effects count the casts made this turn).
@@ -2135,14 +3051,22 @@ def _top_move_text(analysis):
     scaling = target and analysis.get("target_state") == "committing"
     act = _affordable_activation(analysis, gold)
     if act and gold is not None and gold >= act[2]:
-        msg = f"Activate {act[1]} ({act[3]}) — beats a reroll"
+        msg = activation_text(act)
         analysis["buy_step_roll"] = msg
         analysis["activation_step"] = act[0]
+        if act[4]:
+            analysis["discard_target"] = act[4]
         return msg
     if gold is not None and gold >= 1:
+        # When a flip fired, the roll line is the LAST place the reason can
+        # appear — and it is the line the Buy box mirrors, so it must carry it
+        # ("roll — nothing in the shop beats your gold; level needs saving" said
+        # nothing about WHY the level was deferred).
         msg = ("roll — hunt more " + target + " to scale it"
                if scaling else
-               "roll — nothing in the shop beats your gold; level needs saving")
+               (f"stabilize / roll — {level_flip_why}"
+                if level_flip_why else
+                "roll — nothing in the shop beats your gold; level needs saving"))
         analysis["buy_step_roll"] = msg
         return msg
     # Otherwise point at the comp so the advice stays actionable instead of
@@ -2309,9 +3233,11 @@ def _comp_needs_by_tier(analysis, card_db, reach=None):
     shopping that's left (a lone addon at tier+1 used to pull LEVEL past
     missing cores on the current tier — the 2026-09-08 report: 'keeps
     saying to upgrade even if there are minions at this tier we still
-    need'). 'Here' includes LOWER tiers: a tier-3 core while at tier 4 is
-    still diluted by leveling (the pool's sub-tier share drops as the
-    tavern climbs).
+    need'). 'Here' = THIS tier only: below-tier pieces are neutral
+    (findable before and after leveling — they justify neither a stay
+    nor a level; 2026-09-20 ruling on the 09-11 review's objection). The
+    old 'this tier or below' let a tier-3 core hold the ladder back at
+    tier 4.
 
     'Above' = beyond tier+1 (tier-6 Fauna Whisperer while at tier 4). It
     used to be counted NOWHERE, and a missing core AT tier+1 tied evenly
@@ -2343,10 +3269,16 @@ def _comp_needs_by_tier(analysis, card_db, reach=None):
                 if section == "core":
                     next_core += 1
                 next_any += 1
-            elif t <= tier:
+            elif t == tier:
                 if section == "core":
                     here_core += 1
                 here_any += 1
+            elif t < tier:
+                pass  # below-tier: findable here AND after leveling — it
+                # justifies neither a stay nor a level (2026-09-20 ruling:
+                # the old "here = this tier or below" let a sub-tier core
+                # hold the ladder back; Mike confirmed the 09-11 review's
+                # objection)
             else:  # beyond tier+1: unfindable here, unfindable at tier+1 —
                 # unless a live discover/token source reaches it from here.
                 if any(_src_reaches(s, row.get("card"), t, tier)
@@ -2612,6 +3544,8 @@ def comp_progress(board, comps, recent_cards=None, top=4, trinkets=None):
                 "name": comp.get("name"),
                 "tribe": comp.get("tribe"),
                 "meta_tier": comp.get("meta_tier"),
+                "provisional": _is_provisional(comp),
+                "evidence": comp.get("evidence"),
                 "hits": hits,
                 "ready": hits >= 2,
                 "needs": [cid for cid in comp.get("core", [])
@@ -2639,6 +3573,133 @@ def comp_progress(board, comps, recent_cards=None, top=4, trinkets=None):
                              tier_rank.get(r["meta_tier"], 3),
                              r["name"] or ""))
     return rows[:top]
+
+
+def _board_tribe_parts(board):
+    """Counter of canonical tribe PARTS across the board's tribed minions."""
+    counts = collections.Counter()
+    for m in board or []:
+        for p in parts(normalize((m or {}).get("tribe"))):
+            counts[p] += 1
+    return counts
+
+
+def _is_provisional(comp):
+    """Is this comp mined from our own corpus rather than published?
+
+    Provisional comps (comp_miner.py --promote) fill a tribe the comp source
+    does not cover at all — Aberration since 36.6.1. They are real direction but
+    weak evidence: n games, no published tier, no pick rate. Everything that
+    ranks or gates comps must treat them as second class (see comp_target,
+    comp_gap, tribes_without_comps), and everything that DISPLAYS one must say
+    so (comp_label).
+    """
+    return bool((comp or {}).get("provisional"))
+
+
+def comp_gap(board, comps):
+    """The board's dominant tribe when NO PUBLISHED comp exists for it, else None.
+
+    Patch 36.6.1 added the Aberration tribe, and the comp source (hsreplay) has
+    no Aberration comps yet — so a board can be dominated by a tribe the coach
+    has no recipe for at all. Reporting that is the honest read.
+
+    Why this exists, measured on the 2026-09-23 win: a 6-of-7 Aberration board,
+    no comps defined for Aberration, and `comp_target` returned "Beasts - Tasty
+    Lobstah" off TWO single incidental hits in two different Beast comps. The
+    plan then advised buying Banana Slamma onto an all-Aberration board, in a
+    game that was won. The rule below requires a real MAJORITY (more than half
+    the tribed minions, at least three of them) so a mixed board is not
+    mislabelled as a tribe build.
+
+    A provisional comp does NOT close this gap: the gap is about the published
+    source, and callers use it to say "no comp published for <tribe> yet" and to
+    segment advice-quality measurement. `comp_target` still coaches the
+    provisional package (see the gap branch there), so the player gets a
+    direction AND the honest label.
+    """
+    counts = _board_tribe_parts(board)
+    if not counts:
+        return None
+    tribe, n = counts.most_common(1)[0]
+    total = sum(counts.values())
+    if total < 3 or n * 2 <= total:
+        return None
+    defined = {normalize(c.get("tribe")) for c in (comps or {}).values()
+               if isinstance(c, dict) and c.get("tribe")
+               and not _is_provisional(c)}
+    return None if tribe in defined else tribe
+
+
+def _provisional_for_tribe(tribe, comps, board):
+    """The best provisional comp for `tribe`, or None.
+
+    "Best" = the one whose core the board already carries, then the one with
+    more games behind it. A provisional comp is only ever reached through the
+    gap branch of comp_target, so this never competes with a published comp.
+    """
+    board_cards = {m.get("card") for m in board or []}
+    best = None
+    for comp in (comps or {}).values():
+        if not isinstance(comp, dict) or not _is_provisional(comp):
+            continue
+        if normalize(comp.get("tribe")) != normalize(tribe):
+            continue
+        overlap = len(set(comp.get("core") or []) & board_cards)
+        games = ((comp.get("evidence") or {}).get("games") or 0)
+        key = (overlap, games)
+        if best is None or key > best[0]:
+            best = (key, comp)
+    return best[1] if best else None
+
+
+def comp_label(comp):
+    """Display name, with the provisional marker and its sample size attached.
+
+    Detail views (the shopping list, the UI comp box) use this so a mined comp
+    can never read like a published one: "Aberrations - Deity Feed
+    (provisional — 4 of our games)".
+    """
+    if not comp:
+        return None
+    name = comp.get("name")
+    if not _is_provisional(comp):
+        return name
+    games = (comp.get("evidence") or {}).get("games")
+    return (f"{name} (provisional — {games} of our games)"
+            if games else f"{name} (provisional)")
+
+
+def _tribe_hits(board, rc, comp, tribe, shared, db):
+    """Core hits whose CARD actually belongs to `tribe` (copies count).
+
+    The tribe-level fallback used to sum raw hits across comps of one tribe, so a
+    single card sitting in several comps' cores gave EVERY tribe a phantom hit —
+    two comps x one hit = "the tribe has evidence". Measured on the 2026-09-23
+    win: that is what turned a 6-of-7 Aberration board into "Beasts - Tasty
+    Lobstah".
+
+    ALL-TRIBE cards (Amalgams: Titus Rivendare is `All` and core in several
+    comps) are excluded from CREATING tribe evidence. By the canonical rule an
+    Amalgam counts as every tribe, which is right for a comp-fit test but wrong
+    here: "the player owns Titus" is not evidence of which tribe they are
+    building. They still count toward a comp's own >=2-hit commit, which is
+    comp-specific evidence.
+    """
+    cores = set(comp.get("core", [])) - shared
+    if not cores:
+        return 0
+    present = {c["card"] for c in board if c.get("card")} | set(rc or [])
+    matched = set()
+    for cid in present:
+        if cid not in cores:
+            continue
+        card_tribe = (db.get(cid) or {}).get("race")
+        if card_tribe == ALL_MARKER:
+            continue  # fits any build, so it says nothing about the direction
+        if matches(card_tribe, tribe):
+            matched.add(cid)
+    return _core_hits(board, rc, matched)
 
 
 def comp_target(board, comps, recent_cards=None, trinkets=None):
@@ -2673,6 +3734,12 @@ def comp_target(board, comps, recent_cards=None, trinkets=None):
 
     committed = None   # (comp, overlap, board_dominant)
     for comp in comps.values():
+        if _is_provisional(comp):
+            # Second-class evidence: a mined comp must never outrank a published
+            # one, so it is not a candidate for the >=2-hit commit at all. It has
+            # its own path below, reached only when the tribe has no published
+            # comp (the 2026-09-23 Aberration case).
+            continue
         # Copies count (a commit is often 2x/3x one core, same as a pivot).
         # Ties break on BOARD DOMINANCE: a comp whose tribe is a strict
         # majority of the board is the live build (2026-09-07: a five-dragon
@@ -2688,6 +3755,8 @@ def comp_target(board, comps, recent_cards=None, trinkets=None):
     if rc:
         best_recent = None
         for comp in comps.values():
+            if _is_provisional(comp):
+                continue  # see the commit loop: mined comps are second class
             if committed and comp is committed[0]:
                 continue  # more of the same comp is not a pivot
             cores = set(comp.get("core", [])) - shared
@@ -2703,17 +3772,51 @@ def comp_target(board, comps, recent_cards=None, trinkets=None):
             # lags, the buys lead). A board-dominant commit holds on a tie
             # — the thing actually fighting stays the direction.
             return best_recent[0]
+    # THE BOARD'S OWN TRIBE WINS over an incidental published match. A board
+    # dominated by a tribe with NO published comp (Aberration since 36.6.1) has a
+    # provisional package instead, and that package IS the build — even when some
+    # published comp happens to match two cores on it. Measured failure
+    # (2026-09-23 Galakrond game): a 4-of-6 Aberration board whose target
+    # flip-flopped between "Demons - Shop Buff", "Mechs - Deathrattle" and
+    # "Beasts - Tasty Lobstah" while `comp_gap` said Aberration the whole time, so
+    # the plan hunted Tasty Lobster at the player's own build. The
+    # recent-acquisition check ABOVE still gets a real pivot its say — buys lead a
+    # lagging board — which is why this sits after it, not before.
+    gap = comp_gap(board, comps)
+    if gap:
+        provisional = _provisional_for_tribe(gap, comps, board)
+        if provisional:
+            # ...unless the published commit is being ACTIVELY built right now:
+            # two or more of its cores bought this turn is a pivot in progress
+            # (buys lead the board), and it keeps the direction. Without that
+            # check an incidental pair sitting on the board outranks the tribe
+            # the player is actually playing.
+            active_pivot = False
+            if committed:
+                cores = set(committed[0].get("core", [])) - shared
+                active_pivot = sum(1 for c in (rc or []) if c in cores) >= 2
+            if not active_pivot:
+                return provisional
     if committed:
         return committed[0]
-    # Tribe-level evidence: core hits spread across comps of one tribe.
+    if gap:
+        # No provisional package for that tribe either: "no direction" is the
+        # truth, and the weak tribe-level path below must not manufacture one
+        # (the Banana Slamma failure).
+        return None
+    # Tribe-level evidence: core hits spread across comps of one tribe, counting
+    # only hits whose card actually belongs to that tribe.
     tribe_best = {}
     tribe_total = {}
+    db = _load_card_db()
     for comp in comps.values():
-        hits = core_hits(comp)
-        if not hits:
-            continue
-        tribe = comp.get("tribe")
+        if _is_provisional(comp):
+            continue  # provisional comps never set the direction on their own
+        tribe = normalize(comp.get("tribe")) if comp.get("tribe") else None
         if not tribe:
+            continue
+        hits = _tribe_hits(board, rc, comp, tribe, shared, db)
+        if not hits:
             continue
         tribe_total[tribe] = tribe_total.get(tribe, 0) + hits \
             + _trinket_nudge(comp, trinkets)
@@ -2756,7 +3859,9 @@ def comp_cards(target, board):
                 for cid in ids]
 
     return {
-        "name": target.get("name"),
+        "name": comp_label(target),
+        "provisional": _is_provisional(target),
+        "evidence": target.get("evidence"),
         "core": rows(target.get("core", [])),
         "addons": rows(target.get("addons", [])),
     }
@@ -2771,7 +3876,24 @@ _DEFAULT_SCENARIO = {
     "play_naga": 3,
     "deathrattle": 4,
     "play_tier3_or_lower": 4,
+    # No discard count can be assumed: 0 means "derive it from the board's
+    # Activate-discard outlets" (_discard_scenario), the one rate this model
+    # cannot take from the logs.
+    "discard": 0,
 }
+
+
+def _scenario_for_engine(engine, board_minions, names):
+    """Default per-turn trigger counts for ONE engine when the caller passes none.
+
+    Every other engine's trigger is countable from the action/tag stream, so the
+    tunable `_DEFAULT_SCENARIO` is the fallback. The discard engine's is not:
+    nothing in a Power.log records a discard, so its count comes from the board
+    (analysis/discard_mechanic.md).
+    """
+    if engine.get("trigger") == "discard":
+        return _discard_scenario(board_minions)
+    return {engine["trigger"]: _DEFAULT_SCENARIO.get(engine["trigger"], 3)}
 
 
 @functools.lru_cache(maxsize=1)
@@ -2851,12 +3973,16 @@ def _engine_growth_bonus(board_minions, names, scenario=None):
         core_steps = [s for s in engine["chain"] if s.get("counts_as")] or engine["chain"]
         if not any(_has_card(board_minions, s["source"], names) for s in core_steps):
             continue
-        sc = scenario or {engine["trigger"]: _DEFAULT_SCENARIO.get(engine["trigger"], 3)}
+        sc = scenario or _scenario_for_engine(engine, board_minions, names)
         # simulate_growth matches engine pieces by name; board_state minions only
         # carry card IDs, so enrich the board with names from the BG pool.
         enriched = [dict(m, name=names.get(m["card"], "")) for m in board_minions]
         result = simulate_growth(enriched, sc, engine)
-        total = result["gain"]["atk"] + result["gain"]["hp"]
+        # Engine growth, plus the Deity's per-combat pool discounted as combat
+        # power (`_sim_points`): a discard engine's payoff lands on the Deity
+        # first, and crediting it at full weight would price one-fight power as
+        # persistent growth.
+        total = _sim_points(result)
         if total <= 0:
             continue
         factor = 1.0

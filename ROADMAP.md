@@ -80,6 +80,14 @@ winner from loser.
       manual paste; tavern-spell tier from the wiki.
 - [x] Family-ban extraction: `bans.py` (5 allowed / 5 banned per game from a
       Power.log) + comp filter.
+- [x] **Provisional comps for tribes the source does not cover** (2026-09-23):
+      `comp_miner.py --promote` mines our own boards and writes a marked entry
+      into `comps.json` (`provisional: true` + evidence, no invented meta tier,
+      second class in every ranking path, labelled everywhere it shows, safe
+      from `scrape_comps.py --prune`). First entry: `aberrations-deity-feed` for
+      the Aberration tribe 36.6.1 added (n=4, top4=2). Retire it once hsreplay
+      publishes an Aberration comp — `--promote` reports the shadowing. See
+      DESIGN.md §"Provisional comps".
 - [x] Patch-notes updater: `patch_notes.py <url>` fetches official patch notes,
       LLM-extracts before/after changes, and (with `--apply`) writes them into
       `meta/`. Dry-runs by default; new cards flagged for manual entry.
@@ -394,6 +402,15 @@ tavern-owned) — shop_ranking just silently dropped them.
       shopping list ("[have]" markers), tags shop entries CORE/addon/spell,
       and restructured the whole output into compact labeled sections; the
       overlay's Target comp widget lists the cards as owned/missing chips.
+- [x] **Decide column rebuilt around the decision** (2026-09-23): the plan
+      renders from structured steps (`value.split_step` — action, tag, ONE
+      reason, details behind hover) instead of a paragraph, colour-coded by kind;
+      and the FRAGILE band (13-16 effective HP) gets its own danger line
+      (effective HP, last hit, the hit that kills, 3-fight bleed) instead of
+      being clause three of a long row. Measured on the 459 cached steps: the
+      visible action went from p90 123 chars / max 174 to p90 26 / max 74, and
+      action+reason to p90 44. See `analysis/LEVELING_MODEL.md` §"The FRAGILE
+      band and damage memory".
 - [ ] Post-game replay review UI.
 - [x] **Selection ranker** (`choices.py`, 2026-09-01): the coach now advises on
       the picks it could only count before — hero (1 of 4), trinkets (Lesser/

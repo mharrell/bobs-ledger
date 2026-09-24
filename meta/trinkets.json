@@ -37,6 +37,16 @@
   "cost": 0
  },
  {
+  "id": "BG30_MagicItem_310",
+  "name": "Rivendare Portrait",
+  "description": "Get a Titus Rivendare. Start of Combat: Double the Health of your Titus Rivendares.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Pick if you're committed to any comp that requires a Titus, such as [[Goldrinn, the Great Wolf||59955]] beasts or [[Catacomb Crasher]] Undeads.",
+  "type": "Greater"
+ },
+ {
   "id": "BG30_MagicItem_410",
   "name": "Quilligraphy Set",
   "description": "Avenge (3): Your Blood Gems give an extra +1 Health this game.",
@@ -54,25 +64,6 @@
   },
   "guide": "Best picked with [[Prickly Piper]] already, and use [[Glowgullet Warlord]] as your avenge unit. Commit Quils.",
   "cost": 1
- },
- {
-  "id": "BG30_MagicItem_410t2",
-  "name": "Quilligraphy Set",
-  "description": "Avenge (4): Your Blood Gems give an extra +1/+1 this game.",
-  "pick_rate": 18.3,
-  "avg_placement": 4.89,
-  "placement_distribution": {
-   "1": 8.45,
-   "2": 10.93,
-   "3": 10.35,
-   "4": 12.25,
-   "5": 13.93,
-   "6": 14.7,
-   "7": 14.88,
-   "8": 14.52
-  },
-  "guide": "Good trinket with an avenge setup, usually with [[Glowgullet Warlord]] and [[Bristlebach]]",
-  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_411",
@@ -129,25 +120,6 @@
   "guide": "Generally decent option to pick."
  },
  {
-  "id": "BG30_MagicItem_420t",
-  "name": "Book of Medivh",
-  "description": "Discover 2 Tavern spells. At the start of each turn, Discover 2 more.",
-  "pick_rate": 18.8,
-  "avg_placement": 4.36,
-  "placement_distribution": {
-   "1": 14.82,
-   "2": 12.77,
-   "3": 11.95,
-   "4": 12.24,
-   "5": 12.63,
-   "6": 12.5,
-   "7": 12.3,
-   "8": 10.77
-  },
-  "guide": "",
-  "type": "Greater"
- },
- {
   "id": "BG30_MagicItem_422",
   "name": "Lorewalker Scroll",
   "description": "Whenever you cast a spell on a minion, give it +4/+4.",
@@ -163,7 +135,7 @@
    "7": 8.59,
    "8": 4.82
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG30_MagicItem_423",
@@ -398,7 +370,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -453,7 +425,7 @@
    "7": 15.09,
    "8": 13.45
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG30_MagicItem_437",
@@ -480,7 +452,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -491,6 +463,16 @@
   "avg_placement": null,
   "placement_distribution": null,
   "guide": "Commit to Goldrinn Beasts or Leviathan Beasts Comp.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_541",
+  "name": "Nether Pendant",
+  "description": "Minions in the Tavern have +2/+2. Improves every 3 times your hero takes damage outside combat. (3 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Fastest way to grow the pendant is [[Wrath Weaver||59670]] and a lot of econ.",
   "type": "Greater"
  },
  {
@@ -509,25 +491,16 @@
    "7": 12.3,
    "8": 9.03
   },
-  "guide": ""
+  "guide": null
  },
  {
-  "id": "BG30_MagicItem_544t",
-  "name": "Nomi Sticker",
-  "description": "After you play an Elemental, give Elementals in the Tavern +5/+5 this game.",
-  "pick_rate": 40.6,
-  "avg_placement": 4.49,
-  "placement_distribution": {
-   "1": 9.22,
-   "2": 11.94,
-   "3": 14.65,
-   "4": 14.44,
-   "5": 14.73,
-   "6": 13.68,
-   "7": 12.3,
-   "8": 9.03
-  },
-  "guide": "",
+  "id": "BG30_MagicItem_545",
+  "name": "Fridge Magnet",
+  "description": "Avenge (3): Get a random Magnetic minion.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Committed to Magnetic Mechs with [[Junk Jouster]].",
   "type": "Greater"
  },
  {
@@ -537,7 +510,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -566,7 +539,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -603,7 +576,7 @@
    "7": 12.59,
    "8": 11.73
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG30_MagicItem_705",
@@ -621,7 +594,7 @@
    "7": 14.06,
    "8": 13.12
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG30_MagicItem_706",
@@ -657,7 +630,7 @@
    "7": 13.52,
    "8": 11.79
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG30_MagicItem_713",
@@ -777,7 +750,17 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_879",
+  "name": "Dalaran Cheese Wheel",
+  "description": "Minions in the Tavern have +2/+2. Improves every 4 times you Refresh. (4 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Commit shop buff Demons.",
   "type": "Greater"
  },
  {
@@ -796,7 +779,7 @@
    "7": 14.19,
    "8": 12.87
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG30_MagicItem_891",
@@ -814,7 +797,7 @@
    "7": 13.26,
    "8": 11.92
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG30_MagicItem_900",
@@ -850,7 +833,7 @@
    "7": 11.52,
    "8": 8.68
   },
-  "guide": "",
+  "guide": null,
   "cost": 0
  },
  {
@@ -870,25 +853,6 @@
    "8": 5.06
   },
   "guide": "Only pick with [[Flighty Scout||120677]]. Scale it using the trinket for the rest of the game."
- },
- {
-  "id": "BG30_MagicItem_914t",
-  "name": "Nerglish Phrasebook",
-  "description": "After you play a minion, give the left-most minion in your hand +6/+6.",
-  "pick_rate": 26.6,
-  "avg_placement": 3.91,
-  "placement_distribution": {
-   "1": 9.59,
-   "2": 18.55,
-   "3": 18.96,
-   "4": 16.87,
-   "5": 13.55,
-   "6": 10.35,
-   "7": 7.06,
-   "8": 5.06
-  },
-  "guide": "",
-  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_917",
@@ -928,6 +892,25 @@
   "cost": 0
  },
  {
+  "id": "BG30_MagicItem_924t",
+  "name": "Booty Bay Brew",
+  "description": "Whenever you spend Gold, give two friendly Pirates +6/+6.",
+  "pick_rate": 17.7,
+  "avg_placement": 4.03,
+  "placement_distribution": {
+   "1": 11.63,
+   "2": 13.95,
+   "3": 17.21,
+   "4": 16.67,
+   "5": 15.64,
+   "6": 11.47,
+   "7": 9.16,
+   "8": 4.27
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG30_MagicItem_931",
   "name": "Lucky Tabby",
   "description": "After 7 friendly minions die, get a random Beast. (7 left!)",
@@ -945,6 +928,26 @@
   },
   "guide": "Only pick if you have a lot of summons on your board already, with cards such as [[Forest Rover||115577]].",
   "cost": 0
+ },
+ {
+  "id": "BG30_MagicItem_942",
+  "name": "Mecha-Jaraxxus Sticker",
+  "description": "Get 2 random Magnetic Mecha-Demons. At the start of each turn, get 2 more.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Shield Reborn large demons for utility, sell the rest.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_952",
+  "name": "Jarred Frostling",
+  "description": "Start of Combat: Give 2 friendly Elementals \"Deathrattle: Summon a Flourishing Frostling\".",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_962",
@@ -980,7 +983,7 @@
    "7": 14.27,
    "8": 13.16
   },
-  "guide": "",
+  "guide": null,
   "cost": 0
  },
  {
@@ -1045,7 +1048,17 @@
    "7": 13.46,
    "8": 12.37
   },
-  "guide": ""
+  "guide": null
+ },
+ {
+  "id": "BG30_MagicItem_996",
+  "name": "Bob's Tip Jar",
+  "description": "Gain 4 Gold. Increase your maximum Gold by 4.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_998",
@@ -1066,13 +1079,23 @@
   "guide": "Decent pick if you have no 1 drop or 2 drop pairs that you want to triple. Once you've picked this trinket, you can no longer triple 1 drops or 2 drops, but your shops become much better."
  },
  {
+  "id": "BG30_MagicItem_999",
+  "name": "Fancy Spellbook",
+  "description": "After you spend 7 Gold, cast Shiny Ring. (7 Gold left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Need econ + spell power ([[Tranquil Meditative||119942]])",
+  "type": "Greater"
+ },
+ {
   "id": "BG31_MagicItem_903",
   "name": "Wisdomball Supply",
   "description": "Get a Knockoff Wisdomball. At the start of each turn, repeat this.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -1091,8 +1114,28 @@
    "7": 12.85,
    "8": 7.98
   },
-  "guide": "",
+  "guide": null,
   "cost": 0
+ },
+ {
+  "id": "BG32_MagicItem_172",
+  "name": "Boom's Monster Portrait",
+  "description": "Get a Dr. Boom's Monster. At the start of every turn, get another.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_200",
+  "name": "All-Purpose Kibble",
+  "description": "Whenever a friendly Beast attacks, give it +3 Attack and permanently improve this.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG32_MagicItem_271",
@@ -1146,7 +1189,17 @@
    "7": 12.92,
    "8": 8.99
   },
-  "guide": ""
+  "guide": null
+ },
+ {
+  "id": "BG32_MagicItem_284",
+  "name": "Aggem Sticker",
+  "description": "At the end of your turn, this plays 7 Blood Gems on a friendly minion of each type.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG32_MagicItem_300",
@@ -1164,7 +1217,7 @@
    "7": 12.9,
    "8": 9.71
   },
-  "guide": "",
+  "guide": null,
   "cost": 1
  },
  {
@@ -1174,7 +1227,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -1230,7 +1283,7 @@
    "7": 12.13,
    "8": 13.0
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG32_MagicItem_361t",
@@ -1248,7 +1301,27 @@
    "7": 12.13,
    "8": 13.0
   },
-  "guide": "",
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_362",
+  "name": "Innkeeper's Hearth",
+  "description": "Discover two Tier 6 minions. Set their stats to 30/30.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_362t",
+  "name": "Innkeeper's Hearth",
+  "description": "Discover two Tier 6 minions. Set their stats to 30/30.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -1258,7 +1331,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -1317,6 +1390,16 @@
   "guide": "Always decent."
  },
  {
+  "id": "BG32_MagicItem_807",
+  "name": "Curator Sticker",
+  "description": "Get a Golden Mishmash and a 10/10 Amalgam with Venomous.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "The Curator Amalgam is best when paired with reborn and Kangor's apprentice.",
+  "type": "Greater"
+ },
+ {
   "id": "BG32_MagicItem_808",
   "name": "Bloodbound Earrings",
   "description": "After you cast 4 spells, this plays a Blood Gem on all your minions. (4 left!)",
@@ -1335,6 +1418,25 @@
   "guide": "Pick with gem scaling ([[Gem Rat||116434]]). Best played with [[Balinda Stonehearth||130298]] later."
  },
  {
+  "id": "BG32_MagicItem_808t",
+  "name": "Bloodbound Earrings",
+  "description": "After you cast 5 spells, this plays two Blood Gems on all your minions. (5 left!)",
+  "pick_rate": 31.4,
+  "avg_placement": 4.28,
+  "placement_distribution": {
+   "1": 12.41,
+   "2": 13.98,
+   "3": 14.09,
+   "4": 13.35,
+   "5": 13.8,
+   "6": 12.53,
+   "7": 11.35,
+   "8": 8.49
+  },
+  "guide": "Best played with [[Balinda Stonehearth||130298]] and already scaled gems.",
+  "type": "Greater"
+ },
+ {
   "id": "BG32_MagicItem_817",
   "name": "Rendle Sticker",
   "description": "Steal the highest-Tier card from the Tavern. At the end of each turn, repeat this.",
@@ -1350,7 +1452,7 @@
    "7": 13.56,
    "8": 12.04
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG32_MagicItem_821",
@@ -1464,6 +1566,16 @@
   "type": "Greater"
  },
  {
+  "id": "BG32_MagicItem_888",
+  "name": "Recycling Sticker",
+  "description": "After you play an Elemental, gain a free Refresh.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Every [[Sellemental||64038]] and [[Tavern Tempest||64077]]. Need [[Brann Bronzebeard||96786]] to be infinite.",
+  "type": "Greater"
+ },
+ {
   "id": "BG32_MagicItem_893",
   "name": "Bluegill Flippers",
   "description": "Whenever you cast a Tavern spell, give the left-most minion in your hand and warband +3/+3.",
@@ -1489,6 +1601,26 @@
   "avg_placement": null,
   "placement_distribution": null,
   "guide": "Best picked when you guarantee have something good to golden in your shop.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_920",
+  "name": "Thaumaturgist Portrait",
+  "description": "Get 2 Thaumaturgists. Your Thaumaturgists' Spellcrafts are permanent.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_922",
+  "name": "Charming Panpipes",
+  "description": "At the end of each turn, give your left-most minion +3/+3. After you cast a spell, improve this.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "This one is great if you have insane spell generation already. Really strong with Drakkari",
   "type": "Greater"
  },
  {
@@ -1607,7 +1739,7 @@
    "7": 14.95,
    "8": 14.95
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG35_MagicItem_156",
@@ -1635,7 +1767,7 @@
    "7": 9.74,
    "8": 7.32
   },
-  "guide": "",
+  "guide": null,
   "cost": 2
  },
  {
@@ -1654,7 +1786,7 @@
    "7": 12.83,
    "8": 9.07
   },
-  "guide": "",
+  "guide": null,
   "cost": 1
  },
  {
@@ -1713,6 +1845,26 @@
   "guide": "Commit Combat Scaling Quilboars. Run [[Bristlebach]] + Taunted/Divine Shielded/reborn [[Pufferquil]] as core cards."
  },
  {
+  "id": "BG35_MagicItem_700",
+  "name": "Wildfeather Duster",
+  "description": "After you summon 6 Beasts, get a random Beast. (6 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_701",
+  "name": "Fang Anklet",
+  "description": "Start of Combat: Your Beasts have +1/+1 this combat. After you summon a Beast, improve this permanently.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Commit beasts, and run [[Banana Slamma||98824]] as your core card.",
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_711",
   "name": "Protective Ring",
   "description": "Start of Combat: Give 4 random friendly Pirates Divine Shield.",
@@ -1729,7 +1881,27 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_742",
+  "name": "Accord-o-Tron Portrait",
+  "description": "At the end of each turn, Magnetize an Accord-o-Tron to your left- and right-most Mechs.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Use [[Drakkari Enchanter||101314]] to ramp economy and [[Utility Drone||98588]] to scale.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_743",
+  "name": "Electrode Attractor",
+  "description": "Magnetic Mechs cost (2). The Tavern offers an extra one whenever it is Refreshed.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Commit Magnetic Mechs",
   "type": "Greater"
  },
  {
@@ -1768,7 +1940,7 @@
    "7": 12.25,
    "8": 10.27
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG35_MagicItem_812",
@@ -1777,7 +1949,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -1832,7 +2004,7 @@
    "7": 12.49,
    "8": 11.76
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG35_MagicItem_816t",
@@ -1850,7 +2022,7 @@
    "7": 12.49,
    "8": 11.76
   },
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -1890,6 +2062,16 @@
   "guide": "Generally solid pick, downside is worth the 10 gold."
  },
  {
+  "id": "BG35_MagicItem_820",
+  "name": "Safety Patch",
+  "description": "Cast Ice Block. Gain 5 Gold.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_821",
   "name": "Kaleidoscope",
   "description": "Discover a Tier 7 minion. Lock it in your hand for 2 |4 (turn, turns).",
@@ -1909,25 +2091,6 @@
   "cost": 0
  },
  {
-  "id": "BG35_MagicItem_821t",
-  "name": "Kaleidoscope",
-  "description": "Discover a Golden Tier 7 minion. Lock it in your hand for 2 |4 (turn, turns).",
-  "pick_rate": 32.8,
-  "avg_placement": 4.54,
-  "placement_distribution": {
-   "1": 12.82,
-   "2": 11.87,
-   "3": 11.91,
-   "4": 12.01,
-   "5": 12.58,
-   "6": 13.31,
-   "7": 13.24,
-   "8": 12.26
-  },
-  "guide": "",
-  "type": "Greater"
- },
- {
   "id": "BG35_MagicItem_823",
   "name": "Timeworn Candelabra",
   "description": "Discover a 2-Cost minion from the Minor Timewarp.",
@@ -1943,7 +2106,7 @@
    "7": 13.75,
    "8": 12.82
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG35_MagicItem_823t",
@@ -1961,7 +2124,7 @@
    "7": 13.75,
    "8": 12.82
   },
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2018,7 +2181,7 @@
    "7": 10.38,
    "8": 6.32
   },
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2037,7 +2200,7 @@
    "7": 12.53,
    "8": 9.27
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG35_MagicItem_861",
@@ -2152,6 +2315,26 @@
   "guide": "Play into a spell power comp such as End of turn/Spell buff comp with [[Fauna Whisperer||120905]]."
  },
  {
+  "id": "BG35_MagicItem_923",
+  "name": "Bewitched Ribbon",
+  "description": "Whenever you cast a spell, give your minions +1/+1 permanently. (+2/+2 while in combat!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Best with Combat Scaling Nagas",
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_930",
+  "name": "Warband Whistle",
+  "description": "Gain a free Refresh that contains plain copies of minions in your warband.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_931",
   "name": "Transcribing Typewriter",
   "description": "Get an extra copy of the next 2 minions you buy. (2 left!)",
@@ -2168,6 +2351,25 @@
    "8": 12.45
   },
   "guide": "Only pick on tavern 4 so you're going to get its value immediately."
+ },
+ {
+  "id": "BG35_MagicItem_931t",
+  "name": "Transcribing Typewriter",
+  "description": "Get an extra copy of the next 4 minions you buy. (4 left!)",
+  "pick_rate": 21.4,
+  "avg_placement": 4.55,
+  "placement_distribution": {
+   "1": 12.83,
+   "2": 11.89,
+   "3": 11.61,
+   "4": 12.06,
+   "5": 12.74,
+   "6": 12.98,
+   "7": 13.44,
+   "8": 12.45
+  },
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG36_MagicItem_200",
@@ -2204,7 +2406,7 @@
    "7": 12.9,
    "8": 7.66
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG36_MagicItem_202",
@@ -2298,7 +2500,7 @@
    "7": 12.83,
    "8": 10.34
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG36_MagicItem_212",
@@ -2307,7 +2509,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2344,7 +2546,7 @@
    "7": 15.85,
    "8": 14.48
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG36_MagicItem_301",
@@ -2362,7 +2564,7 @@
    "7": 14.43,
    "8": 14.05
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG36_MagicItem_302",
@@ -2383,6 +2585,25 @@
   "guide": "+4/2 a turn is decent on turn 6, +6/3 is amazing. Use tempo to comfortably level to 5."
  },
  {
+  "id": "BG36_MagicItem_302t",
+  "name": "Gold Mallet",
+  "description": "At the end of your turn, give your minions +4/+2. (Improved by Golden minions you've played this game!)",
+  "pick_rate": 48.5,
+  "avg_placement": 3.59,
+  "placement_distribution": {
+   "1": 16.65,
+   "2": 16.42,
+   "3": 18.56,
+   "4": 17.24,
+   "5": 12.52,
+   "6": 10.29,
+   "7": 5.72,
+   "8": 2.6
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG36_MagicItem_303",
   "name": "Glass of Perspective",
   "description": "Get a random Choose One card. At the start of each turn, get another.",
@@ -2398,7 +2619,7 @@
    "7": 13.74,
    "8": 12.96
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG36_MagicItem_303t",
@@ -2416,7 +2637,7 @@
    "7": 13.74,
    "8": 12.96
   },
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2453,7 +2674,7 @@
    "7": 13.32,
    "8": 11.97
   },
-  "guide": "",
+  "guide": null,
   "cost": 1
  },
  {
@@ -2463,7 +2684,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2473,7 +2694,27 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_361",
+  "name": "Myrmidon Sticker",
+  "description": "Start of Combat: Double your left and right-most Naga's stats.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_362",
+  "name": "Cyclist Portrait",
+  "description": "Get a Showy Cyclist. Your Showy Cyclists' Deathrattles give permanent stats.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2493,7 +2734,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2503,7 +2744,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2513,7 +2754,17 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_373",
+  "name": "Multilayered Shield",
+  "description": "Your Tavern spells give an extra +1/+2. (Improved by each different friendly minion type!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2536,6 +2787,156 @@
   "type": "Lesser"
  },
  {
+  "id": "BG36_MagicItem_400",
+  "name": "Corrupted Coin Portrait",
+  "description": "Get 2 Corrupted Coins.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_403",
+  "name": "Hammer of Twilight",
+  "description": "Your minions have +1 Attack. (Improved by each card you've discarded this game!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_403t",
+  "name": "Hammer of Twilight",
+  "description": "Your minions have +2/+1. (Improved by each card you've discarded this game!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_404",
+  "name": "Corrupted Baton",
+  "description": "After you cast a Tavern spell, give your Deity +4/+4.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_404t",
+  "name": "Corrupted Baton",
+  "description": "After you cast a Tavern spell, give your Deity +10/+10.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_406",
+  "name": "Shath'Yar Shrine",
+  "description": "After you discard a spell, get a random Aberration.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_416",
+  "name": "Evil Experiment",
+  "description": "After your Deity awakens, give it Reborn.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_430",
+  "name": "Sludge Portrait",
+  "description": "Get a Sludge Corrosion. After you discard a card, get a Sludge Corrosion.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_417",
+  "name": "Makeshift Master",
+  "description": "Spellcraft: Choose a minion. After it gains stats outside combat this turn, your Deity also gains them.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_418",
+  "name": "Tome of the Ancients",
+  "description": "After you discard 3 cards, your Tavern spells give an extra +1/+1 this game. (3 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_424",
+  "name": "Rascal Sticker",
+  "description": "Gain 1 Gold for each friendly Golden minion. At the start of your turn, repeat this.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_600",
+  "name": "Converter Portrait",
+  "description": "Get a Faceless Converter. Start of Combat: Give your Faceless Converters Reborn.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_609",
+  "name": "Trickster's Sleeve",
+  "description": "After you buy a minion, gain 1 Gold. (Then swap to Tavern spell!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_610",
+  "name": "Sinister Invitation",
+  "description": "Discover a Golden minion of your most common type with a Dark Gift. It doesn't give a Triple Reward.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_611",
+  "name": "Tableware Portrait",
+  "description": "Get a Menagerie Tableware. At the start of each turn, get another.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG36_MagicItem_800",
   "name": "Demonic Bloodletter",
   "description": "Whenever you cast a Tavern spell, give minions in the Tavern +1/+1 this game.",
@@ -2551,7 +2952,7 @@
    "7": 11.35,
    "8": 9.92
   },
-  "guide": "",
+  "guide": null,
   "cost": 3
  },
  {
@@ -2588,26 +2989,7 @@
    "7": 10.29,
    "8": 6.69
   },
-  "guide": ""
- },
- {
-  "id": "BG36_MagicItem_810t",
-  "name": "Inductive Gyroblade",
-  "description": "At the end of your turn, get a 12/12 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)",
-  "pick_rate": 25.4,
-  "avg_placement": 4.21,
-  "placement_distribution": {
-   "1": 9.4,
-   "2": 14.7,
-   "3": 16.88,
-   "4": 15.93,
-   "5": 14.03,
-   "6": 12.07,
-   "7": 10.29,
-   "8": 6.69
-  },
-  "guide": "",
-  "type": "Greater"
+  "guide": null
  },
  {
   "id": "BG36_MagicItem_811",
@@ -2625,7 +3007,7 @@
    "7": 13.95,
    "8": 12.07
   },
-  "guide": ""
+  "guide": null
  },
  {
   "id": "BG36_MagicItem_812",
@@ -2643,7 +3025,7 @@
    "7": 10.92,
    "8": 6.73
   },
-  "guide": "",
+  "guide": null,
   "cost": 0
  },
  {
@@ -2665,13 +3047,223 @@
   "guide": "Must already have Flighty Scout. Buy cheap spells to scale them."
  },
  {
+  "id": "BG36_MagicItem_830",
+  "name": "Bloodfury Shield",
+  "description": "Whenever you cast a Tavern spell, add a Fodder to your next Refresh.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Use [[Devilish Distractor||132901]] + [[Balinda Stonehearth||130298]] setup and this trinket for shop buff payoff.",
+  "type": "Greater"
+ },
+ {
   "id": "BG36_MagicItem_850",
   "name": "Cookie's Stirring Rod",
   "description": "After you play 5 Murlocs, get two random Tavern spells. (5 left!)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": "",
+  "guide": null,
   "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_852",
+  "name": "Willbreaker Sticker",
+  "description": "Get 2 random Tavern spells. When you play one, discard the other. At the start of your turn, repeat this.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG35_MagicItem_712",
+  "name": "Privateer Portrait",
+  "description": "Get a Proud Privateer and 2 random Bounties. At the start of each turn, get another 2 Bounties.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_732",
+  "name": "Soul Fermenter",
+  "description": "Start of Combat: Destroy your 3 left-most minions. After your last minion dies, resummon them.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_754",
+  "name": "Dramaloc Sticker",
+  "description": "Start of Combat: Give your Murlocs the Attack of the highest-Attack minion in your hand.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_924",
+  "name": "Groundbreaker Portrait",
+  "description": "Get a Groundbreaker. Your Groundbreakers also give stats to the minion to their left.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_204",
+  "name": "Plaguerunner Portrait",
+  "description": "Get a Plaguerunner. After you destroy a Plaguerunner outside combat, get a plain copy.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_402",
+  "name": "Mindslasher Portrait",
+  "description": "Get a Vicious Mindslasher. Your Vicious Mindslashers also give stats to adjacent minions.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_408",
+  "name": "Quartermaster's Hook",
+  "description": "After you spend 50 Gold, replace this with a random Greater Pirate Trinket. (50 Gold left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_602",
+  "name": "Mask of Ancient Ones",
+  "description": "Make your Deity Golden this game.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_914t",
+  "name": "Nerglish Phrasebook",
+  "description": "After you play a minion, give the left-most minion in your hand +6/+6.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_988t",
+  "name": "Great Boar Sticker",
+  "description": "Get 5 Blood Gems. Your Blood Gems give an extra +3/+3.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_417t",
+  "name": "Makeshift Master",
+  "description": "Choose a minion. After it gains stats outside combat this turn, your Deity also gains them.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG30_MagicItem_701",
+  "name": "The Eye of Sargeras",
+  "description": "Every fourth card you buy costs Health instead of Gold. (3 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Great trinket when committed to Shop Buff Demons. Also want a [[Brann Bronzebeard||96786]] and [[Soul Rewinder||100949]] in your setup.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_411",
+  "name": "Reinvigorating Light",
+  "description": "Discover a second Hero Power. Gain 3 Gold.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG36_MagicItem_414",
+  "name": "Weighted Gauntlet",
+  "description": "At the end of your turn, give your minions +1/+1. (Doubles at the start of each turn!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
+  "id": "BG30_MagicItem_943",
+  "name": "Surveyor Portrait",
+  "description": "Get a Hot-Air Surveyor. Blood Gems played from your hand give an extra +6/+6.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_301",
+  "name": "Bassgill Portrait",
+  "description": "Get a Bassgill. After you summon a Murloc in combat, give it Divine Shield.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG32_MagicItem_367",
+  "name": "Ghastly Sticker",
+  "description": "Your end of turn effects trigger an extra time.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Good when committed to an end of turn comp like Back to Back.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_215",
+  "name": "Dragon's Eye",
+  "description": "Your Dragons' Battlecries trigger an extra time.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_423",
+  "name": "Volumizer Portrait",
+  "description": "Get a random Magnetic Volumizer. At the start of each turn, get another.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
  }
 ]

@@ -177,7 +177,18 @@ class GameState:
         m = NAME_TAG.search(line)
         if m:
             name, tag, value = m.groups()
-            if tag == "RESOURCES":
+            if tag == "BACON_COMBAT_DAMAGE_CAP":
+                # This season's per-combat damage cap, escalating by round. The
+                # log writes it on the NAMED GameEntity form (Entity=GameEntity,
+                # unbracketed), which never reaches _apply — only the opening
+                # value ever arrives on the bare numeric GameEntity. Reading the
+                # numeric form alone froze the cap at 2 for whole games: on the
+                # 2026-09-22 morning session the parser produced damage_cap=2 in
+                # all four games while real per-fight damage reached 22, so the
+                # mortality clause's "one bad fight ends it" demanded eff HP <= 2
+                # instead of <= the true cap. Last write wins, like every tag.
+                self.damage_cap = int(value)
+            elif tag == "RESOURCES":
                 self.gold_max[name] = int(value)
                 self._set_gold(name)
             elif tag == "RESOURCES_USED":
@@ -319,10 +330,13 @@ class GameState:
             # This season's per-combat damage cap, escalating by round
             # (2/5/10/15 seen in the 2026-09-08 session). "One bad fight can
             # end it" is only true when effective HP <= the current cap.
-            # Lives here (the tag dispatcher) rather than in NAME_TAG: the
-            # authoritative GameState write arrives on the bare-numeric
-            # GameEntity (`Entity=1`, routed via the bare-entity branch) —
-            # only PTL's echo uses the named Entity=GameEntity form.
+            #
+            # This branch handles the bare-numeric spelling (`Entity=1`), which
+            # carries only the OPENING value. The escalation the log actually
+            # publishes rides the unbracketed NAMED GameEntity form and is
+            # handled in feed()'s NAME_TAG branch — see the note there. The old
+            # comment here claimed the opposite (that the named form was a mere
+            # PowerTaskList echo), which is why the cap sat at 2 all game.
             self.damage_cap = int(value)
         elif tag == "ATK":
             self.atk[eid] = int(value)

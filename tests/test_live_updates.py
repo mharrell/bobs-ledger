@@ -156,7 +156,10 @@ class TestLevelCost(unittest.TestCase):
         self.assertEqual(c.level_cost(), 5)
 
     def test_price_drops_per_turn_at_tier(self):
-        """Wiki rule: tier+5 minus turns at the tier (2nd turn: 4)."""
+        """The upgrade starts at (target+3) gold and drops 1 per round
+        waited (CLAUDE.md indexing; the audit's F4 — the old docstring
+        wrote the same rule as 'tier+5 minus turns', a confusingly
+        different index). 1→2 costs 5; a second turn at tier 1: 4."""
         c = self._coach(1)
         c._tier_seen_turn = 0
         c.actions.turn = 2
@@ -354,17 +357,20 @@ class TestLevelGates(unittest.TestCase):
         self.assertNotIn("LEVEL", tm)
         self.assertIn("stay on tier 2", tm)
 
-    def test_lower_tier_core_counts_as_here(self):
-        """A tier-3 core while at tier 4: leveling dilutes sub-tier pool
-        shares too — 'here' is this tier OR below."""
+    def test_lower_tier_core_does_not_hold_the_stay(self):
+        """A tier-3 core while at tier 4 does NOT justify staying (2026-09-20
+        ruling on the 09-11 review's objection): below-tier pieces stay
+        findable after leveling, so they never hold the ladder back — the
+        old 'here = this tier or below' froze the curve on a sub-tier
+        core."""
         from value import _load_card_db
         db = _load_card_db()
         t3 = next(c for c, v in db.items() if v.get("tier") == 3)
         a, top_move = self._analysis(tier=4)
         a["target_cards"]["core"] = [{"card": t3, "name": t3, "owned": False}]
         tm = top_move(a)
-        self.assertNotIn("LEVEL", tm)
-        self.assertIn("stay on tier 4", tm)
+        self.assertNotIn("stay on tier 4", tm)
+        self.assertIn("LEVEL to tier 5", tm)
 
     def test_more_next_cores_than_here_levels(self):
         """The comp's missing cores live mostly one tier up: LEVEL states
@@ -904,6 +910,134 @@ class TestBanGate(unittest.TestCase):
         self.assertEqual(c.allowed, allowed)
 
 
+class TestManualBans(unittest.TestCase):
+    """The overlay's tap-the-ban-screen picker (2026-09-19): the ban list is
+    provably not in any log (identical CREATE_GAME setup across different-ban
+    games), the pool inference converged at minute 12/14 in the evening
+    games, and a manual set is exact from t0. Manual bans are authoritative
+    for the rest of the game and reset with it.
+
+    Three states since 36.6.1 (2026-09-22): the reveal screen offers the
+    CURRENT pool's tribes (Aberration is on it, Naga is not), so the manual
+    complement is the 11-tribe roster minus the taps minus the out-of-play
+    tribes — still exactly 5 allowed, which is the invariant the inference
+    path's 5/5 gate is built on."""
+
+    TEAMS = ["Beast", "Demon", "Dragon", "Elemental", "Mech"]
+
+    def _coach(self):
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        # Two IN-PLAY comps (Murloc, Mech) next to the Beast one, plus the
+        # rotated Naga one: the taps must be what moves the in-play comps,
+        # while the Naga comp is dead by ROTATION whatever the taps say
+        # (out of play — see meta/out_of_play.json). Core ids are real pool
+        # minions that are still in play (Flighty Scout / Cord Puller —
+        # BG33_140 River Skipper is a Murloc but was itself removed in
+        # 36.6.1, so a comp built on it would drop for the wrong reason).
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
+                         "core": ["BG30_111"]},
+            "nagas-y": {"name": "Nagas - Y", "tribe": "Naga",
+                        "core": ["BG23_318"]},
+            "murlocs-z": {"name": "Murlocs - Z", "tribe": "Murloc",
+                          "core": ["BG32_330"]},
+            "mechs-w": {"name": "Mechs - W", "tribe": "Mech",
+                        "core": ["BG29_611"]},
+        }
+        c._card_races = {}
+        c.cur_lines = ["x"]
+        return c
+
+    def tearDown(self):
+        import coach_ui
+        coach_ui.store_manual_bans([])
+
+    def test_manual_set_is_authoritative(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c._bans_ready)
+        self.assertTrue(c.bans_manual)
+        # Allowed = the in-play tribes (the 11-tribe roster minus out-of-play
+        # Naga) minus the 5 taps -> 5, and the rotated tribe is reported as
+        # out of play rather than as a 6th ban.
+        self.assertEqual(c.allowed, ["Aberration", "Murloc", "Pirate",
+                                     "Quilboar", "Undead"])
+        self.assertEqual(c.out_of_pool, ["Naga"])
+        # The manual set reached the comp filter: the Beast and Mech comps are
+        # out (tapped), the Naga comp is out by ROTATION, the Murloc comp —
+        # whose tribe is NOT tapped — is the one that survives.
+        self.assertEqual(set(c.playable), {"murlocs-z"})
+        self.assertNotIn("nagas-y", c.playable)
+        self.assertFalse(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 5)
+
+    def test_manual_beats_earlier_inference_lock(self):
+        """The inference locked 5/5 first (pool streamed fast), THEN the
+        player taps the reveal — the tap must still win (the reveal is the
+        ground truth; the inference's complement is only a guess until the
+        leaks argument, and the tap usually happens before it anyway)."""
+        import coach_ui
+        c = self._coach()
+        c.allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
+        c._bans_ready = True
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c.bans_manual)
+        self.assertEqual(c.allowed, ["Aberration", "Murloc", "Pirate",
+                                     "Quilboar", "Undead"])
+
+    def test_changing_the_taps_reapplies(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertEqual(set(c.playable), {"murlocs-z"})  # Mech tapped
+        coach_ui.store_manual_bans(["Beast", "Demon", "Dragon", "Elemental",
+                                    "Murloc"])
+        c._refresh_bans()
+        self.assertEqual(c.allowed, ["Aberration", "Mech", "Pirate",
+                                     "Quilboar", "Undead"])
+        # The survivor FLIPS with the taps: Murloc is banned now and Mech is
+        # not, while the Beast comp stays banned and the Naga comp stays
+        # rotated out of the pool either way.
+        self.assertEqual(set(c.playable), {"mechs-w"})
+
+    def test_clearing_reopens_detection(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        coach_ui.store_manual_bans([])
+        c._refresh_bans()
+        self.assertFalse(c.bans_manual)
+        self.assertFalse(c._bans_ready)
+        self.assertIsNone(c.allowed)
+        self.assertTrue(c.tribes_detecting)  # the inference retries
+
+    def test_store_validates_against_the_roster(self):
+        import coach_ui
+        self.assertEqual(coach_ui.store_manual_bans(
+            ["Beast", "Weird", "", None, "Elemental"]), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.latest_manual_bans(), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.store_manual_bans([]), [])  # empty = clear
+        self.assertIsNone(coach_ui.latest_manual_bans())
+
+    def test_reset_with_the_game(self):
+        """bans_manual rides _GAME_DEFAULTS: a new game resets it (the tap
+        was per-game; a stale manual set would poison the next lobby)."""
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c.bans_manual)
+        c._reset()
+        self.assertFalse(c.bans_manual)
+        self.assertIsNone(c._manual_key)
+
+
 class TestRenderJsonComps(unittest.TestCase):
     def test_playable_comps_become_rich_tier_rows(self):
         """The comps panel needs more than names: each playable comp row
@@ -945,6 +1079,24 @@ class TestRenderJsonComps(unittest.TestCase):
         a = render_json(analysis)
         self.assertFalse(a["comps"][0]["core"][0]["banned"])
         self.assertEqual(a["buy_step_card"], None)
+
+    def test_dark_gifts_are_not_in_the_payload(self):
+        """Player call, 2026-09-23: "remove that list of Dark gifts on the
+        coaching page. That is accomplishing nothing." The overlay listed gifts
+        the player already owns and the game already shows, so the payload stops
+        carrying them — but the ANALYSIS keeps the field, because the corpus and
+        telemetry record it."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "dark_gifts": [{"name": "Spectral Sight",
+                                    "description": "Discover a spell"}],
+                    "opp_trinkets": ["Flaming Portrait"]}
+        a = render_json(analysis)
+        self.assertNotIn("dark_gifts", a)
+        self.assertEqual(a["opp_trinkets"], ["Flaming Portrait"],
+                         "the opponents' trinkets line stays — it is intel the "
+                         "player cannot see in game")
+        self.assertIn("dark_gifts", analysis, "the analysis still records them")
 
     def test_game_comps_preferred_tribe_flag_rides(self):
         """The panel renders game_comps (the live coach's game-level list)

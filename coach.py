@@ -62,9 +62,11 @@ def analyze(path, game_index=1):
     card_races = _load_card_races(os.path.join(_HERE, ".card_races.json"))
     seed = _game_seed(chunk)
     allowed = None
+    out_of_pool = []
     for g in bans_from_log(path, card_races):
         if g["seed"] == seed:
             allowed = g["allowed"]
+            out_of_pool = g.get("out_of_pool") or []
             # The log's own CARDRACE tags (see bans_from_log): the upstream
             # cache lags the patch, so merge the observed tribes over it
             # before comps filtering — otherwise new-set core cards fail
@@ -90,18 +92,29 @@ def analyze(path, game_index=1):
         "tier": tier,
         "gold": gold,
         "board": friendly_board,
-        "banned": _banned(allowed),
+        "banned": _banned(allowed, out_of_pool),
+        "out_of_pool": list(out_of_pool),
         "playable_comps": playable,
         "sell_rank": ranked,
         "scenario": scenario,
     }
 
 
-def _banned(allowed):
-    # Unknown ban info (None) shows as no banned tribes, never "all banned".
+def _banned(allowed, out_of_pool=()):
+    """Tribes banned THIS GAME — never the ones that left the pool entirely.
+
+    A rotated-out tribe (Naga since 36.6.1) is in neither `allowed` nor the
+    game's ban list, so the old complement over DISPLAY_TRIBES reported it as
+    banned and the CLI printed six banned tribes for a 5/5 game. Same three
+    states as bans_from_log: in play / banned this game / out of pool.
+
+    Unknown ban info (None) still shows as no banned tribes, never "all
+    banned".
+    """
     if not allowed:
         return []
-    return [t for t in DISPLAY_TRIBES if t not in set(allowed)]
+    out = set(out_of_pool or ())
+    return [t for t in DISPLAY_TRIBES if t not in set(allowed) and t not in out]
 
 
 def describe(analysis):
@@ -172,6 +185,9 @@ def describe(analysis):
         ln.append("TRIGGERS: " + ", ".join(f"{k}={v}" for k, v in active.items()))
     if analysis.get("banned"):
         ln.append("BANNED: " + ", ".join(analysis["banned"]))
+    if analysis.get("out_of_pool"):
+        ln.append("OUT OF PLAY (rotated out of the pool): "
+                  + ", ".join(analysis["out_of_pool"]))
     if analysis.get("sell_rank"):
         ln.append("SELL (safe -> keep): " + " · ".join(
             f"{names.get(c, c)} ({v:.0f})" for c, v in analysis["sell_rank"][:3]))

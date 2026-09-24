@@ -55,6 +55,22 @@ def _advise_point(lines, phase_lo, phase_hi):
     was never actually shown live (the t9/t15 one-card rankings were this
     artifact). Fire once the offer set has been stable for a stretch, like the
     settled state the live loop actually advises on.
+
+    The coach is ALSO analyzed at each buy-phase boundary while feeding, exactly
+    as live.py does, and that is not cosmetic: `analyze()` is what assigns
+    hero_card/account/friendly (via _ensure_meta), and feed()'s NEXT_OPPONENT
+    pairing is gated on identifying the friendly player — so a single analyze()
+    at the END of the feed discards EVERY opponent pairing. Measured on the
+    2026-09-22 evening session: live cadence resolves the pairing
+    ({1: 5, 2: 5, 3: 2, 4: 6, 5: 8, 6: 1, ...}) while an end-only analyze
+    leaves it all-None, and because _opp_boards/_lobby_stats are pairing-keyed,
+    every forecast then falls through to the 9-game corpus baseline
+    (meta/turn_baseline.json). That is why the review docs' "your X vs their
+    ~163" lines repeated a constant across unrelated games: the harness was
+    quoting a degraded reconstruction, not the coach. Reconstructed in live
+    order, the 09-22 evening game 2 fatal turn flips from
+    "ahead on paper — 346 vs ~163" to "behind — 346 vs ~872, seen 1 round ago;
+    don't take this fight".
     """
     import live_coach
     coach = live_coach.LiveCoach()
@@ -68,6 +84,9 @@ def _advise_point(lines, phase_lo, phase_hi):
         line = lines[j]
         if j >= phase_lo and "tag=STEP value=MAIN_ACTION" in line:
             armed = True
+            # Live cadence: seed the meta at the phase boundary so the pairing
+            # guard can identify the friendly player for this phase's lines.
+            coach.analyze()
         coach.feed(line)
         if armed:
             offers = tuple(coach.tavern_offers())
@@ -137,13 +156,41 @@ def _spell_names():
 
 
 def main():
+    """Entry point. `--summary` prints a <=8 line digest instead of the table.
+
+    Implemented by capturing this tool's own output and letting review_kit
+    reduce it, rather than by threading a flag through every print: the review
+    logic is the part that must not change, and this is a presentation concern.
+    The full text is still produced (and cached) — the point is that an agent
+    does not have to READ it.
+    """
     argv = sys.argv[1:]
+    if "--summary" not in argv:
+        return _run(argv)
+    import contextlib
+    import io
+    import review_kit
+    argv = [a for a in argv if a != "--summary"]
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc = _run(argv)
+    text = buf.getvalue()
+    if not text.strip():
+        return rc
+    print(review_kit.summarise_text(text))
+    return rc
+
+
+def _run(argv):
     at_spec = None
+    at_value_idx = None
     if "--at" in argv:
         i = argv.index("--at")
         if i + 1 < len(argv):
             at_spec = argv[i + 1]
-    args = [a for a in argv if not a.startswith("--")]
+            at_value_idx = i + 1
+    args = [a for idx, a in enumerate(argv)
+            if idx != at_value_idx and not a.startswith("--")]
     latest = "--latest" in argv
     if latest or not args:
         logs = sorted(glob.glob(HS_LOG_GLOB),

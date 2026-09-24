@@ -1,0 +1,458 @@
+{
+  "_comment": "Cards and tribes that are NOT in play, and must never be recommended. Sourced from the official patch notes and VALIDATED against the log-mined pool: every removed minion here is absent from the post-patch pool_roster and was present in a pre-patch pool. Enforced by playable.py. History is kept so a card that rotates back can be re-enabled with its reason on record — see `history`.",
+  "patch": "36.6.1",
+  "updated": "2026-09-22",
+  "sources": [
+    "https://hearthstone.blizzard.com/en-us/news/24302091",
+    "hearth-coach/meta/pool_roster.json (log-mined validation)"
+  ],
+  "tribes": {
+    "Naga": {
+      "reason": "rotated out of the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "note": "Naga-specific heroes and cards are unavailable while Naga is out of the pool. Compound cards that are PARTLY Naga stay playable while their other tribe is in play — the game's own pool dump still lists BG31_330 Ominous Seer (hearthstonejson: Demon/Naga) in a post-patch game whose allowed tribes include Demon. So a card is out of play only when ALL of its tribes are out."
+    }
+  },
+  "cards": {
+    "BG_TTN_401": {
+      "name": "Ancestral Automaton",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG_TTN_401"
+    },
+    "BG32_172": {
+      "name": "Auto Assembler",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG32_172"
+    },
+    "BG36_507": {
+      "name": "Breakout Mastermind",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG36_507"
+    },
+    "BG36_760": {
+      "name": "Captain Cookie",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG36_760"
+    },
+    "BG29_503": {
+      "name": "Clunker Junker",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG29_503"
+    },
+    "BG35_142": {
+      "name": "Cousin Errgl",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG35_142"
+    },
+    "BG26_162": {
+      "name": "Dancing Barnstormer",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG26_162"
+    },
+    "BG35_143": {
+      "name": "Deepwater Chieftain",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG35_143"
+    },
+    "BGS_071": {
+      "name": "Deflect-o-Bot",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BGS_071"
+    },
+    "BG31_824": {
+      "name": "Dual-Wield Corsair",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG31_824"
+    },
+    "BG33_323": {
+      "name": "Dustbone Devastator",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG33_323"
+    },
+    "BG32_822": {
+      "name": "Fire-forged Evoker",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG32_822"
+    },
+    "BG32_842": {
+      "name": "Glowing Cinder",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG32_842"
+    },
+    "BG28_595": {
+      "name": "Ignition Specialist",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG28_595"
+    },
+    "BGS_012": {
+      "name": "Kangor's Apprentice",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BGS_012"
+    },
+    "BG35_140": {
+      "name": "Mama Mrrglton",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG35_140"
+    },
+    "BG32_170": {
+      "name": "Metallic Hunter",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG32_170"
+    },
+    "BG31_843": {
+      "name": "Meteorite Crasher",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG31_843"
+    },
+    "BG36_351": {
+      "name": "Moat Custodian",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG36_351"
+    },
+    "BGS_127": {
+      "name": "Molten Rock",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BGS_127"
+    },
+    "BG27_080": {
+      "name": "Motley Phalanx",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG27_080"
+    },
+    "BGS_104": {
+      "name": "Nomi, Kitchen Nightmare",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BGS_104"
+    },
+    "BG27_002": {
+      "name": "Oozeling Gladiator",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG27_002"
+    },
+    "BG35_141": {
+      "name": "Papa Mrrglton",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG35_141"
+    },
+    "BG33_893": {
+      "name": "Primitive Painter",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG33_893"
+    },
+    "BG36_509": {
+      "name": "Private Investigator",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG36_509"
+    },
+    "BG33_140": {
+      "name": "River Skipper",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG33_140"
+    },
+    "BG32_841": {
+      "name": "Sand Swirler",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG32_841"
+    },
+    "BG26_148": {
+      "name": "Scrap Scraper",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG26_148"
+    },
+    "BG25_806": {
+      "name": "Sly Raptor",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG25_806"
+    },
+    "BG29_810": {
+      "name": "Thousandth Paper Drake",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG29_810"
+    },
+    "BG32_846": {
+      "name": "Unleashed Mana Surge",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG32_846"
+    },
+    "BG36_510": {
+      "name": "Vigilant Bristlemane",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG36_510"
+    },
+    "BG35_152": {
+      "name": "Void Pup Trainer",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG35_152"
+    },
+    "BG24_004": {
+      "name": "Warpwing",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG24_004"
+    },
+    "BG33_899": {
+      "name": "Mounting Avalanche",
+      "kind": "tavern_spell",
+      "reason": "removed from the tavern-spell pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG33_899"
+    },
+    "BG35_149": {
+      "name": "Deepwater Clan",
+      "kind": "tavern_spell",
+      "reason": "removed from the tavern-spell pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG35_149"
+    },
+    "BG35_MagicItem_863": {
+      "name": "Avalanche Sticker",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG35_MagicItem_863"
+    },
+    "BG35_MagicItem_821": {
+      "name": "Kaleidoscope",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG35_MagicItem_821"
+    },
+    "BG30_MagicItem_303": {
+      "name": "Automaton Portrait",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool",
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "id": "BG30_MagicItem_303"
+    },
+    "name:Amplifying Essence": {
+      "name": "Amplifying Essence",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool (no card id in meta/trinkets.json — the name is the only handle we have)",
+      "patch": "36.6.1",
+      "date": "2026-09-22"
+    },
+    "name:Assembler Portrait": {
+      "name": "Assembler Portrait",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool (no card id in meta/trinkets.json — the name is the only handle we have)",
+      "patch": "36.6.1",
+      "date": "2026-09-22"
+    },
+    "name:Errgl Sticker": {
+      "name": "Errgl Sticker",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool (no card id in meta/trinkets.json — the name is the only handle we have)",
+      "patch": "36.6.1",
+      "date": "2026-09-22"
+    }
+  },
+  "heroes": {},
+  "hero_constraints": {
+    "_comment": "Hero/tribe restrictions announced for the Aberration debut; the coach's hero pick ranking should reflect these.",
+    "banned_from_aberration_tribe": [
+      "Morchie",
+      "Murozond, Unbounded",
+      "Sylvanas Windrunner"
+    ],
+    "banned_from_aberration_tribe_yshaarj_only": [
+      "The Curator",
+      "The Lich King",
+      "Teron Gorefiend",
+      "N'Zoth"
+    ]
+  },
+  "history": [
+    {
+      "patch": "36.6.1",
+      "date": "2026-09-22",
+      "rotated_out_tribes": [
+        "Naga"
+      ],
+      "removed": [
+        "Ancestral Automaton",
+        "Auto Assembler",
+        "Breakout Mastermind",
+        "Captain Cookie",
+        "Clunker Junker",
+        "Cousin Errgl",
+        "Dancing Barnstormer",
+        "Deepwater Chieftain",
+        "Deflect-o-Bot",
+        "Dual-Wield Corsair",
+        "Dustbone Devastator",
+        "Fire-forged Evoker",
+        "Glowing Cinder",
+        "Ignition Specialist",
+        "Kangor's Apprentice",
+        "Mama Mrrglton",
+        "Metallic Hunter",
+        "Meteorite Crasher",
+        "Moat Custodian",
+        "Molten Rock",
+        "Motley Phalanx",
+        "Nomi, Kitchen Nightmare",
+        "Oozeling Gladiator",
+        "Papa Mrrglton",
+        "Primitive Painter",
+        "Private Investigator",
+        "River Skipper",
+        "Sand Swirler",
+        "Scrap Scraper",
+        "Sly Raptor",
+        "Thousandth Paper Drake",
+        "Unleashed Mana Surge",
+        "Vigilant Bristlemane",
+        "Void Pup Trainer",
+        "Warpwing",
+        "Deepwater Clan",
+        "Mounting Avalanche",
+        "Automaton Portrait",
+        "Avalanche Sticker",
+        "Kaleidoscope",
+        "Amplifying Essence",
+        "Assembler Portrait",
+        "Errgl Sticker"
+      ],
+      "returning": [
+        "Auto Accelerator",
+        "Blue Volumizer",
+        "Bronze Warden",
+        "Bubble Gunner",
+        "Conveyor Construct",
+        "Dune Dweller",
+        "Elite Navigator",
+        "Firelands Fugitive",
+        "Geomagus Roogug",
+        "Ghastcoiler",
+        "Gormling Gourmet",
+        "Green Volumizer",
+        "Hackerfin",
+        "Hot-Air Surveyor",
+        "Ichoron the Protector",
+        "Iron Groundskeeper",
+        "Leyline Surfacer",
+        "Living Azerite",
+        "Mangled Bandit",
+        "Nadina the Red",
+        "Red Volumizer",
+        "Relentless Deflector",
+        "Shoalfin Mystic",
+        "Ultraviolet Ascendant",
+        "Young Murk-Eye",
+        "Seafood Stew",
+        "Vibrant Bubble"
+      ]
+    }
+  ]
+}

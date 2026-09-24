@@ -304,6 +304,26 @@ def fetch_youtube_links(comp_id):
     return data if isinstance(data, list) else data.get("results", [])
 
 
+def prune_unlisted(comps, keep_slugs):
+    """Drop comps the source no longer lists — but NEVER a provisional one.
+
+    A provisional comp (comp_miner.py --promote) exists precisely because this
+    source has nothing for its tribe, so pruning "what the source no longer
+    lists" would delete it on every run and silently take the only direction the
+    coach has for that tribe with it. Returns (pruned, kept) slugs.
+    """
+    pruned, kept = [], []
+    for key in list(comps):
+        if key in keep_slugs:
+            continue
+        if (comps[key] or {}).get("provisional"):
+            kept.append(key)
+            continue
+        del comps[key]
+        pruned.append(key)
+    return pruned, kept
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("comp_ids", nargs="*", help="comp ids or slugs to scrape")
@@ -311,7 +331,9 @@ def main():
     ap.add_argument("--prune", action="store_true",
                     help="(with --top) drop comps no longer in the top-N visible set")
     ap.add_argument("--diff", action="store_true",
-                    help="print a per-comp change report (tier, cards, text edits)")
+                    help="print a per-comp change report (tier, cards, text edits). NOTE: writes")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="scrape and report, but never write meta/comps.json")
     ap.add_argument("--youtube", action="store_true", help="fetch YouTube links too")
     ap.add_argument("--cards-cache", default=DEFAULT_CARDS_CACHE)
     args = ap.parse_args()
@@ -384,10 +406,19 @@ def main():
               f"core={len(comp['core'])} addons={len(comp['addons'])}")
 
     if args.prune and keep_slugs is not None:
-        for key in list(comps):
-            if key not in keep_slugs:
-                del comps[key]
-                print(f"  pruned {key}")
+        pruned, kept = prune_unlisted(comps, keep_slugs)
+        for key in pruned:
+            print(f"  pruned {key}")
+        for key in kept:
+            print(f"  kept {key} (provisional — not owned by this source)")
+
+    if args.dry_run:
+        # --diff SHOWS differences, it does not prevent writes: running
+        # `--top 40 --diff` believing it was a dry run modified comps.json on
+        # 2026-09-23. This is the flag that actually does not write.
+        print(f"\ndry run — {len(comps)} comps would be written to {COMPS_PATH} "
+              f"(nothing written)")
+        return
 
     with open(COMPS_PATH, "w", encoding="utf-8") as f:
         json.dump(comps, f, indent=2, ensure_ascii=False)

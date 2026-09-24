@@ -40,3 +40,12 @@ hearth-coach/corpus_out/
 hearth-coach/patch_reports/
 hearth-coach/meta/.patch_state.json
 hearth-coach/meta/.patch_config.json
+hearth-coach/logs_archive/
+
+# Automation caches (logquery/review_kit): regenerable, machine-specific
+hearth-coach/.review_cache/
+
+# comp_miner proposals: derived from the local log corpus (which is not in the
+# repo), regenerable, and never a source of truth — promotion is a human edit
+# to meta/comps.json
+hearth-coach/meta/comp_candidates.json

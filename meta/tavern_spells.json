@@ -231,6 +231,13 @@
     "text": "[x]Choose One - Give your\nminions +2/+2; or At the\nstart of your next turn, give\nyour minions +2/+2 twice."
   },
   {
+    "tier": 3,
+    "id": "BG32_337",
+    "name": "Seafood Stew",
+    "cost": 2,
+    "text": "Give a minion +1/+1. Repeat for each different Bonus Keyword in your warband."
+  },
+  {
     "tier": 4,
     "id": "BG28_603",
     "name": "Boon of Beetles",
@@ -278,6 +285,20 @@
     "name": "Eonar's Favor",
     "cost": 2,
     "text": "Choose a minion. Give minions of its type in the Tavern +3/+3 this game."
+  },
+  {
+    "tier": 4,
+    "id": "BG35_910",
+    "name": "Conflagration",
+    "cost": 2,
+    "text": "Give a minion +4/+4. (Improved by each Elemental you played this turn!)"
+  },
+  {
+    "tier": 4,
+    "id": "BG35_911",
+    "name": "Arcane Absorption",
+    "cost": 1,
+    "text": "Give a friendly Elemental half the stats of the highest-Health minion in the Tavern."
   },
   {
     "tier": 4,
@@ -348,6 +369,13 @@
     "name": "Temperature Shift",
     "cost": 4,
     "text": "Get a Fire Baller and a Snow Baller."
+  },
+  {
+    "tier": 4,
+    "id": "BG36_301t",
+    "name": "Sludge Corrosion",
+    "cost": 1,
+    "text": "Give your minions +1/+1. If you discard this, cast it twice."
   },
   {
     "tier": 5,
@@ -460,6 +488,20 @@
     "name": "Golden Touch",
     "cost": 5,
     "text": "Make a random minion in the Tavern Golden."
+  },
+  {
+    "tier": 5,
+    "id": "BG36_303",
+    "name": "Corrupted Coin",
+    "cost": 2,
+    "text": "Gain 2 Gold. If you discard this, increase your maximum Gold by 2."
+  },
+  {
+    "tier": 5,
+    "id": "BG36_371",
+    "name": "Energizing Chamber",
+    "cost": 1,
+    "text": "Give your Deity +7/+7. If you discard this, cast it twice."
   },
   {
     "tier": 6,

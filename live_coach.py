@@ -18,10 +18,12 @@ import re
 from board_state import GameState
 from extract_game import extract_game, _friendly_player, MINION_ID
 from tribes import normalize
-from bans import bans_from_log, filter_comps_by_available_tribes, _load_card_races, _HERE
+from bans import (bans_from_log, filter_comps_by_available_tribes,
+                  out_of_pool_tribes, _load_card_races, _HERE)
 import meta
 import pool
 import lobby
+from coach_ui import latest_manual_bans
 from meta import hero_power as _hero_power_text
 from tribes import DISPLAY_TRIBES, matches, normalize
 from player_actions import (
@@ -33,7 +35,7 @@ from value import (
     comp_cards, comp_progress, sell_recommendation, shop_ranking, top_move,
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
     situation_line, sticky_comp_target, combat_forecast, active_recipes,
-    live_reach_sources, DYING_HEALTH,
+    live_reach_sources, DYING_HEALTH, comp_gap, comp_label, fragility,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -122,12 +124,17 @@ _NEXT_OPP = re.compile(
     r"[^\]]*?player=(\d+)\]|(\S+)) tag=NEXT_OPPONENT_PLAYER_ID value=(\d+)")
 
 
-def _banned(allowed):
+def _banned(allowed, out_of_pool=()):
     # Unknown ban info (None) shows as no banned tribes, never "all banned"
     # (the old code listed all 10 for None — the 2026-09-04 Guff overlay).
+    # Out-of-play tribes are NOT banned: they are absent from the pool in
+    # every lobby of this patch (Naga since 36.6.1), so the strip lists them
+    # separately ("out of play") instead of calling a rotated tribe banned.
     if not allowed:
         return []
-    return [t for t in DISPLAY_TRIBES if t not in set(allowed)]
+    out = set(out_of_pool)
+    return [t for t in DISPLAY_TRIBES
+            if t not in set(allowed) and t not in out]
 
 
 def _median(values):
@@ -433,6 +440,8 @@ _GAME_DEFAULTS = {
     "_bans_ready": False,
     "tribes_detecting": False,  # 5/5 ban set not confirmed yet (window state)
     "tribes_seen": 0,        # pure tribes the pool reveal has shown so far
+    "bans_manual": False,    # the player set the bans in the overlay
+    "_manual_key": None,     # tuple of the applied manual ban list
     "_card_races": None,
     "_seed": None,
     "_comps": None,
@@ -464,6 +473,10 @@ class LiveCoach:
         self.allowed = None
         self.playable = None
         self.game_comps = None   # the comps panel's game-level list
+        # Tribes out of play entirely (rotated by a patch — Naga since 36.6.1).
+        # A patch-level fact from the registry, not per-game: it keeps the
+        # strip reading "Naga: out of play" instead of "Naga: banned".
+        self.out_of_pool = []
 
     def _reset(self):
         self.gs = GameState()
@@ -901,18 +914,74 @@ class LiveCoach:
         list. Each row carries _tribe_confirmed (its tribe in the
         confirmed set?) so the UI dims the could-still-be-banned ones
         instead of hiding them.
+
+        Three states (2026-09-22, patch 36.6.1): in play, banned THIS game, or
+        out of play entirely. Only the second is "banned", so the ban universe
+        is ALL_TRIBES minus the out-of-play tribes (bans.out_of_pool_tribes —
+        Naga since 36.6.1; fail-open to empty when the registry is off or
+        unreadable). `self.out_of_pool` rides the payload so the strip can
+        label a rotated tribe as such instead of banned; the manual path
+        subtracts the same set, keeping its 5-allowed invariant intact.
         """
-        if self._bans_ready or self._comps is None or not self.cur_lines:
+        if self._comps is None or not self.cur_lines:
+            return
+        # Manual bans (overlay tap-the-ban-screen picker) are authoritative:
+        # the reveal is exact at t0 while the pool inference needs minutes
+        # (2026-09-19: minute 12/14 in the evening games). Applied once per
+        # distinct list; clearing the taps falls back to the inference.
+        manual = latest_manual_bans()
+        if manual:
+            key = tuple(manual)
+            if not (self.bans_manual and self._manual_key == key):
+                self._manual_key = key
+                self.bans_manual = True
+                # allowed = the tribes the pool CAN offer minus the tapped
+                # bans. Out-of-play tribes are subtracted too: the reveal
+                # screen offers the current pool's tribes (Naga is not on it,
+                # 36.6.1), so tapping 5 bans must leave 5 allowed, not 6 —
+                # otherwise the manual path breaks the very 5/5 invariant the
+                # inference path is built on. Fail-open (empty) when the
+                # registry is unavailable.
+                self.out_of_pool = sorted(out_of_pool_tribes())
+                oop = set(self.out_of_pool)
+                self.allowed = sorted(t for t in DISPLAY_TRIBES
+                                      if t not in set(manual)
+                                      and t not in oop)
+                self._bans_ready = True
+                self.tribes_seen = len(self.allowed)
+                self.tribes_detecting = False
+                self.playable = filter_comps_by_available_tribes(
+                    self._comps, self._card_races, self.allowed)
+                self.game_comps = self.playable
+            return
+        if self.bans_manual:
+            # Manual taps were cleared mid-game — reopen the detection
+            # window instead of stranding a stale manual set.
+            self.bans_manual = False
+            self._manual_key = None
+            self._bans_ready = False
+            self.allowed = None
+        if self._bans_ready:
             return
         allowed = None
         observed = {}
+        found = None
         if self._seed is not None:
             for g in bans_from_log(None, self._card_races,
                                    lines=self.cur_lines):
                 if g["seed"] == self._seed:
+                    found = g
                     allowed = g["allowed"]
                     observed = g.get("races") or {}
                     break
+        # Out of play is PATCH-level, not per-game (the registry's rotated
+        # tribes), so it is refreshed even before this game's bans resolve —
+        # and it is what keeps Naga out of the strip's banned list. The
+        # payload's own key wins when present; otherwise ask the registry
+        # directly (fail-open to empty — see bans.out_of_pool_tribes).
+        oop = (found or {}).get("out_of_pool")
+        self.out_of_pool = sorted(oop if oop is not None
+                                  else out_of_pool_tribes())
         if observed:
             # The log's own CARDRACE tags (see bans_from_log): patch-proof
             # tribes for the comp filter too, not just the 5-tribe gate —
@@ -938,7 +1007,10 @@ class LiveCoach:
             # that fail-opens on an empty set, but here an empty set means
             # "nothing confirmed YET", not "no ban info" — with it the
             # window played fail-open (2026-09-10 replay: seen=0 ->
-            # n_playable=21).
+            # n_playable=21). This is the designed mirror of
+            # bans.filter_comps_by_available_tribes, which fail-OPENS on
+            # no-info for the replay/panel layer — the pair is intentional,
+            # don't unify them (2026-09-19 test audit F3).
             confirmed = set(allowed or ())
 
             def window_ok(tribe):
@@ -1160,6 +1232,13 @@ class LiveCoach:
             friendly)
         target = comp_target(board, self.playable, recent_cards=recent,
                              trinkets=trinket_recs)
+        # A board dominated by a tribe the coach has NO PUBLISHED comp for
+        # (Aberration since 36.6.1, until the comp source catches up): carry the
+        # gap so the plan and the overlay can SAY it, instead of implying a
+        # direction the comp list cannot justify. A provisional (mined) comp for
+        # that tribe does not close the gap — it fills it, labelled — so both
+        # fields travel together and the UI can show "provisional".
+        gap = comp_gap(board, self.playable)
         # Sticky same-tribe direction (2026-09-06 Guff game: the target
         # churned 'Summon Beetles' -> 'Tasty Lobstah' phase-to-phase on
         # identical tribe evidence, reading as "which build am I doing?").
@@ -1309,6 +1388,23 @@ class LiveCoach:
         damage_last = None
         loss_streak = 0
         close_losses = False  # every loss in the streak was by 1-2
+        # DAMAGE MEMORY (design candidate (b), 2026-09-18 review): the sum of the
+        # last three fights' damage. A lost streak RESETS on a win or a tie, and
+        # that is exactly how the 09-18 game slipped every stabilize gate: it had
+        # bled 10 in two of the last three fights, t9 was won/tied, so the streak
+        # read 0 and the plan pointed a one-10-hit-from-death board at a tier.
+        # Three fights is longer than a streak and cannot be reset by one round.
+        damage_recent3 = 0
+        seen_fights = 0
+        for t in (turn - 1, turn - 2, turn - 3):
+            d3 = _combat_damage(t)
+            if d3 is None:
+                continue
+            seen_fights += 1
+            if d3 > 0:
+                damage_recent3 += d3
+        if not seen_fights:
+            damage_recent3 = None
         d = _combat_damage(turn - 1)
         if d is not None and d > 0:
             damage_last = d
@@ -1325,8 +1421,7 @@ class LiveCoach:
                     t -= 1
                 else:
                     break
-        # The never-won alarm (2026-09-19 Reno game: bled in every fight
-        # from t2 and died 8th — no line ever said the one true thing,
+        # The never-won alarm (2026-09-19 Reno game: bled in every fight        # from t2 and died 8th — no line ever said the one true thing,
         # and the plan was LEVELing through it). Read from the PREDAMAGE
         # buckets, not the true-HP series: the series showed a phantom
         # 0-damage fight here (armor-grant/copy-reset noise), while a
@@ -1479,7 +1574,11 @@ class LiveCoach:
                                    if turn - r.get("turn", 0) <= 2][-3:]]),
             "opp_age": opp_age,
             "baseline_opp": _baseline_opp(turn),
-            "banned": _banned(self.allowed),
+            "banned": _banned(self.allowed, self.out_of_pool),
+            # Tribes out of play entirely (rotated by a patch — Naga since
+            # 36.6.1): never in `banned` (they are not banned THIS game, they
+            # do not exist in this patch's pool), shown as their own state.
+            "out_of_pool": list(self.out_of_pool),
             "playable_comps": self.playable,
             # The comps panel's list (game-level; playable_comps is the
             # advisory filter, evidence-only while the bans stream in).
@@ -1489,6 +1588,13 @@ class LiveCoach:
             # instead of implying every tribe shown is confirmed (2026-09-10).
             "tribes_detecting": self.tribes_detecting,
             "tribes_seen": self.tribes_seen,
+            # Manual bans landed (overlay picker): the panel shows the
+            # picker in "set by you" mode and every filter is exact.
+            "bans_manual": self.bans_manual,
+            # The picker's tap list (canonical display names) + per-game id
+            # so the UI can reset its local picker state on a new game.
+            "tribe_roster": DISPLAY_TRIBES,
+            "game_no": self.game_no,
             # Commit-readiness meter: how close each candidate comp is to the
             # commit threshold, so the UI can show direction BEFORE
             # comp_target declares a target (the pre-commit blind spot).
@@ -1500,6 +1606,22 @@ class LiveCoach:
             "buy_this": shop[0][0] if shop else None,
             "choice": choice_advice,
             "target_comp": target["name"] if target else None,
+            # Provisional = mined from our own corpus, not published (see
+            # value._is_provisional). The label carries the marker and the
+            # sample size; the evidence rides along so the overlay can show
+            # WHY it is being coached toward.
+            "target_comp_label": comp_label(target),
+            "target_comp_provisional": bool(target and target.get("provisional")),
+            "target_comp_evidence": (target or {}).get("evidence"),
+            # The dominant tribe with no comp defined, or None. Named so the
+            # plan can say "no comp published for Aberration yet" instead of
+            # quietly having no direction.
+            "comp_gap": gap,
+            # Damage memory rides the analysis so the plan's bleed gate can see
+            # it; `fragility` (the band + the note the overlay shows) is derived
+            # just below, once, for every consumer.
+            "damage_recent3": damage_recent3,
+            "damage_last": damage_last,
             "target_state": target_state(target, board),
             "target_cards": comp_cards(target, board),
             "hand": hand_steps,
@@ -1510,6 +1632,10 @@ class LiveCoach:
             # instead of advising a reroll with the last gold.
             "activations": [{"cid": c} for c in self.activations],
         }
+        # One computation of the fragility band for every consumer: the plan
+        # (the 13-16 HP clause + the bleed gate), the situation line's mortality
+        # read, and the overlay's danger widget.
+        result["fragility"] = fragility(result)
         result["situation"] = situation_line(result)
         result["forecast"] = combat_forecast(result)
         result["top_move"] = top_move(result)

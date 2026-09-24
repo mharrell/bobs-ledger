@@ -573,5 +573,17 @@
     "name": "Edwin VanCleef",
     "hero_power": "Give a minion +2/+2. Improves after you buy 4 cards. (4 left!)",
     "pick_rate": 6.1
+  },
+  {
+    "name": "Drest'agath",
+    "hero_power": "Discard a card to get a random Aberration.",
+    "pick_rate": null,
+    "note": "New in 36.6.1 (2026-09-22). Guaranteed in EVERY game until 2026-10-06, so the pick panel will offer it constantly; no population pick data exists yet, so it is left unranked rather than given an invented rate."
+  },
+  {
+    "name": "Kith'ix",
+    "hero_power": "Get 2 random minions. When you play one, discard the other.",
+    "pick_rate": null,
+    "note": "New in 36.6.1 (2026-09-22). Guaranteed in EVERY game until 2026-10-06, so the pick panel will offer it constantly; no population pick data exists yet, so it is left unranked rather than given an invented rate."
   }
 ]
