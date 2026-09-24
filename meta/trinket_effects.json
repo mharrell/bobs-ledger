@@ -2026,5 +2026,14 @@
    ]
   },
   "note": "Your Dragons' Battlecries trigger an extra time (Dragon's Eye, Greater). A tribe-gated doubler: strong in a Dragon build with real battlecries, dead in any other, so 12 with the tribe recorded - the same discipline as the other tribe-gated amps (Flaming Portrait 14 for Elementals, Dramaloc Sticker 8 for Murlocs)."
+ },
+ "BG36_MagicItem_423": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "magnetic"
+   ]
+  },
+  "note": "Get a random Magnetic Volumizer, and another at the start of every turn (Volumizer Portrait, Lesser). A repeating Magnetic body: it grows a Mech board each turn and each copy can be magnetized onto a body, so it is priced with the recurring generators (Orb of the Unknown 6 for one random Lesser Trinket, Converter Portrait 8) at 8 for the Lesser tier."
  }
 }

@@ -3255,5 +3255,15 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_423",
+  "name": "Volumizer Portrait",
+  "description": "Get a random Magnetic Volumizer. At the start of each turn, get another.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
  }
 ]

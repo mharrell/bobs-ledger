@@ -994,9 +994,12 @@ def _swap_guards(analysis):
     Every one of these earned its place from a review: the comp's own pieces
     (2026-09-04: "sell Balinda (making room)" three phases running — she IS
     nagas core), a card the plan is HOLDING for a triple (2026-09-06 Guff t12:
-    "Hold Sewer Lord" and "sell Sewer Lord" in the same plan), and multipliers
+    "Hold Sewer Lord" and "sell Sewer Lord" in the same plan), multipliers
     (Brann/Drakkari/Titus-class), whose value is what they amplify rather than
-    what they are.
+    what they are, and — since the 2026-09-23 conflict report — the discard
+    outlet the plan is about to activate ("2 Swap: play Brann, sell Mindbending
+    Recruiter" beside "3 Activate Mindbending Recruiter": the plan sold the card
+    its own next step needed).
     """
     guards = {}
     comp = _slot_comp(analysis)
@@ -1020,7 +1023,7 @@ def _swap_guards(analysis):
     return guards
 
 
-def slot_swaps(analysis):
+def slot_swaps(analysis, reserved_outlet=None):
     """Rank the ways to spend a full board's free slot, best first.
 
     The player's report this answers, verbatim: "the coach will frequently say
@@ -1049,6 +1052,10 @@ def slot_swaps(analysis):
         return []
     names = _load_bg_names()
     guards = _swap_guards(analysis)
+    if reserved_outlet:
+        # The plan is activating this outlet this turn (step 3b), so it is not a
+        # candidate to sell (step 4) — the 2026-09-23 conflict.
+        guards.setdefault(reserved_outlet, "the plan is activating it")
     outgoing = next(((c, s) for c, s in (analysis.get("sell_rank") or [])
                      if c not in guards), None)
     if outgoing is None:
@@ -1778,10 +1785,15 @@ _DISCARD_IMPROVED = re.compile(r"if (?:you )?discard(?:ed)?\s+this", re.I)
 
 
 #: A hand card worth less than this is expendable to a discard outlet; above it,
-#: the outlet is not worth the card (a fresh body or a real spell stays in hand).
-#: A starting value, stated as an assumption like SWAP_TAKE — the hand scores it
-#: compares come from the same `minion_value`/spell-effect scale the shop uses.
-DISCARD_FODDER_MAX = 12.0
+#: the outlet is not worth the card. A starting value, stated as an assumption
+#: like SWAP_TAKE, on the same scale the shop uses.
+#:
+#: 12 was too generous and produced the 2026-09-23 conflict report: the plan
+#: played a 7.6 Brann Bronzebeard and, one step later, offered to DISCARD it for
+#: a random Aberration ("least useful card in hand" — a 7.6 card is not filler).
+#: 6 keeps the intended class: cheap spells (Tavern Coin 2), summons and small
+#: bodies you were never going to build with.
+DISCARD_FODDER_MAX = 6.0
 
 
 def discard_fodder(analysis):
@@ -2816,6 +2828,39 @@ def _top_move_text(analysis):
             parts.append(f"next priority: LEVEL to tier {p_tier + 1} "
                          f"({p_cost}g) — after the next triple or when the "
                          f"shop stops producing")
+    # 3b. THE DISCARD LOOP — decided BEFORE the slot, so the two cannot collide.
+    # A board outlet that discards ("Activate (0): Discard a card to get a random
+    # Aberration") plus a card whose own text says discarding it is BETTER
+    # (Energizing Chamber casts twice, Sludge Corrosion casts twice, Corrupted
+    # Coin raises max Gold) is a strict gain: the outlet's payoff AND the upgraded
+    # spell. Cast once and never mentioning the outlet was the old behaviour — the
+    # 2026-09-23 Drest'agath win held four Energizing Chambers with a Mindbending
+    # Recruiter on board for five straight phases and the plan never connected
+    # them.
+    #
+    # ORDER IS THE FIX for the 2026-09-23 conflict report, which read:
+    #   1 Play Brann Bronzebeard (board is full)
+    #   2 Swap: play Brann Bronzebeard, sell Mindbending Recruiter (7.6 vs 3.0)
+    #   3 Activate Mindbending Recruiter — discard Brann Bronzebeard
+    # — the plan sold the outlet the third step needed and spent the card the
+    # first step was playing. The discard decision now claims its card first (so
+    # the swap can no longer offer to play it) and reserves the outlet, which the
+    # swap's guards treat as unsellable.
+    discard_outlet = None
+    _act = _affordable_activation(analysis, budget if budget is not None else gold)
+    if _act and _act[4]:
+        discard_outlet = _act[0]
+        _fodder = _act[4]
+        analysis["activation_step"] = _act[0]
+        analysis["discard_target"] = _fodder
+        # Demoting the hand entry (rather than adding a second step) keeps ONE
+        # line naming both halves: "Discard Energizing Chamber (via Mindbending
+        # Recruiter — discarding it is better — cast it twice)".
+        for s in analysis.get("hand_plan") or []:
+            if s.get("card") == _fodder["card"] and s.get("verb") != "hold":
+                s["verb"] = "discard"
+                s["why"] = f"via {_act[1]} — {_fodder['why']}"
+                break
     # 4. THE SLOT (design: analysis/board_swap.md). Board full + something wants
     # in (a hand play or a minion buy): name the card that goes, state the
     # comparison, and veto a swap that loses. This replaces the old
@@ -2825,7 +2870,7 @@ def _top_move_text(analysis):
     # ever fired for a BUY, never for a hand play, and (c) never compared the two
     # cards, so it happily blessed the 2026-09-23 case of playing a 16.0 body
     # over a 20.2 one. A spell buy needs no slot, which the old path also missed.
-    swaps = slot_swaps(analysis)
+    swaps = slot_swaps(analysis, reserved_outlet=discard_outlet)
     if swaps:
         best = swaps[0]
         if best["verdict"] != "veto":
@@ -2936,30 +2981,6 @@ def _top_move_text(analysis):
     # t16's Cast Repair Job x3 with a funded purse remains correct advice;
     # so is casting at gold 0 when the spell is in hand.
     if hand_entries:
-        # THE DISCARD LOOP (decided here, where `budget` is known and the hand is
-        # about to render). A board outlet that discards ("Activate (0): Discard a
-        # card to get a random Aberration") plus a card whose own text says
-        # discarding it is BETTER (Energizing Chamber casts twice, Sludge
-        # Corrosion casts twice, Corrupted Coin raises max Gold) is a strict gain:
-        # the outlet's payoff AND the upgraded spell. The plan used to cast such a
-        # card once and never mention the outlet — the 2026-09-23 Drest'agath win
-        # held four Energizing Chambers with a Mindbending Recruiter on board for
-        # five straight phases and the plan never connected them.
-        #
-        # Demoting the hand entry (rather than adding a second step) keeps ONE
-        # line naming both halves: "Discard Energizing Chamber (via Mindbending
-        # Recruiter — discarding it is better — cast it twice)".
-        _act = _affordable_activation(
-            analysis, budget if budget is not None else gold)
-        if _act and _act[4] and _act[4]["improved"]:
-            _fodder = _act[4]
-            for s in hand_entries:
-                if s.get("card") == _fodder["card"] and s.get("verb") != "hold":
-                    s["verb"] = "discard"
-                    s["why"] = f"via {_act[1]} — {_fodder['why']}"
-                    analysis["activation_step"] = _act[0]
-                    analysis["discard_target"] = _fodder
-                    break
         counts, order = {}, []
         for s in hand_entries:
             key = (s["verb"], s["card"])

@@ -172,14 +172,19 @@ class TestTheDiscardLoop(unittest.TestCase):
                          "the other copy is still cast")
         self.assertEqual(a["discard_target"]["card"], CHAMBER)
 
-    def test_without_an_improved_card_the_loop_stays_a_fallback(self):
+    def test_a_cheap_card_is_claimed_by_the_outlet_rather_than_cast(self):
+        """One card, one use — and the outlet's payoff (a random Aberration)
+        beats the single gold a Tavern Coin casts for. The discard decision now
+        runs FIRST (step 3b of the planner), so the card it spends is no longer
+        also cast in the same plan; it becomes a `discard` hand verb naming the
+        outlet."""
         a = analysis(hand({"card": COIN, "name": "Tavern Coin", "verb": "cast",
                            "score": 2}))
         line = value.top_move(a)
-        self.assertEqual([s["verb"] for s in a["hand_plan"]], ["cast"],
-                         "no demotion: a plain card is only spent when nothing "
-                         "else needs the gold")
-        self.assertNotIn("discard Tavern Coin", line)
+        self.assertEqual([s["verb"] for s in a["hand_plan"]], ["discard"])
+        self.assertIn("Discard Tavern Coin (via Mindbending Recruiter", line)
+        self.assertNotIn("Cast Tavern Coin", line)
+        self.assertEqual(a["discard_target"]["card"], COIN)
 
     def test_no_outlet_means_no_loop(self):
         a = analysis(hand({"card": CHAMBER, "name": "Energizing Chamber",
@@ -194,6 +199,93 @@ class TestTheDiscardLoop(unittest.TestCase):
         value.top_move(a)
         kinds = {s["kind"] for s in a["top_move_steps"]}
         self.assertIn("discard", kinds)
+
+
+class TestThePlanDoesNotContradictItself(unittest.TestCase):
+    """The 2026-09-23 conflict report, verbatim from the overlay:
+
+        Do this now
+        Aberrations build — hunting pieces (provisional) · strong (101 vs ~64) …
+        FRAGILE — 15 effective HP …
+        1 Play Brann Bronzebeard        (board is full)
+        2 Swap: play Brann Bronzebeard, sell Mindbending Recruiter  (7.6 vs 3.0)
+        3 Activate Mindbending Recruiter — discard Brann Bronzebeard
+
+    Step 2 sold the outlet step 3 needed, and step 3 spent the card step 1 was
+    playing. Three rules now keep one plan to one use per card.
+    """
+
+    BRANN = "BG25_354"      # a real body: 7.6 in the report
+    BOARD = ["BG36_112", "BG36_318", "BG36_103", "BG36_115", "BG36_109",
+             OUTLET, "BG36_320"]
+
+    def _analysis(self, hand, sells=None, **over):
+        a = analysis(hand, activations=(OUTLET,), **over)
+        a["board"] = [{"card": c, "atk": 5, "health": 5, "tribe": "Aberration"}
+                      for c in self.BOARD]
+        a["sell_rank"] = sells if sells is not None else [(OUTLET, 3.0),
+                                                          ("BG36_112", 5.6),
+                                                          ("BG36_115", 9.0)]
+        return a
+
+    def test_a_real_body_is_not_discarded_just_after_being_played(self):
+        a = self._analysis([{"card": self.BRANN, "name": "Brann Bronzebeard",
+                             "verb": "play", "score": 7.6}])
+        line = value.top_move(a)
+        self.assertNotIn("Activate", line)
+        self.assertNotIn("discard Brann", line)
+        self.assertIsNone(a.get("discard_target"))
+        self.assertIn("Swap: play Brann Bronzebeard", line,
+                      "the play-and-sell advice stands on its own")
+
+    def test_but_a_cheap_card_is_still_fodder(self):
+        a = self._analysis([
+            {"card": self.BRANN, "name": "Brann Bronzebeard", "verb": "play",
+             "score": 7.6},
+            {"card": COIN, "name": "Tavern Coin", "verb": "cast", "score": 2}])
+        a["hand_plan"] = a["hand_plan"]      # same list, the plan mutates it
+        line = value.top_move(a)
+        self.assertIn("Discard Tavern Coin", line)
+        self.assertIn("Play Brann Bronzebeard", line)
+        self.assertIn("Swap: play Brann Bronzebeard", line)
+
+    def test_the_outlet_is_not_sold_while_the_plan_uses_it(self):
+        a = self._analysis([
+            {"card": self.BRANN, "name": "Brann Bronzebeard", "verb": "play",
+             "score": 7.6},
+            {"card": COIN, "name": "Tavern Coin", "verb": "cast", "score": 2}])
+        value.top_move(a)
+        rows = value.slot_swaps(a, reserved_outlet=OUTLET)
+        self.assertTrue(rows)
+        self.assertNotEqual(rows[0]["outgoing"], OUTLET,
+                            "the cheapest body to sell is the outlet the plan "
+                            "is activating")
+        self.assertEqual(rows[0]["outgoing"], "BG36_112")
+
+    def test_the_fodder_is_not_the_swaps_incoming_card(self):
+        """One card, one use: whichever decision runs first claims the card.
+        The discard runs first (3b) precisely so the swap cannot offer to play
+        the card the plan is spending."""
+        a = self._analysis([
+            {"card": COIN, "name": "Tavern Coin", "verb": "play", "score": 2}])
+        line = value.top_move(a)
+        self.assertIn("Discard Tavern Coin", line)
+        self.assertNotIn("Swap: play Tavern Coin", line)
+        self.assertNotIn("1. Play Tavern Coin", line)
+
+    def test_a_seven_point_card_is_not_filler(self):
+        self.assertLess(value.DISCARD_FODDER_MAX, 7.6,
+                        "the report's Brann card scored 7.6 and must not read "
+                        "as 'least useful card in hand'")
+
+    def test_the_improved_loop_still_leads_and_still_discards(self):
+        a = self._analysis([
+            {"card": CHAMBER, "name": "Energizing Chamber", "verb": "cast",
+             "score": 14},
+            {"card": COIN, "name": "Tavern Coin", "verb": "cast", "score": 2}])
+        line = value.top_move(a)
+        self.assertTrue(line.startswith("1. Discard Energizing Chamber"), line)
+        self.assertEqual(a["discard_target"]["card"], CHAMBER)
 
 
 if __name__ == "__main__":
