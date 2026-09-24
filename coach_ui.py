@@ -643,12 +643,14 @@ function render(a) {
         : 'Level costs ' + cost + 'g — '
           + Math.max(0, cost - (a.gold ?? 0)) + ' short'));
   }
-  // Dark gifts (what Dark Discovery granted) and the opponents' trinkets —
-  // both read from the log (2026-09-08 ground truth).
-  (a.dark_gifts || []).forEach(g => {
-    instr.appendChild(el('div', 'footline',
-      'Dark gift: ' + g.name + ' — ' + (g.description || '')));
-  });
+  // Opponents' trinkets — read from the log (2026-09-08 ground truth): free
+  // scout intel the player cannot see in game.
+  // The Dark gifts line that used to sit here was REMOVED (2026-09-23, player
+  // call: "remove that list of Dark gifts on the coaching page. That is
+  // accomplishing nothing."). It listed gifts the player already owns, which the
+  // game itself shows on the board — real estate in the Decide column spent
+  // restating known state. The analysis still carries `dark_gifts` for telemetry
+  // and the corpus; only the overlay stopped rendering it.
   if (a.opp_trinkets && a.opp_trinkets.length) {
     instr.appendChild(el('div', 'footline',
       'Their trinkets: ' + a.opp_trinkets.join(', ')));
@@ -1187,9 +1189,13 @@ def render_json(analysis):
     # The next-fight verdict (stat ratio + our keyword edges) rides the
     # scout strip so "will the next fight kill me" is on screen.
     a["forecast"] = analysis.get("forecast")
-    # Dark gifts (what Dark Discovery granted) and the opponents' trinkets
-    # (visible in the log, 2026-09-08 ground truth) — free intel lines.
-    a["dark_gifts"] = analysis.get("dark_gifts") or []
+    # Opponents' trinkets (visible in the log, 2026-09-08 ground truth) — free
+    # intel the player cannot see in game. `dark_gifts` is DROPPED from the
+    # payload since 2026-09-23 (the overlay no longer renders it: it listed gifts
+    # the player already owns and the game already shows). render_json copies the
+    # whole analysis, so the drop has to be explicit — leaving the key would keep
+    # shipping state the page has no use for.
+    a.pop("dark_gifts", None)
     a["opp_trinkets"] = analysis.get("opp_trinkets") or []
     # When leveling leads the top move, the buy is what you do with the
     # leftover — label it that way so the priorities read in order.
