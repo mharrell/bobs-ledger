@@ -2005,5 +2005,26 @@
    ]
   },
   "note": "Get a Bassgill; after you summon a Murloc in combat, give it Divine Shield (Bassgill Portrait, Greater). A Murloc-gated combat amp: Divine Shield on each summoned body is real protection, but only in a Murloc build, so 10 against the tribe-agnostic portraits' 8."
+ },
+ "BG32_MagicItem_367": {
+  "base_value": 16,
+  "synergy": {
+   "keywords": [
+    "end_of_turn"
+   ]
+  },
+  "note": "Your end-of-turn effects trigger an extra time (Ghastly Sticker, Greater; guide: 'good when committed to an end of turn comp like Back to Back'). A whole extra trigger on EVERY end-of-turn effect the board runs - the strongest shape of the multiplier class - so it is priced at the top of it (16), above the single-engine amplifiers (Flaming Portrait 14) because it multiplies the board, not one card."
+ },
+ "BG36_MagicItem_215": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "battlecry"
+   ],
+   "tribes": [
+    "Dragon"
+   ]
+  },
+  "note": "Your Dragons' Battlecries trigger an extra time (Dragon's Eye, Greater). A tribe-gated doubler: strong in a Dragon build with real battlecries, dead in any other, so 12 with the tribe recorded - the same discipline as the other tribe-gated amps (Flaming Portrait 14 for Elementals, Dramaloc Sticker 8 for Murlocs)."
  }
 }
