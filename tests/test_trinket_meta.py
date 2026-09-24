@@ -102,16 +102,23 @@ class TestOfferedCoverage(unittest.TestCase):
             self.skipTest("no trinket ids in recent logs")
         ids = {t["id"] for t in meta.trinkets()}
         # `...e` is the trinket's own enchantment, not a trinket: BG36_MagicItem_403e
-        # is the aura Hammer of Twilight applies. Its base must be known, which
-        # is what makes the exemption safe rather than a blanket suffix skip.
-        # Anything else is a gap UNLESS it is recorded in meta/patch_gaps.json
-        # as deliberately not carried (BG30_MagicItem_442t is the Blood Golem
-        # TOKEN its sticker summons) — the registry keeps the evidence, so a
-        # new token-shaped id still fails here.
+        # is the aura Hammer of Twilight applies. `...e2` is the same thing as a
+        # second/premium enchantment: BG35_MagicItem_740e2 is the golden
+        # Deathrattle Sky Golem Portrait gives your minions. The base must be
+        # known, which is what makes the exemption safe rather than a blanket
+        # suffix skip. Anything else is a gap UNLESS it is recorded in
+        # meta/patch_gaps.json as deliberately not carried (BG30_MagicItem_442t
+        # is the Blood Golem TOKEN its sticker summons) — the registry keeps the
+        # evidence, so a new token-shaped id still fails here.
         from logquery import _answered_gaps
         recorded = _answered_gaps()
+
+        def own_enchantment(cid):
+            m = re.search(r"e\d*$", cid)
+            return bool(m) and cid[:m.start()] in ids
+
         missing = sorted(c for c in seen - ids - recorded
-                         if not (c.endswith("e") and c[:-1] in ids))
+                         if not own_enchantment(c))
         self.assertFalse(
             missing, f"trinkets seen in logs but absent from DB: {missing}")
 

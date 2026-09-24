@@ -4719,5 +4719,18 @@
     "text": "Poisonous",
     "tribe_src": "hearthstonejson",
     "auto_added": "from session logs (extend_pool.py)"
+  },
+  {
+    "tier": 4,
+    "id": "BG36_700",
+    "name": "Sewer Escapee",
+    "cost": 3,
+    "tribe": "Murloc",
+    "attack": 4,
+    "health": 5,
+    "mechanics": [],
+    "text": "[x]Activate (1): Give another\nMurloc +7/+7 and a\n  random Bonus Keyword.",
+    "tribe_src": "hearthstonejson",
+    "auto_added": "from session logs (extend_pool.py)"
   }
 ]

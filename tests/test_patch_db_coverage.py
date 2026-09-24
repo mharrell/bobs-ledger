@@ -32,7 +32,7 @@ EXPECTED_COUNTS = {
     "new_heroes": 2,
 }
 
-ACCEPTED_GAP_NAMES = {"Sha of Fear", "Sewer Escapee"}
+ACCEPTED_GAP_NAMES = {"Sha of Fear"}
 
 
 class TestPatchDbCoverage(unittest.TestCase):

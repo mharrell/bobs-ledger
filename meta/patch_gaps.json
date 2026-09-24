@@ -10,14 +10,6 @@
       "stats": "9/12",
       "reason": "no card id exists anywhere on this machine",
       "evidence": "0 hearthstonejson entries by that exact name; the name appears in NO entityName of any of the 5 Power.log sessions on disk (scanned 2026-09-23 by pairing entityName= with cardId= on every TAG_CHANGE line - the method that DID find C'Thun's id, see below); absent from the 36.6.1 log-mined pool. It is the article's positional split point between the Aberration block and the other-tribes block, which is part of why its tribe is left null rather than inferred from position."
-    },
-    {
-      "kind": "minion",
-      "name": "Sewer Escapee",
-      "tier": 4,
-      "stats": "4/5",
-      "reason": "no card id exists anywhere on this machine",
-      "evidence": "0 hearthstonejson entries by that exact name; the name appears in NO entityName of any of the 5 local Power.log sessions (entityName/cardId scan, 2026-09-23); absent from the 36.6.1 log-mined pool."
     }
   ],
   "seen_not_carried": [
@@ -65,6 +57,13 @@
       "id": "BG36_369",
       "was": "listed under expected_missing: 'no card id exists anywhere on this machine'",
       "resolution": "the id arrived the moment a live game offered the card - BG36_369, read off an EntityChoices option in the 13:42 session on 2026-09-23 (entityName=Greedy Conniver id=5920 cardId=BG36_369), which the doctor pre-flight flagged as an unnamed id in the newest game. Added to meta/minions.json (tier 3, 7/7, Aberration, text from the patch article). This is the gap closing the way the entry predicted it would: not by a data source appearing, but by the card showing up in play."
+    },
+    {
+      "kind": "minion",
+      "name": "Sewer Escapee",
+      "id": "BG36_700",
+      "was": "listed under expected_missing: 'no card id exists anywhere on this machine'",
+      "resolution": "the 2026-09-23 scan ran against a stale .cards_full.json (35,807 entries, pre-36.6 carddefs missing). A 2026-09-24 re-download (36,022 entries) carries BG36_700 (Murloc, 4/5, tier 4, 'Activate (1): Give another Murloc +7/+7 and a random Bonus Keyword.'), and the 2026-09-24 session log confirms it in play: the Dark Discovery button (BG36_Button_DarkGift) summons it (entityName=Sewer Escapee cardId=BG36_700; its enchantment is BG36_700e 'Sewage Mutation'). Added to meta/minions.json via extend_pool.py --apply on 2026-09-24. Lesson: the patch-day gap scan is only as fresh as the carddefs cache it consults - refresh it on patch day."
     }
   ]
 }
