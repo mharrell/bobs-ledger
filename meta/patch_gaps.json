@@ -34,6 +34,13 @@
       "name": "Blood Golem",
       "reason": "a trinket-SHAPED id that is not a trinket: it is the Golem token BG30_MagicItem_442 (Blood Golem Sticker) summons",
       "evidence": "the client card data gives it an empty description while every real trinket (and every Lesser/Greater `t` variant: BG36_MagicItem_403t, BG36_MagicItem_417t, BG30_MagicItem_914t, BG30_MagicItem_988t) carries text; its name differs from its base's ('Blood Golem' vs 'Blood Golem Sticker') where the Lesser/Greater pairs share a name; and no choice list ever offers it. Carrying it would put a token in the trinket pool, where choices.py ranks picks by trinket effects. tests/test_trinket_meta.py::test_every_trinket_seen_in_a_log_is_in_the_db consults this entry, so a NEW token-shaped id still fails the gate."
+    },
+    {
+      "kind": "minion_token",
+      "id": "BGFYM_002t",
+      "name": "Aberrant Tentacle",
+      "reason": "a summoned TOKEN with no card data anywhere on this machine, so the DB cannot carry it and it is not a pool minion",
+      "evidence": "the 2026-09-23 late sessions render it (and its golden BGFYM_002t_G) as raw ids in the coach's own advice. The name comes from the log's own entityName pairing, and the patch article describes the source (Zoatroid: 'When you sell this, get a 0/2 Tentacle with Taunt'). It appears in NO hearthstonejson cache entry - neither the base BGFYM_002 nor BGFYM_002t exists there - so there is no text, tier or stats to add. Recorded rather than added to minions.json for the same reason as BG30_MagicItem_442t (Blood Golem): the DB is the POOL, and a summoned token in it could be mistaken for a purchasable card."
     }
   ],
   "out_of_scope": [

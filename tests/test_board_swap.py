@@ -208,5 +208,60 @@ class TestTheRenderedStep(unittest.TestCase):
                         "the slot decision must not trail the level advice")
 
 
+class TestTheBoardsTribeBeatsAnIncidentalMatch(unittest.TestCase):
+    """The 2026-09-23 Galakrond game: a 4-of-6 Aberration board whose target
+    flip-flopped between "Demons - Shop Buff", "Mechs - Deathrattle" and
+    "Beasts - Tasty Lobstah" while `comp_gap` said Aberration the whole time, so
+    the plan hunted Tasty Lobster at the player's own build. Cause: provisional
+    comps were skipped in the commit path, so a PUBLISHED comp matching two
+    incidental cores won by default."""
+
+    AB = ["BG36_318", "BG36_103", "BG36_115", "BG36_109"]
+    BEAST = "BG36_201"
+
+    def _comps(self):
+        return dict(meta.comps(), **{
+            "beasts-lobstah": {"name": "Beasts - Tasty Lobstah", "tribe": "Beast",
+                               "meta_tier": "A", "core": [self.BEAST],
+                               "addons": []}})
+
+    def _board(self):
+        out = [{"card": c, "atk": 5, "health": 5, "tribe": "Aberration"}
+               for c in self.AB]
+        out += [{"card": self.BEAST, "atk": 5, "health": 5, "tribe": "Beast"}] * 2
+        return out
+
+    def test_the_board_tribe_wins_over_an_incidental_pair(self):
+        got = value.comp_target(self._board(), self._comps())
+        self.assertEqual(got["name"], "Aberrations - Deity Feed")
+        self.assertTrue(got["provisional"])
+
+    def test_an_active_pivot_still_wins(self):
+        """Two cores of the published comp BOUGHT this turn is a pivot in
+        progress — buys lead a lagging board (the 2026-09-04 Varden rule)."""
+        got = value.comp_target(self._board(), self._comps(),
+                                recent_cards=[self.BEAST, self.BEAST])
+        self.assertEqual(got["name"], "Beasts - Tasty Lobstah")
+
+    def test_a_published_comp_dominant_board_is_untouched(self):
+        board = [{"card": self.BEAST, "atk": 5, "health": 5, "tribe": "Beast"}] * 3
+        board += [{"card": self.AB[0], "atk": 5, "health": 5,
+                   "tribe": "Aberration"}]
+        self.assertEqual(value.comp_target(board, self._comps())["name"],
+                         "Beasts - Tasty Lobstah")
+
+    def test_without_a_provisional_package_the_old_rule_stands(self):
+        """No mined comp for the gap tribe: "no direction" still beats a
+        manufactured one, and a real >=2-hit published commit still wins."""
+        comps = {"beasts-lobstah": {"name": "Beasts - Tasty Lobstah",
+                                    "tribe": "Beast", "core": [self.BEAST],
+                                    "addons": []}}
+        board = self._board()
+        self.assertEqual(value.comp_target(board, comps)["name"],
+                         "Beasts - Tasty Lobstah",
+                         "the >=2-hit commit rule is unchanged when nothing "
+                         "mined covers the board's tribe")
+
+
 if __name__ == "__main__":
     unittest.main()
