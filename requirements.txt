@@ -1,2 +1,3 @@
 requests>=2.28
 yt-dlp>=2024.1.0  # fetch_transcripts.py (YouTube comp guides); optional
+UnityPy>=1.20     # hearth_art_extract.py (patch-day card art from the local client); optional

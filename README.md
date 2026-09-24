@@ -134,11 +134,14 @@ game patch:
 
 1. New minions/spells change: run the patch-notes pipeline —
    `python patch_notes.py` applies official Blizzard patch notes to the
-   meta DB (dry-run by default; `--apply` writes).
+   meta DB (dry-run by default; `--apply` writes). `python doctor.py`
+   is the one-command verdict afterwards (patch, coverage, art, newest
+   log); it flags anything the refresh missed.
 2. Card art for new cards: re-run `python hearth_art_extract.py` to
-   re-extract art from the local client (100% coverage), or let the
-   overlay fall back to HearthstoneJSON — which lags a patch by days;
-   missing art after a patch is known and harmless.
+   re-extract art from the local client (needs the optional
+   `python -m pip install UnityPy`), or let the overlay fall back to
+   HearthstoneJSON — which lags a patch by days; missing art after a
+   patch is known and harmless (the overlay shows a text tile).
 
 Everything else keeps working on an old meta — advice just may not know
 the newest cards.
