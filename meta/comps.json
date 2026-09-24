@@ -93,7 +93,7 @@
     "enable": [
       "BG26_148"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "elementals-stat-scaling": {
     "name": "Elementals - Stat scaling",
@@ -145,7 +145,7 @@
     "enable": [
       "BG25_806"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "murlocs-venom-scam": {
     "name": "Murlocs - Venom Scam",
@@ -170,9 +170,10 @@
     "tribe": "Murloc",
     "guide": "guides/murlocs-venom-scam.md",
     "enable": [
-      "BGS_020"
+      "BGS_020",
+      "BG_LOE_077"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "murlocs-apm": {
     "name": "Murlocs - APM",
@@ -197,9 +198,10 @@
     "tribe": "Murloc",
     "guide": "guides/murlocs-apm.md",
     "enable": [
-      "BGS_020"
+      "BGS_020",
+      "BG_LOE_077"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "pirates-apm-golden": {
     "name": "Pirates - APM Golden",
@@ -225,7 +227,7 @@
     "enable": [
       "BG25_354"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "demons-shop-buff": {
     "name": "Demons - Shop Buff",
@@ -299,7 +301,7 @@
     "enable": [
       "BG26_148"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "quilboar-bristlemane": {
     "name": "Quilboar - Bristlemane",
@@ -347,7 +349,7 @@
     "enable": [
       "BG25_806"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "quilboar-choose-one": {
     "name": "Quilboar - Choose One",
@@ -398,7 +400,7 @@
     "enable": [
       "BG26_148"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "demons-apm-shop-buff": {
     "name": "Demons - APM Shop Buff",
@@ -446,9 +448,10 @@
     "representative_card": "BG35_142",
     "tribe": "Murloc",
     "enable": [
-      "BGS_020"
+      "BGS_020",
+      "BG_LOE_077"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "pirates-apm-undead": {
     "name": "Pirates - APM Undead",
@@ -474,7 +477,7 @@
     "enable": [
       "BG25_354"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "dragons-battlecries": {
     "name": "Dragons - Battlecries",
@@ -497,7 +500,11 @@
     "when_to_commit": "Kalecgos, Arcane Aspect + Brann Bronzebeard",
     "common_enablers": "Brann Bronzebeard\nBronze Timewalker",
     "representative_card": "BGS_041",
-    "tribe": "Dragon"
+    "tribe": "Dragon",
+    "enable": [
+      "BG_LOE_077"
+    ],
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "beasts-beetles": {
     "name": "Beasts - Beetles",
@@ -524,7 +531,7 @@
     "enable": [
       "BG25_806"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "demons-self-damage": {
     "name": "Demons - Self Damage",
@@ -552,7 +559,7 @@
       "BGS_004",
       "BG26_174"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "dragons-apm-evoker": {
     "name": "Dragons - APM Evoker",
@@ -576,7 +583,11 @@
     "when_to_commit": "Fire-forged Evoker + Sky Admiral Rogers + Proud Privateer",
     "common_enablers": "Sky Admiral Rogers",
     "representative_card": "BG32_822",
-    "tribe": "Dragon"
+    "tribe": "Dragon",
+    "enable": [
+      "BG_LOE_077"
+    ],
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "beasts-summons": {
     "name": "Beasts - Summons",
@@ -602,7 +613,7 @@
     "enable": [
       "BG25_806"
     ],
-    "enable_src": "jeef-direction-video (2025; partial — unresolved names pending)"
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "undead-apm-undead": {
     "name": "Undead - APM Undead",
@@ -623,7 +634,8 @@
     "summary": "Scale undead attack with infinite gold",
     "when_to_commit": "Bounty Generation (Sky Admiral Rogers) + Proud Privateer + Forsaken Weaver",
     "common_enablers": "Sky Admiral Rogers",
-    "representative_card": "BG34_692"
+    "representative_card": "BG34_692",
+    "tribe": "Undead"
   },
   "murlocs-tidecaller": {
     "name": "Murlocs - Tidecaller",
@@ -644,7 +656,13 @@
     "summary": "Play spells to scale Murlocs.",
     "when_to_commit": "Brann Bronzebeard + lots of economy + Shamanic Tidecaller",
     "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
-    "representative_card": "BG36_704"
+    "representative_card": "BG36_704",
+    "tribe": "Murloc",
+    "enable": [
+      "BGS_020",
+      "BG_LOE_077"
+    ],
+    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)"
   },
   "aberrations-deity-feed": {
     "name": "Aberrations - Deity Feed",
@@ -735,5 +753,5 @@
     }
   }
 ,
-  "_enable_note": "enable = pieces that OPEN the direction (lean); core = the commit point (Jeef, 'Direction' video: enablers are not commit points). Partial curation 2026-09-20 — the video's full table references older-season names that don't resolve against the current pool (dragons: Smuggler/Bran; elementals: Genie/Wraith; nagas: Orgozoa -> Lord of Gains/A.F. Kay; undead: Sore Loser -> Champion of the Primus/Sister Death Speaker; quilboar: Boogie/Spearhide -> Piper). Verify against the current card list before adding."
+  "_enable_note": "enable = pieces that OPEN the direction (lean); core = the commit point (Jeef, 'Direction' video: enablers are not commit points). Table verified against the card DB 2026-09-24. Resolved to ids: Brann Bronzebeard BG_LOE_077 (dragons, murlocs), Primalfin Lookout BGS_020 (murlocs), Titus Rivendare BG25_354 (pirates), Sly Raptor BG25_806 (Slamma beasts), Scrap Scraper BG26_148 (mechs), Wrath Weaver BGS_004 + Soul Rewinder BG26_174 (self-damage demons). The video's remaining names predate the current card set and have no id anywhere in minions.json: Smuggler (dragons), Genie/Wraith/Rock Rock (elementals), Boogie/Spearhide/Piper (quilboar), Orgozoa/Lord of Gains/A.F. Kay (nagas; Kay is a hero in heroes.json, so that clause is likely a transcript garble), Sore Loser/Champion of the Primus/Sister Death Speaker (undead). Those tribes get no enable row until their current-season openers are named. Pool membership is deliberately NOT claimed here: pool_roster is log-mined from 3 games (2026-09-22), too thin to prune by."
 }
