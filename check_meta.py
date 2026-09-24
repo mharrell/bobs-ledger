@@ -114,7 +114,11 @@ def main():
         if slug.startswith("_"):
             continue  # file-level notes (_enable_note), not comps
         if not comp.get("tribe"):
-            warnings.append(f"comps.json: {slug} has no tribe field")
+            # 2026-09-24: the 36.6.1 re-scrape landed undead-apm-undead and
+            # murlocs-tidecaller tribe-less, and as a warning it never gated.
+            # A tribe-less comp is unfilterable by the family ban — dead
+            # weight that renders as if it were fine. Structural: error.
+            errors.append(f"comps.json: {slug} has no tribe field")
         if not comp.get("core"):
             warnings.append(f"comps.json: {slug} has no core cards")
         comp_ids.update(c for c in comp.get("core", []))
