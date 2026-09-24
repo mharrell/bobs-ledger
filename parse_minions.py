@@ -283,10 +283,21 @@ def main():
             print("dry run — pass --apply to write")
         return
 
+    # The paste-rebuild path. 2026-09-24: this ran UNCONDITIONALLY, so a bare
+    # `parse_minions --refresh-cache` fell through to here and overwrote the
+    # living curated DB with a rebuild from the stale paste — 36 post-paste
+    # entries (Bubble Gunner, Brain Rotter, ...) deleted in place, caught only
+    # because the diff was read before commit. Rebuilding is --apply-gated
+    # like every other writer; extensions go through extend_pool.py, not here.
     with open(RAW, encoding="utf-8") as f:
         raw = f.read()
     card_map = load_card_map()
     minions = parse(raw, card_map)
+    if not args.apply:
+        print(f"dry run: would rebuild {OUT} from the raw paste "
+              f"({len(minions)} minions — post-paste curated entries not in "
+              "the paste would be LOST). Pass --apply to overwrite.")
+        return
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(minions, f, indent=2, ensure_ascii=False)
         f.write("\n")
