@@ -210,16 +210,77 @@ reviews the report and applies with `patch_notes.py <url> --apply`.
 **Per-decision fetch:** the coach loads the relevant subset per decision (e.g.,
 comps filtered by the family ban; the hero-rank list on hero-select).
 
+### Provisional comps — mined from our own corpus (added 2026-09-23) — LOCKED
+
+The comp list comes from a scraped source, and that source does not cover every
+tribe in play: it has **26 comps across the ten original tribes and none for
+Aberration**, which 36.6.1 added. Measured consequence (2026-09-23, 12 games in
+the local corpus): **4 games ended on an Aberration-dominant board**, and in a
+typical game **36–60% of the coach's lines were the "no target comp"
+placeholder**. Those games are also structurally unmeasurable — a player cannot
+follow advice that does not exist — so the gap corrupts the adherence metric as
+well as the coaching.
+
+**`comp_miner.py --promote`** fills it and the entry carries its own caveat:
+
+- **Marked.** `provisional: true`, `source`, and an `evidence` block (games,
+  top-4 count, floor, build date, per-card share and average placement). A
+  provisional comp is labelled everywhere it can reach the player, in the plan
+  ("provisional — 4 of our games"), the overlay's comp box, the comp-direction
+  rows and the Playable-comps panel (grouped under "Provisional", sorted last).
+- **Second class by construction.** It never enters the ≥2-hit commit, the
+  recent-acquisition pivot, or the tribe-level signal (`value._is_provisional`),
+  so a published comp always outranks it. It is reachable through exactly ONE
+  path: `comp_target`'s gap branch, for a board whose dominant tribe has no
+  published comp at all.
+- **No invented tier.** `meta_tier`/`difficulty` stay null: nobody published
+  this comp, so there is no tier to quote, and a fabricated "A" would let it sort
+  among real comps and win pick ranking it never earned.
+- **The gap stays visible.** `comp_gap` still reports the tribe (it is about the
+  *published* source), so the honest "no comp published for X yet" message and
+  the cohort split in measurement both keep working.
+- **The scraper cannot delete it.** `scrape_comps.py --prune` drops only what the
+  source used to list; a provisional entry is kept and reported, and
+  `--promote`/`shadowed_provisional` reports the intended end state — a
+  provisional comp whose tribe the source has since published — for a human to
+  retire.
+
+First entry: **`aberrations-deity-feed`** ("Aberrations - Deity Feed", n=4,
+top4=2), core Faceless Converter + N'raqi Sapper.
+
+### The current pool and out-of-play (added 2026-09-22) — LOCKED
+
+The snapshot above has no concept of a card *leaving*, which is why a removed
+card stayed recommendable forever. Patch 36.6.1 (a new minion type, Aberrations;
+Naga rotated out) forced the issue, and two data layers now answer it:
+
+- **`meta/pool_roster.json`** — the **current pool**, mined from the machine's
+  own Power.logs by `pool_roster.py`. The game dumps its pool at game start
+  (every in-pool minion as a `FULL_ENTITY` with `TECH_LEVEL`, `ATK`/`HEALTH`,
+  `CARDRACE`, `IS_BACON_POOL_MINION`), so this is authoritative, offline and
+  patch-proof where the paste is a hand-refreshed snapshot. Sessions group into
+  content **epochs**; the boundary is read from content, not `BuildNumber`
+  (which did not change across 36.6.1).
+- **`meta/out_of_play.json`** — the **registry** of what is not in play
+  (rotated tribes, removed cards), each with reason/patch/date and a `history`
+  block. Enforced by **`playable.py`**, which is also the review gate:
+  `validate()` cross-checks the official removal lists against the mined pool
+  and reports disagreements rather than hiding them. `HEARTH_OUT_OF_PLAY=0`
+  disables enforcement so a historical replay review is judged under the rules
+  it was played with.
+
+Design, evidence and the remaining gaps: `analysis/pool_and_out_of_play.md`.
+
 ### The assets (`meta/`)
 | File | Contents |
 |------|----------|
 | `comps.json` | 20 comps (tier, difficulty, core/addon cards, how-to-play, when-to-commit) |
 | `cards.json` | 89 curated cards (name, tier, tribe, atk/health) |
-| `trinkets.json` | 121 Lesser Trinkets (pick rate, avg placement, distribution, guide) |
+| `trinkets.json` | 212 trinket rows (Lesser/Greater/variants; pick rate, avg placement, distribution, guide) |
 | `dark_gifts.json` | 43 dark gifts (name, description) |
-| `heroes.json` | 115 heroes (hero power, pick rate) |
-| `minions.json` | 245 minions by tavern tier, with full card details |
-| `tavern_spells.json` | 72 tavern spells by tier, with cost + text |
+| `heroes.json` | 117 heroes (hero power, pick rate) |
+| `minions.json` | 328 minions by tavern tier, with full card details |
+| `tavern_spells.json` | 77 tavern spells by tier, with cost + text |
 | `guides/` | comp guides mined from commentary transcripts |
 
 ### Honest design notes

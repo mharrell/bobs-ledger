@@ -123,6 +123,20 @@ _HTML = r"""<!doctype html>
   #statebar .good { color:var(--good); font-weight:400; font-size:12px; }
   #statebar .bad { color:var(--bad); font-weight:400; font-size:12px; }
   #statebar .banned { color:var(--dim); font-weight:400; font-size:12px; }
+  /* Out-of-play tribes (rotated by a patch: Naga since 36.6.1) are a THIRD
+     state, not a ban — struck through and warn-colored so "Naga — out of
+     play" never reads as "Naga was banned this game". */
+  #statebar .oop { color:var(--warn); font-weight:400; font-size:12px;
+                   text-decoration:line-through; }
+  /* Ban picker (2026-09-19): tap the 5 banned tribes from the reveal
+     screen — the log never carries the ban list, the inference takes
+     minutes, a manual set is exact from turn 1. */
+  .banchips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .banchips .chip { border:1px solid #2c2f36; border-radius:12px;
+                    padding:2px 10px; font-size:12px; cursor:pointer;
+                    color:var(--dim); user-select:none; }
+  .banchips .chip.picked { border-color:var(--bad); color:var(--bad);
+                           text-decoration:line-through; }
   /* One priority column: explicit instructions first, then the horizontal
      card rows (game-like), then reference chips. */
   #app { display:flex; flex-direction:column; gap:8px; min-width:0; }
@@ -142,6 +156,33 @@ _HTML = r"""<!doctype html>
   /* The situation read: the plan's one-line thread. */
   .instructions .situation { font-size:14px; font-weight:600;
                              color:var(--warn); padding:2px 0 3px; }
+  /* DANGER: the fragility band as its own line. The 2026-09-18 loss was a
+     misread of a legal-looking plan at 14 HP, so this must not be buried in
+     the row above it. */
+  .instructions .danger { font-size:15px; font-weight:700; padding:4px 6px;
+                          margin:2px 0 4px; border-radius:3px; }
+  .instructions .danger.fragile { color:#ffd479; background:#3a2d10;
+                                  border:1px solid #6b5217; }
+  .instructions .danger.dying { color:#ffd7d7; background:#4a1414;
+                                border:1px solid #8c2b2b; }
+  #statebar .warn { color:var(--warn); font-weight:700; }
+  /* Plan steps render from structured data: action first, the tag and the ONE
+     reason under it, the remaining clauses behind hover (the "…"). */
+  .instructions .step .stepbody { display:inline-block; }
+  .instructions .step .act { font-weight:700; }
+  .instructions .step .tag { color:var(--dim); font-size:12px; font-weight:600;
+                             margin-left:6px; border:1px solid #2c2f36;
+                             border-radius:3px; padding:0 4px; }
+  .instructions .step .why { color:var(--dim); font-size:13px;
+                             font-weight:400; line-height:1.3; }
+  .instructions .step .more { cursor:help; color:var(--dim); opacity:.6; }
+  .instructions .step.k-level .act { color:#8fb8ff; }
+  .instructions .step.k-buy .act { color:var(--good); }
+  .instructions .step.k-pick .act { color:var(--gold); }
+  .instructions .step.k-sell .act { color:#e0a06a; }
+  .instructions .step.k-roll .act { color:var(--dim); }
+  .instructions .step.k-cast .act, .instructions .step.k-play .act { color:#cbb2ff; }
+  .instructions .step.k-swap .act { color:var(--warn); }
   /* Horizontal game-like card tiles: thumb on top, name below. */
   .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
   .tile { display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -430,6 +471,21 @@ function render(a) {
   app.innerHTML = '';
   statebar.innerHTML = '';
   if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
+  // Ban-picker sync (see the state block near the bottom): a new game
+  // reseeds from the server; a settled manual set overwrites stale local
+  // taps (unless we tapped in the last 3s — the POST may still be in
+  // flight); while the player is mid-tapping during detection, local wins.
+  const gameNo = a.game_no ?? null;
+  if (gameNo !== _banPickGame) {
+    _banPickGame = gameNo;
+    _banPick = new Set(a.bans_manual ? (a.banned || []) : []);
+    _banPickAt = 0;
+  } else if (a.bans_manual && Date.now() - _banPickAt > 3000) {
+    const srv = new Set(a.banned || []);
+    if (srv.size !== _banPick.size || [...srv].some(t => !_banPick.has(t))) {
+      _banPick = srv;
+    }
+  }
   // Pre-warm the /card renders for everything on screen so hovers are
   // instant (one-time per card: the server caches downloads in
   // img_cache/card/, and misses are remembered server-side).
@@ -449,9 +505,11 @@ function render(a) {
   tier.appendChild(el('span', null, String(a.tier ?? '?')));
   statebar.appendChild(tier);
   if (a.health != null) {
-    const dying = a.health + (a.armor || 0) <= 12;
+    const fr = a.fragility || {};
+    const dying = (a.health + (a.armor || 0)) <= 12;
     const hp = el('span', null); hp.appendChild(el('span', 'lbl', 'HP '));
-    hp.appendChild(el('span', dying ? 'bad' : null,
+    hp.appendChild(el('span', dying ? 'bad'
+      : (fr.band === 'fragile' ? 'warn' : null),
       a.health + (a.armor ? '+' + a.armor : '')));
     statebar.appendChild(hp);
   }
@@ -481,6 +539,13 @@ function render(a) {
     statebar.appendChild(el('span', 'lbl', 'Banned:'));
     a.banned.forEach(t => statebar.appendChild(el('span', 'banned', t)));
   }
+  // Out of play (rotated by a patch): NOT banned this game — the pool cannot
+  // offer it in any lobby (Naga since 36.6.1). Its own labeled, struck-through
+  // state, so a rotated tribe never reads as a ban the player could undo.
+  if (a.out_of_pool && a.out_of_pool.length) {
+    statebar.appendChild(el('span', 'lbl', 'Out of play:'));
+    a.out_of_pool.forEach(t => statebar.appendChild(el('span', 'oop', t)));
+  }
 
   // INSTRUCTIONS — the explicit, do-this-now panel. A pending pick gates
   // everything, so it reads first; then the numbered plan steps; then the
@@ -490,6 +555,22 @@ function render(a) {
   // The situation read: the plan's thread (direction, strength, danger) in
   // one line, so the numbered steps read as a story instead of a list.
   if (a.situation) instr.appendChild(el('div', 'situation', a.situation));
+  // DANGER — its own line, not clause three of a long row. The 2026-09-18 loss
+  // is the reason it exists: 14 HP, bled 10 in two of three fights, every level
+  // gate legal by construction, and the plan read as "the build is about to
+  // take off" — 8th place with 10 gold unspent. The number that decides the turn
+  // is not the HP but the NEXT HIT, so that is what this says.
+  if (a.fragility && a.fragility.band !== 'steady') {
+    const fr = a.fragility;
+    const danger = el('div', 'danger ' + fr.band,
+      (fr.band === 'dying' ? 'DYING — ' : 'FRAGILE — ')
+      + fr.eff_health + ' effective HP'
+      + (fr.last_hit ? ', took ' + fr.last_hit + ' last fight' : '')
+      + ' — a ' + fr.eff_health + '-hit ends it'
+      + (fr.recent3 ? ' · bled ' + fr.recent3 + ' over the last 3 fights' : '')
+      + (fr.cap ? ' · damage cap ' + fr.cap : ''));
+    instr.appendChild(danger);
+  }
   // The empty-shop gap (after a buy/roll the offers vanish from the log for
   // a second or two before the game re-prints them) holds the old plan —
   // saying so makes the lag legible instead of looking like a freeze
@@ -519,12 +600,31 @@ function render(a) {
     instr.appendChild(alts);
   }
   if (a.top_move) {
-    a.top_move.split(' · ').forEach(step => {
+    // Render from the STRUCTURED steps (value.split_step, carried on
+    // top_move_steps) instead of re-parsing the string: the action is the line,
+    // the tag and the ONE reason sit under it, and the remaining clauses go
+    // behind hover. Measured before this: median 2 steps per row but a third of
+    // the plans with more than three, and a p90 step length of 123 characters
+    // (worst 174) with four rationale clauses in one string.
+    const structured = a.top_move_steps || [];
+    a.top_move.split(' · ').forEach((step, i) => {
       const m = step.match(/^(\d+)\. (.*)$/);
-      const line = el('div', 'step');
+      const s = structured[i] || {};
+      const line = el('div', 'step' + (s.kind ? ' k-' + s.kind : ''));
       if (m) {
         line.appendChild(el('span', 'stepnum', m[1]));
-        line.appendChild(el('span', null, m[2]));
+        const body = el('span', 'stepbody');
+        body.appendChild(el('span', 'act', s.action || m[2]));
+        if (s.tag) body.appendChild(el('span', 'tag', s.tag));
+        if (s.reason) body.appendChild(el('div', 'why', s.reason));
+        if ((s.details || []).length) {
+          // Hover rather than on-screen: the reasons are real, they are just
+          // not all worth a row while you have 30 seconds to spend gold.
+          const more = el('div', 'why more', '…');
+          more.title = s.details.join(' · ');
+          body.appendChild(more);
+        }
+        line.appendChild(body);
       } else {
         line.textContent = step;
       }
@@ -543,12 +643,14 @@ function render(a) {
         : 'Level costs ' + cost + 'g — '
           + Math.max(0, cost - (a.gold ?? 0)) + ' short'));
   }
-  // Dark gifts (what Dark Discovery granted) and the opponents' trinkets —
-  // both read from the log (2026-09-08 ground truth).
-  (a.dark_gifts || []).forEach(g => {
-    instr.appendChild(el('div', 'footline',
-      'Dark gift: ' + g.name + ' — ' + (g.description || '')));
-  });
+  // Opponents' trinkets — read from the log (2026-09-08 ground truth): free
+  // scout intel the player cannot see in game.
+  // The Dark gifts line that used to sit here was REMOVED (2026-09-23, player
+  // call: "remove that list of Dark gifts on the coaching page. That is
+  // accomplishing nothing."). It listed gifts the player already owns, which the
+  // game itself shows on the board — real estate in the Decide column spent
+  // restating known state. The analysis still carries `dark_gifts` for telemetry
+  // and the corpus; only the overlay stopped rendering it.
   if (a.opp_trinkets && a.opp_trinkets.length) {
     instr.appendChild(el('div', 'footline',
       'Their trinkets: ' + a.opp_trinkets.join(', ')));
@@ -582,10 +684,14 @@ function render(a) {
 
   // HAND — casts from hand are free, stuck minions play free; the ranked
   // order here is the plan's hand steps (they're numbered in the panel too).
+  // A `discard` verb (2026-09-23): the plan is feeding this card to a board
+  // outlet that discards it, because the card's own text says discarding beats
+  // casting it — it must not render as "play".
   if (a.hand && a.hand.length) {
     const tiles = el('div', 'tiles');
     a.hand.forEach(s => {
-      const sub = (s.verb === 'cast' ? 'cast' : s.verb === 'hold' ? 'hold' : 'play')
+      const sub = (s.verb === 'cast' ? 'cast' : s.verb === 'hold' ? 'hold'
+                   : s.verb === 'discard' ? 'discard' : 'play')
         + (s.score != null ? ' · ' + s.score.toFixed(0) : '');
       tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
     });
@@ -639,11 +745,19 @@ function render(a) {
   app.appendChild(box('Sell', sellBody));
 
   // TARGET COMP — what you're hunting: horizontal tiles, missing pieces
-  // fully opaque, owned pieces faded.
+  // fully opaque, owned pieces faded. A PROVISIONAL target (mined from our own
+  // games, no published comp exists for the tribe) is labelled here and in the
+  // comp-direction rows: the plan coaches it, but the player must be able to
+  // tell it apart from a published comp at a glance.
   if (a.target_comp) {
     const pivot = a.target_state === 'pivot';
+    const ev = a.target_comp_evidence || {};
     const body = el('div', 'target',
-      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp);
+      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp
+      + (a.target_comp_provisional
+         ? '  [provisional' + (ev.games ? ' — ' + ev.games + ' of our games' : '')
+           + (ev.top4 != null ? ', top4 ' + ev.top4 : '') + ']'
+         : ''));
     const tc = a.target_cards || {};
     const list = el('div', 'tiles');
     [['core', 'core'], ['addons', 'addons']].forEach(([_label, key]) => {
@@ -675,7 +789,8 @@ function render(a) {
       }
       if (r.hits > 2) pips.appendChild(el('span', 'full', '×' + r.hits));
       row.appendChild(pips);
-      row.appendChild(el('span', 'mname', r.name));
+      row.appendChild(el('span', 'mname',
+        r.name + (r.provisional ? ' [prov]' : '')));
       row.appendChild(el('span', 'mstat',
         r.name === a.target_comp
           ? (a.target_state === 'pivot' ? 'pivoting — committed' : 'committed')
@@ -711,16 +826,26 @@ function render(a) {
   // opponent holdings aren't subtracted yet, so this is a floor, not a
   // lobby total (analysis/pool_availability.md).
   if (a.shop_rank && a.shop_rank.length) {
+    const body = el('div');
+    // A buy the slot arbiter vetoed: the shop tile must not keep glowing gold
+    // for a card the plan just argued against (board_swap.md).
+    const vetoed = a.buy_step_swap_veto || null;
+    if (vetoed) {
+      body.appendChild(el('div', 'none',
+        'not worth a board slot this turn: ' + vetoed
+        + ' — see the swap line in Do this now'));
+    }
     const tiles = el('div', 'tiles');
     a.shop_rank.forEach(s => {
       const sub = (s.price != null ? s.price + 'g · ' : '') + s.score.toFixed(0)
         + (s.tag ? ' · ' + s.tag : '')
         + (s.pool ? ' · ' + s.pool : '');
       tiles.appendChild(tile(s.card, s.name, sub,
-                             {cls: s.card === stepCard ? 'buynow' : null,
+                             {cls: (s.card === stepCard && !vetoed) ? 'buynow' : null,
                               golden: s.golden}));
     });
-    app.appendChild(box('Tavern (ranked)', tiles));
+    body.appendChild(tiles);
+    app.appendChild(box('Tavern (ranked)', body));
   } else {
     app.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
@@ -734,19 +859,46 @@ function render(a) {
   // of not-yet-confirmed tribes; the header says so the full list doesn't
   // read as "all tribes confirmed".
   const compsBody = el('div');
-  if (a.tribes_detecting) {
-    compsBody.appendChild(el('div', 'none', 'bans still resolving — '
-      + (a.tribes_seen || 0) + '/5 tribes confirmed · dimmed comps could '
-      + 'still be banned'));
+  if (a.tribes_detecting || a.bans_manual) {
+    // Ban picker: the reveal screen shows the 5 banned tribes at t0 and
+    // the pool inference only converges minutes later — tapping them here
+    // makes every downstream comp filter exact for the whole game
+    // (2026-09-19; the ban list is provably not in any log).
+    const line = el('div', 'none', a.bans_manual
+      ? 'bans set by you — tap to correct'
+      : 'bans still resolving — ' + (a.tribes_seen || 0)
+        + '/5 tribes confirmed · dimmed comps could still be banned · '
+        + 'tap the 5 banned tribes to set them now:');
+    compsBody.appendChild(line);
+    const chips = el('div', 'banchips');
+    // The reveal screen lists the CURRENT pool's tribes, so an out-of-play
+    // tribe (Naga since 36.6.1) is not on it and is not tappable here either.
+    const oopSet = new Set(a.out_of_pool || []);
+    (a.tribe_roster || []).filter(t => !oopSet.has(t)).forEach(t => {
+      const c = el('span', 'chip' + (_banPick.has(t) ? ' picked' : ''), t);
+      c.onclick = () => {
+        if (_banPick.has(t)) _banPick.delete(t); else _banPick.add(t);
+        _banPickAt = Date.now();
+        c.classList.toggle('picked');
+        postBans([..._banPick]);
+      };
+      chips.appendChild(c);
+    });
+    compsBody.appendChild(chips);
   }
   if (a.comps && a.comps.length) {
     let lastTier = null;
     a.comps.forEach(c => {
-      const tier = c.meta_tier || '?';
+      // A provisional (mined) comp has no published tier by definition: label
+      // the group "Provisional" instead of letting a null read as "Unranked",
+      // which would look like a real comp whose tier is merely unknown.
+      const tier = c.provisional ? 'prov' : (c.meta_tier || '?');
       if (tier !== lastTier) {
         lastTier = tier;
         compsBody.appendChild(el('div', 'cptier',
-          tier === '?' ? 'Unranked' : tier + ' tier'));
+          tier === '?' ? 'Unranked'
+            : tier === 'prov' ? 'Provisional (mined from our own games)'
+            : tier + ' tier'));
       }
       compsBody.appendChild(compRow(c));
     });
@@ -754,6 +906,18 @@ function render(a) {
     compsBody.appendChild(el('div', 'none', '—'));
   }
   app.appendChild(box('Playable comps', compsBody));
+}
+// Ban-picker state, deliberately OUTSIDE render(): the app rebuilds every
+// poll second and would wipe in-progress taps. Per game: when the payload's
+// game_no changes, seed from the server (a fresh game clears manual bans).
+// Once tapping, local state wins for 3s so a poll can't flicker the chip
+// back before the POST lands; after that the server (via bans_manual) is
+// authoritative and self-heals any missed POST.
+let _banPick = new Set(), _banPickGame = null, _banPickAt = 0;
+function postBans(list) {
+  fetch('/bans', {method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({banned: list})});
 }
 setInterval(poll, 1000);
 poll();
@@ -767,9 +931,36 @@ class _State:
     def __init__(self):
         self.lock = threading.Lock()
         self.analysis = None
+        # The player-set banned tribes (POST /bans), or None when not set.
+        # The ban reveal is on screen at t0 and the pool inference needs
+        # minutes to converge, so a 5-tap override at hero pick is the
+        # precise path (2026-09-19; the list itself is not in any log).
+        self.manual_bans = None
 
 
 _state = _State()
+
+
+def store_manual_bans(tribes):
+    """Set the manual banned-tribe list; an empty list clears it.
+
+    Only canonical display names (tribes.DISPLAY_TRIBES) are accepted;
+    everything else is dropped. Returns the list that stuck (sorted).
+    """
+    from tribes import DISPLAY_TRIBES
+    roster = set(DISPLAY_TRIBES)
+    clean = sorted({t for t in (tribes or [])
+                    if isinstance(t, str) and t in roster})
+    with _state.lock:
+        _state.manual_bans = clean if clean else None
+    return clean
+
+
+def latest_manual_bans():
+    """The manual banned tribes, or None when the player hasn't set any."""
+    with _state.lock:
+        return list(_state.manual_bans) if _state.manual_bans is not None \
+            else None
 
 
 def render_json(analysis):
@@ -949,6 +1140,12 @@ def render_json(analysis):
             "slug": slug,
             "name": comp["name"],
             "meta_tier": comp.get("meta_tier"),
+            # Mined from our own corpus rather than published (value.
+            # _is_provisional): the panel groups these under "Provisional"
+            # instead of a tier, and they sort LAST — a comp with no published
+            # tier must never appear above a real S/A/B comp.
+            "provisional": bool(comp.get("provisional")),
+            "evidence": comp.get("evidence"),
             # Tribe confirmed in this lobby? Absent (True) once the bans
             # resolve; False only inside the detection window, where the
             # panel dims the could-still-be-banned rows.
@@ -956,13 +1153,21 @@ def render_json(analysis):
             "core": rows(comp.get("core")),
             "addons": rows(comp.get("addons")),
         })
-    comp_rows.sort(key=lambda c: (tier_rank.get(c["meta_tier"], 3),
+    comp_rows.sort(key=lambda c: (1 if c["provisional"] else 0,
+                                  tier_rank.get(c["meta_tier"], 3),
                                   c["name"] or ""))
     a["comps"] = comp_rows
     # The Buy box mirrors the top move's actual buy/roll step (buy_step_card /
     # buy_step_roll are written by value.top_move), so the two can't disagree.
     a["buy_step_card"] = analysis.get("buy_step_card")
     a["buy_roll_text"] = analysis.get("buy_step_roll")
+    # A buy the SLOT arbiter talked the plan out of (analysis/board_swap.md):
+    # value.top_move rewrites its step and records the card here, so the Buy box
+    # cannot keep blessing a card the numbers just argued against.
+    a["buy_step_swap_veto"] = analysis.get("buy_step_swap_veto")
+    # Which card the plan is feeding to a discard outlet, and why (analysis/
+    # discard_mechanic.md): the hand box and the plan must name the same card.
+    a["discard_target"] = analysis.get("discard_target")
     # Structured steps from value.top_move — [{text, kind, card}]. The JS
     # still renders from the top_move string today; migrating it onto these
     # (one entry per step, kind-tagged, buy card attached) is the planned
@@ -984,9 +1189,13 @@ def render_json(analysis):
     # The next-fight verdict (stat ratio + our keyword edges) rides the
     # scout strip so "will the next fight kill me" is on screen.
     a["forecast"] = analysis.get("forecast")
-    # Dark gifts (what Dark Discovery granted) and the opponents' trinkets
-    # (visible in the log, 2026-09-08 ground truth) — free intel lines.
-    a["dark_gifts"] = analysis.get("dark_gifts") or []
+    # Opponents' trinkets (visible in the log, 2026-09-08 ground truth) — free
+    # intel the player cannot see in game. `dark_gifts` is DROPPED from the
+    # payload since 2026-09-23 (the overlay no longer renders it: it listed gifts
+    # the player already owns and the game already shows). render_json copies the
+    # whole analysis, so the drop has to be explicit — leaving the key would keep
+    # shipping state the page has no use for.
+    a.pop("dark_gifts", None)
     a["opp_trinkets"] = analysis.get("opp_trinkets") or []
     # When leveling leads the top move, the buy is what you do with the
     # leftover — label it that way so the priorities read in order.
@@ -1087,6 +1296,20 @@ class _Handler(BaseHTTPRequestHandler):
                 self._send(404, "text/plain", b"no card render cached")
                 return
             self._send(200, "text/html; charset=utf-8", _HTML.encode())
+
+    def do_POST(self):
+        if self.path.rstrip("/") == "/bans":
+            n = int(self.headers.get("Content-Length") or 0)
+            try:
+                payload = json.loads(self.rfile.read(n) or b"{}")
+            except ValueError:
+                self._send(400, "application/json", b'{"error":"bad json"}')
+                return
+            banned = store_manual_bans(payload.get("banned"))
+            self._send(200, "application/json",
+                       json.dumps({"ok": True, "banned": banned}).encode())
+            return
+        self._send(404, "text/plain", b"no such endpoint")
 
     def _send(self, code, ctype, body):
         self.send_response(code)

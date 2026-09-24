@@ -1,5 +1,5 @@
 {
- "_comment": "Curated per-trinket reads (card-text pass phase 2, 2026-09-08: 'literally read the text of each card'). base_value = intrinsic power read on the spell-point scale (1 gold = 2 pts, +2/+2 on one minion = 4, recurring per-turn effects priced over ~5-6 turns). synergy = what board/keyword features reward holding this trinket: tribes (canonical), keywords (deathrattle/battlecry/magnetic/divine_shield/reborn/taunt/blood_gem/spell/refresh/economy/leveling/golden/trinket/dark_gift/hero_power/hand/yogg). Consumed by choices._rank_trinkets (precise synergy instead of the substring read) and value.minion_value (W_TRINKET term).",
+ "_comment": "Curated per-trinket reads (card-text pass phase 2, 2026-09-08: 'literally read the text of each card'). base_value = intrinsic power read on the spell-point scale (1 gold = 2 pts, +2/+2 on one minion = 4, recurring per-turn effects priced over ~5-6 turns). synergy = what board/keyword features reward holding this trinket: tribes (canonical), keywords (deathrattle/battlecry/magnetic/divine_shield/reborn/taunt/blood_gem/spell/refresh/economy/leveling/golden/trinket/dark_gift/hero_power/hand/yogg/discard). Consumed by choices._rank_trinkets (precise synergy instead of the substring read) and value.minion_value (W_TRINKET term).",
  "BG30_MagicItem_804": {
   "base_value": 8,
   "synergy": {
@@ -147,6 +147,19 @@
   },
   "note": "4 spells -> Blood Gems on all minions (Bloodbound Earrings)"
  },
+ "BG32_MagicItem_808t": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Quilboar"
+   ],
+   "keywords": [
+    "spell",
+    "blood_gem"
+   ]
+  },
+  "note": "4 spells -> Blood Gems on all minions (Bloodbound Earrings)"
+ },
  "BG32_MagicItem_893": {
   "base_value": 8,
   "synergy": {
@@ -175,16 +188,16 @@
   },
   "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
  },
- "BG30_MagicItem_420t": {
+ "BG30_MagicItem_924": {
   "base_value": 14,
   "synergy": {
-   "keywords": [
-    "spell"
+   "tribes": [
+    "Pirate"
    ]
   },
-  "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
+  "note": "every gold spend: two Pirates +3/+3 (Booty Bay Brew)"
  },
- "BG30_MagicItem_924": {
+ "BG30_MagicItem_924t": {
   "base_value": 14,
   "synergy": {
    "tribes": [
@@ -446,6 +459,15 @@
   },
   "note": "end of turn: board +1/+1, improves with goldens played (Gold Mallet)"
  },
+ "BG36_MagicItem_302t": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "end of turn: board +1/+1, improves with goldens played (Gold Mallet)"
+ },
  "BG32_MagicItem_951": {
   "base_value": 12,
   "synergy": {
@@ -527,19 +549,6 @@
   },
   "note": "end of turn: 12/12 satellite, improves per spell cast (Inductive Gyroblade)"
  },
- "BG36_MagicItem_810t": {
-  "base_value": 16,
-  "synergy": {
-   "tribes": [
-    "Mechanical"
-   ],
-   "keywords": [
-    "spell",
-    "magnetic"
-   ]
-  },
-  "note": "end of turn: 12/12 satellite, improves per spell cast (Inductive Gyroblade)"
- },
  "BG30_MagicItem_423": {
   "base_value": 10,
   "synergy": {
@@ -575,15 +584,6 @@
   "note": "keyworded Blood Gem, repeats per turn (Jewelry Box)"
  },
  "BG35_MagicItem_821": {
-  "base_value": 10,
-  "synergy": {
-   "keywords": [
-    "leveling"
-   ]
-  },
-  "note": "Discover a Tier 7 minion, locked 2 turns (Kaleidoscope)"
- },
- "BG35_MagicItem_821t": {
   "base_value": 10,
   "synergy": {
    "keywords": [
@@ -703,25 +703,7 @@
   },
   "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
  },
- "BG30_MagicItem_914t": {
-  "base_value": 10,
-  "synergy": {
-   "keywords": [
-    "hand"
-   ]
-  },
-  "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
- },
  "BG30_MagicItem_544": {
-  "base_value": 12,
-  "synergy": {
-   "tribes": [
-    "Elemental"
-   ]
-  },
-  "note": "per Elemental played: Tavern Elementals +3/+2 permanently (Nomi Sticker)"
- },
- "BG30_MagicItem_544t": {
   "base_value": 12,
   "synergy": {
    "tribes": [
@@ -837,18 +819,6 @@
   "note": "craft a custom Undead, every 2 turns (Putricide Sticker)"
  },
  "BG30_MagicItem_410": {
-  "base_value": 8,
-  "synergy": {
-   "tribes": [
-    "Quilboar"
-   ],
-   "keywords": [
-    "blood_gem"
-   ]
-  },
-  "note": "Avenge(3): Blood Gems give extra +1 Health (Quilligraphy Set)"
- },
- "BG30_MagicItem_410t2": {
   "base_value": 8,
   "synergy": {
    "tribes": [
@@ -1109,6 +1079,15 @@
   },
   "note": "extra copy of the next 2 minions you buy (Transcribing Typewriter)"
  },
+ "BG35_MagicItem_931t": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "extra copy of the next 2 minions you buy (Transcribing Typewriter)"
+ },
  "BG30_MagicItem_891": {
   "base_value": 6,
   "synergy": {
@@ -1188,14 +1167,14 @@
   "note": "a random spell now + 1 every turn (Colorful Compass)"
  },
  "BG30_MagicItem_426t": {
-  "base_value": 14,
+  "base_value": 10,
   "synergy": {
    "keywords": [
     "spell",
     "economy"
    ]
   },
-  "note": "2 random spells now + 2 every turn (Colorful Compass variant)"
+  "note": "a random spell now + 1 every turn (Colorful Compass)"
  },
  "BG30_MagicItem_442": {
   "base_value": 8,
@@ -1464,5 +1443,597 @@
    ]
   },
   "note": "every 5 Murlocs played -> 2 random Tavern spells (Cookie's Stirring Rod)"
+ },
+ "BG30_MagicItem_310": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "deathrattle"
+   ]
+  },
+  "note": "summons Titus Rivendare (deathrattles fire twice) and doubles his Health at combat start (Rivendare Portrait) — the deathrattle-comp enabler; the doubling only matters while Titus survives"
+ },
+ "BG30_MagicItem_541": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ]
+  },
+  "note": "Tavern minions +2/+2, improving on hero damage (Nether Pendant) — the buy-the-buff tavern engines (Nomi/Air Revenant class) are what turn it on"
+ },
+ "BG30_MagicItem_545": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "magnetic"
+   ]
+  },
+  "note": "Avenge (3): recurring random Magnetic minion (Fridge Magnet) — mech engine fuel and triple fodder"
+ },
+ "BG30_MagicItem_879": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ]
+  },
+  "note": "Tavern minions +2/+2, improving every 4 Refreshes (Dalaran Cheese Wheel) — same tavern-buff engine family as Nether Pendant, slower to improve"
+ },
+ "BG30_MagicItem_996": {
+  "base_value": 20,
+  "synergy": {
+   "keywords": [
+    "economy",
+    "leveling"
+   ]
+  },
+  "note": "4 gold now + maximum gold 4 (Bob's Tip Jar) — Goblin Wallet-class compounding income, the strongest economy read in the DB"
+ },
+ "BG30_MagicItem_999": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "every 7 gold spent casts a free Shiny Ring (Fancy Spellbook) — cast-engine fuel that pays for itself in a normal shopping turn"
+ },
+ "BG32_MagicItem_172": {
+  "base_value": 14,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "a Dr. Boom's Monster now and another every turn (Boom's Monster Portrait) — permanent big bodies and easy triple progress"
+ },
+ "BG32_MagicItem_200": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Beast"
+   ]
+  },
+  "note": "Beast attacks give it +3 Attack and permanently improve this (All-Purpose Kibble) — the improvement is the permanent part; the in-combat buff evaporates (player rule)"
+ },
+ "BG32_MagicItem_362": {
+  "base_value": 18,
+  "synergy": {
+   "keywords": [
+    "leveling"
+   ]
+  },
+  "note": "two Tier-6 discovers set to 30/30 (Innkeeper's Hearth) — instant warband-carrying stats; strongest as a late pick"
+ },
+ "BG32_MagicItem_362t": {
+  "base_value": 18,
+  "synergy": {
+   "keywords": [
+    "leveling"
+   ]
+  },
+  "note": "two Tier-6 discovers set to 30/30 (Innkeeper's Hearth) — instant warband-carrying stats; strongest as a late pick"
+ },
+ "BG32_MagicItem_807": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "a golden Mishmash plus a 10/10 venomous Amalgam (Curator Sticker) — triple-reward progress and a poisonous body on pickup"
+ },
+ "BG32_MagicItem_920": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "two Thaumaturgists whose Spellcrafts become permanent (Thaumaturgist Portrait) — spell-engine amp that scales every turn"
+ },
+ "BG32_MagicItem_922": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "end of turn: left-most minion +3/+3, each cast improves it (Charming Panpipes) — spell-fueled growth; keep your scaler left-most"
+ },
+ "BG35_MagicItem_701": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Beast"
+   ]
+  },
+  "note": "+1/+1 to Beasts each combat, permanently improving per Beast summoned (Fang Anklet) — slow burn that rewards a beast-heavy warband"
+ },
+ "BG35_MagicItem_742": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "magnetic"
+   ]
+  },
+  "note": "end of turn: an Accord-o-Tron magnetized onto each edge Mech (Accord-o-Tron Portrait) — recurring stats; keep Mechs on the edges"
+ },
+ "BG35_MagicItem_743": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "magnetic",
+    "economy",
+    "refresh"
+   ]
+  },
+  "note": "Magnetic Mechs cost 2 and every Refresh offers an extra one (Electrode Attractor) — the one real price break in BG (vs the flat-3 rule): mech engine fuel"
+ },
+ "BG35_MagicItem_820": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "casts Ice Block + 5 gold (Safety Patch) — a stabilize tool for the fragile turns, not a growth engine"
+ },
+ "BG35_MagicItem_923": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "every cast: permanent +1/+1 to the whole warband, +2/+2 in combat (Bewitched Ribbon) — the spell-engine payoff; scales with cast volume"
+ },
+ "BG35_MagicItem_930": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "refresh",
+    "golden"
+   ]
+  },
+  "note": "one free Refresh of plain warband copies (Warband Whistle) — a triple hunt: buy the copies you're missing"
+ },
+ "BG36_MagicItem_361": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Naga"
+   ]
+  },
+  "note": "combat-start doubling of the edge Nagas' stats (Myrmidon Sticker) — position-dependent (edges) and combat-only"
+ },
+ "BG36_MagicItem_362": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "deathrattle"
+   ]
+  },
+  "note": "a Showy Cyclist whose Deathrattle stats become permanent (Cyclist Portrait) — pairs with Cyclist-recurring engines"
+ },
+ "BG36_MagicItem_373": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Tavern spells give an extra +1/+2, improving per different friendly minion type (Multilayered Shield) — rewards type-diverse spell engines"
+ },
+ "BG36_MagicItem_830": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "every Tavern spell adds a Fodder token to the next Refresh (Bloodfury Shield) — token generation feeding buys and triple progress in cast-heavy games"
+ },
+ "BG35_MagicItem_700": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Beast"
+   ]
+  },
+  "note": "every 6 Beast summons: a random Beast (Wildfeather Duster) — recurring body/triple fodder that feeds itself in a summon-heavy beast build"
+ },
+ "BG30_MagicItem_942": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "magnetic"
+   ],
+   "tribes": [
+    "Mech",
+    "Demon"
+   ]
+  },
+  "note": "2 random Magnetic Mecha-Demons now and every turn (Mecha-Jaraxxus Sticker) — priced between Scraper Sticker (1 Magnetic Mech/turn, 12) and Azsharan Statuette (3 spells/turn, 16). Tribes read from the card's own name (Mecha-Demons are Mech/Demon), not from a card-text tribe line."
+ },
+ "BG30_MagicItem_952": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ],
+   "keywords": [
+    "deathrattle"
+   ]
+  },
+  "note": "Start of Combat: 2 friendly Elementals gain 'Deathrattle: Summon a Flourishing Frostling' (Jarred Frostling) — the direct Elemental twin of Hoggy Bank (Quilboar, 10). Combat-only bodies, so it prices as a fight-swing, not an engine."
+ },
+ "BG32_MagicItem_284": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "blood_gem"
+   ]
+  },
+  "note": "End of turn: plays 7 Blood Gems, one on a friendly minion of each type (Aggem Sticker). Priced above Bloodbound Earrings / Jar o' Gems (10) because it fires every turn unconditionally, and above Great Boar Sticker (12) on volume. No tribe tag on purpose: it rewards a MENAGERIE board (a minion of each type), not Quilboars."
+ },
+ "BG32_MagicItem_888": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ],
+   "keywords": [
+    "refresh",
+    "economy"
+   ]
+  },
+  "note": "A free Refresh every time you play an Elemental (Recycling Sticker) — an APM/economy enabler, priced against Gold-plated Compass (5 free Refreshes + a golden, 12). Grows with Elemental throughput, so it is a build-around, not a flat buff."
+ },
+ "BG36_MagicItem_403": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "discard"
+   ]
+  },
+  "note": "Your minions have +1 Attack, improved by every card discarded this game (Hammer of Twilight, LESSER). Read from the client card data rather than the name: BG36_MagicItem_403 is the Lesser (+1 Attack, type Lesser) and BG36_MagicItem_403t the Greater (+2/+1). The two shared a name AND a read until 2026-09-23 — exactly the Lesser/Greater aliasing risk the discard doc logged as assumption A3 — so the Lesser now carries its own floor. Board-wide on the spell-point scale: 6 minions x 1 Attack = 6, growing with the discard count, undiscounted because the floor is already low."
+ },
+ "BG36_MagicItem_404": {
+  "base_value": 4,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "After you cast a Tavern spell, give your Deity +4/+4 (Corrupted Baton, LESSER; the Greater BG36_MagicItem_404t is +10/+10 and the two shared a read until 2026-09-23). Same shape as the Greater read — spell-fuelled DEITY POOL, not board stats, paid out only when the Deity awakens — scaled to the printed numbers (4 vs 10)."
+ },
+ "BG36_MagicItem_416": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "reborn"
+   ]
+  },
+  "note": "After your Deity awakens, give it Reborn (Evil Experiment, Greater). Reborn on the build's payoff body: priced with the other Reborn-on-a-body trinkets (Converter Portrait 8, Eternal Portrait 8, Ophidian Staff 8), discounted to 6 because it does nothing until the Deity awakens (three friendly Aberration deaths, and the 50/50 head)."
+ },
+ "BG36_MagicItem_430": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "discard",
+    "spell"
+   ]
+  },
+  "note": "Get a Sludge Corrosion, and another after every card you discard (Sludge Portrait, Greater). Priced with the recurring generators (Shath'Yar Shrine 10 for a random Aberration per discarded spell) but one lower: what it generates is a fixed +1/+1 spell (BG36_301t, which casts twice if the trinket's own copies are discarded), so the payoff is smaller than a random-Aberration stream — 8 for the immediate copy plus the discard-rate stream."
+ },
+ "BG36_MagicItem_403t": {
+  "base_value": 16,
+  "synergy": {
+   "keywords": [
+    "discard"
+   ]
+  },
+  "note": "Your minions have +2/+1, improved by every card discarded this game (Hammer of Twilight, Greater; the Lesser BG36_MagicItem_403 is +1 Attack, read separately since 2026-09-23). Board-wide: on the spell-point scale (1 stat point = 1 pt) a 6-minion board is ~18 and grows with the discard count, discounted to 16 because the buff needs a wide board to pay off. First entry to use the 36.6.1 `discard` keyword — the Aberration tribe's theme."
+ },
+ "BG36_MagicItem_424": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden",
+    "economy"
+   ]
+  },
+  "note": "1 Gold per friendly Golden minion at the start of every turn (Rascal Sticker). Sits under Goblin Wallet (max Gold +1/turn, compounding, 16) and beside Gold Pendant (a golden each turn, 12): the payout is proportional to how many goldens the build already holds, so it is a win-more economy piece."
+ },
+ "BG36_MagicItem_600": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "reborn"
+   ]
+  },
+  "note": "Get a Faceless Converter; Start of Combat: your Faceless Converters gain Reborn (Converter Portrait) — mechanically identical in shape to Eternal Portrait (8), which is what it is priced against. Deliberately NO tribe tag: the article does not state the Faceless Converter's minion type and it has not been seen in a mined pool, so guessing Aberration would be invention."
+ },
+ "BG36_MagicItem_610": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden",
+    "dark_gift"
+   ]
+  },
+  "note": "Discover a Golden minion of your most common type WITH a Dark Gift, no Triple Reward (Sinister Invitation) — one-shot but it delivers a golden body plus a gift in a single purchase, priced against Gold Pendant (a golden each turn, 12) and Maldraxxus Dagger (a Dark Gift copy each turn, 10)."
+ },
+ "BG36_MagicItem_611": {
+  "base_value": 10,
+  "synergy": {},
+  "note": "Get a Menagerie Tableware, and another every turn (Tableware Portrait) — a recurring minion generator priced with its peers Sellemental Portrait (10) and Baller Portrait (8). No keyword: the value is the body per turn, and a Menagerie payoff needs the board the trinket does not itself supply."
+ },
+ "BG36_MagicItem_400": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "economy",
+    "discard"
+   ]
+  },
+  "note": "Get 2 Corrupted Coins (Corrupted Coin Portrait, Lesser). Two 2-cost spells = 4 gold of value at 2 pts/gold = 8. Keyword `discard` because each Coin's better half is its discard line (+2 maximum Gold), so the portrait is fuel for a discard outlet too."
+ },
+ "BG36_MagicItem_404t": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "After you cast a Tavern spell, give your Deity +10/+10 (Corrupted Baton, Greater; the Lesser is +4/+4). Priced as spell-fuelled DEITY POOL, not board stats: the pool only pays out when the Deity awakens (three Aberration deaths, 50/50 which head, per combat), so it is discounted well below what the raw +10/+10 per cast would be on a board."
+ },
+ "BG36_MagicItem_406": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "discard"
+   ]
+  },
+  "note": "After you discard a spell, get a random Aberration (Shath'Yar Shrine, Greater). A recurring minion generator, priced with its peers (Sellemental Portrait 10) rather than higher, because the trigger is narrow: it needs a discarded SPELL specifically, not any card."
+ },
+ "BG36_MagicItem_417": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Spellcraft: choose a minion; after it gains stats outside combat this turn, your Deity also gains them (Makeshift Master, Greater). Doubles a stat pump into Deity fuel - the strongest of the Deity-fuel trinkets, but still pool value behind the awakening, so it sits under a permanent board buff."
+ },
+ "BG36_MagicItem_418": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "discard",
+    "spell"
+   ]
+  },
+  "note": "After you discard 3 cards, your Tavern spells give an extra +1/+1 this game (Tome of the Ancients, Greater). Priced with Quilligraphy Set (Avenge 3: Blood Gems +1 Health, 8) - the same shape: a one-time quest for a permanent, board-wide upgrade."
+ },
+ "BG36_MagicItem_609": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "economy",
+    "spell"
+   ]
+  },
+  "note": "After you buy a minion, gain 1 Gold, then it swaps to a Tavern spell (Trickster's Sleeve, Lesser). Priced against Rascal Sticker (1 Gold per Golden per turn, 12): per-BUY is worth at least as much early, but it is a one-shot ladder that ends in a single spell, not a recurring payout."
+ },
+ "BG36_MagicItem_852": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "spell",
+    "discard"
+   ]
+  },
+  "note": "Get 2 random Tavern spells; playing one discards the other; repeats every turn (Willbreaker Sticker, Lesser). Sits with Book of Medivh (2 Tavern spells a turn, 14) and adds a guaranteed discard every turn, so it is also the cheapest way to keep a discard outlet fed."
+ },
+ "BG35_MagicItem_712": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "Get a Proud Privateer and 2 random Bounties, then 2 more Bounties every turn (Privateer Portrait, Greater). An immediate body plus a compounding income stream, priced with the Pirate economy engines it feeds (Booty Bay Brew 14 for every gold spent, Gold-plated Compass 12)."
+ },
+ "BG35_MagicItem_732": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "deathrattle"
+   ]
+  },
+  "note": "Start of Combat: destroy your 3 left-most minions; after your last minion dies, resummon them (Soul Fermenter, Greater). A Deathrattle enabler that pays a real price - it deletes three bodies up front - so it is priced BELOW the plain stat trinkets (10-12) and reads as a build-around: it is worth it only when those three deaths are themselves the plan."
+ },
+ "BG35_MagicItem_754": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Murloc"
+   ]
+  },
+  "note": "Start of Combat: your Murlocs take the Attack of the highest-Attack minion in your hand (Dramaloc Sticker, Greater). Tribe-gated AND needs a big hand minion, so 8: a genuine swing inside a Murloc build, dead weight outside one."
+ },
+ "BG35_MagicItem_924": {
+  "base_value": 10,
+  "note": "Get a Groundbreaker; your Groundbreakers then also give stats to the minion on their left (Groundbreaker Portrait). Priced with the other portrait+amp trinkets (Converter Portrait 8 for a body plus Reborn, Flaming Portrait 14 for a tavern-engine amp): 10 for a body plus a positional doubler."
+ },
+ "BG36_MagicItem_204": {
+  "base_value": 10,
+  "note": "Get a Plaguerunner; after you destroy one outside combat, get a plain copy (Plaguerunner Portrait, Greater). Body plus a repeatable-destruction generator, priced with the other generator portraits (Shath'Yar Shrine 10)."
+ },
+ "BG36_MagicItem_402": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Get a Vicious Mindslasher; your Vicious Mindslashers then also buff adjacent minions (Mindslasher Portrait, LESSER - the Greater variant is +stats to the whole board shape). A spell-cast payoff body, priced at the Lesser tier with Manipulator Portrait (6)."
+ },
+ "BG36_MagicItem_408": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "Spend 50 Gold to replace this with a random Greater Pirate Trinket (Quartermaster's Hook, Lesser). A delayed upgrade rather than a stat gain, priced like Splinter of Aurum (10: at 15 gold, a random GOLDEN Tier 5, once) - it converts a Lesser slot into a Greater one, so it is only worth a Lesser pick in a long game."
+ },
+ "BG36_MagicItem_602": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "Make your Deity Golden this game (Mask of Ancient Ones, Greater). Golden doubles a minion's stats, and on the Deity that is the build's whole payoff pool doubled, so it is priced with the golden-makers (Gold Pendant 12, Gold-plated Compass 12) rather than the 8-point bodies. It does nothing until the Deity awakens (three friendly Aberration deaths, 50/50 which head) - the discount for that is already inside the 12."
+ },
+ "BG36_MagicItem_417t": {
+  "base_value": 6,
+  "note": "Choose a minion; after it gains stats outside combat this turn, your Deity also gains them (Makeshift Master, LESSER - the Greater BG36_MagicItem_417 has the same effect behind Spellcraft and is read at 12). The same Deity-fuel doubling, a slot cheaper and without the Spellcraft cast, so half the Greater's read."
+ },
+ "BG30_MagicItem_914t": {
+  "base_value": 16,
+  "synergy": {
+   "keywords": [
+    "hand"
+   ]
+  },
+  "note": "Per minion played: the left-most minion in your hand gains +6/+6 (Nerglish Phrasebook, Greater; the Lesser BG30_MagicItem_914 is +3/+3 and read at 10). More than double the Lesser's pump but not double the value - the target is still a single hand minion - hence 16 rather than 20."
+ },
+ "BG30_MagicItem_988t": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "blood_gem"
+   ]
+  },
+  "note": "Get 5 Blood Gems and your Blood Gems give an extra +3/+3 (Great Boar Sticker, Greater; the Lesser BG30_MagicItem_988 is 3 gems and +2/+1, read at 12). More gems AND a bigger per-gem rider, so 14."
+ },
+ "BG30_MagicItem_701": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "Every fourth card you buy costs Health instead of Gold, three times (The Eye of Sargeras, Greater; guide: a Shop-Buff-Demon pick). Priced as economy: at 4-6 buys a turn that is roughly one free 3-gold minion per turn for three turns, with the other Shop-Buff peers (Booty Bay Brew 14 per gold spent, Quartermaster's Hook 10). The Health cost is NOT modelled in base_value - it is small early and dangerous in the 13-16 fragility band, where the plan's own danger clause is the thing that should veto it."
+ },
+ "BG36_MagicItem_411": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "hero_power",
+    "economy"
+   ]
+  },
+  "note": "Discover a SECOND Hero Power and gain 3 Gold (Reinvigorating Light, Lesser). A second power is a whole extra engine per turn whose value depends on which powers the lobby offers - taken at the two-hero-power entries' scale (8) with the 3 Gold read as economy (gold 2/gold)."
+ },
+ "BG36_MagicItem_414": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "end_of_turn"
+   ]
+  },
+  "note": "End of turn: your minions get +1/+1, and the amount DOUBLES at the start of each turn (Weighted Gauntlet, Lesser) - so turn N gives +2^(N-1)/+2^(N-1) board-wide. Priced at 12 like the other end-of-turn board scalers (Gold Mallet 12) rather than by the printed +1/+1: it needs turns to compound, which is exactly what the current value model discounts."
+ },
+ "BG30_MagicItem_943": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "blood_gem"
+   ],
+   "tribes": [
+    "Quilboar"
+   ]
+  },
+  "note": "Get a Hot-Air Surveyor; Blood Gems played from your hand give an extra +6/+6 (Surveyor Portrait, Greater). Two payoffs at once - a body plus a large per-gem rider - priced with the strong Blood Gem trinkets (Aggem Sticker 14, Great Boar Sticker +3/+3 14) at 12 because it only pays on gems played FROM HAND."
+ },
+ "BG32_MagicItem_301": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "deathrattle"
+   ],
+   "tribes": [
+    "Murloc"
+   ]
+  },
+  "note": "Get a Bassgill; after you summon a Murloc in combat, give it Divine Shield (Bassgill Portrait, Greater). A Murloc-gated combat amp: Divine Shield on each summoned body is real protection, but only in a Murloc build, so 10 against the tribe-agnostic portraits' 8."
+ },
+ "BG32_MagicItem_367": {
+  "base_value": 16,
+  "synergy": {
+   "keywords": [
+    "end_of_turn"
+   ]
+  },
+  "note": "Your end-of-turn effects trigger an extra time (Ghastly Sticker, Greater; guide: 'good when committed to an end of turn comp like Back to Back'). A whole extra trigger on EVERY end-of-turn effect the board runs - the strongest shape of the multiplier class - so it is priced at the top of it (16), above the single-engine amplifiers (Flaming Portrait 14) because it multiplies the board, not one card."
+ },
+ "BG36_MagicItem_215": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "battlecry"
+   ],
+   "tribes": [
+    "Dragon"
+   ]
+  },
+  "note": "Your Dragons' Battlecries trigger an extra time (Dragon's Eye, Greater). A tribe-gated doubler: strong in a Dragon build with real battlecries, dead in any other, so 12 with the tribe recorded - the same discipline as the other tribe-gated amps (Flaming Portrait 14 for Elementals, Dramaloc Sticker 8 for Murlocs)."
+ },
+ "BG36_MagicItem_423": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "magnetic"
+   ]
+  },
+  "note": "Get a random Magnetic Volumizer, and another at the start of every turn (Volumizer Portrait, Lesser). A repeating Magnetic body: it grows a Mech board each turn and each copy can be magnetized onto a body, so it is priced with the recurring generators (Orb of the Unknown 6 for one random Lesser Trinket, Converter Portrait 8) at 8 for the Lesser tier."
  }
 }

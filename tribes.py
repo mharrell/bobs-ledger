@@ -7,7 +7,13 @@ Mech special case ("Mech"). They never intersected, so every cross-file tribe
 comparison silently failed. This module is the single mapping; the canonical
 form is the singular display name matching cards.json and the bans output:
 
-  Elemental, Mech, Beast, Demon, Dragon, Murloc, Naga, Pirate, Quilboar, Undead
+  Elemental, Mech, Beast, Demon, Dragon, Murloc, Naga, Pirate, Quilboar, Undead,
+  Aberration
+
+Aberration is patch 36.6.1's new minion type (2026-09-22, the Deity/discard
+tribe) — the first tribe ever ADDED to the roster. Naga was rotated out of the
+pool in the same patch; out-of-pool is a different concept from
+banned-this-game, and lives in `meta/out_of_play.json`.
 
 Use `canon()` for raw log values (ALL_TRIBES members) and `normalize()` for
 card/meta entries (single, compound "Demon/Quilboar", "All"/"Neutral" -> None).
@@ -24,11 +30,18 @@ CANON = {
     # Legacy plural forms from the pre-canonicalization data ("Elementals" etc.).
     "BEASTS": "Beast", "DEMONS": "Demon", "ELEMENTALS": "Elemental",
     "MECHS": "Mech", "MURLOCS": "Murloc", "NAGAS": "Naga", "PIRATES": "Pirate",
+    "ABERRATIONS": "Aberration",
 }
 
+#: Every tribe the game can put in a Battlegrounds pool, in roster order. This
+#: list is the ban gate's universe ("the tribes minus the 5 allowed"), so a
+#: tribe missing here is invisible to bans + comp filtering entirely: on
+#: 2026-09-22 (36.6.1) the evening log reported only FOUR allowed tribes per
+#: game and read the new tribe's cards as unknown races, purely because
+#: Aberration was absent from this list.
 ALL_TRIBES = [
     "BEAST", "DEMON", "DRAGON", "ELEMENTAL", "MECHANICAL",
-    "MURLOC", "NAGA", "PIRATE", "QUILBOAR", "UNDEAD",
+    "MURLOC", "NAGA", "PIRATE", "QUILBOAR", "UNDEAD", "ABERRATION",
 ]
 
 

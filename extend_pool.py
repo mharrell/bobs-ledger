@@ -27,9 +27,29 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 POOL = os.path.join(_HERE, "meta", "minions.json")
 CARDS = os.path.join(_HERE, ".cards_full.json")
 
+#: Summoned TOKENS and reprints both look like pool cards to the card cache —
+#: Half-Shell (`BG19_010t`), Beetle (`BG28_603t`) and the Chromadrakes
+#: (`BG34_634t`) are MINION-typed with a techLevel, and so are the Timewarp
+#: variants (`BG34_Giant_*`), the buddies (`TB_BaconShop_HERO_33_Buddy`) and the
+#: hero-power copies (`TB_BaconUps_*`). So the id SHAPE stays the primary filter
+#: (the conservative proxy that has worked since the tool was written), widened
+#: by exactly one family:
+#:
+#: `BG_<SET><n>_<num>` — a Battlegrounds REPRINT, which keeps its original
+#: set-coded id instead of a `BG<nn>_<num>` one. Emperor Cobra is `BG_EX1_170`
+#: (Blackrock Mountain) and the 2026-09-23 Drest'agath game rendered it as a raw
+#: id in the coach's own advice because the old regex — and therefore this tool —
+#: could not see it. A trailing `t` fails this pattern, which keeps tokens out.
+_REPRINT_ID = re.compile(r"^BG_[A-Z]+\d*_\d+$")
+
 
 def minion_ids_in_logs(limit=5):
-    """Distinct BG minion card ids from the most recent session logs."""
+    """Distinct BG minion card ids from the most recent session logs.
+
+    Two id families: the `BG<nn>_<num>` shape (MINION_ID) and the `BG_<SET>_<num>`
+    reprints (see _REPRINT_ID) — Emperor Cobra is `BG_EX1_170` and was invisible
+    to this tool until a 2026-09-23 game rendered it raw in the coach's advice.
+    """
     logs = sorted(glob.glob(LOG_GLOB), key=os.path.getmtime, reverse=True)[:limit]
     ids = set()
     for path in logs:
@@ -37,10 +57,11 @@ def minion_ids_in_logs(limit=5):
             for line in f:
                 for m in re.finditer(r"cardId=(\w+)", line):
                     cid = m.group(1)
-                    if MINION_ID.match(cid):
-                        # Golden variants never get looked up (board_state
-                        # strips _G before the pool query) — skip them.
-                        ids.add(cid[:-2] if cid.endswith("_G") else cid)
+                    # Golden variants never get looked up (board_state
+                    # strips _G before the pool query) — skip them.
+                    cid = cid[:-2] if cid.endswith("_G") else cid
+                    if MINION_ID.match(cid) or _REPRINT_ID.match(cid):
+                        ids.add(cid)
     return ids
 
 
@@ -89,7 +110,11 @@ def main():
             "tier": card.get("techLevel"),
             "id": cid,
             "name": card.get("name"),
-            "cost": card.get("cost"),
+            # Minions cost a FLAT 3 gold at every tier (CLAUDE.md; player-
+            # confirmed 2026-09-06) — hearthstonejson's `cost` is the mana cost
+            # and reports 0 for BG minions, which is why the 18 older
+            # auto_added rows carry a 0 that _buy_prices must not trust.
+            "cost": 3,
             # Full lookup via tribes.tribes_from_races: compounds preserved,
             # Amalgams -> "All" (the old races[0] truncated both).
             "tribe": tribes_from_races(races),
@@ -97,6 +122,7 @@ def main():
             "health": card.get("health"),
             "mechanics": card.get("mechanics", []),
             "text": re.sub(r"<[^>]+>", "", card.get("text") or "").strip(),
+            "tribe_src": "hearthstonejson",
             "auto_added": "from session logs (extend_pool.py)",
         })
     for a in additions:
