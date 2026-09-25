@@ -65,7 +65,7 @@ comes from a local value function plus a meta reference bundled in
    the terminal and starts the overlay:
 
    ```
-   Coach UI: http://127.0.0.1:8765/
+   Coach UI: http://127.0.0.1:8747/
    ```
 
    Open that URL in any browser and park the window beside the game.
@@ -81,33 +81,54 @@ comes from a local value function plus a meta reference bundled in
 
 ## The overlay, box by box
 
-The overlay is one priority column. Read it top to bottom:
+On a wide window the overlay is **two panes**: **Decide** on the left —
+everything the turn's decision needs, never scrolled away — and
+**Reference** on the right, which scrolls. On a narrow window they stack
+into one column, decision first.
 
-- **State strip** (top line) — hero, gold, tavern tier, turn, plus:
+Decide pane:
+
+- **State strip** (top line) — hero, gold, tavern tier, HP, turn, and
+  your live placement, as stat tiles, plus:
   - **Scout strip** — your board's stats vs. the next opponent's, so
     "will the next fight kill me" is answered on screen.
-  - **Combat forecast** — `favored` / `even` / `behind` for the next fight.
+  - **Combat forecast** — `✓ favored` / `even` / `✕ behind` for the next
+    fight.
   - **Banned tribes** — this game's 5/5 tribe ban (see glossary).
-- **Do this now** — the single best next move with the why ("Buy
-  Tram Operator — you have a triple pair, gold left over"), including a
-  level-vs-roll reference line and the buy price it actually read from
-  the game.
-- **Your hand** — cards held in hand as tiles (hand minions are sellable
-  too and appear in the Sell row).
-- **Sell** — board minions grouped *safe to sell | divider | keep*, on
-  one line.
-- **Looking for (comp / pivot)** — what to shop for on future rolls.
-- **Comp direction** — per-comp commit readiness ("pips"): how close you
-  are to committing to each candidate comp.
-- **Tavern (ranked)** — the current shop offers, ranked for your board,
-  with prices and card art.
-- **Playable comps** — the comps actually possible this game (after the
-  tribe ban filter), in meta-tier order. Readable from turn 1: while the
-  lobby's 5/5 tribe bans are still being read from the shop rolls
-  (~turn 3-5), every comp stays listed with not-yet-confirmed tribes
-  dimmed, then the list narrows to the ban filter.
+- **Do this now** — the plan as numbered steps, step 1 bigger than
+  everything else with a gold bar: the one move the turn is for. Each
+  step carries a kind chip (BUY / LEVEL / SELL / ROLL / …), the action,
+  and one reason; the rest of the rationale hides behind the "…". A
+  danger band (▲ FRAGILE / ■ DYING) sits above the plan when the next
+  hit matters more than the plan. Includes a level-vs-roll reference
+  line and the buy price actually read from the game.
 - **Choose 1** — appears during hero / trinket / Dark Gift / discover
-  picks; ranks the options for your situation.
+  picks; ranks the options for your situation. Options with no data say
+  so instead of pretending to rank.
+- **Your hand** — held cards with their verdict (cast / play / hold /
+  discard); the plan's chosen discard fodder is named on its tile.
+- **Hand engine** — when a hand-charge kit is in play: deployer on
+  board? slot free? how many charging.
+
+Reference pane:
+
+- **Next opponent** — the announced opponent's comp, as of the round
+  shown.
+- **Sell** — board minions grouped *safe to sell | divider | do not
+  sell*, each row with the why ("comp core" is a keep; "stats only" is
+  a safe sell).
+- **Looking for (comp / pivot)** — what to shop for on future rolls.
+- **Comp direction** — a meter per candidate comp: how close you are to
+  the 2-core-hit commit point, with the state in words beside it.
+- **Lobby pressure** — which tribes the seats you've seen are committing.
+- **Tavern (ranked)** — the current shop offers, ranked for your board,
+  with prices and card art; the plan's buy glows gold.
+- **Playable comps** — the comps actually possible this game (after the
+  tribe ban filter), in meta-tier order, click to expand a comp's
+  shopping list. Readable from turn 1: while the lobby's 5/5 tribe bans
+  are still being read from the shop rolls (~turn 3-5), every comp stays
+  listed with not-yet-confirmed tribes dimmed, and the ban-picker chips
+  let you set the banned tribes by hand from the reveal screen.
 
 ## Coach vocabulary
 
