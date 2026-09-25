@@ -131,23 +131,58 @@ _HTML = r"""<!doctype html>
 <meta charset="utf-8">
 <title>Coach</title>
 <style>
-  :root { --bg:#14161a; --panel:#1e2126; --panel2:#262a31; --text:#e8e8e8;
-          --dim:#9aa0a8; --good:#5fd97a; --warn:#f0b04a; --bad:#e86a5a;
-          --gold:#ffd97a; }
+  /* Design tokens — the ONLY place a raw hex may appear (a test parses this
+     block and fails on hex drift anywhere else). Values from the validated
+     dark-mode reference palette; status colors are for STATE, never
+     decoration, and always ride a word or mark, never color alone. */
+  :root {
+    /* surfaces + ink */
+    --bg:#0d0d0d;        /* page plane */
+    --panel:#1a1a19;     /* box surface */
+    --panel2:#242422;    /* raised surface: chips, placeholder thumbs, hover */
+    --text:#ffffff;      /* primary ink: values, names, actions */
+    --text-2:#c3c2b7;    /* secondary ink: why-lines, subs, body */
+    --dim:#898781;       /* muted: labels, headers, de-emphasis */
+    --border:rgba(255,255,255,.10);  --gridline:#2c2c2a;
+    /* status */
+    --good:#0ca30c;      /* favored / safe */
+    --warn:#fab219;      /* fragile / out-of-play */
+    --bad:#ec835a;       /* serious: behind, do-not-sell, banned */
+    --critical:#d03b3b;  /* DYING only — 3.6:1, large marks never small text */
+    /* coach identity: currency / commit */
+    --gold:#ffd97a;
+    /* step-kind accents (categorical, not status) */
+    --k-level:#8fb8ff; --k-cast:#cbb2ff; --k-sell:#e0a06a; --k-spell:#7ab8f0;
+    /* severity band tints; --crit-ink carries the dying band's body text */
+    --warn-bg:rgba(250,178,25,.13);  --warn-border:rgba(250,178,25,.38);
+    --crit-bg:rgba(208,59,59,.16);   --crit-border:rgba(208,59,59,.45);
+    --crit-ink:#ffd7d7;
+    --shadow:0 8px 24px rgba(0,0,0,.65);
+    --radius:6px;
+  }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
          font:14px/1.45 "Segoe UI", system-ui, sans-serif; padding:8px; }
   #wrap { max-width:1600px; margin:0 auto; }
-  /* State strip spans the whole width; the boxes flow in three columns on a
-     wide window (the old 780px panel left two-thirds of the screen empty). */
-  #statebar { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-              background:var(--panel); border:1px solid #2c2f36;
-              border-radius:6px; padding:6px 12px; margin-bottom:8px;
-              font-size:15px; font-weight:600; }
-  #statebar .lbl { color:var(--dim); font-weight:400; font-size:12px; }
-  #statebar .good { color:var(--good); font-weight:400; font-size:12px; }
-  #statebar .bad { color:var(--bad); font-weight:400; font-size:12px; }
-  #statebar .banned { color:var(--dim); font-weight:400; font-size:12px; }
+  /* State strip: stat tiles (muted label over a semibold value), then the
+     chip row (triggers, bans, out-of-play, forecast). */
+  #statebar { display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+              background:var(--panel); border:1px solid var(--border);
+              border-radius:var(--radius); padding:6px 12px; margin-bottom:8px;
+              font-size:14px; }
+  #statebar .tile { display:inline-flex; flex-direction:column;
+                    align-items:flex-start; line-height:1.25; }
+  #statebar .lbl { color:var(--dim); font-weight:400; font-size:11px; }
+  #statebar .val { font-weight:600; font-size:15px;
+                   font-variant-numeric:tabular-nums; }
+  #statebar .val.gold { color:var(--gold); }
+  #statebar .val.warn { color:var(--warn); }
+  /* DYING HP: --crit-ink, not --critical — critical is 3.6:1 on this
+     surface, below large-text size at 15px. */
+  #statebar .val.bad { color:var(--crit-ink); font-weight:700; }
+  #statebar .good { color:var(--good); font-weight:600; font-size:12px; }
+  #statebar .bad { color:var(--bad); font-weight:600; font-size:12px; }
+  #statebar .banned { color:var(--text-2); font-weight:400; font-size:12px; }
   /* Out-of-play tribes (rotated by a patch: Naga since 36.6.1) are a THIRD
      state, not a ban — struck through and warn-colored so "Naga — out of
      play" never reads as "Naga was banned this game". */
@@ -157,15 +192,27 @@ _HTML = r"""<!doctype html>
      screen — the log never carries the ban list, the inference takes
      minutes, a manual set is exact from turn 1. */
   .banchips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
-  .banchips .chip { border:1px solid #2c2f36; border-radius:12px;
+  .banchips .chip { border:1px solid var(--border); border-radius:12px;
                     padding:2px 10px; font-size:12px; cursor:pointer;
                     color:var(--dim); user-select:none; }
   .banchips .chip.picked { border-color:var(--bad); color:var(--bad);
                            text-decoration:line-through; }
-  /* One priority column: explicit instructions first, then the horizontal
-     card rows (game-like), then reference chips. */
-  #app { display:flex; flex-direction:column; gap:8px; min-width:0; }
-  .box { background:var(--panel); border:1px solid #2c2f36; border-radius:6px;
+  /* Two panes on a wide window: DECIDE (the turn's decision — never
+     needs scrolling, sticky) and REFERENCE (scout intel + shopping
+     lists, scrolls). Under 1200px — or a very short window, where a
+     sticky column taller than the viewport would trap its bottom —
+     they stack into the original single priority column, decide first.
+     NEVER set overflow on a pane: it clips the 4.5x hover zoom. */
+  #app { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+         gap:8px; align-items:start; }
+  #app > section { display:flex; flex-direction:column; gap:8px;
+                   min-width:0; }
+  #col-decide { position:sticky; top:8px; }
+  @media (max-width:1199.98px), (max-height:899px) {
+    #app { display:flex; flex-direction:column; }
+    #col-decide { position:static; }
+  }
+  .box { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
          padding:7px 9px; }
   .box h3 { margin:0 0 4px; font-size:11px; letter-spacing:.06em;
             text-transform:uppercase; color:var(--dim); }
@@ -174,7 +221,7 @@ _HTML = r"""<!doctype html>
   .instructions h3 { color:var(--gold); font-size:12px; }
   .instructions .step { font-size:19px; padding:3px 0; }
   .instructions .footline { margin-top:6px; padding-top:5px;
-                            border-top:1px solid #2c2f36;
+                            border-top:1px solid var(--border);
                             color:var(--dim); font-size:13px; }
   .instructions .pickline { font-size:19px; font-weight:700;
                             color:var(--good); padding:3px 0; }
@@ -186,27 +233,33 @@ _HTML = r"""<!doctype html>
      the row above it. */
   .instructions .danger { font-size:15px; font-weight:700; padding:4px 6px;
                           margin:2px 0 4px; border-radius:3px; }
-  .instructions .danger.fragile { color:#ffd479; background:#3a2d10;
-                                  border:1px solid #6b5217; }
-  .instructions .danger.dying { color:#ffd7d7; background:#4a1414;
-                                border:1px solid #8c2b2b; }
+  /* Status never rides color alone: the mark (▲/■) + the word FRAGILE/DYING
+     carry the state; the tint band just makes it un-missable. Body text is
+     ink (--crit-ink for dying), never the status color itself — critical is
+     3.6:1 on this surface, too low for small text. */
+  .instructions .danger.fragile { color:var(--text); background:var(--warn-bg);
+                                  border:1px solid var(--warn-border); }
+  .instructions .danger.fragile .dmark { color:var(--warn); }
+  .instructions .danger.dying { color:var(--crit-ink); background:var(--crit-bg);
+                                border:1px solid var(--crit-border); }
+  .instructions .danger.dying .dmark { color:var(--critical); }
   #statebar .warn { color:var(--warn); font-weight:700; }
   /* Plan steps render from structured data: action first, the tag and the ONE
      reason under it, the remaining clauses behind hover (the "…"). */
   .instructions .step .stepbody { display:inline-block; }
   .instructions .step .act { font-weight:700; }
   .instructions .step .tag { color:var(--dim); font-size:12px; font-weight:600;
-                             margin-left:6px; border:1px solid #2c2f36;
+                             margin-left:6px; border:1px solid var(--border);
                              border-radius:3px; padding:0 4px; }
-  .instructions .step .why { color:var(--dim); font-size:13px;
+  .instructions .step .why { color:var(--text-2); font-size:13px;
                              font-weight:400; line-height:1.3; }
   .instructions .step .more { cursor:help; color:var(--dim); opacity:.6; }
-  .instructions .step.k-level .act { color:#8fb8ff; }
+  .instructions .step.k-level .act { color:var(--k-level); }
   .instructions .step.k-buy .act { color:var(--good); }
   .instructions .step.k-pick .act { color:var(--gold); }
-  .instructions .step.k-sell .act { color:#e0a06a; }
+  .instructions .step.k-sell .act { color:var(--k-sell); }
   .instructions .step.k-roll .act { color:var(--dim); }
-  .instructions .step.k-cast .act, .instructions .step.k-play .act { color:#cbb2ff; }
+  .instructions .step.k-cast .act, .instructions .step.k-play .act { color:var(--k-cast); }
   .instructions .step.k-swap .act { color:var(--warn); }
   /* Horizontal game-like card tiles: thumb on top, name below. */
   .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
@@ -215,7 +268,7 @@ _HTML = r"""<!doctype html>
   .tile .thumb { width:56px; height:56px; }
   .tile .tname { font-size:12px; line-height:1.25; width:104px; overflow:hidden;
                  text-overflow:ellipsis; white-space:nowrap; }
-  .tile .tsub { font-size:11px; color:var(--dim); }
+  .tile .tsub { font-size:11px; color:var(--text-2); }
   .tile .xcount { color:var(--dim); font-size:11px; }
   .tile.buynow .tname { color:var(--gold); font-weight:700; }
   /* Sell groups: safe | divider | keep, all on one horizontal line. */
@@ -228,10 +281,10 @@ _HTML = r"""<!doctype html>
   .sellgroup.safe .tname { color:var(--good); }
   .sellgroup.keep .tname { color:var(--bad); }
   .gdivider { width:2px; align-self:stretch; flex:none;
-              background:#2c2f36; border-radius:1px; }
+              background:var(--border); border-radius:1px; }
   /* Hand-charge engine row: deployer on board? slot free? charging? */
   .engrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-  .engbit { font-size:12px; color:var(--dim); }
+  .engbit { font-size:12px; color:var(--text-2); }
   .engbit.ok { color:var(--good); }
   .engbit.bad { color:var(--bad); font-weight:700; }
   /* Target-comp tiles: what you're hunting fully opaque, owned faded. */
@@ -240,14 +293,14 @@ _HTML = r"""<!doctype html>
   /* A banned-tribe piece of a hybrid comp: struck out, dim. */
   .tile.comprow.bannedrow .tname { text-decoration:line-through; }
   .tile.comprow.bannedrow .tsub { color:var(--bad); }
-  .gold { color:#ffd97a; }
+  .gold { color:var(--gold); }
   .thumb { width:56px; height:56px; border-radius:5px; object-fit:cover; flex:none;
            cursor:zoom-in; transition:transform .12s ease-out; }
   /* No art cached for this card: a same-size placeholder keeps every row
      aligned (missing art used to collapse the row and shift names). */
   .thumb.ph { display:inline-flex; align-items:center; justify-content:center;
               color:var(--dim); background:var(--panel2);
-              border:1px solid #2c2f36; font-size:18px; cursor:default; }
+              border:1px solid var(--border); font-size:18px; cursor:default; }
   /* Hover zoom (the fallback when no tooltip appears): art is 256x256, so
      scale(4.5) on a 56px tile thumb shows it near full size; origin center
      bottom grows the popup up and outward from the tile, z-index floats it
@@ -255,19 +308,19 @@ _HTML = r"""<!doctype html>
      canzoom is dropped the moment a render/text tooltip shows. */
   img.thumb.canzoom:hover { transform:scale(4.5); transform-origin:center bottom;
                     position:relative; z-index:5; }
-  .thumb.golden { box-shadow:0 0 0 2px #ffd97a; }
+  .thumb.golden { box-shadow:0 0 0 2px var(--gold); }
   /* The plan's buy glows in the tavern tiles. */
   img.thumb.buynowart { box-shadow:0 0 0 2px var(--gold); }
   /* Hover card: the full framed render (with text) near the tile, or — when
      upstream has no render for the card — a text box fed from the meta DB. */
   #tip { position:fixed; z-index:50; max-width:300px; }
   .tiprender { display:block; width:256px; border-radius:8px;
-               box-shadow:0 8px 24px rgba(0,0,0,.65); }
-  .tipbox { background:var(--panel2); border:1px solid #2c2f36;
-            border-radius:6px; padding:6px 9px; max-width:280px;
-            box-shadow:0 8px 24px rgba(0,0,0,.65); }
+               box-shadow:0 8px 24px var(--shadow); }
+  .tipbox { background:var(--panel2); border:1px solid var(--border);
+            border-radius:var(--radius); padding:6px 9px; max-width:280px;
+            box-shadow:0 8px 24px var(--shadow); }
   .tipname { font-weight:700; font-size:13px; }
-  .tiptext { font-size:12px; color:var(--dim); margin-top:2px; }
+  .tiptext { font-size:12px; color:var(--text-2); margin-top:2px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .chip { background:var(--panel2); border-radius:10px; padding:1px 8px;
           font-size:13px; }
@@ -285,7 +338,7 @@ _HTML = r"""<!doctype html>
   .crow.unconf { opacity:.5; }
   .carrow { color:var(--dim); font-size:11px; flex:none; width:10px; }
   .cname { font-weight:600; }
-  .cstat { color:var(--dim); font-size:12px; flex:none; }
+  .cstat { color:var(--text-2); font-size:12px; flex:none; }
   .cbody { padding:0 0 4px 17px; }
   /* Top move: each numbered priority step on its own line */
   .step { font-size:16px; font-weight:700; line-height:1.4; padding:1px 0; }
@@ -293,7 +346,7 @@ _HTML = r"""<!doctype html>
   .target { font-size:14px; font-weight:600; color:var(--gold); }
   .target .pivot { color:var(--warn); }
   .tag-core { color:var(--gold); }
-  .tag-spell { color:#7ab8f0; }
+  .tag-spell { color:var(--k-spell); }
   .tag-addon { color:var(--warn); }
   /* Comp direction meter: pip row + candidate name + distance-to-commit. */
   .mrow { display:flex; align-items:baseline; gap:8px; padding:2px 0;
@@ -313,7 +366,10 @@ _HTML = r"""<!doctype html>
 <body>
 <div id="wrap">
 <div id="statebar">Waiting for live.py analysis…</div>
-<div id="app"></div>
+<div id="app">
+<section id="col-decide"></section>
+<section id="col-ref"></section>
+</div>
 </div>
 <script>
 let _lastPayload = null;
@@ -543,7 +599,10 @@ function render(a) {
   // value.py's constants, mirrored to the client (the JS used to hard-code
   // its own copies — two definitions that could drift).
   const TH = a.thresholds || {};
-  app.innerHTML = '';
+  const decide = document.getElementById('col-decide');
+  const ref = document.getElementById('col-ref');
+  decide.innerHTML = '';
+  ref.innerHTML = '';
   statebar.innerHTML = '';
   if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
   // Ban-picker sync (see the state block near the bottom): a new game
@@ -572,37 +631,39 @@ function render(a) {
     }
   });
 
-  // STATE STRIP — hero / gold / tier / turn / scout / banned / triggers
-  statebar.appendChild(el('span', null, a.hero || '?'));
-  const gold = el('span', null); gold.appendChild(el('span', 'lbl', 'Gold '));
-  gold.appendChild(el('span', 'gold', String(a.gold ?? '?')));
-  statebar.appendChild(gold);
-  const tier = el('span', null); tier.appendChild(el('span', 'lbl', 'Tier '));
-  tier.appendChild(el('span', null, String(a.tier ?? '?')));
-  statebar.appendChild(tier);
+  // STATE STRIP — stat tiles (label over value), then the chip row.
+  // Hero name leads as the trust anchor; the numbers use tabular figures so
+  // they don't shift width as they tick.
+  function statTile(label, value, valCls) {
+    const t = el('span', 'tile');
+    t.appendChild(el('span', 'lbl', label));
+    t.appendChild(el('span', 'val' + (valCls ? ' ' + valCls : ''),
+                     String(value)));
+    return t;
+  }
+  statebar.appendChild(el('span', 'tile', a.hero || '?'));
+  statebar.appendChild(statTile('Gold', a.gold ?? '?', 'gold'));
+  statebar.appendChild(statTile('Tier', a.tier ?? '?'));
   if (a.health != null) {
     const fr = a.fragility || {};
     const dying = (a.health + (a.armor || 0)) <= (TH.dying_hp || 12);
-    const hp = el('span', null); hp.appendChild(el('span', 'lbl', 'HP '));
-    hp.appendChild(el('span', dying ? 'bad'
-      : (fr.band === 'fragile' ? 'warn' : null),
-      a.health + (a.armor ? '+' + a.armor : '')));
-    statebar.appendChild(hp);
+    statebar.appendChild(statTile('HP',
+      a.health + (a.armor ? '+' + a.armor : ''),
+      dying ? 'bad' : (fr.band === 'fragile' ? 'warn' : null)));
   }
   const turns = (a.scenario || {}).turns;
-  if (turns) {
-    const t = el('span', null); t.appendChild(el('span', 'lbl', 'Turn '));
-    t.appendChild(el('span', null, String(turns)));
-    statebar.appendChild(t);
-  }
+  if (turns) statebar.appendChild(statTile('Turn', turns));
   if (a.scout) {
     statebar.appendChild(el('span', 'lbl', a.scout));
   }
   if (a.forecast) {
-    // The next-fight verdict: colored by its verdict word.
-    const good = a.forecast.startsWith('favored');
-    const cls = good ? 'good' : (a.forecast.startsWith('behind') ? 'bad' : null);
-    statebar.appendChild(el('span', cls, a.forecast));
+    // The next-fight verdict: the mark + the verdict word carry the state;
+    // the color reinforces (never the reverse).
+    const fav = a.forecast.startsWith('favored');
+    const behind = a.forecast.startsWith('behind');
+    const mark = fav ? '✓ ' : (behind ? '✕ ' : '');
+    const cls = fav ? 'good' : (behind ? 'bad' : null);
+    statebar.appendChild(el('span', cls, mark + a.forecast));
   }
   const triggers = (a.scenario || {});
   const active = Object.entries(triggers)
@@ -638,13 +699,17 @@ function render(a) {
   // is not the HP but the NEXT HIT, so that is what this says.
   if (a.fragility && a.fragility.band !== 'steady') {
     const fr = a.fragility;
-    const danger = el('div', 'danger ' + fr.band,
-      (fr.band === 'dying' ? 'DYING — ' : 'FRAGILE — ')
+    const dying = fr.band === 'dying';
+    const danger = el('div', 'danger ' + fr.band);
+    // Mark + word carry the state; color only reinforces it.
+    danger.appendChild(el('span', 'dmark', dying ? '■ ' : '▲ '));
+    danger.appendChild(el('span', null,
+      (dying ? 'DYING — ' : 'FRAGILE — ')
       + fr.eff_health + ' effective HP'
       + (fr.last_hit ? ', took ' + fr.last_hit + ' last fight' : '')
       + ' — a ' + fr.eff_health + '-hit ends it'
       + (fr.recent3 ? ' · bled ' + fr.recent3 + ' over the last 3 fights' : '')
-      + (fr.cap ? ' · damage cap ' + fr.cap : ''));
+      + (fr.cap ? ' · damage cap ' + fr.cap : '')));
     instr.appendChild(danger);
   }
   // The empty-shop gap (after a buy/roll the offers vanish from the log for
@@ -731,7 +796,7 @@ function render(a) {
     instr.appendChild(el('div', 'footline',
       'Their trinkets: ' + a.opp_trinkets.join(', ')));
   }
-  app.appendChild(instr);
+  decide.appendChild(instr);
 
   // NEXT OPPONENT — the announced seat's last-known composition (phase 2,
   // lobby.py): exact when their board staged, aged since. The subtitle
@@ -752,7 +817,7 @@ function render(a) {
                              {golden: c.golden}));
     });
     body.appendChild(tiles);
-    app.appendChild(box('Next opponent', body));
+    ref.appendChild(box('Next opponent', body));
   }
 
   // The plan's actual buy (highlighted in the shop tiles below too).
@@ -771,7 +836,7 @@ function render(a) {
         + (s.score != null ? ' · ' + s.score.toFixed(0) : '');
       tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
     });
-    app.appendChild(box('Your hand', tiles));
+    decide.appendChild(box('Your hand', tiles));
   }
 
   // HAND ENGINE — a hand-charge kit (Bream Counter + Diremuck Forager is
@@ -787,7 +852,7 @@ function render(a) {
     if (e.space) bit('✓ slot free', 'ok');
     else bit('✗ board full — the summon needs a free slot', 'bad');
     bit(e.charging + ' charging');
-    app.appendChild(box('Hand engine', body));
+    decide.appendChild(box('Hand engine', body));
   }
 
   // SELL — one horizontal line: safe to sell | divider | do not sell.
@@ -819,7 +884,7 @@ function render(a) {
     keepG.appendChild(sellKeep);
     sellBody.appendChild(keepG);
   }
-  app.appendChild(box('Sell', sellBody));
+  ref.appendChild(box('Sell', sellBody));
 
   // TARGET COMP — what you're hunting: horizontal tiles, missing pieces
   // fully opaque, owned pieces faded. A PROVISIONAL target (mined from our own
@@ -848,7 +913,7 @@ function render(a) {
       });
     });
     body.appendChild(list);
-    app.appendChild(box('Looking for (' + (pivot ? 'pivot' : 'comp') + ')', body));
+    ref.appendChild(box('Looking for (' + (pivot ? 'pivot' : 'comp') + ')', body));
   }
 
   // COMP DIRECTION — commit-readiness meter: how close each candidate comp
@@ -882,7 +947,7 @@ function render(a) {
       a.comp_progress[0].needs.forEach(c => t.appendChild(tile(c.card, c.name)));
       body.appendChild(t);
     }
-    app.appendChild(box('Comp direction', body));
+    ref.appendChild(box('Comp direction', body));
   }
 
   // LOBBY PRESSURE — tribe commitment across SEEN seats (phase 2): who is
@@ -894,7 +959,7 @@ function render(a) {
       body.appendChild(el('div', 'footline',
         r.tribe + ' — ' + r.seats + ' of ' + r.of + ' seen seats (2+ copies)'));
     });
-    app.appendChild(box('Lobby pressure', body));
+    ref.appendChild(box('Lobby pressure', body));
   }
 
   // TAVERN — the ranked shop as a horizontal card row (game-like); the
@@ -922,9 +987,9 @@ function render(a) {
                               golden: s.golden}));
     });
     body.appendChild(tiles);
-    app.appendChild(box('Tavern (ranked)', body));
+    ref.appendChild(box('Tavern (ranked)', body));
   } else {
-    app.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
+    ref.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
 
   // PLAYABLE COMPS — the bottom panel: grouped by meta tier (S/A/B, the
@@ -982,7 +1047,7 @@ function render(a) {
   } else if (!a.tribes_detecting) {
     compsBody.appendChild(el('div', 'none', '—'));
   }
-  app.appendChild(box('Playable comps', compsBody));
+  ref.appendChild(box('Playable comps', compsBody));
 }
 // Ban-picker state, deliberately OUTSIDE render(): the app rebuilds every
 // poll second and would wipe in-progress taps. Per game: when the payload's
