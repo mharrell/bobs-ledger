@@ -105,6 +105,25 @@ class TestMissHygiene(unittest.TestCase):
         self.assertIn(TEST_ID, active)
         self.assertNotIn(f"{TEST_ID}_OLD", active)
 
+    def test_active_misses_excludes_ids_with_art_on_disk(self):
+        """The regression behind 'where did the images go?' (2026-09-24):
+        patch-day art extraction adds files without touching the miss list,
+        so 434 of 504 entries had art on disk — and the /artmiss client
+        trust the list, placeholdering cards whose art EXISTS. A miss entry
+        whose file exists must never be served as a miss."""
+        from coach_ui import _active_misses
+        art_path = os.path.join(HERE, "img_cache", f"{TEST_ID}.png")
+        with open(art_path, "wb") as f:
+            f.write(b"PNG")
+        try:
+            self._remember(TEST_ID, 0)
+            self.assertNotIn(TEST_ID, _active_misses())
+        finally:
+            os.remove(art_path)
+        # With the file gone, the same fresh entry is a real miss again.
+        self._remember(TEST_ID, 0)
+        self.assertIn(TEST_ID, _active_misses())
+
 
 if __name__ == "__main__":
     unittest.main()
