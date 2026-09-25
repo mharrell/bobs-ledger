@@ -2103,6 +2103,18 @@ def situation_line(analysis):
     return " · ".join(bits[:3])
 
 
+@functools.lru_cache(maxsize=1)
+def _base_buy_prices():
+    """The static price map: flat-3 minions (plus their _G ids) and every
+    spell's DB cost. Analysis-independent, ~2500 entries — built once, not
+    once per advice push (the overlay pushes up to ~3/s)."""
+    spell_db = _load_spell_db()
+    costs = {c: MINION_BUY_PRICE for c in _load_card_db()}
+    costs.update({c + "_G": MINION_BUY_PRICE for c in list(costs)})
+    costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
+    return costs
+
+
 def _buy_prices(analysis):
     """Buy prices for the shop overlay/affordability walk.
 
@@ -2123,9 +2135,7 @@ def _buy_prices(analysis):
     plan walk discounts the one spell it would buy (see _top_move_text).
     """
     spell_db = _load_spell_db()
-    costs = {c: MINION_BUY_PRICE for c in _load_card_db()}
-    costs.update({c + "_G": MINION_BUY_PRICE for c in list(costs)})
-    costs.update({c: (v or {}).get("cost") for c, v in spell_db.items()})
+    costs = dict(_base_buy_prices())
     costs.update({c: v for c, v in (analysis.get("shop_costs") or {}).items()
                   if c in spell_db})
     held = (analysis.get("scenario") or {}).get("trinkets") or []
