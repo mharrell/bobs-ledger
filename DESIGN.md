@@ -341,7 +341,7 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
     `meta/engines.json`; golden, compounding, tribe-scaling).
   - `live_coach.py` — incremental live coach (fast per-buy-phase analysis).
   - `live.py` — live monitor + overlay server.
-  - `coach_ui.py` — overlay (three-column Decide/Build/Market layout, prices,
+  - `coach_ui.py` — overlay (two-pane Decide/Reference on wide windows, prices,
     card art).
   - `validate_growth.py` — simulator validation against real games.
   - `replay_stats.py` — deterministic replay-analysis pipeline (corpus stats).

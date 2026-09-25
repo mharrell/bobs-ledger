@@ -1,6 +1,6 @@
 # Coaching UI — Design (local Chrome overlay)
 
-**Status: design / brainstorm — NOT implementation.**
+**Status: implemented** (the widget list below landed through 2026-09; layout/visual spec updated 2026-09-24).
 
 The goal is a local web overlay (opened in Chrome) that sits over/next to
 Hearthstone while playing Battlegrounds, showing a set of small "boxes"
@@ -72,12 +72,29 @@ computable from the existing pipeline (`live.py` → board + bans + comps + valu
 (needs more value tuning), triple tracker, confidence gauge, banned-tribes strip,
 turn plan.
 
-## Layout
+## Layout (2026-09-24 spec)
 
-A **single fixed side panel** (or a small grid of boxes) that docks to the side of
-the game window, roughly 250–320px wide. Boxes stack vertically; each is a compact
-card with a title and 3–6 ranked rows. It should be **draggable and collapsible**
-so the player can move it clear of the shop/board.
+Two panes on a wide window (≥1200px, and tall enough that a sticky column
+fits): **DECIDE** — state strip, "Do this now" plan, Your hand, Hand engine —
+sticky, never scrolled away; **REFERENCE** — Next opponent, Sell, Looking
+for, Comp direction meters, Lobby pressure, Tavern, Playable comps —
+scrollable. Below the breakpoint they stack into one priority column,
+decide first. (The 2026-09-03 side-panel and three-column sketches above are
+superseded; dragging/collapsing was never built.)
+
+Visual system: colors live ONLY in the stylesheet's `:root` token block
+(a test fails on hex drift). Dark-mode palette: surface `#1a1a19`, page
+`#0d0d0d`, ink `#ffffff`/`#c3c2b7`/muted `#898781`, hairline border
+`rgba(255,255,255,.10)`. Status colors are reserved for STATE and always
+ride a mark + a word, never color alone: good `#0ca30c` (favored/safe),
+warning `#fab219` (FRAGILE ▲ / out-of-play), serious `#ec835a` (behind/
+do-not-sell/banned), critical `#d03b3b` (DYING ■ — 3.6:1, so marks and
+borders only; the band's body text uses `--crit-ink`). Gold `#ffd97a` is
+the coach's identity (currency/commit): instruction border, step numbers,
+target line, core tags, committed meters, buy-now glow. Plan steps render
+from structured `top_move_steps` with a text kind chip (BUY/LEVEL/SELL/…);
+step 1 is the view's ONE hero (22px, gold bar) — a pending pick gates the
+turn and reads first instead.
 
 ## Data flow
 

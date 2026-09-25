@@ -1560,9 +1560,9 @@ def top_move(analysis):
     side-writes into `analysis`:
       buy_step_card / buy_step_roll  the Buy box's resolved card / roll text
       top_move_steps                 [{text, kind, card}] — the same steps as
-                                     structured data, so the overlay can
-                                     render from data instead of re-parsing
-                                     the strings (it still does today).
+                                     structured data; the overlay renders
+                                     from these (2026-09-24) instead of
+                                     re-parsing the strings.
     Kind is one of level/pick/buy/sell/roll/cast/play/note; `card` is the
     resolved buy card (buy_step_card) when the step is the buy.
     """

@@ -3,24 +3,26 @@
 
 Runs a tiny stdlib HTTP server (no dependencies). `live.py` pushes the latest
 situation analysis here each buy phase; the server exposes it as JSON at
-`/analysis` and serves a static HTML/CSS/JS page at `/` that polls it. Layout
-(2026-09-04 rework, player-directed): one priority column — a big "Do this
-now" instruction panel (pending pick, then the numbered plan steps, then the
-level/roll reference line), then horizontal game-like card tiles: the Sell
-row split into "safe to sell | do not sell" groups (the value function's own
-filler threshold, score < 15), the target-comp shopping list, and the ranked
-tavern with the plan's buy glowing gold. The board list is gone (the sell
-row covers what matters); triggers/turn live in the state strip.
+`/analysis` (ETag/304 — the page polls at 300ms and unchanged pushes cost a
+header) and serves a static HTML/CSS/JS page at `/`.
+Layout (2026-09-24 rework): two panes on a wide window — DECIDE (the state
+strip, the "Do this now" plan with its kind-chipped hero step, Your hand,
+Hand engine) sticky and never scrolled away; REFERENCE (Next opponent, Sell,
+Looking for, Comp direction meters, Lobby pressure, ranked Tavern, Playable
+comps) scrolls. Below ~1200px the original single priority column returns,
+decide first. Colors come from the token block at the top of the stylesheet
+(a test fails on hex drift); severity uses the status palette with a mark
+and a word, never color alone.
 Design: analysis/DESIGN_COACHING_UI.md. Tile names carry a '*N' tavern-tier
 badge (2026-09-09); hovering a tile shows the full card render — framed
 layout WITH text (img_cache/card/, fetched on demand) — or, when upstream
-has no render, the card text from the meta DBs. The bottom "Playable comps"
-panel (2026-09-09) groups the playable comps by meta tier; clicking a comp
-expands its required cards (owned faded, banned struck out), clicking again
-collapses it (expansion state survives the 1s poll rebuilds).
+has no render, the card text from the meta DBs. The "Playable comps" panel
+groups the playable comps by meta tier; clicking a comp expands its required
+cards (owned faded, banned struck out), clicking again collapses it
+(expansion state survives the rebuilds).
 
 Usage:
-    python coach_ui.py [--port N]     # run the server standalone (empty state)
+    python coach_ui.py [--port=N]     # run the server standalone (empty state)
 """
 import hashlib
 import json
@@ -244,23 +246,35 @@ _HTML = r"""<!doctype html>
                                 border:1px solid var(--crit-border); }
   .instructions .danger.dying .dmark { color:var(--critical); }
   #statebar .warn { color:var(--warn); font-weight:700; }
-  /* Plan steps render from structured data: action first, the tag and the ONE
-     reason under it, the remaining clauses behind hover (the "…"). */
+  /* Plan steps render from structured data: kind chip, then the action (ink —
+     identity is the chip's text + border accent, never the text color), the
+     tag and the ONE reason under it, the remaining clauses behind hover. */
   .instructions .step .stepbody { display:inline-block; }
   .instructions .step .act { font-weight:700; }
+  .instructions .step .chip { font-size:10px; font-weight:700;
+                              letter-spacing:.05em; color:var(--text-2);
+                              border:1px solid var(--border); border-radius:3px;
+                              padding:0 4px; margin-right:6px;
+                              vertical-align:2px; }
+  .instructions .step .chip.k-level { border-color:var(--k-level); }
+  .instructions .step .chip.k-buy   { border-color:var(--good); }
+  .instructions .step .chip.k-pick  { border-color:var(--gold); }
+  .instructions .step .chip.k-sell  { border-color:var(--k-sell); }
+  .instructions .step .chip.k-cast  { border-color:var(--k-cast); }
+  .instructions .step .chip.k-play  { border-color:var(--k-cast); }
+  .instructions .step .chip.k-swap  { border-color:var(--warn); }
   .instructions .step .tag { color:var(--dim); font-size:12px; font-weight:600;
                              margin-left:6px; border:1px solid var(--border);
                              border-radius:3px; padding:0 4px; }
   .instructions .step .why { color:var(--text-2); font-size:13px;
                              font-weight:400; line-height:1.3; }
   .instructions .step .more { cursor:help; color:var(--dim); opacity:.6; }
-  .instructions .step.k-level .act { color:var(--k-level); }
-  .instructions .step.k-buy .act { color:var(--good); }
-  .instructions .step.k-pick .act { color:var(--gold); }
-  .instructions .step.k-sell .act { color:var(--k-sell); }
-  .instructions .step.k-roll .act { color:var(--dim); }
-  .instructions .step.k-cast .act, .instructions .step.k-play .act { color:var(--k-cast); }
-  .instructions .step.k-swap .act { color:var(--warn); }
+  /* Step 1 is the view's ONE hero: the biggest text on the page, anchored by
+     a gold bar. (A pending pick gates the turn — the pick line above already
+     reads first, so the hero rule stays honest.) */
+  .instructions .step.hero { font-size:22px; padding:2px 0 4px;
+                             border-left:3px solid var(--gold);
+                             padding-left:8px; }
   /* Horizontal game-like card tiles: thumb on top, name below. */
   .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
   .tile { display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -348,16 +362,27 @@ _HTML = r"""<!doctype html>
   .tag-core { color:var(--gold); }
   .tag-spell { color:var(--k-spell); }
   .tag-addon { color:var(--warn); }
-  /* Comp direction meter: pip row + candidate name + distance-to-commit. */
-  .mrow { display:flex; align-items:baseline; gap:8px; padding:2px 0;
+  /* Comp direction meter: track (light step of the same ramp) + severity
+     fill + candidate name + the text state that carries the meaning. */
+  .mrow { display:flex; align-items:center; gap:8px; padding:2px 0;
           font-size:14px; min-width:0; }
-  .mrow .pips { font-size:13px; letter-spacing:2px; color:var(--dim);
-                flex:none; }
-  .mrow .pips .full { color:var(--gold); }
+  .mrow .meter { width:44px; height:8px; border-radius:4px; flex:none;
+                 background:rgba(255,217,122,.16); overflow:hidden;
+                 position:relative; }
+  .mrow .meter.near { background:rgba(250,178,25,.14); }
+  .mrow .meter:not(.met):not(.near) { background:var(--gridline); }
+  .mrow .meter .fill { position:absolute; inset:0 auto 0 0; display:block;
+                       height:100%; border-radius:4px; min-width:4px;
+                       background:var(--dim); }
+  .mrow .meter.near .fill { background:var(--warn); }
+  .mrow .meter.met .fill { background:var(--gold); }
   .mrow .mname { font-weight:600; overflow:hidden; text-overflow:ellipsis;
                  white-space:nowrap; }
-  .mrow .mstat { color:var(--dim); font-size:12px; flex:none; }
+  .mrow .mstat { color:var(--text-2); font-size:12px; flex:none; }
   .mrow.locked .mname { color:var(--gold); font-weight:700; }
+  /* Pane headers: the two-pane grouping (Decide | Reference). */
+  .pane-h { margin:0; font-size:11px; font-weight:700; letter-spacing:.14em;
+            text-transform:uppercase; color:var(--dim); }
   .none { color:var(--dim); font-style:italic; }
   .score { color:var(--dim); flex:none; }
   .xcount { color:var(--dim); font-weight:400; }
@@ -522,7 +547,7 @@ function tile(cid, name, sub, opts) {
 // Comps panel: one playable comp as a clickable row. Clicking expands its
 // required cards (core, then addons) — owned faded, banned-this-game struck
 // out, missing fully opaque, same language as the Looking-for box; clicking
-// again collapses. The open set survives the 1s poll rebuilds (a rebuild
+// again collapses. The open set survives the rebuilds (a rebuild
 // drops the DOM but re-opens whatever was open). The collapsed row already
 // says how much of the core you own, so expanding is only for the detail.
 const _openComps = new Set();
@@ -589,6 +614,15 @@ function compRow(c) {
   wrap.appendChild(body);
   return wrap;
 }
+// Step-kind chips: 2-4 characters of text — font-independent (no glyphs)
+// and never the only carrier (the action word is ink; the chip's border
+// adds the kind accent). value._STEP_KINDS is the source of the kind set;
+// a drift-guard test fails when the two diverge.
+const KIND_CHIP = {
+  level: 'LV', pick: 'PICK', buy: 'BUY', sell: 'SELL', roll: 'ROLL',
+  cast: 'CAST', play: 'PLAY', hold: 'HOLD', swap: 'SWAP', discard: 'DISC',
+  note: 'NOTE',
+};
 function render(a) {
   const app = document.getElementById('app');
   const statebar = document.getElementById('statebar');
@@ -605,6 +639,11 @@ function render(a) {
   ref.innerHTML = '';
   statebar.innerHTML = '';
   if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
+  // Pane grouping: DECIDE = the turn's decision (never scrolled away),
+  // REFERENCE = scout intel and shopping lists. The headers re-render with
+  // the panes (render() clears each section wholesale).
+  decide.appendChild(el('h2', 'pane-h', 'Decide'));
+  ref.appendChild(el('h2', 'pane-h', 'Reference'));
   // Ban-picker sync (see the state block near the bottom): a new game
   // reseeds from the server; a settled manual set overwrites stale local
   // taps (unless we tapped in the last 3s — the POST may still be in
@@ -653,6 +692,18 @@ function render(a) {
   }
   const turns = (a.scenario || {}).turns;
   if (turns) statebar.appendChild(statTile('Turn', turns));
+  if (a.current_place) {
+    // Live leaderboard standing (Plan 5 lever 1). Ordinal only — no lobby
+    // size exists in any payload, and inventing "of 8" would be wrong in
+    // Duos and after late-game deaths.
+    const p = a.current_place;
+    const suf = ([11, 12, 13].includes(p % 100))
+      ? 'th' : ({1: 'st', 2: 'nd', 3: 'rd'}[p % 10] || 'th');
+    // Same rule value.situation_line uses: from t8, 5th-or-worse is the
+    // "spike, not greed" zone.
+    statebar.appendChild(statTile('Place', p + suf,
+      (p >= 5 && turns >= 8) ? 'warn' : null));
+  }
   if (a.scout) {
     statebar.appendChild(el('span', 'lbl', a.scout));
   }
@@ -741,21 +792,23 @@ function render(a) {
     instr.appendChild(alts);
   }
   if (a.top_move) {
-    // Render from the STRUCTURED steps (value.split_step, carried on
-    // top_move_steps) instead of re-parsing the string: the action is the line,
-    // the tag and the ONE reason sit under it, and the remaining clauses go
-    // behind hover. Measured before this: median 2 steps per row but a third of
-    // the plans with more than three, and a p90 step length of 123 characters
-    // (worst 174) with four rationale clauses in one string.
-    const structured = a.top_move_steps || [];
-    a.top_move.split(' · ').forEach((step, i) => {
-      const m = step.match(/^(\d+)\. (.*)$/);
-      const s = structured[i] || {};
-      const line = el('div', 'step' + (s.kind ? ' k-' + s.kind : ''));
-      if (m) {
-        line.appendChild(el('span', 'stepnum', m[1]));
+    // Render from the STRUCTURED steps (value.top_move side-writes
+    // top_move_steps: {action, tag, reason, details, kind, card}) — the
+    // string is never re-parsed here. That was the audit's "formatting used
+    // as data" finding: rewording a message could silently break the page.
+    // Identity rides the kind chip (text, not color); the action word is
+    // ink. Step 1 is the view's ONE hero — unless a pending pick gates the
+    // turn, in which case the pick line above already leads.
+    const steps = a.top_move_steps || [];
+    if (steps.length) {
+      steps.forEach((s, i) => {
+        const kind = s.kind || 'note';
+        const line = el('div', 'step k-' + kind + (i === 0 ? ' hero' : ''));
+        line.appendChild(el('span', 'stepnum', i + 1));
         const body = el('span', 'stepbody');
-        body.appendChild(el('span', 'act', s.action || m[2]));
+        body.appendChild(el('span', 'chip k-' + kind,
+                           KIND_CHIP[kind] || 'NOTE'));
+        body.appendChild(el('span', 'act', s.action || s.text || ''));
         if (s.tag) body.appendChild(el('span', 'tag', s.tag));
         if (s.reason) body.appendChild(el('div', 'why', s.reason));
         if ((s.details || []).length) {
@@ -766,11 +819,14 @@ function render(a) {
           body.appendChild(more);
         }
         line.appendChild(body);
-      } else {
-        line.textContent = step;
-      }
-      instr.appendChild(line);
-    });
+        instr.appendChild(line);
+      });
+    } else {
+      // Minimal payload (the Choose-1 push carries only the string).
+      a.top_move.split(' · ').forEach(step => {
+        instr.appendChild(el('div', 'step', step));
+      });
+    }
   }
   // Level/roll reference: the button's real price. An analysis without a
   // level_cost (never the live loop's case) shows no level line at all —
@@ -831,9 +887,13 @@ function render(a) {
   if (a.hand && a.hand.length) {
     const tiles = el('div', 'tiles');
     a.hand.forEach(s => {
+      // The plan's chosen discard fodder is named on the tile ("the plan's
+      // discard") — discard_target rode the payload unrendered until now.
+      const fodder = a.discard_target && a.discard_target === s.card;
       const sub = (s.verb === 'cast' ? 'cast' : s.verb === 'hold' ? 'hold'
                    : s.verb === 'discard' ? 'discard' : 'play')
-        + (s.score != null ? ' · ' + s.score.toFixed(0) : '');
+        + (s.score != null ? ' · ' + s.score.toFixed(0) : '')
+        + (fodder ? ' · the plan\'s discard' : '');
       tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
     });
     decide.appendChild(box('Your hand', tiles));
@@ -924,22 +984,28 @@ function render(a) {
     const body = el('div');
     a.comp_progress.forEach(r => {
       const row = el('div', 'mrow' + (r.name === a.target_comp ? ' locked' : ''));
-      const pips = el('span', 'pips');
+      // A real meter, not pips: the track is a light step of the same ramp
+      // so the state reads across the whole bar, and the fill's color is
+      // severity (gold = committed/ready, warn = one away). The text state
+      // beside it always carries the meaning — the meter never acts alone.
       const n = Math.min(r.hits, 2);
-      for (let i = 0; i < 2; i++) {
-        pips.appendChild(el('span', i < n ? 'full' : null, i < n ? '●' : '○'));
-      }
-      if (r.hits > 2) pips.appendChild(el('span', 'full', '×' + r.hits));
-      row.appendChild(pips);
+      const meter = el('span', 'meter'
+        + (r.name === a.target_comp || r.ready ? ' met'
+           : (r.tribe_hits || 0) >= 2 ? ' near' : ''));
+      const fill = el('span', 'fill');
+      fill.style.width = (n / 2 * 100) + '%';
+      meter.appendChild(fill);
+      row.appendChild(meter);
       row.appendChild(el('span', 'mname',
         r.name + (r.provisional ? ' [prov]' : '')));
       row.appendChild(el('span', 'mstat',
-        r.name === a.target_comp
+        (r.name === a.target_comp
           ? (a.target_state === 'pivot' ? 'pivoting — committed' : 'committed')
           : r.ready ? 'ready to commit'
           : (r.tribe_hits || 0) >= 2
             ? 'one core card away · tribe signal'
-            : 'one core card away'));
+            : 'one core card away')
+        + (r.hits > 2 ? ' (' + r.hits + ' hits)' : '')));
       body.appendChild(row);
     });
     if (!a.target_comp && (a.comp_progress[0].needs || []).length) {
@@ -1330,9 +1396,8 @@ def render_json(analysis):
     # discard_mechanic.md): the hand box and the plan must name the same card.
     a["discard_target"] = analysis.get("discard_target")
     # Structured steps from value.top_move — [{text, kind, card}]. The JS
-    # still renders from the top_move string today; migrating it onto these
-    # (one entry per step, kind-tagged, buy card attached) is the planned
-    # render-at-the-edge rework.
+    # renders from these (2026-09-24 flip, the audit's render-at-the-edge
+    # rework); the string is the fallback for the minimal Choose-1 payload.
     a["top_move_steps"] = analysis.get("top_move_steps") or []
     # Scout strip (gates 3+4): our stat total vs the next opponent's
     # last-known board (exact — we fought them), else the lobby median /

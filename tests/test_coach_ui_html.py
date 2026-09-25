@@ -58,5 +58,25 @@ class TestTokenDiscipline(unittest.TestCase):
                          + ", ".join(missing))
 
 
+class TestKindChips(unittest.TestCase):
+    """The plan steps render a text chip per step kind. value._STEP_KINDS is
+    the source of the kind set; when value grows a kind and the JS chip map
+    doesn't, the step silently renders the NOTE chip — this keeps the two
+    from diverging."""
+
+    def test_every_step_kind_has_a_chip(self):
+        from value import _STEP_KINDS
+        m = re.search(r"const KIND_CHIP = \{(.*?)\};", _HTML, re.S)
+        self.assertTrue(m, "KIND_CHIP map not found in the page JS")
+        chips = set(re.findall(r"(\w+):\s*'", m.group(1)))
+        kinds = {k for _prefix, k in _STEP_KINDS}
+        self.assertEqual(kinds - chips, set(),
+                         "step kinds with no chip in the JS map: "
+                         + ", ".join(sorted(kinds - chips)))
+        self.assertEqual(chips - kinds, set(),
+                         "chips for kinds value.py no longer emits: "
+                         + ", ".join(sorted(chips - kinds)))
+
+
 if __name__ == "__main__":
     unittest.main()
