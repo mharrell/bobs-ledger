@@ -275,7 +275,7 @@ def _run(argv):
             print(f"     actual: {_actual(actual, names)}")
             continue
         rec = a.get("top_move") or "-"
-        buys = [names.get(c, c) for c in (actual.get("buys") or [])]
+        buys = [_name(c, names) for c in (actual.get("buys") or [])]
         board_n = len(a.get("board") or [])
         print(f"t{t}  tier {a.get('tier')}  gold {a.get('gold')}  board {board_n}")
         print(f"     coach: {rec}")
@@ -304,11 +304,11 @@ def _run(argv):
                          for s in (a.get("top_move_steps") or []))
             print(f"     buy match: plan said "
                   f"{'roll (hunt)' if rolled else 'level only'} — player bought "
-                  f"({', '.join(names.get(c, c) for c in buys_raw) or 'nothing'})")
+                  f"({', '.join(_name(c, names) for c in buys_raw) or 'nothing'})")
         elif picks:
             if buys_raw and set(buys_raw) & set(picks):
                 hit = next(c for c in buys_raw if c in picks)
-                print(f"     buy match: TAKEN ({names.get(hit, hit)})")
+                print(f"     buy match: TAKEN ({_name(hit, names)})")
             elif buys_raw and all(c in spell_names for c in buys_raw):
                 print("     buy match: spells only "
                       f"({', '.join(spell_names.get(c, c) for c in buys_raw)}) "
@@ -319,14 +319,26 @@ def _run(argv):
     return 0
 
 
+def _name(cid, names):
+    """Name a card id, resolving golden (`_G`) and token (`t`/`tN`) variants
+    to the base card — the same convention the overlay's CARDS map uses.
+    A golden played from board printed as `BG36_318_G`; a Deity token as
+    `BGFYM_002t`. Falls back to the ORIGINAL id when neither variant nor
+    base is named (never print a stripped id that isn't in the DB)."""
+    if cid in names:
+        return names[cid]
+    base = re.sub(r"_G$|t\d*$", "", cid)
+    return names.get(base, cid)
+
+
 def _actual(t, names):
     if not t:
         return "(pass / no actions)"
     bits = []
     if t.get("buys"):
-        bits.append("buy " + ", ".join(names.get(c, c) for c in t["buys"]))
+        bits.append("buy " + ", ".join(_name(c, names) for c in t["buys"]))
     if t.get("sells"):
-        bits.append("sell " + ", ".join(names.get(c, c) for c in t["sells"]))
+        bits.append("sell " + ", ".join(_name(c, names) for c in t["sells"]))
     if t.get("upgrades"):
         bits.append("LEVEL " + "x" * t["upgrades"])
     if t.get("refreshes"):
@@ -336,7 +348,7 @@ def _actual(t, names):
     if t.get("hero_power"):
         bits.append("hero power x" + str(t["hero_power"]))
     if t.get("plays"):
-        bits.append("play " + ", ".join(names.get(c, c) for c in t["plays"][:3]))
+        bits.append("play " + ", ".join(_name(c, names) for c in t["plays"][:3]))
     return "; ".join(bits) if bits else "(pass / no actions)"
 
 

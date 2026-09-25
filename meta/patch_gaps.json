@@ -26,19 +26,15 @@
       "name": "Blood Golem",
       "reason": "a trinket-SHAPED id that is not a trinket: it is the Golem token BG30_MagicItem_442 (Blood Golem Sticker) summons",
       "evidence": "the client card data gives it an empty description while every real trinket (and every Lesser/Greater `t` variant: BG36_MagicItem_403t, BG36_MagicItem_417t, BG30_MagicItem_914t, BG30_MagicItem_988t) carries text; its name differs from its base's ('Blood Golem' vs 'Blood Golem Sticker') where the Lesser/Greater pairs share a name; and no choice list ever offers it. Carrying it would put a token in the trinket pool, where choices.py ranks picks by trinket effects. tests/test_trinket_meta.py::test_every_trinket_seen_in_a_log_is_in_the_db consults this entry, so a NEW token-shaped id still fails the gate."
-    },
-    {
-      "kind": "minion_token",
-      "id": "BGFYM_002t",
-      "name": "Aberrant Tentacle",
-      "reason": "a summoned TOKEN with no card data anywhere on this machine, so the DB cannot carry it and it is not a pool minion",
-      "evidence": "the 2026-09-23 late sessions render it (and its golden BGFYM_002t_G) as raw ids in the coach's own advice. The name comes from the log's own entityName pairing, and the patch article describes the source (Zoatroid: 'When you sell this, get a 0/2 Tentacle with Taunt'). It appears in NO hearthstonejson cache entry - neither the base BGFYM_002 nor BGFYM_002t exists there - so there is no text, tier or stats to add. Recorded rather than added to minions.json for the same reason as BG30_MagicItem_442t (Blood Golem): the DB is the POOL, and a summoned token in it could be mistaken for a purchasable card."
     }
   ],
   "out_of_scope": [
     {
       "kind": "duos_minions",
-      "names": ["Voidpriest Cloner", "C'Thrax Wrecker"],
+      "names": [
+        "Voidpriest Cloner",
+        "C'Thrax Wrecker"
+      ],
       "reason": "Duos-only cards; the coach coaches SOLO Battlegrounds",
       "evidence": "Duos is a separate mode with its own card surface, and a Duos-only row in the solo DB could be recommended in a solo shop where it can never appear. The two changed Duos minions (Man'ari Messenger, Transport Reactor) are excluded for the same reason. Recorded here rather than silently dropped: Voidpriest Cloner's text ('Whenever you discard a card, Pass a copy of it. (2 times per turn.)') is the only published per-turn cap on discard triggers, and C'Thrax Wrecker's ('Give your team's Deities +4/+4') confirms Deity is a card type rather than one card - both were fed to the discard-engine work."
     }
@@ -64,7 +60,13 @@
       "id": "BG36_700",
       "was": "listed under expected_missing: 'no card id exists anywhere on this machine'",
       "resolution": "the 2026-09-23 scan ran against a stale .cards_full.json (35,807 entries, pre-36.6 carddefs missing). A 2026-09-24 re-download (36,022 entries) carries BG36_700 (Murloc, 4/5, tier 4, 'Activate (1): Give another Murloc +7/+7 and a random Bonus Keyword.'), and the 2026-09-24 session log confirms it in play: the Dark Discovery button (BG36_Button_DarkGift) summons it (entityName=Sewer Escapee cardId=BG36_700; its enchantment is BG36_700e 'Sewage Mutation'). Added to meta/minions.json via extend_pool.py --apply on 2026-09-24. Lesson: the patch-day gap scan is only as fresh as the carddefs cache it consults - refresh it on patch day."
+    },
+    {
+      "kind": "minion_token",
+      "name": "Aberrant Tentacle",
+      "id": "BGFYM_002t",
+      "was": "a summoned TOKEN with no card data anywhere on this machine, so the DB cannot carry it and it is not a pool minion",
+      "resolution": "named from the log itself (entityName=Aberrant Tentacle cardId=BGFYM_002t, 2026-09-24 evening session; HEALTH 2, TAUNT, ABERRATION - the log prints no ATK) and carried in meta/minions.json as a 0-cost token: it sits on boards and gets sold, so the Sell row and replay review must not print the raw id. Goldens (BGFYM_002t_G) resolve by base-strip in the review path."
     }
   ]
 }
-
