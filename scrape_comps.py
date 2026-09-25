@@ -20,9 +20,11 @@ against the live site (2026-08):
   `GET /api/v1/youtube/affiliates/links/?prefix=battlegrounds/comps/<id>/`
   (needs a browser User-Agent + `Referer` header).
 
-The page provides `summary` and `representative_card`; only `tribe` and `guide`
-are hand-added. This script merges into meta/comps.json and preserves those
-hand-added fields, so re-scraping on a patch won't clobber them. The hand-added
+The page provides `summary` and `representative_card`; `tribe`, `guide`,
+`how_to_play` and `source` are ours (the guide text is written here, not
+scraped — see HAND_ADDED_FIELDS). This script merges into meta/comps.json and
+preserves those fields, so re-scraping on a patch won't clobber them. The
+hand-added
 `tribe` must be the canonical singular display name (see tribes.py: "Elemental",
 "Mech", ...) — check_meta.py enforces this.
 
@@ -73,14 +75,21 @@ TIER_MAP = {1: "S", 2: "A", 3: "B"}
 DIFFICULTY_MAP = {1: "Easy", 2: "Medium", 3: "Hard"}
 
 # Hand-added fields the page does NOT provide — preserved across re-scrapes.
-HAND_ADDED_FIELDS = ("tribe", "guide")
+# `how_to_play` and `source` count from 2026-09-24: the takedown-hygiene pass
+# rewrote every comp's guide text as original advice (hsreplay's prose is
+# copyrighted website content, and republishing it invites a DMCA), so the
+# field is now OURS and must never be overwritten by a re-scrape — nor
+# imported for new comps (build_comp no longer carries it). A new comp simply
+# has no how_to_play until it is written by hand (check_meta warns).
+HAND_ADDED_FIELDS = ("tribe", "guide", "how_to_play", "source")
 
 # [[Card Name||dbfId]] wiki-link used in when_to_commit / common_enablers.
 WIKILINK_RE = re.compile(r"\[\[([^|\]]+)\|\|(\d+)\]\]")
 
 # Free-text comp fields that the site edits between patches (reported by
-# --diff as "edited (N -> M chars)" rather than a full dump).
-TEXT_FIELDS = ("how_to_play", "summary", "when_to_commit", "common_enablers")
+# --diff as "edited (N -> M chars)" rather than a full dump). how_to_play is
+# deliberately absent: see HAND_ADDED_FIELDS.
+TEXT_FIELDS = ("summary", "when_to_commit", "common_enablers")
 
 MINIONS_PATH = os.path.join(_HERE, "meta", "minions.json")
 
@@ -276,19 +285,26 @@ def diff_comp(old, new, card_names):
 
 
 def build_comp(record, dbfid_map):
-    """Turn a raw comp record (comp_* keys) into the meta schema dict."""
+    """Turn a raw comp record (comp_* keys) into the meta schema dict.
+
+    comp_how_to_play is deliberately NOT carried: it is hsreplay's copyrighted
+    guide prose, and republishing it is takedown bait (2026-09-24 pass). The
+    comp BUILD (which cards, tier, difficulty) is unprotectable strategy
+    facts; the prose is not. A new comp gets no how_to_play until it is
+    written in our own words.
+    """
     rep = record.get("comp_representative_card")
     return {
         "name": record.get("comp_name", ""),
         "difficulty": DIFFICULTY_MAP.get(record.get("comp_difficulty"), "?"),
         "meta_tier": TIER_MAP.get(record.get("comp_tier"), "?"),
         "core": map_cards(record.get("comp_core_cards"), dbfid_map),
-        "how_to_play": record.get("comp_how_to_play", ""),
         "addons": map_cards(record.get("comp_addon_cards"), dbfid_map),
         "summary": record.get("comp_summary", ""),
         "when_to_commit": strip_wikilinks(record.get("comp_when_to_commit", "")),
         "common_enablers": enablers_to_text(record.get("comp_common_enablers", "")),
         "representative_card": dbfid_map.get(str(rep), "") if rep else "",
+        "source": "hsreplay.net comp pages (scrape_comps.py)",
     }
 
 

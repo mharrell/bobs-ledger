@@ -175,11 +175,12 @@ point at your own repo instead. To record no decision log at all
 The coach's code is MIT-licensed — see `LICENSE` in the repo root. Two
 things the license doesn't cover, credited where they came from:
 
-- The meta reference (`meta/*.json`) is curated from public sources:
-  the comp builds and guide text were scraped from hsreplay.net's
-  public comp pages (`scrape_comps.py`), and card data comes from
-  HearthstoneJSON. The one comp mined from our own replay corpus is
-  marked `provisional` with its evidence attached.
+- The meta reference (`meta/*.json`) credits its sources: each comp in
+  `comps.json` names where the build came from (hsreplay.net's public
+  comp pages, via `scrape_comps.py`; one comp is mined from our own
+  replay corpus and marked `provisional`), and card data comes from
+  HearthstoneJSON. The strategy *builds* are facts; the guide text is
+  written in the coach's own words — nothing is republished.
 - Hearthstone — card names, text, and art — is © Blizzard
   Entertainment. This is an unofficial fan tool: it reads log files
   only and is not affiliated with or endorsed by Blizzard.
