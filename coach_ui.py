@@ -22,15 +22,18 @@ collapses it (expansion state survives the 1s poll rebuilds).
 Usage:
     python coach_ui.py [--port N]     # run the server standalone (empty state)
 """
+import hashlib
 import json
 import os
 import re
 import threading
 import time
 import urllib.request
+from functools import lru_cache
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from value import (_load_bg_names, _load_card_db, _load_spell_db,
+                   DYING_HEALTH, SELL_FILLER_SCORE,
                    HAND_DEPLOY_KITS, hand_engine, sell_reason)
 import pool
 import meta
@@ -67,14 +70,35 @@ except (OSError, ValueError):
     _art_miss = {}
 
 
+_miss_last_write = [0.0]  # last on-disk flush of the miss list (rate-limit)
+
+
 def _remember_miss(cid):
     with _art_lock:
         _art_miss[cid] = time.time()
-        try:
-            with open(_art_miss_path, "w", encoding="utf-8") as f:
-                json.dump(_art_miss, f)
-        except OSError:
-            pass
+        # Prune entries already dead to _can_retry — the file used to grow
+        # without bound (502 ids and counting). The in-memory dict is the
+        # gate; the disk write is only crash recovery, so it is rate-limited
+        # (it used to rewrite the whole file on every miss).
+        now = time.time()
+        for c in [c for c, t in _art_miss.items() if now - t > MISS_TTL]:
+            del _art_miss[c]
+        if now - _miss_last_write[0] >= 30.0:
+            _miss_last_write[0] = now
+            try:
+                with open(_art_miss_path, "w", encoding="utf-8") as f:
+                    json.dump(_art_miss, f)
+            except OSError:
+                pass
+
+
+def _active_misses():
+    """Card ids currently on the miss list (fresh enough that /img would
+    404 again right now). Served once at GET /artmiss so the page renders
+    placeholder tiles with no 404 round-trip per tile per rebuild."""
+    with _art_lock:
+        now = time.time()
+        return sorted(c for c, t in _art_miss.items() if now - t <= MISS_TTL)
 
 
 def _can_retry(cid):
@@ -108,7 +132,8 @@ _HTML = r"""<!doctype html>
 <title>Coach</title>
 <style>
   :root { --bg:#14161a; --panel:#1e2126; --panel2:#262a31; --text:#e8e8e8;
-          --dim:#9aa0a8; --good:#5fd97a; --warn:#f0b04a; --bad:#e86a5a; }
+          --dim:#9aa0a8; --good:#5fd97a; --warn:#f0b04a; --bad:#e86a5a;
+          --gold:#ffd97a; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text);
          font:14px/1.45 "Segoe UI", system-ui, sans-serif; padding:8px; }
@@ -292,14 +317,29 @@ _HTML = r"""<!doctype html>
 </div>
 <script>
 let _lastPayload = null;
+let _etag = null;
+let _pollBusy = false;
 async function poll() {
+  if (_pollBusy) return;  // a slow response must not pile up ticks
+  _pollBusy = true;
   try {
-    const r = await fetch('/analysis');
-    const raw = await r.text();
-    if (raw === _lastPayload) return;  // nothing changed — don't rebuild the
-    _lastPayload = raw;                // DOM (rebuilding every second made
-    render(JSON.parse(raw));           // thumbnails flicker)
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    const r = await fetch('/analysis', {
+      signal: ctrl.signal,
+      headers: _etag ? {'If-None-Match': _etag} : undefined,
+    });
+    clearTimeout(timer);
+    if (r.status !== 304) {          // 304 = unchanged: header only, no body,
+      const raw = await r.text();    // no JSON.parse, no DOM work
+      _etag = r.headers.get('ETag');
+      if (raw !== _lastPayload) {    // unchanged payloads never rebuild the
+        _lastPayload = raw;          // DOM (rebuilding every second made
+        render(JSON.parse(raw));     // thumbnails flicker)
+      }
+    }
   } catch (e) { /* keep last frame */ }
+  finally { _pollBusy = false; }
 }
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -370,11 +410,29 @@ function box(title, body) {
   if (body) b.appendChild(body);
   return b;
 }
+// Card ids with no art upstream (the render build lags the patch; trinkets
+// have none at all), fetched once from GET /artmiss: thumb() renders the
+// placeholder directly, so ~500 known misses stop paying a 404 round-trip
+// per tile per rebuild. Keyed by the EXACT id requested — /img does not
+// strip the golden _G suffix.
+const MISSES = new Set();
+fetch('/artmiss').then(r => r.json()).then(j => {
+  (j.misses || []).forEach(cid => MISSES.add(cid));
+}).catch(() => {});
 // Card art thumbnail (img_cache/ via /img/<id>.png, fetched by fetch_art.py).
 // Hides itself gracefully when no art is cached (current-set BG-only cards).
 // Hover shows the full card render (framed layout WITH text) via /card/,
 // falling back to a text box from the meta DB, then to the old portrait zoom.
+function thumbPh(cid, name) {
+  const ph = document.createElement('span');
+  ph.className = 'thumb ph';
+  ph.textContent = (name || '?').trim().charAt(0).toUpperCase();
+  ph.onmouseenter = () => hoverCard(ph, cid, name);
+  ph.onmouseleave = leaveCard;
+  return ph;
+}
 function thumb(cid, name) {
+  if (MISSES.has(cid)) return thumbPh(cid, name);
   const img = document.createElement('img');
   img.className = 'thumb canzoom';
   img.src = '/img/' + cid + '.png';
@@ -383,13 +441,10 @@ function thumb(cid, name) {
   img.onmouseleave = leaveCard;
   img.onerror = () => {
     // No art available (render build lags the patch; trinkets have none
-    // upstream): a same-size placeholder keeps every row aligned.
-    const ph = document.createElement('span');
-    ph.className = 'thumb ph';
-    ph.textContent = (name || '?').trim().charAt(0).toUpperCase();
-    ph.onmouseenter = () => hoverCard(ph, cid, name);
-    ph.onmouseleave = leaveCard;
-    img.replaceWith(ph);
+    // upstream): a same-size placeholder keeps every row aligned. The id
+    // joins MISSES so sibling tiles of the same card skip the 404 too.
+    MISSES.add(cid);
+    img.replaceWith(thumbPh(cid, name));
   };
   return img;
 }
@@ -415,6 +470,22 @@ function tile(cid, name, sub, opts) {
 // drops the DOM but re-opens whatever was open). The collapsed row already
 // says how much of the core you own, so expanding is only for the detail.
 const _openComps = new Set();
+// Expanded bodies are cached keyed by slug + the exact rows (core/addons
+// with their owned/banned flags — those are compTiles' only inputs, and
+// keying on them is what keeps a just-bought card from still reading
+// "have"/"missing"). appendChild re-parents, so the <img>s persist across
+// the full-DOM rebuilds instead of being re-requested every tick.
+const _compBodyCache = new Map();
+function compBody(c) {
+  const key = c.slug + '|' + JSON.stringify([c.core, c.addons]);
+  let node = _compBodyCache.get(key);
+  if (!node) {
+    node = compTiles(c);
+    if (_compBodyCache.size > 300) _compBodyCache.clear();
+    _compBodyCache.set(key, node);
+  }
+  return node;
+}
 function compTiles(c) {
   const tiles = el('div', 'tiles');
   [['core', 'core'], ['addons', 'addons']].forEach(([_label, key]) => {
@@ -445,16 +516,17 @@ function compRow(c) {
     + (unconf ? ' · tribe unconfirmed' : '')));
   const body = el('div', 'cbody');
   // Collapsed rows build their tiles lazily (on first expand) so a 21-comp
-  // panel doesn't queue 100+ card fetches up front; an open row builds now.
+  // panel doesn't queue 100+ card fetches up front; an open row reuses the
+  // cached body (see _compBodyCache).
   body.hidden = !open;
-  if (open) body.appendChild(compTiles(c));
+  if (open) body.appendChild(compBody(c));
   head.onclick = () => {
     const nowOpen = !_openComps.has(c.slug);
     if (nowOpen) _openComps.add(c.slug); else _openComps.delete(c.slug);
     head.classList.toggle('open', nowOpen);
     arrow.textContent = nowOpen ? '▾' : '▸';
     body.hidden = !nowOpen;
-    if (nowOpen && !body.children.length) body.appendChild(compTiles(c));
+    if (nowOpen && !body.children.length) body.appendChild(compBody(c));
   };
   const wrap = el('div', 'crow' + (unconf ? ' unconf' : ''));
   wrap.appendChild(head);
@@ -468,6 +540,9 @@ function render(a) {
   // tooltip with the old frame so it can't outlive its card.
   leaveCard();
   CARDS = a.cards || {};
+  // value.py's constants, mirrored to the client (the JS used to hard-code
+  // its own copies — two definitions that could drift).
+  const TH = a.thresholds || {};
   app.innerHTML = '';
   statebar.innerHTML = '';
   if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
@@ -480,6 +555,7 @@ function render(a) {
     _banPickGame = gameNo;
     _banPick = new Set(a.bans_manual ? (a.banned || []) : []);
     _banPickAt = 0;
+    _compBodyCache.clear();  // a new game invalidates every owned/banned flag
   } else if (a.bans_manual && Date.now() - _banPickAt > 3000) {
     const srv = new Set(a.banned || []);
     if (srv.size !== _banPick.size || [...srv].some(t => !_banPick.has(t))) {
@@ -506,7 +582,7 @@ function render(a) {
   statebar.appendChild(tier);
   if (a.health != null) {
     const fr = a.fragility || {};
-    const dying = (a.health + (a.armor || 0)) <= 12;
+    const dying = (a.health + (a.armor || 0)) <= (TH.dying_hp || 12);
     const hp = el('span', null); hp.appendChild(el('span', 'lbl', 'HP '));
     hp.appendChild(el('span', dying ? 'bad'
       : (fr.band === 'fragile' ? 'warn' : null),
@@ -715,8 +791,8 @@ function render(a) {
   }
 
   // SELL — one horizontal line: safe to sell | divider | do not sell.
-  // The split is the value function's own filler threshold (score < 15 is
-  // what top_move calls "a clear filler").
+  // The split is the value function's own filler threshold (SELL_FILLER_SCORE,
+  // shipped as thresholds.sell_safe_below — what top_move calls "a clear filler").
   const sellSafe = el('div', 'tiles');
   const sellKeep = el('div', 'tiles');
   (a.sell_rank || []).forEach(s => {
@@ -726,9 +802,10 @@ function render(a) {
     const sub = s.score.toFixed(0)
       + (s.why ? ' · ' + s.why : '')
       + (s.fuel ? ' · cast, not sell' : '');
+    const safe = s.score < (TH.sell_safe_below || 15);
     const t = tile(s.card, s.name, sub,
-                   {golden: s.golden, n: s.n, cls: s.score < 15 ? 'safe' : 'keep'});
-    (s.score < 15 ? sellSafe : sellKeep).appendChild(t);
+                   {golden: s.golden, n: s.n, cls: safe ? 'safe' : 'keep'});
+    (safe ? sellSafe : sellKeep).appendChild(t);
   });
   const sellBody = el('div', 'sellrow');
   const safeG = el('div', 'sellgroup safe');
@@ -919,7 +996,10 @@ function postBans(list) {
                   headers: {'Content-Type': 'application/json'},
                   body: JSON.stringify({banned: list})});
 }
-setInterval(poll, 1000);
+// 300ms: the live loop pushes up to ~3/s and the advice itself costs ~5ms —
+// the 1s browser poll was the perceived lag. Between pushes the server
+// answers a header-only 304, so the faster tick is nearly free.
+setInterval(poll, 300);
 poll();
 </script>
 </body>
@@ -931,6 +1011,11 @@ class _State:
     def __init__(self):
         self.lock = threading.Lock()
         self.analysis = None
+        # The serialized /analysis body and its ETag, built once per push
+        # (update_analysis) instead of once per request — the page polls at
+        # 300ms and a 304 between pushes is a header, not ~40KB of JSON.
+        self.payload = b"{}"
+        self.etag = None
         # The player-set banned tribes (POST /bans), or None when not set.
         # The ban reveal is on screen at t0 and the pool inference needs
         # minutes to converge, so a 5-tap override at hero pick is the
@@ -961,6 +1046,17 @@ def latest_manual_bans():
     with _state.lock:
         return list(_state.manual_bans) if _state.manual_bans is not None \
             else None
+
+
+@lru_cache(maxsize=1)
+def _meta_rows():
+    """(minions, spells, trinkets) as id→record maps. The meta DB reads are
+    already lru_cached, but rebuilding these three dicts on every analysis
+    push (up to ~3/s) was pure waste — they change only on a meta refresh
+    (i.e. on process restart, which is the documented live.py contract)."""
+    return ({m.get("id"): m for m in meta.minions()},
+            {s.get("id"): s for s in meta.spells()},
+            {t.get("id"): t for t in meta.trinkets()})
 
 
 def render_json(analysis):
@@ -1005,7 +1101,7 @@ def render_json(analysis):
     if holding_destroy:
         for g in sell:
             race = ((card_db.get(g["card"]) or {}).get("race") or "")
-            if g["score"] < 15 and "Undead" in (race or ""):
+            if g["score"] < SELL_FILLER_SCORE and "Undead" in (race or ""):
                 g["fuel"] = True
     # WHY each Sell row sits there (2026-09-10 ask): the score alone can't
     # tell "comp core" (a keep!) from "stats only" (a safe sell) — the
@@ -1197,11 +1293,11 @@ def render_json(analysis):
     # shipping state the page has no use for.
     a.pop("dark_gifts", None)
     a["opp_trinkets"] = analysis.get("opp_trinkets") or []
-    # When leveling leads the top move, the buy is what you do with the
-    # leftover — label it that way so the priorities read in order.
-    a["buy_label"] = ("Then buy (after leveling)"
-                      if (analysis.get("top_move") or "").startswith("1. LEVEL")
-                      else "Buy this")
+    # Thresholds the JS would otherwise hard-code (dying HP, the sell
+    # safe/keep split) — value.py's constants are the single source; the
+    # page reads them with fallbacks so an old payload still renders.
+    a["thresholds"] = {"dying_hp": DYING_HEALTH,
+                       "sell_safe_below": SELL_FILLER_SCORE}
     # Per-card display metadata for the overlay (2026-09-09): the tavern tier
     # for the '*N' name badge and the card text for the hover tooltip — so
     # cards whose full render isn't upstream (new sets, trinkets) still get
@@ -1227,9 +1323,7 @@ def render_json(analysis):
     choice = analysis.get("choice") or {}
     ids.update(row[1] for row in (choice.get("ranked") or [])
                if len(row) > 1 and row[1])
-    mrows = {m.get("id"): m for m in meta.minions()}
-    srows = {s.get("id"): s for s in meta.spells()}
-    trows = {t.get("id"): t for t in meta.trinkets()}
+    mrows, srows, trows = _meta_rows()
     cards = {}
     for cid in sorted(ids):
         base = cid[:-2] if cid.endswith("_G") else cid
@@ -1248,8 +1342,12 @@ def render_json(analysis):
 
 def update_analysis(analysis):
     """Store the latest rendered analysis for the overlay to serve."""
+    data = json.dumps(render_json(analysis)).encode()
+    etag = hashlib.sha1(data).hexdigest()
     with _state.lock:
-        _state.analysis = render_json(analysis)
+        _state.analysis = json.loads(data)
+        _state.payload = data
+        _state.etag = etag
 
 
 def latest_analysis():
@@ -1257,45 +1355,78 @@ def latest_analysis():
         return _state.analysis
 
 
+def _analysis_response(if_none_match=None):
+    """(code, headers, body) for GET /analysis. Pure, so the 304 path is
+    testable without a socket. ETag/304 rather than SSE: the transport is
+    BaseHTTPRequestHandler (HTTP/1.0, no keep-alive) and the client is
+    loopback — a 304 costs microseconds and reuses the request path that
+    already exists."""
+    with _state.lock:
+        payload, etag = _state.payload, _state.etag
+    headers = {"Cache-Control": "no-cache"}
+    if etag:
+        headers["ETag"] = f'"{etag}"'
+    if if_none_match and etag and etag in if_none_match:
+        return 304, headers, b""
+    return 200, headers, payload
+
+
 class _Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.rstrip("/") == "/analysis":
-            with _state.lock:
-                data = json.dumps(_state.analysis) if _state.analysis else "{}"
-            self._send(200, "application/json", data.encode())
-        else:
-            m = re.match(r"^/img/([A-Za-z0-9_]+)\.png$", self.path)
-            if m:
-                cid = m.group(1)
-                path = os.path.join(_HERE, "img_cache", f"{cid}.png")
-                if not os.path.exists(path) and _can_retry(cid):
-                    # On-demand: fetch the render now so the hero/trinket/
-                    # minion art appears on the next UI poll instead of never.
-                    _fetch_render(cid)
-                if os.path.exists(path):
-                    with open(path, "rb") as f:
-                        self._send(200, "image/png", f.read())
-                    return
-                self._send(404, "text/plain", b"no art cached")
+            code, headers, body = _analysis_response(
+                self.headers.get("If-None-Match"))
+            self._send(code, "application/json", body, headers=headers)
+            return
+        if self.path.rstrip("/") == "/artmiss":
+            # Served BEFORE the /img regex (the pattern would otherwise not
+            # match this path, but the ordering keeps the routes obvious).
+            self._send(200, "application/json",
+                       json.dumps({"misses": _active_misses()}).encode())
+            return
+        m = re.match(r"^/img/([A-Za-z0-9_]+)\.png$", self.path)
+        if m:
+            cid = m.group(1)
+            path = os.path.join(_HERE, "img_cache", f"{cid}.png")
+            if not os.path.exists(path) and _can_retry(cid):
+                # On-demand: fetch the render now so the hero/trinket/
+                # minion art appears on the next UI poll instead of never.
+                _fetch_render(cid)
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    # Art is content-addressed by card id — cacheable hard.
+                    self._send(200, "image/png", f.read(),
+                               headers={"Cache-Control":
+                                        "public, max-age=604800"})
                 return
-            m = re.match(r"^/card/([A-Za-z0-9_]+)\.png$", self.path)
-            if m:
-                # The hover tooltip's full render (framed card WITH text),
-                # cached in img_cache/card/. Golden ids resolve to the base
-                # card; misses share the /img miss list (same upstream URL).
-                cid = m.group(1)
-                if cid.endswith("_G"):
-                    cid = cid[:-2]
-                path = os.path.join(CARD_DIR, f"{cid}.png")
-                if not os.path.exists(path) and _can_retry(cid):
-                    _fetch_render(cid, dest_dir=CARD_DIR)
-                if os.path.exists(path):
-                    with open(path, "rb") as f:
-                        self._send(200, "image/png", f.read())
-                    return
-                self._send(404, "text/plain", b"no card render cached")
+            self._send(404, "text/plain", b"no art cached",
+                       headers={"Cache-Control": "no-store"})
+            return
+        m = re.match(r"^/card/([A-Za-z0-9_]+)\.png$", self.path)
+        if m:
+            # The hover tooltip's full render (framed card WITH text),
+            # cached in img_cache/card/. Golden ids resolve to the base
+            # card; misses share the /img miss list (same upstream URL).
+            cid = m.group(1)
+            if cid.endswith("_G"):
+                cid = cid[:-2]
+            path = os.path.join(CARD_DIR, f"{cid}.png")
+            if not os.path.exists(path) and _can_retry(cid):
+                _fetch_render(cid, dest_dir=CARD_DIR)
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    self._send(200, "image/png", f.read(),
+                               headers={"Cache-Control":
+                                        "public, max-age=604800"})
                 return
-            self._send(200, "text/html; charset=utf-8", _HTML.encode())
+            self._send(404, "text/plain", b"no card render cached",
+                       headers={"Cache-Control": "no-store"})
+            return
+        # The page itself: no-cache so a Phase-2 CSS edit is picked up on
+        # refresh (it previously had no validator at all, and Chrome's
+        # heuristic caching served stale markup).
+        self._send(200, "text/html; charset=utf-8", _HTML.encode(),
+                   headers={"Cache-Control": "no-cache"})
 
     def do_POST(self):
         if self.path.rstrip("/") == "/bans":
@@ -1311,9 +1442,11 @@ class _Handler(BaseHTTPRequestHandler):
             return
         self._send(404, "text/plain", b"no such endpoint")
 
-    def _send(self, code, ctype, body):
+    def _send(self, code, ctype, body, headers=None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        for k, v in (headers or {}).items():
+            self.send_header(k, v)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
