@@ -697,19 +697,22 @@
     "difficulty": null,
     "core": [
       "BG36_318",
-      "BG36_103"
+      "BG36_103",
+      "BG36_320",
+      "BG32_821",
+      "BG25_354",
+      "BG26_ICC_901"
     ],
     "addons": [
-      "BG25_354",
-      "BG36_320",
+      "BG36_312",
+      "BG36_113",
+      "BG36_300",
       "BG36_109",
-      "BG36_115",
-      "BG36_114",
-      "BG35_883"
+      "BG36_115"
     ],
     "provisional": true,
-    "source": "own replay corpus (comp_miner.py)",
-    "summary": "Feed the Deity: Faceless Converter and N'raqi Sapper both pay the Deity on Deathrattle (Sapper hands you Energizing Chambers, +7/+7 each, cast twice if discarded), with Titus Rivendare doubling those triggers and Mysterious K'Thir / The Shadow of Doubt / Parasitic Fleshling as the discard and hand-add payoffs. Mined from our own Aberration-dominant boards, not published anywhere.",
+    "source": "own replay corpus (comp_miner.py, 2026-09-23); core/helpers player-curated 2026-09-24 — a comp_miner --promote Aberration re-run REBUILDS this provisional row and would drop the curated lists (they survive in git history)",
+    "summary": "Feed the Deity on two axes: deathrattle pay (Faceless Converter gives the Deity +1/+1 improved per tavern spell cast, N'raqi Sapper hands you Energizing Chambers, +7/+7 each, cast twice if discarded, Drifting Sacrifice is the t3 on-ramp) doubled by Titus Rivendare; and end-of-turn spell scaling (Felfire Conjurer and N'raqi Frostcaller make tavern spells give an extra +1/+1 this game, Mysterious K'Thir pays +8/+8 per discarded spell) doubled by Drakkari Enchanter. Helpers: Mindbending Recruiter (Activate: discard a card, get a random Aberration) with The Shadow of Doubt paying the Deity +3/+4 on every hand-add, and Nightmare Corroder banking Sludge Corrosions. Player-curated 2026-09-24 (core/helpers rewritten from the comp_miner 2-card provisional).",
     "when_to_commit": "When the board is majority Aberration and two or more of the core cards are held or bought.",
     "evidence": {
       "games": 4,
