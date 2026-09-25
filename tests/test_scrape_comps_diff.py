@@ -49,9 +49,17 @@ class TestDiffComp(unittest.TestCase):
                          ["core: + BG99_999"])
 
     def test_text_fields_report_length_only(self):
-        new = base_comp(how_to_play="do the thing much better now ok")
+        new = base_comp(summary="a comp, ranked")
         self.assertEqual(diff_comp(base_comp(), new, NAMES),
-                         ["how_to_play: edited (12 -> 31 chars)"])
+                         ["summary: edited (6 -> 14 chars)"])
+
+    def test_how_to_play_is_ours_and_never_diffed(self):
+        """Since the 2026-09-24 takedown-hygiene pass, how_to_play is written
+        in our own words and preserved across re-scrapes (HAND_ADDED_FIELDS) —
+        the scraped prose is never imported, so the field can never change
+        from a re-scrape and has nothing to diff."""
+        new = base_comp(how_to_play="do the thing much better now ok")
+        self.assertEqual(diff_comp(base_comp(), new, NAMES), [])
 
     def test_representative_change(self):
         new = base_comp(representative_card="BG31_835")

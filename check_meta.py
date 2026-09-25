@@ -121,6 +121,16 @@ def main():
             errors.append(f"comps.json: {slug} has no tribe field")
         if not comp.get("core"):
             warnings.append(f"comps.json: {slug} has no core cards")
+        if not comp.get("source"):
+            # Takedown hygiene (2026-09-24): every comp names where it came
+            # from. Scrape_comps stamps it; hand-added comps must too.
+            warnings.append(f"comps.json: {slug} has no source field")
+        if not comp.get("provisional") and not comp.get("how_to_play"):
+            # The guide text is written in our own words since the 2026-09-24
+            # rewrite (scrape_comps no longer imports hsreplay's prose). A
+            # comp without it is unadvised, not wrong — warn, don't gate.
+            warnings.append(f"comps.json: {slug} has no how_to_play (write "
+                            "original advice, don't paste the source page)")
         comp_ids.update(c for c in comp.get("core", []))
         comp_ids.update(c for c in comp.get("addons", []))
     minion_ids = {m.get("id") for m in minions}
