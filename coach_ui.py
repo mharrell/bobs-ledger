@@ -95,12 +95,22 @@ def _remember_miss(cid):
 
 
 def _active_misses():
-    """Card ids currently on the miss list (fresh enough that /img would
-    404 again right now). Served once at GET /artmiss so the page renders
-    placeholder tiles with no 404 round-trip per tile per rebuild."""
+    """Card ids that would 404 RIGHT NOW — fresh on the miss list AND with
+    no art file on disk. Served once at GET /artmiss so the page renders
+    placeholder tiles with no 404 round-trip per tile per rebuild.
+
+    The file-exists check is not optional: the miss list goes stale when art
+    arrives by another door (patch-day hearth_art_extract rewrites img_cache
+    without touching this file — 434 of its 504 entries had files on disk on
+    2026-09-24). The /img endpoint itself is immune (it stats the file
+    first); only this list can lie, and the client trusts it."""
     with _art_lock:
         now = time.time()
-        return sorted(c for c, t in _art_miss.items() if now - t <= MISS_TTL)
+        return sorted(
+            c for c, t in _art_miss.items()
+            if now - t <= MISS_TTL
+            and not os.path.exists(
+                os.path.join(_HERE, "img_cache", f"{c}.png")))
 
 
 def _can_retry(cid):
