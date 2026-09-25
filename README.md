@@ -170,6 +170,20 @@ repo (`mharrell/hearth-telemetry`) — set `HEARTH_TELEMETRY_REPO` to
 point at your own repo instead. To record no decision log at all
 (locally or otherwise), run with `HEARTH_TELEMETRY=0`.
 
+## License & attribution
+
+The coach's code is MIT-licensed — see `LICENSE` in the repo root. Two
+things the license doesn't cover, credited where they came from:
+
+- The meta reference (`meta/*.json`) is curated from public sources:
+  the comp builds and guide text were scraped from hsreplay.net's
+  public comp pages (`scrape_comps.py`), and card data comes from
+  HearthstoneJSON. The one comp mined from our own replay corpus is
+  marked `provisional` with its evidence attached.
+- Hearthstone — card names, text, and art — is © Blizzard
+  Entertainment. This is an unofficial fan tool: it reads log files
+  only and is not affiliated with or endorsed by Blizzard.
+
 ## Troubleshooting
 
 - **`No active Power.log found` / nothing happens during a game** —
