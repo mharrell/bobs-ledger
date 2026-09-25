@@ -4732,5 +4732,20 @@
     "text": "[x]Activate (1): Give another\nMurloc +7/+7 and a\n  random Bonus Keyword.",
     "tribe_src": "hearthstonejson",
     "auto_added": "from session logs (extend_pool.py)"
+  },
+  {
+    "tier": null,
+    "id": "BGFYM_002t",
+    "name": "Aberrant Tentacle",
+    "cost": 0,
+    "tribe": "Aberration",
+    "attack": 0,
+    "health": 2,
+    "mechanics": [
+      "TAUNT"
+    ],
+    "text": "Deity-feed token (summoned to hand by the Deity package; the log carries no ATK value for it). Taunt; feeds the Deity when discarded/destroyed by the feed effects.",
+    "tribe_src": "log",
+    "auto_added": "from session logs (2026-09-24 evening review: the player sold one from board and the Sell row printed the raw id)"
   }
 ]

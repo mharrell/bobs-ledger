@@ -114,14 +114,21 @@ class TestUnresolvedPreflight(unittest.TestCase):
     def test_the_registry_is_what_the_preflight_reads(self):
         self.assertIn("BG31_893", logquery._ANSWERED_GAPS)
 
-    def test_a_golden_variant_of_an_answered_gap_is_also_answered(self):
+    def test_a_golden_variant_of_a_known_card_is_also_known(self):
         """The log prints the golden copy with a `_G` suffix (BGFYM_002t_G for
-        the Aberrant Tentacle token). Registering the token must silence its
-        golden too, or the question never actually closes."""
-        self.assertIn("BGFYM_002t", logquery._ANSWERED_GAPS)
-        self.assertFalse(logquery._plausible_card("BGFYM_002t_G", "MINION", set()))
-        self.assertTrue(logquery._plausible_card("BGFYM_999_G", "MINION", set()),
-                        "an unregistered variant is still a gap")
+        the Aberrant Tentacle token). The token was a registry gap until
+        2026-09-24, when it was CARRIED in minions.json (the player sold one
+        from board and the Sell row printed the raw id) — so the golden now
+        resolves through _meta_ids instead of the registry. Either way the
+        question must stay closed, and an unregistered variant must not."""
+        known = logquery._meta_ids()
+        self.assertIn("BGFYM_002t", known,
+                      "the token is carried — it must never be a gap again")
+        self.assertFalse(
+            logquery._plausible_card("BGFYM_002t_G", "MINION", known))
+        self.assertTrue(
+            logquery._plausible_card("BGFYM_999_G", "MINION", known),
+            "an unknown variant is still a gap")
 
 
 class TestReviewKit(unittest.TestCase):

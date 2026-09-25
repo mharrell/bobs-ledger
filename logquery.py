@@ -442,6 +442,13 @@ def _plausible_card(cid, ctype, known):
         return False
     if cid != _base_card(cid) and _base_card(cid) in known:
         return False
+    # A golden of a KNOWN TOKEN (`BGFYM_002t_G`, the Aberrant Tentacle): the
+    # strip loop runs both suffixes and lands on `BGFYM_002`, an id that does
+    # not exist — the `t` is part of the token's real id. The question is
+    # answered when any intermediate strip is known, not only the full strip.
+    m = _GOLDEN_SUFFIX.search(cid)
+    if m and cid[:m.start()] in known:
+        return False
     return ctype in _DISPLAYABLE
 
 
