@@ -1543,6 +1543,38 @@ def hand_plan(hand, board_minions=None, scenario=None, pool_held=None):
     return steps
 
 
+def _name_sell_victims(hand_entries, board_len, sell_rank, names):
+    """Annotate play steps that execute into a full board with a NAMED sell.
+
+    Hand steps are each annotated against the plan-time board (hand_plan's
+    len(board) checks), but they EXECUTE in order: the 3rd play from a
+    5-board lands on a full board, and the old annotation ("sell to make
+    room") named no victim — the 2026-09-26 E.T.C. game queued "Play
+    K'Thir · Play Gearfin · Play Mindbending Recruiter" from board 5 and
+    left the player to guess. Project the slot count across the queued
+    plays and name the victim from the same sell_rank the Sell box uses
+    (the 2026-09-03 audit: 16 of 34 "sell to make room" lines named
+    nothing). Mutates the entries in place like the shop-buff demotion, so
+    the overlay's hand box agrees with the plan.
+    """
+    victim = names.get(sell_rank[0][0]) if sell_rank else None
+    proj = board_len
+    for s in hand_entries:
+        if s.get("verb") != "play":
+            continue
+        why = s.get("why") or ""
+        if proj >= 7 and victim:
+            if "sell to make room" in why:
+                s["why"] = why.replace("sell to make room",
+                                       f"sell {victim} first")
+            elif "sell" not in why.lower():
+                s["why"] = (why + f" — board is full: sell {victim} first"
+                            if why else
+                            f"board is full — sell {victim} first")
+        proj = min(7, proj + 1)
+    return hand_entries
+
+
 _STEP_KINDS = (("LEVEL", "level"), ("PICK ", "pick"), ("Buy ", "buy"),
                ("sell ", "sell"), ("roll", "roll"), ("Cast ", "cast"),
                ("Play ", "play"), ("Hold ", "hold"), ("Swap: ", "swap"),
@@ -3008,6 +3040,8 @@ def _top_move_text(analysis):
     # t16's Cast Repair Job x3 with a funded purse remains correct advice;
     # so is casting at gold 0 when the spell is in hand.
     if hand_entries:
+        _name_sell_victims(hand_entries, len(analysis.get("board") or []),
+                           analysis.get("sell_rank") or [], names)
         counts, order = {}, []
         for s in hand_entries:
             key = (s["verb"], s["card"])
