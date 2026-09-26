@@ -165,6 +165,8 @@ def main():
     does not have to READ it.
     """
     argv = sys.argv[1:]
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")  # advice can carry ⚠/· — a cp1252 console must not kill the run
     if "--summary" not in argv:
         return _run(argv)
     import contextlib

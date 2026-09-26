@@ -182,8 +182,12 @@ def show_moments(text, turns):
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")  # cached reviews can carry ⚠/· — a cp1252 console must not kill the run
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("log", nargs="?", default=None)
+    ap.add_argument("--latest", action="store_true",
+                    help="use the newest session log (same as passing no log)")
     ap.add_argument("--games", default=None, help="comma list, e.g. 1,3")
     ap.add_argument("--show", default=None,
                     help="print only these turns from the cache, e.g. --show 5,13")
@@ -191,7 +195,8 @@ def main():
     ap.add_argument("--refresh", action="store_true")
     args = ap.parse_args()
 
-    path = args.log if args.log and args.log != "--latest" else logquery.newest_log()
+    path = (args.log if args.log and args.log != "--latest" and not args.latest
+            else logquery.newest_log())
     if not path or not os.path.exists(path):
         raise SystemExit("no Power.log found (pass a path)")
 
