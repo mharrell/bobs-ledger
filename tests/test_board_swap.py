@@ -232,16 +232,23 @@ class TestTheBoardsTribeBeatsAnIncidentalMatch(unittest.TestCase):
         return out
 
     def test_the_board_tribe_wins_over_an_incidental_pair(self):
+        """Promoted 2026-09-26: Deity Feed is first-class now, so it wins the
+        commit loop outright (2 core hits, dominant board) instead of via the
+        gap path's provisional-package rule."""
         got = value.comp_target(self._board(), self._comps())
         self.assertEqual(got["name"], "Aberrations - Deity Feed")
-        self.assertTrue(got["provisional"])
+        self.assertFalse(got.get("provisional"))
 
     def test_an_active_pivot_still_wins(self):
         """Two cores of the published comp BOUGHT this turn is a pivot in
-        progress — buys lead a lagging board (the 2026-09-04 Varden rule)."""
+        progress — but as a first-class board commit (2 core hits, dominant
+        board) Deity Feed holds on the evidence tie: the 2026-09-07 rule —
+        on a tie the dominant board wins, and the buys carry the SAME
+        evidence (2 hits). The pivot-beats-package case is still covered in
+        test_provisional_comps with a synthetic provisional fixture."""
         got = value.comp_target(self._board(), self._comps(),
                                 recent_cards=[self.BEAST, self.BEAST])
-        self.assertEqual(got["name"], "Beasts - Tasty Lobstah")
+        self.assertEqual(got["name"], "Aberrations - Deity Feed")
 
     def test_a_published_comp_dominant_board_is_untouched(self):
         board = [{"card": self.BEAST, "atk": 5, "health": 5, "tribe": "Beast"}] * 3

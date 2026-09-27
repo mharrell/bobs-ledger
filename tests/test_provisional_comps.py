@@ -245,13 +245,16 @@ class TestPruneKeepsProvisional(unittest.TestCase):
 class TestTheShippedEntry(unittest.TestCase):
     """The real meta/comps.json entry this feature exists for."""
 
-    def test_the_aberration_entry_is_provisional_and_carries_evidence(self):
+    def test_the_aberration_entry_is_first_class_and_carries_evidence(self):
+        """Promoted 2026-09-26 (player decision): the curated deity-pool build
+        competes as a first-class comp alongside the published
+        aberrations-deathrattle-spells. Provenance stays in source/evidence."""
         comp = meta.comps().get("aberrations-deity-feed")
-        self.assertIsNotNone(comp, "the mined Aberration comp is missing")
-        self.assertTrue(comp["provisional"])
+        self.assertIsNotNone(comp, "the curated Aberration comp is missing")
+        self.assertFalse(comp.get("provisional"))
         self.assertEqual(comp["tribe"], AB)
         self.assertTrue(comp["core"])
-        ev = comp["evidence"]
+        ev = comp["evidence"]     # the mining evidence stays attached
         self.assertGreaterEqual(ev["games"], comp_miner.PROVISIONAL_FLOOR)
         self.assertIsNone(comp["meta_tier"])
 
@@ -262,11 +265,13 @@ class TestTheShippedEntry(unittest.TestCase):
         self.assertFalse(missing, f"comp names cards the DB cannot resolve: {missing}")
 
     def test_the_published_comps_are_untouched(self):
-        """Promotion must not have disturbed a single scraped entry."""
+        """The tier refresh must not have disturbed a single scraped entry:
+        every comp except the curated Aberration build carries a source tier."""
         comps = meta.comps()
-        published = [k for k, c in comps.items() if not c.get("provisional")]
-        self.assertEqual(len(published), len(comps) - 1)
-        for k in published:
+        scraped = [k for k in comps
+                   if k != "aberrations-deity-feed" and not k.startswith("_")]
+        self.assertGreater(len(scraped), 1)
+        for k in scraped:
             self.assertIn("meta_tier", comps[k])
 
 
