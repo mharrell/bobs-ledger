@@ -2,17 +2,15 @@
   "elementals-unbound-tempest": {
     "name": "Elementals - Unbound Tempest",
     "difficulty": "Easy",
-    "meta_tier": "S",
+    "meta_tier": "B",
     "core": [
       "BG36_352",
-      "BG36_701",
+      "BGS_123",
       "BG_LOE_077",
-      "BGS_104",
-      "BGS_123"
+      "BG36_701"
     ],
-    "how_to_play": "Shop-buff engine: open with whichever of [[Nomi, Kitchen Nightmare||63626]] or [[Air Revenant||126173]] appears first. Core economy and generation: [[Brann Bronzebeard||96786]] + [[Tavern Tempest||64077]] + [[Kelp Keeper||132883]]. [[Flaming Enforcer||126924]] is the midgame stabilizer. Late game [[Unbound Tempest||132983]] raises the cap - cycle premium elementals under it ([[Sellemental||64038]], [[Refreshing Anomaly||64042]]).",
     "addons": [
-      "BG32_846",
+      "BG28_707",
       "BG34_500",
       "BG34_858"
     ],
@@ -20,8 +18,9 @@
     "when_to_commit": "Brann Bronzebeard + shop buff (Nomi, Kitchen Nightmare) + Unbound Tempest",
     "common_enablers": "Brann Bronzebeard\nTavern Tempest + Kelp Keeper",
     "representative_card": "BG36_352",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Elemental",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Shop-buff engine: open with whichever of [[Nomi, Kitchen Nightmare||63626]] or [[Air Revenant||126173]] appears first. Core economy and generation: [[Brann Bronzebeard||96786]] + [[Tavern Tempest||64077]] + [[Kelp Keeper||132883]]. [[Flaming Enforcer||126924]] is the midgame stabilizer. Late game [[Unbound Tempest||132983]] raises the cap - cycle premium elementals under it ([[Sellemental||64038]], [[Refreshing Anomaly||64042]])."
   },
   "nagas-end-of-turn-spell-buff": {
     "name": "Nagas - End Of Turn/Spell Buff",
@@ -76,11 +75,10 @@
     "difficulty": "Hard",
     "meta_tier": "A",
     "core": [
+      "BG36_853",
       "BG26_152",
-      "BG35_883",
-      "BG36_853"
+      "BG35_883"
     ],
-    "how_to_play": "Targeted spells go on Mechs while [[Glambot||132893]] is on board; [[Balinda Stonehearth||130298]] doubles each cast. Fuel the loop with spell generation ([[Captain Cookie||133075]]) and gem cyclers ([[Fearless Foodie||113154]]), and buy Pointy Arrow on sight. Mid-to-late, [[Utility Drone||98588]] converts the magnetics Glambot accumulated into real stats.",
     "addons": [
       "BG26_ICC_901",
       "BG36_506",
@@ -91,13 +89,10 @@
     "when_to_commit": "Glambot + Balinda Stonehearth",
     "common_enablers": "Glambot to stabilize",
     "representative_card": "BG36_853",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Mech",
     "guide": "guides/mechs-magnetics-spells.md",
-    "enable": [
-      "BG26_148"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Targeted spells go on Mechs while [[Glambot||132893]] is on board; [[Balinda Stonehearth||130298]] doubles each cast. Fuel the loop with spell generation ([[Captain Cookie||133075]]) and gem cyclers ([[Fearless Foodie||113154]]), and buy Pointy Arrow on sight. Mid-to-late, [[Utility Drone||98588]] converts the magnetics Glambot accumulated into real stats."
   },
   "elementals-stat-scaling": {
     "name": "Elementals - Stat scaling",
@@ -130,12 +125,11 @@
     "difficulty": "Hard",
     "meta_tier": "A",
     "core": [
+      "BG36_208",
       "BG25_354",
       "BG36_202",
-      "BG36_204",
-      "BG36_208"
+      "BG36_204"
     ],
-    "how_to_play": "Deathrattle-multiplication comp: fire [[Tasty Lobster||132796]] as often as possible. Rallies plus [[Deathstrider||132808]] and [[Titus Rivendare||97408]] re-trigger it each time; a golden [[Headhunter Gryphon||132800]] moves those triggers into the shop phase - buy every [[Snarky Shark||132804]] and [[Lurking Lionfish||132794]] you see. Defensive finish: reborn + taunt the Lobster, and give the Gryphon windfury with [[Sprightly Scarab||108909]].",
     "addons": [
       "BG25_016",
       "BG36_201",
@@ -145,13 +139,10 @@
     "when_to_commit": "Headhunter Gryphon + Deathstrider",
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BG36_202",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Beast",
     "guide": "guides/beasts-tasty-lobstah.md",
-    "enable": [
-      "BG25_806"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Deathrattle-multiplication comp: fire [[Tasty Lobster||132796]] as often as possible. Rallies plus [[Deathstrider||132808]] and [[Titus Rivendare||97408]] re-trigger it each time; a golden [[Headhunter Gryphon||132800]] moves those triggers into the shop phase - buy every [[Snarky Shark||132804]] and [[Lurking Lionfish||132794]] you see. Defensive finish: reborn + taunt the Lobster, and give the Gryphon windfury with [[Sprightly Scarab||108909]]."
   },
   "murlocs-venom-scam": {
     "name": "Murlocs - Venom Scam",
@@ -162,7 +153,6 @@
       "BG33_318",
       "BG34_140"
     ],
-    "how_to_play": "Scam board. Buy every poison/reborn piece and concentrate stats on few units so your trades stay lopsided; the rest of the board exists to trade evenly at worst. Golden [[Expert Aviator||126637]] with venom from [[Bile Spitter||122219]] floods the fight with scam from hand. [[Sky-hatch Runaway||132957]] can hand out permanent venom instead.",
     "addons": [
       "BG27_556",
       "BG34_604",
@@ -173,14 +163,10 @@
     "when_to_commit": "When you have no future or are clearly getting outstatted",
     "common_enablers": "Getting outscaled",
     "representative_card": "BG33_318",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Murloc",
     "guide": "guides/murlocs-venom-scam.md",
-    "enable": [
-      "BGS_020",
-      "BG_LOE_077"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Scam board. Buy every poison/reborn piece and concentrate stats on few units so your trades stay lopsided; the rest of the board exists to trade evenly at worst. Golden [[Expert Aviator||126637]] with venom from [[Bile Spitter||122219]] floods the fight with scam from hand. [[Sky-hatch Runaway||132957]] can hand out permanent venom instead."
   },
   "murlocs-apm": {
     "name": "Murlocs - APM",
@@ -220,7 +206,6 @@
       "BG36_344",
       "BG36_523"
     ],
-    "how_to_play": "Infinite-gold package: [[Enterprising Escapee||132762]] behind [[Sky Admiral Rogers||122516]] + [[Proud Privateer||122520]], with [[Brann Bronzebeard||96786]] accelerating the loop. Once infinite, goldens and discovers never stop, and all of them feed [[Hooktusk, Master Marauder||132925]]. Keep buying discovers to scale. Higher-cap endgame pivot: the Demons shop-buff comp.",
     "addons": [
       "BG26_817",
       "BG33_825",
@@ -230,13 +215,10 @@
     "when_to_commit": "Enterprising Escapee + Infinite gold",
     "common_enablers": "Enterprising Escapee",
     "representative_card": "BG36_523",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Pirate",
     "guide": "guides/pirates-apm-golden.md",
-    "enable": [
-      "BG25_354"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Infinite-gold package: [[Enterprising Escapee||132762]] behind [[Sky Admiral Rogers||122516]] + [[Proud Privateer||122520]], with [[Brann Bronzebeard||96786]] accelerating the loop. Once infinite, goldens and discovers never stop, and all of them feed [[Hooktusk, Master Marauder||132925]]. Keep buying discovers to scale. Higher-cap endgame pivot: the Demons shop-buff comp."
   },
   "demons-shop-buff": {
     "name": "Demons - Shop Buff",
@@ -244,11 +226,10 @@
     "meta_tier": "A",
     "core": [
       "BG28_633",
-      "BG35_883",
       "BG36_731",
-      "BG36_762"
+      "BG36_762",
+      "BG35_883"
     ],
-    "how_to_play": "Shop-scaling comp. [[Devilish Distractor||132901]] buffs the shop, doubled by [[Balinda Stonehearth||130298]]. The payoff then eats the buffed shop - usually [[Felboar||110664]], otherwise [[Twisted Wrathguard||130662]] or reborn [[Imp-lusionist||132899]]. Cast [[Methodical Madness||132903]] into shops holding divine shield or venomous units to spread the keywords across your demons.",
     "addons": [
       "BG21_004",
       "BG26_174",
@@ -260,22 +241,22 @@
     "when_to_commit": "Buffed Shop (Devilish Distractor) + Twisted Wrathguard",
     "common_enablers": "Brann Bronzebeard\nTwisted Wrathguard",
     "representative_card": "BG36_762",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Demon",
     "guide": "guides/demons-shop-buff.md",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Shop-scaling comp. [[Devilish Distractor||132901]] buffs the shop, doubled by [[Balinda Stonehearth||130298]]. The payoff then eats the buffed shop - usually [[Felboar||110664]], otherwise [[Twisted Wrathguard||130662]] or reborn [[Imp-lusionist||132899]]. Cast [[Methodical Madness||132903]] into shops holding divine shield or venomous units to spread the keywords across your demons."
   },
   "undead-attack-scaling": {
     "name": "Undead - Attack Scaling",
     "difficulty": "Easy",
     "meta_tier": "S",
     "core": [
-      "BG25_010",
       "BG28_309",
-      "BG32_324",
       "BG36_511",
-      "BG36_515"
+      "BG25_010",
+      "BG36_515",
+      "BG32_324"
     ],
-    "how_to_play": "Butchering engine. The [[Drustfallen Butcher||120104]] spell scales attack, and [[Friendly Geist||120219]] grows it; [[Handless Forsaken||95265]] sets summon quality. [[Snazzy Phantom||133083]] banks stats off the right-most unit in combat and in the shop phase, so butcher your reborn units into it. Strongest line: [[Dead Bellringer||132322]] + [[Mummifier||108992]] - reborn the whole board, then loop bellringer activate -> reborn -> butcher, one spell at a time, for a wall of Snazzy procs.",
     "addons": [
       "BG25_009",
       "BG25_354",
@@ -287,9 +268,10 @@
     "when_to_commit": "Attack Scaling (Drustfallen Butcher) + summons (Handless Forsaken)",
     "common_enablers": "Deathly Striker \nUndead midgame (Plaguerunner)",
     "representative_card": "BG32_324",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Undead",
     "guide": "guides/undead-attack-scaling.md",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Butchering engine. The [[Drustfallen Butcher||120104]] spell scales attack, and [[Friendly Geist||120219]] grows it; [[Handless Forsaken||95265]] sets summon quality. [[Snazzy Phantom||133083]] banks stats off the right-most unit in combat and in the shop phase, so butcher your reborn units into it. Strongest line: [[Dead Bellringer||132322]] + [[Mummifier||108992]] - reborn the whole board, then loop bellringer activate -> reborn -> butcher, one spell at a time, for a wall of Snazzy procs."
   },
   "mechs-deathrattle": {
     "name": "Mechs - Deathrattle",
@@ -344,12 +326,11 @@
     "difficulty": "Hard",
     "meta_tier": "A",
     "core": [
-      "BG26_802",
-      "BG35_602",
       "BG35_604",
+      "BG35_602",
+      "BG26_802",
       "BG36_204"
     ],
-    "how_to_play": "Summon snowball. Get an early [[Lurking Leviathan||130711]], then summon as many Beasts as you can. Best summoner is a reborn [[Sewer lord||130996]]; Hoarding Hyena's taunt summon is next. [[Banana Slamma||98824]] turns every summon into a serious attacker.",
     "addons": [
       "BG23_008",
       "BG36_209"
@@ -358,24 +339,20 @@
     "when_to_commit": "Early Lurking Leviathan + Beast summons (Sewer Lord)",
     "common_enablers": "Beast summons midgame (beetles)",
     "representative_card": "BG35_602",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Beast",
-    "enable": [
-      "BG25_806"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Summon snowball. Get an early [[Lurking Leviathan||130711]], then summon as many Beasts as you can. Best summoner is a reborn [[Sewer lord||130996]]; Hoarding Hyena's taunt summon is next. [[Banana Slamma||98824]] turns every summon into a serious attacker."
   },
   "quilboar-choose-one": {
     "name": "Quilboar - Choose One",
     "difficulty": "Hard",
     "meta_tier": "B",
     "core": [
-      "BG31_323",
+      "BG34_684",
       "BG31_326",
-      "BG33_885",
-      "BG34_684"
+      "BG31_323",
+      "BG33_885"
     ],
-    "how_to_play": "Gem engine with a choose-one payoff. Scale gems through [[Gem rat||116434]] or [[Sanguine Refiner||122566]]. The payoff is [[Turbo Hogrider||116195]]. Generate extra choose-ones ([[Gem rat||116434]], [[Bramble Tunneler||132632]]) and cycle every decent one - the only skips are [[Intrepid Botanist||120223]] and [[Time Management||117573]].",
     "addons": [
       "BG23_017",
       "BG26_ICC_901",
@@ -387,8 +364,9 @@
     "when_to_commit": "Gem rat + Turbo Hogrider",
     "common_enablers": "Gem Rat",
     "representative_card": "BG31_323",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Quilboar",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Gem engine with a choose-one payoff. Scale gems through [[Gem rat||116434]] or [[Sanguine Refiner||122566]]. The payoff is [[Turbo Hogrider||116195]]. Generate extra choose-ones ([[Gem rat||116434]], [[Bramble Tunneler||132632]]) and cycle every decent one - the only skips are [[Intrepid Botanist||120223]] and [[Time Management||117573]]."
   },
   "mechs-magnetics": {
     "name": "Mechs - Magnetics",
@@ -423,14 +401,13 @@
     "difficulty": "Easy",
     "meta_tier": "A",
     "core": [
-      "BG28_633",
       "BG33_823",
       "BG33_825",
+      "BG28_633",
+      "BG36_762",
       "BG35_883",
-      "BG36_523",
-      "BG36_762"
+      "BG36_523"
     ],
-    "how_to_play": "Max-economy demon shell. The usual start: Brann, Rogers and Privateer all online by turn 9, with the Escapee keeping the loop going. Spend the surplus on targeted spells into [[Devilish Distractor||132901]] + [[Balinda Stonehearth||130298]] so the shop grows every turn; cycled gem buffers and every gem barrage feed it too. A huge shop cycled repeatedly through [[Felboar||110664]] or [[Twisted Wrathguard||130662]] compounds fast.",
     "addons": [
       "BG35_155",
       "BG_LOE_077"
@@ -439,9 +416,10 @@
     "when_to_commit": "Early infinite gold + Felboar",
     "common_enablers": "Brann Bronzebeard",
     "representative_card": "BG28_633",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Demon",
     "guide": "guides/demons-apm-shop-buff.md",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Max-economy demon shell. The usual start: Brann, Rogers and Privateer all online by turn 9, with the Escapee keeping the loop going. Spend the surplus on targeted spells into [[Devilish Distractor||132901]] + [[Balinda Stonehearth||130298]] so the shop grows every turn; cycled gem buffers and every gem barrage feed it too. A huge shop cycled repeatedly through [[Felboar||110664]] or [[Twisted Wrathguard||130662]] compounds fast."
   },
   "murlocs-family": {
     "name": "Murlocs - Family",
@@ -503,12 +481,11 @@
     "difficulty": "Medium",
     "meta_tier": "B",
     "core": [
-      "BG24_004",
-      "BG29_813",
+      "BGS_041",
       "BG_LOE_077",
-      "BGS_041"
+      "BG24_004",
+      "BG29_813"
     ],
-    "how_to_play": "Battlecry engine. [[Brann Bronzebeard||96786]] + [[Kalecgos, Arcane Aspect||60630]] means +4/+4 to all Dragons per battlecry, so trigger as many as possible. Once set up, cycle only premium battlecries - [[Tavern Tempest||64077]], [[Refreshing Anomaly||64042]], [[Shell Collector||80740]], [[Draconic Warden||126860]]. Highest cap: find a double-attack spell each turn and let [[Persistent Poet||108463]] make [[Warpwing||92413]]'s attack doubling permanent; [[Amber Guardian||95006]] and [[Thousandth Paper Drake||108116]] attach permanent divine shield and windfury to it.",
     "addons": [
       "BG24_500",
       "BG29_810",
@@ -519,24 +496,20 @@
     "when_to_commit": "Kalecgos, Arcane Aspect + Brann Bronzebeard",
     "common_enablers": "Brann Bronzebeard\nBronze Timewalker",
     "representative_card": "BGS_041",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Dragon",
-    "enable": [
-      "BG_LOE_077"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Battlecry engine. [[Brann Bronzebeard||96786]] + [[Kalecgos, Arcane Aspect||60630]] means +4/+4 to all Dragons per battlecry, so trigger as many as possible. Once set up, cycle only premium battlecries - [[Tavern Tempest||64077]], [[Refreshing Anomaly||64042]], [[Shell Collector||80740]], [[Draconic Warden||126860]]. Highest cap: find a double-attack spell each turn and let [[Persistent Poet||108463]] make [[Warpwing||92413]]'s attack doubling permanent; [[Amber Guardian||95006]] and [[Thousandth Paper Drake||108116]] attach permanent divine shield and windfury to it."
   },
   "beasts-beetles": {
     "name": "Beasts - Beetles",
     "difficulty": "Hard",
-    "meta_tier": "S",
+    "meta_tier": "A",
     "core": [
-      "BG26_802",
       "BG31_809",
-      "BG36_204",
-      "BG36_209"
+      "BG26_802",
+      "BG36_209",
+      "BG36_204"
     ],
-    "how_to_play": "Beetle scaling. Open with [[Ravaging Scorpid||132949]] or [[Turquoise Skitterer||119255]] to grow beetle stats. [[Headhunter Gryphon||132800]] generates comp pieces, with [[Snarky Shark||132804]] helping. Run as many [[Banana Slamma||98824]] as you can - each doubles beetle attack and cracks tall boards.",
     "addons": [
       "BG31_801",
       "BG31_803",
@@ -547,25 +520,21 @@
     "when_to_commit": "Early Ravaging Scorpid or Turquoise Skitterer",
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BG36_209",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Beast",
-    "enable": [
-      "BG25_806"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Beetle scaling. Open with [[Ravaging Scorpid||132949]] or [[Turquoise Skitterer||119255]] to grow beetle stats. [[Headhunter Gryphon||132800]] generates comp pieces, with [[Snarky Shark||132804]] helping. Run as many [[Banana Slamma||98824]] as you can - each doubles beetle attack and cracks tall boards."
   },
   "demons-self-damage": {
     "name": "Demons - Self Damage",
     "difficulty": "Easy",
     "meta_tier": "S",
     "core": [
-      "BG32_873",
-      "BG35_883",
-      "BG36_733",
+      "BG_LOE_077",
       "BG36_762",
-      "BG_LOE_077"
+      "BG35_883",
+      "BG32_873",
+      "BG36_733"
     ],
-    "how_to_play": "Self-damage engine. Hurt your own hero ([[Malchezaar, Prince of Dance||99199]], [[Wrath Weaver||59670]], or trinkets) while [[Ashen Corruptor||121687]] converts that damage into shop buffs; [[Tichondrius||99228]] stabilizes the midgame. [[Eredar Escapist||133028]] cupcake generation is the late payoff - target the Corruptor. [[Balinda Stonehearth||130298]] doubles both cupcakes and [[Devilish Distractor||132901]]. Under the Weaver, each Demon you play discounts the next spell to zero - feed that with [[Brann Bronzebeard||96786]] and cycled [[Imposing Percussionist||99232]].",
     "addons": [
       "BG26_523",
       "BG26_524",
@@ -575,13 +544,9 @@
     "when_to_commit": "Ashen Corruptor + self damage (Wrath Weaver or Malchezaar, Prince of Dance) + payoff (Tichondrius or Eredar Escapist)",
     "common_enablers": "Wrath Weaver + Soul Rewinder demon midgame",
     "representative_card": "BG32_873",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Demon",
-    "enable": [
-      "BGS_004",
-      "BG26_174"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Self-damage engine. Hurt your own hero ([[Malchezaar, Prince of Dance||99199]], [[Wrath Weaver||59670]], or trinkets) while [[Ashen Corruptor||121687]] converts that damage into shop buffs; [[Tichondrius||99228]] stabilizes the midgame. [[Eredar Escapist||133028]] cupcake generation is the late payoff - target the Corruptor. [[Balinda Stonehearth||130298]] doubles both cupcakes and [[Devilish Distractor||132901]]. Under the Weaver, each Demon you play discounts the next spell to zero - feed that with [[Brann Bronzebeard||96786]] and cycled [[Imposing Percussionist||99232]]."
   },
   "dragons-apm-evoker": {
     "name": "Dragons - APM Evoker",
@@ -617,14 +582,13 @@
     "difficulty": "Medium",
     "meta_tier": "A",
     "core": [
+      "BGS_018",
       "BG25_354",
-      "BG26_802",
-      "BG35_604",
       "BG36_204",
       "BG36_208",
-      "BGS_018"
+      "BG26_802",
+      "BG35_604"
     ],
-    "how_to_play": "Goldrinn beast snowball. A midgame [[Headhunter Gryphon||132800]] generates beasts while you assemble the core. Pop [[Goldrinn, the Great Wolf||59955]] in the shop phase via [[Deathstrider||132808]]; [[Titus Rivendare||97408]] doubles the whole strategy. Force the Gryphon to attack with the [[Lurking Lionfish||132794]] activate or cycled [[Snarky Shark||132804]] - chaining shop attacks generates more of both. [[Sewer Lord||130996]] + [[Banana Slamma||98824]] finish under the Goldrinn aura with huge-attack summons.",
     "addons": [
       "BG36_201"
     ],
@@ -632,12 +596,9 @@
     "when_to_commit": "Headhunter Gryphon + Deathstrider + Goldrinn, the Great Wolf",
     "common_enablers": "Headhunter Gryphon",
     "representative_card": "BGS_018",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Beast",
-    "enable": [
-      "BG25_806"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Goldrinn beast snowball. A midgame [[Headhunter Gryphon||132800]] generates beasts while you assemble the core. Pop [[Goldrinn, the Great Wolf||59955]] in the shop phase via [[Deathstrider||132808]]; [[Titus Rivendare||97408]] doubles the whole strategy. Force the Gryphon to attack with the [[Lurking Lionfish||132794]] activate or cycled [[Snarky Shark||132804]] - chaining shop attacks generates more of both. [[Sewer Lord||130996]] + [[Banana Slamma||98824]] finish under the Goldrinn aura with huge-attack summons."
   },
   "undead-apm-undead": {
     "name": "Undead - APM Undead",
@@ -645,12 +606,11 @@
     "meta_tier": "A",
     "core": [
       "BG25_010",
-      "BG33_823",
-      "BG33_825",
+      "BG36_515",
       "BG34_692",
-      "BG36_515"
+      "BG33_825",
+      "BG33_823"
     ],
-    "how_to_play": "Infinite-gold Undead scaling. [[Sky Admiral Rogers||122516]] + [[Proud Privateer||122520]] print the gold; add [[Enterprising Escapee||132762]] / [[Brann Bronzebeard||96786]] until you are infinite, then cut them for board slots. Cycle all free cards ([[Refreshing Anomaly||64042]]). Spend the gold on bounties and [[Forsaken Weaver||126733]] casts to scale Undead attack; a reborn golden [[Handless Forsaken||95265]] anchors the board. [[Snazzy Phantom||133083]] turns reborn pops ([[Maw Caster||121508]], [[Disguised Graverobber||104610]]) into permanent stats.",
     "addons": [
       "BG36_523",
       "BG_LOE_077"
@@ -659,22 +619,22 @@
     "when_to_commit": "Bounty Generation (Sky Admiral Rogers) + Proud Privateer + Forsaken Weaver",
     "common_enablers": "Sky Admiral Rogers",
     "representative_card": "BG34_692",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Undead",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Infinite-gold Undead scaling. [[Sky Admiral Rogers||122516]] + [[Proud Privateer||122520]] print the gold; add [[Enterprising Escapee||132762]] / [[Brann Bronzebeard||96786]] until you are infinite, then cut them for board slots. Cycle all free cards ([[Refreshing Anomaly||64042]]). Spend the gold on bounties and [[Forsaken Weaver||126733]] casts to scale Undead attack; a reborn golden [[Handless Forsaken||95265]] anchors the board. [[Snazzy Phantom||133083]] turns reborn pops ([[Maw Caster||121508]], [[Disguised Graverobber||104610]]) into permanent stats."
   },
   "murlocs-tidecaller": {
     "name": "Murlocs - Tidecaller",
     "difficulty": "Medium",
     "meta_tier": "A",
     "core": [
-      "BG26_354",
+      "BG_LOE_077",
       "BG27_556",
-      "BG33_891",
-      "BG35_883",
+      "BG26_354",
       "BG36_704",
-      "BG_LOE_077"
+      "BG35_883",
+      "BG33_891"
     ],
-    "how_to_play": "Tidecaller finisher. Build economy first: golden [[Brann Bronzebeard||96786]] or Brann + [[Magicfin Mycologist||122277]], keep the top-shelf economy spells - Cloning Conch, battlecry discovers. Then [[Shamanic Tidecaller||133026]] converts all of it: under [[Balinda Stonehearth||130298]], cast everything into it - bloodgems, [[Oozeling Gladiator||103670]] spells. Grow premium hand Murlocs ([[Bile Spitter||122219]], [[Expert Aviator||126637]]) for summon value; [[Choral Mrrrglr||98948]] duplicates the hand's stats.",
     "addons": [
       "BG33_318"
     ],
@@ -682,13 +642,9 @@
     "when_to_commit": "Brann Bronzebeard + lots of economy + Shamanic Tidecaller",
     "common_enablers": "Brann Bronzebeard\nShamanic Tidecaller",
     "representative_card": "BG36_704",
+    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Murloc",
-    "enable": [
-      "BGS_020",
-      "BG_LOE_077"
-    ],
-    "enable_src": "jeef-direction-video (2025; names verified against the card DB, 2026-09-24)",
-    "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24"
+    "how_to_play": "Tidecaller finisher. Build economy first: golden [[Brann Bronzebeard||96786]] or Brann + [[Magicfin Mycologist||122277]], keep the top-shelf economy spells - Cloning Conch, battlecry discovers. Then [[Shamanic Tidecaller||133026]] converts all of it: under [[Balinda Stonehearth||130298]], cast everything into it - bloodgems, [[Oozeling Gladiator||103670]] spells. Grow premium hand Murlocs ([[Bile Spitter||122219]], [[Expert Aviator||126637]]) for summon value; [[Choral Mrrrglr||98948]] duplicates the hand's stats."
   },
   "aberrations-deity-feed": {
     "name": "Aberrations - Deity Feed",
@@ -710,8 +666,7 @@
       "BG36_109",
       "BG36_115"
     ],
-    "provisional": true,
-    "source": "own replay corpus (comp_miner.py, 2026-09-23); core/helpers player-curated 2026-09-24 — a comp_miner --promote Aberration re-run REBUILDS this provisional row and would drop the curated lists (they survive in git history)",
+    "source": "own replay corpus (comp_miner.py, 2026-09-23); core/helpers player-curated 2026-09-24; promoted to a first-class comp 2026-09-26 (player decision): the published aberrations-deathrattle-spells (S/Easy) shares Converter/Titus/Sapper/Corroder/Shadow of Doubt but this is the distinct deity-pool spell-scaling build the player actually plays — a comp_miner --promote re-run now REFUSES to touch a non-provisional row",
     "summary": "Feed the Deity on two axes: deathrattle pay (Faceless Converter gives the Deity +1/+1 improved per tavern spell cast, N'raqi Sapper hands you Energizing Chambers, +7/+7 each, cast twice if discarded, Drifting Sacrifice is the t3 on-ramp) doubled by Titus Rivendare; and end-of-turn spell scaling (Felfire Conjurer and N'raqi Frostcaller make tavern spells give an extra +1/+1 this game, Mysterious K'Thir pays +8/+8 per discarded spell) doubled by Drakkari Enchanter. Helpers: Mindbending Recruiter (Activate: discard a card, get a random Aberration) with The Shadow of Doubt paying the Deity +3/+4 on every hand-add, and Nightmare Corroder banking Sludge Corrosions. Player-curated 2026-09-24 (core/helpers rewritten from the comp_miner 2-card provisional).",
     "when_to_commit": "When the board is majority Aberration and two or more of the core cards are held or bought.",
     "evidence": {
@@ -781,5 +736,55 @@
       ]
     }
   },
-  "_enable_note": "enable = pieces that OPEN the direction (lean); core = the commit point (Jeef, 'Direction' video: enablers are not commit points). Table verified against the card DB 2026-09-24. Resolved to ids: Brann Bronzebeard BG_LOE_077 (dragons, murlocs), Primalfin Lookout BGS_020 (murlocs), Titus Rivendare BG25_354 (pirates), Sly Raptor BG25_806 (Slamma beasts), Scrap Scraper BG26_148 (mechs), Wrath Weaver BGS_004 + Soul Rewinder BG26_174 (self-damage demons). The video's remaining names predate the current card set and have no id anywhere in minions.json: Smuggler (dragons), Genie/Wraith/Rock Rock (elementals), Boogie/Spearhide/Piper (quilboar), Orgozoa/Lord of Gains/A.F. Kay (nagas; Kay is a hero in heroes.json, so that clause is likely a transcript garble), Sore Loser/Champion of the Primus/Sister Death Speaker (undead). Those tribes get no enable row until their current-season openers are named. Pool membership is deliberately NOT claimed here: pool_roster is log-mined from 3 games (2026-09-22), too thin to prune by."
+  "_enable_note": "enable = pieces that OPEN the direction (lean); core = the commit point (Jeef, 'Direction' video: enablers are not commit points). Table verified against the card DB 2026-09-24. Resolved to ids: Brann Bronzebeard BG_LOE_077 (dragons, murlocs), Primalfin Lookout BGS_020 (murlocs), Titus Rivendare BG25_354 (pirates), Sly Raptor BG25_806 (Slamma beasts), Scrap Scraper BG26_148 (mechs), Wrath Weaver BGS_004 + Soul Rewinder BG26_174 (self-damage demons). The video's remaining names predate the current card set and have no id anywhere in minions.json: Smuggler (dragons), Genie/Wraith/Rock Rock (elementals), Boogie/Spearhide/Piper (quilboar), Orgozoa/Lord of Gains/A.F. Kay (nagas; Kay is a hero in heroes.json, so that clause is likely a transcript garble), Sore Loser/Champion of the Primus/Sister Death Speaker (undead). Those tribes get no enable row until their current-season openers are named. Pool membership is deliberately NOT claimed here: pool_roster is log-mined from 3 games (2026-09-22), too thin to prune by.",
+  "murlocs-keyword": {
+    "name": "Murlocs - Keyword",
+    "tribe": "Murloc",
+    "difficulty": "Medium",
+    "meta_tier": "S",
+    "core": [
+      "BG36_700",
+      "BG33_318",
+      "BG34_140",
+      "BG_LOE_077"
+    ],
+    "addons": [
+      "BG22_403",
+      "BG31_148",
+      "BG31_149",
+      "BG32_336",
+      "BG36_701"
+    ],
+    "summary": "Add Keywords to Murlocs and buff them",
+    "when_to_commit": "Brann Bronzebeard + Sewer Escapee",
+    "common_enablers": "Brann Bronzebeard\nSewer Escapee",
+    "representative_card": "BG36_700",
+    "source": "hsreplay.net comp pages (scrape_comps.py)"
+  },
+  "aberrations-deathrattle-spells": {
+    "name": "Aberrations - Deathrattle/Spells",
+    "tribe": "Aberration",
+    "difficulty": "Easy",
+    "meta_tier": "S",
+    "core": [
+      "BG36_204",
+      "BG25_354",
+      "BG36_208",
+      "BG36_318",
+      "BG36_101"
+    ],
+    "addons": [
+      "BG25_016",
+      "BG33_823",
+      "BG33_825",
+      "BG36_103",
+      "BG36_109",
+      "BG36_115"
+    ],
+    "summary": "Play spells and proc deathrattle to scale Deity",
+    "when_to_commit": "Faceless Converter + Titus Rivendare\nSky Admiral Rogers + Proud Privateer pivot highest cap",
+    "common_enablers": "Spell generation (Unwilling Slacker)",
+    "representative_card": "BG36_318",
+    "source": "hsreplay.net comp pages (scrape_comps.py)"
+  }
 }
