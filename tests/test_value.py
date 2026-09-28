@@ -1672,5 +1672,95 @@ class TestCoreHitsNoDoubleCount(unittest.TestCase):
         self.assertEqual(_core_hits(board, rc, self.CORES), 1)
 
 
+class TestTempoMode(unittest.TestCase):
+    """Tempo/emergency: while bleeding, current stats outrank scaling.
+
+    The 2026-09-26 E.T.C. spiral: "growth engine" Fire Baller headlined
+    three straight turns of a dying board while the level clause said
+    "buy stats first" — the shop ranking never saw the bleed. The bands
+    (>=12 full, >=8 half) mirror the level gate's stabilize zone.
+    """
+
+    def test_one_big_hit_is_full_tempo(self):
+        hist = {4: {"al": 5, "hl": 45}, 5: {"al": 5, "hl": 28}}  # 50 -> 33
+        self.assertEqual(value.tempo_emergency(hist, 5), 1.0)
+
+    def test_calm_board_is_no_tempo(self):
+        hist = {4: {"al": 5, "hl": 45}, 5: {"al": 8, "hl": 45}}  # armor up
+        self.assertEqual(value.tempo_emergency(hist, 5), 0.0)
+
+    def test_small_bleed_is_half_tempo(self):
+        hist = {4: {"al": 5, "hl": 45}, 5: {"al": 5, "hl": 36}}  # 50 -> 41
+        self.assertEqual(value.tempo_emergency(hist, 5), 0.6)
+
+    def test_three_fight_bleed_sums(self):
+        # two 4-5 hit fights in the window: 9 bled, no single big hit
+        hist = {3: {"al": 5, "hl": 45}, 4: {"al": 5, "hl": 41},
+                5: {"al": 5, "hl": 36}}
+        self.assertEqual(value.tempo_emergency(hist, 5), 0.6)
+
+    def test_no_history_is_no_tempo(self):
+        self.assertEqual(value.tempo_emergency({}, 5), 0.0)
+
+    def test_default_minion_value_is_unchanged(self):
+        body_card = {"id": "BDY", "name": "Body", "text": "", "attack": 6,
+                     "health": 6}
+        body = {"card": "BDY", "atk": 6, "health": 6}
+        self.assertEqual(value.minion_value(body, body_card),
+                         value.minion_value(body, body_card, emergency=0.0))
+
+    def test_emergency_closes_the_growth_vs_stats_gap(self):
+        engine_card = {"id": "ENG", "name": "Engine",
+                       "text": "At the end of your turn, gain +4/+4.",
+                       "attack": 1, "health": 1}
+        body_card = {"id": "BDY", "name": "Body", "text": "", "attack": 6,
+                     "health": 6}
+        engine = {"card": "ENG", "atk": 1, "health": 1}
+        body = {"card": "BDY", "atk": 6, "health": 6}
+        calm_gap = (value.minion_value(engine, engine_card)
+                    - value.minion_value(body, body_card))
+        emerg_gap = (value.minion_value(engine, engine_card, emergency=1.0)
+                     - value.minion_value(body, body_card, emergency=1.0))
+        self.assertGreater(calm_gap, 0, "the fixture needs a growth-favored calm board")
+        self.assertLess(emerg_gap, calm_gap,
+                        "tempo mode must close the growth-vs-stats gap")
+
+
+class TestCompProgressLean(unittest.TestCase):
+    """The comp meter's leaning lane: early openers show a direction before
+    any t5 core lands (the losses' shared fingerprint — the coach went
+    generic through the openers because detection keys on core hits).
+    Display-only: `ready` and comp_target stay core-evidence gated."""
+
+    COMPS = {
+        "ab": {"name": "Aberrations - Deity Feed", "tribe": "Aberration",
+               "core": ["C1", "C2"], "enable": ["E1", "E2", "E3"]},
+        "mu": {"name": "Other", "tribe": "Murloc", "core": ["M1", "M2"]},
+    }
+
+    def test_openers_alone_show_a_leaning_row(self):
+        board = [{"card": "E1", "tribe": "Aberration"},
+                 {"card": "E2", "tribe": "Aberration"}]
+        rows = value.comp_progress(board, self.COMPS)
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]["leaning"])
+        self.assertEqual(rows[0]["hits"], 0)
+        self.assertFalse(rows[0]["ready"])
+
+    def test_one_opener_is_not_a_lean(self):
+        board = [{"card": "E1", "tribe": "Aberration"}]
+        self.assertEqual(value.comp_progress(board, self.COMPS), [])
+
+    def test_real_hits_outrank_and_lean_never_flips_ready(self):
+        board = [{"card": "C1", "tribe": "Aberration"},
+                 {"card": "E1", "tribe": "Aberration"},
+                 {"card": "E2", "tribe": "Aberration"}]
+        rows = value.comp_progress(board, self.COMPS)
+        self.assertEqual(rows[0]["name"], "Aberrations - Deity Feed")
+        self.assertFalse(rows[0]["leaning"])
+        self.assertEqual(rows[0]["hits"], 1)
+        self.assertFalse(rows[0]["ready"])
+
+
 if __name__ == "__main__":
     unittest.main()

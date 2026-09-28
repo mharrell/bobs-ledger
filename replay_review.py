@@ -316,8 +316,23 @@ def _run(argv):
                       f"({', '.join(spell_names.get(c, c) for c in buys_raw)}) "
                       f"— not among the coach's ranked picks this phase")
             else:
-                print(f"     buy match: passed "
-                      f"(coach pick: {names.get(picks[0], picks[0])})")
+                # Not every pass is a decline: on a comp-qualified plan the
+                # player regularly buys a DIFFERENT comp piece than the #1 —
+                # same direction, different pick. Score the split so adherence
+                # can't read a coherent build as a rejection (the 2026-09-26
+                # reviews: wins at 13% "adherence" were on-comp buys).
+                tname = a.get("target_comp")
+                tcomp = (meta.comps().get(tname) if tname else None) or {}
+                pieces = set((tcomp.get("core") or [])
+                             + (tcomp.get("addons") or []))
+                on_comp = [c for c in buys_raw if c in pieces]
+                if on_comp:
+                    print(f"     buy match: passed on-comp (bought "
+                          f"{', '.join(_name(c, names) for c in on_comp)}; "
+                          f"coach pick: {names.get(picks[0], picks[0])})")
+                else:
+                    print(f"     buy match: passed "
+                          f"(coach pick: {names.get(picks[0], picks[0])})")
     return 0
 
 

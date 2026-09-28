@@ -36,6 +36,7 @@ from value import (
     comp_target, target_state, hand_plan, _load_spell_db, _core_hits,
     situation_line, sticky_comp_target, combat_forecast, active_recipes,
     live_reach_sources, DYING_HEALTH, comp_gap, comp_label, fragility,
+    tempo_emergency,
 )
 
 _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
@@ -1305,11 +1306,17 @@ class LiveCoach:
             if p != self.friendly and c not in seen:
                 offer_ids.append(c)
                 seen.add(c)
+        # Tempo mode: while bleeding, current stats outrank scaling (the
+        # 2026-09-26 E.T.C. spiral — "growth engine" buys headlined a dying
+        # board three turns running). Bleed bands mirror the level gate's
+        # stabilize zone; 0 off a calm board (no behavior change).
+        emergency = tempo_emergency(self._armor_hist, self.actions.turn)
         shop = shop_ranking(offer_ids, self.playable, board,
                             self.allowed, hero_power=hero_power,
                             trinkets=trinket_recs, scenario=scenario,
                             recent_cards=recent, comp=target,
-                            hand=hand, recipes=recipes) if offer_ids else []
+                            hand=hand, recipes=recipes,
+                            emergency=emergency) if offer_ids else []
         shop_costs = shop_cost_map(self.gs, offer_ids, self.shop_eids)
         # Own-side pool ledger (phase 1, analysis/pool_availability.md):
         # everything we hold (board + hand, golden = 3) is out of the shared

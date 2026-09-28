@@ -135,8 +135,25 @@ class TestReviewKit(unittest.TestCase):
     def test_verdict_classification(self):
         self.assertEqual(review_kit._classify("TAKEN (Fire Baller)"), "taken")
         self.assertEqual(review_kit._classify("passed (coach pick: X)"), "passed")
+        self.assertEqual(review_kit._classify(
+            "passed on-comp (bought Mysterious K'Thir; coach pick: Y)"),
+            "passed_on_comp")
         self.assertEqual(review_kit._classify("plan said level only — player bought"), "not_applicable")
         self.assertEqual(review_kit._classify("spells only (X)"), "other")
+
+    def test_on_comp_passes_are_counted_and_not_mismatches(self):
+        """A comp-piece buy under a different #1 is agreement: counted
+        separately and NOT flagged as a phase worth opening (the 09-26
+        reviews misread coherent builds as rejections)."""
+        facts = {"game": 1, "hero": "H", "place": 2, "phases": [1, 2],
+                 "verdicts": ["TAKEN (X)",
+                              "passed on-comp (bought A; coach pick: B)"]}
+        split = review_kit._adherence(facts["verdicts"])
+        self.assertEqual(split["passed_on_comp"], 1)
+        self.assertEqual(split["passed"], 0)
+        self.assertEqual(review_kit._moments(facts), [2])
+        line = review_kit._compact_line(facts, split)
+        self.assertIn("passed=0 (on-comp=1)", line)
 
     def test_header_and_phase_regexes(self):
         text = ("replay review — Hearthstone_x game 2/3, hero=Marin the Manager, "

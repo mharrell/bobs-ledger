@@ -1012,10 +1012,12 @@ function render(a) {
         (r.name === a.target_comp
           ? (a.target_state === 'pivot' ? 'pivoting — committed' : 'committed')
           : r.ready ? 'ready to commit'
+          : r.leaning ? 'leaning · openers on board'
           : (r.tribe_hits || 0) >= 2
             ? 'one core card away · tribe signal'
             : 'one core card away')
-        + (r.hits > 2 ? ' (' + r.hits + ' hits)' : '')));
+        + (r.hits > 2 ? ' (' + r.hits + ' hits)' : '')
+        + (r.leaning && r.lean_hits > 2 ? ' (' + r.lean_hits + ' openers)' : '')));
       body.appendChild(row);
     });
     if (!a.target_comp && (a.comp_progress[0].needs || []).length) {
