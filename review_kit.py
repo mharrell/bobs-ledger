@@ -76,6 +76,9 @@ def _classify(verdict):
     v = verdict.strip().lower()
     if v.startswith("taken"):
         return "taken"
+    if v.startswith("passed on-comp"):
+        # a comp-piece buy under a different #1 — agreement, not a mismatch
+        return "passed_on_comp"
     if v.startswith("passed"):
         return "passed"
     if v.startswith("plan said"):
@@ -107,7 +110,8 @@ def parse_text(text):
 
 
 def _adherence(verdicts):
-    split = {"taken": 0, "passed": 0, "not_applicable": 0, "other": 0}
+    split = {"taken": 0, "passed": 0, "passed_on_comp": 0,
+             "not_applicable": 0, "other": 0}
     for v in verdicts:
         split[_classify(v)] += 1
     return split
@@ -120,9 +124,10 @@ def _compact_line(facts, split, unresolved=None, cache=None):
     out = [f"g{facts['game']} {str(facts['hero'])[:20]:20} "
            f"place={facts['place']} phases={rounds} "
            f"taken={split['taken']}/{n} ({pct}%) "
-           f"passed={split['passed']} n/a={split['not_applicable']}"]
+           f"passed={split['passed']} (on-comp={split['passed_on_comp']}) "
+           f"n/a={split['not_applicable']}"]
     mismatch = [t for t, v in zip(facts["phases"], facts["verdicts"])
-                if _classify(v) in ("passed", "other")]
+                if _classify(v) in _MISMATCH_CLASSES]
     moments = sorted(set(mismatch[:6] + facts["phases"][-1:]))
     out.append(f"   open first: turns {moments or '-'}")
     if unresolved:
@@ -160,8 +165,14 @@ def summarise_game(log, game, chunk, refresh=False):
 
 def _moments(facts):
     mismatch = [t for t, v in zip(facts["phases"], facts["verdicts"])
-                if _classify(v) in ("passed", "other")]
+                if _classify(v) in _MISMATCH_CLASSES]
     return sorted(set(mismatch[:6] + facts["phases"][-1:]))
+
+
+#: Phases the skeleton names "open first": the off-comp passes and anything
+#: unclassified. An on-comp pass (a comp-piece buy under a different #1) is
+#: agreement, not a mismatch worth a reviewer's turn.
+_MISMATCH_CLASSES = ("passed", "other")
 
 
 
@@ -231,7 +242,8 @@ def main():
                if r["phases"] else "?")
         print(f"  g{r['game']} {str(r['hero'])[:20]:20} place={r['place']} "
               f"phases={r['phases']} taken={a['taken']}/{r['phases']} ({pct}) "
-              f"passed={a['passed']} n/a={a['not_applicable']}")
+              f"passed={a['passed']} (on-comp={a['passed_on_comp']}) "
+              f"n/a={a['not_applicable']}")
         if r["unresolved"]:
             print(f"      UNRESOLVED ids (advice will render raw): "
                   f"{', '.join(r['unresolved'][:5])}")

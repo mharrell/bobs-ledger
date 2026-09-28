@@ -736,8 +736,55 @@ def growth_potential(card):
     return score
 
 
+def tempo_emergency(armor_hist, turn):
+    """0..1 — how hard the buy ranking should favor CURRENT stats over
+    scaling while the player is bleeding.
+
+    The 2026-09-26 E.T.C. spiral: "growth engine" Fire Baller headlined
+    three straight turns of a dying board while the level clause said
+    "buy stats first" — the shop ranking never saw the bleed, only the level
+    gate did. bleed = max(last fight, the last 3 fights' sum, 4 per straight
+    loss); the bands mirror that gate's stabilize zone: >=12 full tempo,
+    >=8 half, else 0 (byte-identical behavior). `armor_hist` is live_coach's
+    _armor_hist ({turn: {al, hl, dl}}); a turn's true HP = armor + HEALTH -
+    DAMAGE, carried forward across partial records exactly like the
+    fragility block reads it.
+    """
+    series = {}
+    last = {}
+    for t in range((max(armor_hist) + 1) if armor_hist else 0):
+        rec = armor_hist.get(t)
+        if rec:
+            for k in ("al", "hl", "dl"):
+                if rec.get(k) is not None:
+                    last[k] = rec[k]
+        if last.get("al") is not None and last.get("hl") is not None:
+            series[t] = last["al"] + last["hl"] - (last.get("dl") or 0)
+
+    # Consecutive snapshot pairs are the fights, whatever the turn indices:
+    # reading them from the tail sidesteps the write-timing off-by-one that
+    # the fragility block works around with turn-1 indexing.
+    keys = sorted(series)
+    damages = [series[a] - series[b] for a, b in zip(keys, keys[1:])]
+    last_hit = damages[-1] if damages else None
+    recent3 = sum(d for d in damages[-3:] if d and d > 0)
+    streak = 0
+    for d in reversed(damages):
+        if d and d > 0:
+            streak += 1
+        else:
+            break
+    bleed = max(last_hit or 0, recent3, 4 * streak)
+    if bleed >= 12:
+        return 1.0
+    if bleed >= 8:
+        return 0.6
+    return 0.0
+
+
 def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
-                 board_scaling=0, dominant_tribe=None, engine_bonus=0):
+                 board_scaling=0, dominant_tribe=None, engine_bonus=0,
+                 emergency=0.0):
     """Score a board minion (higher = more valuable to keep).
 
     `board_scaling` is the combined stats of scaling minions on the board (an
@@ -786,7 +833,16 @@ def minion_value(minion, card=None, comp=None, hero_power=None, trinkets=None,
         growth *= 2.0
     elif comp and minion["card"] in comp.get("addons", []):
         growth *= 1.5
-    score += W_GROWTH * growth
+    growth_term = W_GROWTH * growth
+    if emergency:
+        # Tempo mode: while bleeding, a scaling engine is worth less than a
+        # body — the game can end before "future Ballers" pays out. Discount
+        # the growth term, boost the current-stats term; the comp bonuses
+        # below are untouched (missing cores are still the build).
+        growth_term *= 1.0 - 0.6 * emergency
+    score += growth_term
+    if emergency:
+        score += W_STATS * (atk + hp) * emergency
 
     if card:
         base_atk = card.get("attack") or 0
@@ -1173,7 +1229,8 @@ def recipe_fuel_hit(card, recipe):
 
 def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
                  hero_power=None, trinkets=None, scenario=None,
-                 recent_cards=None, comp=None, hand=None, recipes=None):
+                 recent_cards=None, comp=None, hand=None, recipes=None,
+                 emergency=0.0):
     """Rank the shop's tavern cards (minions AND spells) by value.
 
     `shop_cards`: list of card ids currently offered. `comps`: the playable comps
@@ -1190,6 +1247,8 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
     at t9). No evidence now means NO comp bonus — cards score on their own
     merits — and a caller that already computed the target passes it so the
     buy headline and the "committing to" display can't disagree.
+    `emergency` (0..1, from value.tempo_emergency) favors current stats over
+    scaling while the player bleeds — 0.0 is byte-identical to before.
     Returns a list of (card_id, score) sorted most-valuable first, so the
     coach can headline "Buy this".
     """
@@ -1244,7 +1303,8 @@ def shop_ranking(shop_cards, comps, board_minions=None, allowed_tribes=None,
             atk, health = atk * 3, health * 3
         m = {"card": cid, "atk": atk, "health": health, "tribe": card.get("race")}
         val = minion_value(m, card, comp, hero_power, trinkets,
-                           engine_bonus=engine_bonus.get(cid, 0))
+                           engine_bonus=engine_bonus.get(cid, 0),
+                           emergency=emergency)
         if golden:
             # ...and playing it pays the triple reward NOW — super-duper high
             # value (player rule), above a missing comp core (+14).
@@ -2520,7 +2580,23 @@ def _top_move_text(analysis):
                 # nearly always right (the 09-15 game-2 under-level guard).
                 flip_why = "your board is behind the lobby pace — buy stats first"
             if flip_why and opp_note(board_stats, their, approx):
-                flip_why += f"; {opp_note(board_stats, their, approx)}"
+                lead = (board_stats is not None and their
+                        and board_stats >= 1.5 * their)
+                if lead and (damage_last or loss_streak or dying):
+                    # The 2026-09-27 paradox ("your 222 vs their ~91 — too
+                    # fragile to level first"): a decisive stat lead on a
+                    # dying/streaking board is not two unrelated facts to
+                    # glue with a semicolon — the fights are being lost to
+                    # scaling, not stats. Say that.
+                    bled = (analysis.get("damage_recent3") or damage_last)
+                    bled_note = (f"still bled {bled}" if bled
+                                 else "still nearly dead")
+                    flip_why += (f"; your {board_stats} leads their "
+                                 f"{'~' if approx else ''}{int(their)} yet "
+                                 f"{bled_note} — the lead isn't landing, "
+                                 f"treat the lobby as scaling faster")
+                else:
+                    flip_why += f"; {opp_note(board_stats, their, approx)}"
             if flip_why:
                 # A flip defers the LEVEL outright, not just when the buy
                 # locks the level out — "buy stats first" is the advice even
@@ -3582,7 +3658,15 @@ def comp_progress(board, comps, recent_cards=None, top=4, trinkets=None):
     for comp in comps.values():
         cores = set(comp.get("core", [])) - shared
         hits = _core_hits(board, rc, cores)
-        if hits:
+        # The leaning lane (2026-09-28): a comp whose EARLY OPENERS (its
+        # `enable` row — Drifting Sacrifice/Recruiter-class t3/t4 pieces)
+        # are on board reads as a direction before any t5 core lands. Two
+        # openers show a leaning row; `ready`/commit stays core-evidence
+        # only — an opener never manufactures a target (comp_target is
+        # untouched, the 2026-09-23 no-manufactured-direction rule).
+        lean = _core_hits(board, rc,
+                          set(comp.get("enable") or []) - shared)
+        if hits or lean >= 2:
             blocked = set(comp.get("_blocked_core") or [])
             rows.append({
                 "name": comp.get("name"),
@@ -3591,6 +3675,8 @@ def comp_progress(board, comps, recent_cards=None, top=4, trinkets=None):
                 "provisional": _is_provisional(comp),
                 "evidence": comp.get("evidence"),
                 "hits": hits,
+                "lean_hits": lean,
+                "leaning": bool(lean >= 2 and not hits),
                 "ready": hits >= 2,
                 "needs": [cid for cid in comp.get("core", [])
                           if cid in cores and cid not in board_cards
@@ -3611,8 +3697,10 @@ def comp_progress(board, comps, recent_cards=None, top=4, trinkets=None):
     for r in rows:
         r["tribe_hits"] = tribe_total.get(r["tribe"])
     tier_rank = {"S": 0, "A": 1, "B": 2}
-    # Trinket nudge orders ties (1-hit rows), never flips `ready`.
-    rows.sort(key=lambda r: (-(r["hits"] + (0.5 if r.get("trinket_fit")
+    # Trinket nudge orders ties (1-hit rows), never flips `ready`; leaning
+    # rows (openers only) always sort under a real core hit.
+    rows.sort(key=lambda r: ((1 if r.get("leaning") else 0),
+                             -(r["hits"] + (0.5 if r.get("trinket_fit")
                                             else 0.0)),
                              tier_rank.get(r["meta_tier"], 3),
                              r["name"] or ""))
