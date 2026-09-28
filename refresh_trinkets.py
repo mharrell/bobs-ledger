@@ -52,6 +52,11 @@ TRINKETS_PAGE = "https://hsreplay.net/battlegrounds/trinkets/{page}/"
 MAGICITEM = re.compile(r"^(?:BG\d+)_MagicItem_\w+$")
 CHOICE_OPT = re.compile(
     r"DebugPrintEntityChoices.*?cardId=(BG\d+_MagicItem_\w+)")
+#: Any mention at all — a granted trinket (Bronzebeard Portrait off a pick),
+#: a token trinket (Chromatic Tear) or an opponent's board piece never shows
+#: in OUR pick menu, but the coverage gate (tests/test_trinket_meta.py) scans
+#: exactly these lines, so the rebuild must too or the gate stays red.
+SEEN_ANY = re.compile(r"cardId=(BG\d+_MagicItem_\w+)")
 
 
 def _clean_text(text):
@@ -64,6 +69,19 @@ def _clean_text(text):
 
 def _offered_ids():
     """Every trinket id any local session ever put in a pick menu."""
+    return _scan_logs(CHOICE_OPT)
+
+
+def _seen_ids():
+    """Every trinket id any local session log ever mentions at all.
+
+    The coverage gate requires exactly this set (minus own enchantments and
+    recorded gaps), so the rebuild scans the same lines it does.
+    """
+    return _scan_logs(SEEN_ANY)
+
+
+def _scan_logs(pattern):
     ids = set()
     for path in glob.glob(os.path.join(
             r"C:\Program Files (x86)\Hearthstone\Logs",
@@ -71,7 +89,7 @@ def _offered_ids():
         try:
             with open(path, encoding="utf-8", errors="replace") as f:
                 for line in f:
-                    m = CHOICE_OPT.search(line)
+                    m = pattern.search(line)
                     if m:
                         ids.add(m.group(1))
         except OSError:
@@ -140,8 +158,10 @@ def main():
     guides = _hsreplay_guides(args.guides_cache)
     cards = _hsjson_cards(args.hsjson_cache)
     offered = _offered_ids()
+    seen = _seen_ids()
     print(f"old entries: {len(old_db)} | hsreplay guides: {len(guides)}"
-          f" | offered in local logs: {len(offered)}")
+          f" | offered in pick menus: {len(offered)}"
+          f" | seen anywhere: {len(seen)}")
 
     # name -> log ids (a name can hold several ids: Colorful Compass
     # tribe variants 426/426t share text and stats).
@@ -177,10 +197,27 @@ def main():
         new_db.append(entry)
 
     added = []
-    for cid in sorted(set(offered) - {e["id"] for e in new_db}):
+    # Cover everything the gate can see, with the gate's own exemptions:
+    # recorded gaps (patch_gaps.json) and a trinket's own enchantment
+    # (...e / ...e2 whose base is covered). Anything else seen-but-unknown
+    # becomes an entry from its hearthstonejson card.
+    from logquery import _answered_gaps
+    recorded = _answered_gaps()
+    already = {e["id"] for e in new_db if e.get("id")}
+    todo = set(seen) - already
+    covered = already | todo
+
+    def own_base(cid):
+        m = re.search(r"e\d*$", cid)
+        return cid[:m.start()] if m else None
+
+    for cid in sorted(todo - set(recorded)):
+        base = own_base(cid)
+        if base and base != cid and base in covered:
+            continue  # own enchantment — exempt, exactly like the gate
         card = cards.get(cid)
         if not card:
-            print(f"  !! offered id {cid} has no hearthstonejson card — skipped")
+            print(f"  !! seen id {cid} has no hearthstonejson card — skipped")
             continue
         name, desc = card
         prior = old_by_name.get(name) or {}
