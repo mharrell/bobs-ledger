@@ -32,7 +32,11 @@ EXPECTED_COUNTS = {
     "new_heroes": 2,
 }
 
-ACCEPTED_GAP_NAMES = {"Sha of Fear"}
+#: No accepted gaps remain: Sha of Fear (BG36_111, the last one) entered the
+#: DB on 2026-09-27 with the housekeeping pass — an event-tier Aberration at
+#: techLevel 7, named here so the closure is on record (a gap that closes
+#: silently teaches nothing).
+ACCEPTED_GAP_NAMES = set()
 
 
 class TestPatchDbCoverage(unittest.TestCase):
