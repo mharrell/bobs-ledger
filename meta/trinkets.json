@@ -1306,6 +1306,25 @@
   "guide": null
  },
  {
+  "id": "BG32_MagicItem_361t",
+  "name": "Portable Factory",
+  "description": "Discover a Tier 5 minion with a type. At the start of each turn, get another copy of it.",
+  "pick_rate": 14.2,
+  "avg_placement": 4.4,
+  "placement_distribution": {
+   "1": 14.86,
+   "2": 13.24,
+   "3": 12.3,
+   "4": 11.5,
+   "5": 11.2,
+   "6": 11.76,
+   "7": 12.13,
+   "8": 13.0
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG32_MagicItem_362",
   "name": "Innkeeper's Hearth",
   "description": "Discover two Tier 6 minions. Set their stats to 30/30.",
@@ -2588,6 +2607,25 @@
    "8": 2.6
   },
   "guide": "+4/2 a turn is decent on turn 6, +6/3 is amazing. Use tempo to comfortably level to 5."
+ },
+ {
+  "id": "BG36_MagicItem_302t",
+  "name": "Gold Mallet",
+  "description": "At the end of your turn, give your minions +4/+2. (Improved by Golden minions you've played this game!)",
+  "pick_rate": 48.5,
+  "avg_placement": 3.59,
+  "placement_distribution": {
+   "1": 16.65,
+   "2": 16.42,
+   "3": 18.56,
+   "4": 17.24,
+   "5": 12.52,
+   "6": 10.29,
+   "7": 5.72,
+   "8": 2.6
+  },
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG36_MagicItem_303",

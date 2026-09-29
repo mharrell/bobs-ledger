@@ -437,6 +437,15 @@
   },
   "note": "end of turn: board +1/+1, improves with goldens played (Gold Mallet)"
  },
+ "BG36_MagicItem_302t": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "End of turn: your minions +4/+2, improved by Golden minions played this game (Gold Mallet) — board-wide recurring scaling that compounds with golden turns; base 12 (text re-read 2026-09-29: was +1/+1 in the old paste)."
+ },
  "BG32_MagicItem_951": {
   "base_value": 12,
   "synergy": {
@@ -759,6 +768,15 @@
    ]
   },
   "note": "Discover a typed T4 minion, another copy each turn (Portable Factory)"
+ },
+ "BG32_MagicItem_361t": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "Discover a typed TIER 5 minion, another copy of it at the start of each turn (Portable Factory) — a recurring t5-quality body; base 14 (text re-read 2026-09-29: was T4 in the old paste)."
  },
  "BG32_MagicItem_300": {
   "base_value": 10,
