@@ -181,15 +181,34 @@ maintainer is an explicit manual step:
 
 ```
 python package_corpus.py <Power.log>   # bundle: sanitized log + decisions
-python upload_corpus.py --latest      # upload (requires your GitHub auth)
+python package_corpus.py --inspect corpus_out/<bundle>   # what's inside
+python upload_corpus.py --latest       # upload
 ```
 
+`--inspect` decodes the bundle and re-scans its log for unredacted
+BattleTags — "it's clean" as a measurement, not a promise. A bundle is
+one gzipped JSON file: the sanitized log, the decision log, and a
+manifest. Nothing else.
+
+Three ways to send it — **no GitHub account needed for the first two:**
+
+1. **Collector URL** (what beta testers use): set
+   `HEARTH_TELEMETRY_URL` (and optionally `HEARTH_TELEMETRY_KEY`, the
+   shared secret the maintainer hands out with the URL) and run
+   `python upload_corpus.py --latest`. A plain HTTPS POST; the reference
+   collector lives in `../telemetry/`.
+2. **The file itself**: the bundle from `package_corpus.py` is a single
+   self-contained file — email it, attach it, drop it wherever you
+   already talk to the maintainer.
+3. **Your own GitHub repo**: `gh` logged in, or `GH_TELEMETRY_TOKEN`
+   (a fine-grained PAT with Contents write on that repo only); default
+   repo `mharrell/hearth-telemetry`, override with
+   `HEARTH_TELEMETRY_REPO`.
+
 The Power.log in a bundle is sanitized first (`sanitize_log.py` redacts
-BattleTags — the only personal data Hearthstone writes into logs).
-`upload_corpus.py`'s default repo is the maintainer's private research
-repo (`mharrell/hearth-telemetry`) — set `HEARTH_TELEMETRY_REPO` to
-point at your own repo instead. To record no decision log at all
-(locally or otherwise), run with `HEARTH_TELEMETRY=0`.
+BattleTags — the only personal data Hearthstone writes into logs). To
+record no decision log at all (locally or otherwise), run with
+`HEARTH_TELEMETRY=0`.
 
 ## License & attribution
 
@@ -199,7 +218,7 @@ things the license doesn't cover, credited where they came from:
 - The meta reference (`meta/*.json`) credits its sources: each comp in
   `comps.json` names where the build came from (hsreplay.net's public
   comp pages, via `scrape_comps.py`; one comp is mined from our own
-  replay corpus and marked `provisional`), and card data comes from
+  replay corpus, curated with the maintainer), and card data comes from
   HearthstoneJSON. The strategy *builds* are facts; the guide text is
   written in the coach's own words — nothing is republished.
 - Hearthstone — card names, text, and art — is © Blizzard

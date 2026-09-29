@@ -53,6 +53,69 @@ class TestUpload(unittest.TestCase):
                 upload_corpus.upload(any_file)
         self.assertEqual(pf.call_args[0][0], "me/t")
 
+    def test_put_url_posts_the_bundle_with_key_and_name(self):
+        """The no-GitHub transport: a plain POST with an optional shared
+        key — the user needs nothing but the URL."""
+        captured = {}
+
+        class R:
+            def __init__(self, reply):
+                self._reply = reply
+
+            def read(self):
+                return self._reply.encode()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        def fake_urlopen(req, timeout=None):
+            captured["url"] = req.full_url
+            captured["method"] = req.method
+            captured["headers"] = dict(req.header_items())
+            captured["body_len"] = len(req.data)
+            return R("stored corpus/x.json.gz (5 bytes)")
+
+        with mock.patch.object(upload_corpus.urllib.request,
+                               "urlopen", fake_urlopen):
+            reply = upload_corpus.put_url(
+                "https://col.example/post", b"BUNDLEDATA",
+                key="s3cr3t", name="corpus_20260929.json.gz")
+        self.assertEqual(reply, "stored corpus/x.json.gz (5 bytes)")
+        self.assertEqual(captured["url"], "https://col.example/post")
+        self.assertEqual(captured["method"], "POST")
+        headers = {k.lower(): v for k, v in captured["headers"].items()}
+        self.assertEqual(headers.get("x-telemetry-key"), "s3cr3t")
+        self.assertEqual(headers.get("x-bundle-name"),
+                         "corpus_20260929.json.gz")
+        self.assertEqual(headers.get("content-type"), "application/gzip")
+        self.assertEqual(captured["body_len"], len(b"BUNDLEDATA"))
+
+    def test_put_url_without_key_sends_no_key_header(self):
+        captured = {}
+
+        class R:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return b"ok"
+
+        def fake_urlopen(req, timeout=None):
+            captured["headers"] = dict(req.header_items())
+            return R()
+
+        with mock.patch.object(upload_corpus.urllib.request,
+                               "urlopen", fake_urlopen):
+            upload_corpus.put_url("https://col.example/post", b"B")
+        headers = {k.lower(): v for k, v in captured["headers"].items()}
+        self.assertNotIn("x-telemetry-key", headers)
+
     def test_token_env_passed_through(self):
         any_file = os.path.join(HERE, "meta", "comps.json")
         with mock.patch.dict(os.environ, {"GH_TELEMETRY_TOKEN": "t0k"}):

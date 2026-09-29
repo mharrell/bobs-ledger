@@ -78,6 +78,37 @@ def datetime_iso():
     return datetime.datetime.now().isoformat(timespec="seconds")
 
 
+def inspect(bundle_path):
+    """What's in the bundle, in the open — the pre-send trust view.
+
+    Decodes the bundle and RE-SCANS the sanitized log for unredacted
+    BattleTags, so "it's clean" is a measurement, not a promise.
+    """
+    if not os.path.exists(bundle_path):
+        print(f"no such bundle: {bundle_path}")
+        return 1
+    with gzip.open(bundle_path, "rt", encoding="utf-8") as f:
+        bundle = json.load(f)
+    m = bundle["manifest"]
+    print(f"bundle: {bundle_path} "
+          f"({os.path.getsize(bundle_path) / 1e6:.1f} MB)")
+    for k, v in m.items():
+        print(f"  {k}: {v}")
+    print(f"  decisions: {len(bundle['decisions'])} advisories")
+    if bundle["decisions"]:
+        first = bundle["decisions"][0]
+        sample = json.dumps(first, ensure_ascii=False)
+        print(f"  first decision: {sample[:220]}")
+    import base64 as _b64
+    log = _b64.b64decode(bundle["log_gz_b64"]).decode("utf-8", "replace")
+    _clean, still_raw = sanitize_text(log)
+    print(f"  unredacted BattleTags remaining in the bundle's log: "
+          f"{len(still_raw)}")
+    print("  that is the whole bundle: sanitized log + decision log + "
+          "manifest. Nothing else is included.")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("log", nargs="?", help="path to a session Power.log")
@@ -85,7 +116,11 @@ def main():
                     help="package the newest session log")
     ap.add_argument("-o", "--out", default="corpus_out",
                     help="output directory (default: corpus_out/)")
+    ap.add_argument("--inspect", metavar="BUNDLE",
+                    help="show exactly what a packaged bundle contains")
     args = ap.parse_args()
+    if args.inspect:
+        return inspect(args.inspect)
     path = args.log
     if not path or args.latest:
         logs = sorted(glob.glob(HS_LOG_GLOB),
