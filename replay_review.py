@@ -324,7 +324,8 @@ def _run(argv):
                 tname = a.get("target_comp")
                 tcomp = (meta.comps().get(tname) if tname else None) or {}
                 pieces = set((tcomp.get("core") or [])
-                             + (tcomp.get("addons") or []))
+                             + (tcomp.get("addons") or [])
+                             + (a.get("hunt_targets") or []))
                 on_comp = [c for c in buys_raw if c in pieces]
                 if on_comp:
                     print(f"     buy match: passed on-comp (bought "

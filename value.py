@@ -2870,6 +2870,8 @@ def _top_move_text(analysis):
                                  f"({_shop_name(cid, names)} is off-build)")
                     analysis["buy_step_roll"] = parts[-1]
                     analysis["buy_step_card"] = None
+                    analysis["hunt_targets"] = [r["card"]
+                                                for r in (specific or feasible)[:2]]
                     cid = None
                     hunted = True
                 else:
@@ -2889,6 +2891,13 @@ def _top_move_text(analysis):
                         weak = _weak_reach_note(analysis.get("reach_sources"),
                                                 missing)
                     no_hunt_note = f"no hunt — {nm} ({why}{weak})"
+                    # The pieces named above are still the build's missing
+                    # cards — the player buys one the moment it shows (the
+                    # 2026-09-29 A.F. Kay t10: "no hunt — Goldrinn, Titus",
+                    # Titus bought that phase). Side-write them so the
+                    # adherence split credits a hunt-piece buy as on-comp.
+                    analysis["hunt_targets"] = [r["card"]
+                                                for r, _ok, _w in evaluated[:2]]
         if cid is not None:
             bought = cid
             analysis["buy_step_card"] = cid

@@ -917,5 +917,13 @@
     "note": "2 Tavern Dish Bananas - direct spell fuel for the discard/Deity package."
    }
   ]
+ },
+ "BG26_813t": {
+  "effects": [
+   {
+    "kind": "golden",
+    "note": "Golden a friendly minion — a golden body with no triple needed; per the golden rule it does NOT combine toward a triple."
+   }
+  ]
  }
 }
