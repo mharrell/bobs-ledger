@@ -49,3 +49,6 @@ hearth-coach/.review_cache/
 # repo), regenerable, and never a source of truth — promotion is a human edit
 # to meta/comps.json
 hearth-coach/meta/comp_candidates.json
+
+# corpus bundles never leave the machine un-asked
+corpus_out/

@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Upload a corpus bundle to the private telemetry repo on GitHub.
+"""Upload a corpus bundle to the coach's telemetry.
 
-One PUT per bundle via the Contents API. Auth, in order of preference:
-  1. the `gh` CLI (its own keyring — no secrets stored by this tool)
-  2. the GH_TELEMETRY_TOKEN env var (a fine-grained PAT with Contents write
-     on the telemetry repo ONLY — that's the blast radius if it leaks)
-The repo defaults to HEARTH_TELEMETRY_REPO or mharrell/hearth-telemetry.
+Two transports, picked by what's configured:
+
+  1. A COLLECTOR URL (no GitHub account needed): --url or
+     HEARTH_TELEMETRY_URL. One POST per bundle; the optional shared secret
+     HEARTH_TELEMETRY_KEY rides in an X-Telemetry-Key header. The reference
+     collector (a Cloudflare Worker writing to R2) ships in telemetry/.
+  2. The GitHub repo (the maintainer's own path): one PUT per bundle via
+     the Contents API — the `gh` CLI, or GH_TELEMETRY_TOKEN (a
+     fine-grained PAT with Contents write on that repo ONLY). Repo
+     defaults to HEARTH_TELEMETRY_REPO or mharrell/hearth-telemetry.
 
 Usage:
   python upload_corpus.py corpus_out/corpus_XXXX.json.gz
@@ -64,6 +69,24 @@ def put_file(repo, remote_path, data, token=None):
         return json.load(r)["content"]["download_url"]
 
 
+def put_url(url, data, key=None, name=None):
+    """POST one bundle to a collector endpoint. Returns the collector's reply.
+
+    The user needs nothing but the URL: no GitHub account, no PAT. The
+    shared key (HEARTH_TELEMETRY_KEY) is optional and is the ONLY
+    credential — it throttles strangers, it is not an identity.
+    """
+    headers = {"Content-Type": "application/gzip"}
+    if key:
+        headers["X-Telemetry-Key"] = key
+    if name:
+        headers["X-Bundle-Name"] = os.path.basename(name)
+    req = urllib.request.Request(url, data=data, method="POST",
+                                 headers=headers)
+    with urllib.request.urlopen(req, timeout=300) as r:
+        return r.read().decode("utf-8", "replace").strip()[:300]
+
+
 def upload(bundle_path, repo=None, token=None):
     repo = repo or os.environ.get("HEARTH_TELEMETRY_REPO", DEFAULT_REPO)
     if token is None:
@@ -82,6 +105,9 @@ def main():
     ap.add_argument("bundle", nargs="?", help="a corpus_*.json.gz bundle")
     ap.add_argument("--latest", action="store_true",
                     help="package the newest session, then upload it")
+    ap.add_argument("--url", help="collector endpoint (a POST URL — no "
+                    "GitHub account needed; default "
+                    "$HEARTH_TELEMETRY_URL)")
     ap.add_argument("--repo", help="telemetry repo (default "
                     f"{DEFAULT_REPO})")
     ap.add_argument("--yes", "-y", action="store_true",
@@ -100,14 +126,22 @@ def main():
     if not os.path.exists(bundle):
         print(f"no such bundle: {bundle}")
         return 1
-    if not gh_available() and not os.environ.get("GH_TELEMETRY_TOKEN"):
-        print("no auth: install/login `gh`, or set GH_TELEMETRY_TOKEN")
-        return 1
-    repo = args.repo or os.environ.get("HEARTH_TELEMETRY_REPO", DEFAULT_REPO)
+    url = args.url or os.environ.get("HEARTH_TELEMETRY_URL")
+    if url:
+        destination = url
+    else:
+        if not gh_available() and not os.environ.get("GH_TELEMETRY_TOKEN"):
+            print("no auth: set HEARTH_TELEMETRY_URL (a collector URL — "
+                  "no GitHub needed), or install/login `gh`, or set "
+                  "GH_TELEMETRY_TOKEN")
+            return 1
+        repo = args.repo or os.environ.get("HEARTH_TELEMETRY_REPO",
+                                           DEFAULT_REPO)
+        destination = f"{repo}/corpus/{os.path.basename(bundle)}"
     print(f"about to upload: {bundle}")
     print("  contents: the BattleTag-redacted Power.log + this session's "
           "decision log (no other personal data)")
-    print(f"  destination: {repo}/corpus/{os.path.basename(bundle)}")
+    print(f"  destination: {destination}")
     if not args.yes:
         try:
             answer = input("upload? [y/N] ").strip().lower()
@@ -117,7 +151,14 @@ def main():
             print("cancelled — nothing uploaded")
             return 1
     try:
-        upload(bundle, repo=args.repo)
+        if url:
+            with open(bundle, "rb") as f:
+                data = f.read()
+            print(put_url(url, data,
+                          key=os.environ.get("HEARTH_TELEMETRY_KEY"),
+                          name=bundle))
+        else:
+            upload(bundle, repo=args.repo)
     except Exception as e:  # noqa: BLE001
         print(f"upload failed: {e}")
         return 1
