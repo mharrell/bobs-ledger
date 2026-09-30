@@ -10,9 +10,9 @@
       "BG36_701"
     ],
     "addons": [
-      "BG28_707",
+      "BG34_858",
       "BG34_500",
-      "BG34_858"
+      "BG28_707"
     ],
     "summary": "Play elementals to scale from big shop",
     "when_to_commit": "Brann Bronzebeard + shop buff (Nomi, Kitchen Nightmare) + Unbound Tempest",
@@ -80,10 +80,10 @@
       "BG35_883"
     ],
     "addons": [
-      "BG26_ICC_901",
-      "BG36_506",
-      "BG36_760",
-      "BG36_854"
+      "BG36_370",
+      "BG30_121",
+      "BG36_854",
+      "BG26_ICC_901"
     ],
     "summary": "Cast spells on Mechs",
     "when_to_commit": "Glambot + Balinda Stonehearth",
@@ -131,9 +131,9 @@
       "BG36_204"
     ],
     "addons": [
-      "BG25_016",
       "BG36_201",
-      "BG36_210"
+      "BG36_210",
+      "BG25_016"
     ],
     "summary": "Trigger Lobster Deathrattle to scale",
     "when_to_commit": "Headhunter Gryphon + Deathstrider",
@@ -154,10 +154,10 @@
       "BG34_140"
     ],
     "addons": [
-      "BG27_556",
-      "BG34_604",
       "BG36_243",
-      "BGS_131"
+      "BG27_556",
+      "BGS_131",
+      "BG34_604"
     ],
     "summary": "Buy scam cards and try to preserve placements",
     "when_to_commit": "When you have no future or are clearly getting outstatted",
@@ -207,9 +207,9 @@
       "BG36_523"
     ],
     "addons": [
-      "BG26_817",
       "BG33_825",
-      "BG_LOE_077"
+      "BG_LOE_077",
+      "BG26_817"
     ],
     "summary": "Use infinite money to scale pirates",
     "when_to_commit": "Enterprising Escapee + Infinite gold",
@@ -231,10 +231,10 @@
       "BG35_883"
     ],
     "addons": [
+      "BG35_155",
+      "BG32_873",
       "BG21_004",
       "BG26_174",
-      "BG32_873",
-      "BG35_155",
       "BG_LOE_077"
     ],
     "summary": "Scale and consume shop",
@@ -249,7 +249,7 @@
   "undead-attack-scaling": {
     "name": "Undead - Attack Scaling",
     "difficulty": "Easy",
-    "meta_tier": "S",
+    "meta_tier": "A",
     "core": [
       "BG28_309",
       "BG36_511",
@@ -258,11 +258,11 @@
       "BG32_324"
     ],
     "addons": [
-      "BG25_009",
       "BG25_354",
+      "BG25_009",
+      "BG36_514",
       "BG31_835",
-      "BG32_880",
-      "BG36_514"
+      "BG32_880"
     ],
     "summary": "Summon high attack Undeads",
     "when_to_commit": "Attack Scaling (Drustfallen Butcher) + summons (Handless Forsaken)",
@@ -354,10 +354,10 @@
       "BG33_885"
     ],
     "addons": [
-      "BG23_017",
-      "BG26_ICC_901",
       "BG31_327",
       "BG36_331",
+      "BG26_ICC_901",
+      "BG23_017",
       "BG36_510"
     ],
     "summary": "Play Choose One cards to scale",
@@ -409,8 +409,9 @@
       "BG36_523"
     ],
     "addons": [
+      "BG_LOE_077",
       "BG35_155",
-      "BG_LOE_077"
+      "BG30_121"
     ],
     "summary": "Cast spells to consume buffed shop.",
     "when_to_commit": "Early infinite gold + Felboar",
@@ -483,14 +484,14 @@
     "core": [
       "BGS_041",
       "BG_LOE_077",
-      "BG24_004",
-      "BG29_813"
+      "BG29_813",
+      "BG34_633",
+      "BG36_849",
+      "BG36_701"
     ],
     "addons": [
-      "BG24_500",
-      "BG29_810",
-      "BG32_822",
-      "BG36_242"
+      "BG36_242",
+      "BGS_040"
     ],
     "summary": "Cycle battlecries to scale dragons",
     "when_to_commit": "Kalecgos, Arcane Aspect + Brann Bronzebeard",
@@ -511,10 +512,10 @@
       "BG36_204"
     ],
     "addons": [
-      "BG31_801",
       "BG31_803",
+      "BG35_604",
       "BG35_602",
-      "BG35_604"
+      "BG31_801"
     ],
     "summary": "Summon large beetles",
     "when_to_commit": "Early Ravaging Scorpid or Turquoise Skitterer",
@@ -536,9 +537,9 @@
       "BG36_733"
     ],
     "addons": [
-      "BG26_523",
       "BG26_524",
-      "BGS_004"
+      "BGS_004",
+      "BG26_523"
     ],
     "summary": "Use self-damage to scale",
     "when_to_commit": "Ashen Corruptor + self damage (Wrath Weaver or Malchezaar, Prince of Dance) + payoff (Tichondrius or Eredar Escapist)",
@@ -746,7 +747,6 @@
   "_enable_note": "enable = pieces that OPEN the direction (lean); core = the commit point (Jeef, 'Direction' video: enablers are not commit points). Table verified against the card DB 2026-09-24. Resolved to ids: Brann Bronzebeard BG_LOE_077 (dragons, murlocs), Primalfin Lookout BGS_020 (murlocs), Titus Rivendare BG25_354 (pirates), Sly Raptor BG25_806 (Slamma beasts), Scrap Scraper BG26_148 (mechs), Wrath Weaver BGS_004 + Soul Rewinder BG26_174 (self-damage demons). The video's remaining names predate the current card set and have no id anywhere in minions.json: Smuggler (dragons), Genie/Wraith/Rock Rock (elementals), Boogie/Spearhide/Piper (quilboar), Orgozoa/Lord of Gains/A.F. Kay (nagas; Kay is a hero in heroes.json, so that clause is likely a transcript garble), Sore Loser/Champion of the Primus/Sister Death Speaker (undead). Those tribes get no enable row until their current-season openers are named. Pool membership is deliberately NOT claimed here: pool_roster is log-mined from 3 games (2026-09-22), too thin to prune by.",
   "murlocs-keyword": {
     "name": "Murlocs - Keyword",
-    "tribe": "Murloc",
     "difficulty": "Medium",
     "meta_tier": "S",
     "core": [
@@ -757,21 +757,21 @@
     ],
     "addons": [
       "BG22_403",
-      "BG31_148",
+      "BG36_701",
       "BG31_149",
       "BG32_336",
-      "BG36_701"
+      "BG31_148"
     ],
     "summary": "Add Keywords to Murlocs and buff them",
     "when_to_commit": "Brann Bronzebeard + Sewer Escapee",
     "common_enablers": "Brann Bronzebeard\nSewer Escapee",
     "representative_card": "BG36_700",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Murloc",
     "guide": "guides/murlocs-keyword.md"
   },
   "aberrations-deathrattle-spells": {
     "name": "Aberrations - Deathrattle/Spells",
-    "tribe": "Aberration",
     "difficulty": "Easy",
     "meta_tier": "S",
     "core": [
@@ -782,18 +782,146 @@
       "BG36_101"
     ],
     "addons": [
-      "BG25_016",
-      "BG33_823",
-      "BG33_825",
-      "BG36_103",
       "BG36_109",
-      "BG36_115"
+      "BG36_103",
+      "BG25_016",
+      "BG36_115",
+      "BG33_825",
+      "BG33_823"
     ],
     "summary": "Play spells and proc deathrattle to scale Deity",
     "when_to_commit": "Faceless Converter + Titus Rivendare\nSky Admiral Rogers + Proud Privateer pivot highest cap",
     "common_enablers": "Spell generation (Unwilling Slacker)",
     "representative_card": "BG36_318",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Aberration",
     "guide": "guides/aberrations-deathrattle-spells.md"
+  },
+  "menagerie": {
+    "name": "Menagerie",
+    "difficulty": "Medium",
+    "meta_tier": "S",
+    "core": [
+      "BG_LOE_077",
+      "BG35_883",
+      "BG36_640"
+    ],
+    "addons": [
+      "BG32_821",
+      "BG30_121",
+      "BG28_633",
+      "BG36_523",
+      "BG36_370",
+      "BG33_891",
+      "BG36_104"
+    ],
+    "summary": "Cast targetted spells to scale all tribes",
+    "when_to_commit": "Gatekeeper Amalgam + Balinda Stonehearth or spell power (Dark Puppeteer)",
+    "common_enablers": "Spell power (Dark Puppeteer)\nGatekeeper Amalgam",
+    "representative_card": "BG36_640",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": null,
+    "how_to_play": "Spell-target multiplier engine: cast friendly-targeted spells at Gatekeeper Amalgam (it casts Misplaced Tea Set back) with Balinda Stonehearth doubling every cast and Brann doubling battlecries. Half the addons eat spell CASTS as fuel - buy spells every turn even off-plan.",
+    "guide": "guides/menagerie.md"
+  },
+  "mechs-apm-magnetic": {
+    "name": "Mechs - APM Magnetic",
+    "difficulty": "Easy",
+    "meta_tier": "A",
+    "core": [
+      "BG36_367",
+      "BG33_825",
+      "BG33_823",
+      "BG36_851",
+      "BG36_506",
+      "BG26_149"
+    ],
+    "addons": [
+      "BG36_523",
+      "BG_LOE_077"
+    ],
+    "summary": "Attach bigger and bigger magnetics",
+    "when_to_commit": "Infinite gold (Sky Admiral Rogers + Proud Privateer) + Auto Reveille",
+    "common_enablers": "Infinite gold (Sky Admiral Rogers)",
+    "representative_card": "BG36_367",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Mech",
+    "how_to_play": "APM chain engine: buy 3 cards to fire Auto Reveille, play mechs so Spark Snapper magnetizes and improves, let Polarizing Beatboxer mirror every attach, and time Drone Duplicator Activate before the biggest one. Rogers/Privateer print doubled Bounties off the same spending.",
+    "guide": "guides/mechs-apm-magnetic.md"
+  },
+  "aberrations-apm-deity": {
+    "name": "Aberrations - APM Deity",
+    "difficulty": "Easy",
+    "meta_tier": "A",
+    "core": [
+      "BG36_111",
+      "BG33_823",
+      "BG33_825",
+      "BG36_109"
+    ],
+    "addons": [
+      "BG36_318",
+      "BG36_523",
+      "BG_LOE_077"
+    ],
+    "summary": "Play cards to scale deity.",
+    "when_to_commit": "Sky Admiral Rogers + Proud Privateer + The Shadow of Doubt",
+    "common_enablers": "The Shadow of Doubt\nSky Admiral Rogers",
+    "representative_card": "BG36_109",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Aberration",
+    "how_to_play": "Spend-gold Deity engine: Sky Admiral Rogers mints Bounties every 9 gold spent, Proud Privateer casts them twice, every tavern spell gives Sha of Fear board+Deity pump, and every hand-add feeds The Shadow of Doubt. Gold in hand is wasted fuel - spend it.",
+    "guide": "guides/aberrations-apm-deity.md"
+  },
+  "elementals-living-azerite": {
+    "name": "Elementals - Living Azerite",
+    "difficulty": "Medium",
+    "meta_tier": "A",
+    "core": [
+      "BG35_881",
+      "BG35_883",
+      "BG_LOE_077",
+      "BG28_707",
+      "BG36_701"
+    ],
+    "addons": [
+      "BG33_823",
+      "BGS_126",
+      "BG33_825"
+    ],
+    "summary": "Buff Elementals in shop",
+    "when_to_commit": "Brann Bronzebeard + Living Azerite + good economy",
+    "common_enablers": "Brann Bronzebeard",
+    "representative_card": "BG28_707",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Elemental",
+    "how_to_play": "Shop-buff scaler: every tavern spell you cast gives elementals in the TAVERN +3/+2 permanently (Living Azerite), so buy the buffed bodies before rolling. Balinda doubles targeted spells; Leyline Surfacer generates Absorptions on both battlecry and deathrattle.",
+    "guide": "guides/elementals-living-azerite.md"
+  },
+  "aberrations-sludge": {
+    "name": "Aberrations - Sludge",
+    "difficulty": "Medium",
+    "meta_tier": "A",
+    "core": [
+      "BG25_354",
+      "BG36_300",
+      "BG36_115",
+      "BG36_320",
+      "BG36_104"
+    ],
+    "addons": [
+      "BG32_821",
+      "BG36_103",
+      "BG36_312",
+      "BG26_ICC_901"
+    ],
+    "summary": "Discard sludges to scale",
+    "when_to_commit": "Spell generation (Nightmare Corroder, Sludge Portrait) + Spell Power (N'raqi Frostcaller)",
+    "common_enablers": "Nightmare Corroder + discard midgame",
+    "representative_card": "BG36_115",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Aberration",
+    "how_to_play": "Spell-scaling aberrations: press Nraqi Frostcaller (free) every turn, feed KThir your left-most hand spells (+8/+8 each), bank permanent spell quality off Corroder and Dark Puppeteer deaths (Titus doubles), and remember discarded Sludge Corrosions cast twice.",
+    "guide": "guides/aberrations-sludge.md"
   }
 }
