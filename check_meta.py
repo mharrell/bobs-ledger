@@ -113,12 +113,21 @@ def main():
     for slug, comp in comps.items():
         if slug.startswith("_"):
             continue  # file-level notes (_enable_note), not comps
-        if not comp.get("tribe"):
+        if "tribe" not in comp:
             # 2026-09-24: the 36.6.1 re-scrape landed undead-apm-undead and
             # murlocs-tidecaller tribe-less, and as a warning it never gated.
             # A tribe-less comp is unfilterable by the family ban — dead
             # weight that renders as if it were fine. Structural: error.
             errors.append(f"comps.json: {slug} has no tribe field")
+        elif not comp.get("tribe"):
+            # 2026-09-30: an EXPLICIT null tribe is a deliberate opt-out for
+            # menagerie-class builds — playable under every family ban
+            # (bans.py fails open on a falsy comp tribe) with per-card
+            # availability still enforced via _blocked_core. Warn so it
+            # stays a decision, never an omission.
+            warnings.append(f"comps.json: {slug} declares tribe null — "
+                            "unfilterable by the family ban (deliberate "
+                            "for menagerie-class builds)")
         if not comp.get("core"):
             warnings.append(f"comps.json: {slug} has no core cards")
         if not comp.get("source"):
