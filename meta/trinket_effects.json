@@ -73,18 +73,6 @@
   },
   "note": "Temperature Shift, repeats after 11 Elementals (Baller Portrait)"
  },
- "BG36_MagicItem_390": {
-  "base_value": 8,
-  "synergy": {
-   "tribes": [
-    "Elemental"
-   ],
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "Temperature Shift, repeats after 11 Elementals (Baller Portrait)"
- },
  "BG30_MagicItem_705": {
   "base_value": 12,
   "synergy": {
@@ -185,15 +173,6 @@
   "note": "after 14 spells, Tavern spells give extra +4/+4 (Bubble Crown)"
  },
  "BG35_MagicItem_840": {
-  "base_value": 12,
-  "synergy": {
-   "tribes": [
-    "Elemental"
-   ]
-  },
-  "note": "Chromadrake + one every turn (Chromatic Tear)"
- },
- "BG35_MagicItem_840t": {
   "base_value": 12,
   "synergy": {
    "tribes": [
@@ -444,7 +423,7 @@
     "golden"
    ]
   },
-  "note": "End of turn: your minions +4/+2, improved by Golden minions played this game (Gold Mallet) — board-wide recurring scaling that compounds with golden turns; base 12 (text re-read 2026-09-29: was +1/+1 in the old paste)."
+  "note": "end of turn: board +1/+1, improves with goldens played (Gold Mallet)"
  },
  "BG32_MagicItem_951": {
   "base_value": 12,
@@ -751,15 +730,6 @@
   },
   "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
  },
- "BG35_MagicItem_850t": {
-  "base_value": 14,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
- },
  "BG32_MagicItem_361": {
   "base_value": 14,
   "synergy": {
@@ -776,7 +746,7 @@
     "economy"
    ]
   },
-  "note": "Discover a typed TIER 5 minion, another copy of it at the start of each turn (Portable Factory) — a recurring t5-quality body; base 14 (text re-read 2026-09-29: was T4 in the old paste)."
+  "note": "Discover a typed T4 minion, another copy each turn (Portable Factory)"
  },
  "BG32_MagicItem_300": {
   "base_value": 10,
@@ -1108,6 +1078,16 @@
   "note": "Wheel of Yogg-Saron, re-spins each turn (Yogg-Tastic Pastry)"
  },
  "BG30_MagicItem_426": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "spell",
+    "economy"
+   ]
+  },
+  "note": "a random spell now + 1 every turn (Colorful Compass)"
+ },
+ "BG30_MagicItem_426t": {
   "base_value": 10,
   "synergy": {
    "keywords": [

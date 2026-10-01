@@ -821,7 +821,7 @@
     "representative_card": "BG36_640",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
     "tribe": null,
-    "how_to_play": "Spell-target multiplier engine: cast friendly-targeted spells at Gatekeeper Amalgam (it casts Misplaced Tea Set back) with Balinda Stonehearth doubling every cast and Brann doubling battlecries. Half the addons eat spell CASTS as fuel - buy spells every turn even off-plan.",
+    "how_to_play": "Spell-target multiplier engine: cast friendly-targeted spells at Gatekeeper Amalgam (it casts Misplaced Tea Set back) with Balinda Stonehearth doubling every cast and Brann doubling battlecries. Blood Gems are its best food (Victorious Geomant/Hot-Air Surveyor keep the gems landing on it); keep Belinda - selling her is a pivot signal, and Faceless Converter re-summons double-dip since the Amalgam counts as an Aberration. Alternate minion and spell buys: the build eats spell casts as fuel.",
     "guide": "guides/menagerie.md"
   },
   "mechs-apm-magnetic": {

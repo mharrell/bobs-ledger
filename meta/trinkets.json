@@ -374,6 +374,16 @@
   "guide": null
  },
  {
+  "id": "BG30_MagicItem_426t",
+  "name": "Colorful Compass",
+  "description": "Get 2 random 92. At the start of each turn, get 2 more.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG30_MagicItem_430",
   "name": "Rockin' Music Box",
   "description": "Get a random Battlecry minion. At the start of each turn, get another.",
@@ -2141,25 +2151,6 @@
   "cost": 3
  },
  {
-  "id": "BG35_MagicItem_840t",
-  "name": "Chromatic Tear",
-  "description": "Get 2 random Chromadrakes. After you play 7 Battlecry minions, repeat this. (7 left!)",
-  "pick_rate": 22.2,
-  "avg_placement": 4.12,
-  "placement_distribution": {
-   "1": 13.52,
-   "2": 15.45,
-   "3": 15.23,
-   "4": 13.96,
-   "5": 11.9,
-   "6": 11.3,
-   "7": 10.6,
-   "8": 8.04
-  },
-  "guide": "Must have a Brann already, can help you become infinite.",
-  "type": "Greater"
- },
- {
   "id": "BG35_MagicItem_850",
   "name": "Pocket Cyclone",
   "description": "Cast Easterly Winds. At the start of each turn, cast it again.",
@@ -2177,25 +2168,6 @@
   },
   "guide": "Commit Shop Buff Eles.",
   "cost": 0
- },
- {
-  "id": "BG35_MagicItem_850t",
-  "name": "Pocket Cyclone",
-  "description": "Cast Easterly Winds four times. At the start of each turn, cast it twice more.",
-  "pick_rate": 23.3,
-  "avg_placement": 4.24,
-  "placement_distribution": {
-   "1": 9.55,
-   "2": 13.7,
-   "3": 16.34,
-   "4": 16.37,
-   "5": 14.9,
-   "6": 12.45,
-   "7": 10.38,
-   "8": 6.32
-  },
-  "guide": null,
-  "type": "Greater"
  },
  {
   "id": "BG35_MagicItem_851",
@@ -2790,25 +2762,6 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Greater"
- },
- {
-  "id": "BG36_MagicItem_390",
-  "name": "Baller Portrait",
-  "description": "Get a Fire Baller or a Snow Baller. At the start of each turn, repeat this.",
-  "pick_rate": 24.6,
-  "avg_placement": 4.18,
-  "placement_distribution": {
-   "1": 15.36,
-   "2": 13.84,
-   "3": 14.01,
-   "4": 13.08,
-   "5": 11.9,
-   "6": 11.12,
-   "7": 11.25,
-   "8": 9.44
-  },
-  "guide": "Scale the stats of your elementals so your ballers can benefit from them.",
-  "type": "Lesser"
  },
  {
   "id": "BG36_MagicItem_400",
