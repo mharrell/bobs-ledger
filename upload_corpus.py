@@ -76,7 +76,11 @@ def put_url(url, data, key=None, name=None):
     shared key (HEARTH_TELEMETRY_KEY) is optional and is the ONLY
     credential — it throttles strangers, it is not an identity.
     """
-    headers = {"Content-Type": "application/gzip"}
+    headers = {"Content-Type": "application/gzip",
+               # workers.dev bot filtering 403s the default Python-urllib
+               # User-Agent before the worker runs (found live, 2026-10-01:
+               # curl passed, urllib 403'd, same key) — send an honest one.
+               "User-Agent": "hearth-coach-telemetry/1.0"}
     if key:
         headers["X-Telemetry-Key"] = key
     if name:
