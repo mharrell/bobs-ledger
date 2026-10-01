@@ -40,6 +40,24 @@ def coach_version():
     return _coach_version
 
 
+def session_stem(log_path):
+    """The decision-log stem for a session: the Hearthstone_* session-dir
+    name when the log lives in one, else the log basename.
+
+    Every session's log is named Power.log, so keying on the basename
+    collapsed ALL sessions into decision_Power.log.jsonl — and packaging
+    any one session then shipped every session's decisions ever (the
+    2026-10-01 telemetry test PUT a 27 MB bundle carrying records back to
+    09-04).
+    """
+    if log_path:
+        parent = os.path.basename(os.path.dirname(os.path.abspath(log_path)))
+        if parent.startswith("Hearthstone_"):
+            return parent
+        return os.path.basename(log_path)
+    return "unknown"
+
+
 def record(analysis, log_path=None, log_offset=None, game_no=None):
     """Append one advisory to decision_logs/decision_<session>.jsonl.
 
@@ -52,7 +70,8 @@ def record(analysis, log_path=None, log_offset=None, game_no=None):
     try:
         os.makedirs(LOG_DIR, exist_ok=True)
         base = os.path.basename(log_path or "unknown")
-        path = os.path.join(LOG_DIR, f"decision_{base}.jsonl")
+        path = os.path.join(LOG_DIR,
+                            f"decision_{session_stem(log_path)}.jsonl")
         entry = {
             "schema": SCHEMA,
             "ts": datetime.datetime.now().isoformat(timespec="seconds"),

@@ -1345,16 +1345,6 @@
   "type": "Greater"
  },
  {
-  "id": "BG32_MagicItem_362t",
-  "name": "Innkeeper's Hearth",
-  "description": "Discover two Tier 6 minions. Set their stats to 30/30.",
-  "pick_rate": null,
-  "avg_placement": null,
-  "placement_distribution": null,
-  "guide": null,
-  "type": "Greater"
- },
- {
   "id": "BG32_MagicItem_366",
   "name": "Guiding Candle",
   "description": "Your first two Refreshes each turn contain only Tier 6 cards. (2 left!)",
@@ -2914,6 +2904,16 @@
   "type": "Lesser"
  },
  {
+  "id": "BG36_MagicItem_423t",
+  "name": "Volumizer Portrait",
+  "description": "Get 2 random Magnetic Volumizers. At the start of each turn, repeat this.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG36_MagicItem_424",
   "name": "Rascal Sticker",
   "description": "Gain 1 Gold for each friendly Golden minion. At the start of your turn, repeat this.",
@@ -2947,6 +2947,16 @@
   "id": "BG36_MagicItem_602",
   "name": "Mask of Ancient Ones",
   "description": "Make your Deity Golden this game.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_606",
+  "name": "Writhing Tentacles",
+  "description": "After you discard your first minion each turn, get a copy of it with double stats. (1 left!)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,

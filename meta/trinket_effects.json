@@ -1453,15 +1453,6 @@
   },
   "note": "two Tier-6 discovers set to 30/30 (Innkeeper's Hearth) — instant warband-carrying stats; strongest as a late pick"
  },
- "BG32_MagicItem_362t": {
-  "base_value": 18,
-  "synergy": {
-   "keywords": [
-    "leveling"
-   ]
-  },
-  "note": "two Tier-6 discovers set to 30/30 (Innkeeper's Hearth) — instant warband-carrying stats; strongest as a late pick"
- },
  "BG32_MagicItem_807": {
   "base_value": 14,
   "synergy": {
@@ -1935,6 +1926,15 @@
   },
   "note": "Get a random Magnetic Volumizer, and another at the start of every turn (Volumizer Portrait, Lesser). A repeating Magnetic body: it grows a Mech board each turn and each copy can be magnetized onto a body, so it is priced with the recurring generators (Orb of the Unknown 6 for one random Lesser Trinket, Converter Portrait 8) at 8 for the Lesser tier."
  },
+ "BG36_MagicItem_423t": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "magnetic"
+   ]
+  },
+  "note": "Get a random Magnetic Volumizer, and another at the start of every turn (Volumizer Portrait, Lesser). A repeating Magnetic body: it grows a Mech board each turn and each copy can be magnetized onto a body, so it is priced with the recurring generators (Orb of the Unknown 6 for one random Lesser Trinket, Converter Portrait 8) at 8 for the Lesser tier."
+ },
  "BG32_MagicItem_232": {
   "base_value": 5,
   "synergy": {
@@ -1973,5 +1973,14 @@
    ]
   },
   "note": "After 13 friendly minions attack, becomes a random GREATER trinket (13 left). Deferred value: the Greater pool is strong (Greater Corrupted Baton reads +10/+10); priced as deferred base 6 until Greaters are individually annotated."
+ },
+ "BG36_MagicItem_606": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "discard"
+   ]
+  },
+  "note": "After you discard your FIRST minion each turn, get a copy of it with double stats (Writhing Tentacles). A discard-ENGINE payoff: the aberration/discard builds discard bodies on purpose (Recruiter, Frostcaller, KThir-adjacent Activate outlets) - this turns the best one into a 2x body. Also noted as an unmodelled discard SOURCE in engines.json (analysis/discard_mechanic.md)."
  }
 }
