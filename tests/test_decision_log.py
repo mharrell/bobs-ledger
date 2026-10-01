@@ -82,5 +82,55 @@ class TestDecisionLog(unittest.TestCase):
         self.assertEqual(c.game_no, 1)
 
 
+class TestSessionStem(unittest.TestCase):
+    """Every session's log is named Power.log, so basename-keyed files
+    collapsed all sessions into one pile (the 2026-10-01 telemetry test
+    PUT a 27 MB bundle carrying every session since 09-04)."""
+
+    def test_session_dir_name_wins(self):
+        self.assertEqual(
+            decision_log.session_stem(
+                r"C:\Hearthstone\Logs\Hearthstone_2026_09_30\Power.log"),
+            "Hearthstone_2026_09_30")
+
+    def test_bare_log_falls_back_to_basename(self):
+        self.assertEqual(decision_log.session_stem(r"C:\x\Power.log"),
+                         "Power.log")
+        self.assertEqual(decision_log.session_stem(None), "unknown")
+
+
+class TestDecisionsForSession(unittest.TestCase):
+    """The legacy shared pile is filtered to the packaged log's own
+    creation->last-write window — one session's bundle carries one
+    session's decisions."""
+
+    def test_legacy_pile_filters_to_the_log_window(self):
+        import datetime
+        import json as _json
+        from unittest import mock
+
+        import package_corpus
+
+        recs = [{"ts": "2026-09-30T17:00:00", "turn": 1},
+                {"ts": "2026-09-30T21:00:00", "turn": 2},
+                {"ts": "2026-10-01T09:00:00", "turn": 3}]
+        with tempfile.TemporaryDirectory() as td:
+            legacy = os.path.join(td, "decision_Power.log.jsonl")
+            with open(legacy, "w", encoding="utf-8") as f:
+                for r in recs:
+                    f.write(_json.dumps(r) + "\n")
+            log = os.path.join(td, "Hearthstone_2026_09_30",
+                               "Power.log")
+            os.makedirs(os.path.dirname(log))
+            open(log, "w").close()
+            lo = datetime.datetime(2026, 9, 30, 16, 0).timestamp()
+            hi = datetime.datetime(2026, 9, 30, 21, 30).timestamp()
+            with mock.patch.object(decision_log, "LOG_DIR", td), \
+                 mock.patch.object(os.path, "getctime", return_value=lo), \
+                 mock.patch.object(os.path, "getmtime", return_value=hi):
+                got = package_corpus.decisions_for_session(log)
+        self.assertEqual([r["turn"] for r in got], [1, 2])
+
+
 if __name__ == "__main__":
     unittest.main()

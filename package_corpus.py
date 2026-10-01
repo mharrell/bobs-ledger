@@ -29,6 +29,43 @@ from config import HS_LOG_GLOB
 SCHEMA = 1
 
 
+def decisions_for_session(log_path):
+    """The packaged session's advisories — and ONLY that session's.
+
+    Reads decision_<session>.jsonl (decision_log.session_stem). Falls back
+    to the legacy shared pile (decision_Power.log.jsonl, where every
+    session collapsed into one basename-keyed file) filtered to records
+    timestamped within the log's own creation→last-write window.
+    """
+    path = os.path.join(decision_log.LOG_DIR,
+                        f"decision_{decision_log.session_stem(log_path)}.jsonl")
+    if not os.path.exists(path):
+        legacy = os.path.join(decision_log.LOG_DIR,
+                              "decision_Power.log.jsonl")
+        if not os.path.exists(legacy):
+            return []
+        lo = datetime.datetime.fromtimestamp(os.path.getctime(log_path))
+        hi = datetime.datetime.fromtimestamp(os.path.getmtime(log_path))
+        out = []
+        with open(legacy, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                try:
+                    ts = datetime.datetime.fromisoformat(rec.get("ts") or "")
+                except ValueError:
+                    continue
+                if lo <= ts <= hi:
+                    out.append(rec)
+        return out
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(l) for l in f if l.strip()]
+
+
 def package(log_path, out_dir):
     with open(log_path, "rb") as f:
         raw_bytes = f.read()
@@ -38,13 +75,7 @@ def package(log_path, out_dir):
     sanitized, redacted = sanitize_text(raw)
     if redacted:
         print(f"sanitized: {len(redacted)} BattleTags redacted")
-    decisions_path = os.path.join(
-        decision_log.LOG_DIR,
-        f"decision_{os.path.basename(log_path)}.jsonl")
-    decisions = []
-    if os.path.exists(decisions_path):
-        with open(decisions_path, encoding="utf-8") as f:
-            decisions = [json.loads(l) for l in f if l.strip()]
+    decisions = decisions_for_session(log_path)
 
     bundle = {
         "schema": SCHEMA,

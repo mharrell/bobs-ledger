@@ -56,8 +56,9 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(b["decisions"][0]["offset"], 42)
 
     def test_no_decision_log_still_packages(self):
-        os.remove(os.path.join(decision_log.LOG_DIR,
-                               "decision_Power.log.jsonl"))
+        os.remove(os.path.join(
+            decision_log.LOG_DIR,
+            f"decision_{decision_log.session_stem(self.log)}.jsonl"))
         out = package_corpus.package(self.log, self.tmp.name)
         with gzip.open(out, "rt", encoding="utf-8") as f:
             b = json.load(f)
