@@ -1,15 +1,17 @@
 # Telemetry collector (DEPLOYED 2026-10-01)
 
 The no-GitHub-account transport for corpus bundles is **live**:
-`https://hearth-telemetry-collector.mharrell-coach.workers.dev`
-(subdomain `mharrell-coach`, KV namespace `abd7803c581b4470a2834e92ae0006a2`,
-worker `hearth-telemetry-collector`).
+`https://hearth-telemetry-collector.bobs-ledger.workers.dev`
+(subdomain `bobs-ledger` — renamed from mharrell-coach the same day by
+DELETE + re-PUT of the subdomain; the old URL no longer resolves — KV
+contents are unaffected), KV namespace
+`abd7803c581b4470a2834e92ae0006a2`, worker `hearth-telemetry-collector`.
 
 A beta user needs exactly two lines:
 
 ```
-HEARTH_TELEMETRY_URL=https://hearth-telemetry-collector.mharrell-coach.workers.dev
-HEARTH_TELEMETRY_KEY=<the shared key — kept in job tmp/telemetry_key.txt, rotate freely>
+HEARTH_TELEMETRY_URL=https://hearth-telemetry-collector.bobs-ledger.workers.dev
+HEARTH_TELEMETRY_KEY=<the shared key — rotate freely via printf | wrangler secret put>
 ```
 
 then `python upload_corpus.py --latest` is a plain HTTPS POST. No GitHub
@@ -31,7 +33,10 @@ the contents on any bundle.
    required, and one-session bundles are 1–6 MB (KV value cap 25 MB).
 3. The workers.dev SUBDOMAIN must be registered before the first deploy
    (wrangler auto-registers from the folder name and fails); it is also
-   doable via `PUT /accounts/<id>/workers/subdomain`. Ours: mharrell-coach.
+   doable via `PUT /accounts/<id>/workers/subdomain`. Ours: bobs-ledger.
+   RENAMING later is DELETE-then-PUT on that same endpoint (a direct PUT
+   409s with "account already has an associated subdomain"); the new
+   subdomain's TLS cert takes a minute to provision after the switch.
 4. `npx wrangler deploy` with `deploy/wrangler.toml` (KV binding BUCKET).
 5. `printf '%s' "$KEY" | npx wrangler secret put TELEMETRY_KEY` — use
    printf, NOT echo: echo's trailing newline is stored with the secret and
