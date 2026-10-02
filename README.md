@@ -21,12 +21,34 @@ The coach needs **no API key and no internet for normal play** — the advice
 comes from a local value function plus a meta reference bundled in
 `meta/`. (Only card art may be fetched from the web.)
 
+## Get it
+
+Either path works — the zip is the no-tools route:
+
+- **Download the release zip** (no git, no build): fetch
+  `https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.json`,
+  read its `"zip_name"`, then download
+  `https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/<zip_name>`
+  and unzip it anywhere. Zip installs keep themselves current — `live.py`
+  checks the release channel on start and offers updates (decline with
+  `--no-update`).
+- **Git clone** (adds `git pull` updates and the dev tools):
+
+  ```
+  git clone https://github.com/mharrell/visual-game-coach
+  ```
+
+  A clone is never auto-updated — shas can't prove which side is newer,
+  so the update check stands aside; update with `git pull`.
+
+`python live.py --version` prints what you're running either way.
+
 ## Quick start
 
-1. **Install:**
+1. **Install the one runtime dependency:**
 
    ```
-   cd hearth-coach
+   cd <unzipped-folder-or-clone>\hearth-coach
    python -m pip install -r requirements.txt
    ```
 

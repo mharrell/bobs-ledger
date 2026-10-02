@@ -13,9 +13,10 @@ and a manifest {version, note, zip sha256, created} — then PUTs the zip
 and manifest to the KV namespace the collector serves:
 
     GET  <collector>/release/latest.json   (public)
-    GET  <collector>/release/<zip>         (shared key required)
+    GET  <collector>/release/<zip>         (public — the install path)
 
-Beta users pick updates up through `update.py` / live.py's startup check.
+Users install from the zip URL (hearth-coach/README.md) or git; updates
+flow through `update.py` / live.py's startup check.
 """
 import argparse
 import datetime
