@@ -1,4 +1,4 @@
-# Hearthstone Battlegrounds Coach
+# Bob's Ledger
 
 A real-time coaching overlay for Hearthstone Battlegrounds. It reads the
 live game from Hearthstone's own logs, reasons over the actual board —
@@ -80,6 +80,12 @@ comes from a local value function plus a meta reference bundled in
    see [Troubleshooting](#troubleshooting).
 
 ## The overlay, box by box
+
+When there's nothing to advise yet — a fresh start, a brand-new game, or
+after a press of the **Clear** button (top-right) — the overlay shows a
+welcome card instead of panels. It never shows the previous game's
+advice: a new game wipes the screen automatically (and resets your
+manual ban taps, since the tribe ban differs per game).
 
 On a wide window the overlay is **two panes**: **Decide** on the left —
 everything the turn's decision needs, never scrolled away — and

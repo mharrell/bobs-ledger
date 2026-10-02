@@ -1,6 +1,6 @@
 # Telemetry collector (DEPLOYED 2026-10-01)
 
-The no-GitHub-account transport for corpus bundles is **live**:
+Bob's Ledger's no-GitHub-account transport for corpus bundles is **live**:
 `https://hearth-telemetry-collector.bobs-ledger.workers.dev`
 (subdomain `bobs-ledger` — renamed from mharrell-coach the same day by
 DELETE + re-PUT of the subdomain; the old URL no longer resolves — KV

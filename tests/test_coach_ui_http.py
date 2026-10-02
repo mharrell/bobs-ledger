@@ -93,5 +93,40 @@ class TestArtHeaders(unittest.TestCase):
             coach_ui._miss_last_write[0] = saved_writer
 
 
+class TestWelcomeAndClear(unittest.TestCase):
+    """The deliberate empty state: fresh boot, a new game's CREATE_GAME,
+    and the page's Clear button all serve the welcome — never the previous
+    game's panel dressed up as live advice."""
+
+    def setUp(self):
+        self._saved = (coach_ui._state.payload, coach_ui._state.etag,
+                       coach_ui._state.analysis,
+                       coach_ui._state.manual_bans)
+
+    def tearDown(self):
+        (coach_ui._state.payload, coach_ui._state.etag,
+         coach_ui._state.analysis,
+         coach_ui._state.manual_bans) = self._saved
+
+    def test_clear_serves_the_welcome(self):
+        import json
+        coach_ui.clear_analysis()
+        code, _h, body = coach_ui._analysis_response(None)
+        self.assertEqual(code, 200)
+        a = json.loads(body)
+        self.assertTrue(a["welcome"])
+        self.assertEqual(a["product"], "Bob's Ledger")
+
+    def test_clear_button_keeps_manual_bans(self):
+        coach_ui.store_manual_bans(["Beast"])
+        coach_ui.clear_analysis(keep_bans=True)
+        self.assertEqual(coach_ui.latest_manual_bans(), ["Beast"])
+
+    def test_new_game_clear_wipes_manual_bans(self):
+        coach_ui.store_manual_bans(["Beast"])
+        coach_ui.clear_analysis()
+        self.assertIsNone(coach_ui.latest_manual_bans())
+
+
 if __name__ == "__main__":
     unittest.main()

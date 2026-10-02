@@ -179,11 +179,16 @@ def monitor(path, poll=1.0):
     # patch lands is identifiable — it keeps its OLD code until restarted
     # (the 2026-09-08 evening game ran on the 13:59 code while the fixes had
     # landed at 17:36-20:27; the user's reports described fixed bugs).
-    print(f"Live-coaching {path} (coach {decision_log.coach_version()})",
-          flush=True)
+    print(f"Bob's Ledger — live-coaching {path} "
+          f"(coach {decision_log.coach_version()})", flush=True)
     f = open(path, "rb")
     last_offset = _catch_up(f, coach)
-    _advise(coach, force=True)  # seed the overlay with the current (last) game
+    # Deliberately NO force-advise seed here: attaching to a finished or
+    # mid-settle game used to paint the PREVIOUS game's panel as if it were
+    # live advice. The overlay opens on the welcome state instead, and the
+    # normal loop pushes real advice on the first buy-phase state change
+    # (a live shop fires within one tick of the restart).
+    coach_ui.clear_analysis()
     in_action = False
     last_state = None
     next_log_check = 0.0  # session discovery throttled to ~5s (was every tick)
@@ -237,6 +242,14 @@ def monitor(path, poll=1.0):
                             try:
                                 line = raw.decode("utf-8", errors="replace")
                                 coach.feed(line)
+                                if "CREATE_GAME" in line:
+                                    # A new game: the previous game's panel
+                                    # must never survive into this one. The
+                                    # welcome screen shows until the first
+                                    # live buy phase; the manual bans wipe
+                                    # too (the 5/5 family ban differs per
+                                    # game).
+                                    coach_ui.clear_analysis()
                                 # Only GameState STEP lines delimit the buy
                                 # phase — the PowerTaskList copies arrive after
                                 # MAIN_END and would re-arm mid-turn on a
