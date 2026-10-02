@@ -530,18 +530,77 @@ def _render(query, rows, names):
     return "\n".join("  " + json.dumps(r, ensure_ascii=False) for r in rows)
 
 
-def main():
+def _reorder(argv):
+    """argv with the log path moved in front of the options.
+
+    argparse cannot re-enter an optional positional after an option, so a
+    path given last was rejected ("unrecognized arguments") while the same
+    path given first worked. Rather than document a footgun, pull the bare
+    token out: the only bare tokens are the path and `--latest`, and an
+    option's VALUE is never bare (it always follows its option, which this
+    walk keeps together).
+    """
+    if not argv:
+        return argv
+    VALUE_OPTS = {"--game", "--turn", "--tag", "--top"}
+    head, path, tail = [argv[0]], None, []
+    i = 1
+    while i < len(argv):
+        a = argv[i]
+        if a in VALUE_OPTS:
+            tail.append(a)
+            if i + 1 < len(argv):
+                tail.append(argv[i + 1])
+                i += 2
+                continue
+        elif a.startswith("--"):
+            tail.append(a)              # --latest and friends stay options
+        elif path is None:
+            path = a
+        else:
+            tail.append(a)          # a second bare token: argparse's problem
+        i += 1
+    return head + ([path] if path is not None else []) + tail
+
+
+def _build_parser():
+    """The CLI parser, separate from main() so a test can inspect it.
+
+    That is not decoration: the log positional was once declared twice to
+    document it, the two shared the dest, and the empty second one parsed
+    last and wiped the path — every query then silently ran against the
+    newest log (2026-10-02).
+    """
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("query", choices=list(QUERIES))
-    ap.add_argument("log", nargs="?", default=None)
+    # ONE positional. The path is lifted out of argv by _reorder() before
+    # argparse sees it, because with `nargs="?"` an option in front of the
+    # path made it unrecognized: `stats --turn 5 <log>` failed while
+    # `stats <log> --turn 5` worked (2026-10-02). Declaring it a second time
+    # to document it did NOT work — two positionals share the dest, the
+    # empty second one parsed last and wiped the path, so every query
+    # silently ran against the newest log.
+    ap.add_argument("log", nargs="?", default=None,
+                    help="Power.log path; may be given before or after the "
+                         "options")
     ap.add_argument("--game", type=int, default=None)
     ap.add_argument("--turn", type=int, default=None)
     ap.add_argument("--tag", default=None)
     ap.add_argument("--top", type=int, default=25)
     ap.add_argument("--json", action="store_true")
-    args = ap.parse_args()
+    # A real flag, not a magic positional value: argparse reads any `--token`
+    # as an option, so `board --latest` could never have been a positional.
+    ap.add_argument("--latest", action="store_true",
+                    help="use the newest Power.log")
+    return ap
 
-    path = args.log if args.log and args.log != "--latest" else newest_log()
+
+def main():
+    args = _build_parser().parse_args(_reorder(sys.argv[1:]))
+
+    path = None if args.latest else args.log
+    if not path:
+        path = newest_log()
     if not path or not os.path.exists(path):
         raise SystemExit("no Power.log found (pass a path)")
     sess = Session(path)
