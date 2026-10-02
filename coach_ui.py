@@ -364,6 +364,18 @@ _HTML = r"""<!doctype html>
   .cname { font-weight:600; }
   .cstat { color:var(--text-2); font-size:12px; flex:none; }
   .cbody { padding:0 0 4px 17px; }
+  /* Comp guidance (2026-10-02): the curated per-comp advice that ships in
+     meta/comps.json and the mined guide fetched on expand. Before this the
+     expanded row showed card chips only, so none of it reached a player. */
+  .cguidance { margin:0 0 5px; }
+  .cline { font-size:12px; line-height:1.45; padding:1px 0; }
+  .cline.dim { color:var(--text-2); }
+  .cguideslot:empty { display:none; }
+  .cguidefull { margin-top:5px; padding-top:5px;
+                border-top:1px solid var(--gridline); }
+  .cguidemd { font-size:12px; line-height:1.5; color:var(--text-2);
+              white-space:pre-wrap; margin:3px 0 0; font-family:inherit;
+              max-height:320px; overflow-y:auto; }
   /* Top move: each numbered priority step on its own line */
   .step { font-size:16px; font-weight:700; line-height:1.4; padding:1px 0; }
   .stepnum { color:var(--gold); margin-right:7px; }
@@ -586,11 +598,57 @@ function compBody(c) {
   const key = c.slug + '|' + JSON.stringify([c.core, c.addons]);
   let node = _compBodyCache.get(key);
   if (!node) {
-    node = compTiles(c);
+    node = el('div', 'cbodyinner');
+    // The curated guidance that ships with the comp DB. Until 2026-10-02 it
+    // was read by nothing: an expanded row showed card chips only, so the
+    // written advice (and all 20 mined guides) never reached a player.
+    const g = el('div', 'cguidance');
+    if (c.difficulty) {
+      g.appendChild(el('div', 'cline', 'Difficulty: ' + c.difficulty));
+    }
+    if (c.when_to_commit) {
+      g.appendChild(el('div', 'cline', 'Commit when: ' + c.when_to_commit));
+    }
+    if (c.summary) g.appendChild(el('div', 'cline dim', c.summary));
+    (c.enablers || []).forEach(e => {
+      g.appendChild(el('div', 'cline dim', '· ' + e));
+    });
+    if (g.children.length) node.appendChild(g);
+    node.appendChild(compTiles(c));
+    // Prose and the full guide are fetched on first expand and the resulting
+    // node cached per slug (the body itself is cached across full-DOM
+    // rebuilds, so the fetched text survives the 3/s re-render).
+    const slot = el('div', 'cguideslot');
+    node.appendChild(slot);
+    if (c.has_guide) loadGuide(c.slug, slot);
     if (_compBodyCache.size > 300) _compBodyCache.clear();
     _compBodyCache.set(key, node);
   }
   return node;
+}
+const _guideCache = new Map();
+function loadGuide(slug, slot) {
+  const cached = _guideCache.get(slug);
+  if (cached) { slot.appendChild(cached); return; }
+  fetch('/guide/' + slug).then(r => r.ok ? r.json() : null).then(j => {
+    if (!j) return;
+    const wrap = el('div', 'cguidefull');
+    if (j.how_to_play) wrap.appendChild(el('div', 'cline', j.how_to_play));
+    if (!j.how_to_play && !j.markdown) {
+      // Say so rather than showing an empty box: this comp has no written
+      // guide yet, and the commit line above is all the curated advice.
+      wrap.appendChild(el('div', 'cline dim',
+        'No written guide for this comp yet — the commit line is the '
+        + 'curated advice.'));
+    }
+    if (j.markdown) {
+      wrap.appendChild(el('div', 'cline dim',
+        j.curated ? 'Full guide' : 'Full guide (mined from commentary)'));
+      wrap.appendChild(el('pre', 'cguidemd', j.markdown));
+    }
+    _guideCache.set(slug, wrap);
+    slot.appendChild(wrap);
+  }).catch(() => { /* offline: the commit line is still on screen */ });
 }
 function compTiles(c) {
   const tiles = el('div', 'tiles');
@@ -1014,6 +1072,25 @@ function render(a) {
       });
     });
     body.appendChild(list);
+    // How to actually play the thing being committed to (2026-10-02). The
+    // written guidance for every comp shipped in meta/comps.json and was read
+    // by nothing, so a player was told which cards to hunt and never how the
+    // build works.
+    const g = a.target_comp_guide;
+    if (g && (g.how_to_play || g.when_to_commit)) {
+      const guide = el('div', 'cguidance');
+      if (g.difficulty) {
+        guide.appendChild(el('div', 'cline', 'Difficulty: ' + g.difficulty));
+      }
+      if (g.when_to_commit) {
+        guide.appendChild(el('div', 'cline', 'Commit when: ' + g.when_to_commit));
+      }
+      if (g.how_to_play) guide.appendChild(el('div', 'cline', g.how_to_play));
+      (g.enablers || []).forEach(e => {
+        guide.appendChild(el('div', 'cline dim', '· ' + e));
+      });
+      body.appendChild(guide);
+    }
     ref.appendChild(box('Looking for (' + (pivot ? 'pivot' : 'comp') + ')', body));
   }
 
@@ -1142,12 +1219,19 @@ function render(a) {
     a.comps.forEach(c => {
       // A provisional (mined) comp has no published tier by definition: label
       // the group "Provisional" instead of letting a null read as "Unranked",
-      // which would look like a real comp whose tier is merely unknown.
-      const tier = c.provisional ? 'prov' : (c.meta_tier || '?');
+      // which would look like a real comp whose tier is merely unknown. A
+      // comp promoted out of the mined corpus (Aberrations - Deity Feed) has
+      // the same problem for the same reason, so it gets its own label rather
+      // than a tier nobody published (2026-10-02).
+      const tier = c.provisional ? 'prov'
+        : c.meta_tier ? c.meta_tier
+        : (c.tier_missing ? 'nopub' : '?');
       if (tier !== lastTier) {
         lastTier = tier;
         compsBody.appendChild(el('div', 'cptier',
           tier === '?' ? 'Unranked'
+            : tier === 'nopub'
+              ? 'No published tier (promoted from our own games)'
             : tier === 'prov' ? 'Provisional (mined from our own games)'
             : tier + ' tier'));
       }
@@ -1274,6 +1358,125 @@ def _meta_rows():
             {t.get("id"): t for t in meta.trinkets()})
 
 
+#: The long-form per-comp guides. Written for the player, and until
+#: 2026-10-02 read by nothing at all: 20 files of mined commentary sat in
+#: the release while the panel showed a comp's name, tier and card chips.
+_GUIDE_DIR = os.path.join(_HERE, "meta", "guides")
+_GUIDE_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+
+
+def _plain_comp_text(text):
+    """comps.json cites cards as `[[Name||id]]`. The overlay shows the name:
+    the id is for the scraper, not the player."""
+    if not text:
+        return None
+    return re.sub(r"\[\[([^\]|]+)(?:\|\|[^\]]*)?\]\]", r"\1", text).strip() or None
+
+
+def _enabler_lines(text):
+    """`common_enablers` is newline-separated; the panel wants the lines."""
+    plain = _plain_comp_text(text)
+    return [ln.strip() for ln in plain.splitlines() if ln.strip()] if plain else []
+
+
+def _guide_display(markdown):
+    """Guide markdown as readable plain text.
+
+    Deliberately not a Markdown renderer: the overlay shows this in a <pre>,
+    so the only transformation is dropping the syntax the reader would
+    otherwise see (`#` markers, `**` emphasis, `>` quote prefixes) while
+    keeping every word — including the attribution block, which is the
+    provenance of the advice.
+    """
+    out = []
+    for line in markdown.splitlines():
+        line = re.sub(r"^#{1,6}\s*", "", line)
+        line = re.sub(r"^>\s?", "", line)
+        line = line.replace("**", "")
+        out.append(line.rstrip())
+    return "\n".join(out).strip()
+
+
+#: Opening paragraph per comp slug, for the target box (see render_json).
+_guide_openings = {}
+
+
+def _guide_opening(markdown, limit=420):
+    """The first real paragraph of a guide.
+
+    Used as the target comp's on-screen summary when the comp has no
+    `how_to_play` line: three comps lack one (including the maintainer's own
+    Aberrations - Deity Feed), and their mined guides already say how the
+    build works — so the panel quotes what exists instead of showing nothing,
+    and instead of us inventing strategy text.
+    """
+    if not markdown:
+        return None
+    para = []
+    for line in markdown.splitlines():
+        text = line.strip()
+        if not text:
+            if para:
+                break
+            continue
+        if text.startswith("#") or text.startswith(">"):
+            continue        # title and provenance, not the pitch
+        para.append(text)
+    joined = " ".join(para).strip().replace("**", "")
+    if not joined:
+        return None
+    return joined if len(joined) <= limit else joined[:limit].rsplit(" ", 1)[0] + "…"
+
+
+def comp_guide(slug, comp):
+    """The payload for GET /guide/<slug>: what the panel shows when a player
+    expands a comp.
+
+    Fetched on demand rather than pushed: ~2 KB of prose x 35 comps has no
+    business in a payload the browser pulls three times a second, and nobody
+    reads a guide they have not opened (the same reason art is fetched on
+    demand). `curated` says whether there is a written `how_to_play` line;
+    `markdown` is the mined guide. A comp with neither says so in the panel
+    rather than looking empty.
+    """
+    out = {
+        "slug": slug,
+        "name": (comp or {}).get("name"),
+        "difficulty": (comp or {}).get("difficulty"),
+        "summary": _plain_comp_text((comp or {}).get("summary")),
+        "when_to_commit": _plain_comp_text((comp or {}).get("when_to_commit")),
+        "enablers": _enabler_lines((comp or {}).get("common_enablers")),
+        "how_to_play": _plain_comp_text((comp or {}).get("how_to_play")),
+        "curated": bool((comp or {}).get("how_to_play")),
+        # Both guide-derived fields are always present, None when the comp
+        # has no guide file: a consumer should not have to guess the shape
+        # from which comp it asked about.
+        "markdown": None,
+        "opening": None,
+    }
+    path = os.path.join(_GUIDE_DIR, f"{slug}.md")
+    raw = None
+    if _GUIDE_SLUG.match(slug or "") and os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                raw = f.read()
+        except OSError:
+            raw = None
+    if raw is not None:
+        out["markdown"] = _guide_display(raw)
+        # Computed from the RAW markdown: _guide_display has already stripped
+        # the `#`, so heading detection on its output would hand back the
+        # title as the opening paragraph.
+        out["opening"] = _guide_opening(raw)
+    return out
+
+
+def _comps_by_slug():
+    """The comp DB keyed by slug, for the on-demand guide route."""
+    return {slug: c for slug, c in (meta.comps() or {}).items()
+            if isinstance(c, dict)}
+
+
 def render_json(analysis):
     """Enrich coach.analyze output with card names for frontend display."""
     names = _load_bg_names()
@@ -1330,9 +1533,11 @@ def render_json(analysis):
                 if isinstance(c, dict) and c.get("card")}
     addon_ids = {c["card"] for c in (tc.get("addons") or [])
                  if isinstance(c, dict) and c.get("card")}
-    target_comp = next((c for c in (analysis.get("playable_comps") or {}).values()
-                        if isinstance(c, dict)
-                        and c.get("name") == analysis.get("target_comp")), None)
+    target_comp, target_slug = None, None
+    for _slug, _c in (analysis.get("playable_comps") or {}).items():
+        if isinstance(_c, dict) and _c.get("name") == analysis.get("target_comp"):
+            target_comp, target_slug = _c, _slug
+            break
     banned_tribes = set(analysis.get("banned") or [])
     for g in sell:
         g["why"] = sell_reason(board_by_card.get(g["card"], {}),
@@ -1407,6 +1612,33 @@ def render_json(analysis):
                                    else row["tag"])
                               for row in a["shop_rank"]]
     a["target_cards"] = analysis.get("target_cards")
+    # The committing comp's own guidance, right where the player looks for the
+    # plan. Only the target (one comp, a few hundred bytes) rides the payload;
+    # every other comp's prose and guide comes from /guide/<slug> on expand.
+    if target_comp:
+        how_to_play = _plain_comp_text(target_comp.get("how_to_play"))
+        if not how_to_play:
+            # Three comps have no curated `how_to_play` line (including
+            # Aberrations - Deity Feed, which the plan commits to most often).
+            # Their mined guide already explains the build, so quote its
+            # opening instead of showing nothing — and without us inventing
+            # strategy text. Cached: a guide changes only on a meta refresh,
+            # which is a process restart (the same contract as _meta_rows).
+            opening = _guide_openings.get(target_slug)
+            if opening is None:
+                opening = comp_guide(target_slug, target_comp)["opening"] or ""
+                _guide_openings[target_slug] = opening
+            how_to_play = opening or None
+        a["target_comp_guide"] = {
+            "slug": target_slug,
+            "difficulty": target_comp.get("difficulty"),
+            "when_to_commit": _plain_comp_text(
+                target_comp.get("when_to_commit")),
+            "how_to_play": how_to_play,
+            "enablers": _enabler_lines(target_comp.get("common_enablers")),
+        }
+    else:
+        a["target_comp_guide"] = None
     # Commit-readiness meter (per-candidate core hits) — pre-commit the
     # player is otherwise blind to direction until comp_target fires. The
     # missing-core ids are named here so the UI can show them as tiles
@@ -1451,12 +1683,25 @@ def render_json(analysis):
             "slug": slug,
             "name": comp["name"],
             "meta_tier": comp.get("meta_tier"),
+            # A comp with no published tier is NOT "Unranked" — that reads as
+            # a real comp whose tier is merely unknown. Aberrations - Deity
+            # Feed was promoted from our own mined corpus, so it has no
+            # hsreplay tier to show; the panel labels the group accordingly.
+            "tier_missing": not comp.get("meta_tier"),
             # Mined from our own corpus rather than published (value.
             # _is_provisional): the panel groups these under "Provisional"
             # instead of a tier, and they sort LAST — a comp with no published
             # tier must never appear above a real S/A/B comp.
             "provisional": bool(comp.get("provisional")),
             "evidence": comp.get("evidence"),
+            # The curated guidance. Short fields ride the payload (a few
+            # hundred bytes total); the prose and the mined guide are fetched
+            # by /guide/<slug> when a row is expanded — see comp_guide().
+            "difficulty": comp.get("difficulty"),
+            "summary": _plain_comp_text(comp.get("summary")),
+            "when_to_commit": _plain_comp_text(comp.get("when_to_commit")),
+            "enablers": _enabler_lines(comp.get("common_enablers")),
+            "has_guide": bool(comp.get("guide") or comp.get("how_to_play")),
             # Tribe confirmed in this lobby? Absent (True) once the bans
             # resolve; False only inside the detection window, where the
             # panel dims the could-still-be-banned rows.
@@ -1616,6 +1861,30 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(404, "text/plain", b"no art cached",
                        headers={"Cache-Control": "no-store"})
             return
+        m = re.match(r"^/guide/([a-z0-9-]+)$", self.path)
+        if m:
+            # The comp guide, on demand: a player opening a row is a human
+            # event, so this never belongs in the 3/s payload. 404 for an
+            # unknown slug rather than an empty 200 — the panel then knows
+            # to say "no guide" instead of rendering a blank box.
+            comp = _comps_by_slug().get(m.group(1))
+            if comp is None:
+                self._send(404, "text/plain", b"no such comp",
+                           headers={"Cache-Control": "no-store"})
+                return
+            body = json.dumps(comp_guide(m.group(1), comp),
+                              ensure_ascii=False).encode("utf-8")
+            self._send(200, "application/json", body,
+                       headers={"Cache-Control": "no-cache"})
+            return
+        if self.path.startswith("/guide/"):
+            # Anything else under /guide/ is a malformed slug or a traversal
+            # attempt. Answer 404 rather than falling through to the overlay
+            # page: a JSON endpoint that returns HTML on a bad request hides
+            # bugs on both sides.
+            self._send(404, "text/plain", b"no such guide",
+                       headers={"Cache-Control": "no-store"})
+            return
         m = re.match(r"^/card/([A-Za-z0-9_]+)\.png$", self.path)
         if m:
             # The hover tooltip's full render (framed card WITH text),
@@ -1676,12 +1945,41 @@ class _Handler(BaseHTTPRequestHandler):
         pass
 
 
+def _port_in_use(port, host="127.0.0.1", timeout=0.4):
+    """Is something already answering on this port?
+
+    Windows lets a second socket bind a port another process is LISTENING on
+    (SO_REUSEADDR means something different there than on POSIX), so
+    start_server() could bind "successfully" and then serve nothing: every
+    request went to the first process, and a second live.py showed a
+    permanently frozen overlay with no error at all (found 2026-10-02 — an
+    audit's leftover live.py held 8747 and a fresh server silently got no
+    traffic). Probing first turns that into a visible fact.
+    """
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(timeout)
+        return s.connect_ex((host, port)) == 0
+
+
 def start_server(port=DEFAULT_PORT):
     """Start the overlay server in a background thread; returns the server.
 
     Threading: an on-demand art fetch blocks that request for up to ~5s —
     on the single-threaded server it would stall /analysis polling.
+
+    A port that already answers is stepped over rather than hijacked, and
+    said out loud: the alternative is an overlay that never updates while
+    looking perfectly healthy.
     """
+    if port and _port_in_use(port):
+        alt = port + 1
+        while alt < port + 10 and _port_in_use(alt):
+            alt += 1
+        print(f"Note: port {port} is already answering — another Bob's Ledger "
+              f"overlay is probably running (an old one shows stale advice). "
+              f"Serving on {alt} instead.")
+        port = alt
     server = ThreadingHTTPServer(("127.0.0.1", port), _Handler)
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
