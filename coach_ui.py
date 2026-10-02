@@ -417,6 +417,15 @@ _HTML = r"""<!doctype html>
   .welcome .w-status { color:var(--text-2); font-size:13px; margin-bottom:10px; }
   .welcome .w-hint, .welcome .w-priv { color:var(--dim); font-size:12px;
                                        margin-top:6px; }
+  /* The first-run fix, on screen. live.py's console message has always told
+     the player "the welcome card shows the same steps" — it did not, it sent
+     them to the README on disk, which is exactly the wrong place when the
+     reason they opened the overlay is that nothing was happening. */
+  .welcome .w-steps { color:var(--text-2); background:var(--panel2);
+                      border:1px solid var(--gridline); border-radius:6px;
+                      padding:8px 10px; margin:8px 0 2px; font-size:12px;
+                      line-height:1.45; white-space:pre-wrap;
+                      font-family:ui-monospace,Consolas,monospace; }
   #clearbtn { position:fixed; top:8px; right:10px; z-index:50;
               background:transparent; border:1px solid var(--dim);
               color:var(--dim); border-radius:6px; padding:2px 10px;
@@ -748,6 +757,7 @@ function renderWelcome(a) {
   card.appendChild(el('div', 'w-tag', a.tagline || ''));
   card.appendChild(el('div', 'w-status', a.status || ''));
   card.appendChild(el('div', 'w-hint', a.hint || ''));
+  if (a.steps) card.appendChild(el('pre', 'w-steps', a.steps));
   card.appendChild(el('div', 'w-priv', a.privacy || ''));
   decide.appendChild(card);
 }
@@ -1338,8 +1348,13 @@ WELCOME_PAYLOAD = json.dumps({
     "tagline": "A real-time Hearthstone Battlegrounds coach",
     "status": "Waiting for your next buy phase — advice appears here the "
               "moment your shop opens.",
-    "hint": "Nothing arriving? Check that Hearthstone's file logging is ON "
-            "(README, Quick Start).",
+    "hint": "Never seen advice? Hearthstone only writes the log this reads "
+            "when file logging is ON. Close the game, then put this in "
+            "%LocalAppData%\\Blizzard\\Hearthstone\\log.config (create the "
+            "file if it is not there):",
+    # The block live.py's console message has always claimed this card shows.
+    "steps": "[Power]\nLogLevel=1\nFilePrinting=true\n"
+             "ConsolePrinting=false\nScreenshots=false",
     "privacy": "Nothing leaves your machine unless you share a session.",
 }).encode()
 

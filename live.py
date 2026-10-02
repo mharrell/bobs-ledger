@@ -404,7 +404,17 @@ def main():
     if ui_on:
         try:
             server = coach_ui.start_server()
-            print(f"Coach UI: http://127.0.0.1:{server.server_address[1]}/")
+            url = f"http://127.0.0.1:{server.server_address[1]}/"
+            print(f"Coach UI: {url}")
+            if "--open" in opts:
+                # The click-launcher's path. It must open the port we
+                # ACTUALLY bound — a busy 8747 steps to 8748, so the launcher
+                # cannot guess the URL. Off-thread so a slow browser launch
+                # never delays the first analysis.
+                import threading
+                import webbrowser
+                threading.Thread(target=webbrowser.open, args=(url,),
+                                 daemon=True).start()
         except OSError as e:
             print(f"Coach UI skipped ({e})")
     warn_stale_meta()

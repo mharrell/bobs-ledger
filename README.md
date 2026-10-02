@@ -57,6 +57,16 @@ Either path works — the zip is the no-tools route:
 
 ## Quick start
 
+**The short version: unzip the release, then double-click
+`Start Bob's Ledger.cmd`** in the folder it unzipped to. It finds Python,
+checks the one dependency (asking before it installs anything), tells you if
+your Hearthstone log folder is missing, offers to put an icon on your
+Desktop, and starts the coach with the overlay already open in your
+browser. Run it with `--check` to see what it found without starting
+anything.
+
+The manual path, if you would rather do it yourself:
+
 1. **Install the one runtime dependency:**
 
    ```
@@ -275,6 +285,8 @@ Everything the coach stores lives inside the install:
 - `hearth-coach/.card_races.json` — the card→tribe cache.
 - `.update_state.json` — the install's last-updated stamp, at the install
   root (next to the `hearth-coach/` folder).
+- `Bob's Ledger.lnk` — only if you asked the launcher for a Desktop
+  shortcut; delete it from your Desktop like any other shortcut.
 
 The one thing the coach asks you to change outside its folder is
 Hearthstone's own `log.config` (Quick start step 2). It belongs to
@@ -298,13 +310,24 @@ things the license doesn't cover, credited where they came from:
 
 ## Troubleshooting
 
+- **`Start Bob's Ledger.cmd` says Python 3 was not found** — install it from
+  python.org and tick *"Add python.exe to PATH"* in the installer, then run
+  the launcher again. It offers to open the download page for you.
+- **The launcher window flashes and closes** — run it from a Command Prompt
+  (or run `Start Bob's Ledger.cmd --check`) so you can read the message;
+  the window normally stays open for the whole session.
 - **`No active Power.log found` / nothing happens during a game** —
   file logging isn't enabled (see Quick start step 2), or Hearthstone
   hasn't written a log in the last 10 minutes. The coach auto-finds the
   newest session log modified within 10 minutes (`LIVE_RECENT` env var
-  changes this); pass an explicit path to analyze an older one.
+  changes this); pass an explicit path to analyze an older one. The overlay's
+  welcome card also shows the `log.config` block.
 - **Overlay says "Waiting for live.py analysis…"** — live.py isn't
   running, or it found no active log. Check the terminal output.
+- **The overlay's advice says it is N seconds old** — that line only appears
+  when the advice has stopped updating: live.py has wedged or exited. The
+  overlay is deliberately showing you its last frame and telling you so
+  rather than pretending it is live.
 - **Overlay frozen / shows a stale board** — refresh the browser tab.
   Between rounds the shop can legitimately be empty (shop is dealt at
   round start); that gap is normal.

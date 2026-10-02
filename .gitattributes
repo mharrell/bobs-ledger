@@ -1,2 +1,10 @@
 # Shell scripts must stay LF — CRLF breaks bash (the Stop hook runs via bash)
 *.sh text eol=lf
+
+# Batch files must be CRLF — cmd.exe mis-parses LF-only .bat/.cmd (labels and
+# goto in particular), and the launcher ships to users inside a zip.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Binary asset: never text-convert an icon.
+*.ico binary
