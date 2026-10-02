@@ -148,6 +148,15 @@
   },
   "note": "per Tavern spell: left-most in hand+warband +3/+3 (Bluegill Flippers)"
  },
+ "BG32_MagicItem_892": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Murloc"
+   ]
+  },
+  "note": "Spellcraft: give a Murloc a random Bonus Keyword (Vibrant Bubble) - tribe-gated and recurring each turn, priced with the other tribe-gated repeaters (All-Purpose Kibble 6, Spell-powered Wrench 8)"
+ },
  "BG30_MagicItem_998": {
   "base_value": 6,
   "synergy": {
