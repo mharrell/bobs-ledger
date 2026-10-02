@@ -73,7 +73,7 @@
   "mechs-magnetics-spells": {
     "name": "Mechs - Magnetics/Spells",
     "difficulty": "Hard",
-    "meta_tier": "A",
+    "meta_tier": "B",
     "core": [
       "BG36_853",
       "BG26_152",
@@ -200,7 +200,7 @@
   "pirates-apm-golden": {
     "name": "Pirates - APM Golden",
     "difficulty": "Easy",
-    "meta_tier": "A",
+    "meta_tier": "B",
     "core": [
       "BG33_823",
       "BG36_344",
@@ -581,7 +581,7 @@
   "beasts-summons": {
     "name": "Beasts - Summons",
     "difficulty": "Medium",
-    "meta_tier": "A",
+    "meta_tier": "B",
     "core": [
       "BGS_018",
       "BG25_354",
@@ -773,13 +773,12 @@
   "aberrations-deathrattle-spells": {
     "name": "Aberrations - Deathrattle/Spells",
     "difficulty": "Easy",
-    "meta_tier": "S",
+    "meta_tier": "A",
     "core": [
       "BG36_204",
       "BG25_354",
       "BG36_208",
-      "BG36_318",
-      "BG36_101"
+      "BG36_318"
     ],
     "addons": [
       "BG36_109",
@@ -787,7 +786,8 @@
       "BG25_016",
       "BG36_115",
       "BG33_825",
-      "BG33_823"
+      "BG33_823",
+      "BG36_101"
     ],
     "summary": "Play spells and proc deathrattle to scale Deity",
     "when_to_commit": "Faceless Converter + Titus Rivendare\nSky Admiral Rogers + Proud Privateer pivot highest cap",
@@ -821,8 +821,8 @@
     "representative_card": "BG36_640",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
     "tribe": null,
-    "how_to_play": "Spell-target multiplier engine: cast friendly-targeted spells at Gatekeeper Amalgam (it casts Misplaced Tea Set back) with Balinda Stonehearth doubling every cast and Brann doubling battlecries. Blood Gems are its best food (Victorious Geomant/Hot-Air Surveyor keep the gems landing on it); keep Belinda - selling her is a pivot signal, and Faceless Converter re-summons double-dip since the Amalgam counts as an Aberration. Alternate minion and spell buys: the build eats spell casts as fuel.",
-    "guide": "guides/menagerie.md"
+    "guide": "guides/menagerie.md",
+    "how_to_play": "Spell-target multiplier engine: cast friendly-targeted spells at Gatekeeper Amalgam (it casts Misplaced Tea Set back) with Balinda Stonehearth doubling every cast and Brann doubling battlecries. Blood Gems are its best food (Victorious Geomant/Hot-Air Surveyor keep the gems landing on it); keep Belinda - selling her is a pivot signal, and Faceless Converter re-summons double-dip since the Amalgam counts as an Aberration. Alternate minion and spell buys: the build eats spell casts as fuel."
   },
   "mechs-apm-magnetic": {
     "name": "Mechs - APM Magnetic",
@@ -846,8 +846,8 @@
     "representative_card": "BG36_367",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
     "tribe": "Mech",
-    "how_to_play": "APM chain engine: buy 3 cards to fire Auto Reveille, play mechs so Spark Snapper magnetizes and improves, let Polarizing Beatboxer mirror every attach, and time Drone Duplicator Activate before the biggest one. Rogers/Privateer print doubled Bounties off the same spending.",
-    "guide": "guides/mechs-apm-magnetic.md"
+    "guide": "guides/mechs-apm-magnetic.md",
+    "how_to_play": "APM chain engine: buy 3 cards to fire Auto Reveille, play mechs so Spark Snapper magnetizes and improves, let Polarizing Beatboxer mirror every attach, and time Drone Duplicator Activate before the biggest one. Rogers/Privateer print doubled Bounties off the same spending."
   },
   "aberrations-apm-deity": {
     "name": "Aberrations - APM Deity",
@@ -870,8 +870,8 @@
     "representative_card": "BG36_109",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
     "tribe": "Aberration",
-    "how_to_play": "Spend-gold Deity engine: Sky Admiral Rogers mints Bounties every 9 gold spent, Proud Privateer casts them twice, every tavern spell gives Sha of Fear board+Deity pump, and every hand-add feeds The Shadow of Doubt. Gold in hand is wasted fuel - spend it.",
-    "guide": "guides/aberrations-apm-deity.md"
+    "guide": "guides/aberrations-apm-deity.md",
+    "how_to_play": "Spend-gold Deity engine: Sky Admiral Rogers mints Bounties every 9 gold spent, Proud Privateer casts them twice, every tavern spell gives Sha of Fear board+Deity pump, and every hand-add feeds The Shadow of Doubt. Gold in hand is wasted fuel - spend it."
   },
   "elementals-living-azerite": {
     "name": "Elementals - Living Azerite",
@@ -895,8 +895,8 @@
     "representative_card": "BG28_707",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
     "tribe": "Elemental",
-    "how_to_play": "Shop-buff scaler: every tavern spell you cast gives elementals in the TAVERN +3/+2 permanently (Living Azerite), so buy the buffed bodies before rolling. Balinda doubles targeted spells; Leyline Surfacer generates Absorptions on both battlecry and deathrattle.",
-    "guide": "guides/elementals-living-azerite.md"
+    "guide": "guides/elementals-living-azerite.md",
+    "how_to_play": "Shop-buff scaler: every tavern spell you cast gives elementals in the TAVERN +3/+2 permanently (Living Azerite), so buy the buffed bodies before rolling. Balinda doubles targeted spells; Leyline Surfacer generates Absorptions on both battlecry and deathrattle."
   },
   "aberrations-sludge": {
     "name": "Aberrations - Sludge",
@@ -921,7 +921,34 @@
     "representative_card": "BG36_115",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
     "tribe": "Aberration",
-    "how_to_play": "Spell-scaling aberrations: press Nraqi Frostcaller (free) every turn, feed KThir your left-most hand spells (+8/+8 each), bank permanent spell quality off Corroder and Dark Puppeteer deaths (Titus doubles), and remember discarded Sludge Corrosions cast twice.",
-    "guide": "guides/aberrations-sludge.md"
+    "guide": "guides/aberrations-sludge.md",
+    "how_to_play": "Spell-scaling aberrations: press Nraqi Frostcaller (free) every turn, feed KThir your left-most hand spells (+8/+8 each), bank permanent spell quality off Corroder and Dark Puppeteer deaths (Titus doubles), and remember discarded Sludge Corrosions cast twice."
+  },
+  "quilboar-apm-shop-buff": {
+    "name": "Quilboar - APM Shop Buff",
+    "difficulty": "Easy",
+    "meta_tier": "S",
+    "core": [
+      "BG33_823",
+      "BG33_825",
+      "BG28_633",
+      "BG35_883",
+      "BG_LOE_077"
+    ],
+    "addons": [
+      "BG35_155",
+      "BG36_762",
+      "BG36_640",
+      "BG36_523",
+      "BG30_121",
+      "BG36_370"
+    ],
+    "summary": "Cast spells to consume buffed shop.",
+    "when_to_commit": "Early infinite gold + Felboar",
+    "common_enablers": "Brann Bronzebeard",
+    "representative_card": "BG28_633",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Quilboar",
+    "how_to_play": "APM shop-buff engine: Rogers mints a Bounty every 9 gold and Privateer casts Bounties twice, while Balinda doubles friendly-targeted spells. Stream spells into Devilish Distractor to pump the tavern +2/+2 per cast, then Felboar consumes the buffed shop every 3 spells. Blood Gems (Surveyor/Geomant) are cheap fuel; keep the carry left-most for Geomant overflow."
   }
 }
