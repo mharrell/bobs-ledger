@@ -197,5 +197,33 @@ class TestTrinketPickGuides(unittest.TestCase):
         self.assertNotIn("guides", a.get("choice", {}))
 
 
+class TestStaleAdviceMarker(unittest.TestCase):
+    """A frozen overlay must not look live.
+
+    The page only re-renders when the payload CHANGES, and a wedged live.py
+    leaves the server answering 304 forever — so the last advice stayed on
+    screen indistinguishable from live advice, and the player acts on it
+    (2026-10-02). The payload now carries when it was produced, and a
+    separate ticker (not render()) ages it on screen.
+    """
+
+    def test_payload_carries_the_generation_time(self):
+        import time
+        a = coach_ui.render_json({"board": [], "sell_rank": [], "shop_rank": [],
+                                  "hand": []})
+        self.assertIsInstance(a["generated"], float)
+        self.assertLess(abs(a["generated"] - time.time()), 60)
+
+    def test_the_page_has_a_freshness_node_and_ticker(self):
+        html = coach_ui._HTML
+        self.assertIn('id="freshness"', html)
+        # The ticker must be independent of render(): poll() stops calling
+        # render() once the payload stops changing, which is exactly the
+        # failure this reports.
+        self.assertIn("setInterval(tickFreshness", html)
+        self.assertIn("function tickFreshness", html)
+        self.assertIn("STALE_AFTER", html)
+
+
 if __name__ == "__main__":
     unittest.main()

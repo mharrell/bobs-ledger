@@ -422,11 +422,19 @@ _HTML = r"""<!doctype html>
               color:var(--dim); border-radius:6px; padding:2px 10px;
               font-size:11px; cursor:pointer; }
   #clearbtn:hover { color:var(--text-2); }
+  /* Stale-advice marker. The overlay only re-renders when the server pushes,
+     so a wedged live.py (or a dead one) left the last advice on screen
+     looking exactly like live advice — the worst failure for a coach, since
+     the player acts on it. This shows the age once it stops being fresh. */
+  #freshness { display:none; font-size:12px; font-weight:700;
+               color:var(--warn); padding:2px 0 4px; }
+  #freshness.on { display:block; }
 </style>
 </head>
 <body>
 <div id="wrap">
 <div id="statebar">Waiting for live.py analysis…</div>
+<div id="freshness"></div>
 <button id="clearbtn" title="Blank the overlay — a new game clears it automatically">Clear</button>
 <div id="app">
 <section id="col-decide"></section>
@@ -437,6 +445,12 @@ _HTML = r"""<!doctype html>
 let _lastPayload = null;
 let _etag = null;
 let _pollBusy = false;
+//: Epoch seconds of the advice currently on screen, and how old it may get
+//: before the page says so. The ticker below is separate from render()
+//: because render() only runs when the payload CHANGES: once live.py wedges,
+//: the server answers 304 forever and nothing would ever redraw the age.
+let _generated = null;
+const STALE_AFTER = 8;
 async function poll() {
   if (_pollBusy) return;  // a slow response must not pile up ticks
   _pollBusy = true;
@@ -453,12 +467,28 @@ async function poll() {
       _etag = r.headers.get('ETag');
       if (raw !== _lastPayload) {    // unchanged payloads never rebuild the
         _lastPayload = raw;          // DOM (rebuilding every second made
-        render(JSON.parse(raw));     // thumbnails flicker)
+        const parsed = JSON.parse(raw);  // thumbnails flicker)
+        _generated = parsed.generated || null;
+        render(parsed);
       }
     }
-  } catch (e) { /* keep last frame */ }
+  } catch (e) { /* keep last frame — the freshness ticker reports it */ }
   finally { _pollBusy = false; }
 }
+function tickFreshness() {
+  const node = document.getElementById('freshness');
+  if (!node) return;
+  // No payload yet = no game yet; the welcome card speaks for itself.
+  if (_generated == null) { node.className = ''; node.textContent = ''; return; }
+  const age = Math.max(0, Math.round(Date.now() / 1000 - _generated));
+  if (age < STALE_AFTER) { node.className = ''; node.textContent = ''; return; }
+  node.className = 'on';
+  const when = age >= 120 ? Math.floor(age / 60) + ' min'
+             : age >= 60 ? '1 min' : age + 's';
+  node.textContent = 'Advice from ' + when + ' ago — is live.py still '
+    + 'running? (it is frozen, not live)';
+}
+setInterval(tickFreshness, 1000);
 function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -1491,6 +1521,11 @@ def render_json(analysis):
     """Enrich coach.analyze output with card names for frontend display."""
     names = _load_bg_names()
     a = dict(analysis)
+    # When this advice was produced. The page shows its age once it stops
+    # being fresh, so a wedged live.py cannot pass for a live one (2026-10-02):
+    # the overlay is only written on a successful analyze, and a frozen frame
+    # used to look exactly like live advice.
+    a["generated"] = time.time()
     a["board"] = [dict(m, name=names.get(m["card"], m["card"])) for m in analysis["board"]]
     # Group duplicate board minions (Fauna Whisperer ×2 with different stats
     # used to show as two confusing rows); score = the instance you'd sell
