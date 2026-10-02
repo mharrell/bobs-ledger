@@ -889,6 +889,15 @@ function render(a) {
       alts.appendChild(tile(c, n, w != null ? w : (s != null ? s.toFixed(1) : null)));
     });
     instr.appendChild(alts);
+    // What each offered trinket actually does for this build (2026-10-02).
+    // The curated guides shipped in the DB and were rendered nowhere; here
+    // they answer the one question the pick panel raises and the stats
+    // cannot: what do I do with it once I take it.
+    const pickGuides = a.choice.guides || {};
+    a.choice.ranked.forEach(([n]) => {
+      if (!pickGuides[n]) return;
+      instr.appendChild(el('div', 'cline', n + ' — ' + pickGuides[n]));
+    });
   }
   if (a.top_move) {
     // Render from the STRUCTURED steps (value.top_move side-writes
@@ -1365,9 +1374,10 @@ _GUIDE_DIR = os.path.join(_HERE, "meta", "guides")
 _GUIDE_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
-def _plain_comp_text(text):
-    """comps.json cites cards as `[[Name||id]]`. The overlay shows the name:
-    the id is for the scraper, not the player."""
+def _plain_card_text(text):
+    """The meta DB cites cards as `[[Name||id]]` (comps.json, and the curated
+    trinket guides). The overlay shows the name: the id is for the scraper,
+    not the player."""
     if not text:
         return None
     return re.sub(r"\[\[([^\]|]+)(?:\|\|[^\]]*)?\]\]", r"\1", text).strip() or None
@@ -1375,7 +1385,7 @@ def _plain_comp_text(text):
 
 def _enabler_lines(text):
     """`common_enablers` is newline-separated; the panel wants the lines."""
-    plain = _plain_comp_text(text)
+    plain = _plain_card_text(text)
     return [ln.strip() for ln in plain.splitlines() if ln.strip()] if plain else []
 
 
@@ -1443,10 +1453,10 @@ def comp_guide(slug, comp):
         "slug": slug,
         "name": (comp or {}).get("name"),
         "difficulty": (comp or {}).get("difficulty"),
-        "summary": _plain_comp_text((comp or {}).get("summary")),
-        "when_to_commit": _plain_comp_text((comp or {}).get("when_to_commit")),
+        "summary": _plain_card_text((comp or {}).get("summary")),
+        "when_to_commit": _plain_card_text((comp or {}).get("when_to_commit")),
         "enablers": _enabler_lines((comp or {}).get("common_enablers")),
-        "how_to_play": _plain_comp_text((comp or {}).get("how_to_play")),
+        "how_to_play": _plain_card_text((comp or {}).get("how_to_play")),
         "curated": bool((comp or {}).get("how_to_play")),
         # Both guide-derived fields are always present, None when the comp
         # has no guide file: a consumer should not have to guess the shape
@@ -1616,7 +1626,7 @@ def render_json(analysis):
     # plan. Only the target (one comp, a few hundred bytes) rides the payload;
     # every other comp's prose and guide comes from /guide/<slug> on expand.
     if target_comp:
-        how_to_play = _plain_comp_text(target_comp.get("how_to_play"))
+        how_to_play = _plain_card_text(target_comp.get("how_to_play"))
         if not how_to_play:
             # Three comps have no curated `how_to_play` line (including
             # Aberrations - Deity Feed, which the plan commits to most often).
@@ -1632,7 +1642,7 @@ def render_json(analysis):
         a["target_comp_guide"] = {
             "slug": target_slug,
             "difficulty": target_comp.get("difficulty"),
-            "when_to_commit": _plain_comp_text(
+            "when_to_commit": _plain_card_text(
                 target_comp.get("when_to_commit")),
             "how_to_play": how_to_play,
             "enablers": _enabler_lines(target_comp.get("common_enablers")),
@@ -1698,8 +1708,8 @@ def render_json(analysis):
             # hundred bytes total); the prose and the mined guide are fetched
             # by /guide/<slug> when a row is expanded — see comp_guide().
             "difficulty": comp.get("difficulty"),
-            "summary": _plain_comp_text(comp.get("summary")),
-            "when_to_commit": _plain_comp_text(comp.get("when_to_commit")),
+            "summary": _plain_card_text(comp.get("summary")),
+            "when_to_commit": _plain_card_text(comp.get("when_to_commit")),
             "enablers": _enabler_lines(comp.get("common_enablers")),
             "has_guide": bool(comp.get("guide") or comp.get("how_to_play")),
             # Tribe confirmed in this lobby? Absent (True) once the bans
@@ -1717,6 +1727,20 @@ def render_json(analysis):
     # buy_step_roll are written by value.top_move), so the two can't disagree.
     a["buy_step_card"] = analysis.get("buy_step_card")
     a["buy_roll_text"] = analysis.get("buy_step_roll")
+    # The curated guide for each offered trinket. 110 of the 220 trinket rows
+    # carry one and nothing rendered them — on the one screen where a wrong
+    # pick costs the whole game, and where the panel already shows pick% and
+    # average placement. Attached by NAME because the trinket DB is keyed by
+    # name and the ids drift per patch (choices._load_trinket_db matches the
+    # same way).
+    _choice = analysis.get("choice") or {}
+    if _choice.get("kind") == "trinket" and _choice.get("ranked"):
+        _by_name = {t.get("name"): _plain_card_text(t.get("guide"))
+                    for t in meta.trinkets() if t.get("guide")}
+        _guides = {row[0]: _by_name[row[0]] for row in _choice["ranked"]
+                   if row and row[0] in _by_name}
+        if _guides:
+            a["choice"] = dict(_choice, guides=_guides)
     # A buy the SLOT arbiter talked the plan out of (analysis/board_swap.md):
     # value.top_move rewrites its step and records the card here, so the Buy box
     # cannot keep blessing a card the numbers just argued against.

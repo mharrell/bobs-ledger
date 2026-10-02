@@ -145,5 +145,57 @@ class TestPayloadCarriesGuidance(unittest.TestCase):
             self.assertLess(len(json.dumps(row)), 2000)
 
 
+class TestTrinketPickGuides(unittest.TestCase):
+    """The 110 curated trinket guides reach the pick panel.
+
+    Same class of gap as the comp guides: the advice shipped in
+    meta/trinkets.json and no code rendered it — on the one screen where a
+    wrong pick costs the whole game, and where the panel already shows the
+    pick% and average placement.
+    """
+
+    def _guide_names(self):
+        return [t["name"] for t in coach_ui.meta.trinkets() if t.get("guide")]
+
+    def test_offered_trinket_guides_ride_the_pick_payload(self):
+        names = self._guide_names()[:2]
+        self.assertEqual(len(names), 2, "expected curated trinket guides")
+        ids = {t["name"]: t["id"] for t in coach_ui.meta.trinkets()}
+        ranked = [[n, ids.get(n, "BG30_MagicItem_301"), 3.0, "pick 30%"]
+                  for n in names]
+        a = coach_ui.render_json({
+            "board": [], "sell_rank": [], "shop_rank": [], "hand": [],
+            "choice": {"kind": "trinket", "source": "Lesser Trinket",
+                       "ranked": ranked}})
+        guides = a["choice"]["guides"]
+        self.assertEqual(set(guides), set(names))
+        for n in names:
+            self.assertTrue(guides[n])
+            self.assertNotIn("[[", guides[n], "card markup not stripped")
+
+    def test_a_hero_pick_carries_no_guide_block(self):
+        a = coach_ui.render_json({
+            "board": [], "sell_rank": [], "shop_rank": [], "hand": [],
+            "choice": {"kind": "hero", "source": "Choose One",
+                       "ranked": [["Reno Jackson", "BG20_HERO_201", 5.0, "pick 50%"]]}})
+        self.assertNotIn("guides", a["choice"])
+
+    def test_an_offered_trinket_without_a_guide_is_simply_absent(self):
+        """Never a placeholder: a trinket with no guide shows no guide.
+
+        Keyed by NAME (the DB is name-keyed, and variant rows can share a
+        name), so "has no guide" means no row with that name has one.
+        """
+        guided = {t["name"] for t in coach_ui.meta.trinkets() if t.get("guide")}
+        no_guide = [t["name"] for t in coach_ui.meta.trinkets()
+                    if t.get("name") and t["name"] not in guided]
+        self.assertTrue(no_guide, "expected some trinkets to have no guide")
+        a = coach_ui.render_json({
+            "board": [], "sell_rank": [], "shop_rank": [], "hand": [],
+            "choice": {"kind": "trinket", "source": "Lesser Trinket",
+                       "ranked": [[no_guide[0], "BG30_MagicItem_999", 1.0, ""]]}})
+        self.assertNotIn("guides", a.get("choice", {}))
+
+
 if __name__ == "__main__":
     unittest.main()
