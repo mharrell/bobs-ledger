@@ -1,5 +1,5 @@
 {
- "_comment": "Curated per-trinket reads (card-text pass phase 2, 2026-09-08: 'literally read the text of each card'). base_value = intrinsic power read on the spell-point scale (1 gold = 2 pts, +2/+2 on one minion = 4, recurring per-turn effects priced over ~5-6 turns). synergy = what board/keyword features reward holding this trinket: tribes (canonical), keywords (deathrattle/battlecry/magnetic/divine_shield/reborn/taunt/blood_gem/spell/refresh/economy/leveling/golden/trinket/dark_gift/hero_power/hand/yogg/discard). Consumed by choices._rank_trinkets (precise synergy instead of the substring read) and value.minion_value (W_TRINKET term).",
+ "_comment": "Curated per-trinket reads (card-text pass phase 2, 2026-09-08: 'literally read the text of each card'). base_value = intrinsic power read on the spell-point scale (1 gold = 2 pts, +2/+2 on one minion = 4, recurring per-turn effects priced over ~5-6 turns). synergy = what board/keyword features reward holding this trinket: tribes (canonical), keywords (deathrattle/battlecry/magnetic/divine_shield/reborn/taunt/blood_gem/spell/refresh/economy/leveling/golden/trinket/dark_gift/hero_power/hand/yogg/discard). Consumed by choices._rank_trinkets (precise synergy instead of the substring read) and value.minion_value (W_TRINKET term). An entry carrying a \"review\" key was priced from the card text rather than confirmed by the maintainer — treat its base_value as a first pass, and delete the key once you have agreed with it.",
  "BG30_MagicItem_804": {
   "base_value": 8,
   "synergy": {
@@ -155,7 +155,8 @@
     "battlecry"
    ]
   },
-  "note": "end of turn: the two left-most minions get +1/+2, improved by Battlecries triggered this game (Murky Sticker). Priced just under Charming Panpipes 12 (same per-turn stat volume on one minion, no Battlecry dependency) and above the static tribe repeaters at 6-8. No tribe recorded: unlike its Murloc Sticker siblings the effect is not tribe-gated."
+  "note": "end of turn: the two left-most minions get +1/+2, improved by Battlecries triggered this game (Murky Sticker). Priced just under Charming Panpipes 12 (same per-turn stat volume on one minion, no Battlecry dependency) and above the static tribe repeaters at 6-8. No tribe recorded: unlike its Murloc Sticker siblings the effect is not tribe-gated.",
+  "review": "unreviewed — card-text read 2026-10-02, not confirmed by the maintainer"
  },
  "BG32_MagicItem_925": {
   "base_value": 10,
@@ -167,7 +168,8 @@
     "Murloc"
    ]
   },
-  "note": "get a Hackerfin, then at the end of each turn trigger your Hackerfins' Battlecries (Hackerfin Portrait). A body plus a recurring Battlecry trigger - priced with War Drum 10 (one Battlecry triggers twice each turn) and below Dragon Skull 12. The payoff bodies are Murlocs, so the tribe is recorded."
+  "note": "get a Hackerfin, then at the end of each turn trigger your Hackerfins' Battlecries (Hackerfin Portrait). A body plus a recurring Battlecry trigger - priced with War Drum 10 (one Battlecry triggers twice each turn) and below Dragon Skull 12. The payoff bodies are Murlocs, so the tribe is recorded.",
+  "review": "unreviewed — card-text read 2026-10-02, not confirmed by the maintainer"
  },
  "BG32_MagicItem_892": {
   "base_value": 6,
@@ -176,7 +178,8 @@
     "Murloc"
    ]
   },
-  "note": "Spellcraft: give a Murloc a random Bonus Keyword (Vibrant Bubble) - tribe-gated and recurring each turn, priced with the other tribe-gated repeaters (All-Purpose Kibble 6, Spell-powered Wrench 8)"
+  "note": "Spellcraft: give a Murloc a random Bonus Keyword (Vibrant Bubble) - tribe-gated and recurring each turn, priced with the other tribe-gated repeaters (All-Purpose Kibble 6, Spell-powered Wrench 8)",
+  "review": "unreviewed — card-text read 2026-10-02, not confirmed by the maintainer"
  },
  "BG30_MagicItem_998": {
   "base_value": 6,
