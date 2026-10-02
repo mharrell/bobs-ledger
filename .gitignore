@@ -65,4 +65,17 @@ claude_code_zai_env.sh
 
 # YouTube auto-transcripts (third-party caption text, takedown bait):
 # derived research cache — mined into the guides, never republished.
+# Both spellings: the directory actually lives under meta/, and the original
+# rule named a path that never existed — leaving the caption text untracked
+# but NOT ignored, one `git add -A` from being committed.
 hearth-coach/transcripts/
+hearth-coach/meta/transcripts/
+
+# Per-install update state (the version + publish time this install
+# carries). Written by update.py; publish_release.py stamps a fresh one into
+# every release zip, so a stale local copy must not be committed or shipped.
+.update_state.json
+
+# Scratch dirs used while verifying a release build
+.tmp_*/
+
