@@ -177,5 +177,29 @@ class TestServerPortConflict(unittest.TestCase):
             srv.server_close()
 
 
+class TestWelcomeCard(unittest.TestCase):
+    """The first-run fix has to be ON the welcome card.
+
+    live.py's console message has always told the player "the Coach UI
+    welcome card shows the same steps" — the card pointed at the README on
+    disk instead, which is the wrong place when the reason the player opened
+    the overlay is that nothing was happening (2026-10-02).
+    """
+
+    def test_the_card_carries_the_log_config_block(self):
+        import json as _json
+        payload = _json.loads(coach_ui.WELCOME_PAYLOAD)
+        self.assertIn("log.config", payload["hint"])
+        for line in ("[Power]", "LogLevel=1", "FilePrinting=true"):
+            self.assertIn(line, payload["steps"])
+
+    def test_the_page_renders_that_block(self):
+        # Both the element and its rule have to exist, or the multi-line
+        # block collapses into one unreadable line.
+        self.assertIn("'w-steps'", coach_ui._HTML)
+        self.assertIn(".welcome .w-steps", coach_ui._HTML)
+        self.assertIn("white-space:pre-wrap", coach_ui._HTML)
+
+
 if __name__ == "__main__":
     unittest.main()
