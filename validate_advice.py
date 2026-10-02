@@ -46,7 +46,7 @@ CASES = [
         # Tavern Tempest — the build key the old coach never surfaced —
         # must headline the same shop the player bought from.
         "name": "game4-t11-buy-moment-tempest-surfaced",
-        "session": "Hearthstone_2026_09_15", "game": 4,
+        "session": "Hearthstone_2026_01_01", "game": 4,
         "at": "09:06:44",
         "recipes": ["shudderwock-sous-chef-battlecries"],
         "shop_surfaced": "Tavern Tempest",
@@ -57,7 +57,7 @@ CASES = [
     },
     {
         "name": "game4-t13-buy-moment-tempest-headlined",
-        "session": "Hearthstone_2026_09_15", "game": 4,
+        "session": "Hearthstone_2026_01_01", "game": 4,
         "at": "09:12:22",
         "recipes": ["shudderwock-sous-chef-battlecries"],
         "shop_surfaced": "Tavern Tempest",
@@ -65,7 +65,7 @@ CASES = [
     },
     {
         "name": "game4-t12-recipe-active-weak-reach-mention",
-        "session": "Hearthstone_2026_09_15", "game": 4, "turn": 12,
+        "session": "Hearthstone_2026_01_01", "game": 4, "turn": 12,
         "recipes": ["shudderwock-sous-chef-battlecries"],
         # Plan 2 Layer A: the tier-blocked hunt for the named piece stays
         # BLOCKED (random generation is a weak mention, never a gate) but
@@ -77,7 +77,7 @@ CASES = [
         # past the tempo window, a fuel conversion in the shop — the plan
         # names the conversion instead of leaving gold unspent.
         "name": "game4-t20-feed-the-engine",
-        "session": "Hearthstone_2026_09_15", "game": 4, "turn": 20,
+        "session": "Hearthstone_2026_01_01", "game": 4, "turn": 20,
         "recipes": ["shudderwock-sous-chef-battlecries"],
         "top_contains": "feed the engine",
     },
@@ -89,21 +89,21 @@ CASES = [
         # (the engine piece only hit the board mid-phase); t17 stays LEVEL
         # (took 10 damage - stabilize first); t15 and t19 roll-lead.
         "name": "game4-t15-roll-for-fuel-leads",
-        "session": "Hearthstone_2026_09_15", "game": 4, "turn": 15,
+        "session": "Hearthstone_2026_01_01", "game": 4, "turn": 15,
         "recipes": ["shudderwock-sous-chef-battlecries"],
         "top_contains": "consider rerolling for elemental bodies",
         "top_contains2": "next priority: LEVEL to tier 6",
     },
     {
         "name": "game4-t19-roll-for-fuel-leads",
-        "session": "Hearthstone_2026_09_15", "game": 4, "turn": 19,
+        "session": "Hearthstone_2026_01_01", "game": 4, "turn": 19,
         "recipes": ["shudderwock-sous-chef-battlecries"],
         "top_contains": "consider rerolling for",
         "top_contains2": "next priority: LEVEL to tier 6",
     },
     {
         "name": "game1-t8-no-false-recipe-no-fuel-line",
-        "session": "Hearthstone_2026_09_15", "game": 1, "turn": 8,
+        "session": "Hearthstone_2026_01_01", "game": 1, "turn": 8,
         "recipes": [],
         # Plan 2 Layer B negative: no fuel engine on board -> the
         # feed-the-engine line must not exist.
@@ -121,7 +121,7 @@ CASES = [
         # "buy stats" (flip_why: behind the lobby pace) and that edit is
         # the fix's acceptance test.
         "name": "game1-t9-no-false-recipe_level-push-documented",
-        "session": "Hearthstone_2026_09_15", "game": 1, "turn": 9,
+        "session": "Hearthstone_2026_01_01", "game": 1, "turn": 9,
         "recipes": [],
         "top_contains": "LEVEL to tier 5",
     },
@@ -129,13 +129,13 @@ CASES = [
         # Voone t6/t7: the LEVEL advice was right (the player under-leveled
         # into 7th) — a regression guard for every later plan.
         "name": "game2-t6-level-stands",
-        "session": "Hearthstone_2026_09_15", "game": 2, "turn": 6,
+        "session": "Hearthstone_2026_01_01", "game": 2, "turn": 6,
         "recipes": [],
         "top_startswith": "LEVEL",
     },
     {
         "name": "game2-t7-level-stands",
-        "session": "Hearthstone_2026_09_15", "game": 2, "turn": 7,
+        "session": "Hearthstone_2026_01_01", "game": 2, "turn": 7,
         "recipes": [],
         "top_startswith": "LEVEL",
     },
@@ -146,7 +146,7 @@ CASES = [
     # TIER-gate exception (discover/token reach) must NOT reopen it.
     {
         "name": "morchie-t9-over-hunt-stays-blocked",
-        "session": "Hearthstone_2026_09_11", "game": 2, "turn": 9,
+        "session": "Hearthstone_2026_01_01", "game": 2, "turn": 9,
         "recipes": [],
         "top_contains": "no hunt",
         "top_not_contains": "hunting",

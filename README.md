@@ -17,9 +17,12 @@ Hearthstone writes on your disk.
 - Python 3.9 or newer
 - Hearthstone installed and able to run
 
-The coach needs **no API key and no internet for normal play** — the advice
-comes from a local value function plus a meta reference bundled in
-`meta/`. (Only card art may be fetched from the web.)
+The coach needs **no API key**. It does not need the internet to advise:
+the advice comes from a local value function plus a meta reference bundled
+in `meta/` (including the card→tribe map, so there is no first-run
+download). Two things do use the network, both optional to play: card art
+is fetched from HearthstoneJSON on demand, and each start checks the
+release channel for a new version (disable with `--no-update`).
 
 ## Get it
 
@@ -202,10 +205,13 @@ What the coach writes on your machine:
 - `img_cache/` — downloaded card art.
 - `decision_logs/` — one JSONL line per advisory: what the coach advised,
   when, on which game state. **Contains no personal data** — card ids and
-  minion names only; BattleTags never reach the analysis.
+  minion names only. (Verified, not assumed: a scan of 31,607 records for
+  BattleTag-shaped text finds none, because player names never reach the
+  analysis.)
 
-Nothing is uploaded automatically, ever. Sharing data with the coach's
-maintainer is an explicit manual step:
+Nothing is uploaded automatically, ever. The only network traffic the coach
+generates on its own is card art and the start-of-run release check above.
+Sharing data with the maintainer is an explicit manual step:
 
 ```
 python package_corpus.py <Power.log>   # bundle: sanitized log + decisions
@@ -213,8 +219,9 @@ python package_corpus.py --inspect corpus_out/<bundle>   # what's inside
 python upload_corpus.py --latest       # upload
 ```
 
-`--inspect` decodes the bundle and re-scans its log for unredacted
-BattleTags — "it's clean" as a measurement, not a promise. A bundle is
+`--inspect` decodes a bundle and re-scans its contents with
+`privacy_scan.py` — deliberately separate code from the sanitizer, so a
+redactor that misses a category cannot certify its own work. A bundle is
 one gzipped JSON file: the sanitized log, the decision log, and a
 manifest. Nothing else.
 
@@ -233,10 +240,18 @@ Three ways to send it — **no GitHub account needed for the first two:**
    repo `mharrell/hearth-telemetry`, override with
    `HEARTH_TELEMETRY_REPO`.
 
-The Power.log in a bundle is sanitized first (`sanitize_log.py` redacts
-BattleTags — the only personal data Hearthstone writes into logs). To
-record no decision log at all (locally or otherwise), run with
-`HEARTH_TELEMETRY=0`.
+The Power.log in a bundle is sanitized first. `sanitize_log.py` redacts
+**every player identity** the log carries, which is three categories, not
+one: BattleTags (`handle#1234`), the bare opponent handles Battlegrounds
+writes for most opponents (no discriminator at all), and `GameAccountId`
+pairs — the `lo` half is stable for an account across sessions, so leaving
+it in would let uploads be linked together. Each becomes a stable
+placeholder (`P1`, `P2`, …), so the sanitized log still analyses exactly
+like the original. `--inspect` proves it on the file you are about to send.
+
+To record no decision log at all (locally or otherwise), run with
+`HEARTH_TELEMETRY=0`. That switch governs the local advisory log only; it
+does not stop the release check (`--no-update` does that).
 
 ## License & attribution
 

@@ -53,7 +53,7 @@ from value import _load_bg_names
 GS = "GameState.DebugPrintPower()"
 SEAT = re.compile(r"TAG_CHANGE Entity=(.+?) tag=BACON_CURRENT_COMBAT_PLAYER_ID value=(\d+)")
 NEXT_OPP = re.compile(r"TAG_CHANGE Entity=.+? tag=NEXT_OPPONENT_PLAYER_ID value=(\d+)")
-# TAG_CHANGE with a bare-name entity (account form): Entity=Name#1234 tag=X value=Y
+# TAG_CHANGE with a bare-name entity (account form): Entity=Player#1234 tag=X value=Y
 NAME_TAG = re.compile(r"TAG_CHANGE Entity=(\S+) tag=(\w+) value=(\w+)")
 SHOW_ENTITY = re.compile(r"SHOW_ENTITY - Updating Entity=\[.*?\bid=(\d+).*?\] CardID=(\w*)")
 ELIMISH = re.compile(r"ELIMIN|ALIVE|DEAD|DEATH|BUST|QUIT|KNOCK|PLAYSTATE|FATIGUE", re.I)
