@@ -53,3 +53,12 @@ hearth-coach/meta/comp_candidates.json
 # corpus bundles never leave the machine un-asked
 corpus_out/
 VERSION
+
+# Wrangler local state — carries the CF account id / account email
+.wrangler/
+telemetry/.wrangler/
+.dev.vars
+*.env
+
+# Local API-key bootstrap helper (never ships, never commits)
+claude_code_zai_env.sh
