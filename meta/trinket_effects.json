@@ -73,6 +73,18 @@
   },
   "note": "Temperature Shift, repeats after 11 Elementals (Baller Portrait)"
  },
+ "BG36_MagicItem_390": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ],
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Temperature Shift, repeats after 11 Elementals (Baller Portrait)"
+ },
  "BG30_MagicItem_705": {
   "base_value": 12,
   "synergy": {
@@ -146,6 +158,15 @@
   "note": "2 gold but no T1/T2 shop offers (Bob-blehead) — read for a higher-tier curve"
  },
  "BG30_MagicItem_420": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
+ },
+ "BG30_MagicItem_420t": {
   "base_value": 14,
   "synergy": {
    "keywords": [
@@ -266,6 +287,18 @@
    ]
   },
   "note": "after 4 Refreshes: highest-Tier Tavern card costs Health (Demonic Tapestry)"
+ },
+ "BG35_MagicItem_154": {
+  "base_value": 14,
+  "synergy": {
+   "tribes": [
+    "Demon"
+   ],
+   "keywords": [
+    "consume"
+   ]
+  },
+  "note": "every Demon played makes another friendly Demon consume a Tavern minion for its stats (Ur'zul Sticker) — the driver of the Felboar/Enforcer consume package; value scales with Demons played per turn and leaving an unbuy in the Tavern to eat"
  },
  "BG36_MagicItem_203": {
   "base_value": 12,
@@ -661,6 +694,15 @@
   "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
  },
  "BG30_MagicItem_544": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ]
+  },
+  "note": "per Elemental played: Tavern Elementals +3/+2 permanently (Nomi Sticker)"
+ },
+ "BG30_MagicItem_544t": {
   "base_value": 12,
   "synergy": {
    "tribes": [
@@ -1663,15 +1705,6 @@
   "note": "Your minions have +1 Attack, improved by every card discarded this game (Hammer of Twilight, LESSER). Read from the client card data rather than the name: BG36_MagicItem_403 is the Lesser (+1 Attack, type Lesser) and BG36_MagicItem_403t the Greater (+2/+1). The two shared a name AND a read until 2026-09-23 — exactly the Lesser/Greater aliasing risk the discard doc logged as assumption A3 — so the Lesser now carries its own floor. Board-wide on the spell-point scale: 6 minions x 1 Attack = 6, growing with the discard count, undiscounted because the floor is already low."
  },
  "BG36_MagicItem_404": {
-  "base_value": 4,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "After you cast a Tavern spell, give your Deity +4/+4 (Corrupted Baton, LESSER; the Greater BG36_MagicItem_404t is +10/+10 and the two shared a read until 2026-09-23). Same shape as the Greater read — spell-fuelled DEITY POOL, not board stats, paid out only when the Deity awakens — scaled to the printed numbers (4 vs 10)."
- },
- "BG36_MagicItem_404t": {
   "base_value": 4,
   "synergy": {
    "keywords": [

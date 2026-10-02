@@ -130,6 +130,25 @@
   "guide": "Generally decent option to pick."
  },
  {
+  "id": "BG30_MagicItem_420t",
+  "name": "Book of Medivh",
+  "description": "Discover 2 Tavern spells. At the start of each turn, Discover 2 more.",
+  "pick_rate": 18.8,
+  "avg_placement": 4.36,
+  "placement_distribution": {
+   "1": 14.82,
+   "2": 12.77,
+   "3": 11.95,
+   "4": 12.24,
+   "5": 12.63,
+   "6": 12.5,
+   "7": 12.3,
+   "8": 10.77
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG30_MagicItem_422",
   "name": "Lorewalker Scroll",
   "description": "Whenever you cast a spell on a minion, give it +4/+4.",
@@ -502,6 +521,25 @@
    "8": 9.03
   },
   "guide": null
+ },
+ {
+  "id": "BG30_MagicItem_544t",
+  "name": "Nomi Sticker",
+  "description": "After you play an Elemental, give Elementals in the Tavern +5/+5 this game.",
+  "pick_rate": 40.6,
+  "avg_placement": 4.49,
+  "placement_distribution": {
+   "1": 9.22,
+   "2": 11.94,
+   "3": 14.65,
+   "4": 14.44,
+   "5": 14.73,
+   "6": 13.68,
+   "7": 12.3,
+   "8": 9.03
+  },
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_545",
@@ -1754,6 +1792,16 @@
   "guide": null
  },
  {
+  "id": "BG35_MagicItem_154",
+  "name": "Ur'zul Sticker",
+  "description": "After you play a Demon, another friendly Demon consumes a minion in the Tavern to gain its stats.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_156",
   "name": "Flaming Portrait",
   "description": "Get a Flaming Enforcer. Whenever your Flaming Enforcers trigger, also give the stats to their neighbors.",
@@ -2793,6 +2841,25 @@
   "type": "Greater"
  },
  {
+  "id": "BG36_MagicItem_390",
+  "name": "Baller Portrait",
+  "description": "Get a Fire Baller or a Snow Baller. At the start of each turn, repeat this.",
+  "pick_rate": 24.6,
+  "avg_placement": 4.18,
+  "placement_distribution": {
+   "1": 15.36,
+   "2": 13.84,
+   "3": 14.01,
+   "4": 13.08,
+   "5": 11.9,
+   "6": 11.12,
+   "7": 11.25,
+   "8": 9.44
+  },
+  "guide": "Scale the stats of your elementals so your ballers can benefit from them.",
+  "type": "Lesser"
+ },
+ {
   "id": "BG36_MagicItem_400",
   "name": "Corrupted Coin Portrait",
   "description": "Get 2 Corrupted Coins.",
@@ -2841,16 +2908,6 @@
   "placement_distribution": null,
   "guide": null,
   "type": "Lesser"
- },
- {
-  "id": "BG36_MagicItem_404t",
-  "name": "Corrupted Baton",
-  "description": "After you cast a Tavern spell, give your Deity +10/+10.",
-  "pick_rate": null,
-  "avg_placement": null,
-  "placement_distribution": null,
-  "guide": null,
-  "type": "Greater"
  },
  {
   "id": "BG36_MagicItem_406",
