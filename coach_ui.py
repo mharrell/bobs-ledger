@@ -2014,8 +2014,25 @@ def main():
     import sys
     port = DEFAULT_PORT
     for a in sys.argv[1:]:
-        if a.startswith("--port"):
-            port = int(a.split("=")[1])
+        # There was no argument handling at all here: `coach_ui.py --help`
+        # started the server and blocked forever, and `--port` without `=`
+        # crashed on a split() index (2026-10-02).
+        if a in ("-h", "--help"):
+            print("usage: python coach_ui.py [--port=N]\n"
+                  "  serves the overlay on 127.0.0.1 (live.py starts it for "
+                  "you); Ctrl+C to stop.")
+            return 0
+        if a == "--port":
+            print("--port needs a value: --port=8747 (try --help)")
+            return 2
+        if not a.startswith("--port="):
+            print(f"unknown argument: {a} (try --help)")
+            return 2
+        try:
+            port = int(a.split("=", 1)[1])
+        except ValueError:
+            print(f"--port needs a number: {a} (try --help)")
+            return 2
     start_server(port)
     print(f"Coach UI serving at http://127.0.0.1:{port}/  (Ctrl+C to stop)")
     try:

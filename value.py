@@ -4177,6 +4177,14 @@ def _best_comp(board_minions, comps):
 
 
 if __name__ == "__main__":
+    import sys
+    if any(a in ("-h", "--help") for a in sys.argv[1:]):
+        # This block is a smoke test, not a CLI: `value.py --help` used to run
+        # the demo and print scores, which reads as a broken tool (2026-10-02).
+        print("usage: python value.py\n"
+              "  value.py is a library; running it executes a display smoke "
+              "test (a Glambot-engine board).")
+        raise SystemExit(0)
     # Smoke test: a Glambot engine board. The engine pieces (Glambot, Utility
     # Drone) should rank high despite modest stats, because the simulator credits
     # them with the growth the engine drives.

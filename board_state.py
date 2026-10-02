@@ -593,10 +593,20 @@ def _fmt_minion(m):
 
 
 def main():
+    if any(a in ("-h", "--help") for a in sys.argv[1:]):
+        print("usage: python board_state.py <Power.log> [--games N]")
+        return 0
     if len(sys.argv) < 2:
         print("usage: python board_state.py <Power.log> [--games N]")
         return 1
     log_path = sys.argv[1]
+    # A mistyped path used to reach open() and raise a raw FileNotFoundError
+    # traceback (2026-10-02). live.py already answers this way. `os` is
+    # imported here because this module has never needed it at top level.
+    import os
+    if not os.path.exists(log_path):
+        print(f"no such log: {log_path}")
+        return 1
     limit = None
     if "--games" in sys.argv:
         limit = int(sys.argv[sys.argv.index("--games") + 1])
