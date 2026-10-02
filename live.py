@@ -344,6 +344,21 @@ def monitor(path, poll=1.0):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     opts = [a for a in sys.argv[1:] if a.startswith("--")]
+    # Update check BEFORE coaching begins (never mid-session): one cheap
+    # GET; any failure starts the current version normally. An accepted
+    # update re-execs onto the new code so the running coach IS the
+    # version the decision logs will claim.
+    if "--no-update" not in opts:
+        try:
+            import update
+            if update.run(prompt="--yes" not in opts,
+                          assume_yes="--yes" in opts) == "applied":
+                print("restarting onto the new version...", flush=True)
+                os.execv(sys.executable, [sys.executable,
+                                          os.path.abspath(__file__)]
+                         + sys.argv[1:])
+        except Exception:  # noqa: BLE001 - update checks never block play
+            pass
     path = args[0] if args else find_active_log()
     if not path or not os.path.exists(path):
         print("No active Power.log found (Hearthstone not running recently).")

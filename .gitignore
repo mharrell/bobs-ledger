@@ -52,3 +52,4 @@ hearth-coach/meta/comp_candidates.json
 
 # corpus bundles never leave the machine un-asked
 corpus_out/
+VERSION
