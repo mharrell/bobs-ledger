@@ -72,9 +72,11 @@ winner from loser.
         the W_HERO synergy term in sell/shop rankings.
 
 ## Phase 3 — Meta reference (done)
-- [x] Build the structured meta DB in `meta/`: comps (20), cards (89), trinkets
-      (121), dark gifts (43), heroes (115), minions (245, with full card details),
-      tavern spells (72, by tier). See DESIGN.md section 6.
+- [x] Build the structured meta DB in `meta/`: comps, cards, trinkets, dark
+      gifts, heroes, minions (with full card details) and tavern spells (by
+      tier). Grown since the phase closed — **counts 2026-10-02: 35 comps, 89
+      cards, 220 trinkets, 43 dark gifts, 117 heroes, 334 minions, 86 tavern
+      spells.** See DESIGN.md section 6.
 - [x] Scrapers/parsers: `scrape_comps.py` (hsreplay comps), `parse_trinkets.py`,
       `parse_minions.py`; Cloudflare-gated data (minions/heroes/dark-gifts) via
       manual paste; tavern-spell tier from the wiki.
@@ -88,6 +90,12 @@ winner from loser.
       the Aberration tribe 36.6.1 added (n=4, top4=2). Retire it once hsreplay
       publishes an Aberration comp — `--promote` reports the shadowing. See
       DESIGN.md §"Provisional comps".
+      **Resolved 2026-09-26:** the source published Aberration comps, and
+      `aberrations-deity-feed` was promoted to a first-class comp (the player's
+      own deity-pool build, distinct from the scraped
+      `aberrations-deathrattle-spells`) — `comps.json` now holds 4 Aberration
+      comps and **no `provisional: true` row**. The mechanism stays as the path
+      for the next tribe the source misses.
 - [x] Patch-notes updater: `patch_notes.py <url>` fetches official patch notes,
       LLM-extracts before/after changes, and (with `--apply`) writes them into
       `meta/`. Dry-runs by default; new cards flagged for manual entry.
@@ -100,7 +108,8 @@ winner from loser.
 
 ## Phase 4 — Coach agent
 - [ ] **Choose the coach's advice model** (open decision): hosted API vs local
-      vision-capable model. `coach_llm.py` (a DeepSeek v4 flash client) exists
+      vision-capable model. `coach_llm.py` (a GLM 5.3 flash client,
+      `DEFAULT_PROVIDER = "glm"`) exists
       but is NOT the intended advice engine at this time. (The deepseek-v4-flash
       config in `~/.claude/settings.json` is for the Claude Code session, not the
       coach.)
@@ -124,9 +133,10 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
 - [x] **Growth simulator** (`simulate_growth.py`): deterministically models a
       comp's trigger chain (cast spell / play tribe / end of turn / discover /
       attack) and sums the stat gain. Machine-readable engine model in
-      `meta/engines.json` — **13 engines** (Glambot, Spark Snapper, Mana Surge,
+      `meta/engines.json` — **14 engines** (Glambot, Spark Snapper, Mana Surge,
       Groundbreaker, Ruiner, Tasty Lobster, Painter, Unbound/Nomi, Felboar,
-      Ravaging Scorpid, Hooktusk, Devilish Distractor, Vigilant Bristlemane).
+      Ravaging Scorpid, Hooktusk, Devilish Distractor, Vigilant Bristlemane,
+      plus the 36.6.1 Aberrations Discard/Deity engine).
       Handles golden pieces (2x), compounding shop-eat, and tribe-scaling.
 - [x] **Wired into the coach**: `sell_recommendation` (safe-to-sell → keep),
       `shop_ranking` (tavern buy ranking), `top_move` (one decision line).
@@ -358,7 +368,7 @@ The "reasoning layer" the coach reasons over — how good each minion/comp is.
 ## Phase 4b — Spell buy advice (done)
 Most of the player's actual buys are tavern SPELLS, which shop advice ignored
 entirely (replay review labelled spell-only turns as such). The spell data was
-already in `meta/tavern_spells.json` (72 spells, tier/cost/text); the live shop
+already in `meta/tavern_spells.json` (86 spells, tier/cost/text); the live shop
 parse already captured spell options (their ids match the minion-option regex,
 tavern-owned) — shop_ranking just silently dropped them.
 - [x] **Spell scoring** (`value.py`): `_load_spell_db()` + `_spell_score()` —
@@ -430,17 +440,24 @@ tavern-owned) — shop_ranking just silently dropped them.
 - [ ] Persist live game data so a log rotation / coach restart doesn't lose the
       tail of a game (surfaced when the A. F. Kay game was lost to rotation).
 - [x] **Overlay real-estate rework** (2026-09-03/04, from the overlay
-      screenshots): full-width three-column layout — DECIDE (Choose 1, Top
-      move, Buy, Level/Roll), BUILD (Target comp, Board, triggers), MARKET
+      screenshots): full-width layout — DECIDE (Choose 1, Top move, Buy,
+      Level/Roll), BUILD (Target comp, Board, triggers), MARKET
       (Tavern shop, Sell ranking, Playable comps) — with the state strip
-      (hero/gold/tier/turn/HP/banned) across the top; responsive (3/2/1
-      columns). 44px art with hover zoom; art placeholders (initial letter,
-      fixed slot) keep every row aligned with or without art. The Buy box
+      (hero/gold/tier/turn/HP/banned) across the top; 44px art with hover zoom;
+      art placeholders (initial letter, fixed slot) keep every row aligned with
+      or without art. The Buy box
       mirrors the top move's actual buy (buy_step_card written by top_move) —
       they used to disagree (shop #1 vs the plan's affordable card). Shop
       rows show each card's tavern price. Playable comps (was permanently
       "—" on a key mismatch), stacked comp rows, duplicate sell entries
       grouped with ×N badges.
+      **Superseded 2026-09-24:** the 3/2/1-column DECIDE/BUILD/MARKET split is
+      gone. `coach_ui.py` is a **two-pane Decide/Reference** layout
+      (`grid-template-columns:minmax(0,1fr) minmax(0,1fr)`): Decide — state
+      strip, the plan, Your hand, Hand engine — sticky on the left; Reference —
+      Next opponent, Sell, Looking for, Comp direction, Lobby pressure, Tavern,
+      Playable comps — scrolling on the right. Below the breakpoint they stack
+      into ONE column, decision first.
 - [x] **Card art: 100% coverage** (2026-09-03): HearthstoneJSON renders lag
       the patch and skip trinkets entirely, and the wiki is Cloudflare-blocked
       — so `hearth_art_extract.py` reads the local client's Unity bundles:

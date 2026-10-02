@@ -57,6 +57,12 @@ sweeps in every session holding a signature element.
 
 Measured across the five sessions on disk:
 
+> **Source sessions gone (noted 2026-10-02).** The five `Hearthstone_2026_09_2*`
+> sessions this table was built from are no longer on the machine (the log
+> directory now holds 2026-09-29 through 2026-10-02). The numbers below stand as
+> the record of that measurement but **cannot be re-derived** from local logs —
+> re-mining the epoch boundary needs fresh logs from a patch transition.
+
 | Session | Games | Pool cards | `ABERRATION` CARDRACE lines |
 |---|---|---|---|
 | 09-21 10:33 | 2 | 201 | 0 |
@@ -132,7 +138,9 @@ matching every tribe-fit term in `value.py`.
 
 `bans.filter_comps_by_available_tribes` now also drops out-of-play comps — it is
 the single funnel both `coach.py` and `live_coach.py` use, so both are covered
-by one change. The two Naga comps are gone (24 → 22 playable). The per-game ban
+by one change. The two Naga comps are gone (24 → 22 playable, measured against
+the list as it stood on 2026-09-22; the list has grown since — 35 comps with 2
+Naga comps on 2026-10-02, so the same filter now drops 2 of 35). The per-game ban
 answer ("unplayable in *this* game") and the patch answer ("doesn't exist any
 more") are deliberately different layers with different weights:
 `value.W_OUT_OF_PLAY = 8.0` against the banned-tribe `-2.0`.
@@ -161,16 +169,21 @@ never have seen a card list. Both are fixed and regression-tested.
 > are now closed and are kept here with the resolution so the record shows what
 > changed and why; the rest stand.
 
-- **No Aberration comps.** `meta/comps.json` has none, and inventing them from
-  a one-day-old patch would be exactly the "checklist comp from turn 1" habit
-  Shadybunny warns about. The coach can now *see* Aberration cards (tribe,
-  tier, stats) but has no comp to build toward; comps should come from observed
-  play over the next days, not from this document. **Still open.**
+- **Aberration comps — CLOSED (2026-09-26).** This bullet said `meta/comps.json`
+  had none and that inventing them from a one-day-old patch would be exactly the
+  "checklist comp from turn 1" habit Shadybunny warns about. The comps then came
+  from observed play, as intended: the source now publishes Aberration comps, and
+  `comps.json` holds **4** (`aberrations-deathrattle-spells`, `aberrations-apm-deity`,
+  `aberrations-sludge` scraped; `aberrations-deity-feed` mined from our own corpus
+  by `comp_miner.py --promote` and promoted to a first-class comp). No entry
+  carries `provisional: true` any more. See DESIGN.md §"Provisional comps".
 - **The Deity mechanic is modelled** (landed in main, `fb01b1b`, merged `85b3928`).
   `meta/engines.json` has an `aberrations-discard-deity` engine (trigger
   `discard`, 9 steps, every number citing its card text) and `value.py` detects it
-  comp-independently alongside `_spell_fuel_bonus` — necessary because
-  `comps.json` has no Aberration comp to key an engine on. The discarded rate is
+  comp-independently alongside `_spell_fuel_bonus` — a wiring choice made because
+  `comps.json` had no Aberration comp to key an engine on. Aberration comps exist
+  since 2026-09-26, but the detection is still board-derived (see
+  `discard_mechanic.md` §4.1). The discarded rate is
   **modelled, not measured**, and the Deity half is grounded in the log state that
   actually exists for it: the "Secret Deity [DNT]" entity (`BG_OldGod`,
   `zone=SECRET`) re-created once per round, carrying `QUEST_PROGRESS` 0→1→2 with
@@ -185,22 +198,22 @@ never have seen a card list. Both are fixed and regression-tested.
   shop credit. Most of the mechanic's payoff is per-combat power behind a 50/50
   Deity roll, and the model is deliberately arranged so that never outranks a
   permanent stat.
-- **Most 36.6.1 discard trinkets are not in `meta/trinkets.json` yet.** Only
-  Hammer of Twilight is; Writhing Tentacles, Shath'Yar Shrine, Sludge Portrait,
-  Corrupted Baton, Mask of Ancient Ones, Evil Experiment, Kiri's Double Eclipse
-  and Weighted Gauntlet are known from the article text alone. The engine gates
-  them by name so the chain works either way, but the DB rows belong to a
-  `refresh_trinkets.py` pass — and that tool derives its universe from the
-  trinkets **offered in local logs** plus the hsreplay guide list, so a card has
-  to be offered in a session before it can be captured. Verified by dry run: the
-  next refresh would add 15 entries, and none of them is a discard trinket, so
-  this gap closes only when one is actually offered (or the guides catch up).
-  **Still open, and not hand-patchable** — hand-adding rows to a generated file
-  is what had to be reverted once already during the 36.6.1 update.
-  *Hazard for whoever runs it next:* the tool reported "191 -> 192 entries
-  (15 added)" from a 191-entry file, i.e. it wants to remove about as many as it
-  adds, so a re-run is not obviously idempotent. Understand that before running
-  it for real, and diff the 14 it would drop against the curated reads.
+- **36.6.1 discard trinkets — CLOSED (2026-09-23).** This bullet said only
+  Hammer of Twilight was in `meta/trinkets.json`, with Writhing Tentacles,
+  Shath'Yar Shrine, Sludge Portrait, Corrupted Baton, Mask of Ancient Ones, Evil
+  Experiment, Kiri's Double Eclipse and Weighted Gauntlet known from the article
+  text alone. Seven arrived via `refresh_trinkets.py` and three more (`404`,
+  `416`, `430`) were added by hand from the observed-id cache — the full
+  resolution (including the `BG36_MagicItem_403` Lesser/Greater aliasing fix) is
+  written up in `analysis/discard_mechanic.md` §2. `meta/trinkets.json` is now
+  **220 rows** (2026-10-02); Writhing Tentacles is in the DB by name, and
+  Kiri's Double Eclipse is still absent — `tests/test_trinket_meta.py` fails the
+  moment a trinket-shaped id appears in a log without a DB row.
+- **`refresh_trinkets.py` is still not obviously idempotent** (recorded
+  2026-09-22, not retracted): the tool reported "191 -> 192 entries (15 added)"
+  from a 191-entry file, i.e. it wants to remove about as many as it adds.
+  *Hazard for whoever runs it next:* understand that before running it for real,
+  and diff the ~14 it would drop against the curated reads.
 - **Two cards a `no carddef` boundary, not an oversight:** `BGFYM_005` and
   `BGFYM_011` (the Y'Shaarj family) have **no card definition in the installed
   client**, so no art can be extracted for them; `BG30_MagicItem_4262`

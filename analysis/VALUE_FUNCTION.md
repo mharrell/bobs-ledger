@@ -64,7 +64,7 @@ computable from what we have: `board_state.py` (buffed stats), `comps.json`
 
 ## The BG-pool guardrail (critical)
 
-**Only reason over the Battlegrounds minion pool** (`meta/minions.json`, 245
+**Only reason over the Battlegrounds minion pool** (`meta/minions.json`, 334
 minions) — never the full hearthstonejson DB, which includes Standard cards not in
 Battlegrounds. A Standard card like Spellbreaker is noise that would corrupt the
 advice. The value function and the coach's reasoning must be constrained to the

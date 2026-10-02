@@ -94,8 +94,9 @@ coach's runtime. Cache discipline: byte-stable FIXED_BLOCK + per-decision
 VARIABLE tail; verify via `prompt_cache_hit_tokens` vs `prompt_cache_miss_tokens`.
 
 **2. The coach's advice model is a separate, OPEN decision** (see ROADMAP
-"Open decisions"). It was never locked. `coach_llm.py` is a DeepSeek v4 flash
-client that exists in the repo (kept) but is **not** the intended advice engine
+"Open decisions"). It was never locked. `coach_llm.py` is a GLM 5.3 flash
+client (`DEFAULT_PROVIDER = "glm"`, provider-agnostic) that exists in the
+repo (kept) but is **not** the intended advice engine
 at this time. The coach's reasoning model — hosted API vs local vision-capable
 model — is still to be chosen.
 
@@ -117,13 +118,17 @@ any tribe is active, so they can't reveal bans. Implemented in `bans.py`
 ## 5. The Data Asset: Opponent Observation from Own Replays
 
 ### Thesis
-Each Hearthstone `Power.log` game contains the **full move stream of all 8
-players** (hero, purchases, sells, tiers, placement). So each game you play
-yields **~8 decision trajectories**, not just your own.
+Each Hearthstone `Power.log` game contains the **full per-player record of
+all 8 players** (hero, hero name, tavern-tier timing, final placement). So
+each game you play yields **~8 tier trajectories**, not just your own — but
+not 8 complete decision streams: opponents' individual buys and sells are
+**not** recoverable, because they share the spectator player number (Phase 1
+finding, `analysis/OPPONENT_DATA.md`; the friendly side's buys/sells do
+parse). Tier timing is the one clean per-player decision signal.
 
 ### Why it's valuable
-- **8x per-game yield.** Each replay contains the complete decisions of you +
-  7 opponents.
+- **8x per-game yield.** Each replay contains the tier/placement record of
+  you + 7 opponents.
 - **More than HDT persists.** HDT's own local cache (`BgsLastGames.xml`) stores
   only *your own* final board + placement — **no opponent data**. Your raw
   `Power.log` is richer than the tracker's cache.
@@ -134,7 +139,8 @@ yields **~8 decision trajectories**, not just your own.
 ### What it enables
 - MMR-localized coaching (your opponents are near your rating).
 - Opponent-modeling as a feature (common patterns at your MMR band).
-- A full-time-stream training set (state buckets -> outcome win-tables).
+- A per-player tier-timing + outcome training set (state buckets -> outcome
+  win-tables).
 
 ### Honest caveats (breakoutBot discipline)
 - **Volume still scales with games played.** Per-game efficiency is 8x, but raw
@@ -149,13 +155,19 @@ yields **~8 decision trajectories**, not just your own.
   `Hearthstone_<timestamp>\Power.log` (or `Power_old.log` after rotation).
 - Format: standard Power.log with `CREATE_GAME`, `GAME_SEED`, `BACON_*` tags,
   `TAG_PLAYSTATE`, `SHOW_ENTITY`/`CardID`, `TECH_LEVEL`.
-- Parser: **`python-hslog`** (official HearthSim, MIT, Python) — the same parser
-  HDT uses. Cloned into `python-hslog/`.
+- Parser: **stdlib only, no `hslog`** — `extract_game.py` parses the raw log
+  directly (verified: `hslog`'s `EntityTreeExporter` is built for constructed
+  2-player games and mangles Battlegrounds' 8-player structure, collapsing all
+  7 opponents into the "spectator" player). `python-hslog` (official HearthSim,
+  MIT) is vendored into `python-hslog/` and used only by the `parse_bg.py`
+  smoke test, not on the BG data path.
 
-### Validation task (parked / to-do)
-Split one `Power.log` into games and extract per-player move stream (hero,
-placement, purchases, tiers). Confirms the opponent-data thesis. See
-`parse_bg.py` (smoke test) and `analysis/OPPONENT_DATA.md`.
+### Validation task — DONE (2026-08-24/25, ROADMAP Phase 1)
+`extract_game.py` splits one `Power.log` into games and extracts the
+per-player record (hero, hero name, account name, placement, tier) plus the
+move stream: tier timing for all 8, buys/sells for the friendly side only.
+Confirms the opponent-data thesis with the buy/sell caveat above. See
+`analysis/OPPONENT_DATA.md`.
 
 ---
 
@@ -213,13 +225,20 @@ comps filtered by the family ban; the hero-rank list on hero-select).
 ### Provisional comps — mined from our own corpus (added 2026-09-23) — LOCKED
 
 The comp list comes from a scraped source, and that source does not cover every
-tribe in play: it has **26 comps across the ten original tribes and none for
-Aberration**, which 36.6.1 added. Measured consequence (2026-09-23, 12 games in
-the local corpus): **4 games ended on an Aberration-dominant board**, and in a
-typical game **36–60% of the coach's lines were the "no target comp"
-placeholder**. Those games are also structurally unmeasurable — a player cannot
-follow advice that does not exist — so the gap corrupts the adherence metric as
-well as the coaching.
+tribe in play. When this section was written (2026-09-23) it had **26 comps
+across the ten original tribes and none for Aberration**, which 36.6.1 added.
+Measured consequence (2026-09-23, 12 games in the local corpus): **4 games
+ended on an Aberration-dominant board**, and in a typical game **36–60% of the
+coach's lines were the "no target comp" placeholder**. Those games are also
+structurally unmeasurable — a player cannot follow advice that does not
+exist — so the gap corrupts the adherence metric as well as the coaching.
+
+**Resolved since (2026-09-26):** the source now publishes Aberration comps —
+`meta/comps.json` holds **35 comps, 4 of them Aberration**
+(`aberrations-deathrattle-spells`, `aberrations-apm-deity`, `aberrations-sludge`
+scraped; `aberrations-deity-feed` promoted from our own corpus) — and **no entry
+carries `provisional: true` today**. The mechanism below is kept because it is
+the standing path for the next tribe the source misses.
 
 **`comp_miner.py --promote`** fills it and the entry carries its own caveat:
 
@@ -246,7 +265,12 @@ well as the coaching.
   retire.
 
 First entry: **`aberrations-deity-feed`** ("Aberrations - Deity Feed", n=4,
-top4=2), core Faceless Converter + N'raqi Sapper.
+top4=2), core Faceless Converter + N'raqi Sapper. It was **promoted to a
+first-class comp on 2026-09-26** (player decision: the published
+`aberrations-deathrattle-spells` shares Converter/Titus/Sapper/Corroder/Shadow
+of Doubt, but this is the distinct deity-pool spell-scaling build the player
+actually plays), so `comp_miner.py --promote` now refuses to touch it — a
+non-provisional row is never overwritten.
 
 ### The current pool and out-of-play (added 2026-09-22) — LOCKED
 
@@ -274,13 +298,14 @@ Design, evidence and the remaining gaps: `analysis/pool_and_out_of_play.md`.
 ### The assets (`meta/`)
 | File | Contents |
 |------|----------|
-| `comps.json` | 20 comps (tier, difficulty, core/addon cards, how-to-play, when-to-commit) |
+| `comps.json` | 35 comps (tier, difficulty, core/addon cards, how-to-play, when-to-commit) |
 | `cards.json` | 89 curated cards (name, tier, tribe, atk/health) |
-| `trinkets.json` | 212 trinket rows (Lesser/Greater/variants; pick rate, avg placement, distribution, guide) |
-| `dark_gifts.json` | 43 dark gifts (name, description) |
+| `trinkets.json` | 220 trinket rows (Lesser/Greater/variants; pick rate, avg placement, distribution, guide) |
+| `dark_gifts.json` | 43 dark gifts (name, description; not ranked — see `choices.py`) |
 | `heroes.json` | 117 heroes (hero power, pick rate) |
-| `minions.json` | 328 minions by tavern tier, with full card details |
-| `tavern_spells.json` | 77 tavern spells by tier, with cost + text |
+| `minions.json` | 334 minions by tavern tier, with full card details |
+| `tavern_spells.json` | 86 tavern spells by tier, with cost + text |
+| `engines.json` | 14 growth engines (machine-readable trigger chain) |
 | `guides/` | comp guides mined from commentary transcripts |
 
 ### Honest design notes
@@ -332,7 +357,8 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
   - `bans.py` — Power.log → per-game 5 allowed / 5 banned tribes; comp filter
     (partial pool reveals fail open and retry).
   - `scrape_comps.py` — hsreplay comp pages → `comps.json` (`--top N`, `--prune`).
-  - `coach_llm.py` — DeepSeek v4 flash client with prefix-cache discipline.
+  - `coach_llm.py` — GLM 5.3 flash client (`DEFAULT_PROVIDER = "glm"`;
+    DeepSeek is a switchable second provider) with prefix-cache discipline.
   - `parse_trinkets.py` / `parse_minions.py` — meta raw pastes → JSON.
   - `value.py` — minion value function (sell ranking, shop ranking, top move;
     real upgrade button prices, level-vs-board rule, comp-pivot tracking).
