@@ -125,6 +125,19 @@ def _art_map():
 
 
 def extract(only_ids=None, write=True):
+    # Capability first. Without UnityPy every container was skipped with a
+    # per-container "(skip ...: No module named 'UnityPy')" and the tool still
+    # exited 0, so `patch_day.py --apply` could not tell that the art refresh
+    # had done nothing at all (2026-10-02).
+    try:
+        _unitypy()
+    except ImportError:
+        print("UnityPy is not installed — no art can be extracted from the "
+              "local client.")
+        print("  install it with: python -m pip install UnityPy")
+        print("  (the overlay still fetches HearthstoneJSON renders on "
+              "demand; this only affects the offline, client-exact art)")
+        return 1
     os.makedirs(CACHE, exist_ok=True)
     wanted = _meta_ids() | _log_ids()
     if only_ids:
