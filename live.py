@@ -43,28 +43,49 @@ def find_active_log():
     return logs[0] if logs else None
 
 
-def warn_stale_meta():
+def warn_stale_meta(meta_dir=None):
     """One startup line when the meta DB predates a plausible patch.
 
-    Silence means nothing (fresh installs carry no patch state); a stale
-    stamp is the case that quietly degrades advice — new cards render as
-    raw ids and comps go off. The weekly scheduled check keeps this fresh
-    on the dev machine; release users get it fixed by the next update.
+    The ROSTER decides, not `meta/.patch_state.json`: that file is only
+    check_patch_notes.py's dedup latch, and it stays on the last patch that
+    tool reported — after 36.6.1 was applied by hand it still read 36.4.2,
+    so this warning fired on a machine whose DB was current, on the one
+    machine that ever saw it (the stamp does not ship, so release users got
+    silence instead). doctor.py already prefers the roster for exactly that
+    reason; a check that cries wolf trains you to ignore it (2026-10-02).
+
+    Silence is the normal case: a DB built more than ten days ago, with no
+    patch since, prints nothing. `meta_dir` is injectable for tests.
     """
-    stamp = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         "meta", ".patch_state.json")
+    meta_dir = meta_dir or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "meta")
+    label, built = None, None
     try:
-        with open(stamp, encoding="utf-8") as f:
-            st = json.load(f)
-        checked = time.strptime(st.get("last_checked", ""), "%Y-%m-%d")
-        age_days = (time.time() - time.mktime(checked)) / 86400
-        if age_days > 10:
-            print(f"NOTE: the card/comps DB was last patch-checked "
-                  f"{st.get('last_checked')} ({st.get('last_title', '?')}). "
-                  "If a patch shipped since, the coach may misread it — "
-                  "check for an update (python update.py --check).")
-    except Exception:  # noqa: BLE001 - no state / odd json: stay quiet
+        with open(os.path.join(meta_dir, "pool_roster.json"),
+                  encoding="utf-8") as f:
+            roster = json.load(f)
+        label, built = roster.get("patch"), roster.get("built")
+    except (OSError, ValueError):
         pass
+    if not built:
+        # A dev checkout that has run the patch checker but has no roster yet.
+        try:
+            with open(os.path.join(meta_dir, ".patch_state.json"),
+                      encoding="utf-8") as f:
+                st = json.load(f)
+            label, built = st.get("last_title"), st.get("last_checked")
+        except (OSError, ValueError):
+            return
+    try:
+        age_days = (time.time()
+                    - time.mktime(time.strptime(built, "%Y-%m-%d"))) / 86400
+    except (TypeError, ValueError):
+        return
+    if age_days > 10:
+        print(f"NOTE: the card/comps DB is from {built} "
+              f"(patch {label or '?'}), {int(age_days)} days ago. If a patch "
+              "shipped since, the coach may misread it — check for an update "
+              "(python update.py --check).")
 
 
 _last_board = None  # (card, atk, health) fingerprint of the last advised board

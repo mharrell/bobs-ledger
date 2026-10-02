@@ -377,7 +377,68 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
   - `sanitize_log.py` / `decision_log.py` / `package_corpus.py` /
     `upload_corpus.py` — the beta corpus loop → private repo
     `mharrell/hearth-telemetry`.
+  - `privacy_scan.py` — the independent checker behind every privacy claim
+    (see "Privacy & sharing" below).
+  - **Automation toolkit (2026-09-23).** Output tokens are the expensive
+    side, so every entry point is bounded to a few lines and takes `--json`:
+    `patch_day.py` (detect patch → fetch notes → canary the parsers →
+    report; `--apply` refreshes), `doctor.py` (one-shot pre-flight verdict:
+    patch, coverage, gates, art, trinket coverage, newest log),
+    `logquery.py` (eight bounded Power.log queries), `review_kit.py`
+    (per-game review skeleton + turn drill-down, cached), `comp_miner.py`
+    (mine OUR corpus for comps the scraped source lacks; proposes, and
+    `--promote` writes a PROVISIONAL entry marked as such), `pool.py` /
+    `lobby.py` / `pool_roster.py` (own-side pool ledger, seat-level
+    opponent snapshots, log-mined pool roster), `outcome_audit.py` and
+    `turn_forensics.py` (advice-vs-outcome and log-mechanics forensics).
+  - Root `sync.py` — commit + merge into main + push, in one command.
 - **Meta reference:** complete in `meta/` (see section 6).
+
+### Privacy & sharing (2026-10-02)
+
+The coach reads logs, so its privacy claims have to be measured, not
+asserted. Three mechanisms, in order of who they protect:
+
+1. `sanitize_log.py` redacts every player identity a Power.log carries —
+   BattleTags, the bare opponent handles Battlegrounds writes for most
+   opponents (no discriminator at all), and `GameAccountId` pairs, whose
+   `lo` half is stable per account and so links a player's uploads. Each
+   becomes a stable `P1, P2, …` placeholder, which is what keeps the
+   sanitized log analysable: it produces identical advice.
+2. `privacy_scan.py` verifies, using deliberately DIFFERENT code from the
+   redactor. The first version of this check called the sanitizer on its own
+   output, and certified a bundle clean that shipped fifteen opponent
+   handles; a check that asks the cleaner whether it cleaned is not a check.
+   It is what `package_corpus --inspect` runs, and what `publish_release.py`
+   gates on.
+3. `publish_release.py` refuses to publish unless two gates pass: PRIVACY
+   (no shipped text file carries personal data) and REPRODUCIBILITY (the zip
+   matches HEAD, with no uncommitted edits and no stray untracked entries —
+   the zip is built from the working tree, so a scratch directory once
+   inflated a release from 236 entries to 472). Both have explicit
+   overrides so an exception is a decision, not an accident.
+
+### Distribution & first run
+
+`publish_release.py` builds the zip (code + `meta/` + user docs; never
+`analysis/`, `telemetry/`, `CLAUDE.md`, the caches, local data, or any
+`.lnk`), stamps `VERSION` and `.update_state.json`, and PUTs it plus a
+manifest to the collector's KV namespace. Users get it from
+`GET /release/latest.json` → `GET /release/<zip>`, or by `git clone`.
+
+A released zip keeps itself current because the stamp it carries is the
+other half of the update join: direction is decided by the manifest's
+publish timestamp against that stamp, and without a stamped state a fresh
+install could only ever answer "unknown", which is why the update offer
+never fired until 2026-10-02.
+
+First run is `Start Bob's Ledger.cmd` at the zip root: it finds Python
+(venv → `py -3` → `python`), asks before installing the one dependency,
+reports the log folder without writing to it, offers a Desktop shortcut
+with `bobs-ledger.ico` on it, and starts the coach with the overlay open.
+Windows never draws an icon on a `.cmd`, so the shortcut is the only
+clickable thing that can wear the icon; it is created on the user's machine
+because a `.lnk` embeds absolute paths.
 
 ### Network situation
 - hsreplay's minions/heroes/dark-gifts APIs are Cloudflare-protected (403) —
