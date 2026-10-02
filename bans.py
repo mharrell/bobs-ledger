@@ -75,27 +75,41 @@ def out_of_pool_tribes():
 
 
 def _load_card_races(cache_path):
-    """Return {card_id: [races]} from hearthstonejson, cached to disk.
+    """Return {card_id: [races]}, cached to disk.
 
     Races are the raw log names (BEAST, MECHANICAL, ...). Neutral cards have an
     empty list; all-tribe cards have ["ALL"].
+
+    The cache ships with a release, so the normal path is a local read. The
+    download is a fallback for a checkout (where the cache is gitignored)
+    and it can no longer break the coach: a failed fetch returns {} and the
+    caller adds the races the log itself revealed. Before this, an offline
+    first run raised out of the live path, and because a repeated tick error
+    is printed once and then suppressed (live.py), the overlay simply waited
+    forever with no advice and no explanation (2026-10-02).
     """
     if os.path.exists(cache_path):
         with open(cache_path, encoding="utf-8") as f:
             return json.load(f)
-    print(f"  downloading card list from hearthstonejson (cached to {cache_path}) ...")
-    resp = requests.get(HEARTHSTONEJSON_URL, timeout=120)
-    resp.raise_for_status()
-    card_races = {}
-    for card in resp.json():
-        cid = card.get("id")
-        if not cid:
-            continue
-        races = card.get("races") or ([card["race"]] if card.get("race") else [])
-        card_races[cid] = [r for r in races if r and r != "NEUTRAL"]
-    with open(cache_path, "w", encoding="utf-8") as f:
-        json.dump(card_races, f)
-    return card_races
+    try:
+        print(f"  downloading card list from hearthstonejson (cached to {cache_path}) ...",
+              flush=True)
+        resp = requests.get(HEARTHSTONEJSON_URL, timeout=120)
+        resp.raise_for_status()
+        card_races = {}
+        for card in resp.json():
+            cid = card.get("id")
+            if not cid:
+                continue
+            races = card.get("races") or ([card["race"]] if card.get("race") else [])
+            card_races[cid] = [r for r in races if r and r != "NEUTRAL"]
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump(card_races, f)
+        return card_races
+    except Exception as e:  # noqa: BLE001 - offline must not stop coaching
+        print(f"  could not download the card list ({e.__class__.__name__}); "
+              "carrying on with the tribes this log reveals", flush=True)
+        return {}
 
 
 def bans_from_log(powerlog_path, card_races=None, lines=None):
