@@ -2,10 +2,29 @@
 
 **Status: stage 1 IMPLEMENTED (2026-09-23).** Stages 2 (combat "now" term) and 3
 (simulator "future" term) are designed below and not built. `value.slot_swaps`,
-the guards, the plan wiring and `tests/test_board_swap.py` are the stage-1
-deliverable.
+the plan wiring and `tests/test_board_swap.py` are the stage-1 deliverable.
+
+**Guard caveat (verified against `value.py::_swap_guards`, 2026-10-02):** the
+guard list in §4.3 is a design target, and stage 1 shipped **three of its seven
+classes** — comp core/addon, the plan's holds, and multipliers — plus one guard
+the list did not name (the discard outlet the plan is about to activate,
+`reserved_outlet`, added 2026-09-23). **Four classes remain open:**
+golden/triple components that would break a completed golden, token/summon
+bodies, the Deity carrier / permanent-accrued-stat bodies, and
+position-dependent minions; and within the first class, "any card in the live
+target's shopping list" is not separately guarded (only the target comp's
+core/addon ids are). §4.3 marks each below.
 
 ### Stage-1 result, measured across all local sessions (44 full-board phases)
+
+> **Source sessions gone (noted 2026-10-02).** The 09-2x Power.logs this was
+> measured over are no longer on the machine (the log directory now holds
+> 2026-09-29 through 2026-10-02), so the 44-phase counterfactual **cannot be
+> re-derived** — §5's re-run recipe needs the raw logs, and `.review_cache/`
+> keeps only the rendered per-game review text (advice vs actual, per phase),
+> not the analysis dicts. That rendered text does survive for the 09-21 → 09-25
+> sessions, so the §1 "154 cached coach lines" counts can still be re-read; the
+> phase verdicts below cannot.
 
 | | |
 |---|---|
@@ -158,19 +177,31 @@ still cannot see the slot, the triple, or the comp glue — those stay structura
 ### 4.3 Guards — cards that are not sellable
 
 Some already exist in `sell_recommendation` (comp glue floor, multipliers,
-Spellcraft). The arbiter must not hand back a guard as the outgoing card:
+Spellcraft). The arbiter must not hand back a guard as the outgoing card.
+Implemented guards are `value._swap_guards` + `slot_swaps`'s
+`reserved_outlet`; the rest are marked **OPEN**:
 
-- comp **core/addon** (floor exists) and any card in the live target's shopping list;
-- a **multiplier/enabler** (Brann, Drakkari, Titus-class) — its value is what it
-  amplifies, and `_engine_growth_bonus` already measures part of that;
-- a **golden-hunt hold** (the plan says "hold — a 3rd copy turns it golden": the
-  same panel must not also sell it — this guard exists and is tested);
-- **golden/triple components** that would break a completed golden;
-- a **token/summon body** — nearly free to lose, and usually the right answer;
-- the **Deity carrier** / permanent-accrued-stat bodies (one-time effects that
-  cannot be re-bought);
-- **position-dependent** minions (left-most/adjacent effects) whose value depends
-  on neighbours the score cannot see.
+- **[DONE]** comp **core/addon** (floor exists) — `_swap_guards` returns both,
+  as "it is the comp's core" / "it is part of the comp". **[OPEN]** any card in
+  the live target's shopping list beyond those ids;
+- **[DONE]** a **multiplier/enabler** (Brann, Drakkari, Titus-class) — its value
+  is what it amplifies, and `_engine_growth_bonus` already measures part of
+  that (`value._is_multiplier`);
+- **[DONE]** a **golden-hunt hold** (the plan says "hold — a 3rd copy turns it
+  golden": the same panel must not also sell it — this guard exists and is
+  tested, and it was generalised to ANY `hold` in the plan, 2026-09-06);
+- **[OPEN]** **golden/triple components** that would break a completed golden;
+- **[OPEN]** a **token/summon body** — nearly free to lose, and usually the right
+  answer;
+- **[OPEN]** the **Deity carrier** / permanent-accrued-stat bodies (one-time
+  effects that cannot be re-bought);
+- **[OPEN]** **position-dependent** minions (left-most/adjacent effects) whose
+  value depends on neighbours the score cannot see.
+
+One guard the list above did not anticipate, added after the 2026-09-23
+conflict report: the **discard outlet the plan is about to activate**
+(`slot_swaps(reserved_outlet=...)`), because the plan was selling the card its
+own next step needed.
 
 ### 4.4 Output
 

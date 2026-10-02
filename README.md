@@ -7,6 +7,15 @@ the best move *for this exact situation*, with the reason. Stat overlays
 tell you what wins at your rating on average; this tells you what to do
 with the board you're holding right now.
 
+Be clear on what that advice is: a **rule-based second opinion**, not a
+validated oracle. The coach's recommendations have **not** been validated
+against outcomes. The project's own audit (`outcome_audit.py`) is explicit
+that its followed-vs-ignored HP comparison is observational and not causal
+— players follow advice in easy spots and ignore it in scary ones — and
+that the leveling lane is the suspect: followed level advice preceded a
+mean −4.6 HP loss against −2.0 when ignored. So treat a level line as a
+question to price, not a verdict.
+
 No account access, no game modification — it only reads log files that
 Hearthstone writes on your disk.
 
@@ -133,9 +142,10 @@ Decide pane:
   danger band (▲ FRAGILE / ■ DYING) sits above the plan when the next
   hit matters more than the plan. Includes a level-vs-roll reference
   line and the buy price actually read from the game.
-- **Choose 1** — appears during hero / trinket / Dark Gift / discover
+- **Choose 1** — appears during hero / trinket / discover
   picks; ranks the options for your situation. Options with no data say
-  so instead of pretending to rank.
+  so instead of pretending to rank. (Dark Gift picks are not ranked —
+  there is no dark-gift ranking path, and the overlay drops the line.)
 - **Your hand** — held cards with their verdict (cast / play / hold /
   discard); the plan's chosen discard fodder is named on its tile.
 - **Hand engine** — when a hand-charge kit is in play: deployer on
@@ -253,6 +263,24 @@ To record no decision log at all (locally or otherwise), run with
 `HEARTH_TELEMETRY=0`. That switch governs the local advisory log only; it
 does not stop the release check (`--no-update` does that).
 
+## Uninstalling
+
+Delete the install folder — the one you unzipped. Nothing is written
+outside it: no registry entries, no services, no data under `AppData`.
+Everything the coach stores lives inside the install:
+
+- `hearth-coach/img_cache/` — downloaded and extracted card art.
+- `hearth-coach/decision_logs/` — the local advisory log (one JSONL line
+  per advisory).
+- `hearth-coach/.card_races.json` — the card→tribe cache.
+- `.update_state.json` — the install's last-updated stamp, at the install
+  root (next to the `hearth-coach/` folder).
+
+The one thing the coach asks you to change outside its folder is
+Hearthstone's own `log.config` (Quick start step 2). It belongs to
+Hearthstone, not the coach, and other trackers may rely on it — leave it
+alone unless you want the logging off.
+
 ## License & attribution
 
 The coach's code is MIT-licensed — see `LICENSE` in the repo root. Two
@@ -295,6 +323,9 @@ things the license doesn't cover, credited where they came from:
 
 Internal docs (design history, not needed to use the coach):
 `DESIGN.md` (architecture), `ROADMAP.md` (phase status), `analysis/*.md`
-(decision analyses). Post-game tools: `replay_review.py` (coach-vs-player
+(decision analyses). `analysis/` is maintainer-only and is **not** in a
+release zip (its replay reviews name real opponents), so a zip install has
+no `analysis/` directory — that is expected, not a broken install.
+Post-game tools: `replay_review.py` (coach-vs-player
 diff per phase), `replay_stats.py` (replay corpus stats). The test suite:
 `python -m unittest discover -s tests`.

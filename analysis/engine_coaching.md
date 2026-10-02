@@ -162,18 +162,32 @@ blocked.
 
 ### Current behavior
 
-Gate ladder in `value.py` (~1370–1440): flip gates (dying; tier ≥ 2 + 2
-losses + board < 0.7× opponent; tier ≥ 3 + 2 losses; took ≥ 10 damage) →
+Gate ladder in `value.py` (~2541–2611, re-checked 2026-10-02): flip gates
+(too fragile to level first; 0 wins so far; bled ≥ 15 over the last 3 fights
+— the 2026-09-18 damage memory; tier ≥ 2 + 2
+losses + board < 0.7× the next seat; tier ≥ 3 + 2 losses; tier ≥ 3 + took
+≥ 10 last fight; tier ≥ 4 + board < 0.7× the LOBBY pace, which is this
+plan's own anchor) →
 Q1 stay → LEVEL with "the comp's next pieces live there" / "you're strong
 — convert it into a tier" (`board_stats ≥ 1.5× next opponent`) / "standard
 curve". Rolls appear only as filler ("roll meanwhile"). History of
 special-case patches (09-08 Loh, 09-10 tie, 09-11 Morchie) = the ladder is
 out of room.
 
+**Status (2026-10-02):** items 2–4 of the design below LANDED — the
+lobby-pace anchor (`value.py:2575`), the three roll modes (roll-for-fuel
+`value.py:2324`/`2639`, pieces mode and the spoken anti-roll state
+`value.py:2828`), and the dual "consider rerolling for X" + "next priority:
+Y" output (`value.py:2645`, `2972`). **Item 1 did NOT:** there is no
+`level_value` or `roll_value` function anywhere in the repo — the
+comparison stayed inside `top_move`'s gate ladder, which is the "another
+elif" this plan was written to replace.
+
 ### Design
 
-1. **One decision function, not another elif:** `level_value` (unlocked
-   pieces × Plan-2 reachability + flip-gate penalties as inputs) vs
+1. **One decision function, not another elif (NOT built — neither name
+   exists in the code):** `level_value` (unlocked pieces × Plan-2
+   reachability + flip-gate penalties as inputs) vs
    `roll_value` (live engine recipe (P1) × gold income × fuel at current
    tier (P2-B) × board cushion). Existing gates become inputs.
 2. **Strength re-anchored to lobby pace** — lobby.py seat snapshots, not

@@ -1,13 +1,21 @@
 # LLM Model Comparison — deepseek-v4-flash vs GLM 5.3 flash
 
-**Status:** proposal / experiment design — not yet run.
+**Status:** proposal / experiment design — not yet run (no `results.csv` in the
+repo).
+**Pin note (2026-10-02):** the coach's pin has since moved the other way.
+`coach_llm.py` now defaults to GLM (`DEFAULT_PROVIDER = "glm"`, model
+`glm-5.3-flash`) and the DeepSeek v4 flash pin is **retired** — it survives in
+the provider table only so `compare_models.py` can race it. Read §1's
+"currently pinned to `deepseek-v4-flash`" as the pre-switch state that motivated
+this experiment.
 **Owner:** Mike Harrell
 **Date:** 2026-08-30
 
 ## 1. Why this experiment
 
-The coach's advice model is an open decision (see `ROADMAP.md`). It is currently
-pinned to `deepseek-v4-flash` (1M-token context, prefix-cache discipline in
+The coach's advice model is an open decision (see `ROADMAP.md`). At the time of
+writing it
+was pinned to `deepseek-v4-flash` (1M-token context, prefix-cache discipline in
 `coach_llm.py`). Before committing, we want a controlled comparison against
 GLM 5.3 flash on the **actual request types the coach will make**, so the choice
 is grounded in real cost / latency / quality numbers rather than a vibe.
@@ -127,9 +135,11 @@ A harness (`compare_models.py`) that:
 
 ## 11. Open questions / decisions needed
 
-- **GLM 5.3 flash API:** endpoint, key, context window, prefix-cache support,
-  reasoning-effort parameter name. (DeepSeek side is already wired in
-  `coach_llm.py`.)
+- **GLM 5.3 flash API:** endpoint, key env and prefix-cache behaviour are now
+  wired in `coach_llm.py` (`PROVIDERS["glm"]` → `glm-5.3-flash`,
+  `api.zhipuai.com`, `GLM_API_KEY`; the docstring records the ~5x cached-input
+  rate). Still open: the context window and the reasoning-effort parameter name.
+  (The DeepSeek side has been wired all along.)
 - **Quality rubric:** confirm the per-call-type rubric before scoring.
 - **Sample size:** 15–30 prompts; run each N times (e.g. 3–5) for stable latency
   percentiles, or accept noisy p95 at one run each?

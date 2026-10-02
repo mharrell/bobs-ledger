@@ -179,6 +179,14 @@ substring occurrences per file. The scans are throwaway probes; the numbers are
 reproducible with ~20 lines of Python (read each `Power.log` line by line,
 count the patterns — the files are 44–154 MB, ~30 s each).
 
+> **Source sessions gone (noted 2026-10-02).** Those five `Hearthstone_2026_09_2*`
+> sessions are no longer on the machine (the log directory now holds 2026-09-29
+> through 2026-10-02), so **every count in §3 cannot be re-derived** locally.
+> They are kept as the record of what was measured; re-running the probes needs
+> new logs from a session where the player has an Aberration board. The same
+> applies to §2's "occurs in none of the 5 local sessions" for Writhing
+> Tentacles, and to §3.3's "0 in all four older sessions".
+
 ### 3.1 A discard is NOT a logged event
 
 | Session | `CANT_DISCARD` | `DISCARDED` | `tag=DISCARD` | `BlockType=ACTIVATE` | `BACON_DEITY_SIGIL` |
@@ -316,10 +324,14 @@ What that means for the model:
 | The marginal value | `value._discard_fuel_bonus` | mirror of `_spell_fuel_bonus`: the simulator delta between "discards = outlets" and "discards = outlets + 1" |
 | The seam | `value.shop_ranking` | a shop **minion** carrying an outlet gets `W_DISCARD_FUEL * fuel` — the same seam that credits a tavern spell with `W_SPELL_FUEL * _spell_fuel_bonus` |
 
-`meta/comps.json` still has **no Aberration comp** (deliberately — see
-`pool_and_out_of_play.md` §6), so a comp-keyed engine would be unreachable. The
-engine is therefore reached exactly the way `_spell_fuel_bonus` reaches the
-cast-spell engines: by triggering off the *board*, not off a comp.
+`meta/comps.json` **had no Aberration comp** when this was written (deliberately
+— see `pool_and_out_of_play.md` §6), so a comp-keyed engine would have been
+unreachable. **Since 2026-09-26 it has 4** (three scraped, plus
+`aberrations-deity-feed` promoted from our own corpus), but the wiring below was
+deliberately left as designed: the engine is reached exactly the way
+`_spell_fuel_bonus` reaches the cast-spell engines — by triggering off the
+*board* (`_is_discard_outlet`), not off a comp, so it works whether or not the
+player is on a published Aberration build.
 
 ### 4.2 The chain, step by step
 

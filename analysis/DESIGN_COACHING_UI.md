@@ -38,7 +38,7 @@ boxes matter most.
 - **Pivot alert** — if your comp is fading vs the lobby, a nudge toward a
   higher-tier comp.
 - **Selection ranker** — **ranks the choices when the player must make a
-  selection**: heroes, trinkets, discoveries, dark-gift minions, etc.
+  selection**: heroes, trinkets, discoveries, etc.
 
 ### Planning & coaching
 - **Suggested turn plan** — a mini-sequence: "buy X, sell Y, level, roll".
@@ -64,13 +64,23 @@ computable from the existing pipeline (`live.py` → board + bans + comps + valu
 2. **Tavern buy ranking** — the shop's minions ranked by value to your comp.
 3. **Buy this** — the single best tavern minion right now (headline of the shop rank).
 4. **Selection ranker** — ranked choices when a pick appears (heroes/trinkets/
-   discoveries/dark gifts). Appears only when a choice is active.
+   discoveries). Appears only when a choice is active. Dark Gifts are NOT
+   ranked: `choices.py::choice_kind` classifies only `hero`, `trinket`,
+   `discover` and `unknown`, and the overlay drops the `dark_gifts` line.
 5. **Your comp + rival comps** — who's playing what (context).
 6. **Refresh-vs-level** — "you can afford to level" vs "roll here."
 
-**Deferred to v2:** opponent-threat box (needs opponent boards), pivot alert
-(needs more value tuning), triple tracker, confidence gauge, banned-tribes strip,
-turn plan.
+**Originally deferred to v2:** opponent-threat box (needs opponent
+boards), pivot alert (needs more value tuning), triple tracker, confidence gauge,
+banned-tribes strip, turn plan.
+
+**Shipped since, as v1 widgets (verified in `coach_ui.py`, 2026-10-02):** the
+banned-tribes strip (state bar, plus the 2026-09-19 manual ban picker), the
+turn plan (the "Do this now" steps), the pivot alert ("Looking for (pivot)"
+plus the comp-direction meters) and the opponent-threat read (the "Next
+opponent" box, the scout strip's stat comparison, and the combat forecast's
+✓ favored / even / ✕ behind). **Still deferred:** the triple tracker and the
+confidence gauge — neither appears in `coach_ui.py`.
 
 ## Layout (2026-09-24 spec)
 

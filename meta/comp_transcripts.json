@@ -1,4 +1,5 @@
 {
+ "_comment": "Provenance archive, NOT runtime data: comp slug -> the YouTube transcript ids its guide was mined from (fetch_transcripts.py -> the guides in meta/guides/). No code reads this file; it exists so the guides' sources stay traceable. The caption text itself is deliberately not in the repo (third-party text, takedown bait).",
  "nagas-end-of-turn-spell-buff": [
   "VasXoIZujac",
   "LSnOSqVyfH0",

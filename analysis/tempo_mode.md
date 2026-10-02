@@ -1,7 +1,9 @@
-# Tempo mode, finished: bleed-aware ranking everywhere
+# Tempo mode: bleed-aware ranking everywhere
 
-**Status:** design candidate — no code yet (design-before-implementing,
-per `analysis/engine_coaching.md`).
+**Status:** partly shipped — the pace signal itself and its first consumers
+are in the code (the "What exists today" inventory below); **Plans 1–4 are
+not built** (verified against the code 2026-10-02; per-plan status in the
+gap section). Design-before-implementing, per `analysis/engine_coaching.md`.
 **Date:** 2026-10-02. **Evidence base:** outcome_audit 2026-09-25, the
 2026-09-26 E.T.C. spiral, and the 2026-09-18 FRAGILE-band loss.
 
@@ -33,6 +35,28 @@ price a turn-10 payout the same at 100 HP and at 15.
 
 ## The remaining gap (what is still pace-blind)
 
+**Plan status (each verified against the code, 2026-10-02):**
+
+- **Plan 1 — not built.** `_spell_score(spell, board_minions, names,
+  scenario=None)` takes no `emergency` argument, and the fuel bonuses are
+  not discounted (`value.py`).
+- **Plan 2 — not built.** Only the `growth_potential` term sees
+  `emergency` (`value.py:837-845`); `W_ENGINE_SIM`, `W_RECIPE_FUEL` and
+  `W_ENGINE_MULT` are untouched by it.
+- **Plan 3 — not built.** There is no `level_value`/`roll_value` comparison
+  and no pace input to plan tie-breaks. (The `_plan_shape` in the design
+  text is an audit classifier that lives in `outcome_audit.py`, not an
+  epsilon the planner uses.)
+- **Plan 4 — not built.** `outcome_audit.py` buckets by advice class
+  (buy / level-lead / hunt-roll / pass), not by emergency, and the
+  `HEARTH_TEMPO` kill switch it depends on does not exist (see below).
+
+What DID land is the inventory above: `tempo_emergency` plus the offer and
+`minion_value` wiring, the DYING/FRAGILE bands, and the LEVEL demotion. So
+the bleeding is visible to the coach; it is not yet priced everywhere.
+
+The gap, itemized:
+
 1. **Spell ranking** — `_spell_score` has no emergency input.
    `W_SPELL_FUEL` / `W_DISCARD_FUEL` literally price *future* engine
    growth; in a bleed they should collapse, while one-shot board buffs
@@ -53,6 +77,9 @@ price a turn-10 payout the same at 100 HP and at 15.
 **Pace stays one number.** `tempo_emergency` remains the only source of
 truth; every plan below is a new *consumer* of it, not a new signal.
 Kill switch: `HEARTH_TEMPO=0` forces e=0 (byte-identical to today).
+**Not implemented:** `HEARTH_TEMPO` appears in no `.py` file anywhere in
+the repo (grep, 2026-10-02) — it is part of Plan 4, so today there is
+nothing to switch off.
 
 ### Plan 1 — pace into spell scoring
 `_spell_score(…, emergency=e)`:
@@ -82,7 +109,9 @@ covers everything else.
 ### Plan 4 — validation harness (the discipline part)
 - Extend `outcome_audit.py` to bucket turns by emergency (0 / 0.6 / 1.0)
   and report followed-vs-ignored HP deltas per bucket.
-- **Sham control:** replay the same corpus with `HEARTH_TEMPO=0`.
+- **Sham control:** replay the same corpus with `HEARTH_TEMPO=0`
+  (the switch is part of this plan and does not exist yet — see the status
+  note above).
   Contract: e=0 turns are byte-identical advice (regression test);
   the control run reproduces today's numbers by construction.
 - **Success:** in e≥0.6 turns, followed advice's HP delta improves

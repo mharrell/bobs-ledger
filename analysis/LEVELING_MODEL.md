@@ -142,6 +142,11 @@ Need (build order):
    and the level gates' reasons carry the comparison ("your 7 vs
    their ~16"). Shadybunny's Q0 uses it: already ≥1.5x their board and
    not losing → "you're strong — convert it into a tier".
-5. **Next: combat forecast** — a real "will I win the next fight"
-   estimate (positioning, keywords, deathrattles) would ground gate 5
-   properly; the stat-total comparison is the v1 proxy.
+5. **Combat forecast — SHIPPED** (`value.combat_forecast`, `value.py:3298`,
+   and surfaced in the overlay as ✓ favored / even / ✕ behind). It is the
+   stat-ratio estimate augmented with OUR keyword edges (divine shields,
+   venomous) and honesty marks (approximate anchors carry `~`, stale
+   anchors carry their age, and "favored" is capped to "ahead on paper" at
+   ≤10 effective HP). What gate 5 still lacks is the other half of the
+   design: the OPPONENT's keywords are not tracked (their board arrives as
+   stat totals), and the estimate is a ratio, not a combat simulation.
