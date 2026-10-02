@@ -5,10 +5,13 @@
 //                       decision log + manifest) into KV under corpus/.
 //   GET  /release/latest.json — the update manifest (version, note, zip
 //                       sha256). Public: version info is not sensitive.
-//   GET  /release/<name>.zip — the release archive; requires the shared
-//                       key (X-Telemetry-Key), same throttle as ingest.
+//   GET  /release/<name>.zip — the release archive. Public: it IS the
+//                       install path (the hygiene pass, ee5cd93, keeps
+//                       local data out of the zip), and update.py checks
+//                       it on every start — a key here would 403 every
+//                       fresh install's first update, silently.
 //
-// Beta users need the URL + shared key only — no GitHub account. Deploy
+// The shared key (X-Telemetry-Key) throttles CORPUS INGEST only. Deploy
 // once (telemetry/README.md); rotate TELEMETRY_KEY if the URL leaks.
 
 export default {
@@ -34,12 +37,9 @@ export default {
         });
       }
       if (name.endsWith(".zip")) {
-        // The release archive: same shared-key throttle as ingest. Binary:
-        // KV must be read as an arrayBuffer (default text mangles bytes).
-        if (env.TELEMETRY_KEY
-            && request.headers.get("X-Telemetry-Key") !== env.TELEMETRY_KEY) {
-          return new Response("bad key\n", {status: 403});
-        }
+        // The release archive: public — it is the install path (see the
+        // header). Binary: KV must be read as an arrayBuffer (default
+        // text mangles bytes).
         const zip = await env.BUCKET.get(`release/${name}`,
                                          {type: "arrayBuffer"});
         if (zip == null) return new Response("no such release\n",

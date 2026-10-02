@@ -1,0 +1,4 @@
+# Dev tools only — never needed to run the coach.
+#   python -m pip install -r requirements-dev.txt
+yt-dlp>=2024.1.0   # fetch_transcripts.py (YouTube comp guides)
+UnityPy>=1.20      # hearth_art_extract.py (patch-day card art, local client)

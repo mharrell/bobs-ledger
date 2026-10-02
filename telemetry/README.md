@@ -7,7 +7,10 @@ DELETE + re-PUT of the subdomain; the old URL no longer resolves — KV
 contents are unaffected), KV namespace
 `abd7803c581b4470a2834e92ae0006a2`, worker `hearth-telemetry-collector`.
 
-A beta user needs exactly two lines:
+A beta user who only INSTALLS needs nothing but the URL — the release zip
+is public (`GET /release/<name>.zip`, the install path since 2026-10-02;
+the hygiene pass keeps local data out of releases). UPLOADING a corpus
+bundle needs the shared key, i.e. exactly two lines:
 
 ```
 HEARTH_TELEMETRY_URL=https://hearth-telemetry-collector.bobs-ledger.workers.dev

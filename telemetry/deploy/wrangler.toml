@@ -1,0 +1,20 @@
+# The telemetry collector + release server, as deployed 2026-10-01.
+# (Reconstructed into the repo 2026-10-02 from telemetry/README.md's
+# deploy notes — the first deploy ran without a checked-in config, which
+# made redeploys unreproducible. The live worker's only non-default
+# settings are the name, the workers.dev subdomain bobs-ledger, and the
+# KV binding below.)
+#
+# Redeploy:
+#   cd telemetry && npx wrangler deploy -c deploy/wrangler.toml
+#
+# TELEMETRY_KEY is a secret, not config:
+#   printf '%s' "$KEY" | npx wrangler secret put TELEMETRY_KEY
+
+name = "hearth-telemetry-collector"
+main = "../collector.js"
+compatibility_date = "2026-09-30"
+
+[[kv_namespaces]]
+binding = "BUCKET"
+id = "abd7803c581b4470a2834e92ae0006a2"
