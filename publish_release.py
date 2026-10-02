@@ -87,33 +87,35 @@ def main():
           f"({len(data) / 1e6:.1f} MB, sha {sha[:12]})")
     print(f"  note: {args.note}")
 
-    env = dict(os.environ)
-    tmp = os.path.join(os.environ.get("TEMP", _HERE), f"rel_{version}.zip")
-    with open(tmp, "wb") as f:
+    tmp_zip = os.path.join(os.environ.get("TEMP", _HERE),
+                           f"rel_{version}.zip")
+    tmp_manifest = os.path.join(os.environ.get("TEMP", _HERE),
+                                "release_latest.json")
+    with open(tmp_zip, "wb") as f:
         f.write(data)
+    with open(tmp_manifest, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, ensure_ascii=False)
     try:
-        for key, path in ((f"release/{zip_name}", tmp),
-                          ("release/latest.json", None)):
+        for key, path in ((f"release/{zip_name}", tmp_zip),
+                          ("release/latest.json", tmp_manifest)):
             # npx is npx.cmd on Windows — CreateProcess needs the resolved
-            # name, not the npm shim.
+            # name, not the npm shim. Both values go via --path: wrangler v4
+            # takes exactly one of <value> (positional) or --path, and a
+            # JSON manifest as a positional arg is quoting roulette.
             cmd = [shutil.which("npx") or "npx.cmd", "--yes", "wrangler",
                    "kv", "key", "put", key,
-                   "--namespace-id", args.namespace, "--remote"]
-            stdin_payload = None
-            if path:
-                cmd += ["--path", path]
-            else:
-                # wrangler reads the value from stdin when no --path is given
-                stdin_payload = json.dumps(manifest, ensure_ascii=False).encode()
-            r = subprocess.run(cmd, input=stdin_payload, cwd=_HERE,
+                   "--namespace-id", args.namespace, "--remote",
+                   "--path", path]
+            r = subprocess.run(cmd, cwd=_HERE,
                                capture_output=True, timeout=300)
             if r.returncode != 0:
                 raise RuntimeError(
                     f"kv put {key} failed: {r.stderr.decode()[:300]}")
             print(f"  uploaded {key}")
     finally:
-        if os.path.exists(tmp):
-            os.remove(tmp)
+        for p in (tmp_zip, tmp_manifest):
+            if os.path.exists(p):
+                os.remove(p)
     print("published. Users update via `python update.py` or on their next "
           "live.py start.")
     return 0
