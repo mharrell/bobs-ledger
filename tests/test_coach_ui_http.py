@@ -128,5 +128,54 @@ class TestWelcomeAndClear(unittest.TestCase):
         self.assertIsNone(coach_ui.latest_manual_bans())
 
 
+class TestServerPortConflict(unittest.TestCase):
+    """A port another overlay already answers on must not be hijacked.
+
+    On Windows a second socket CAN bind a port a first process is listening
+    on, so start_server() used to return a healthy-looking server that
+    received no traffic at all — every request went to the older process and
+    the new overlay stayed frozen with no error (2026-10-02: an audit's
+    leftover live.py held 8747 and a fresh test server silently served
+    nothing).
+    """
+
+    def test_port_in_use_detects_a_listener(self):
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            s.listen(1)
+            port = s.getsockname()[1]
+            self.assertTrue(coach_ui._port_in_use(port))
+        self.assertFalse(coach_ui._port_in_use(port))
+
+    def test_start_server_steps_over_a_busy_port(self):
+        import socket
+        import urllib.request
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("127.0.0.1", 0))
+            s.listen(1)
+            busy = s.getsockname()[1]
+            srv = coach_ui.start_server(busy)
+            try:
+                self.assertNotEqual(srv.server_address[1], busy,
+                                    "bound the port another socket holds")
+                # and it really serves, which the hijacked bind did not
+                url = f"http://127.0.0.1:{srv.server_address[1]}/artmiss"
+                with urllib.request.urlopen(url, timeout=10) as r:
+                    self.assertEqual(r.status, 200)
+                    self.assertIn(b"misses", r.read())
+            finally:
+                srv.shutdown()
+                srv.server_close()
+
+    def test_ephemeral_port_is_left_alone(self):
+        srv = coach_ui.start_server(0)
+        try:
+            self.assertGreater(srv.server_address[1], 0)
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+
 if __name__ == "__main__":
     unittest.main()
