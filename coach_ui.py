@@ -141,7 +141,7 @@ _HTML = r"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Coach</title>
+<title>Bob's Ledger</title>
 <style>
   /* Design tokens — the ONLY place a raw hex may appear (a test parses this
      block and fails on hex drift anywhere else). Values from the validated
@@ -396,11 +396,26 @@ _HTML = r"""<!doctype html>
   .none { color:var(--dim); font-style:italic; }
   .score { color:var(--dim); flex:none; }
   .xcount { color:var(--dim); font-weight:400; }
+  /* Welcome (the deliberate empty state): teaches instead of faking.
+     Shown on fresh boot, a new game's first tick, and after Clear. */
+  .welcome { margin-top:8vh; padding:30px 34px; border:1px solid var(--dim);
+             border-radius:12px; max-width:560px; }
+  .welcome .w-title { margin:0 0 4px; font-size:26px; color:var(--gold); }
+  .welcome .w-tag { font-size:14px; margin-bottom:16px; }
+  .welcome .w-status { color:var(--text-2); font-size:13px; margin-bottom:10px; }
+  .welcome .w-hint, .welcome .w-priv { color:var(--dim); font-size:12px;
+                                       margin-top:6px; }
+  #clearbtn { position:fixed; top:8px; right:10px; z-index:50;
+              background:transparent; border:1px solid var(--dim);
+              color:var(--dim); border-radius:6px; padding:2px 10px;
+              font-size:11px; cursor:pointer; }
+  #clearbtn:hover { color:var(--text-2); }
 </style>
 </head>
 <body>
 <div id="wrap">
 <div id="statebar">Waiting for live.py analysis…</div>
+<button id="clearbtn" title="Blank the overlay — a new game clears it automatically">Clear</button>
 <div id="app">
 <section id="col-decide"></section>
 <section id="col-ref"></section>
@@ -633,7 +648,23 @@ const KIND_CHIP = {
   cast: 'CAST', play: 'PLAY', hold: 'HOLD', swap: 'SWAP', discard: 'DISC',
   note: 'NOTE',
 };
+function renderWelcome(a) {
+  const decide = document.getElementById('col-decide');
+  const ref = document.getElementById('col-ref');
+  const statebar = document.getElementById('statebar');
+  decide.innerHTML = '';
+  ref.innerHTML = '';
+  statebar.textContent = '';
+  const card = el('div', 'welcome');
+  card.appendChild(el('h1', 'w-title', a.product || "Bob's Ledger"));
+  card.appendChild(el('div', 'w-tag', a.tagline || ''));
+  card.appendChild(el('div', 'w-status', a.status || ''));
+  card.appendChild(el('div', 'w-hint', a.hint || ''));
+  card.appendChild(el('div', 'w-priv', a.privacy || ''));
+  decide.appendChild(card);
+}
 function render(a) {
+  if (a.welcome) { renderWelcome(a); return; }
   const app = document.getElementById('app');
   const statebar = document.getElementById('statebar');
   // A rebuild discards the hovered element without a mouseleave — drop the
@@ -1144,6 +1175,13 @@ function postBans(list) {
 // answers a header-only 304, so the faster tick is nearly free.
 setInterval(poll, 300);
 poll();
+// The manual escape hatch: blank the overlay now. The server keeps the
+// manual bans on this path; a new game's CREATE_GAME wipes them instead.
+document.getElementById('clearbtn').onclick = async () => {
+  await fetch('/clear', {method: 'POST'});
+  _etag = null;   // force the next poll to take the welcome payload
+  poll();
+};
 </script>
 </body>
 </html>
@@ -1157,8 +1195,10 @@ class _State:
         # The serialized /analysis body and its ETag, built once per push
         # (update_analysis) instead of once per request — the page polls at
         # 300ms and a 304 between pushes is a header, not ~40KB of JSON.
-        self.payload = b"{}"
-        self.etag = None
+        # The fresh-boot payload is the WELCOME state, not "{}": an empty
+        # frame must teach, not render blank panels.
+        self.payload = WELCOME_PAYLOAD
+        self.etag = hashlib.sha1(WELCOME_PAYLOAD).hexdigest()
         # The player-set banned tribes (POST /bans), or None when not set.
         # The ban reveal is on screen at t0 and the pool inference needs
         # minutes to converge, so a 5-tap override at hero pick is the
@@ -1166,7 +1206,39 @@ class _State:
         self.manual_bans = None
 
 
+#: The deliberate empty state (fresh boot, a new game's first tick, or a
+#: manual Clear): the product's welcome — never the previous game's panel
+#: dressed up as live advice. render() on the page draws it.
+WELCOME_PAYLOAD = json.dumps({
+    "welcome": True,
+    "product": "Bob's Ledger",
+    "tagline": "A real-time Hearthstone Battlegrounds coach",
+    "status": "Waiting for your next buy phase — advice appears here the "
+              "moment your shop opens.",
+    "hint": "Nothing arriving? Check that Hearthstone's file logging is ON "
+            "(README, Quick Start).",
+    "privacy": "Nothing leaves your machine unless you share a session.",
+}).encode()
+
+
 _state = _State()
+
+
+def clear_analysis(keep_bans=False):
+    """Reset the overlay to the welcome state.
+
+    Fired on a new game's CREATE_GAME — the previous game's panel must
+    never survive into the next one, and the manual bans wipe with it (the
+    5/5 family ban differs per game). The page's Clear button passes
+    keep_bans=True: mid-game, a wipe should blank the screen, not throw
+    away a deliberate 5-tap ban set.
+    """
+    with _state.lock:
+        _state.analysis = None
+        _state.payload = WELCOME_PAYLOAD
+        _state.etag = hashlib.sha1(WELCOME_PAYLOAD).hexdigest()
+        if not keep_bans:
+            _state.manual_bans = None
 
 
 def store_manual_bans(tribes):
@@ -1581,6 +1653,13 @@ class _Handler(BaseHTTPRequestHandler):
             banned = store_manual_bans(payload.get("banned"))
             self._send(200, "application/json",
                        json.dumps({"ok": True, "banned": banned}).encode())
+            return
+        if self.path.rstrip("/") == "/clear":
+            # The page's Clear button: blank the overlay but keep the
+            # player's manual bans (mid-game, a wipe should not throw away
+            # a deliberate 5-tap ban set).
+            clear_analysis(keep_bans=True)
+            self._send(200, "application/json", b'{"ok": true}')
             return
         self._send(404, "text/plain", b"no such endpoint")
 
