@@ -148,6 +148,27 @@
   },
   "note": "per Tavern spell: left-most in hand+warband +3/+3 (Bluegill Flippers)"
  },
+ "BG35_MagicItem_753": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "battlecry"
+   ]
+  },
+  "note": "end of turn: the two left-most minions get +1/+2, improved by Battlecries triggered this game (Murky Sticker). Priced just under Charming Panpipes 12 (same per-turn stat volume on one minion, no Battlecry dependency) and above the static tribe repeaters at 6-8. No tribe recorded: unlike its Murloc Sticker siblings the effect is not tribe-gated."
+ },
+ "BG32_MagicItem_925": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "battlecry"
+   ],
+   "tribes": [
+    "Murloc"
+   ]
+  },
+  "note": "get a Hackerfin, then at the end of each turn trigger your Hackerfins' Battlecries (Hackerfin Portrait). A body plus a recurring Battlecry trigger - priced with War Drum 10 (one Battlecry triggers twice each turn) and below Dragon Skull 12. The payoff bodies are Murlocs, so the tribe is recorded."
+ },
  "BG32_MagicItem_892": {
   "base_value": 6,
   "synergy": {
