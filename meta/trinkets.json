@@ -1674,6 +1674,16 @@
   "type": "Greater"
  },
  {
+  "id": "BG32_MagicItem_925",
+  "name": "Hackerfin Portrait",
+  "description": "Get a Hackerfin. At the end of each turn, trigger your Hackerfins' Battlecries.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG32_MagicItem_926",
   "name": "Morgl Portrait",
   "description": "Get a Tide Oracle Morgl.",
@@ -1998,6 +2008,16 @@
   "id": "BG35_MagicItem_750",
   "name": "Magicfin Sticker",
   "description": "After you buy a Tavern spell, get a 1/1 Murloc and teach it that spell. (2 times per turn.)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Need Brann",
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_753",
+  "name": "Murky Sticker",
+  "description": "At the end of each turn, give your two left-most minions +1/+2. (Improved by your Battlecries triggered this game!)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
