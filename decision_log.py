@@ -27,16 +27,25 @@ _coach_version = None
 
 
 def coach_version():
-    """The running code's git commit — the advice/replay version join."""
+    """The running code's version — the advice/replay version join.
+
+    Git sha for a checkout; the release VERSION file for a zip install
+    (update.local_version() owns that order). Zip installs used to log
+    "(coach unknown)" everywhere because .git never ships in a release.
+    """
     global _coach_version
     if _coach_version is None:
         try:
-            _coach_version = subprocess.run(
-                ["git", "rev-parse", "--short", "HEAD"],
-                cwd=_HERE, capture_output=True, text=True,
-                timeout=5).stdout.strip() or "unknown"
+            import update  # stdlib-only module, same directory
+            _coach_version = update.local_version() or "unknown"
         except Exception:  # noqa: BLE001 - never break advising over telemetry
-            _coach_version = "unknown"
+            try:
+                _coach_version = subprocess.run(
+                    ["git", "rev-parse", "--short", "HEAD"],
+                    cwd=_HERE, capture_output=True, text=True,
+                    timeout=5).stdout.strip() or "unknown"
+            except Exception:  # noqa: BLE001
+                _coach_version = "unknown"
     return _coach_version
 
 

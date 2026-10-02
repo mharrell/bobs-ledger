@@ -12,8 +12,10 @@ re-read the tail and run the existing coach loop on each decision point.
 Usage:
     python live.py                     # auto-find the active session
     python live.py <Power.log> [--once] [--poll N]
+    python live.py --version           # print the running version
 """
 import glob
+import json
 import os
 import sys
 import time
@@ -39,6 +41,30 @@ def find_active_log():
         if age < recent_seconds:
             return path
     return logs[0] if logs else None
+
+
+def warn_stale_meta():
+    """One startup line when the meta DB predates a plausible patch.
+
+    Silence means nothing (fresh installs carry no patch state); a stale
+    stamp is the case that quietly degrades advice — new cards render as
+    raw ids and comps go off. The weekly scheduled check keeps this fresh
+    on the dev machine; release users get it fixed by the next update.
+    """
+    stamp = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "meta", ".patch_state.json")
+    try:
+        with open(stamp, encoding="utf-8") as f:
+            st = json.load(f)
+        checked = time.strptime(st.get("last_checked", ""), "%Y-%m-%d")
+        age_days = (time.time() - time.mktime(checked)) / 86400
+        if age_days > 10:
+            print(f"NOTE: the card/comps DB was last patch-checked "
+                  f"{st.get('last_checked')} ({st.get('last_title', '?')}). "
+                  "If a patch shipped since, the coach may misread it — "
+                  "check for an update (python update.py --check).")
+    except Exception:  # noqa: BLE001 - no state / odd json: stay quiet
+        pass
 
 
 _last_board = None  # (card, atk, health) fingerprint of the last advised board
@@ -344,6 +370,10 @@ def monitor(path, poll=1.0):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     opts = [a for a in sys.argv[1:] if a.startswith("--")]
+    if "--version" in opts:
+        import update
+        print(f"Bob's Ledger {update.local_version()}")
+        return 0
     # Update check BEFORE coaching begins (never mid-session): one cheap
     # GET; any failure starts the current version normally. An accepted
     # update re-execs onto the new code so the running coach IS the
@@ -359,22 +389,41 @@ def main():
                          + sys.argv[1:])
         except Exception:  # noqa: BLE001 - update checks never block play
             pass
-    path = args[0] if args else find_active_log()
-    if not path or not os.path.exists(path):
-        print("No active Power.log found (Hearthstone not running recently).")
-        return 1
     poll = 0.3  # fast tail cadence — analysis is ~5ms, so sub-second updates
     ui_on = "--no-ui" not in opts
     for o in opts:
         if o.startswith("--poll"):
             poll = float(o.split("=")[1])
-    # Start the overlay server (unless --no-ui); open it in the browser.
+    # Start the overlay server (unless --no-ui) BEFORE the log check: the
+    # welcome card names the log.config fix, and it must be on screen in
+    # exactly the first-run case where logging isn't enabled yet.
     if ui_on:
         try:
             server = coach_ui.start_server()
             print(f"Coach UI: http://127.0.0.1:{server.server_address[1]}/")
         except OSError as e:
             print(f"Coach UI skipped ({e})")
+    warn_stale_meta()
+    path = args[0] if args else find_active_log()
+    if path and not os.path.exists(path):
+        print(f"log not found: {path}")
+        return 1
+    if not path:
+        print("No active Power.log found. Hearthstone's file logging is "
+              "probably OFF — enable it per hearth-coach/README.md step 2 "
+              "(the log.config block; the Coach UI welcome card shows the "
+              "same steps).")
+        if "--once" in opts:
+            return 1
+        print("Waiting for a Power.log to appear (start Hearthstone; "
+              "Ctrl-C to quit)...")
+        try:
+            while not path:
+                time.sleep(2)
+                path = find_active_log()
+        except KeyboardInterrupt:
+            return 0
+        print(f"found {path}")
     if "--once" in opts:
         coach = LiveCoach()
         with open(path, encoding="utf-8", errors="replace") as f:

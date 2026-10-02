@@ -16,20 +16,59 @@ import update  # noqa: E402
 
 MANIFEST = {"schema": 1, "version": "abc1234", "note": "tempo mode",
             "zip_name": "bobs-ledger-abc1234.zip",
-            "zip_sha256": "0" * 64, "zip_bytes": 10}
+            "zip_sha256": "0" * 64, "zip_bytes": 10,
+            "created": "2026-10-01T12:00:00"}
 
 
-class TestBehind(unittest.TestCase):
+def _decide(local, manifest, state=None):
+    return update.decide(local, manifest, state or {})[0]
+
+
+class TestDecide(unittest.TestCase):
+    """Direction is decided by the manifest's publish timestamp vs the
+    install's last-update state — NEVER by sha inequality, which once
+    downgraded a fresh clone of a newer main onto the older zip."""
+
     def test_no_manifest_is_no_update(self):
-        self.assertFalse(update.behind("anything", None))
-        self.assertFalse(update.behind("anything", {}))
+        self.assertEqual(_decide("anything", None), "current")
+        self.assertEqual(_decide("anything", {}), "current")
 
-    def test_same_version_is_current(self):
-        self.assertFalse(update.behind("abc1234", MANIFEST))
+    def test_state_timestamps_decide_direction(self):
+        state = {"version": "old1234", "created": "2026-09-30T08:00:00"}
+        self.assertEqual(_decide("old1234", MANIFEST, state), "update")
+        older = dict(MANIFEST, created="2026-09-29T00:00:00")
+        self.assertEqual(_decide("old1234", older, state), "local-newer")
+        same = dict(MANIFEST, created=state["created"])
+        self.assertEqual(_decide("old1234", same, state), "current")
 
-    def test_different_version_is_behind(self):
-        self.assertTrue(update.behind("old", MANIFEST))
-        self.assertTrue(update.behind("unknown", MANIFEST))
+    def test_stateless_install_is_current_only_on_exact_match(self):
+        self.assertEqual(_decide("abc1234", MANIFEST), "current")
+        # a git checkout of a newer main must NOT look behind
+        self.assertEqual(_decide("def5678", MANIFEST), "unknown")
+        self.assertEqual(_decide("unknown", MANIFEST), "unknown")
+
+    def test_manifest_without_created_never_guesses(self):
+        self.assertEqual(_decide("old1234", dict(MANIFEST, created="")),
+                         "unknown")
+
+    def test_decide_detail_names_both_sides(self):
+        _, detail = update.decide(
+            "old1234", MANIFEST,
+            {"version": "old1234", "created": "2026-09-30T08:00:00"})
+        self.assertIn("old1234 -> abc1234", detail)
+
+
+class TestState(unittest.TestCase):
+    def test_save_then_load_round_trips(self):
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as td:
+            state_file = os.path.join(td, ".update_state.json")
+            with mock.patch.object(update, "STATE_FILE", state_file):
+                self.assertEqual(update.load_state(), {})  # absent is {}
+                update.save_state(MANIFEST)
+                self.assertEqual(update.load_state(),
+                                 {"version": "abc1234",
+                                  "created": "2026-10-01T12:00:00"})
 
 
 class TestApplyZip(unittest.TestCase):
