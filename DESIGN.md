@@ -321,7 +321,7 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 
 ## 8b. Setup & Infrastructure Status
 
-- Working dir: `<user dir>\PycharmProjects\visual-game-coach`
+- Working dir: `<repo root> Pangolin\PycharmProjects\visual-game-coach`
   (repo project folder: `hearth-coach/`).
 - Cloned `python-hslog/` (official HearthSim parser).
 - `.venv` created; `requests` available (no SDK install needed for the LLM client).

@@ -34,7 +34,7 @@ Blizzard, not scraped.
 ## 2. What the installed app stores locally vs. fetches live
 
 Inspected the installed HDT app at
-`<user dir>\AppData\Roaming\HearthstoneDeckTracker`:
+`<HearthstoneDeckTracker dir>`:
 
 | File | What it is | Local or live? |
 |------|-----------|----------------|

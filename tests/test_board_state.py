@@ -1,4 +1,4 @@
-"""Golden tests for board_state.py against hand-built Power.log excerpts.
+﻿"""Golden tests for board_state.py against hand-built Power.log excerpts.
 
 Fixtures reproduce real-log quirks verified in the 2026-08-29 session log:
 - PowerTaskList re-describes created entities as `FULL_ENTITY - Updating [...]`;
@@ -37,7 +37,7 @@ def tags(prefix, eid, atk, health, zone="PLAY", player=1, cid=""):
 
 
 class TestHeldTrinkets(unittest.TestCase):
-    """Held trinkets (BGxx_MagicItem_NNN) sit in PLAY once chosen — the
+    """Held trinkets (BGxx_MagicItem_NNN) sit in PLAY once chosen â€” the
     value function's W_TRINKET term and the simulator's requires_trinket
     steps read this (both were dead code in the live loop, 2026-09-08).
     The real log path: the placeholder Lesser/Greater Trinket entity
@@ -71,7 +71,7 @@ class TestHeldTrinkets(unittest.TestCase):
 
     def test_placeholder_change_entity_becomes_the_trinket(self):
         """The 2026-09-08 13:33 log's exact shape: BG30_Trinket_1st swaps to
-        BG35_MagicItem_301 via CHANGE_ENTITY — the block's own tag lines
+        BG35_MagicItem_301 via CHANGE_ENTITY â€” the block's own tag lines
         (CARDTYPE, COST) land on the same entity, and stale stats from the
         placeholder don't survive the swap."""
         gs = GameState()
@@ -95,7 +95,7 @@ class TestDarkGifts(unittest.TestCase):
     entityName of a generic BGxx_MidGameEffect_* marker attached to its host
     minion via tag=1234 (2026-09-08 13:33 log: marker 872 'Charisma' -> host
     871, controller 7). The marker drops to REMOVEDFROMGAME while the gift
-    stays active — zone is not the filter."""
+    stays active â€” zone is not the filter."""
 
     def test_marker_name_and_host_link(self):
         gs = GameState()
@@ -148,7 +148,7 @@ class TestDarkGifts(unittest.TestCase):
 class TestHand(unittest.TestCase):
     def test_hand_carries_minions_and_spells(self):
         """The hand is a coaching input (2026-09-04: five spells sat in hand
-        while the coach said nothing — casting from hand is free). Minions
+        while the coach said nothing â€” casting from hand is free). Minions
         and tavern spells both parse, each tagged with a type."""
         gs = GameState()
         lines = (
@@ -168,7 +168,7 @@ class TestHand(unittest.TestCase):
         self.assertEqual(types.get("BG28_897"), "spell")
 
     def test_cast_spell_leaves_the_hand(self):
-        """Casting moves the spell out of HAND — the hand (and the plan)
+        """Casting moves the spell out of HAND â€” the hand (and the plan)
         must shrink with it."""
         gs = GameState()
         for line in (
@@ -190,7 +190,7 @@ class TestControllerLock(unittest.TestCase):
     writes that follow a same-block CONTROLLER change still carry the old
     player and must not un-move the minion (2026-09-04 beasts ghost: the
     coach said 'play Wrath Weaver' every later turn while the entity sat in
-    the other player's hand). Mirror flips carry no CONTROLLER write — their
+    the other player's hand). Mirror flips carry no CONTROLLER write â€” their
     bracket must still seed."""
 
     def test_same_block_bracket_does_not_undo_controller(self):
@@ -233,7 +233,7 @@ class TestUpdatingForm(unittest.TestCase):
     def test_updating_block_targets_its_own_entity(self):
         """A Tusked Camper (3/4) followed by a PTL Updating block of a *different*
         entity (2/2, SETASIDE) and then the camper's own re-render (7/9). The
-        camper must end 7/9 in PLAY — not corrupted by the other block."""
+        camper must end 7/9 in PLAY â€” not corrupted by the other block."""
         gs = GameState()
         lines = (
             creating(10, "BG33_886")
@@ -343,9 +343,9 @@ class TestBareEntityTagChanges(unittest.TestCase):
             gs.feed(line)
         gs.feed(f"{GS}    TAG_CHANGE Entity=7333 tag=COST value=2")
         self.assertEqual(gs.cost[7333], 2)
-        gs.feed(f"{GS}    TAG_CHANGE Entity=Player#1234 "
+        gs.feed(f"{GS}    TAG_CHANGE Entity=Tester#1234 "
                 f"tag=RESOURCES value=10")
-        self.assertEqual(gs.gold["Player#1234"], 10)
+        self.assertEqual(gs.gold["Tester#1234"], 10)
 
     def test_damage_cap_on_numeric_gameentity(self):
         # The authoritative GameState damage-cap write arrives on the
@@ -404,7 +404,7 @@ class TestShowEntityBracketed(unittest.TestCase):
 class TestHandPositionZeroExit(unittest.TestCase):
     """Discover options and next-opponent staging bursts transit zone=HAND
     (bracketed, controller=friendly) for a few seconds, then leave via
-    ZONE_POSITION=0 with no ZONE write — the ghost cards the coach told the
+    ZONE_POSITION=0 with no ZONE write â€” the ghost cards the coach told the
     player to cast all of game 2 t5 (2026-09-14). Position 0 = leaving."""
 
     def test_position_zero_clears_hand(self):

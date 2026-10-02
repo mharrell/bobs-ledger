@@ -1,13 +1,13 @@
-"""Friendly-player detection (extract_game._friendly_player).
+﻿"""Friendly-player detection (extract_game._friendly_player).
 
-The live coach locks `friendly` in once, the first moment a hero parses —
+The live coach locks `friendly` in once, the first moment a hero parses â€”
 so the detection must be right at that moment, not merely right once the
 game is complete. The 2026-09-16 session misfired for a whole game: the
 first placement-tagged hero was a lone OPPONENT (Vanndar, bracket 16) and
-the old "fewest heroes" min() happily returned 16 — the coach then spent
+the old "fewest heroes" min() happily returned 16 â€” the coach then spent
 the game reading a dead opponent's health/board/tier while advising.
 
-Fixtures use the real line shapes (Hearthstone_2026_09_16).
+Fixtures use the real line shapes (Hearthstone_2026_01_01).
 """
 import glob
 import os
@@ -31,7 +31,7 @@ CHOICE_OPTION = (
     "cardId=BG20_HERO_101 player=8]\n")
 CHOICE_HEADER = (
     "D 06:28:05.0722531 GameState.DebugPrintEntityChoices() - id=1 "
-    "Player=Player#1234 TaskList=7 ChoiceType=MULLIGAN CountMin=1 "
+    "Player=Tester#1234 TaskList=7 ChoiceType=MULLIGAN CountMin=1 "
     "CountMax=1\n")
 
 
@@ -55,8 +55,8 @@ class TestChoiceSignal(unittest.TestCase):
         self.assertEqual(int(m.group(1)), 8)
 
     def test_choice_header_not_matched(self):
-        # The header names the account ("Player=Player#1234"), not a
-        # bracket number — it must not feed a garbage player into the set.
+        # The header names the account ("Player=Tester#1234"), not a
+        # bracket number â€” it must not feed a garbage player into the set.
         self.assertIsNone(CHOICE_PLAYER.search(CHOICE_HEADER))
 
     def test_extract_game_returns_choice_players(self):
@@ -73,7 +73,7 @@ class TestChoiceSignal(unittest.TestCase):
 
     def test_choice_beats_a_wrongly_split_counter(self):
         """Even a materialized split defers to the choice signal: opponents
-        share one bracket id, so {16:2, 8:1} would 'work' — but the choice
+        share one bracket id, so {16:2, 8:1} would 'work' â€” but the choice
         says the same thing and is authoritative from t=0."""
         lines = [CHOICE_HEADER, CHOICE_OPTION,
                  _place_line("Vanndar Stormpike", 180, "BG22_HERO_003", 16, 8),
@@ -86,7 +86,7 @@ class TestHeuristicFallback(unittest.TestCase):
     def test_no_choices_unsplit_returns_none(self):
         """THE regression: old code returned the lone player (16) and the
         live coach locked onto an opponent for the whole game. With no
-        choice signal yet, an unsplit counter must return None instead —
+        choice signal yet, an unsplit counter must return None instead â€”
         the caller retries."""
         lines = [_place_line("Vanndar Stormpike", 180,
                              "BG22_HERO_003", 16, 8)]
@@ -94,7 +94,7 @@ class TestHeuristicFallback(unittest.TestCase):
 
     def test_no_choices_tied_split_returns_none(self):
         """Two bracket ids at one hero each: the 1-vs-7 shape hasn't
-        materialized — min() would just pick insertion order."""
+        materialized â€” min() would just pick insertion order."""
         lines = [_place_line("Vanndar Stormpike", 180,
                              "BG22_HERO_003", 16, 8),
                  _place_line("Xyrella", 100, "BG20_HERO_101", 8, 6)]
@@ -141,7 +141,7 @@ class TestLiveLockContract(unittest.TestCase):
     The choice signal fires at the mulligan, before hero entities carry
     placements. Locking the player number there captured a hero-less meta
     that never re-parsed (2026-09-16 07:48 session: hero/tier/gold/health
-    None all game; the coach advised spell buys with no LEVEL machinery —
+    None all game; the coach advised spell buys with no LEVEL machinery â€”
     reported as "prioritizing spells over leveling"). The lock must wait
     for the friendly player's hero record.
     """
@@ -169,7 +169,7 @@ class TestLiveLockContract(unittest.TestCase):
 
     def test_wrong_player_hero_still_waits(self):
         """An opponent hero spawning first (the morning misfire's shape)
-        must not satisfy the gate either — the friendly's OWN hero is the
+        must not satisfy the gate either â€” the friendly's OWN hero is the
         requirement."""
         lc = self._coach_with(
             CHOICE_HEADER, CHOICE_OPTION,
@@ -179,7 +179,7 @@ class TestLiveLockContract(unittest.TestCase):
 
     def test_late_lock_drains_pending_hero_stats(self):
         """Armor/health writes that arrived before the lock are buffered in
-        _stat_pending and drained at lock time — a later lock must not lose
+        _stat_pending and drained at lock time â€” a later lock must not lose
         the opening health."""
         lc = live_coach.LiveCoach()
         for line in (CHOICE_HEADER, CHOICE_OPTION):
@@ -200,7 +200,7 @@ class TestRealLog(unittest.TestCase):
     def test_incremental_lock_matches_full_parse(self):
         """On every game of the newest real session, the friendly player the
         live coach WOULD lock in at its first parseable moment must equal the
-        one the full parse agrees on. Skipped when no session log exists —
+        one the full parse agrees on. Skipped when no session log exists â€”
         the committed suite stays deterministic (the 2026-09-16 session is
         the pinned misfire)."""
         logs = sorted(glob.glob(LOG_GLOB), key=os.path.getmtime, reverse=True)
@@ -219,7 +219,7 @@ class TestRealLog(unittest.TestCase):
                                     extract_game(buf)["choice_players"])
             if full is None:
                 continue
-            # Walk forward until the lock LANDS (non-None) — the contract is
+            # Walk forward until the lock LANDS (non-None) â€” the contract is
             # that whenever it lands, it equals the full parse. An opponent-
             # only hero sighting must be waited out, not locked on.
             locked = None

@@ -13,8 +13,10 @@
 # {"api_key": "..."}. Without a key the check still writes the Battlegrounds
 # section for manual review.
 param(
-    [string]$Python = "<user dir>\PycharmProjects\visual-game-coach\hearth-coach\.venv\Scripts\python.exe",
-    [string]$Script = "<user dir>\PycharmProjects\visual-game-coach\hearth-coach\check_patch_notes.py",
+    # Resolved from this script's own location, so it works on any machine
+    # and the file carries no local profile path.
+    [string]$Python = (Join-Path $PSScriptRoot ".venv\Scripts\python.exe"),
+    [string]$Script = (Join-Path $PSScriptRoot "check_patch_notes.py"),
     [string]$TaskName = "HearthCoachPatchCheck",
     [string]$Days = "Monday",
     [string]$At = "09:00"

@@ -90,8 +90,8 @@ class TestSessionStem(unittest.TestCase):
     def test_session_dir_name_wins(self):
         self.assertEqual(
             decision_log.session_stem(
-                r"C:\Hearthstone\Logs\Hearthstone_2026_09_30\Power.log"),
-            "Hearthstone_2026_09_30")
+                r"C:\Hearthstone\Logs\Hearthstone_2026_01_01\Power.log"),
+            "Hearthstone_2026_01_01")
 
     def test_bare_log_falls_back_to_basename(self):
         self.assertEqual(decision_log.session_stem(r"C:\x\Power.log"),
@@ -119,7 +119,7 @@ class TestDecisionsForSession(unittest.TestCase):
             with open(legacy, "w", encoding="utf-8") as f:
                 for r in recs:
                     f.write(_json.dumps(r) + "\n")
-            log = os.path.join(td, "Hearthstone_2026_09_30",
+            log = os.path.join(td, "Hearthstone_2026_01_01",
                                "Power.log")
             os.makedirs(os.path.dirname(log))
             open(log, "w").close()

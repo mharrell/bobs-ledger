@@ -1,5 +1,5 @@
 """Corpus packaging: sanitized log + decision log in one gzipped bundle,
-with a provenance manifest — the unit beta users would send back."""
+with a provenance manifest â€” the unit beta users would send back."""
 import base64
 import gzip
 import hashlib
@@ -14,6 +14,7 @@ sys.path.insert(0, HERE)
 
 import decision_log  # noqa: E402
 import package_corpus  # noqa: E402
+import privacy_scan  # noqa: E402
 
 
 def _write_log(path, text):
@@ -27,7 +28,7 @@ class TestPackage(unittest.TestCase):
         self.log = os.path.join(self.tmp.name, "Hearthstone_test_1", "Power.log")
         os.makedirs(os.path.dirname(self.log))
         _write_log(self.log,
-                   "TAG_CHANGE Entity=Player#1234 tag=RESOURCES value=3\n"
+                   "TAG_CHANGE Entity=Tester#1234 tag=RESOURCES value=3\n"
                    "GameState.DebugPrintPower() - CREATE_GAME\n")
         # a matching decision log with one entry
         decision_log.LOG_DIR = os.path.join(self.tmp.name, "decision_logs")
@@ -44,14 +45,17 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(b["schema"], package_corpus.SCHEMA)
         m = b["manifest"]
         self.assertEqual(m["decision_count"], 1)
-        self.assertEqual(m["battletags_redacted"], 1)
+        self.assertEqual(m["identities_redacted"], 1)
         self.assertEqual(m["log_basename"], "Power.log")
         with open(self.log, "rb") as raw:
             self.assertEqual(m["log_sha256"], hashlib.sha256(raw.read()).hexdigest())
-        # the sanitized log round-trips and carries no BattleTags
+        # the sanitized log round-trips, keeps the game data, and carries no
+        # player identity (checked by the independent scanner, not the
+        # sanitizer's own opinion of its work)
         log = gzip.decompress(base64.b64decode(b["log_gz_b64"])).decode()
-        self.assertNotIn("Player", log)
+        self.assertNotIn("Tester", log)
         self.assertIn("RESOURCES", log)
+        self.assertEqual(privacy_scan.find(log), {})
         self.assertEqual(len(b["decisions"]), 1)
         self.assertEqual(b["decisions"][0]["offset"], 42)
 
