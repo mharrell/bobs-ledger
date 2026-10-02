@@ -250,11 +250,23 @@ class TestPatchDay(unittest.TestCase):
             os.remove(path)
 
 
-REAL_LOG = (r"C:\Program Files (x86)\Hearthstone\Logs"
-            r"\Hearthstone_2026_09_23\Power.log")
+def _newest_session_log():
+    import glob
+    from config import HS_LOG_GLOB
+    logs = sorted(glob.glob(HS_LOG_GLOB), key=os.path.getmtime, reverse=True)
+    return logs[0] if logs else None
 
 
-@unittest.skipUnless(os.path.exists(REAL_LOG), "no recorded session on disk")
+REAL_LOG = _newest_session_log()
+
+
+@unittest.skipUnless(
+    REAL_LOG and os.environ.get("HEARTH_REAL_SESSION_TESTS") == "1",
+    "pinned to exact row counts from a 2026-09-23 session that is no longer "
+    "on disk, so these cannot pass against whatever log happens to exist — "
+    "re-pointing them fails on fixture coupling, not product bugs "
+    "(2026-10-02). Set HEARTH_REAL_SESSION_TESTS=1 to drive them anyway; "
+    "checking in a frozen session fixture would restore the protection.")
 class TestAgainstARealSession(unittest.TestCase):
     """The bugs a test drive found in minutes, pinned so they stay fixed.
 

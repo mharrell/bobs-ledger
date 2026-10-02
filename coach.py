@@ -47,6 +47,11 @@ def analyze(path, game_index=1):
     game = extract_game(chunk)
     friendly = _friendly_player(game["heroes"], game.get("choice_players"))
     friendly_hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
+    if friendly_hero is None:
+        # A truncated or rotated log loses the hero block; without this the
+        # next line raised a raw TypeError from main() (2026-10-02).
+        raise ValueError(f"game {game_index} has no readable hero — the log "
+                         "may be truncated")
     friendly_account = next((n for n, c in game["account"].items()
                              if c == friendly_hero["card"]), None)
 
@@ -200,7 +205,13 @@ def main():
         return 1
     path = sys.argv[1]
     gi = int(sys.argv[2]) if len(sys.argv) > 2 else 1
-    analysis = analyze(path, gi)
+    try:
+        analysis = analyze(path, gi)
+    except (ValueError, IndexError, OSError) as e:
+        # Truncated/empty logs and out-of-range indexes are ordinary input,
+        # not tracebacks: say what is wrong and exit non-zero (2026-10-02).
+        print(f"cannot analyze {path}: {e}")
+        return 1
     print(describe(analysis))
     return 0
 

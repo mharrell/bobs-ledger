@@ -142,12 +142,25 @@ def q_actions(sess, args):
         return [{"error": f"{type(exc).__name__}: {exc}"}]
     rows = OrderedDict()
     for a in actions:
+        # Two shapes reach here. player_actions.parse_actions returns ONE
+        # dict per turn whose keys are counters (buys/sells/plays/...), with
+        # no `kind` at all — requiring `kind` silently dropped every row and
+        # made this query report "(nothing)" for every log ever passed to it
+        # (2026-10-02). The kind-per-action shape is still supported.
+        if isinstance(a, dict) and "kind" not in a:
+            t = a.get("turn")
+            if t is None:
+                continue
+            r = rows.setdefault(t, Counter())
+            for k, v in a.items():
+                if k != "turn" and isinstance(v, int) and v:
+                    r[k] += v
+            continue
         t = getattr(a, "turn", None) or (a.get("turn") if isinstance(a, dict) else None)
         kind = getattr(a, "kind", None) or (a.get("kind") if isinstance(a, dict) else None)
         if t is None or kind is None:
             continue
-        r = rows.setdefault(t, Counter())
-        r[kind] += 1
+        rows.setdefault(t, Counter())[kind] += 1
     return [OrderedDict(turn=t, **{k: v for k, v in sorted(c.items())})
             for t, c in sorted(rows.items())]
 

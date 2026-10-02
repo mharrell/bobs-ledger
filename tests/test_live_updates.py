@@ -8,6 +8,7 @@ even after the player spent gold.
 import os
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -1238,6 +1239,61 @@ class TestGameStateTable(unittest.TestCase):
         for name in _GAME_DEFAULTS:
             self.assertEqual(played.__dict__[name], fresh.__dict__[name],
                              f"{name} diverges after _reset()")
+
+
+class TestPickDedup(unittest.TestCase):
+    """An unchanged pending pick must be advised once, not once per tick.
+
+    The guard compared a 5-tuple against a 3-tuple it rebuilt below, so it
+    could never match: the overlay re-pushed identical advice every 0.3 s and
+    the run recorded it to the decision log each time (295 records for 58
+    analyses in one session) — duplication that then shipped in the beta
+    corpus (2026-10-02). Behaviour is what is pinned here, not the tuple
+    shape, so the key may change as long as this holds.
+    """
+
+    def setUp(self):
+        import live
+        self.live = live
+        self._saved = live._last_state
+        live._last_state = None
+        self.coach = mock.Mock()
+        self.coach.choice = {"ctype": "hero", "source": "Choose One",
+                             "options": [("Galakrond", "BG36_HERO_01")],
+                             "picked": None}
+        self.coach._bans_ready = True
+        self.ranked = [("Galakrond", "BG36_HERO_01", 4.9, "a reason")]
+
+    def tearDown(self):
+        self.live._last_state = self._saved
+
+    def _patched(self):
+        return (
+            mock.patch.object(self.live, "rank_choices",
+                              return_value=self.ranked),
+            mock.patch.object(self.live.coach_ui, "update_analysis"),
+            mock.patch.object(self.live.coach_ui, "latest_manual_bans",
+                              return_value=[]),
+            mock.patch.object(self.live.decision_log, "record"),
+        )
+
+    def test_unchanged_pick_is_advised_once(self):
+        a, b, c, d = self._patched()
+        with a, b as ui, c, d as rec:
+            for _ in range(3):
+                self.live._advise_pick(self.coach)
+        self.assertEqual(ui.call_count, 1, "overlay was re-pushed")
+        self.assertEqual(rec.call_count, 1, "advisory was logged twice")
+
+    def test_a_changed_pick_is_advised_again(self):
+        a, b, c, d = self._patched()
+        with a, b as ui, c, d:
+            self.live._advise_pick(self.coach)
+            self.coach.choice = {"ctype": "hero", "source": "Choose One",
+                                 "options": [("Sindragosa", "BG36_HERO_02")],
+                                 "picked": None}
+            self.live._advise_pick(self.coach)
+        self.assertEqual(ui.call_count, 2)
 
 
 if __name__ == "__main__":

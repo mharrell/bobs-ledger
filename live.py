@@ -122,7 +122,11 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
             + (f" ({best[3]})" if best[3] else "")
             + (f" — if locked, {ranked[1][0]}"
                if kind == "hero" and len(ranked) > 1 else "")))
-    state = ("pick", c.get("source"), tuple(c["options"]))
+    # Store the SAME key that was compared above. Rebuilding a shorter tuple
+    # here meant the comparison could never be equal, so this guard never
+    # fired: identical advice was re-pushed on every 0.3 s tick and recorded
+    # to the decision log each time — 295 records for 58 analyses in one
+    # session, which is what the beta corpus then shipped (2026-10-02).
     _last_state = state
     coach_ui.update_analysis(a)
     decision_log.record(a, log_path=log_path, log_offset=log_offset,

@@ -2,6 +2,7 @@
 so the browser's repeated image requests don't re-hammer upstream."""
 import os
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -15,7 +16,19 @@ TEST_ID = "ZZZ_TEST_ART"
 
 
 class TestArtFetch(unittest.TestCase):
+    def setUp(self):
+        # These drive the REAL _fetch_render, which records misses through
+        # the real _art_miss_path — so a test run used to rewrite the
+        # running install's .art_miss.json (and prune its live entries), and
+        # the test id then showed up in GET /artmiss to a real player
+        # (2026-10-02). Point the store at a scratch file instead.
+        self._tmp = tempfile.TemporaryDirectory()
+        self._saved = coach_ui._art_miss_path
+        coach_ui._art_miss_path = os.path.join(self._tmp.name, ".art_miss.json")
+
     def tearDown(self):
+        coach_ui._art_miss_path = self._saved
+        self._tmp.cleanup()
         with _art_lock:
             _art_miss.pop(TEST_ID, None)
         path = os.path.join(HERE, "img_cache", f"{TEST_ID}.png")
