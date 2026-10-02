@@ -49,10 +49,20 @@ class TestLogIdAddressing(unittest.TestCase):
         self.assertIn("Elemental", rec.get("synergy", {}).get("tribes", []))
 
 
+@unittest.skipUnless(
+    os.environ.get("HEARTH_REAL_SESSION_TESTS") == "1",
+    "reads the newest local logs, so it goes red on any machine that has "
+    "played since the last trinket refresh — a real gap reported in the wrong "
+    "place. The live check now lives in `doctor.py` (check 'trinkets'), where "
+    "the remedy is one line away; `refresh_trinkets.unrecorded` is unit-tested "
+    "below without logs. Set HEARTH_REAL_SESSION_TESTS=1 to drive this too.")
 class TestOfferedCoverage(unittest.TestCase):
-    """Every trinket any local session ever OFFERED must be in the DB by
-    its log id — skipped when no session log exists, so the committed
-    suite stays deterministic."""
+    """Every trinket any local session ever OFFERED or GRANTED must be in the
+    DB by its log id.
+
+    Determinism: gated on HEARTH_REAL_SESSION_TESTS because the input is the
+    newest logs on this machine. See doctor.check_unrecorded_trinkets for the
+    always-on version of this check."""
 
     CHOICE_OPT = re.compile(
         r"DebugPrintEntityChoices.*?cardId=(BG\d+_MagicItem_\w+)")
@@ -121,6 +131,60 @@ class TestOfferedCoverage(unittest.TestCase):
                          if not own_enchantment(c))
         self.assertFalse(
             missing, f"trinkets seen in logs but absent from DB: {missing}")
+
+
+class TestUnrecordedTrinketLogic(unittest.TestCase):
+    """The coverage check's exemption reasoning, without any logs.
+
+    `refresh_trinkets.unrecorded` is what `doctor.py` and the live tests both
+    call, so these pin the rules that decide what counts as a gap: an
+    enchantment is only exempt when its BASE is recorded, a registered gap is
+    exempt, and anything else is reported.
+    """
+
+    def _u(self, seen, recorded, gaps=()):
+        import refresh_trinkets
+        return refresh_trinkets.unrecorded(seen, recorded, gaps)
+
+    def test_a_recorded_id_is_not_a_gap(self):
+        self.assertEqual(self._u({"BG32_MagicItem_892"},
+                                 {"BG32_MagicItem_892"}), [])
+
+    def test_an_unrecorded_id_is_a_gap(self):
+        self.assertEqual(self._u({"BG35_MagicItem_753"}, set()),
+                         ["BG35_MagicItem_753"])
+
+    def test_own_enchantment_is_exempt_only_when_its_base_is_recorded(self):
+        # BG36_MagicItem_403e is the aura Hammer of Twilight applies.
+        self.assertEqual(
+            self._u({"BG36_MagicItem_403e"}, {"BG36_MagicItem_403"}), [])
+        # ...and the same id IS a gap when the base went missing, which is
+        # what makes this an exemption rather than a suffix skip.
+        self.assertEqual(
+            self._u({"BG36_MagicItem_403e"}, set()),
+            ["BG36_MagicItem_403e"])
+
+    def test_second_premium_enchantment_is_exempt_the_same_way(self):
+        self.assertEqual(
+            self._u({"BG35_MagicItem_740e2"}, {"BG35_MagicItem_740"}), [])
+
+    def test_a_registered_gap_is_exempt(self):
+        self.assertEqual(
+            self._u({"BG30_MagicItem_442t"}, set(), {"BG30_MagicItem_442t"}),
+            [])
+
+    def test_results_are_sorted_and_deduplicated(self):
+        self.assertEqual(
+            self._u({"BG35_MagicItem_9", "BG35_MagicItem_1"}, set()),
+            ["BG35_MagicItem_1", "BG35_MagicItem_9"])
+
+    def test_real_db_has_no_unrecorded_ids_in_its_own_annotations(self):
+        """Cheap always-on invariant: every DECLARED trinket is also
+        annotated, so the ranker's synergy table and the DB cannot drift."""
+        ids = {t["id"] for t in meta.trinkets() if t.get("id")}
+        annotated = set(meta.trinket_effects()) - {"_comment"}
+        self.assertEqual(ids - annotated, set(), "unannotated trinkets")
+        self.assertEqual(annotated - ids, set(), "orphan annotations")
 
 
 if __name__ == "__main__":

@@ -54,9 +54,59 @@ CHOICE_OPT = re.compile(
     r"DebugPrintEntityChoices.*?cardId=(BG\d+_MagicItem_\w+)")
 #: Any mention at all — a granted trinket (Bronzebeard Portrait off a pick),
 #: a token trinket (Chromatic Tear) or an opponent's board piece never shows
-#: in OUR pick menu, but the coverage gate (tests/test_trinket_meta.py) scans
-#: exactly these lines, so the rebuild must too or the gate stays red.
+#: in OUR pick menu, but the coverage check (doctor.check_unrecorded_trinkets)
+#: scans exactly these lines, so the rebuild must too or that check stays red.
 SEEN_ANY = re.compile(r"cardId=(BG\d+_MagicItem_\w+)")
+
+
+def recent_logs(n=6):
+    """The newest `n` Power.logs on this machine."""
+    from config import HS_LOG_GLOB
+    return sorted(glob.glob(HS_LOG_GLOB), key=os.path.getmtime,
+                  reverse=True)[:n]
+
+
+def seen_in_logs(paths, offered_only=False):
+    """Trinket ids appearing in those logs."""
+    pattern = CHOICE_OPT if offered_only else SEEN_ANY
+    seen = set()
+    for path in paths:
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    seen.update(pattern.findall(line))
+        except OSError:
+            continue
+    return seen
+
+
+def unrecorded(seen, recorded, gaps=()):
+    """Ids seen in logs but absent from the DB, minus two deliberate
+    exemptions:
+
+      * a trinket's OWN enchantment — `BG36_MagicItem_403e` is the aura
+        Hammer of Twilight applies, `...e2` its golden form. The exemption
+        requires the BASE id to be recorded, which is what makes it safe
+        rather than a blanket `e`-suffix skip.
+      * an id registered in `meta/patch_gaps.json` as deliberately not
+        carried (`BG30_MagicItem_442t` is the Blood Golem token its sticker
+        summons). The registry keeps the evidence, so a new token-shaped id
+        still gets reported.
+
+    Lives here, next to the regexes and the tool that closes the gap, so the
+    exemption reasoning has exactly one home: it used to be inlined in two
+    tests, which let the rationale drift from the document describing it
+    (2026-10-02).
+    """
+    found = []
+    for cid in sorted(set(seen) - set(recorded)):
+        if cid in gaps:
+            continue
+        m = re.search(r"e\d*$", cid)
+        if m and cid[:m.start()] in recorded:
+            continue
+        found.append(cid)
+    return found
 
 
 def _clean_text(text):

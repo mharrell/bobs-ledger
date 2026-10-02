@@ -145,6 +145,44 @@ def check_unresolved():
     return OK, f"newest game ({row['hero']}, place {row['place']}) renders every id"
 
 
+def check_unrecorded_trinkets():
+    """Trinkets the game has offered or granted that the DB does not carry.
+
+    This began life as two tests. They were right about the gap and wrong
+    about the venue: they read the newest local logs, so the suite went red
+    on any machine that had played since the last refresh — and the only
+    machine that always has fresh logs is the one that plays. The alarm
+    belongs in the pre-flight verdict, where the remedy (`refresh_trinkets.py`)
+    is one line away, and where it can be a warning rather than a failure:
+    a trinket offered mid-session is a real gap, not a broken build.
+
+    The exemptions (a trinket's own enchantment, ids registered in
+    meta/patch_gaps.json) live in `refresh_trinkets.unrecorded` so this and
+    the deterministic test cannot disagree.
+    """
+    try:
+        import refresh_trinkets as rt
+        logs = rt.recent_logs()
+    except Exception as exc:  # noqa: BLE001 - never break the verdict
+        return WARN, f"trinket coverage skipped ({type(exc).__name__}: {exc})"
+    if not logs:
+        return OK, "no Power.log on this machine to compare against"
+    try:
+        recorded = {t["id"] for t in (meta._raw("trinkets.json") or [])
+                    if t.get("id")}
+        seen = rt.seen_in_logs(logs)
+        missing = rt.unrecorded(seen, recorded, logquery._answered_gaps())
+    except Exception as exc:  # noqa: BLE001
+        return WARN, f"trinket coverage skipped ({type(exc).__name__}: {exc})"
+    if missing:
+        return WARN, (f"{len(missing)} trinket(s) seen in the last {len(logs)} "
+                      f"log(s) are not in the DB: {', '.join(missing[:3])} — "
+                      "run refresh_trinkets.py (writes; --dry-run first), then "
+                      "curate anything it lists as NEED CURATION")
+    return OK, (f"all {len(seen)} trinket id(s) in the last {len(logs)} log(s) "
+                f"are recorded ({len(recorded)} rows)")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--online", action="store_true")
@@ -158,6 +196,7 @@ def main():
     checks["meta"] = _gated("check_meta.py", "meta validator")
     checks["roster"] = check_roster()
     checks["art"] = check_art()
+    checks["trinkets"] = check_unrecorded_trinkets()
     checks["discard engine"] = _engine_check()
     checks["newest log"] = check_unresolved()
     if args.full:
