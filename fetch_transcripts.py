@@ -26,7 +26,7 @@ from scrape_comps import resolve_comp_id, _headers, YOUTUBE_LINKS_URL
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 COMPS = os.path.join(_HERE, "meta", "comps.json")
-TRANSCRIPTS = os.path.join(_HERE, "meta", "transcripts")
+TRANSCRIPTS = os.path.join(_HERE, "transcripts")
 
 
 def fetch_links(comp_id):
