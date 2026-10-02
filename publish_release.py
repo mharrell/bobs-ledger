@@ -129,6 +129,11 @@ def uncommitted():
 def _excluded(rel):
     if rel in EXCLUDE_FILES or os.path.basename(rel) in EXCLUDE_FILES:
         return True
+    # Never ship a shortcut: a .lnk embeds ABSOLUTE paths, so one made on the
+    # packager's machine is broken on everyone else's. The launcher creates
+    # its own, on the machine that will use it.
+    if rel.lower().endswith(".lnk"):
+        return True
     return any(rel == p or rel.startswith(p + "/") for p in EXCLUDE_PATHS)
 
 

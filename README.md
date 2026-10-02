@@ -285,8 +285,11 @@ Everything the coach stores lives inside the install:
 - `hearth-coach/.card_races.json` — the card→tribe cache.
 - `.update_state.json` — the install's last-updated stamp, at the install
   root (next to the `hearth-coach/` folder).
-- `Bob's Ledger.lnk` — only if you asked the launcher for a Desktop
-  shortcut; delete it from your Desktop like any other shortcut.
+- `Bob's Ledger.lnk` — the shortcut the launcher offers: one here in the
+  install folder (it travels with the folder) and optionally one on your
+  Desktop. Windows cannot put an icon on a `.cmd`, so a shortcut is the only
+  clickable thing that shows the icon. Delete either like any other
+  shortcut.
 
 The one thing the coach asks you to change outside its folder is
 Hearthstone's own `log.config` (Quick start step 2). It belongs to

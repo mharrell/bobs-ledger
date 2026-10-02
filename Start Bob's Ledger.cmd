@@ -94,40 +94,77 @@ echo standard place and can be pointed with HEARTHSTONE_HOME. What it does
 echo need is file logging turned ON (README, Quick start step 2).
 
 :shortcut_step
+rem Paths for the shortcut step. ROOT/SELFRAW stay raw for batch use; HERE/
+rem SELF are apostrophe-doubled for the PowerShell strings below, because a
+rem single-quoted PowerShell string ends at the first apostrophe - and this
+rem file's own name contains one ("Start Bob's Ledger.cmd").
+set "ROOT=%~dp0"
+set "SELFRAW=%~f0"
+set "HERE=%ROOT:'=''%"
+set "SELF=%SELFRAW:'=''%"
+
+rem The Desktop is often redirected (OneDrive is the common one), so
+rem %USERPROFILE%\Desktop is NOT reliably where shortcuts land. Every
+rem candidate is checked: reading only the unredirected path made --check
+rem report "no" on a machine whose shortcut was sitting in OneDrive\Desktop,
+rem and would have re-offered it on every single start.
+set "DESKTOP="
+if exist "%USERPROFILE%\Desktop" set "DESKTOP=%USERPROFILE%\Desktop"
+if exist "%USERPROFILE%\OneDrive\Desktop" set "DESKTOP=%USERPROFILE%\OneDrive\Desktop"
+if defined OneDrive if exist "%OneDrive%\Desktop" set "DESKTOP=%OneDrive%\Desktop"
+
+rem One prompt, both shortcuts: Windows never draws an icon on a .cmd, so a
+rem shortcut is the ONLY way to hand someone something clickable that wears
+rem the icon. The copy in this folder is the one that always makes sense (it
+rem travels with the install); the Desktop one is convenience. Asked rather
+rem than assumed, and --check below reports without writing anything.
 if /i "%~1"=="--check" goto :report
 set "WANT_SHORTCUT=0"
 if /i "%~1"=="--shortcut" set "WANT_SHORTCUT=1"
-if "%WANT_SHORTCUT%"=="1" goto :make_shortcut
-if exist "%USERPROFILE%\Desktop\Bob's Ledger.lnk" goto :run
-echo.
-choice /c YN /n /m "Put a Bob's Ledger shortcut with its icon on your Desktop? [Y/N] "
-if errorlevel 2 goto :run
-:make_shortcut
-rem Built on THIS machine on purpose: a shortcut file embeds absolute
-rem paths, so one shipped inside the zip would point at the packager's
-rem disk. GetFolderPath('Desktop') also survives a redirected Desktop.
-rem SELF/HERE are apostrophe-doubled before they reach PowerShell: this
-rem file's own name contains one ("Bob's Ledger.cmd"), and a single-quoted
-rem PowerShell string ends at the first apostrophe - so the unescaped path
-rem made the whole command a parse error and no shortcut ever appeared.
-set "SELF=%~f0"
-set "SELF=%SELF:'=''%"
-set "HERE=%~dp0"
-set "HERE=%HERE:'=''%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=[Environment]::GetFolderPath('Desktop'); $s=(New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $d 'Bob''s Ledger.lnk')); $s.TargetPath='%SELF%'; $s.WorkingDirectory='%HERE%'; $s.IconLocation='%HERE%bobs-ledger.ico'; $s.Description='Bobs Ledger - Hearthstone Battlegrounds coach'; $s.Save(); Write-Host ('shortcut created: ' + (Join-Path $d 'Bob''s Ledger.lnk'))"
-if errorlevel 1 echo Could not create the shortcut - dragging this file to the Desktop works too.
+if "%WANT_SHORTCUT%"=="1" goto :make_shortcuts
+if not exist "%ROOT%Bob's Ledger.lnk" goto :ask_shortcuts
+if not defined DESKTOP goto :run
+if not exist "%DESKTOP%\Bob's Ledger.lnk" goto :ask_shortcuts
 goto :run
+:ask_shortcuts
+echo.
+choice /c YN /n /m "Create a 'Bob's Ledger' shortcut with its icon, here and on your Desktop? [Y/N] "
+if errorlevel 2 goto :run
+:make_shortcuts
+call :make_lnk "%ROOT%Bob's Ledger.lnk"
+if defined DESKTOP call :make_lnk "%DESKTOP%\Bob's Ledger.lnk"
+goto :run
+
+rem ---------------------------------------------------------------- helpers
+rem Written on THIS machine on purpose: a shortcut embeds absolute paths, so
+rem one shipped inside the zip would point at the packager's disk.
+:make_lnk
+set "LNK=%~1"
+set "LNK=%LNK:'=''%"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%'); $s.TargetPath='%SELF%'; $s.WorkingDirectory='%HERE%'; $s.IconLocation='%HERE%bobs-ledger.ico'; $s.Description='Bobs Ledger - Hearthstone Battlegrounds coach'; $s.Save()"
+if errorlevel 1 echo Could not create a shortcut at %~1 - dragging this file where you want it works too.
+exit /b 0
 
 :report
 echo.
-echo --check only, nothing was started.
-if exist "%USERPROFILE%\Desktop\Bob's Ledger.lnk" goto :rep_yes
-echo Desktop shortcut: no
+echo --check only, nothing was started, nothing was written.
+if exist "%ROOT%Bob's Ledger.lnk" goto :rep_folder_yes
+echo Shortcut in this folder: no  (a normal start offers to create it)
+goto :rep_desk
+:rep_folder_yes
+echo Shortcut in this folder: yes
+:rep_desk
+if defined DESKTOP goto :rep_desk_known
+echo Desktop shortcut: unknown (no Desktop folder found)
 goto :rep_end
-:rep_yes
+:rep_desk_known
+if exist "%DESKTOP%\Bob's Ledger.lnk" goto :rep_desk_yes
+echo Desktop shortcut: no   (looked in %DESKTOP%)
+goto :rep_end
+:rep_desk_yes
 echo Desktop shortcut: yes
 :rep_end
-echo Next: double-click this file with no arguments to start the coach.
+echo Next: double-click "Bob's Ledger" (the shortcut) or this file to start.
 goto :end
 
 :run

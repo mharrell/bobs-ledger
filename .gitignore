@@ -79,3 +79,8 @@ hearth-coach/meta/transcripts/
 # Scratch dirs used while verifying a release build
 .tmp_*/
 
+# Shortcuts: created by the launcher on the machine that uses them, and they
+# embed absolute paths — never committed, never shipped (publish_release.py
+# excludes *.lnk as well, since it walks the working tree rather than git).
+*.lnk
+
