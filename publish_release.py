@@ -23,6 +23,7 @@ import hashlib
 import io
 import json
 import os
+import shutil
 import subprocess
 import zipfile
 
@@ -93,7 +94,10 @@ def main():
     try:
         for key, path in ((f"release/{zip_name}", tmp),
                           ("release/latest.json", None)):
-            cmd = ["npx", "--yes", "wrangler", "kv", "key", "put", key,
+            # npx is npx.cmd on Windows — CreateProcess needs the resolved
+            # name, not the npm shim.
+            cmd = [shutil.which("npx") or "npx.cmd", "--yes", "wrangler",
+                   "kv", "key", "put", key,
                    "--namespace-id", args.namespace, "--remote"]
             stdin_payload = None
             if path:
