@@ -24,25 +24,28 @@ export default {
       const name = m[1];
       if (name === "latest.json") {
         // Public: a version string, a note, and a hash. Nothing personal.
+        // KV get returns the VALUE directly (no R2-style .text()).
         const manifest = await env.BUCKET.get("release/latest.json");
-        if (!manifest) return new Response("no release\n", {status: 404});
-        return new Response(await manifest.text(), {
+        if (manifest == null) return new Response("no release\n",
+                                                  {status: 404});
+        return new Response(manifest, {
           headers: {"Content-Type": "application/json",
                     "Cache-Control": "no-cache"},
         });
       }
       if (name.endsWith(".zip")) {
-        // The release archive: same shared-key throttle as ingest.
+        // The release archive: same shared-key throttle as ingest. Binary:
+        // KV must be read as an arrayBuffer (default text mangles bytes).
         if (env.TELEMETRY_KEY
             && request.headers.get("X-Telemetry-Key") !== env.TELEMETRY_KEY) {
           return new Response("bad key\n", {status: 403});
         }
-        const zip = await env.BUCKET.get(`release/${name}`);
-        if (!zip) return new Response("no such release\n", {status: 404});
-        const headers = {"Content-Type": "application/zip",
-                         "Cache-Control": "no-cache"};
-        if (zip.size != null) headers["Content-Length"] = String(zip.size);
-        return new Response(zip.body, {headers});
+        const zip = await env.BUCKET.get(`release/${name}`,
+                                         {type: "arrayBuffer"});
+        if (zip == null) return new Response("no such release\n",
+                                             {status: 404});
+        return new Response(zip, {"Content-Type": "application/zip",
+                                  "Cache-Control": "no-cache"});
       }
       return new Response("no such release\n", {status: 404});
     }
