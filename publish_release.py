@@ -32,11 +32,21 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 #: Directory and file names that never ship: local data, dev plumbing,
 #: and regenerable caches. img_cache stays out on purpose — the overlay
 #: fetches art on demand (hearth_art_extract is a local convenience).
+#: .wrangler/ carries the CF account id + account email; logs_archive/
+#: holds raw Power.logs; transcripts/ is third-party YouTube caption
+#: text (redistribution exposure); VERSION is re-stamped fresh below
+#: (a stale local copy must not win the zip's duplicate-entry race).
 EXCLUDE_DIRS = {".git", ".claude", "decision_logs", "corpus_out",
                 ".review_cache", "__pycache__", ".venv", "venv", ".idea",
-                "img_cache", "node_modules", "patch_reports"}
+                "img_cache", "node_modules", "patch_reports",
+                ".wrangler", "logs_archive", "transcripts"}
 EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
-                 ".trinkets_hsjson_cache.json"}
+                 ".trinkets_hsjson_cache.json", ".trinkets_guides_cache.json",
+                 ".cards_full.json", ".card_races.json", ".observed_tribes.json",
+                 ".patch_state.json", ".patch_config.json", "comp_candidates.json",
+                 ".dev.vars", "claude_code_zai_env.sh", "VERSION",
+                 "catch_up_main.ps1", "wt_status.ps1", "register_patch_check.ps1",
+                 "sync.py", "publish_release.py"}
 
 
 def git_sha():
@@ -54,7 +64,8 @@ def build_zip(version):
         for dirpath, dirnames, filenames in os.walk(_HERE):
             dirnames[:] = [d for d in dirnames if d not in EXCLUDE_DIRS]
             for fn in filenames:
-                if fn in EXCLUDE_FILES or fn.endswith(".pyc"):
+                if fn in EXCLUDE_FILES or fn.endswith(".pyc") \
+                        or fn.endswith(".env"):
                     continue
                 full = os.path.join(dirpath, fn)
                 rel = os.path.relpath(full, _HERE).replace(os.sep, "/")
