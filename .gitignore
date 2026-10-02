@@ -62,3 +62,7 @@ telemetry/.wrangler/
 
 # Local API-key bootstrap helper (never ships, never commits)
 claude_code_zai_env.sh
+
+# YouTube auto-transcripts (third-party caption text, takedown bait):
+# derived research cache — mined into the guides, never republished.
+hearth-coach/transcripts/
