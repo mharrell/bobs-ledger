@@ -11,11 +11,14 @@ update applies, so a checked-and-accepted update is one prompt.
 
 Direction: release versions are git shas — there is no ordering. The
 manifest's publish timestamp decides, compared against the timestamp this
-install last updated at (saved to .update_state.json on apply). An install
-with no update state — a git checkout, or a release from before this
-scheme — is never auto-updated onto a different version: shas can't prove
-which side is newer, and guessing once downgraded a fresh clone of main
-onto the older published zip (2026-10-02). `--force` applies regardless.
+install last updated at. A released zip carries that stamp inside it
+(`.update_state.json`, written by publish_release.py at build time), so a
+freshly unzipped install can be told a newer release exists; without it the
+first check could only ever answer "unknown" and the README's "zip installs
+keep themselves current" was unreachable (found 2026-10-02). A git checkout
+has no VERSION and stays "unknown" — shas can't prove which side is newer,
+and guessing once downgraded a fresh clone of main onto the older published
+zip. `--force` applies regardless.
 
 An update check must never block play: every failure mode (offline, no
 manifest, bad json) returns "no update" and the coach starts normally.
@@ -45,7 +48,12 @@ MANIFEST_URL = os.environ.get(
     "https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.json")
 UA = "hearth-coach-telemetry/1.0"  # workers.dev 403s the python-urllib UA
 
-#: Zip entries that may never overwrite local data, by top-level directory.
+#: Zip entries that may never overwrite local data, by path segment.
+#: Matched at ANY depth: every shipped path is nested under the repo folder
+#: (`hearth-coach/decision_logs/...`), so a first-segment-only test never
+#: fired — the guard was inert while both the docstring and PROTECTED
+#: claimed local data was protected (found 2026-10-02 by applying a
+#: realistically nested zip: decision logs were overwritten).
 PROTECTED = {"decision_logs", "corpus_out", ".review_cache", ".git",
              ".claude"}
 
@@ -143,28 +151,64 @@ def download_zip(manifest, key=None):
     return data
 
 
+def _safe_target(root, rel):
+    """Absolute path for a zip entry, or None if it must be refused.
+
+    Refuses zip-slip in every form Windows accepts, not just the POSIX
+    ones: `..` components, absolute POSIX paths, drive-letter absolutes
+    (`C:/evil.dll`), drive-relative paths and NTFS alternate data streams
+    (any component containing `:`), and UNC (`//host/share`). The earlier
+    guard tested only `startswith("/")` and `..`, so `C:/evil.dll` passed
+    and `os.path.join` — where an absolute second argument discards the
+    first — wrote outside the install root (found 2026-10-02).
+
+    The resolved path is re-checked against the root afterwards, so a form
+    nobody thought of still has to get past commonpath().
+    """
+    rel = (rel or "").replace("\\", "/")
+    if rel.startswith("/"):
+        return None                 # absolute POSIX path or UNC (//host/share)
+    parts = [p for p in rel.split("/") if p not in ("", ".")]
+    if not parts:
+        return None
+    for part in parts:
+        if part == ".." or ":" in part:
+            return None
+    root_abs = os.path.abspath(root)
+    target = os.path.abspath(os.path.join(root_abs, *parts))
+    try:
+        if os.path.commonpath([root_abs, target]) != root_abs:
+            return None
+    except ValueError:          # different drives: not under root
+        return None
+    return target
+
+
 def apply_zip(data, root=None):
     """Extract a release zip over the install, protecting local data.
 
-    Returns the count of files written. Entries under PROTECTED top-level
-    dirs are skipped (the user's decision logs and settings survive an
-    update), and zip-slip entries (absolute paths, ..) are refused.
+    Returns the count of files written. Entries under a PROTECTED path
+    segment are skipped at any depth (the user's decision logs and settings
+    survive an update), and zip-slip entries are refused — see
+    _safe_target.
     """
     root = root or ROOT
     written = 0
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         for info in z.infolist():
-            rel = info.filename.replace("\\", "/")
-            if rel.startswith("/") or ".." in rel.split("/"):
-                continue  # zip-slip
-            top = rel.split("/", 1)[0] if "/" in rel else ""
-            if top in PROTECTED or rel in PROTECTED:
+            rel = (info.filename or "").replace("\\", "/")
+            if any(p in PROTECTED
+                   for p in rel.split("/") if p not in ("", ".")):
                 continue
-            target = os.path.join(root, rel.replace("/", os.sep))
+            target = _safe_target(root, rel)
+            if target is None:
+                continue
             if info.is_dir():
                 os.makedirs(target, exist_ok=True)
                 continue
-            os.makedirs(os.path.dirname(target) or root, exist_ok=True)
+            parent = os.path.dirname(target)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
             with z.open(info) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
             written += 1
@@ -199,6 +243,13 @@ def run(prompt=True, assume_yes=False, key=None, force=False):
         return "applied"
     # local-newer / unknown: never guess direction (a fresh clone of a
     # newer main once looked "behind" and would have been downgraded).
+    # A checkout is told the truth about how it updates; only a released
+    # install with no update state gets the --force advice.
+    if action == "unknown" and not os.path.exists(VERSION_FILE):
+        print("Development checkout — a clone updates with `git pull`, so "
+              f"the release channel stands aside (published: "
+              f"{manifest.get('version')}).")
+        return "current"
     print(f"No update applied — {detail}. "
           "Use `python update.py --force` to install the published release "
           "anyway.")
