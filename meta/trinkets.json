@@ -1616,6 +1616,16 @@
   "type": "Greater"
  },
  {
+  "id": "BG32_MagicItem_892",
+  "name": "Vibrant Bubble",
+  "description": "Spellcraft: Give a Murloc a random Bonus Keyword.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
   "id": "BG32_MagicItem_893",
   "name": "Bluegill Flippers",
   "description": "Whenever you cast a Tavern spell, give the left-most minion in your hand and warband +3/+3.",
