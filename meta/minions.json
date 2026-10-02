@@ -912,7 +912,7 @@
   "tribe_src": "log"
  },
  {
-  "tier": 2,
+  "tier": 3,
   "id": "BG36_101",
   "name": "Unwilling Slacker",
   "cost": 3,
@@ -924,6 +924,7 @@
   ],
   "text": "Deathrattle: Get a random 1-Cost Tavern spell.",
   "auto_added": "36.6.1 DB update (log-mined pool)",
+  "auto_updated": "2026-10-01 tier 2->3 (log pool dump, 3 sessions, Data 36600/36601)",
   "tribe_src": "log"
  },
  {
@@ -947,11 +948,12 @@
   "name": "Abyssal Envoy",
   "cost": 3,
   "tribe": "Aberration",
-  "attack": 3,
-  "health": 4,
+  "attack": 2,
+  "health": 2,
   "mechanics": [],
   "text": "Activate (0): Discard a card to get a random Tavern spell.",
   "auto_added": "36.6.1 DB update (log-mined pool)",
+  "auto_updated": "2026-10-01 stats 3/4->2/2 (log pool dump, Data=36601)",
   "tribe_src": "log"
  },
  {
@@ -1191,17 +1193,18 @@
   "name": "Vicious Mindslasher",
   "cost": 3,
   "tribe": "Aberration",
-  "attack": 3,
-  "health": 1,
+  "attack": 1,
+  "health": 2,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
   "text": "Whenever you cast a Tavern spell, give this and your Deity +1/+3.",
   "auto_added": "36.6.1 DB update (log-mined pool)",
+  "auto_updated": "2026-10-01 stats 3/1->1/2 (log pool dump, Data=36601)",
   "tribe_src": "log"
  },
  {
-  "tier": 3,
+  "tier": 2,
   "id": "BG36_100",
   "name": "Wandering Willbreaker",
   "cost": 3,
@@ -1211,6 +1214,7 @@
   "mechanics": [],
   "text": "When you sell this, get 2 random Tavern spells. When you play one, discard the other.",
   "auto_added": "36.6.1 DB update (log-mined pool)",
+  "auto_updated": "2026-10-01 tier 3->2 (log pool dump, 4 sessions, Data 36600/36601)",
   "tribe_src": "log"
  },
  {
@@ -1246,13 +1250,14 @@
   "id": "BG36_369",
   "name": "Greedy Conniver",
   "cost": 3,
-  "tribe": "Aberration",
+  "tribe": "Pirate",
   "attack": 7,
   "health": 7,
   "mechanics": [],
   "text": "If this is Golden when you sell it, Discover a Tier 7 minion.",
   "auto_added": "36.6.1 DB update (patch article + log entityName/cardId)",
-  "tribe_src": "article"
+  "auto_updated": "2026-10-01 tribe Aberration->Pirate (log pool dump, 2 sessions; article lists it under non-Aberration new minions \u2014 DB mis-encode)",
+  "tribe_src": "log"
  },
  {
   "tier": 4,
@@ -2244,13 +2249,14 @@
   "name": "Holy Vanguard",
   "cost": 3,
   "tribe": null,
-  "attack": 5,
-  "health": 5,
+  "attack": 10,
+  "health": 10,
   "mechanics": [
    "DIVINE_SHIELD"
   ],
   "text": "Divine Shield. Has +15/+15 while you have 15 or less Health.",
   "auto_added": "36.6.1 DB update (log-mined pool)",
+  "auto_updated": "2026-10-01 stats 5/5->10/10 (log pool dump, Data=36601)",
   "tribe_src": null
  },
  {
@@ -2443,13 +2449,14 @@
   "name": "Nightmare Corroder",
   "cost": 3,
   "tribe": "Aberration",
-  "attack": 7,
-  "health": 4,
+  "attack": 4,
+  "health": 5,
   "mechanics": [
    "DEATHRATTLE"
   ],
   "text": "Deathrattle: Get a Sludge Corrosion.",
   "auto_added": "36.6.1 DB update (log-mined pool)",
+  "auto_updated": "2026-10-01 stats 7/4->4/5 (log pool dump, Data=36601)",
   "tribe_src": "log"
  },
  {
@@ -3507,12 +3514,13 @@
   "name": "Spark Snapper",
   "cost": 3,
   "tribe": "Mech",
-  "attack": 5,
-  "health": 5,
+  "attack": 6,
+  "health": 8,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
   "text": "[x]Whenever you play a Mech,\nMagnetize a 2/2\nSatellite to it and\nimprove this.",
+  "auto_updated": "2026-10-01 stats 5/5->6/8 (log pool dump, Data=36601)",
   "tribe_src": "log"
  },
  {

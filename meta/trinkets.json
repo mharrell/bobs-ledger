@@ -1212,6 +1212,16 @@
   "guide": null
  },
  {
+  "id": "BG32_MagicItem_283",
+  "name": "Czarina Portrait",
+  "description": "Get a Charging Czarina. Your Charging Czarinas also give Health.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Commit to Divine Shield Mechs",
+  "type": "Greater"
+ },
+ {
   "id": "BG32_MagicItem_284",
   "name": "Aggem Sticker",
   "description": "At the end of your turn, this plays 7 Blood Gems on a friendly minion of each type.",
@@ -2122,6 +2132,25 @@
   "guide": null
  },
  {
+  "id": "BG35_MagicItem_823t",
+  "name": "Timeworn Candelabra",
+  "description": "Discover a 2-Cost minion from the Major Timewarp.",
+  "pick_rate": 33.3,
+  "avg_placement": 4.63,
+  "placement_distribution": {
+   "1": 12.11,
+   "2": 11.07,
+   "3": 11.22,
+   "4": 12.37,
+   "5": 12.98,
+   "6": 13.68,
+   "7": 13.75,
+   "8": 12.82
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_840",
   "name": "Chromatic Tear",
   "description": "Get a random Chromadrake. At the start of each turn, repeat this.",
@@ -2252,6 +2281,16 @@
   },
   "guide": "Commit to a beast comp.",
   "cost": 3
+ },
+ {
+  "id": "BG35_MagicItem_872te",
+  "name": "Ophidian",
+  "description": "+0/+0 and Reborn.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": null
  },
  {
   "id": "BG35_MagicItem_890",

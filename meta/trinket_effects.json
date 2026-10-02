@@ -986,6 +986,15 @@
   },
   "note": "discover a 2-cost Minor Timewarp minion (Timeworn Candelabra)"
  },
+ "BG35_MagicItem_823t": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "discover a 2-cost Minor Timewarp minion (Timeworn Candelabra)"
+ },
  "BG30_MagicItem_416": {
   "base_value": 10,
   "synergy": {
@@ -1982,5 +1991,23 @@
    ]
   },
   "note": "After you discard your FIRST minion each turn, get a copy of it with double stats (Writhing Tentacles). A discard-ENGINE payoff: the aberration/discard builds discard bodies on purpose (Recruiter, Frostcaller, KThir-adjacent Activate outlets) - this turns the best one into a 2x body. Also noted as an unmodelled discard SOURCE in engines.json (analysis/discard_mechanic.md)."
+ },
+ "BG32_MagicItem_283": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Mech"
+   ],
+   "keywords": [
+    "divine_shield",
+    "spell"
+   ]
+  },
+  "note": "Get a Charging Czarina (t5 4/1, Divine Shield); every Tavern spell then gives your Divine Shield minions +4 Attack and Health (Czarina Portrait, GREATER). Spell-fuelled DS-Mech scaler: price it with a recurring per-spell board-wide read — wants cheap spells and a wide Divine Shield board, same fuel shape as Mindslasher Portrait."
+ },
+ "BG35_MagicItem_872te": {
+  "base_value": 0,
+  "synergy": {},
+  "note": "Spellcraft token created by Ophidian Staff (BG35_MagicItem_872): the Reborn implement it hands a Beast. Never offered as a pick — this read exists for the log-coverage gate; all of the value is priced on the Staff itself."
  }
 }
