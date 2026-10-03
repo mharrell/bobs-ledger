@@ -1,4 +1,4 @@
-﻿"""Friendly-player detection (extract_game._friendly_player).
+"""Friendly-player detection (extract_game._friendly_player).
 
 The live coach locks `friendly` in once, the first moment a hero parses â€”
 so the detection must be right at that moment, not merely right once the
@@ -9,7 +9,6 @@ the game reading a dead opponent's health/board/tier while advising.
 
 Fixtures use the real line shapes (Hearthstone_2026_01_01).
 """
-import glob
 import os
 import sys
 import unittest
@@ -17,7 +16,7 @@ import unittest
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
-from config import HS_LOG_GLOB as LOG_GLOB  # noqa: E402
+import real_logs  # noqa: E402
 
 import live_coach  # noqa: E402
 
@@ -203,9 +202,10 @@ class TestRealLog(unittest.TestCase):
         one the full parse agrees on. Skipped when no session log exists â€”
         the committed suite stays deterministic (the 2026-09-16 session is
         the pinned misfire)."""
-        logs = sorted(glob.glob(LOG_GLOB), key=os.path.getmtime, reverse=True)
-        if not logs:
-            self.skipTest("no Hearthstone session log found")
+        settled = real_logs.newest_settled()
+        if not settled:
+            self.skipTest(real_logs.why_none())
+        logs = [settled]
         with open(logs[0], encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
         starts = [i for i, l in enumerate(lines)
