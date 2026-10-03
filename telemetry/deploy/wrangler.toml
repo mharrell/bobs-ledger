@@ -35,7 +35,7 @@ namespace_id = "1001"
   limit = 20
   period = 60
 
-# Retention: session reports older than 90 days are deleted daily. Anonymous
+# Retention: session reports older than 30 days are deleted daily. Anonymous
 # by design means no one can ask for a specific report to be removed, so a
 # window is the only honest answer to "delete mine" - and it bounds what a
 # flood can cost in a 1 GB namespace. The sweep lives in collector.js

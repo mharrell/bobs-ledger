@@ -45,7 +45,7 @@ const PERSONAL_PATTERNS = [
 //: deleted — there is nothing to look it up by — so a retention window is the
 //: only honest answer to "delete mine", and it also puts a ceiling on what a
 //: flood can cost in a 1 GB namespace (2026-10-03).
-const RETENTION_DAYS = 90;
+const RETENTION_DAYS = 30;
 
 //: Conservative bounds on what a real session looks like.
 //:
@@ -137,8 +137,16 @@ export default {
         if (url.pathname === "/sessions") {
           const listing = await env.BUCKET.list({prefix: "sessions/",
                                                  limit: 1000});
+          // `bytes` comes from the metadata written with each report, so a
+          // size summary costs ONE list call and no reads. Reports stored
+          // before that metadata existed report null, which is why the tool
+          // says how many it could not size.
+          const details = listing.keys.map((k) => ({
+            name: k.name,
+            bytes: (k.metadata && k.metadata.bytes) || null}));
           return new Response(JSON.stringify({
-            keys: listing.keys.map((k) => k.name),
+            keys: details.map((d) => d.name),
+            details: details,
             truncated: listing.list_complete === false}),
             {headers: {"Content-Type": "application/json",
                        "Cache-Control": "no-cache"}});
@@ -336,7 +344,8 @@ export default {
         return new Response(identical ? "stored\n" : "already stored\n",
                             {status: identical ? 200 : 409});
       }
-      await env.BUCKET.put(key, body);
+      await env.BUCKET.put(key, body,
+                           {metadata: {bytes: body.byteLength}});
       return new Response("stored\n");
     }
 

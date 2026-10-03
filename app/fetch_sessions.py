@@ -44,6 +44,32 @@ def list_keys(base, key):
     return keys
 
 
+def stats(base, key):
+    """(count, total_bytes, unsized, per_day) for what the collector holds.
+
+    One list call and no reads: each report's size travels in the KEY's
+    metadata, written when it was stored, and the day comes from the key path.
+    Reports stored before that metadata existed come back unsized, which is
+    reported rather than guessed — the whole point of this is to know the real
+    volume, because that is the trigger for doing something about it.
+    """
+    got = _get(base.rstrip("/") + "/sessions", key)
+    details = got.get("details")
+    if not details:
+        details = [{"name": n, "bytes": None} for n in got.get("keys") or []]
+    per_day = {}
+    total = unsized = 0
+    for d in details:
+        name = d.get("name") or ""
+        day = name.split("/")[1] if name.count("/") >= 2 else "?"
+        per_day[day] = per_day.get(day, 0) + 1
+        if d.get("bytes") is None:
+            unsized += 1
+        else:
+            total += d["bytes"]
+    return len(details), total, unsized, per_day
+
+
 def fetch(base, key, out_dir, force=False):
     """(downloaded, skipped) — one file per report, mirroring the key path."""
     base = base.rstrip("/")
@@ -76,6 +102,8 @@ def main():
     ap.add_argument("--out", default="sessions_in",
                     help="where reports land (default sessions_in/)")
     ap.add_argument("--list", action="store_true", help="list, fetch nothing")
+    ap.add_argument("--stats", action="store_true",
+                    help="how many reports, how much space, per day")
     ap.add_argument("--force", action="store_true",
                     help="re-download reports already on disk")
     args = ap.parse_args()
@@ -88,6 +116,16 @@ def main():
         print(f"{len(keys)} report(s) stored")
         for k in keys:
             print(f"  {k}")
+        return 0
+    if args.stats:
+        count, total, unsized, per_day = stats(args.url, args.key)
+        print(f"{count} report(s) stored, {total / 1e6:.1f} MB "
+              f"(the free KV tier holds 1 GB)")
+        if unsized:
+            print(f"  {unsized} stored before sizes were recorded, so the "
+                  "total is a floor")
+        for day in sorted(per_day, reverse=True):
+            print(f"  {day}: {per_day[day]}")
         return 0
     try:
         got, skipped = fetch(args.url, args.key, args.out, force=args.force)

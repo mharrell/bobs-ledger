@@ -146,5 +146,48 @@ class TestNoKey(unittest.TestCase):
         self.assertIn("HEARTH_TELEMETRY_KEY", out.getvalue())
 
 
+class TestStats(unittest.TestCase):
+    """Volume is the trigger for acting on the open ingest, so the number has
+    to be real — one list call, sizes from the metadata written at store time,
+    and "could not size" reported rather than guessed."""
+
+    def _listing(self, details):
+        def _open(req, timeout=None):
+            body = json.dumps({
+                "keys": [d["name"] for d in details],
+                "details": details, "truncated": False}).encode()
+            resp = io.BytesIO(body)
+            resp.__enter__ = lambda *a: resp
+            resp.__exit__ = lambda *a: False
+            return resp
+        return _open
+
+    def test_it_sums_sizes_and_groups_by_day(self):
+        details = [{"name": "sessions/2026-10-03/a.json.gz", "bytes": 100},
+                   {"name": "sessions/2026-10-03/b.json.gz", "bytes": 200},
+                   {"name": "sessions/2026-10-02/c.json.gz", "bytes": 300}]
+        with mock.patch.object(fetch_sessions.urllib.request, "urlopen",
+                               self._listing(details)):
+            count, total, unsized, per_day = fetch_sessions.stats("http://x", "k")
+        self.assertEqual((count, total, unsized), (3, 600, 0))
+        self.assertEqual(per_day, {"2026-10-03": 2, "2026-10-02": 1})
+
+    def test_reports_without_recorded_sizes_make_the_total_a_floor(self):
+        details = [{"name": "sessions/2026-10-03/a.json.gz", "bytes": None},
+                   {"name": "sessions/2026-10-03/b.json.gz", "bytes": 500}]
+        with mock.patch.object(fetch_sessions.urllib.request, "urlopen",
+                               self._listing(details)):
+            count, total, unsized, _per_day = fetch_sessions.stats("http://x", "k")
+        self.assertEqual((count, total, unsized), (2, 500, 1))
+
+    def test_a_worker_that_reports_no_details_still_counts(self):
+        """An older Worker answers with keys only."""
+        with mock.patch.object(fetch_sessions.urllib.request, "urlopen",
+                               fake_urlopen(KEYS)):
+            count, total, unsized, per_day = fetch_sessions.stats("http://x", "k")
+        self.assertEqual((count, total, unsized), (2, 0, 2))
+        self.assertEqual(per_day, {"2026-10-03": 2})
+
+
 if __name__ == "__main__":
     unittest.main()
