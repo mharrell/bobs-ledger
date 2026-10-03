@@ -6,8 +6,10 @@ A real-time coach for **Hearthstone Battlegrounds**. It watches the game you are
 already playing, reads the board you actually have, and tells you the best move
 this turn — with the reason why.
 
-**Windows only.** It reads the log file Hearthstone writes on your own PC, never
-touches the game itself, and asks for no account.
+**Windows only.** It reads the log file Hearthstone writes on your own PC and
+asks for no account. It does not modify the game — the one file it can change is
+Hearthstone's own logging setting, and only if you say yes to it (see
+[turning on logging](#turn-on-hearthstones-logging)).
 
 **[Install it](#install-it)** · **[Turn on logging](#turn-on-hearthstones-logging)** ·
 **[The question it asks you](#the-one-question-it-asks-you)** · **[Something's wrong](#if-somethings-wrong)**
@@ -40,8 +42,14 @@ Already unzipped it? Skip to [logging](#turn-on-hearthstones-logging).
 
 ## Turn on Hearthstone's logging
 
-The step nearly everyone misses: by default Hearthstone does not write the file
-the coach reads.
+**The app offers to do this for you.** If logging is off when you start it, it
+asks — say yes and the step is done: it adds the two lines the coach needs to the
+settings file Hearthstone already has, leaves the rest of that file exactly as it
+was, and keeps a copy of the original first. (It will not do it while Hearthstone
+is running, because the game only reads that file when it starts.)
+
+To do it by hand instead: by default Hearthstone does not write the file the
+coach reads.
 
 1. Close Hearthstone.
 2. Hold **Win**, press **R**, paste `%LocalAppData%\Blizzard\Hearthstone`, press
@@ -130,6 +138,14 @@ what the window said, or a screenshot of it.
 
 Delete the `Bob's Ledger` folder, and the shortcut if you made one. Nothing else
 was installed — no registry entries, no services, nothing left behind.
+
+## Licence & credits
+
+MIT licensed — see `LICENSE`. Card names, card text and card art are © Blizzard
+Entertainment, and this is an unofficial fan tool: not affiliated with, or
+endorsed by, Blizzard. Card data comes from
+[HearthstoneJSON](https://hearthstonejson.com), and the sources behind the comp
+reference are credited inside `meta/comps.json`.
 
 ## Working on the code
 
