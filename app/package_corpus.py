@@ -33,6 +33,44 @@ from config import HS_LOG_GLOB
 
 SCHEMA = 1
 
+#: The decision log's session field, and the paths inside a record that hold a
+#: PERSON rather than game data.
+#:
+#: `analysis.opp_comp.name` is the opponent's display handle — the field the
+#: overlay renders as "Hero · Odin3539". privacy_scan cannot see it: the
+#: scanner matches the shapes the log writes (PlayerName=, Entity=, account
+#: ids), and a name in a JSON key called "name" matches none of them. So this
+#: bundle used to carry handles while `inspect` printed "verified clean ... no
+#: opponent handles ... in the log or the decisions" — one real session had
+#: 50 advisories carrying it (found 2026-10-03, while designing the automatic
+#: upload path that would have made it a player-facing leak).
+_PERSON_PATHS = ("analysis.opp_comp.name",)
+#: The record's log field: normally just "Power.log", but a record written
+#: from a full path would carry the session DIRECTORY, which links a player's
+#: sessions — privacy_scan flags that as session_dir.
+_SESSION_PLACEHOLDER = "[session]"
+
+
+def sanitize_decisions(decisions):
+    """(records, handles_dropped) — decisions with the identities removed.
+
+    A strip of NAMED paths rather than a regex sweep, for the same reason
+    session_report.py works from a whitelist: card names, comp names and hero
+    names are game data and must survive, while one specific key is a person.
+    """
+    out = []
+    dropped = 0
+    for rec in decisions:
+        rec = json.loads(json.dumps(rec))      # never mutate the caller's
+        if rec.get("log"):
+            rec["log"] = _SESSION_PLACEHOLDER
+        oc = (rec.get("analysis") or {}).get("opp_comp")
+        if isinstance(oc, dict) and oc.get("name"):
+            oc.pop("name", None)
+            dropped += 1
+        out.append(rec)
+    return out, dropped
+
 
 def decisions_for_session(log_path):
     """The packaged session's advisories — and ONLY that session's.
@@ -81,6 +119,11 @@ def package(log_path, out_dir):
     if redacted:
         print(f"sanitized: {len(redacted)} identities redacted")
     decisions = decisions_for_session(log_path)
+    decisions, handles_dropped = sanitize_decisions(decisions)
+    if handles_dropped:
+        print(f"stripped {handles_dropped} opponent handle(s) from the "
+              "decision log — privacy_scan does not see them (see "
+              "sanitize_decisions)")
 
     bundle = {
         "schema": SCHEMA,
@@ -96,6 +139,7 @@ def package(log_path, out_dir):
             # opponent handles reported "1 redacted").
             "identities_redacted": len(redacted),
             "decision_count": len(decisions),
+            "opponent_names_dropped": handles_dropped,
         },
         "log_gz_b64": None,  # gzip+base64 of the sanitized log
         "decisions": decisions,
