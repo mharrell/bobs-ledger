@@ -33,6 +33,14 @@ meta/.trinkets_guides_cache.json
 # Per-user advisory telemetry (the beta corpus pairs these with Power.logs)
 decision_logs/
 
+# The user's sharing answer, and the distilled reports this install has sent
+# (session_reports/ holds a local copy of everything shared plus the per-session
+# id map). Local state, never a source of truth, and the one kind of file this
+# project must never commit by accident: `git add -A` took the id map as
+# untracked before this line existed (2026-10-03).
+.share_consent.json
+session_reports/
+
 # Packaged corpus bundles awaiting upload
 corpus_out/
 
