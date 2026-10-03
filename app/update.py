@@ -76,7 +76,12 @@ UA = "hearth-coach-telemetry/1.0"  # workers.dev 403s the python-urllib UA
 #: claimed local data was protected (found 2026-10-02 by applying a
 #: realistically nested zip: decision logs were overwritten).
 PROTECTED = {"decision_logs", "corpus_out", ".review_cache", ".git",
-             ".claude", "img_cache"}
+             ".claude", "img_cache",
+             # The player's sharing answer and the local copies of what was
+             # shared: an update must never overwrite either, and a consent
+             # question silently re-asked after an update would be its own
+             # kind of wrong.
+             ".share_consent.json", "session_reports"}
 
 
 def local_version():
