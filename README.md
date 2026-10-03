@@ -77,6 +77,8 @@ It ranks the awkward picks too: heroes, trinkets, discovers.
 
 ## The one question it asks you
 
+<img src="docs/first-run.png" alt="The first-run card: the log.config block to copy, a line saying nothing has been sent yet, and the question with Yes and No buttons" width="560">
+
 The first time it starts, the coach asks whether it may send a short summary of
 each finished game back to me. **Nothing is sent unless you say yes**, and saying
 no changes nothing else about the coach.
