@@ -45,9 +45,8 @@ export default {
         return new Response(
           "Bob's Ledger — a Hearthstone Battlegrounds coach\n\n" +
           line +
-          "\nDownload:  https://github.com/mharrell/bobs-ledger/releases/latest\n" +
-          "Direct zip: /release/latest.zip\n" +
-          "Manifest:   /release/latest.json\n" +
+          "\nDownload:  /release/latest.zip  (always the current version)\n" +
+          "Manifest:  /release/latest.json\n" +
           "\nThis endpoint also accepts corpus uploads (POST, maintainer's key).\n",
           {headers: {"Content-Type": "text/plain; charset=utf-8",
                      "Cache-Control": "no-cache"}});
@@ -93,8 +92,28 @@ export default {
                                          {type: "arrayBuffer"});
         if (zip == null) return new Response("no such release\n",
                                              {status: 404});
-        return new Response(zip, {"Content-Type": "application/zip",
-                                  "Cache-Control": "no-cache"});
+        // Content-Disposition decides the filename the browser saves, and
+        // therefore the folder Windows offers to extract. The versioned name
+        // ("bobs-ledger-<sha>.zip") made a player's folder look like build
+        // output; the ROUTE keeps that name because the manifest points at it
+        // and update.py downloads by that path — only the display name
+        // changes (2026-10-03).
+        //
+        // `headers:` is load-bearing. This response was written as
+        // `new Response(zip, {"Content-Type": ..., "Cache-Control": ...})`,
+        // which sets NOTHING: ResponseInit has no Content-Type property, so
+        // both were silently dropped and the release downloaded as whatever
+        // the URL said. Whoever next adds a header here, put it inside the
+        // wrapper. (The other three responses in this file already do.)
+        return new Response(zip, {
+          headers: {
+            "Content-Type": "application/zip",
+            // Both forms: plain for everything in practice, RFC 5987 for a
+            // client that wants it percent-encoded.
+            "Content-Disposition":
+              "attachment; filename=\"Bob's Ledger.zip\"; "
+              + "filename*=UTF-8''Bob%27s%20Ledger.zip",
+            "Cache-Control": "no-cache"}});
       }
       return new Response("no such release\n", {status: 404});
     }
