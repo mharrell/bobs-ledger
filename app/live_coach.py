@@ -849,7 +849,8 @@ class LiveCoach:
         if self.friendly is not None or not self.cur_lines:
             return
         game = extract_game(self.cur_lines)
-        friendly = _friendly_player(game["heroes"], game.get("choice_players"))
+        friendly = _friendly_player(game["heroes"], game.get("choice_players"),
+                                    game.get("local_player"))
         if friendly is None:
             return  # no signal yet (very early / end-of-game); retry next analyze
         hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
