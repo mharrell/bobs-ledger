@@ -143,11 +143,11 @@ goto :run
 
 rem ---------------------------------------------------------------- helpers
 rem Written on THIS machine on purpose: a shortcut embeds absolute paths, so
-rem one shipped inside the zip would point at the packager's disk.
+rem one shipped inside the zip would point at the packager's disk. (No -ExecutionPolicy Bypass: inline -Command is not governed by execution policy, verified under Restricted - and the flag is what security tooling scores.)
 :make_lnk
 set "LNK=%~1"
 set "LNK=%LNK:'=''%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%'); $s.TargetPath='%SELF%'; $s.WorkingDirectory='%HERE%'; $s.IconLocation='%HERE%bobs-ledger.ico'; $s.Description='Bobs Ledger - Hearthstone Battlegrounds coach'; $s.Save()"
+powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%'); $s.TargetPath='%SELF%'; $s.WorkingDirectory='%HERE%'; $s.IconLocation='%HERE%bobs-ledger.ico'; $s.Description='Bobs Ledger - Hearthstone Battlegrounds coach'; $s.Save()"
 if errorlevel 1 echo Could not create a shortcut at %~1 - dragging this file where you want it works too.
 exit /b 0
 
@@ -182,7 +182,7 @@ set "PASS=%*"
 set "PASS=%PASS:--check=%"
 set "PASS=%PASS:--shortcut=%"
 rem Stripping a substring leaves debris when the token was "--check=": a lone
-rem "=" would be handed to live.py, which ignores unknown flags — the same
+rem "=" would be handed to live.py, which ignores unknown flags - the same
 rem silent-start failure by another door.
 if "%PASS%"=="=" set "PASS="
 %PY% "%~dp0live.py" --open %PASS%
