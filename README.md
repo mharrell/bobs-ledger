@@ -1,434 +1,235 @@
 # Bob's Ledger
 
-A real-time coaching overlay for Hearthstone Battlegrounds. It reads the
-live game from Hearthstone's own logs, reasons over the actual board —
-your gold, your shop, your pairs, your opponent's board — and tells you
-the best move *for this exact situation*, with the reason. Stat overlays
-tell you what wins at your rating on average; this tells you what to do
-with the board you're holding right now.
+<img src="docs/decide.png" alt="The overlay mid-game: DO THIS NOW gives one buy with its reason, and the level step underneath" width="560">
 
-Be clear on what that advice is: a **rule-based second opinion**, not a
-validated oracle. The coach's recommendations have **not** been validated
-against outcomes. The project's own audit (`outcome_audit.py`) is explicit
-that its followed-vs-ignored HP comparison is observational and not causal
-— players follow advice in easy spots and ignore it in scary ones — and
-that the leveling lane is the suspect: followed level advice preceded a
-mean −4.6 HP loss against −2.0 when ignored. So treat a level line as a
-question to price, not a verdict.
+A real-time coach for **Hearthstone Battlegrounds**. It watches the game you are
+already playing, reads the board you actually have, and tells you the best move
+this turn — with the reason why.
 
-No account access, no game modification — the only file it can change is
-Hearthstone's own logging setting, and only if you say yes to the offer in
-Quick start. Otherwise it reads log files that Hearthstone writes on your disk.
+**Windows only.** It reads the log file Hearthstone writes on your own PC and
+asks for no account. It does not modify the game — the one file it can change is
+Hearthstone's own logging setting, and only if you say yes to it (see
+[turning on logging](#turn-on-hearthstones-logging)).
 
-<img src="docs/decide.png" alt="The overlay's Decide pane mid-game: DO THIS NOW gives one buy with its reason, and the level step says to level only after that buy" width="560">
-
-*The Decide pane mid-game: the one move, the reason, and the numbers behind
-it. Everything below is what the rest of the overlay adds.*
+**[Install it](#install-it)** · **[Turn on logging](#turn-on-hearthstones-logging)** ·
+**[The question it asks you](#the-one-question-it-asks-you)** · **[Something's wrong](#if-somethings-wrong)**
 
 ## What you need
 
-- Windows (the log paths default to a standard Windows Hearthstone install;
-  a custom install can be pointed at with the `HEARTHSTONE_HOME` env var)
-- Python 3.9 or newer
-- Hearthstone installed and able to run
+- A Windows PC with Hearthstone installed.
+- Python 3 — free. If it is missing, the app tells you and links you to it.
+- Five minutes, most of it the download.
 
-**There is no AI model in the loop.** The advice is computed on your
-machine by a deterministic value function and growth simulator over a
-curated meta database — no model is called during play, nothing about
-your game is sent anywhere to produce it, and there is no API key to
-configure. (The repo also contains an optional maintainer tool that uses
-a model to extract patch notes into the meta DB; it is not part of the
-coach and is not in a release.)
+## Install it
 
-The coach needs **no API key**. It does not need the internet to advise:
-the advice comes from a local value function plus a meta reference bundled
-in `meta/` (including the card→tribe map, so there is no first-run
-download). Two things use the network on their own, both optional to play:
-card art is fetched from HearthstoneJSON on demand, and each start checks the
-release channel for a new version (disable with `--no-update`). A third —
-sending a summary of a finished game — happens only if you say yes, and the
-section on what leaves your machine below is precise about it.
+**1. Download it.** [Click here](https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip)
+— it saves as `Bob's Ledger.zip`. No account needed.
 
-## Get it
+**2. Unzip it.** Right-click the file → **Extract All**, somewhere you can write
+to: Desktop or Documents are ideal. (Not `C:\Program Files` — Windows will not
+let the coach keep its card pictures there.) You get a folder called
+`Bob's Ledger`.
 
-**1. Download it:** <https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip>
-— one link, always the current release, no GitHub account needed. The version
-is in the file name.
+**3. Double-click `Start Bob's Ledger.cmd`** in that folder. That is the whole
+install. It finds Python, asks before adding the one small extra it needs, tells
+you where Hearthstone's log folder should be, offers a **shortcut with its own
+icon** for the folder and your Desktop, then opens the overlay in your browser.
 
-**2. Unzip it somewhere you can write** — Desktop or Documents are ideal.
-There is no installer and nothing to build. The program is tucked into `app/`,
-so the folder shows only the launcher, this README, the licence and `docs/`.
-(Not `C:\Program Files`: Windows won't let the coach keep its card-art cache
-there, so the overlay would run without art.)
+Windows may ask once whether to run a file from an "unknown publisher" — the
+normal prompt for anything you downloaded. Click **Run**.
 
-**3. Double-click `Start Bob's Ledger.cmd`** in the folder you unzipped. That
-is the whole install:
+Already unzipped it? Skip to [logging](#turn-on-hearthstones-logging).
 
-- it finds Python 3 (and points you at python.org if there isn't one),
-- checks the one dependency it needs, **asking before it installs anything**,
-- says where Hearthstone's log folder should be,
-- offers a **Bob's Ledger shortcut with its icon** for this folder and your
-  Desktop,
-- starts the coach and opens the overlay in your browser.
+## Turn on Hearthstone's logging
 
-Run it with `--check` to see what it found without starting anything.
+**The app offers to do this for you.** If logging is off when you start it, it
+asks — say yes and the step is done: it adds the two lines the coach needs to the
+settings file Hearthstone already has, leaves the rest of that file exactly as it
+was, and keeps a copy of the original first. (It will not do it while Hearthstone
+is running, because the game only reads that file when it starts.)
 
-After that, **the shortcut is the app** — and it keeps itself current: each
-start checks the release channel and offers a newer version if there is one
-(decline with `--no-update`).
+To do it by hand instead: by default Hearthstone does not write the file the
+coach reads.
 
-### If you would rather do it by hand
+1. Close Hearthstone.
+2. Hold **Win**, press **R**, paste `%LocalAppData%\Blizzard\Hearthstone`, press
+   Enter.
+3. Open `log.config` with Notepad — or create it there — and make sure it
+   contains at least this:
+
+   ```
+   [Power]
+   LogLevel=1
+   FilePrinting=true
+   ConsolePrinting=false
+   Screenshots=false
+   ```
+
+4. Start Hearthstone.
+
+If you use Hearthstone Deck Tracker or Firestone, this file exists already and
+you are done.
+
+## What you'll see
+
+The overlay opens as a page in your browser and updates as you play — not a
+second game window, so put it on another monitor or leave it behind the game.
+
+- **Left — the decision.** The one move for this turn, in large text, with the
+  reason underneath and the numbers behind it.
+- **Right — the reference.** Your shop ranked for the board you have, the comps
+  worth committing to and how close you are to each, and what your next opponent
+  is likely bringing.
+
+It ranks the awkward picks too: heroes, trinkets, discovers.
+
+## The one question it asks you
+
+<img src="docs/first-run.png" alt="The first-run card: the log.config block to copy, a line saying nothing has been sent yet, and the question with Yes and No buttons" width="560">
+
+The first time it starts, the coach asks whether it may send a short summary of
+each finished game back to me. **Nothing is sent unless you say yes**, and saying
+no changes nothing else about the coach.
+
+If you say yes, a summary is your decisions and how the game went: turn, gold,
+tavern tier, health, what was advised, and what happened next. Not your name, not
+the chat, not your file paths, and not your log file. A copy of everything sent
+is kept in `session_reports/` in the app folder, so you can read it yourself. To
+change your mind, press **Clear** at the top-right of the overlay to bring the
+question back.
+
+Why I ask: the advice has not been measured against results yet, and those
+summaries are how it gets measured.
+
+## One honest thing about the advice
+
+Bob's Ledger is a second opinion, not an oracle. Its recommendations have not yet
+been checked against outcomes, and its own audits say some of them — the ones
+about when to level up especially — may be wrong. Treat a surprising call as a
+question worth pricing, not a verdict.
+
+## Two more things worth knowing
+
+- **Patch days.** After a Hearthstone patch the coach's reference data lags a few
+  days, so advice can be less sharp until it catches up. It looks for a new
+  version every time you start.
+- **Where it comes from.** The advice is worked out on your own PC, from
+  Hearthstone's log plus a reference file that ships with the app — nothing is
+  sent anywhere to produce it, and it works with your internet off. Only the card
+  pictures need a connection.
+
+## If something's wrong
+
+- **A black window flashes and vanishes.** You ran the file from inside the .zip.
+  Unzip it first (step 2), then run it from the folder you get.
+- **It says Python was not found.** Install Python from python.org, tick **Add
+  python.exe to PATH**, and run the file again.
+- **The overlay keeps waiting for advice.** Hearthstone's logging is probably
+  still off. The overlay shows that same setting on screen.
+- **The advice stops changing.** The overlay says how long ago it was written, so
+  you can tell stale advice from live advice.
+- **It says the folder cannot be written to.** Move the `Bob's Ledger` folder to
+  Documents or the Desktop and start it again.
+
+Still stuck? [Open an issue](https://github.com/mharrell/bobs-ledger/issues) with
+what the window said, or a screenshot of it.
+
+## Uninstalling
+
+Delete the `Bob's Ledger` folder, and the shortcut if you made one. Nothing else
+was installed — no registry entries, no services, nothing left behind.
+
+## Licence & credits
+
+MIT licensed — see `LICENSE`. Card names, card text and card art are © Blizzard
+Entertainment, and this is an unofficial fan tool: not affiliated with, or
+endorsed by, Blizzard. Card data comes from
+[HearthstoneJSON](https://hearthstonejson.com), and the sources behind the comp
+reference are credited inside `meta/comps.json`.
+
+## Working on the code
+
+**A note on the model tooling you will find in this tree.** I tried a language
+model in the loop early on and decided against it, so nothing on the advising
+path calls one: `live.py`, `live_coach.py`, `value.py` and `coach_ui.py` do not
+import it, and every recommendation comes from the local value function and the
+meta database. The experiment is still here — `coach_llm.py` is the client,
+`compare_models.py` races models against each other, and `patch_notes.py` and
+`check_patch_notes.py` use one to turn official patch notes into the meta DB. It
+stays because it is useful for maintainer work, and none of it ships in a
+release.
+
+### Clone and run it
 
 ```
-cd <the folder you unzipped>
+git clone https://github.com/mharrell/bobs-ledger
+cd bobs-ledger
 python -m pip install -r app\requirements.txt
 python app\live.py
 ```
 
-### Working on the code
+That is the same program the launcher starts. `app\live.py` also takes a log path,
+and `--poll 0.5` re-analyses a saved log, `--once` does a single pass, `--no-ui`
+skips the overlay, `--version` prints what you are running. `python app\doctor.py`
+is the one-shot pre-flight verdict: patch, coverage, art, newest log.
+
+A clone never auto-updates: commit shas cannot prove which side is newer, so the
+release check stands aside and you update with `git pull`.
+
+### The layout
+
+The program lives in `app/`. The root keeps what a player should see — this
+README, `LICENSE`, `docs/`, the launcher — plus what never ships: `analysis/`
+(research notes, some of which name real opponents), `telemetry/` (the release
+channel itself), `CLAUDE.md`, `DESIGN.md`, `ROADMAP.md`.
+
+### Tests
 
 ```
-git clone https://github.com/mharrell/bobs-ledger
+python -m unittest discover -s app/tests
 ```
 
-A clone is never auto-updated — commit shas can't prove which side is newer,
-so the update check stands aside; update with `git pull`. `python app\live.py
---version` prints what you're running either way.
+About a thousand tests, ~45 seconds. Some skip by design: the ones that need a
+real `Power.log` or maintainer-only files report as skipped rather than passing
+quietly.
 
-## Quick start
+### What not to break
 
-Once the launcher has run, there are two things between you and real advice.
+- **The privacy gates, and the sharing whitelist.** `session_report.py`'s `SPEC`
+  names every field a shared summary may contain; a field it does not name cannot
+  appear, so adding one means adding it there deliberately.
+- **The launcher.** `Start Bob's Ledger.cmd` has to stay CRLF and pure ASCII: a
+  bare LF makes cmd.exe mis-parse it, and a stray UTF-8 byte renders as garbage in
+  a console.
+- **The update join.** `VERSION` and `.update_state.json` are stamped into every
+  release and are what let an installed copy learn that a newer one exists.
+- **The install promise.** Outside Hearthstone's own `log.config` — which the
+  launcher edits only when asked, keeping a backup — everything the coach writes
+  stays inside its own folder. Uninstalling is deleting one folder, and that has
+  to stay true.
 
-1. **Turn on Hearthstone's file logging.** This is the step everyone
-   misses — by default Hearthstone writes no `Power.log` at all, and with
-   no log the coach has nothing to read.
-
-   a. Close Hearthstone if it's running.
-
-   b. Press `Win+R`, paste `%LocalAppData%\Blizzard\Hearthstone`, Enter.
-
-   c. Open (or create) a file called `log.config` with a text editor, and
-      make sure it contains at least:
-
-      ```
-      [Power]
-      LogLevel=1
-      FilePrinting=true
-      ConsolePrinting=false
-      Screenshots=false
-      ```
-
-   d. If you use Hearthstone Deck Tracker or Firestone, they likely
-      created this file already — then you're done before you started.
-
-   e. Start Hearthstone. The coach looks for logs under
-      `C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_<timestamp>\Power.log`.
-
-   (The overlay's welcome card shows this same block, and the launcher tells
-   you if the log folder is missing — you should never have to come back
-   here for it.)
-
-2. **Play a game.** With Hearthstone running, the launcher's window prints
-   its advice and the overlay fills in as you play. The overlay starts as a
-   welcome card and shows advice the moment your shop opens.
-
-   Sanity check: the strip at the top shows your hero, gold, tavern tier and
-   turn — they should match the game. If the strip is right, everything
-   downstream is trustworthy. If it stays on "Waiting for live.py analysis…",
-   see [Troubleshooting](#troubleshooting).
-
-Useful flags, if you run it from a terminal: `python app\live.py
-<path-to-Power.log> --poll 0.5` re-analyzes a saved log, `--once` does a single
-analysis, `--no-ui` skips the overlay.
-
-## The overlay, box by box
-
-When there's nothing to advise yet — a fresh start, a brand-new game, or
-after a press of the **Clear** button (top-right) — the overlay shows a
-welcome card instead of panels. It never shows the previous game's
-advice: a new game wipes the screen automatically (and resets your
-manual ban taps, since the tribe ban differs per game).
-
-On a wide window the overlay is **two panes**: **Decide** on the left —
-everything the turn's decision needs, never scrolled away — and
-**Reference** on the right, which scrolls. On a narrow window they stack
-into one column, decision first.
-
-<img src="docs/reference-pane.png" alt="The overlay mid-game: a danger band reading DYING sits above the plan, and the Reference pane lists the next opponent, sell verdicts and the comp guide" width="620">
-
-*Mid-game and one bad fight from out: the danger band above the plan says
-how close the next hit is to ending it, and the Reference pane below names
-the announced opponent, what is safe to sell, and what the comp still
-wants. This is a losing board on purpose — the coach is at its most useful
-when the game is going badly.*
-
-Decide pane:
-
-- **State strip** (top line) — hero, gold, tavern tier, HP, turn, and
-  your live placement, as stat tiles, plus:
-  - **Scout strip** — your board's stats vs. the next opponent's, so
-    "will the next fight kill me" is answered on screen.
-  - **Combat forecast** — `✓ favored` / `even` / `✕ behind` for the next
-    fight.
-  - **Banned tribes** — this game's 5/5 tribe ban (see glossary).
-- **Do this now** — the plan as numbered steps, step 1 bigger than
-  everything else with a gold bar: the one move the turn is for. Each
-  step carries a kind chip (BUY / LEVEL / SELL / ROLL / …), the action,
-  and one reason; the rest of the rationale hides behind the "…". A
-  danger band (▲ FRAGILE / ■ DYING) sits above the plan when the next
-  hit matters more than the plan. Includes a level-vs-roll reference
-  line and the buy price actually read from the game.
-- **Choose 1** — appears during hero / trinket / discover
-  picks; ranks the options for your situation. Options with no data say
-  so instead of pretending to rank. (Dark Gift picks are not ranked —
-  there is no dark-gift ranking path, and the overlay drops the line.)
-- **Your hand** — held cards with their verdict (cast / play / hold /
-  discard); the plan's chosen discard fodder is named on its tile.
-- **Hand engine** — when a hand-charge kit is in play: deployer on
-  board? slot free? how many charging.
-
-Reference pane:
-
-- **Next opponent** — the announced opponent's comp, as of the round
-  shown.
-- **Sell** — board minions grouped *safe to sell | divider | do not
-  sell*, each row with the why ("comp core" is a keep; "stats only" is
-  a safe sell).
-- **Looking for (comp / pivot)** — what to shop for on future rolls.
-- **Comp direction** — a meter per candidate comp: how close you are to
-  the 2-core-hit commit point, with the state in words beside it.
-- **Lobby pressure** — which tribes the seats you've seen are committing.
-- **Tavern (ranked)** — the current shop offers, ranked for your board,
-  with prices and card art; the plan's buy glows gold.
-- **Playable comps** — the comps actually possible this game (after the
-  tribe ban filter), in meta-tier order, click to expand a comp's
-  shopping list. Readable from turn 1: while the lobby's 5/5 tribe bans
-  are still being read from the shop rolls (~turn 3-5), every comp stays
-  listed with not-yet-confirmed tribes dimmed, and the ban-picker chips
-  let you set the banned tribes by hand from the reveal screen.
-
-<img src="docs/trinkets.png" alt="A trinket pick: each option shown with its pick rate and average placement for this board, then the numbered recommendation" width="560">
-
-*Choose 1 during a trinket pick: every option priced by pick rate and
-average placement for the board you actually have, then the one to take.
-Picks with no data say so instead of pretending to rank.*
-
-## Coach vocabulary
-
-- **Hold** — you have a pair (2 copies of a minion); keep it — a 3rd copy
-  triples it and turns it golden.
-- **Off-build** — a buy outside your committed comp's tribe/build; the
-  coach damps these once a comp is committed.
-- **Pivot** — switching comps mid-game; "Looking for (pivot)" means the
-  coach believes your current comp is no longer winnable and names the
-  next-best.
-- **Comp pips / commit readiness** — how many of a comp's core minions
-  you already own (core hits / 2). More pips = stronger case to commit.
-- **Level vs board** — the rule behind the level/roll reference line:
-  level the tavern when your board is strong enough to survive on
-  tempo; roll when it isn't.
-- **5/5 tribe ban** — Battlegrounds bans 5 of the minion tribes each
-  game (shown in the state strip); comps whose core is mostly banned
-  are filtered out, degraded comps are kept and marked.
-
-## After a Hearthstone patch
-
-The meta reference (`meta/*.json`) is a point-in-time snapshot. After a
-game patch:
-
-1. New minions/spells change: run the patch-notes pipeline —
-   `python app\patch_notes.py` applies official Blizzard patch notes to the
-   meta DB (dry-run by default; `--apply` writes). `python app\doctor.py`
-   is the one-command verdict afterwards (patch, coverage, art, newest
-   log); it flags anything the refresh missed.
-2. Card art for new cards: re-run `python app\hearth_art_extract.py` to
-   re-extract art from the local client (needs the optional
-   `python -m pip install UnityPy`), or let the overlay fall back to
-   HearthstoneJSON — which lags a patch by days; missing art after a
-   patch is known and harmless (the overlay shows a text tile).
-
-Everything else keeps working on an old meta — advice just may not know
-the newest cards.
-
-## Privacy & telemetry
-
-What the coach writes on your machine:
-
-- `img_cache/` — downloaded card art.
-- `decision_logs/` — one JSONL line per advisory: what the coach advised,
-  when, on which game state. No account data, no chat, no file paths.
-
-  It is **not** free of people, and the old note here was wrong to imply
-  otherwise: every advisory carries the opponent's display handle in
-  `analysis.opp_comp.name` — the one the overlay shows beside their hero.
-  A scan for BattleTag-shaped text finds none of those here because a bare
-  handle has no `#1234` on it, which is exactly why the sharing path strips
-  that field by name instead of trusting a scan to catch it (2026-10-03).
-
-The coach asks once — on the welcome card, where there is nothing to advise
-yet — and sends nothing at all until you answer:
-
-- **Nothing yet, or No** — nothing is sent. That is the default: a fresh
-  install has never sent anything, and the card says so.
-- **Yes** — after each finished game it sends one small summary (~16 KB) of
-  what it advised and what happened, so the advice can finally be checked
-  against outcomes rather than argued about. No names, no chat, no file
-  paths, and not the log.
-
-Either way it is one click to change: the same card carries the toggle, or use
-`python app\share.py off`. `python app\live.py --no-share` skips a single
-session without changing the setting, and `python app\share.py status` says
-where you stand. Every summary it sends is also kept in `session_reports/`, so
-you can read exactly what went.
-
-What goes out is built from a **whitelist**: `session_report.py` names every
-field a summary may contain, so a new field in the coach's analysis cannot
-travel by accident, and the sender refuses to send a summary that fails its
-own verifier. That is not theoretical caution — the opponent's display handle
-lives in the logged analysis (`analysis.opp_comp.name`, the name the overlay
-shows beside their hero) and `privacy_scan.py` cannot see it. The whitelist
-drops it by never naming it.
-
-If you would rather send a whole replay — the sanitized log *and* the decision
-log, which is what makes deep forensics on one game possible — that stays a
-deliberate manual step:
+### Releasing
 
 ```
-python app\package_corpus.py <Power.log>   # bundle: sanitized log + decisions
-python app\package_corpus.py --inspect corpus_out/<bundle>   # what's inside
-python app\upload_corpus.py --latest       # upload
+python app\publish_release.py --note "what changed" --dry-run   # gates only
+python app\publish_release.py --note "what changed"             # publish
 ```
 
-`--inspect` decodes a bundle and re-scans its contents with
-`privacy_scan.py` — deliberately separate code from the sanitizer, so a
-redactor that misses a category cannot certify its own work. A bundle is
-one gzipped JSON file: the sanitized log, the decision log, and a
-manifest. Nothing else.
+It walks the working tree, runs two gates, stamps the version, uploads to the
+collector's KV store and cuts a GitHub release. The gates are the review that
+matters most:
 
-Three ways to send it — **no GitHub account needed for the first two:**
+- **PRIVACY** — no BattleTags, opponent handles, account ids, local paths or
+  session names in any shipped text file.
+- **REPRODUCIBILITY** — the zip matches HEAD, with no stray entries.
 
-1. **Collector URL** (what beta testers use): set
-   `HEARTH_TELEMETRY_URL` (and optionally `HEARTH_TELEMETRY_KEY`, the
-   shared secret the maintainer hands out with the URL) and run
-   `python upload_corpus.py --latest`. A plain HTTPS POST; the reference
-   collector lives in `../telemetry/`.
-2. **The file itself**: the bundle from `package_corpus.py` is a single
-   self-contained file — email it, attach it, drop it wherever you
-   already talk to the maintainer.
-3. **Your own GitHub repo**: `gh` logged in, or `GH_TELEMETRY_TOKEN`
-   (a fine-grained PAT with Contents write on that repo only); default
-   repo `mharrell/hearth-telemetry`, override with
-   `HEARTH_TELEMETRY_REPO`.
+The version is the commit sha, and `VERSION` is half of the update join: without
+it, an installed copy could never be offered a newer release.
 
-The Power.log in a bundle is sanitized first. `sanitize_log.py` redacts
-**every player identity** the log carries, which is three categories, not
-one: BattleTags (`handle#1234`), the bare opponent handles Battlegrounds
-writes for most opponents (no discriminator at all), and `GameAccountId`
-pairs — the `lo` half is stable for an account across sessions, so leaving
-it in would let uploads be linked together. Each becomes a stable
-placeholder (`P1`, `P2`, …), so the sanitized log still analyses exactly
-like the original. `--inspect` proves it on the file you are about to send.
+### Where the detail lives
 
-To record no decision log at all (locally or otherwise), run with
-`HEARTH_TELEMETRY=0`. That switch governs the local advisory log only; it
-does not stop the release check (`--no-update` does that).
-
-## Uninstalling
-
-Delete the install folder — the one you unzipped. Nothing is written
-outside it: no registry entries, no services, no data under `AppData`.
-Everything the coach stores lives inside the install:
-
-- `img_cache/` — downloaded and extracted card art.
-- `decision_logs/` — the local advisory log (one JSONL line
-  per advisory).
-- `.card_races.json` — the card→tribe cache.
-- `.update_state.json` — the install's last-updated stamp, at the install
-  root.
-- `Bob's Ledger.lnk` — the shortcut the launcher offers: one here in the
-  install folder (it travels with the folder) and optionally one on your
-  Desktop. Windows cannot put an icon on a `.cmd`, so a shortcut is the only
-  clickable thing that shows the icon. Delete either like any other
-  shortcut.
-
-The one thing the coach asks you to change outside its folder is
-Hearthstone's own `log.config` (Quick start step 2). It belongs to
-Hearthstone, not the coach, and other trackers may rely on it — leave it
-alone unless you want the logging off.
-
-## License & attribution
-
-The coach's code is MIT-licensed — see `LICENSE` in the repo root. Two
-things the license doesn't cover, credited where they came from:
-
-- The meta reference (`meta/*.json`) credits its sources: each comp in
-  `comps.json` names where the build came from (hsreplay.net's public
-  comp pages, via `scrape_comps.py`; one comp is mined from our own
-  replay corpus, curated with the maintainer), and card data comes from
-  HearthstoneJSON. The strategy *builds* are facts; the guide text is
-  written in the coach's own words — nothing is republished.
-- Hearthstone — card names, text, and art — is © Blizzard
-  Entertainment. This is an unofficial fan tool: it reads log files
-  only and is not affiliated with or endorsed by Blizzard.
-
-## Something wrong? Ask
-
-The coach reads a log file, so most problems are some version of "it isn't
-seeing my game". Two things make that quick to sort out:
-
-1. Run **`Start Bob's Ledger.cmd --check`** and read the top few lines — it
-   reports the Python it found, whether the dependency is installed, and
-   where it looked for Hearthstone's log folder. That output answers most
-   questions on its own.
-2. Then open an issue: <https://github.com/mharrell/bobs-ledger/issues>.
-   Paste the `--check` output and what you expected to happen; a screenshot
-   of the overlay helps more than a description of it.
-
-## Troubleshooting
-
-- **`Start Bob's Ledger.cmd` says Python 3 was not found** — install it from
-  python.org and tick *"Add python.exe to PATH"* in the installer, then run
-  the launcher again. It offers to open the download page for you.
-- **The launcher window flashes and closes** — run it from a Command Prompt
-  (or run `Start Bob's Ledger.cmd --check`) so you can read the message;
-  the window normally stays open for the whole session.
-- **`No active Power.log found` / nothing happens during a game** —
-  file logging isn't enabled (see Quick start step 2), or Hearthstone
-  hasn't written a log in the last 10 minutes. The coach auto-finds the
-  newest session log modified within 10 minutes (`LIVE_RECENT` env var
-  changes this); pass an explicit path to analyze an older one. The overlay's
-  welcome card also shows the `log.config` block.
-- **Overlay says "Waiting for live.py analysis…"** — live.py isn't
-  running, or it found no active log. Check the terminal output.
-- **The overlay's advice says it is N seconds old** — that line only appears
-  when the advice has stopped updating: live.py has wedged or exited. The
-  overlay is deliberately showing you its last frame and telling you so
-  rather than pretending it is live.
-- **Overlay frozen / shows a stale board** — refresh the browser tab.
-  Between rounds the shop can legitimately be empty (shop is dealt at
-  round start); that gap is normal.
-- **Advice ignores a new patch's cards / comps look wrong after a
-  patch** — stale meta; see [After a Hearthstone patch](#after-a-hearthstone-patch).
-- **Card art missing** — HearthstoneJSON lags a patch (harmless), or
-  `img_cache/` was cleared; re-run `hearth_art_extract.py` for full
-  coverage from the local client.
-- **`Coach UI skipped (...)` at startup** — the default port is taken;
-  the overlay is skipped for that run. Retry or free the port.
-- **Advice mid-spectate / replay looks odd** — hero parsing can fail on
-  spectated or oddly-formatted games; live coaching is built for your
-  own games.
-
-## Going further
-
-Internal docs (design history, not needed to use the coach):
-`DESIGN.md` (architecture), `ROADMAP.md` (phase status), `analysis/*.md`
-(decision analyses). `analysis/` is maintainer-only and is **not** in a
-release zip (its replay reviews name real opponents), so a zip install has
-no `analysis/` directory — that is expected, not a broken install.
-Post-game tools: `replay_review.py` (coach-vs-player
-diff per phase), `replay_stats.py` (replay corpus stats). The test suite:
-`python -m unittest discover -s app/tests`.
-
-The program itself lives in `app/`, which is why the folder you unzip shows
-only the launcher, this README, the licence and `docs/`. Command-line tools
-are in there too: `python app\doctor.py`, `python app\update.py --check`.
+- `DESIGN.md` — architecture, and the reasoning behind it.
+- `CLAUDE.md` — working rules, and the game's log quirks that keep biting.
+- `ROADMAP.md` — phase status.
+- `analysis/` — the research the design came out of (not shipped).
+- `telemetry/README.md` — the collector: its routes, retention and deploy notes.
