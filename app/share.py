@@ -84,6 +84,12 @@ def set_choice(share):
     return status()
 
 
+def sent_count():
+    """How many reports this install has shared — the overlay shows it, so a
+    player can see the feature doing what it said it would."""
+    return len(_sent_ids())
+
+
 def _sent_ids():
     try:
         with open(SENT_PATH, encoding="utf-8") as f:

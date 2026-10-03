@@ -260,6 +260,11 @@ def monitor(path, poll=1.0):
                     active = None  # a removed/locked log must not kill the loop
             if active and os.path.abspath(active) != os.path.abspath(path):
                 print(f"New session detected: {active}", flush=True)
+                # The previous game is over: this is one of the two moments
+                # that is certain, the other being exit. Sharing here means a
+                # player who leaves the coach running for days still has
+                # every finished game counted.
+                _share_finished(path, opts)
                 f.close()
                 path = active
                 f = open(path, "rb")
@@ -392,6 +397,24 @@ def monitor(path, poll=1.0):
         f.close()
 
 
+def _share_finished(log_path, opts=()):
+    """Send a finished session's summary, if the player agreed to share.
+
+    Quiet and total: it reports nothing when sharing is off, undecided or
+    already done, and an error in it can never reach the player as a problem
+    with the coach. `--no-share` skips this session without changing the
+    stored choice — consent is a standing answer, not a permanent one.
+    """
+    if "--no-share" in opts:
+        return "skipped"
+    try:
+        import share
+        return share.share_session(log_path)
+    except Exception as e:          # noqa: BLE001 - never break the coach
+        print(f"  (could not share this session: {e})", flush=True)
+        return "error"
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     opts = [a for a in sys.argv[1:] if a.startswith("--")]
@@ -469,7 +492,10 @@ def main():
     try:
         monitor(path, poll)
     except KeyboardInterrupt:
-        return 0
+        pass
+    finally:
+        # The other certain end-of-game moment: the player stops the coach.
+        _share_finished(path, opts)
     return 0
 
 
