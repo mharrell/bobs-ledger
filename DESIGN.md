@@ -447,7 +447,19 @@ filter:
 - **Transport:** `POST /session` is unauthenticated by design (a secret inside
   a downloadable client is not a secret) with a 512 KB cap, a shape check and
   a coarse personal-data net; reading is keyed (`GET /sessions`), and
-  `fetch_sessions.py` pulls reports into `sessions_in/`.
+  `fetch_sessions.py` pulls reports into `sessions_in/` (or summarises them
+  with `--stats`).
+- **Open ingest, accepted deliberately (2026-10-03).** Fabrication is possible,
+  so the corpus is indicative rather than evidential — a trade the maintainer
+  took knowingly, not by omission. The escalation path if volume or abuse ever
+  justifies it, in the order it would be used: the per-location throttle is
+  already live (20/60s), a stored report can never be overwritten, implausible
+  content is refused, `?days=all` purges the store in one command, and beyond
+  that handed-out keys would buy attribution at the cost of friction.
+- **Retention: 30 days**, swept daily at 04:00. It is also the only answer an
+  anonymous design can give to "delete mine": there is nothing to look a
+  report up by, which is the same property that protects the players sending
+  them.
 - **Capacity is the reason for the tier.** At ~16 KB a report the free KV tier
   holds tens of thousands, against roughly 750 of the 1.3 MB full-log bundles.
   Full logs stay opt-in through `package_corpus.py`.
