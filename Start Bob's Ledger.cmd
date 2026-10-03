@@ -22,6 +22,21 @@ echo   Bob's Ledger - Hearthstone Battlegrounds coach
 echo ============================================================
 echo.
 
+rem --- 0. an interrupted update ---------------------------------------
+rem An update moves a release into place file by file, setting the replaced
+rem copies aside in .staging\old and dropping an APPLYING marker first. If
+rem that marker is still here the process died mid-commit, and this install
+rem may be part old and part new - which is how a coach stops starting. The
+rem set-aside copies are enough to make it run again, and update.py finishes
+rem the job properly (removing files the new version added) once Python is
+rem up. APPLIED, not APPLYING, means the update finished: never undo that.
+if not exist "%~dp0.staging\APPLYING" goto :update_recovery_done
+echo An earlier update was interrupted. Restoring the version that worked...
+xcopy /E /Y /I /Q "%~dp0.staging\old\*" "%~dp0" >nul 2>&1
+echo Done.
+echo.
+:update_recovery_done
+
 rem The program lives in app\, so this folder shows almost nothing: the
 rem launcher, the README, the licence and docs\. Checked BEFORE the Python
 rem work, because the usual reason it is missing is that Windows is running

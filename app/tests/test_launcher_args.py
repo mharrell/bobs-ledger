@@ -131,5 +131,44 @@ class TestLauncherFileFormat(unittest.TestCase):
         self.assertIn("CreateShortcut", text)
 
 
+class TestInterruptedUpdateRecovery(unittest.TestCase):
+    """The launcher puts a half-applied update back before anything else runs.
+
+    Pinned by reading the file rather than running it: reaching this branch in
+    a test means building an install whose update was killed, and the launcher
+    then carries on into the Python and dependency checks — so running it
+    would test the whole first-run flow, not this branch. `update.recover()`
+    is the tested implementation; this batch step is the pre-Python best
+    effort, and its worst case is doing nothing at all.
+    """
+
+    def setUp(self):
+        with open(LAUNCHER, encoding="ascii") as f:
+            self.text = f.read()
+
+    def test_it_runs_before_the_program_check(self):
+        # A killed commit shows up as a missing app\\live.py (the move took the
+        # old tree away), so the restore has to come first — otherwise the
+        # player is told to re-extract the zip they already extracted.
+        self.assertIn(".staging\\APPLYING", self.text)
+        self.assertLess(self.text.index(".staging\\APPLYING"),
+                        self.text.index('app\\live.py" goto'))
+
+    def test_a_finished_update_is_never_undone(self):
+        self.assertNotIn(".staging\\APPLIED", self.text)
+
+    def test_it_restores_from_the_set_aside_copies(self):
+        self.assertIn('xcopy /E /Y /I /Q "%~dp0.staging\\old\\*" "%~dp0"',
+                      self.text)
+
+    def test_it_leaves_the_marker_for_update_py(self):
+        """Deleting the marker here would hide the interrupted state from the
+        precise recovery, which is the one that also removes the files the new
+        version added."""
+        start = self.text.index("An earlier update was interrupted")
+        end = self.text.index(":update_recovery_done", start)
+        self.assertNotIn("del ", self.text[start:end])
+
+
 if __name__ == "__main__":
     unittest.main()

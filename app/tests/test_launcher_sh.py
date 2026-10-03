@@ -157,5 +157,36 @@ class TestGitPreservesTheLineEndings(unittest.TestCase):
         self.assertIn("*.cmd text eol=crlf", self._rules())
 
 
+@unittest.skipUnless(os.path.exists(LAUNCHER), "no macOS launcher")
+class TestInterruptedUpdateRecovery(unittest.TestCase):
+    """The macOS twin of the Windows launcher's recovery step.
+
+    Pinned structurally for the same reason: the tested implementation is
+    `update.recover()`, and this is the pre-Python best effort that runs before
+    it. Running it here would mean faking a killed update and then walking the
+    whole first-run flow.
+    """
+
+    def setUp(self):
+        self.text = _text()
+
+    def test_it_runs_before_the_program_check(self):
+        self.assertIn(".staging/APPLYING", self.text)
+        self.assertLess(self.text.index(".staging/APPLYING"),
+                        self.text.index('! -f "$HERE/app/live.py"'))
+
+    def test_a_finished_update_is_never_undone(self):
+        self.assertNotIn(".staging/APPLIED", self.text)
+
+    def test_it_restores_from_the_set_aside_copies(self):
+        self.assertIn('cp -Rf "$HERE/.staging/old/." "$HERE/"', self.text)
+
+    def test_it_leaves_the_marker_for_update_py(self):
+        start = self.text.index("An earlier update was interrupted")
+        end = self.text.index("fi", self.text.index("cp -Rf", start))
+        block = self.text[start:end]
+        self.assertNotIn("rm ", block)
+
+
 if __name__ == "__main__":
     unittest.main()
