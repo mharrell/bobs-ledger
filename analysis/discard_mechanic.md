@@ -551,7 +551,7 @@ both discard trinkets, 2 discards) produces, by hand and by simulation:
 ## 9. Refreshing / extending on the next patch
 
 ```
-cd hearth-coach
+cd bobs-ledger        # the repo root
 python -m unittest tests.test_discard     # the mechanic's own suite
 python check_meta.py && python -m unittest discover -s tests
 python simulate_growth.py                 # the Aberration demo above

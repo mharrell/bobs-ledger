@@ -355,8 +355,7 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 
 ## 8b. Setup & Infrastructure Status
 
-- Working dir: `<repo root> Pangolin\PycharmProjects\visual-game-coach`
-  (this repository).
+- Working dir: this repository (the code is at the root).
 - Cloned `python-hslog/` (official HearthSim parser).
 - `.venv` created; `requests` available (no SDK install needed for the LLM client).
 - **Tools built:**
@@ -433,7 +432,10 @@ asserted. Three mechanisms, in order of who they protect:
 `analysis/`, `telemetry/`, `CLAUDE.md`, the caches, local data, or any
 `.lnk`), stamps `VERSION` and `.update_state.json`, and PUTs it plus a
 manifest to the collector's KV namespace. Users get it from
-`GET /release/latest.json` → `GET /release/<zip>`, or by `git clone`.
+a GitHub release (`/releases/latest`, one click, with the version and
+note on the page) or `GET /release/latest.zip` (a 302 to the current
+zip, for anyone without a GitHub account). `GET /release/latest.json`
+is the updater's manifest, not a user instruction.
 
 A released zip keeps itself current because the stamp it carries is the
 other half of the update join: direction is decided by the manifest's

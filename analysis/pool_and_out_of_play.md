@@ -250,7 +250,7 @@ never have seen a card list. Both are fixed and regression-tested.
 ## 7. How to refresh on the next patch
 
 ```
-cd hearth-coach
+cd bobs-ledger        # the repo root
 python check_patch_notes.py --no-notify          # detect + report (never edits)
 python patch_notes.py <url>                      # dry-run the balance changes
 python patch_notes.py <url> --apply              # apply them
