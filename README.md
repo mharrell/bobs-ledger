@@ -16,8 +16,9 @@ that the leveling lane is the suspect: followed level advice preceded a
 mean −4.6 HP loss against −2.0 when ignored. So treat a level line as a
 question to price, not a verdict.
 
-No account access, no game modification — it only reads log files that
-Hearthstone writes on your disk.
+No account access, no game modification — the only file it can change is
+Hearthstone's own logging setting, and only if you say yes to the offer in
+Quick start. Otherwise it reads log files that Hearthstone writes on your disk.
 
 <img src="docs/decide.png" alt="The overlay's Decide pane mid-game: DO THIS NOW gives one buy with its reason, and the level step says to level only after that buy" width="560">
 
