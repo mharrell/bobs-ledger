@@ -473,6 +473,22 @@ filter:
 
 ### Distribution & first run
 
+**The launcher offers to turn on Hearthstone's file logging** (2026-10-03),
+because that step is the one nearly every new player misses and the difference
+between advice and an empty card forever. `setup_logging.py` makes the edit,
+under three rules that came out of looking at a real file: it creates
+`log.config` only when there is none; when one exists it sets ONLY `LogLevel=1`
+and `FilePrinting=true` inside the existing `[Power]` section, leaving the
+other five sections (`[Achievements]`, `[Arena]`, `[FullScreenFX]`,
+`[LoadingScreen]`, one more) byte-identical; and it copies the original to
+`log.config.bobs-ledger-backup` before the first change. It refuses while the
+game is running, since the game reads that file at startup.
+
+That is a deliberate exception to "the coach only reads": it edits one file it
+does not own, which is why it asks first, says what it changed, keeps the
+original, and never touches anything else on disk. The README's promise was
+rewritten to say exactly that rather than leave the old one standing.
+
 `publish_release.py` builds the zip (code + `meta/` + user docs; never
 `analysis/`, `telemetry/`, `CLAUDE.md`, the caches, local data, or any
 `.lnk`), stamps `VERSION` and `.update_state.json`, and PUTs it plus a

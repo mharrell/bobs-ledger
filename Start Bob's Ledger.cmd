@@ -87,18 +87,49 @@ goto :end
 :deps_ok
 echo Dependencies: ok
 
-rem --- 3. Hearthstone's log folder ------------------------------------
-rem Told, not written. live.py reports the same thing when it finds no
-rem Power.log, and the README documents the log.config block; creating a
-rem file inside the game's own folder would break the uninstall promise.
+rem --- 3. Hearthstone's file logging ----------------------------------
+rem The step nearly everyone misses, and the difference between a coach that
+rem advises and one that shows an empty card forever. So it is OFFERED rather
+rem than described: setup_logging.py makes the edit, because log.config has
+rem other sections that must survive (anyone using Deck Tracker or Firestone
+rem already has one, and replacing it would break their logging), and it
+rem touches that single file and nothing else - keeping a backup first.
+%PY% "%~dp0app\setup_logging.py" --check >nul 2>&1
+if not errorlevel 1 goto :logging_done
+echo.
+echo Hearthstone's file logging is OFF, and the coach cannot advise without it.
+echo.
+choice /c YN /n /m "Turn it on for me now? [Y/N] "
+if errorlevel 2 goto :logging_manual
+%PY% "%~dp0app\setup_logging.py" --apply
+if errorlevel 1 goto :logging_failed
+goto :logging_done
+
+:logging_failed
+echo.
+echo Could not set it up. Close Hearthstone and run this file again - or use
+echo the block in the README (Turn on Hearthstone's logging).
+goto :logging_done
+
+:logging_manual
+echo.
+echo No problem. By hand: open this folder
+echo   %LOCALAPPDATA%\Blizzard\Hearthstone
+echo and make sure [Power] has LogLevel=1 and FilePrinting=true. The README
+echo has the full block.
+if exist "%LOCALAPPDATA%\Blizzard\Hearthstone" start "" "%LOCALAPPDATA%\Blizzard\Hearthstone"
+
+:logging_done
+rem Where the game writes the log the coach reads. Told, not created: if it is
+rem not there the game is probably installed elsewhere, which is fine, but the
+rem coach has to be pointed at it.
 set "LOGDIR=%ProgramFiles(x86)%\Hearthstone\Logs"
 if exist "%LOGDIR%" goto :shortcut_step
 echo.
 echo Note: no Hearthstone log folder at
 echo   %LOGDIR%
 echo If the game lives elsewhere that is fine - the coach looks in the
-echo standard place and can be pointed with HEARTHSTONE_HOME. What it does
-echo need is file logging turned ON (README, Quick start step 2).
+echo standard place and can be pointed with HEARTHSTONE_HOME.
 
 :shortcut_step
 rem Paths for the shortcut step. ROOT/SELFRAW stay raw for batch use; HERE/

@@ -1456,9 +1456,10 @@ def welcome_payload():
         "status": "Waiting for your next buy phase — advice appears here the "
                   "moment your shop opens.",
         "hint": "Never seen advice? Hearthstone only writes the log this reads "
-                "when file logging is ON. Close the game, then put this in "
-                "%LocalAppData%\\Blizzard\\Hearthstone\\log.config (create the "
-                "file if it is not there):",
+                "when file logging is ON. Run Start Bob's Ledger.cmd again and "
+                "say yes to let it turn that on for you — or put this in "
+                "%LocalAppData%\\Blizzard\\Hearthstone\\log.config yourself "
+                "(create the file if it is not there):",
         # The block live.py's console message has always claimed this card
         # shows.
         "steps": "[Power]\nLogLevel=1\nFilePrinting=true\n"

@@ -109,8 +109,12 @@ every release, so installed copies keep updating). `--dry-run` runs the gates
 without uploading.
 
 Users start with `Start Bob's Ledger.cmd` at the zip root: it finds Python,
-asks before installing `requests`, reports the log folder, offers a Desktop
-shortcut wearing `app/bobs-ledger.ico`, and runs `app\live.py --open`. Windows
+asks before installing `requests`, and **offers to turn Hearthstone's file
+logging on** — `setup_logging.py` edits the game's own `log.config` in place
+(backing it up first and touching only the two keys the coach needs, because
+that file has five other sections that a Deck Tracker user depends on), then
+offers a Desktop shortcut wearing `app/bobs-ledger.ico`, and runs
+`app\live.py --open`. Windows
 draws no icon on a `.cmd`, so the shortcut is the only clickable thing that can wear
 one — and it must be created on the user's machine, since a `.lnk` embeds
 absolute paths.
