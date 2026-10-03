@@ -121,8 +121,12 @@ rem than assumed, and --check below reports without writing anything.
 rem Match on a PREFIX: a shell that hands over "--check=" (which happened)
 rem used to miss the exact-match test and fall through to the run below, so
 rem asking for a report silently STARTED the coach instead. Two of those were
-rem left running and held the install directory open (2026-10-02).
-set "ARG1=%~1"
+rem left running and held the install directory open (2026-10-02). ARG1 is given
+rem a placeholder when there are no arguments, and that is not cosmetic: cmd
+rem mangles an UNDEFINED variable in the "%ARG1:~0,8%" test below into "The syntax
+rem of the command is incorrect." and kills the batch on the spot - so every plain
+rem double-click died right after "Dependencies: ok" (found 2026-10-02).
+if "%~1"=="" (set "ARG1=.") else set "ARG1=%~1"
 if /i "%ARG1%"=="--check" goto :report
 if /i "%ARG1:~0,8%"=="--check=" goto :report
 set "WANT_SHORTCUT=0"
