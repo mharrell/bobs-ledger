@@ -303,5 +303,123 @@ class TestConsentOnTheWelcomeCard(unittest.TestCase):
             self.assertIn(needle, coach_ui._HTML)
 
 
+class TestForeignCallers(unittest.TestCase):
+    """Binding loopback keeps other MACHINES out; it does not keep other PAGES
+    out, and neither Host nor Origin used to be checked.
+
+    Measured before this guard existed: a POST carrying
+    `Origin: https://evil.example` and `Content-Type: text/plain` flipped the
+    sharing consent from undecided to ON, and `GET /analysis` with
+    `Host: evil.example` returned the live analysis. A page the player merely
+    visited could therefore opt them into uploading their games, and read the
+    overlay — which during play carries the opponent's handle (2026-10-03).
+    """
+
+    def setUp(self):
+        import share
+        self._tmp = tempfile.TemporaryDirectory()
+        self._saved = (share.CONSENT_PATH, share.REPORTS_DIR, share.SENT_PATH)
+        share.CONSENT_PATH = os.path.join(self._tmp.name, ".share_consent.json")
+        share.REPORTS_DIR = os.path.join(self._tmp.name, "session_reports")
+        share.SENT_PATH = os.path.join(share.REPORTS_DIR, ".sent.json")
+
+    def tearDown(self):
+        import share
+        (share.CONSENT_PATH, share.REPORTS_DIR,
+         share.SENT_PATH) = self._saved
+        self._tmp.cleanup()
+
+    def _call(self, path, method="GET", body=None, headers=None, host=None):
+        import urllib.error
+        import urllib.request
+        srv = coach_ui.start_server(0)
+        try:
+            port = srv.server_address[1]
+            h = dict(headers or {})
+            if host:
+                h["Host"] = host
+            req = urllib.request.Request(f"http://127.0.0.1:{port}{path}",
+                                         data=body, method=method, headers=h)
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    return port, r.status, r.read()
+            except urllib.error.HTTPError as e:
+                return port, e.code, e.read()
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+    def test_a_cross_origin_post_cannot_flip_consent(self):
+        import json as _json
+        import share
+        _port, status, body = self._call(
+            "/share", "POST", _json.dumps({"share": True}).encode(),
+            {"Content-Type": "text/plain;charset=UTF-8",
+             "Origin": "https://evil.example"})
+        self.assertEqual(status, 403)
+        self.assertIn(b"bad origin", body)
+        self.assertEqual(share.status(), "undecided",
+                         "a hostile page changed the consent answer")
+
+    def test_a_non_json_post_is_refused_even_from_loopback(self):
+        """The content type is the line a cross-origin page cannot cross: it
+        forces a preflight the browser will not pass."""
+        import json as _json
+        _port, status, body = self._call(
+            "/share", "POST", _json.dumps({"share": True}).encode(),
+            {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 415)
+        self.assertIn(b"application/json", body)
+
+    def test_a_rebinding_host_is_refused_on_reads(self):
+        _port, status, body = self._call("/analysis", host="evil.example")
+        self.assertEqual(status, 403)
+        self.assertIn(b"bad host", body)
+
+    def test_a_sandboxed_or_file_origin_is_refused(self):
+        for origin in ("null", "file://", "https://evil.example"):
+            _port, status, _body = self._call(
+                "/share", "POST", b'{"share": true}',
+                {"Content-Type": "application/json", "Origin": origin})
+            self.assertEqual(status, 403, f"origin {origin!r} was accepted")
+
+    def test_an_ipv6_loopback_origin_is_allowed(self):
+        """It looks like an attack and is not one: [::1] IS loopback, and an
+        origin of http://[::1]:9999 means something local served that page. A
+        local process can talk to the overlay regardless of Origin, so Origin
+        is a browser-side control and this is the boundary it draws. (An
+        earlier version of the test above asserted this was refused, which was
+        the test being wrong rather than the guard being loose.)"""
+        import share
+        _port, status, _body = self._call(
+            "/share", "POST", b'{"share": true}',
+            {"Content-Type": "application/json", "Origin": "http://[::1]:9999"})
+        self.assertEqual(status, 200)
+        self.assertEqual(share.status(), "on")
+
+    def test_the_overlays_own_traffic_still_works(self):
+        import json as _json
+        import share
+        port, status, body = self._call("/analysis")
+        self.assertEqual(status, 200)
+        # exactly what the page sends: same-origin, JSON, loopback Origin
+        _port, status, _body = self._call(
+            "/share", "POST", _json.dumps({"share": True}).encode(),
+            {"Content-Type": "application/json",
+             "Origin": f"http://127.0.0.1:{port}"})
+        self.assertEqual(status, 200)
+        self.assertEqual(share.status(), "on")
+
+    def test_host_only_reads_the_forms_that_occur(self):
+        self.assertEqual(coach_ui._host_only("127.0.0.1:8747"), "127.0.0.1")
+        self.assertEqual(coach_ui._host_only("localhost"), "localhost")
+        self.assertEqual(coach_ui._host_only("[::1]:8747"), "[::1]")
+        self.assertEqual(coach_ui._host_only("http://127.0.0.1:8747"),
+                         "127.0.0.1")
+        self.assertEqual(coach_ui._host_only("https://evil.example/x"), "evil.example")
+        self.assertEqual(coach_ui._host_only("null"), "")
+        self.assertEqual(coach_ui._host_only(None), "")
+
+
 if __name__ == "__main__":
     unittest.main()
