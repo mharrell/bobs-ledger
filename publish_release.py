@@ -330,14 +330,14 @@ def main():
     # of it — an API instruction dressed up as a user instruction, since the
     # name carries a commit sha nobody can guess (2026-10-02).
     if not args.no_github:
-        github_release(version, args.note, data)
+        github_release(version, args.note, data, zip_name)
 
     print("published. Users update via `python update.py` or on their next "
           "live.py start.")
     return 0
 
 
-def github_release(version, note, data):
+def github_release(version, note, data, zip_name):
     """Attach the zip to the GitHub release for this version.
 
     Best effort on purpose: the KV copy is what the UPDATER reads, and a
@@ -349,7 +349,11 @@ def github_release(version, note, data):
         print("  note: `gh` not found — skipping the GitHub release. Players "
               "can still download from /release/latest.zip")
         return
-    tmp = os.path.join(os.environ.get("TEMP", _HERE), f"gh_{version}.zip")
+    # Name the temp file what the ASSET should be called: `gh release
+    # create` takes the asset name from the filename, and the first
+    # release went out as "gh_cb95911.zip" — a scratch name a player
+    # would be right to distrust (2026-10-03).
+    tmp = os.path.join(os.environ.get("TEMP", _HERE), zip_name)
     with open(tmp, "wb") as f:
         f.write(data)
     try:
@@ -362,7 +366,7 @@ def github_release(version, note, data):
         else:
             body = (f"{note}\n\n"
                     "### Install\n\n"
-                    "1. Download and unzip `" + os.path.basename(tmp) +
+                    "1. Download and unzip `" + zip_name +
                     "` anywhere.\n"
                     "2. Double-click **Start Bob's Ledger.cmd** in the folder "
                     "you unzipped.\n\n"
