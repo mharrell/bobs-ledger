@@ -187,5 +187,29 @@ class TestItNeverBreaksPlay(ShareFixture):
         self.assertEqual(len(self.posted), 1)
 
 
+class TestSharingHook(unittest.TestCase):
+    """live.py calls this at the two moments a game is certainly over: a new
+    session appearing, and the player stopping the coach."""
+
+    def test_the_no_share_flag_skips_this_session(self):
+        import live
+        self.assertEqual(live._share_finished("x.log", ["--no-share"]),
+                         "skipped")
+
+    def test_it_passes_the_finished_log_through(self):
+        import live
+        with mock.patch.object(share, "share_session",
+                               return_value="sent") as m:
+            self.assertEqual(live._share_finished("that.log"), "sent")
+        m.assert_called_once_with("that.log")
+
+    def test_an_error_in_sharing_never_reaches_the_player_as_a_crash(self):
+        import live
+        with mock.patch.object(share, "share_session",
+                               side_effect=RuntimeError("boom")):
+            with mock.patch("sys.stdout", new_callable=io.StringIO):
+                self.assertEqual(live._share_finished("x.log"), "error")
+
+
 if __name__ == "__main__":
     unittest.main()

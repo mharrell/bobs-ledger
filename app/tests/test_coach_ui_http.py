@@ -4,8 +4,10 @@ The page polls every 300ms; between pushes the answer must be a
 header-only 304 keyed on the ETag update_analysis computed, and card art
 (content-addressed by card id) must be cacheable hard while its 404s must
 poison nothing."""
+import hashlib
 import os
 import sys
+import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -188,7 +190,7 @@ class TestWelcomeCard(unittest.TestCase):
 
     def test_the_card_carries_the_log_config_block(self):
         import json as _json
-        payload = _json.loads(coach_ui.WELCOME_PAYLOAD)
+        payload = _json.loads(coach_ui.welcome_payload())
         self.assertIn("log.config", payload["hint"])
         for line in ("[Power]", "LogLevel=1", "FilePrinting=true"):
             self.assertIn(line, payload["steps"])
@@ -199,6 +201,106 @@ class TestWelcomeCard(unittest.TestCase):
         self.assertIn("'w-steps'", coach_ui._HTML)
         self.assertIn(".welcome .w-steps", coach_ui._HTML)
         self.assertIn("white-space:pre-wrap", coach_ui._HTML)
+
+
+class TestConsentOnTheWelcomeCard(unittest.TestCase):
+    """The card used to promise "Nothing leaves your machine unless you share
+    a session" while offering no way to share one and sending nothing. The
+    sentence is now built from the consent state, the question is on the card,
+    and the answer is one click either way."""
+
+    def setUp(self):
+        import share
+        self._tmp = tempfile.TemporaryDirectory()
+        self._saved_paths = (share.CONSENT_PATH, share.REPORTS_DIR,
+                             share.SENT_PATH)
+        share.CONSENT_PATH = os.path.join(self._tmp.name, ".share_consent.json")
+        share.REPORTS_DIR = os.path.join(self._tmp.name, "session_reports")
+        share.SENT_PATH = os.path.join(share.REPORTS_DIR, ".sent.json")
+        self._saved_state = (coach_ui._state.payload, coach_ui._state.etag)
+
+    def tearDown(self):
+        import share
+        (share.CONSENT_PATH, share.REPORTS_DIR,
+         share.SENT_PATH) = self._saved_paths
+        (coach_ui._state.payload, coach_ui._state.etag) = self._saved_state
+        self._tmp.cleanup()
+
+    def _payload(self):
+        import json as _json
+        return _json.loads(coach_ui.welcome_payload())
+
+    def _post(self, body, raw=False):
+        import json as _json
+        import urllib.error
+        import urllib.request
+        srv = coach_ui.start_server(0)
+        try:
+            url = f"http://127.0.0.1:{srv.server_address[1]}/share"
+            data = body if raw else _json.dumps(body).encode()
+            req = urllib.request.Request(
+                url, data=data, method="POST",
+                headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    return r.status, r.read()
+            except urllib.error.HTTPError as e:
+                return e.code, e.read()
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+    def test_an_unasked_player_is_asked_and_nothing_has_been_sent(self):
+        p = self._payload()
+        self.assertTrue(p["share"]["ask"])
+        self.assertEqual(p["share"]["status"], "undecided")
+        self.assertIn("Nothing has been sent", p["privacy"])
+        self.assertIn(p["share"]["question"], p["share"]["question"])
+
+    def test_the_old_unconditional_promise_is_gone(self):
+        """It was false the moment reports could be sent."""
+        self.assertNotIn("unless you share a session", self._payload()["privacy"])
+
+    def test_no_sends_nothing_and_is_remembered(self):
+        status, body = self._post({"share": False})
+        self.assertEqual(status, 200)
+        self.assertIn(b'"status": "off"', body.replace(b" ", b" "))
+        p = self._payload()
+        self.assertFalse(p["share"]["ask"])
+        self.assertIn("Not sharing", p["privacy"])
+
+    def test_yes_flips_the_card_to_the_sharing_sentence(self):
+        status, _body = self._post({"share": True})
+        self.assertEqual(status, 200)
+        p = self._payload()
+        self.assertEqual(p["share"]["status"], "on")
+        self.assertIn("Sharing one small summary per game", p["privacy"])
+        self.assertIn("no names", p["privacy"])
+
+    def test_the_card_is_not_served_stale_after_the_answer(self):
+        """The page polls with If-None-Match at 300ms: if the payload and its
+        ETag were not rebuilt, the player would click and watch a 304 leave
+        the old sentence on screen."""
+        coach_ui._state.payload = coach_ui.welcome_payload()
+        coach_ui._state.etag = hashlib.sha1(coach_ui._state.payload).hexdigest()
+        before = coach_ui._state.etag
+        self._post({"share": True})
+        code, _headers, _body = coach_ui._analysis_response(f'"{before}"')
+        self.assertEqual(code, 200, "old ETag still matched -> stale card")
+
+    def test_a_non_boolean_is_refused(self):
+        status, body = self._post({"share": "yes"})
+        self.assertEqual(status, 400)
+        self.assertIn(b"true or false", body)
+
+    def test_bad_json_is_refused(self):
+        status, _body = self._post(b"{not json", raw=True)
+        self.assertEqual(status, 400)
+
+    def test_the_page_draws_the_row(self):
+        for needle in ("shareRow", "'w-share'", ".welcome .w-share-btn",
+                       "/share"):
+            self.assertIn(needle, coach_ui._HTML)
 
 
 if __name__ == "__main__":

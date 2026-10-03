@@ -440,6 +440,13 @@ _HTML = r"""<!doctype html>
              border-radius:12px; max-width:560px; }
   .welcome .w-title { margin:0 0 4px; font-size:26px; color:var(--gold); }
   .welcome .w-tag { font-size:14px; margin-bottom:16px; }
+  .welcome .w-share { margin-top:14px; display:flex; gap:10px;
+    align-items:center; flex-wrap:wrap; }
+  .welcome .w-share-q { color:var(--text-2); font-size:13px; }
+  .welcome .w-share-btn { background:var(--panel2); color:inherit;
+    border:1px solid var(--dim); border-radius:6px; padding:6px 12px;
+    font-size:12px; cursor:pointer; }
+  .welcome .w-share-btn:hover { border-color:var(--gold); color:var(--gold); }
   .welcome .w-status { color:var(--text-2); font-size:13px; margin-bottom:10px; }
   .welcome .w-hint, .welcome .w-priv { color:var(--dim); font-size:12px;
                                        margin-top:6px; }
@@ -785,7 +792,35 @@ function renderWelcome(a) {
   card.appendChild(el('div', 'w-hint', a.hint || ''));
   if (a.steps) card.appendChild(el('pre', 'w-steps', a.steps));
   card.appendChild(el('div', 'w-priv', a.privacy || ''));
+  if (a.share) card.appendChild(shareRow(a.share));
   decide.appendChild(card);
+}
+// Consent lives on the welcome card, because that is the one screen every
+// player sees before there is anything to advise, and because the privacy
+// sentence above it is now built from the answer. The poll that follows
+// redraws the card from the server's state, so the words can't lag the click.
+function postShare(share) {
+  fetch('/share', {method: 'POST',
+                   headers: {'Content-Type': 'application/json'},
+                   body: JSON.stringify({share: share})}).then(poll);
+}
+function shareRow(s) {
+  const row = el('div', 'w-share');
+  if (s.ask) row.appendChild(el('span', 'w-share-q', s.question || ''));
+  const button = (label, choice) => {
+    const b = el('button', 'w-share-btn', label);
+    b.onclick = () => postShare(choice);
+    return b;
+  };
+  if (s.ask) {
+    row.appendChild(button(s.yes || 'Yes, share', true));
+    row.appendChild(button(s.no || 'No thanks', false));
+  } else {
+    row.appendChild(button(s.toggle || (s.status === 'on' ? 'Turn off'
+                                                         : 'Turn on'),
+                           s.status !== 'on'));
+  }
+  return row;
 }
 function render(a) {
   if (a.welcome) { renderWelcome(a); return; }
@@ -1356,8 +1391,8 @@ class _State:
         # 300ms and a 304 between pushes is a header, not ~40KB of JSON.
         # The fresh-boot payload is the WELCOME state, not "{}": an empty
         # frame must teach, not render blank panels.
-        self.payload = WELCOME_PAYLOAD
-        self.etag = hashlib.sha1(WELCOME_PAYLOAD).hexdigest()
+        self.payload = welcome_payload()
+        self.etag = hashlib.sha1(self.payload).hexdigest()
         # The player-set banned tribes (POST /bans), or None when not set.
         # The ban reveal is on screen at t0 and the pool inference needs
         # minutes to converge, so a 5-tap override at hero pick is the
@@ -1368,21 +1403,75 @@ class _State:
 #: The deliberate empty state (fresh boot, a new game's first tick, or a
 #: manual Clear): the product's welcome — never the previous game's panel
 #: dressed up as live advice. render() on the page draws it.
-WELCOME_PAYLOAD = json.dumps({
-    "welcome": True,
-    "product": "Bob's Ledger",
-    "tagline": "A real-time Hearthstone Battlegrounds coach",
-    "status": "Waiting for your next buy phase — advice appears here the "
-              "moment your shop opens.",
-    "hint": "Never seen advice? Hearthstone only writes the log this reads "
-            "when file logging is ON. Close the game, then put this in "
-            "%LocalAppData%\\Blizzard\\Hearthstone\\log.config (create the "
-            "file if it is not there):",
-    # The block live.py's console message has always claimed this card shows.
-    "steps": "[Power]\nLogLevel=1\nFilePrinting=true\n"
-             "ConsolePrinting=false\nScreenshots=false",
-    "privacy": "Nothing leaves your machine unless you share a session.",
-}).encode()
+#:
+#: Built per call rather than frozen at import, because the privacy sentence
+#: now DESCRIBES the consent state instead of asserting a policy. The old
+#: fixed line ("Nothing leaves your machine unless you share a session")
+#: promised a feature that did not exist, and would have become false the
+#: moment reports started being sent — a sentence that cannot drift from what
+#: the code does is the only kind worth printing (2026-10-03).
+def share_status():
+    """(status, sent) for the card, never raising.
+
+    Imported lazily and defended on purpose: the overlay must still draw if
+    the sharing machinery is unhappy. A card that fails to render because
+    telemetry broke is a worse bug than the telemetry being broken.
+    """
+    try:
+        import share
+        return share.status(), share.sent_count()
+    except Exception:  # noqa: BLE001
+        return "undecided", 0
+
+
+def set_share_choice(share_it):
+    """Record the player's answer. Returns the new status, or 'unknown'."""
+    try:
+        import share
+        return share.set_choice(share_it)
+    except Exception:  # noqa: BLE001
+        return "unknown"
+
+
+def welcome_payload():
+    status, sent = share_status()
+    if status == "on":
+        privacy = ("Sharing one small summary per game — your decisions and "
+                   "the outcome, with no names, no chat and no file paths"
+                   + (f" ({sent} shared so far)." if sent else "."))
+    elif status == "off":
+        privacy = ("Not sharing: nothing leaves your machine. You can turn "
+                   "it on from here at any time.")
+    else:
+        privacy = ("Nothing has been sent, and nothing will be until you "
+                   "answer. Sharing means one small summary per game — your "
+                   "decisions and the outcome, with no names, no chat and no "
+                   "file paths.")
+    return json.dumps({
+        "welcome": True,
+        "product": "Bob's Ledger",
+        "tagline": "A real-time Hearthstone Battlegrounds coach",
+        "status": "Waiting for your next buy phase — advice appears here the "
+                  "moment your shop opens.",
+        "hint": "Never seen advice? Hearthstone only writes the log this reads "
+                "when file logging is ON. Close the game, then put this in "
+                "%LocalAppData%\\Blizzard\\Hearthstone\\log.config (create the "
+                "file if it is not there):",
+        # The block live.py's console message has always claimed this card
+        # shows.
+        "steps": "[Power]\nLogLevel=1\nFilePrinting=true\n"
+                 "ConsolePrinting=false\nScreenshots=false",
+        "privacy": privacy,
+        "share": {"status": status,
+                  "ask": status == "undecided",
+                  "sent": sent,
+                  "question": "Send a summary of each game to help improve "
+                              "the coach?",
+                  "yes": "Yes, share summaries",
+                  "no": "No thanks",
+                  "toggle": ("Turn sharing off" if status == "on"
+                             else "Turn sharing on")},
+    }).encode()
 
 
 _state = _State()
@@ -1399,8 +1488,8 @@ def clear_analysis(keep_bans=False):
     """
     with _state.lock:
         _state.analysis = None
-        _state.payload = WELCOME_PAYLOAD
-        _state.etag = hashlib.sha1(WELCOME_PAYLOAD).hexdigest()
+        _state.payload = welcome_payload()
+        _state.etag = hashlib.sha1(_state.payload).hexdigest()
         if not keep_bans:
             _state.manual_bans = None
 
@@ -2022,6 +2111,27 @@ class _Handler(BaseHTTPRequestHandler):
             banned = store_manual_bans(payload.get("banned"))
             self._send(200, "application/json",
                        json.dumps({"ok": True, "banned": banned}).encode())
+            return
+        if self.path.rstrip("/") == "/share":
+            n = int(self.headers.get("Content-Length") or 0)
+            try:
+                payload = json.loads(self.rfile.read(n) or b"{}")
+            except ValueError:
+                self._send(400, "application/json", b'{"error":"bad json"}')
+                return
+            if not isinstance(payload.get("share"), bool):
+                self._send(400, "application/json",
+                           b'{"error":"share must be true or false"}')
+                return
+            state = set_share_choice(payload["share"])
+            # The card must redraw with the new sentence, and the page polls
+            # with If-None-Match: leaving the old payload/etag in place would
+            # serve a 304 and the player would watch their click do nothing.
+            with _state.lock:
+                _state.payload = welcome_payload()
+                _state.etag = hashlib.sha1(_state.payload).hexdigest()
+            self._send(200, "application/json",
+                       json.dumps({"ok": True, "status": state}).encode())
             return
         if self.path.rstrip("/") == "/clear":
             # The page's Clear button: blank the overlay but keep the
