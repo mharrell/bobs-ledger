@@ -22,7 +22,7 @@ import time
 
 from choices import choice_kind, rank_choices
 from coach import describe
-from config import HS_LOG_GLOB
+from config import HS_LOG_GLOB, HS_LOG_GLOBS, launcher
 from live_coach import LiveCoach
 from tribes import DISPLAY_TRIBES
 import coach_ui
@@ -32,8 +32,11 @@ import decision_log
 def find_active_log():
     """Newest Hearthstone_*/Power.log written more recently than `recent_seconds`."""
     recent_seconds = int(os.environ.get("LIVE_RECENT", "600"))
+    # Both known shapes (config.log_globs): Windows writes session
+    # directories, the macOS reference documents a flat Logs/Power.log, and
+    # whichever this machine uses, one of the patterns matches.
     logs = sorted(
-        glob.glob(HS_LOG_GLOB),
+        {p for pattern in HS_LOG_GLOBS for p in glob.glob(pattern)},
         key=os.path.getmtime, reverse=True,
     )
     for path in logs:
@@ -468,7 +471,7 @@ def main():
         return 1
     if not path:
         print("No active Power.log found. Hearthstone's file logging is "
-              "probably OFF. Run Start Bob's Ledger.cmd again and say yes "
+              f"probably OFF. Run {launcher()} again and say yes "
               "when it offers to turn that on for you - or see the README "
               "section \"Turn on Hearthstone's logging\".")
         if "--once" in opts:

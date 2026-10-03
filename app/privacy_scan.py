@@ -129,9 +129,13 @@ def _is_fake_account(hi, lo):
 USER_PATH = re.compile(r"[A-Za-z]:\\Users\\[^\\\s\"'`]+")
 SESSION_DIR = re.compile(r"Hearthstone_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}")
 
-#: Text extensions worth scanning in a release.
+#: Text extensions worth scanning in a release. Both launchers belong here:
+#: they are the most-copied files in the project and they shipped unscanned —
+#: `.command` (macOS) was missing and so was `.cmd`, which only escaped notice
+#: because the Windows launcher happens to carry no personal paths today.
 TEXT_SUFFIXES = (".md", ".py", ".json", ".toml", ".txt", ".ps1", ".cfg",
-                 ".sh", ".js", ".yaml", ".yml", ".ini", ".csv")
+                 ".sh", ".js", ".yaml", ".yml", ".ini", ".csv",
+                 ".cmd", ".command", ".bat")
 
 
 def _person(value):

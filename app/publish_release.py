@@ -55,6 +55,7 @@ _REPO = os.path.dirname(_HERE)
 sys.path.insert(0, _HERE)          # the code sits in app/
 
 import privacy_scan  # noqa: E402  (privacy_scan.py, beside this file)
+from config import LAUNCHERS  # noqa: E402  (config.py, beside this file)
 
 # A gate that finds non-ASCII content (accented handles, the em dash in its
 # own report) must not die reporting it: the Windows console is cp1252, and
@@ -169,6 +170,20 @@ def _excluded(rel):
     return any(rel == p or rel.startswith(p + "/") for p in EXCLUDE_PATHS)
 
 
+def _mark_executable(z, rel):
+    """Give a launcher the executable bit inside the zip.
+
+    The zip is built on Windows, where a file has no Unix mode, so the entry
+    lands as 0o666 — and macOS unarchives a .command that nobody can run or
+    double-click (measured in the published zip: 0o666, 2026-10-03).
+    create_system 3 is what tells an unarchiver these bits are Unix ones
+    rather than a DOS attribute.
+    """
+    info = z.getinfo(rel)
+    info.create_system = 3
+    info.external_attr = 0o100755 << 16
+
+
 def build_zip(version, created):
     """The release zip in memory.
 
@@ -193,6 +208,8 @@ def build_zip(version, created):
                 if _excluded(rel):
                     continue
                 z.write(full, rel)
+                if rel in LAUNCHERS:
+                    _mark_executable(z, rel)
     return buf.getvalue()
 
 

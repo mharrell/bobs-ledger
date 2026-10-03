@@ -201,6 +201,15 @@ quietly.
 - **The launcher.** `Start Bob's Ledger.cmd` has to stay CRLF and pure ASCII: a
   bare LF makes cmd.exe mis-parse it, and a stray UTF-8 byte renders as garbage in
   a console.
+- **The macOS launcher's mirror of those rules.** `Start Bob's Ledger.command`
+  has to be LF-only (one CR and bash dies on `$'\r'`), pure ASCII, and free of
+  bash-4 syntax: `/bin/bash` is still 3.2 on macOS. **It has never been run** —
+  no Mac has executed it and no shell here has even parsed it, so its first real
+  run is the test.
+- **The platform layer.** The client root, the `log.config` location and the
+  "is Hearthstone running?" probe all branch on the platform in `config.py` and
+  `setup_logging.py`, and the log lookup asks for both known `Power.log` shapes
+  because which one macOS writes is still unverified.
 - **The update join.** `VERSION` and `.update_state.json` are stamped into every
   release and are what let an installed copy learn that a newer one exists.
 - **The install promise.** Outside Hearthstone's own `log.config` — which the

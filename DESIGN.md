@@ -513,6 +513,40 @@ Windows never draws an icon on a `.cmd`, so the shortcut is the only
 clickable thing that can wear the icon; it is created on the user's machine
 because a `.lnk` embeds absolute paths.
 
+### macOS: groundwork only (2026-10-03)
+
+The runtime needed nothing Windows-specific — no ctypes, no Tk, no window
+manipulation, and the overlay is a localhost page in a browser — so the port
+is a short list rather than a rewrite. What was platform-bound:
+
+- `config.default_home` (client root; macOS keeps the game in `/Applications`)
+  and the log lookup. Windows writes `Logs/Hearthstone_<date>/Power.log`; the
+  community reference documents a flat `Logs/Power.log` on macOS, and which
+  one the client actually uses is **unverified**, so both patterns are asked
+  for.
+- `setup_logging.config_dir`: `~/Library/Preferences/Blizzard/Hearthstone`,
+  not `AppData`. The old code read `LOCALAPPDATA`, which is unset on a Mac, so
+  it would have resolved to `~/Blizzard/Hearthstone` — a folder the game never
+  reads — and created a log.config there.
+- The running-game probe. `tasklist` does not exist on macOS and the old
+  `except: return False` answered "not running", i.e. it would have edited
+  `log.config` underneath a live game, the one thing that module promises not
+  to do. macOS asks `pgrep -x Hearthstone`, falling back to `ps`.
+- `Start Bob's Ledger.command`, the launcher twin.
+
+Packaging: the zip is built on Windows, where a file has no Unix mode, so the
+launcher entries are stamped `0o755` with `create_system=3` — otherwise macOS
+unarchives a `.command` nobody can double-click — and `apply_zip` re-applies
+the bit after extracting, because `zipfile` does not restore permissions.
+`privacy_scan.TEXT_SUFFIXES` now covers `.cmd`, `.command` and `.bat`: the
+launchers were the most-copied files in the project and the least scanned.
+
+**Unverified, deliberately recorded:** no Mac has ever run any of this, and no
+shell on the packaging machine has even parsed the `.command`. The unit tests
+inject the platform, which covers the logic and the exact command lines — not
+macOS. Nothing should be announced as Mac support until a Mac completes an
+install and a game.
+
 ### Network situation
 - hsreplay's minions/heroes/dark-gifts APIs are Cloudflare-protected (403) —
   those meta assets come from manual paste; the comps/trinkets pages are
