@@ -58,6 +58,13 @@ def log_globs(root=None, platform=None):
             os.path.join(root, "Logs", "Power.log"))
 
 
+def as_globs(patterns):
+    """One glob or several, as a tuple — a caller passing a single string keeps working."""
+    if isinstance(patterns, str):
+        return (patterns,)
+    return tuple(patterns)
+
+
 def launcher(platform=None):
     """The launcher that does something when double-clicked on `platform`."""
     return (LAUNCHERS[0] if (platform or sys.platform) == "win32"

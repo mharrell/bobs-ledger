@@ -59,10 +59,20 @@ CHOICE_OPT = re.compile(
 SEEN_ANY = re.compile(r"cardId=(BG\d+_MagicItem_\w+)")
 
 
+def _local_logs():
+    """Every Power.log on this machine, in both known shapes.
+
+    The paths come from config, not from here: HEARTHSTONE_HOME and the
+    platform default have to apply to this tool too, and on a Mac the log is
+    a flat Logs/Power.log rather than a session directory.
+    """
+    from config import HS_LOG_GLOBS, as_globs
+    return {p for pattern in as_globs(HS_LOG_GLOBS) for p in glob.glob(pattern)}
+
+
 def recent_logs(n=6):
     """The newest `n` Power.logs on this machine."""
-    from config import HS_LOG_GLOB
-    return sorted(glob.glob(HS_LOG_GLOB), key=os.path.getmtime,
+    return sorted(_local_logs(), key=os.path.getmtime,
                   reverse=True)[:n]
 
 
@@ -133,9 +143,7 @@ def _seen_ids():
 
 def _scan_logs(pattern):
     ids = set()
-    for path in glob.glob(os.path.join(
-            r"C:\Program Files (x86)\Hearthstone\Logs",
-            "Hearthstone_*", "Power.log")):
+    for path in sorted(_local_logs()):
         try:
             with open(path, encoding="utf-8", errors="replace") as f:
                 for line in f:

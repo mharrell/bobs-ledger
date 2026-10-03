@@ -69,8 +69,9 @@ _art_miss_path = os.path.join(_HERE, ".art_miss.json")
 def ensure_dir(path):
     """True if path is a directory afterwards, False if it cannot be made.
 
-    A read-only install folder — unzipped into C:\\Program Files, or a
-    managed / one-way-synced folder — refuses the create outright, and
+    A read-only install folder — unzipped into the system programs
+    directory, or a managed / one-way-synced folder — refuses the create
+    outright, and
     Windows offers no elevation prompt for it. An unguarded makedirs here
     therefore killed the coach at import with a bare PermissionError
     traceback (WinError 5, reproduced 2026-10-02) before a single piece of

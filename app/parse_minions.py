@@ -34,8 +34,10 @@ import argparse
 import glob
 import json
 import os
+import sys
 import re
 
+import config
 from tribes import normalize, tribes_from_races
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -45,7 +47,18 @@ CARDS = os.path.join(_HERE, ".cards_full.json")
 OVERRIDES = os.path.join(_HERE, "meta", "tribe_overrides.json")
 OBSERVED_CACHE = os.path.join(_HERE, ".observed_tribes.json")
 RACES_CACHE = os.path.join(_HERE, ".card_races.json")
-DEFAULT_LOG_DIR = r"C:\Program Files (x86)\Hearthstone\Logs"
+#: The client's log directory, derived from config so the Windows default and
+#: the HEARTHSTONE_HOME override apply here too. Still a single directory for
+#: callers and for `--logs`; the session-dir shape inside it comes from
+#: config.log_globs.
+DEFAULT_LOG_DIR = os.path.join(config.HS_DIR, "Logs")
+#: The session-dir Power.log shape, owned by config. `config.log_globs` builds
+#: its patterns under the CLIENT ROOT, while `log_dir` here is the Logs
+#: directory inside that root, so what belongs here is the part BELOW the
+#: root. Passing the log dir straight to `config.log_globs(log_dir)[0]` would
+#: add a second "Logs", match nothing, and report zero logs instead of failing.
+_SESSION_GLOB = os.path.relpath(config.HS_LOG_GLOB,
+                               os.path.join(config.HS_DIR, "Logs"))
 
 
 def _strip_html(text):
@@ -157,8 +170,7 @@ def scan_observed(log_dir=DEFAULT_LOG_DIR, cache_path=OBSERVED_CACHE,
     files = cache.setdefault("files", {})
     races = cache.setdefault("races", {})
     scanned = 0
-    for path in sorted(glob.glob(
-            os.path.join(log_dir, "Hearthstone_*", "Power.log"))):
+    for path in sorted(glob.glob(os.path.join(log_dir, _SESSION_GLOB))):
         try:
             sig = [os.path.getsize(path), os.path.getmtime(path)]
         except OSError:
@@ -240,6 +252,11 @@ def refresh_tribes(minions, observed, card_races, overrides):
 
 
 def main():
+    # The module docstring IS this parser's help text, and it carries a union
+    # glyph no cp1252 console can encode: `--help` piped or redirected died
+    # with UnicodeEncodeError before printing a single line (2026-10-03).
+    # Same guard the review tools already carry, for the same reason.
+    sys.stdout.reconfigure(errors="replace")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--refresh-tribes", action="store_true",
                     help="backfill/audit tribe fields in place (dry run "
