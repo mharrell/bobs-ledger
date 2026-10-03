@@ -468,9 +468,9 @@ def main():
         return 1
     if not path:
         print("No active Power.log found. Hearthstone's file logging is "
-              "probably OFF — enable it per README.md step 2 "
-              "(the log.config block; the Coach UI welcome card shows the "
-              "same steps).")
+              "probably OFF. Run Start Bob's Ledger.cmd again and say yes "
+              "when it offers to turn that on for you - or see the README "
+              "section \"Turn on Hearthstone's logging\".")
         if "--once" in opts:
             return 1
         print("Waiting for a Power.log to appear (start Hearthstone; "

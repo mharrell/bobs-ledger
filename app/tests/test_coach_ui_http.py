@@ -330,6 +330,25 @@ class TestForeignCallers(unittest.TestCase):
         self._tmp.cleanup()
 
     def _call(self, path, method="GET", body=None, headers=None, host=None):
+        """One retry on a fresh socket.
+
+        Windows lets a second socket bind a port another socket is LISTENING
+        on — the SO_REUSEADDR quirk start_server documents — so under
+        full-suite load a freshly started server can occasionally receive a
+        request that nothing answers, and the test reports the product as
+        broken. Seen as a once-in-three-runs flake, passing in isolation
+        (2026-10-03). Retrying costs nothing and keeps a real failure visible.
+        """
+        for attempt in (0, 1):
+            try:
+                return self._call_once(path, method, body, headers, host)
+            except OSError:
+                if attempt:
+                    raise
+        return None
+
+    def _call_once(self, path, method="GET", body=None, headers=None,
+                   host=None):
         import urllib.error
         import urllib.request
         srv = coach_ui.start_server(0)
