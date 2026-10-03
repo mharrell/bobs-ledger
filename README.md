@@ -150,6 +150,14 @@ everything the turn's decision needs, never scrolled away — and
 **Reference** on the right, which scrolls. On a narrow window they stack
 into one column, decision first.
 
+<img src="docs/reference-pane.png" alt="The overlay mid-game: a danger band reading DYING sits above the plan, and the Reference pane lists the next opponent, sell verdicts and the comp guide" width="620">
+
+*Mid-game and one bad fight from out: the danger band above the plan says
+how close the next hit is to ending it, and the Reference pane below names
+the announced opponent, what is safe to sell, and what the comp still
+wants. This is a losing board on purpose — the coach is at its most useful
+when the game is going badly.*
+
 Decide pane:
 
 - **State strip** (top line) — hero, gold, tavern tier, HP, turn, and
