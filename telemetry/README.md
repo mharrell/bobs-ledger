@@ -53,12 +53,26 @@ and a coarse net for BattleTag discriminators, local user paths and session
 directory names. Reading is keyed, because browsing everyone's sessions is not
 something the open internet needs.
 
-**Deployment step that is not in this repository: rate limiting.** An open
-write path wants a Cloudflare rate limiting rule on `/session` (Security → WAF
-→ Rate limiting rules). A Worker is stateless and KV writes are far too scarce
-to spend counting writes, so this cannot live in the Worker. Until that rule
-exists, `/session` is uncapped against a flood: the per-write ceiling is
-512 KB, but the volume is unbounded.
+**Rate limiting IS implemented, as a Worker binding** — not as a dashboard
+rule, and the difference is not cosmetic: WAF rate limiting rules are
+**zone-scoped**, and a `workers.dev` hostname is not a zone in this account,
+so there is no Security/WAF page for this Worker at all (2026-10-03; the
+earlier note here sent the maintainer looking for one).
+
+`deploy/wrangler.toml` defines a `ratelimits` binding (20 requests / 60s) and
+collector.js checks it first thing on `POST /session`, before the body is even
+read, keyed on the caller's address used purely as a counter key. Verified
+live: 45 concurrent requests produced 28 × 429 and 17 accepted. Two properties
+worth remembering:
+
+- The limit is **per Cloudflare location**, so it stops one source flooding
+  from one place — the case that protects the 1 GB namespace and the 1,000
+  writes/day. A distributed attacker gets N × the allowance; it is a throttle,
+  not a wall. A genuinely global cap needs a custom domain plus a zone WAF
+  rule, or a KV counter, which costs a write per upload.
+- It behaves like a **token bucket**, not a fixed window: a sequential hammer
+  ~1s apart never trips it, because 20-per-60s refills one token every 3
+  seconds. Test it concurrently.
 
 Retrieve reports with `python fetch_sessions.py` (needs
 `HEARTH_TELEMETRY_URL` and `HEARTH_TELEMETRY_KEY`); it skips what is already on
