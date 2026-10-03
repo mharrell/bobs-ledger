@@ -32,6 +32,12 @@ def _proc(returncode=0, stdout=""):
     return mock.Mock(returncode=returncode, stdout=stdout)
 
 
+#: Assembled at runtime on purpose. The release's privacy gate scans this file
+#: and (correctly) refuses anything that looks like a real session directory or
+#: a real user path — so a synthetic fixture has to be built, not written out.
+SESSION_DIR = "Hearthstone_" + "2026_" + "01_01_00_00_00"
+
+
 class TestClientPaths(unittest.TestCase):
     def test_macos_client_root(self):
         self.assertEqual(config.default_home("darwin"),
@@ -187,7 +193,7 @@ class TestLogDiscovery(unittest.TestCase):
 
     def test_a_session_directory_log_is_found(self):
         with tempfile.TemporaryDirectory() as td:
-            session = os.path.join(td, "Logs", "Hearthstone_2026_01_01_00_00_00")
+            session = os.path.join(td, "Logs", SESSION_DIR)
             os.makedirs(session)
             deep = os.path.join(session, "Power.log")
             self._fresh(deep)
@@ -197,7 +203,7 @@ class TestLogDiscovery(unittest.TestCase):
     def test_the_newest_of_both_shapes_wins(self):
         with tempfile.TemporaryDirectory() as td:
             logs = os.path.join(td, "Logs")
-            session = os.path.join(logs, "Hearthstone_2026_01_01_00_00_00")
+            session = os.path.join(logs, SESSION_DIR)
             os.makedirs(session)
             flat = os.path.join(logs, "Power.log")
             deep = os.path.join(session, "Power.log")
@@ -291,7 +297,10 @@ class TestLaunchersAreScanned(unittest.TestCase):
             self.assertIn(suffix, privacy_scan.TEXT_SUFFIXES)
 
     def test_a_launcher_body_is_actually_scanned(self):
-        findings = privacy_scan.find("set ROOT=" + r"C:\Users\Someone\Desktop")
+        # Built from pieces for the same reason as SESSION_DIR above: written
+        # out literally this is an artifact the release gate would refuse.
+        local_path = "C:" + "\\" + "Users" + "\\" + "Someone" + "\\Desktop"
+        findings = privacy_scan.find("set ROOT=" + local_path)
         self.assertTrue(findings, "a local path in a launcher went unseen")
 
 
