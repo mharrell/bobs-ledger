@@ -78,6 +78,11 @@ bobs-ledger-*.zip
 VERSION
 .update_state.json
 
+# The staging area update.py uses while installing a release. It exists only on
+# an install that is mid-update (or was interrupted mid-update) and carries the
+# replaced copies a rollback restores. Never a source of truth, never shipped.
+.staging/
+
 # Wrangler local state — carries the CF account id / account email
 .wrangler/
 telemetry/.wrangler/

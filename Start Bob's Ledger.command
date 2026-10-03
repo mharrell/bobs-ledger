@@ -33,6 +33,21 @@ echo "  Bob's Ledger - Hearthstone Battlegrounds coach"
 echo "============================================================"
 echo
 
+# --- 0. an interrupted update ---------------------------------------
+# An update moves a release into place file by file, setting the replaced
+# copies aside in .staging/old and dropping an APPLYING marker first. If that
+# marker is still here the process died mid-commit, and this install may be
+# part old and part new - which is how a coach stops starting. The set-aside
+# copies are enough to make it run again, and update.py finishes the job
+# properly (removing files the new version added) once Python is up. APPLIED,
+# not APPLYING, means the update finished: never undo that.
+if [ -f "$HERE/.staging/APPLYING" ]; then
+	echo "An earlier update was interrupted. Restoring the version that worked..."
+	cp -Rf "$HERE/.staging/old/." "$HERE/" 2>/dev/null || true
+	echo "Done."
+	echo
+fi
+
 # The program lives in app/, so this folder shows almost nothing. Checked
 # BEFORE the Python work: the usual reason it is missing is that Finder is
 # running this file straight out of the .zip, and telling someone to

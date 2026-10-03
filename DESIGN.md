@@ -513,6 +513,51 @@ Windows never draws an icon on a `.cmd`, so the shortcut is the only
 clickable thing that can wear the icon; it is created on the user's machine
 because a `.lnk` embeds absolute paths.
 
+### Updates are atomic (2026-10-03)
+
+An update used to rewrite the install file by file, straight over the running
+copy. Killed part way through — a crash, a power cut, a second coach window
+holding a file open — it left a tree that was part old and part new, with no
+way back but downloading the zip again. A truncated module is an install that
+cannot start, and the player has no way to tell which half they have.
+
+`apply_zip` is now three phases:
+
+1. **Stage.** Unpack the release into `.staging/new`. Nothing outside
+   `.staging` is written, so the failure-prone half — a corrupt archive, a full
+   disk, a killed process — cannot cost the player their coach.
+2. **Verify.** Every staged entry is present at the size the zip states. A
+   short write is exactly what a kill leaves behind, and it is caught here,
+   before anything has moved.
+3. **Commit.** Each file is *moved* into place — one atomic replace per file,
+   never a rewrite in place — with whatever it replaces set aside in
+   `.staging/old` first. A failure mid-commit rolls back: the set-aside copies
+   go back and the files this release added are removed, because new code
+   beside old code is the mixed state all of this exists to prevent.
+
+The phase is recorded as a marker *inside* the staging directory, so a later
+start can finish whichever direction was interrupted. `APPLYING` means a commit
+was in flight and the install may be half-updated, so it is rolled back;
+`APPLIED` means the commit finished **and verified**, so there is nothing to
+undo and recovery only tidies up. That distinction is the whole safety
+property: rolling a good update back would throw it away.
+
+Recovery deliberately runs in two places. Both launchers do a crude,
+dependency-free restore from `.staging/old` *before* the program check, because
+a killed commit can leave `app/live.py` missing and a launcher that responds by
+telling the player to re-extract the zip they already extracted is useless.
+`update.recover()` — also reachable as `update.py --recover` — then finishes
+the job precisely once Python is up, including removing the files the new
+version added. Player data is untouched by construction: `PROTECTED` paths are
+skipped at stage time, so nothing in the commit can reach them.
+
+Rejected alternatives, recorded because they look attractive: renaming `app/`
+to `app.old` wholesale (instant swap, but the player's data lives *inside*
+`app/`, so it would have to be re-attached within the same window — more moving
+parts around the data to shrink a code-only window), and keeping the previous
+code on disk to switch to on failure (two copies of the coach, and a "which one
+am I running?" question at every start).
+
 ### macOS: groundwork only (2026-10-03)
 
 The runtime needed nothing Windows-specific — no ctypes, no Tk, no window

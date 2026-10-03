@@ -108,6 +108,15 @@ in `telemetry/`, deployed at `bobs-ledger.workers.dev`; the same URL serves
 every release, so installed copies keep updating). `--dry-run` runs the gates
 without uploading.
 
+Applies are atomic: `apply_zip` stages the release in `.staging`, verifies it
+against the zip, then moves each file into place with the copies it replaces
+set aside — so an interrupted update rolls back instead of leaving an install
+that is part old and part new. Both launchers restore `.staging/old` before the
+program check (a killed commit can leave `app/live.py` missing, and telling a
+player to re-extract the zip is useless); `update.recover()`, or
+`update.py --recover`, then finishes precisely — including removing files the
+new version added — while `APPLIED` on disk means "do not undo this".
+
 Users start with `Start Bob's Ledger.cmd` at the zip root: it finds Python,
 asks before installing `requests`, and **offers to turn Hearthstone's file
 logging on** — `setup_logging.py` edits the game's own `log.config` in place

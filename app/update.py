@@ -85,6 +85,26 @@ PROTECTED = {"decision_logs", "corpus_out", ".review_cache", ".git",
              # kind of wrong.
              ".share_consent.json", "session_reports"}
 
+#: A release is unpacked here first, while the install keeps running the
+#: version it started with. `new/` is the staged release, `old/` holds every
+#: file the commit replaces, and `FILES` lists what a commit would put in
+#: place — enough for either direction to be finished by a later start.
+STAGING = ".staging"
+#: Phase markers inside the staging directory, so recovery knows which way to
+#: finish. APPLYING means a commit is in flight: if it is still here at
+#: start-up, the install may be part old and part new, and the set-aside
+#: copies are what put it back. APPLIED means the commit finished AND
+#: verified — tidying up is all that is left, and rolling a good install back
+#: would be the worse mistake.
+APPLYING = "APPLYING"
+APPLIED = "APPLIED"
+
+#: What the last apply_zip refused or could not do. A refused entry is skipped
+#: (as it always was) and an I/O failure now leaves the install alone instead
+#: of propagating out of a coach start.
+LAST_REFUSED = []
+LAST_ERROR = None
+
 
 def local_version():
     """This install's version: the VERSION file a release carries, else the
@@ -212,24 +232,78 @@ def _safe_target(root, rel):
     return target
 
 
-def apply_zip(data, root=None):
-    """Extract a release zip over the install, protecting local data.
+def _staging(root):
+    return os.path.join(root, STAGING)
 
-    Returns the count of files written. Entries under a PROTECTED path
-    segment are skipped at any depth (the user's decision logs and settings
-    survive an update), and zip-slip entries are refused — see
-    _safe_target.
+
+def _stage_dir(root, *parts):
+    return os.path.join(_staging(root), *parts)
+
+
+def _protected(rel):
+    """True when a zip entry may never overwrite local data."""
+    return any(p in PROTECTED
+               for p in rel.split("/") if p not in ("", "."))
+
+
+def _clear_staging(root):
+    """Best effort: a leftover stage is an eyesore, never a failure."""
+    staging = _staging(root)
+    if os.path.isdir(staging):
+        try:
+            _force_rmtree(staging)
+        except OSError:
+            pass
+
+
+def _marker(staging, name):
+    """Write the phase marker, clearing the other one."""
+    for other in (APPLYING, APPLIED):
+        if other != name:
+            try:
+                os.remove(os.path.join(staging, other))
+            except OSError:
+                pass
+    with open(os.path.join(staging, name), "w", encoding="utf-8") as f:
+        f.write(name + "\n")
+
+
+def _write_file_list(staging, entries):
+    with open(os.path.join(staging, "FILES"), "w", encoding="utf-8") as f:
+        for rel, _size in entries:
+            f.write(rel + "\n")
+
+
+def _file_list(staging):
+    try:
+        with open(os.path.join(staging, "FILES"), encoding="utf-8") as f:
+            return [line.strip() for line in f if line.strip()]
+    except OSError:
+        return []
+
+
+def stage_release(data, root=None):
+    """Unpack a release into `.staging/new`, leaving the install untouched.
+
+    Returns (entries, problems): `entries` is [(rel, size)] in zip order and
+    `problems` names anything refused. Nothing outside `.staging` is written
+    here, which is the point — unpacking is the slow, failure-prone half (a
+    corrupt archive, a full disk, a killed process), and doing it while the
+    install is still whole means it cannot cost the player their coach.
     """
     root = root or ROOT
-    written = 0
+    _clear_staging(root)
+    new = _stage_dir(root, "new")
+    os.makedirs(new, exist_ok=True)
+    entries, problems = [], []
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         for info in z.infolist():
             rel = (info.filename or "").replace("\\", "/")
-            if any(p in PROTECTED
-                   for p in rel.split("/") if p not in ("", ".")):
+            if _protected(rel):
                 continue
-            target = _safe_target(root, rel)
+            target = _safe_target(new, rel)
             if target is None:
+                problems.append(f"refused an entry outside the install: {rel}")
                 continue
             if info.is_dir():
                 os.makedirs(target, exist_ok=True)
@@ -237,27 +311,175 @@ def apply_zip(data, root=None):
             parent = os.path.dirname(target)
             if parent:
                 os.makedirs(parent, exist_ok=True)
-            if os.path.exists(target) and not os.access(target, os.W_OK):
-                # Windows cannot open a read-only file for writing, so a file
-                # that arrived read-only would fail the whole update. Same
-                # attribute problem as _force_rmtree, same fix.
-                try:
-                    os.chmod(target, stat.S_IWRITE | stat.S_IREAD)
-                except OSError:
-                    pass
             with z.open(info) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
+            entries.append((rel, info.file_size))
+    return entries, problems
+
+
+def verify_tree(entries, base):
+    """(ok, problems) — every entry present under `base` at its stated size.
+
+    Size is the cheap proof that a copy finished. A truncated file is exactly
+    what a killed process leaves behind, and a truncated module is an install
+    that cannot start.
+    """
+    problems = []
+    for rel, size in entries:
+        target = os.path.join(base, *rel.split("/"))
+        if not os.path.exists(target):
+            problems.append(f"missing from the release: {rel}")
+        elif os.path.getsize(target) != size:
+            problems.append(f"truncated: {rel} "
+                            f"({os.path.getsize(target)} of {size} bytes)")
+    return (not problems), problems[:8]
+
+
+def commit_staged(entries, root=None):
+    """Move the staged release into place, one atomic replace per file.
+
+    Every file moves rather than being rewritten in place, so no file is ever
+    half-written, and everything replaced is set aside first, so a failure or
+    a kill part way through can be undone instead of left behind. Returns
+    (written, problems); written is 0 when the commit was rolled back.
+    """
+    root = root or ROOT
+    staging = _staging(root)
+    new, old = _stage_dir(root, "new"), _stage_dir(root, "old")
+    _marker(staging, APPLYING)
+    _write_file_list(staging, entries)
+    written = 0
+    try:
+        for rel, _size in entries:
+            staged = os.path.join(new, *rel.split("/"))
+            target = os.path.join(root, *rel.split("/"))
+            parent = os.path.dirname(target)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            if os.path.exists(target):
+                keep = os.path.join(old, *rel.split("/"))
+                os.makedirs(os.path.dirname(keep), exist_ok=True)
+                if os.path.exists(keep):
+                    os.remove(keep)
+                os.replace(target, keep)      # set the old one aside
+            os.replace(staged, target)        # and land the new one
             if rel in LAUNCHERS and os.name == "posix":
-                # zipfile does not restore permissions on extract, so a
-                # launcher that arrived with a mode in the zip would still land
-                # non-executable here — and a Mac player cannot double-click a
-                # .command without +x. Applying the mode is our job, not the
-                # archiver's.
+                # A file moved into place keeps the mode the zip stamped
+                # (publish_release sets 0o755 for both launchers); this is the
+                # belt for archives built before that, and for a Mac player
+                # who cannot double-click a .command without +x.
                 try:
                     os.chmod(target, 0o755)
                 except OSError:
                     pass
             written += 1
+    except OSError as exc:
+        # A file another process holds open lands here — a second coach window
+        # is the real case. Undo rather than leave a mixed install behind.
+        rollback(root)
+        return 0, [f"{exc.strerror or exc}: {getattr(exc, 'filename', '')}"]
+    ok, problems = verify_tree(entries, root)
+    if not ok:
+        rollback(root)
+        return 0, problems
+    _marker(staging, APPLIED)
+    return written, []
+
+
+def rollback(root=None):
+    """Undo an interrupted commit. Returns the number of files restored.
+
+    Every file the release replaced is put back from the set-aside copies, and
+    every file it ADDED is removed — new code beside old code is the mixed
+    state this sequence exists to prevent.
+    """
+    root = root or ROOT
+    staging = _staging(root)
+    new, old = _stage_dir(root, "new"), _stage_dir(root, "old")
+    restored = 0
+    for rel in _file_list(staging):
+        target = os.path.join(root, *rel.split("/"))
+        keep = os.path.join(old, *rel.split("/"))
+        if os.path.exists(keep):
+            if os.path.exists(target):
+                os.remove(target)
+            parent = os.path.dirname(target)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            os.replace(keep, target)
+            restored += 1
+        elif not os.path.exists(os.path.join(new, *rel.split("/"))):
+            # No set-aside copy and no staged copy left: the commit added this
+            # file, so the install never had it.
+            if os.path.exists(target):
+                os.remove(target)
+    _clear_staging(root)
+    return restored
+
+
+def recover(root=None):
+    """Finish an interrupted update, or tidy up after one. Message, or None.
+
+    Called before anything else at start-up: a commit killed part way through
+    leaves the APPLYING marker and an install that may be part old and part
+    new. APPLIED means the commit finished and verified — then there is
+    nothing to undo, and rolling a good install back would be the worse
+    mistake, so clearing up is all that is left.
+    """
+    root = root or ROOT
+    staging = _staging(root)
+    if not os.path.isdir(staging):
+        return None
+    if os.path.exists(os.path.join(staging, APPLIED)):
+        _clear_staging(root)
+        return "tidied up after the last update"
+    if os.path.exists(os.path.join(staging, APPLYING)):
+        n = rollback(root)
+        return (f"an update was interrupted; put {n} file(s) back to the "
+                f"version that was working")
+    _clear_staging(root)
+    return "cleared an update that never started"
+
+
+def apply_zip(data, root=None):
+    """Install a release atomically, protecting local data.
+
+    Three phases, where there used to be one: an update rewrote the install
+    file by file, so being killed part way through left a tree that was part
+    old and part new — with no way back but downloading the zip again. Now the
+    release is unpacked into `.staging` (the running install untouched, so
+    failing there costs nothing), checked against the zip, and only then moved
+    into place, one atomic replace per file, everything replaced set aside
+    first.
+
+    Returns the count of files written (0 when nothing was applied), skips
+    PROTECTED paths at any depth and refuses zip-slip entries exactly as
+    before. Failures land in LAST_ERROR / LAST_REFUSED rather than being
+    raised into a coach start.
+    """
+    global LAST_ERROR, LAST_REFUSED
+    root = root or ROOT
+    LAST_ERROR, LAST_REFUSED = None, []
+    try:
+        entries, refused = stage_release(data, root)
+    except (OSError, zipfile.BadZipFile) as exc:
+        LAST_ERROR = f"could not unpack the release: {exc}"
+        _clear_staging(root)
+        return 0
+    LAST_REFUSED = refused
+    if not entries:
+        _clear_staging(root)
+        return 0
+    ok, problems = verify_tree(entries, _stage_dir(root, "new"))
+    if not ok:
+        LAST_ERROR = ("the release did not unpack completely: "
+                      + "; ".join(problems))
+        _clear_staging(root)
+        return 0
+    written, errors = commit_staged(entries, root)
+    if errors:
+        LAST_ERROR = "could not install the release: " + "; ".join(errors)
+    _clear_staging(root)
     return written
 
 
@@ -447,6 +669,12 @@ def _ask(prompt_text, timeout=20.0):
 
 def run(prompt=True, assume_yes=False, key=None, force=False):
     """The full check flow. Returns 'applied', 'current', or 'declined'."""
+    # Before anything else: if a previous update was killed part way through,
+    # this install may be part old and part new, and that is fixed here rather
+    # than left for the player to discover.
+    recovered = recover()
+    if recovered:
+        print(f"Update recovery: {recovered}.")
     manifest = fetch_manifest()
     action, detail = decide(local_version(), manifest, load_state())
     if action == "current":
@@ -463,6 +691,16 @@ def run(prompt=True, assume_yes=False, key=None, force=False):
                 return "declined"
         data = download_zip(manifest, key=key)
         n = apply_zip(data)
+        if not n:
+            # Nothing was applied, so this install is exactly as it was — say
+            # so plainly. An update that quietly does nothing is worse than
+            # one that says why it could not.
+            print("could not install the update; this install is unchanged.")
+            if LAST_ERROR:
+                print(f"  {LAST_ERROR}")
+            return "current"
+        for line in LAST_REFUSED[:3]:
+            print(f"  note: {line}")
         reshaped = migrate_flat_layout(data)
         save_state(manifest)
         print(f"updated to {manifest['version']} ({n} files). "
@@ -494,7 +732,12 @@ def main():
                     help="apply without prompting")
     ap.add_argument("--force", action="store_true",
                     help="apply even when the newer side can't be proven")
+    ap.add_argument("--recover", action="store_true",
+                    help="undo an update that was interrupted, then report")
     args = ap.parse_args()
+    if args.recover:
+        print(recover() or "nothing to recover — no update was interrupted.")
+        return 0
     if args.check:
         m = fetch_manifest()
         action, detail = decide(local_version(), m, load_state())
