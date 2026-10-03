@@ -1,0 +1,1302 @@
+"""Mid-turn advice updates: the monitor re-advises whenever the decision state
+changes during a buy phase (buy, roll, play, sell), not once per buy phase.
+
+The old loop advised once per MAIN_ACTION transition and went stale for the
+rest of the turn — the overlay kept showing the pre-buy shop and affordability
+even after the player spent gold.
+"""
+import os
+import sys
+import unittest
+from unittest import mock
+
+# app/ is where the code lives; deriving it from this file
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, HERE)          # location-independent: no cwd or -t needed
+
+import live_coach
+from live_coach import LiveCoach
+from tests.test_shop_parsing import opt_block
+
+GS = "D 21:17:13.7844972 GameState.DebugPrintPower() - "
+OPT = "D 21:17:14.0000000 GameState.DebugPrintOptions() - "
+
+
+def _coach_with_offers(*offers):
+    c = LiveCoach()
+    c.friendly = 7  # hero parsed (as it is by the first seeded advise)
+    for line in ["x tag=STEP value=MAIN_ACTION"] + opt_block(1, offers):
+        c.feed(line)
+    return c
+
+
+class TestStateFingerprint(unittest.TestCase):
+    def test_none_before_hero_parsed(self):
+        self.assertIsNone(LiveCoach().state_fingerprint())
+
+    def test_gold_change_changes_fingerprint(self):
+        """A buy spends gold — the fingerprint must notice (affordability)."""
+        c = LiveCoach()
+        c.friendly = 7
+        c.account = "TestAccount"
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES value=5")
+        before = c.state_fingerprint()
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES value=3")
+        self.assertNotEqual(before, c.state_fingerprint())
+
+    def test_shop_change_changes_fingerprint(self):
+        """After a roll the shop loses an offer — the advice must re-run.
+        The roll's writes (old offer removed) are what carry the change: the
+        zone layer keeps the shop present across the reset itself."""
+        c = self._offers_coach()
+        before = c.state_fingerprint()
+        c.feed("x BlockType=PLAY Entity=[entityName=Refresh "
+               "cardId=TB_BaconShop_8p_Reroll_Button player=7] Target=")
+        c.feed(GS + "TAG_CHANGE Entity=[entityName=River Skipper id=100 "
+                    "zone=PLAY zonePos=1 cardId=BG33_140 player=15] "
+                    "tag=ZONE value=REMOVEDFROMGAME")
+        self.assertNotEqual(before, c.state_fingerprint())
+        self.assertEqual(c.tavern_offers(), ["BG33_886"])
+
+    def _offers_coach(self):
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c.friendly = 7
+        for line in ["x tag=STEP value=MAIN_ACTION"] + opt_block(1, [
+                ("River Skipper", "BG33_140", 15),
+                ("Tusked Camper", "BG33_886", 15)]):
+            c.feed(line)
+        return c
+
+    def test_picking_changes_fingerprint(self):
+        """Resolving a pick changes no gold/board/shop — without the choice
+        in the fingerprint the monitor never re-advises and the overlay sat
+        frozen on the pick panel until a refresh (2026-09-04 user report)."""
+        c = self._offers_coach()
+        c.choice = {"ctype": "GENERAL", "source": "TB_BaconShop_TRINKET_1",
+                    "options": [("Bouncy Box", "TB_BaconTrinket18u")],
+                    "picked": None}
+        pending = c.state_fingerprint()
+        c.choice["picked"] = "TB_BaconTrinket18u"
+        self.assertNotEqual(pending, c.state_fingerprint())
+
+    def test_scout_change_changes_fingerprint(self):
+        """A newly announced next opponent changes what the advice says."""
+        c = self._offers_coach()
+        c.account = "TestAccount"
+        before = c.state_fingerprint()
+        c.feed(f"{GS}TAG_CHANGE Entity=TestAccount "
+               f"tag=NEXT_OPPONENT_PLAYER_ID value=8")
+        self.assertNotEqual(before, c.state_fingerprint())
+
+    def test_hand_change_changes_fingerprint(self):
+        """A spell bought into hand (or cast out) changes the plan without
+        touching gold/board/shop — the fingerprint must notice."""
+        c = self._offers_coach()
+        before = c.state_fingerprint()
+        c.gs.feed(f"{GS}    FULL_ENTITY - Creating ID=77 CardID=BG28_897")
+        c.gs.feed(f"{GS}        tag=CONTROLLER value=7")
+        c.gs.feed(f"{GS}        tag=ZONE value=HAND")
+        c.gs.feed(f"{GS}        tag=CARDTYPE value=SPELL")
+        self.assertNotEqual(before, c.state_fingerprint())
+
+
+class TestGoldSpending(unittest.TestCase):
+    def test_spent_gold_is_subtracted(self):
+        """Gold = RESOURCES - RESOURCES_USED. The purse alone made mid-turn
+        advice judge affordability against gold the player already spent."""
+        c = LiveCoach()
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES value=5")
+        self.assertEqual(c.gs.gold.get("TestAccount"), 5)
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES_USED value=3")
+        self.assertEqual(c.gs.gold.get("TestAccount"), 2)
+
+    def test_fingerprint_notices_spending(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.account = "TestAccount"
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES value=5")
+        before = c.state_fingerprint()
+        c.feed(f"{GS}Entity=TestAccount tag=RESOURCES_USED value=3")
+        self.assertNotEqual(before, c.state_fingerprint())
+
+
+class TestLevelCost(unittest.TestCase):
+    def _coach(self, tier):
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = tier
+        return c
+
+    def test_live_button_cost_wins(self):
+        """The TechUp button's COST tag is the authoritative upgrade price."""
+        c = self._coach(2)
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 "
+               f"cardId=TB_BaconShopTechUp03_Button player=7] tag=COST value=6")
+        self.assertEqual(c.level_cost(), 6)
+
+    def test_death_writes_and_zero_costs_ignored(self):
+        """Teardown writes (COST 0, or after the button left PLAY) must not
+        pollute the live price."""
+        c = self._coach(2)
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 "
+               f"cardId=TB_BaconShopTechUp03_Button player=7] tag=COST value=6")
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 "
+               f"cardId=TB_BaconShopTechUp03_Button player=7] tag=ZONE "
+               f"value=REMOVEDFROMGAME")
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Tavern Tier 3 id=1013 "
+               f"cardId=TB_BaconShopTechUp03_Button player=7] tag=COST value=7")
+        self.assertEqual(c.level_cost(), 6)
+
+    def test_turn1_button_costs_5(self):
+        """Turn 1: the tier-2 button costs 5 (3 gold cannot level — the old
+        tier+1 model said 2 and advised an impossible level-then-buy)."""
+        c = self._coach(1)
+        c._tier_seen_turn = 0
+        c.actions.turn = 1
+        self.assertEqual(c.level_cost(), 5)
+
+    def test_price_drops_per_turn_at_tier(self):
+        """The upgrade starts at (target+3) gold and drops 1 per round
+        waited (CLAUDE.md indexing; the audit's F4 — the old docstring
+        wrote the same rule as 'tier+5 minus turns', a confusingly
+        different index). 1→2 costs 5; a second turn at tier 1: 4."""
+        c = self._coach(1)
+        c._tier_seen_turn = 0
+        c.actions.turn = 2
+        self.assertEqual(c.level_cost(), 4)
+
+    def test_top_move_uses_real_cost(self):
+        """Turn 1 (gold 3, button 5): no impossible LEVEL step at all — an
+        upgrade the player can't make this turn isn't advice (2026-09-04)."""
+        from value import top_move
+        a = {"tier": 1, "gold": 3, "level_cost": 5, "board": [],
+             "shop_rank": [], "buy_this": None, "playable_comps": {},
+             "choice": None, "target_comp": None, "sell_rank": []}
+        tm = top_move(a)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIn("roll", tm)
+
+
+class TestLevelVsBoard(unittest.TestCase):
+    """Leveling that costs the board must not lead: when dying, or when the
+    leftover couldn't buy the shop's top card and it's a target-comp core,
+    the buy comes first (2026-09-03: "we can't upgrade the board if we're
+    going to die / miss important minions as a result")."""
+
+    def _analysis(self, gold=6, level_cost=5, health=None, core_pick=False):
+        from value import top_move, _load_card_db
+        db = _load_card_db()
+        hi = next(cid for cid, v in db.items()
+                  if v.get("tier") == 4)   # costs 4 > spare 1
+        a = {"tier": 2, "gold": gold, "level_cost": level_cost,
+             "health": health, "armor": 0, "board": [],
+             "shop_rank": [(hi, 9.0)], "buy_this": hi,
+             "playable_comps": {}, "choice": None, "target_comp": None,
+             "sell_rank": [],
+             "target_cards": {"core": [{"card": hi}] if core_pick else []}}
+        return a, top_move
+
+    def test_dying_hero_buys_instead_of_levels(self):
+        a, top_move = self._analysis(health=8)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("LEVEL next turn", tm)
+
+    def test_core_card_beats_level(self):
+        a, top_move = self._analysis(health=40, core_pick=True)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("LEVEL next turn", tm)
+
+    def test_level_still_leads_when_both_fit(self):
+        """Healthy, no core pick, and the leftover covers the top card:
+        level-first is unchanged."""
+        a, top_move = self._analysis(gold=10)  # spare 5 >= cost 4
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. LEVEL "), tm)
+        self.assertIn("Buy", tm)
+
+    def test_level_leads_when_healthy_and_no_core(self):
+        a, top_move = self._analysis()  # spare 1 < 4, but nothing important
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. LEVEL "), tm)
+
+
+class TestLevelGates(unittest.TestCase):
+    """The leveling gates of analysis/LEVELING_MODEL.md, each with a stated
+    reason: armor flow (Q0), the shopping-list tier filter (Q1), and the
+    curve prior as the default."""
+
+    def _analysis(self, gold=6, level_cost=5, health=40, armor=0,
+                  damage_last=None, loss_streak=0, next_pieces=(),
+                  here_pieces=(), tier=2):
+        from value import top_move, _load_card_db
+        db = _load_card_db()
+
+        def cid_of(t, exclude=()):
+            return next(c for c, v in db.items()
+                        if v.get("tier") == t and c not in exclude)
+
+        t1 = cid_of(1)   # shop headline the budget can cover after a level
+        t2 = cid_of(2, exclude=(t1,))
+        t3 = cid_of(3, exclude=(t1, t2))
+        t4 = cid_of(4, exclude=(t1, t2, t3))
+
+        def row(cid):
+            return {"card": cid, "name": cid, "owned": False}
+
+        a = {"tier": tier, "gold": gold, "level_cost": level_cost,
+             "health": health, "armor": armor, "turn": 7,
+             "damage_last": damage_last, "loss_streak": loss_streak,
+             "board": [], "shop_rank": [(t4, 9.0), (t1, 4.0)],
+             "buy_this": t4, "playable_comps": {}, "choice": None,
+             "target_comp": "Test", "sell_rank": [],
+             "target_cards": {"name": "Test",
+                              "core": [row(c) for c in next_pieces],
+                              "addons": [row(c) for c in here_pieces]}}
+        return a, top_move
+
+    def test_payoff_next_tier_reason(self):
+        """A comp piece the player needs sits at tier+1: the level states
+        the payoff as its reason."""
+        a, top_move = self._analysis(next_pieces=("TIER3X",))
+        # point the comp piece at a real tier-3 card
+        from value import _load_card_db
+        t3 = next(c for c, v in _load_card_db().items() if v.get("tier") == 3)
+        a["target_cards"]["core"] = [{"card": t3, "name": t3, "owned": False}]
+        tm = top_move(a)
+        self.assertTrue(tm.startswith(
+            "1. LEVEL to tier 3 (the comp's next pieces live there)"), tm)
+
+    def test_needs_here_stays_and_buys(self):
+        """The comp's missing pieces are ON the current tier: leveling would
+        LOWER the odds of finding them — stay is stated, buy leads."""
+        from value import _load_card_db
+        db = _load_card_db()
+        t2 = next(c for c, v in db.items() if v.get("tier") == 2)
+        a, top_move = self._analysis(here_pieces=(t2,))
+        tm = top_move(a)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIn("stay on tier 2", tm)
+        self.assertIn("lower the odds", tm)
+
+    def test_loss_streak_defers_level_with_reason(self):
+        """Two straight real losses and the level + top card can't both fit:
+        buy tempo, level trails with the reason stated."""
+        a, top_move = self._analysis(damage_last=8, loss_streak=2, tier=3)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("lost 2 straight fights", tm)
+        self.assertIn("LEVEL next turn", tm)
+
+    def test_single_real_loss_defers_with_reason(self):
+        a, top_move = self._analysis(damage_last=12, loss_streak=1, tier=3)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("took 12 last fight", tm)
+
+    def test_early_game_losses_do_not_flip(self):
+        """Tiers 1-2 are shop-driven (Jeef): early losses don't gate levels."""
+        a, top_move = self._analysis(damage_last=4, loss_streak=3, tier=2)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. LEVEL "), tm)
+
+    def test_flip_reason_carries_scout_numbers(self):
+        a, top_move = self._analysis(damage_last=8, loss_streak=2, tier=3)
+        a["board_stats"] = 27
+        a["opp_stats"] = 90
+        tm = top_move(a)
+        self.assertIn("your 27 vs their 90", tm)
+
+    def test_strong_board_converts_to_level(self):
+        """Shadybunny's Q0: already winning — strength converts into a
+        tier, not into more tempo."""
+        a, top_move = self._analysis()
+        a["board_stats"] = 300
+        a["opp_stats"] = 90
+        tm = top_move(a)
+        self.assertIn("you're strong — convert it into a tier", tm)
+
+    def test_token_loss_does_not_flip(self):
+        """A close 2-damage loss with no streak is no tempo alarm (tier 2 is
+        shop-driven anyway — early game never gates)."""
+        a, top_move = self._analysis(damage_last=2, loss_streak=0)
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. LEVEL "), tm)
+
+    def test_close_losses_still_flip(self):
+        """Any damage is a loss (a won combat never drops health+armor): the
+        2026-09-04 Guff game lost every fight by 1-5 and the old >=3 rule
+        read it as no streak. Two straight close losses at tier 3 flip."""
+        a, top_move = self._analysis(damage_last=2, loss_streak=2, tier=3)
+        a["close_losses"] = True
+        tm = top_move(a)
+        self.assertTrue(tm.startswith("1. Buy "), tm)
+        self.assertIn("lost 2 straight fights (close)", tm)
+
+    def test_curve_prior_names_itself(self):
+        a, top_move = self._analysis()
+        tm = top_move(a)
+        self.assertIn("LEVEL to tier 3 (standard curve)", tm)
+
+    def test_addon_next_tier_does_not_defeat_core_here_stay(self):
+        """A missing CORE on the current tier outranks a lone ADDON at
+        tier+1: the old gate required tier+1 to hold NOTHING, so any addon
+        there pulled LEVEL while the comp's cores sat here (2026-09-08:
+        'keeps saying to upgrade even if there are minions at this tier we
+        still need')."""
+        from value import _load_card_db
+        db = _load_card_db()
+        t2 = next(c for c, v in db.items() if v.get("tier") == 2)
+        t3 = next(c for c, v in db.items() if v.get("tier") == 3
+                  and c != t2)
+        a, top_move = self._analysis(next_pieces=(), here_pieces=(t2,))
+        a["target_cards"]["core"] = [{"card": t2, "name": t2, "owned": False}]
+        a["target_cards"]["addons"] = [{"card": t3, "name": t3, "owned": False}]
+        tm = top_move(a)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIn("stay on tier 2", tm)
+
+    def test_lower_tier_core_does_not_hold_the_stay(self):
+        """A tier-3 core while at tier 4 does NOT justify staying (2026-09-20
+        ruling on the 09-11 review's objection): below-tier pieces stay
+        findable after leveling, so they never hold the ladder back — the
+        old 'here = this tier or below' froze the curve on a sub-tier
+        core."""
+        from value import _load_card_db
+        db = _load_card_db()
+        t3 = next(c for c, v in db.items() if v.get("tier") == 3)
+        a, top_move = self._analysis(tier=4)
+        a["target_cards"]["core"] = [{"card": t3, "name": t3, "owned": False}]
+        tm = top_move(a)
+        self.assertNotIn("stay on tier 4", tm)
+        self.assertIn("LEVEL to tier 5", tm)
+
+    def test_more_next_cores_than_here_levels(self):
+        """The comp's missing cores live mostly one tier up: LEVEL states
+        the payoff."""
+        from value import _load_card_db
+        db = _load_card_db()
+        t2 = next(c for c, v in db.items() if v.get("tier") == 2)
+        t3s = [c for c, v in db.items() if v.get("tier") == 3][:2]
+        a, top_move = self._analysis(tier=2)
+        a["target_cards"]["core"] = [{"card": t2, "name": t2, "owned": False}] \
+            + [{"card": c, "name": c, "owned": False} for c in t3s]
+        tm = top_move(a)
+        self.assertIn("the comp's next pieces live there", tm)
+
+    def test_unranked_pick_never_blessed(self):
+        """An unranked pick (no data — score None) gets no 'PICK X' step:
+        recommending the first listed option read as advice (2026-09-08
+        hero-power stance discover)."""
+        from value import top_move
+        a, _tm = self._analysis()
+        a["choice"] = {"kind": "unknown", "source": "Shift your Hero Power",
+                       "ranked": [("A", "BG31_XYZ", None, ""),
+                                  ("B", "BG31_ABC", None, "")]}
+        tm = top_move(a)
+        self.assertNotIn("PICK", tm)
+
+
+class TestArmorFlow(unittest.TestCase):
+    """Armor/HP drops between buy phases are the loss-streak signal (Q0,
+    analysis/LEVELING_MODEL.md): 'took N last fight' / 'lost N straight'."""
+
+    HERO = ("Entity=[entityName=H id=9 zone=PLAY zonePos=1 "
+            "cardId=BG30_HERO_100 player=7]")
+
+    def test_damage_last_and_streak(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "BG30_HERO_100"
+        c.account = "TestAccount"
+        c.playable = {}
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=HEALTH value=30")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=20")
+        c.actions.turn = 1
+        a = c.analyze()
+        self.assertIsNone(a["damage_last"])  # no prior phase to compare
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=12")
+        c.actions.turn = 2
+        a = c.analyze()
+        self.assertEqual(a["damage_last"], 8)
+        self.assertEqual(a["loss_streak"], 1)
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=4")
+        c.actions.turn = 3
+        a = c.analyze()
+        self.assertEqual(a["damage_last"], 8)
+        self.assertEqual(a["loss_streak"], 2)  # two consecutive real losses
+
+    def test_armor_gain_is_not_a_loss(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "BG30_HERO_100"
+        c.account = "TestAccount"
+        c.playable = {}
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=HEALTH value=30")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=4")
+        c.actions.turn = 1
+        c.analyze()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=ARMOR value=8")
+        c.actions.turn = 2
+        a = c.analyze()
+        self.assertIsNone(a["damage_last"])  # armor went UP: not a loss
+        self.assertEqual(a["loss_streak"], 0)
+
+
+class TestOpponentScout(unittest.TestCase):
+    """Gates 3+4 (analysis/LEVELING_MODEL.md): every fight logs the
+    opponent-side board (fixed id 11) under the announced NEXT_OPPONENT id;
+    the buy-phase preview of the next opponent is that player's last-known
+    board; lobby median falls back for never-fought opponents."""
+
+    HERO = ("Entity=[entityName=H id=9 zone=PLAY zonePos=1 "
+            "cardId=BG30_HERO_100 player=3]")
+    OPP = "Entity=[entityName=A id=50 zone=PLAY zonePos=1 cardId=BG33_886 player=11]"
+
+    def _coach(self):
+        c = LiveCoach()
+        c.friendly = 3
+        c.hero_card = "BG30_HERO_100"
+        c.account = "TestAccount"
+        c.playable = {}
+        return c
+
+    def test_combat_board_mapped_to_announced_opponent(self):
+        c = self._coach()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 1
+        # every buy phase re-announces the pairing (account + hero entities)
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.gs.cardtype[50] = "MINION"
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")  # played
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        a = c.analyze()
+        self.assertEqual(c._opp_boards.get(4, {}).get("stats"), 8)
+        self.assertEqual(a["last_opp_stats"], 8)
+        self.assertEqual(c.next_opponent, 4)
+        self.assertEqual(a["opp_stats"], 8)
+        self.assertEqual(a["board_stats"], 0)
+        self.assertEqual(a["lobby_opp"], 8)
+
+    def test_unfought_next_opponent_falls_back(self):
+        c = self._coach()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=6")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        a = c.analyze()
+        self.assertEqual(c.next_opponent, 6)
+        self.assertIsNone(a["opp_stats"])  # player 6 never fought
+        self.assertIsNone(a["last_opp_stats"])
+
+    def test_deaths_snapshot_the_fought_board(self):
+        """The fullest view of the board we faced wins: combat deaths
+        snapshot the board too (the opponent's minions often enter from
+        SETASIDE, which never fired a snapshot — the Holmes game captured
+        nothing without this), and a minion that died mid-fight still
+        counts as part of the board we faced."""
+        c = self._coach()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
+        c.gs.cardtype[50] = "MINION"
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=REMOVEDFROMGAME")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        a = c.analyze()
+        self.assertEqual(a["last_opp_stats"], 8)
+
+    def test_turn_not_resolved_before_its_fight(self):
+        """A turn is only resolved once its fight is over: during the turn's
+        own buy phase the resolver must not mark it (the Guff game committed
+        the previous fight's 6-stat teardown remnants as the fought board
+        and skipped every real fight)."""
+        c = self._coach()
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.gs.cardtype[50] = "MINION"
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ATK value=3")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")
+        c.analyze()  # turn 1's buy phase: nothing resolved yet
+        self.assertNotIn(1, c._resolved)
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        c.analyze()
+        self.assertIn(1, c._resolved)
+        self.assertEqual(c._opp_boards.get(4, {}).get("stats"), 8)
+
+    def test_teardown_remnants_never_committed(self):
+        """The remnants of the previous fight are torn down during the next
+        turn's buy phase under the same dynamic opponent-side id — they must
+        not be committed as the board we fought; the combat-phase snapshot
+        of the real fight wins."""
+        c = self._coach()
+        c.gs.cardtype[50] = "MINION"
+        c.gs.cardtype[51] = "MINION"
+        opp1 = "Entity=[entityName=A id=50 zone=PLAY zonePos=1 cardId=BG33_886 player=11]"
+        opp2 = "Entity=[entityName=B id=51 zone=PLAY zonePos=2 cardId=BG33_886 player=11]"
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 1
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
+        # fight 1: opponent plays a 3/5
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ATK value=3")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=HEALTH value=5")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ZONE value=PLAY")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        a = c.analyze()
+        self.assertEqual(a["last_opp_stats"], 8)
+        # turn-2 buy phase: fight 1's remnant (half dead) is torn down...
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ATK value=2")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=HEALTH value=1")
+        c.feed(f"{GS}TAG_CHANGE {opp1} tag=ZONE value=GRAVEYARD")
+        # ...the next opponent (player 6) is announced (each buy phase is)...
+        c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=6")
+        # ...their 6/6 enters during the combat that closes this turn
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}TAG_CHANGE {opp2} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {opp2} tag=ATK value=6")
+        c.feed(f"{GS}TAG_CHANGE {opp2} tag=HEALTH value=6")
+        c.feed(f"{GS}TAG_CHANGE {opp2} tag=ZONE value=PLAY")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 3
+        a = c.analyze()
+        # the remnant (3 stats) never enters the lobby; the 12-stat fight wins
+        self.assertEqual([r["stats"] for r in c._lobby_stats], [8, 12])
+        self.assertEqual(c._opp_boards.get(6, {}).get("stats"), 12)
+
+
+class TestBoardFallback(unittest.TestCase):
+    def test_empty_board_falls_back_to_snapshot(self):
+        """A full-board turn's combat teardown leaves the log's PLAY board
+        empty until after the shop prints (2026-09-03: one phase per game
+        advised on board 0). analyze must estimate from the last snapshot."""
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = 3
+        c.account = "TestAccount"
+        c.playable = {}
+        c.gs.snapshots.append([
+            {"card": "BG33_140", "player": 7, "atk": 2, "health": 2},
+            {"card": "BG33_886", "player": 15, "atk": 3, "health": 3},
+        ])
+        a = c.analyze()
+        self.assertEqual([m["card"] for m in a["board"]], ["BG33_140"])
+
+    def test_real_board_beats_snapshot(self):
+        """When the live PLAY board exists it is used (no snapshot ghosting)."""
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = 3
+        c.account = "TestAccount"
+        c.playable = {}
+        c.gs.snapshots.append([{"card": "BG33_140", "player": 7,
+                                "atk": 2, "health": 2}])
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=X id=99 zone=PLAY "
+               f"zonePos=1 cardId=BG33_886 player=7] tag=ZONE value=PLAY")
+        c.gs.cardtype[99] = "MINION"
+        a = c.analyze()
+        self.assertEqual([m["card"] for m in a["board"]], ["BG33_886"])
+
+
+class TestBoardEstimate(unittest.TestCase):
+    """During the combat-teardown window the board estimate must show the
+    buy-phase board, not the fight's depleted remnant (2026-09-07 Tickatus
+    game: the overlay read 'you 90' mid-turn on a 300-stat board — the
+    player's 'my guys evaporated' report)."""
+
+    def test_fullest_snapshot_wins(self):
+        from live_coach import _estimate_board
+        full = [{"player": 3, "card": "A", "atk": 100, "health": 100},
+                {"player": 3, "card": "B", "atk": 100, "health": 100}]
+        remnant = [{"player": 3, "card": "A", "atk": 20, "health": 10}]
+        opp = [{"player": 9, "card": "X", "atk": 500, "health": 500}]
+        got = live_coach._estimate_board([full, remnant, opp], 3)
+        self.assertEqual([m["card"] for m in got], ["A", "B"])
+
+    def test_remnant_only_when_nothing_fresher(self):
+        from live_coach import _estimate_board
+        remnant = [{"player": 3, "card": "A", "atk": 5, "health": 5}]
+        self.assertEqual(_estimate_board([remnant], 3), remnant)
+
+    def test_empty_snapshots(self):
+        from live_coach import _estimate_board
+        self.assertEqual(_estimate_board([], 3), [])
+
+
+class TestStickyBanGate(unittest.TestCase):
+    """The sticky direction must respect the ban filter: before the 5/5 ban
+    resolves the coach runs fail-open with every comp playable, so a target
+    can lock in that window — and the hold then kept showing Nagas AFTER
+    Naga was banned (2026-09-07, twice)."""
+
+    def test_removed_comp_releases_the_direction(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = 3
+        c.account = "TestAccount"
+        c._bans_ready = True
+        c.allowed = ["Beast"]
+        beast = {"name": "Beasts - Test", "tribe": "Beast",
+                 "core": ["BG36_202"], "addons": []}
+        naga = {"name": "Nagas - Groundbreaker", "tribe": "Naga",
+                "core": ["BG31_035"], "addons": []}
+        c.playable = {"beasts": beast}          # the ban already dropped nagas
+        c._sticky_target = naga                 # locked in the fail-open window
+        # a naga core is on the board (sub-threshold: 1 hit would hold)
+        c.gs.feed(f"{GS}FULL_ENTITY - Creating ID=50 CardID=BG31_035")
+        c.gs.feed(f"{GS}    tag=CONTROLLER value=7")
+        c.gs.feed(f"{GS}    tag=ZONE value=PLAY")
+        c.gs.feed(f"{GS}    tag=CARDTYPE value=MINION")
+        c.gs.feed(f"{GS}    tag=ATK value=3")
+        c.gs.feed(f"{GS}    tag=HEALTH value=3")
+        a = c.analyze()
+        self.assertIsNone(a["target_comp"])
+
+    def test_still_playable_comp_holds(self):
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "HERO_X"
+        c.gs.hero_meta["HERO_X"]["tier"] = 3
+        c.account = "TestAccount"
+        c._bans_ready = True
+        c.allowed = ["Beast", "Naga"]
+        naga = {"name": "Nagas - Groundbreaker", "tribe": "Naga",
+                "core": ["BG31_035"], "addons": []}
+        c.playable = {"nagas": naga}
+        c._sticky_target = naga
+        c.gs.feed(f"{GS}FULL_ENTITY - Creating ID=50 CardID=BG31_035")
+        c.gs.feed(f"{GS}    tag=CONTROLLER value=7")
+        c.gs.feed(f"{GS}    tag=ZONE value=PLAY")
+        c.gs.feed(f"{GS}    tag=CARDTYPE value=MINION")
+        c.gs.feed(f"{GS}    tag=ATK value=3")
+        c.gs.feed(f"{GS}    tag=HEALTH value=3")
+        a = c.analyze()
+        self.assertEqual(a["target_comp"], "Nagas - Groundbreaker")
+
+
+class TestBuyStep(unittest.TestCase):
+    def _analysis(self, gold, budget_card_first=True):
+        from value import top_move, _load_card_db, _load_spell_db
+        db = _load_card_db()
+        hi = next(cid for cid, v in db.items()
+                  if v.get("tier") and v["tier"] >= 3)
+        # minions cost a flat 3 now — the walk-down target is a 2-cost spell
+        spell = next(cid for cid, v in _load_spell_db().items()
+                     if (v or {}).get("cost") == 2)
+        a = {"tier": 2, "gold": gold, "level_cost": 5, "board": [],
+             "shop_rank": [(hi, 9.0), (spell, 4.0)], "buy_this": hi,
+             "playable_comps": {}, "choice": None, "target_comp": None,
+             "sell_rank": []}
+        return a, hi, spell, top_move
+
+    def test_unaffordable_headline_walks_down(self):
+        """Gold 7, level 5 (budget 2), headline minion costs 3: the plan buys
+        the affordable 2-cost spell, and buy_step_card says so (the UI's Buy
+        box must agree)."""
+        a, hi, lo, top_move = self._analysis(7)
+        tm = top_move(a)
+        self.assertEqual(a["buy_step_card"], lo)
+        self.assertIn("Buy", tm)
+        self.assertNotIn("roll —", tm)
+
+    def test_nothing_affordable_after_level_is_silence(self):
+        """Gold 5, level 5 (budget 0): the level spent everything — no
+        phantom "roll" with 0 gold (a roll costs 1 too)."""
+        a, hi, lo, top_move = self._analysis(5)
+        tm = top_move(a)
+        self.assertIsNone(a["buy_step_card"])
+        self.assertIsNone(a["buy_step_roll"])
+        self.assertNotIn("roll", tm)
+        self.assertTrue(tm.startswith("1. LEVEL"), tm)
+
+    def test_impossible_level_not_recommended(self):
+        """Gold 6 with the level costing 7: the upgrade is out of reach this
+        turn, so it is not in the plan at all (2026-09-04: the plan led with
+        the upgrade and buried the buy as step 2)."""
+        a, hi, lo, top_move = self._analysis(6)
+        a["level_cost"] = 7
+        tm = top_move(a)
+        self.assertTrue(tm.startswith(f"1. Buy "), tm)
+        self.assertNotIn("LEVEL", tm)
+
+    def test_zero_gold_passes(self):
+        """Gold 0, nothing affordable, level out of reach: pass, not a
+        phantom roll or an impossible upgrade."""
+        a, hi, lo, top_move = self._analysis(0)
+        tm = top_move(a)
+        self.assertIn("pass — out of gold", tm)
+        self.assertNotIn("roll", tm)
+        self.assertNotIn("LEVEL", tm)
+        self.assertIsNone(a["buy_step_card"])
+
+
+class TestBuyEvidence(unittest.TestCase):
+    """A bought card is comp evidence: a minion can sit in hand behind a
+    full board and a spell is acquired by buying — the old plays-only
+    evidence kept the beasts game comp-agnostic until t11 (2026-09-04)."""
+
+    def test_buy_is_tracked(self):
+        c = LiveCoach()
+        c.friendly = 7
+        # A buy: the ZONE tag line (bracket still shows the old zone) plus
+        # the follow-up writes whose bracket now reads zone=HAND — real buys
+        # always have these (stats, position).
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=SETASIDE "
+               f"zonePos=0 cardId=BG33_140 player=7] tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=HAND "
+               f"zonePos=1 cardId=BG33_140 player=7] tag=ZONE_POSITION value=1")
+        self.assertIn((7, "BG33_140"), c.actions.buys)
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        self.assertIn((7, "BG33_140"), c.actions.turn_buys[-1])
+        self.assertEqual(c.actions.buys, [])  # cleared for the new turn
+
+    def test_hand_reentry_not_double_counted(self):
+        """The bracket re-prints zone=HAND on every sibling write — only the
+        SETASIDE/PLAY -> HAND transition is a buy."""
+        c = LiveCoach()
+        c.friendly = 7
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=SETASIDE "
+               f"zonePos=0 cardId=BG33_140 player=7] tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=HAND "
+               f"zonePos=1 cardId=BG33_140 player=7] tag=ATK value=2")
+        self.assertEqual(len(c.actions.buys), 1)
+
+
+class TestBanGate(unittest.TestCase):
+    def test_partial_pool_reveal_fails_open(self):
+        """One tribe's pool minions seen (allowed=[Beast]) is NOT ban info —
+        the old code froze 9 banned tribes in the UI for a whole game."""
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {}
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        fake = [{"seed": "1", "allowed": ["Beast"], "banned": [
+            "Demon", "Dragon", "Elemental", "Mech", "Murloc", "Naga",
+            "Pirate", "Quilboar", "Undead"]}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertIsNone(c.allowed)
+        self.assertFalse(c._bans_ready)  # keeps retrying on later analyzes
+        # Detection-window state rides the payload so the UI can label it.
+        self.assertTrue(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 1)
+
+    def test_detection_window_lists_confirmed_tribes_only(self):
+        """The pool reveals stream in with the shop rolls (5/5 lands turn
+        3-5), and fail-open made the coach AIM at banned-tribe comps until
+        then. The advisory list (playable) therefore admits only comps
+        whose tribe the pool has CONFIRMED — a seen pure tribe is
+        definitely in this lobby; an unseen one might be banned. The
+        panel's game-level list (game_comps) keeps every comp, flagged by
+        tribe confirmation (2026-09-11: the panel must read as "what this
+        game might allow" on turn 1, not as board-derived)."""
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
+                         "core": ["BG30_111"]},
+            "nagas-y": {"name": "Nagas - Y", "tribe": "Naga",
+                        "core": ["BG23_318"]},
+        }
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        fake = [{"seed": "1", "allowed": ["Beast"], "banned": [
+            "Demon", "Dragon", "Elemental", "Mech", "Murloc", "Naga",
+            "Pirate", "Quilboar", "Undead"]}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertEqual(list(c.playable), ["beasts-x"])
+        self.assertNotIn("_blocked_core", c.playable["beasts-x"])
+        self.assertTrue(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 1)
+        # The panel list stays game-level: everything listed, the confirmed
+        # tribe marked certain and the unseen one flagged for dimming.
+        self.assertEqual(set(c.game_comps), {"beasts-x", "nagas-y"})
+        self.assertTrue(c.game_comps["beasts-x"]["_tribe_confirmed"])
+        self.assertFalse(c.game_comps["nagas-y"]["_tribe_confirmed"])
+        # The meta dicts are shared — the per-game flag must be on a copy.
+        self.assertNotIn("_tribe_confirmed", c._comps["beasts-x"])
+
+    def test_detection_window_empty_confirmed_set_hides_all(self):
+        """Early window (0/5 confirmed — with the 3-distinct-card gate this
+        lasts the first ~2 minutes): the ADVISORY list must be EMPTY, not
+        fail-open. is_banned()'s no-ban-info fail-open is the wrong
+        semantics here — the replay showed seen=0 -> n_playable=21 (banned
+        tribes included) before this was made an explicit confirmed-set
+        membership check. The PANEL list still shows every comp (turn-1
+        game-level view), each dimmed as unconfirmed."""
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
+                         "core": ["BG30_111"]},
+        }
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        fake = [{"seed": "1", "allowed": [], "banned": []}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertEqual(c.playable, {})
+        self.assertTrue(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 0)
+        self.assertEqual(set(c.game_comps), {"beasts-x"})
+        self.assertFalse(c.game_comps["beasts-x"]["_tribe_confirmed"])
+
+    def test_complete_ban_set_locks(self):
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {}
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
+        fake = [{"seed": "1", "allowed": allowed, "banned": ["x"] * 5}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertEqual(c.allowed, allowed)
+        self.assertTrue(c._bans_ready)
+        self.assertFalse(c.tribes_detecting)  # window closed
+        self.assertEqual(c.tribes_seen, 5)
+
+    def test_bans_resolve_when_hero_parsed_first(self):
+        """The pool streams after the hero parses; _ensure_meta returns early
+        once friendly is set, so analyze must keep refreshing the bans
+        (the 2026-09-04 Guff game stayed ban-blind all game)."""
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c.friendly = 7          # hero already parsed
+        c.hero_card = "BG30_HERO_100"
+        c._comps = {}
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
+        fake = [{"seed": "1", "allowed": allowed, "banned": ["x"] * 5}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake), \
+                mock.patch.object(LiveCoach, "_resolve_boards"), \
+                mock.patch.object(c.gs, "final_board", return_value=([], None)), \
+                mock.patch("live_coach.sell_recommendation", return_value=[]), \
+                mock.patch("live_coach.comp_target", return_value=None), \
+                mock.patch("live_coach.comp_cards", return_value=None), \
+                mock.patch("live_coach.target_state", return_value=None), \
+                mock.patch("live_coach.top_move", return_value=""):
+            a = c.analyze()
+        self.assertEqual(c.allowed, allowed)
+
+
+class TestManualBans(unittest.TestCase):
+    """The overlay's tap-the-ban-screen picker (2026-09-19): the ban list is
+    provably not in any log (identical CREATE_GAME setup across different-ban
+    games), the pool inference converged at minute 12/14 in the evening
+    games, and a manual set is exact from t0. Manual bans are authoritative
+    for the rest of the game and reset with it.
+
+    Three states since 36.6.1 (2026-09-22): the reveal screen offers the
+    CURRENT pool's tribes (Aberration is on it, Naga is not), so the manual
+    complement is the 11-tribe roster minus the taps minus the out-of-play
+    tribes — still exactly 5 allowed, which is the invariant the inference
+    path's 5/5 gate is built on."""
+
+    TEAMS = ["Beast", "Demon", "Dragon", "Elemental", "Mech"]
+
+    def _coach(self):
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        # Two IN-PLAY comps (Murloc, Mech) next to the Beast one, plus the
+        # rotated Naga one: the taps must be what moves the in-play comps,
+        # while the Naga comp is dead by ROTATION whatever the taps say
+        # (out of play — see meta/out_of_play.json). Core ids are real pool
+        # minions that are still in play (Flighty Scout / Cord Puller —
+        # BG33_140 River Skipper is a Murloc but was itself removed in
+        # 36.6.1, so a comp built on it would drop for the wrong reason).
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
+                         "core": ["BG30_111"]},
+            "nagas-y": {"name": "Nagas - Y", "tribe": "Naga",
+                        "core": ["BG23_318"]},
+            "murlocs-z": {"name": "Murlocs - Z", "tribe": "Murloc",
+                          "core": ["BG32_330"]},
+            "mechs-w": {"name": "Mechs - W", "tribe": "Mech",
+                        "core": ["BG29_611"]},
+        }
+        c._card_races = {}
+        c.cur_lines = ["x"]
+        return c
+
+    def tearDown(self):
+        import coach_ui
+        coach_ui.store_manual_bans([])
+
+    def test_manual_set_is_authoritative(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c._bans_ready)
+        self.assertTrue(c.bans_manual)
+        # Allowed = the in-play tribes (the 11-tribe roster minus out-of-play
+        # Naga) minus the 5 taps -> 5, and the rotated tribe is reported as
+        # out of play rather than as a 6th ban.
+        self.assertEqual(c.allowed, ["Aberration", "Murloc", "Pirate",
+                                     "Quilboar", "Undead"])
+        self.assertEqual(c.out_of_pool, ["Naga"])
+        # The manual set reached the comp filter: the Beast and Mech comps are
+        # out (tapped), the Naga comp is out by ROTATION, the Murloc comp —
+        # whose tribe is NOT tapped — is the one that survives.
+        self.assertEqual(set(c.playable), {"murlocs-z"})
+        self.assertNotIn("nagas-y", c.playable)
+        self.assertFalse(c.tribes_detecting)
+        self.assertEqual(c.tribes_seen, 5)
+
+    def test_manual_beats_earlier_inference_lock(self):
+        """The inference locked 5/5 first (pool streamed fast), THEN the
+        player taps the reveal — the tap must still win (the reveal is the
+        ground truth; the inference's complement is only a guess until the
+        leaks argument, and the tap usually happens before it anyway)."""
+        import coach_ui
+        c = self._coach()
+        c.allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
+        c._bans_ready = True
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c.bans_manual)
+        self.assertEqual(c.allowed, ["Aberration", "Murloc", "Pirate",
+                                     "Quilboar", "Undead"])
+
+    def test_changing_the_taps_reapplies(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertEqual(set(c.playable), {"murlocs-z"})  # Mech tapped
+        coach_ui.store_manual_bans(["Beast", "Demon", "Dragon", "Elemental",
+                                    "Murloc"])
+        c._refresh_bans()
+        self.assertEqual(c.allowed, ["Aberration", "Mech", "Pirate",
+                                     "Quilboar", "Undead"])
+        # The survivor FLIPS with the taps: Murloc is banned now and Mech is
+        # not, while the Beast comp stays banned and the Naga comp stays
+        # rotated out of the pool either way.
+        self.assertEqual(set(c.playable), {"mechs-w"})
+
+    def test_clearing_reopens_detection(self):
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        coach_ui.store_manual_bans([])
+        c._refresh_bans()
+        self.assertFalse(c.bans_manual)
+        self.assertFalse(c._bans_ready)
+        self.assertIsNone(c.allowed)
+        self.assertTrue(c.tribes_detecting)  # the inference retries
+
+    def test_store_validates_against_the_roster(self):
+        import coach_ui
+        self.assertEqual(coach_ui.store_manual_bans(
+            ["Beast", "Weird", "", None, "Elemental"]), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.latest_manual_bans(), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.store_manual_bans([]), [])  # empty = clear
+        self.assertIsNone(coach_ui.latest_manual_bans())
+
+    def test_reset_with_the_game(self):
+        """bans_manual rides _GAME_DEFAULTS: a new game resets it (the tap
+        was per-game; a stale manual set would poison the next lobby)."""
+        import coach_ui
+        c = self._coach()
+        coach_ui.store_manual_bans(self.TEAMS)
+        c._refresh_bans()
+        self.assertTrue(c.bans_manual)
+        c._reset()
+        self.assertFalse(c.bans_manual)
+        self.assertIsNone(c._manual_key)
+
+
+class TestRenderJsonComps(unittest.TestCase):
+    def test_playable_comps_become_rich_tier_rows(self):
+        """The comps panel needs more than names: each playable comp row
+        carries its slug (the click-to-expand key), meta tier (the panel's
+        grouping) and its core/addons shopping list with owned/banned flags
+        — the player sees at a glance which required cards they have.
+        Rows sort meta-tier first (S before A) so the panel can group."""
+        from coach_ui import render_json
+        analysis = {"board": [{"card": "BG23_318", "attack": 1, "health": 1}],
+                    "sell_rank": [], "shop_rank": [],
+                    "playable_comps": {
+                        "beasts-x": {"name": "Beasts - X", "meta_tier": "A",
+                                     "core": ["BG30_111"], "addons": []},
+                        "mechs-y": {"name": "Mechs - Y", "meta_tier": "S",
+                                    "core": ["BG23_318", "BG33_318"],
+                                    "addons": ["BG27_556"],
+                                    "_blocked_core": ["BG33_318"]}}}
+        a = render_json(analysis)
+        self.assertEqual([c["slug"] for c in a["comps"]],
+                         ["mechs-y", "beasts-x"])
+        mechs = a["comps"][0]
+        self.assertEqual(mechs["meta_tier"], "S")
+        by_id = {r["card"]: r for r in mechs["core"]}
+        self.assertTrue(by_id["BG23_318"]["owned"])     # on the board
+        self.assertFalse(by_id["BG33_318"]["owned"])
+        self.assertTrue(by_id["BG33_318"]["banned"])    # _blocked_core
+        self.assertFalse(mechs["addons"][0]["banned"])
+        # The comp cards ride the tooltip metadata map too.
+        self.assertIn("BG23_318", a["cards"])
+
+    def test_playable_comps_no_ban_info_keeps_all(self):
+        """A comp without _blocked_core marks nothing banned — unknown ban
+        info must not read as 'banned'."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "playable_comps": {
+                        "x": {"name": "X", "meta_tier": "B",
+                              "core": ["BG30_111"], "addons": []}}}
+        a = render_json(analysis)
+        self.assertFalse(a["comps"][0]["core"][0]["banned"])
+        self.assertEqual(a["buy_step_card"], None)
+
+    def test_dark_gifts_are_not_in_the_payload(self):
+        """Player call, 2026-09-23: "remove that list of Dark gifts on the
+        coaching page. That is accomplishing nothing." The overlay listed gifts
+        the player already owns and the game already shows, so the payload stops
+        carrying them — but the ANALYSIS keeps the field, because the corpus and
+        telemetry record it."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "dark_gifts": [{"name": "Spectral Sight",
+                                    "description": "Discover a spell"}],
+                    "opp_trinkets": ["Flaming Portrait"]}
+        a = render_json(analysis)
+        self.assertNotIn("dark_gifts", a)
+        self.assertEqual(a["opp_trinkets"], ["Flaming Portrait"],
+                         "the opponents' trinkets line stays — it is intel the "
+                         "player cannot see in game")
+        self.assertIn("dark_gifts", analysis, "the analysis still records them")
+
+    def test_game_comps_preferred_tribe_flag_rides(self):
+        """The panel renders game_comps (the live coach's game-level list)
+        over playable_comps (the evidence-only advisory filter), and the
+        detection-window dim flag rides the row: _tribe_confirmed=False ->
+        tribe_confirmed=False; absent -> True (post-resolution rows and
+        playable_comps fallbacks render certain)."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "playable_comps": {
+                        "advisory": {"name": "Advisory only", "core": []}},
+                    "game_comps": {
+                        "beasts-x": {"name": "Beasts - X", "meta_tier": "A",
+                                     "core": ["BG30_111"], "addons": [],
+                                     "_tribe_confirmed": True},
+                        "nagas-y": {"name": "Nagas - Y", "meta_tier": "B",
+                                    "core": ["BG23_318"], "addons": [],
+                                    "_tribe_confirmed": False}}}
+        a = render_json(analysis)
+        self.assertEqual({c["slug"] for c in a["comps"]},
+                         {"beasts-x", "nagas-y"})   # playable_comps ignored
+        by_slug = {c["slug"]: c for c in a["comps"]}
+        self.assertTrue(by_slug["beasts-x"]["tribe_confirmed"])
+        self.assertFalse(by_slug["nagas-y"]["tribe_confirmed"])
+        # Post-resolution / fallback rows carry no flag -> certain.
+        plain = render_json({"board": [], "sell_rank": [], "shop_rank": [],
+                             "playable_comps": {
+                                 "x": {"name": "X", "core": []}}})
+        self.assertTrue(plain["comps"][0]["tribe_confirmed"])
+
+    def test_tribes_detecting_rides_the_payload(self):
+        """During the detection window the comps panel labels its
+        confirmed-tribes-only list — the flag and seen-count must reach
+        the render payload (post-hoc analyses without them stay falsy)."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "playable_comps": {},
+                    "tribes_detecting": True, "tribes_seen": 2}
+        a = render_json(analysis)
+        self.assertTrue(a["tribes_detecting"])
+        self.assertEqual(a["tribes_seen"], 2)
+        self.assertFalse(render_json({"board": [], "sell_rank": [],
+                                      "shop_rank": [],
+                                      "playable_comps": {}})
+                         .get("tribes_detecting"))
+
+    def test_comp_progress_raw_needs_do_not_crash_render(self):
+        """The comp meter's RAW rows carry needs as bare card-id strings
+        (value.comp_progress); the tooltip-metadata collector indexed
+        c["card"] on them and every analysis push crashed with "string
+        indices must be integers" once a candidate had unowned core —
+        the live coach then retried forever ("coach skipped") and stalled.
+        The collector must read the RENDERED rows, and the needs ids must
+        still land in the cards tooltip map."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "shop_rank": [],
+                    "target_comp": None,
+                    "comp_progress": [
+                        {"name": "Mechs - Y", "tribe": "Mech",
+                         "meta_tier": "S", "hits": 1, "ready": False,
+                         "needs": ["BG23_318"], "tribe_hits": 1}]}
+        a = render_json(analysis)  # used to raise TypeError
+        self.assertEqual(a["comp_progress"][0]["needs"][0]["card"],
+                         "BG23_318")
+        self.assertIn("BG23_318", a["cards"])
+
+    def test_sell_rank_groups_duplicates(self):
+        """Two board copies of one card showed as two confusing rows; they
+        group with a ×N badge and the sell-first instance's score."""
+        from coach_ui import render_json
+        analysis = {"board": [], "shop_rank": [], "playable_comps": {},
+                    "sell_rank": [("BG33_140", 5.0), ("BG33_886", 9.0),
+                                  ("BG33_140", 2.0)]}
+        a = render_json(analysis)
+        rows = a["sell_rank"]
+        self.assertEqual([r["card"] for r in rows], ["BG33_140", "BG33_886"])
+        self.assertEqual(rows[0]["n"], 2)
+        self.assertEqual(rows[0]["score"], 2)
+
+    def test_sell_row_excludes_hand_minions(self):
+        """A hand minion can't be sold — it has to be played first
+        (player-corrected 2026-09-09, superseding the 2026-09-05
+        "hand minions are sellable too" note that let a hand card sit
+        under "Safe to sell" while the coach said to sell the unplayable).
+        Play advice belongs to the hand box; the Sell row stays board-only."""
+        from coach_ui import render_json
+        analysis = {"board": [], "shop_rank": [], "playable_comps": {},
+                    "sell_rank": [("BG33_140", 5.0)],
+                    "hand": [{"card": "BG33_886", "verb": "play",
+                              "score": 4.0},
+                             {"card": "BG33_887", "verb": "hold",
+                              "score": 9.0}]}
+        a = render_json(analysis)
+        self.assertEqual([r["card"] for r in a["sell_rank"]], ["BG33_140"])
+
+    def test_shop_rows_carry_tavern_prices(self):
+        """Prices are invisible in the UI, so a wrong one ("thinks minions
+        cost 1 gold") was undiagnosable. Minion = FLAT 3 at every tier,
+        spell = its per-spell cost."""
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "playable_comps": {},
+                    "shop_rank": [("BG30_123", 5.0), ("BG28_504", 3.0),
+                                  ("BG34_858", 4.0)]}
+        a = render_json(analysis)
+        by_card = {r["card"]: r for r in a["shop_rank"]}
+        # BG30_123 Fearless Foodie = tier-3 minion; BG34_858 Air Revenant =
+        # tier-5 minion (a tier-5 row is the flat-3 discriminator: tier-
+        # pricing and flat-3 coincide at tier 3, so only a non-3 tier can
+        # catch a regression to tier-priced minions); BG28_504 Recruit a
+        # Trainee = 2g spell (spell DB, not the minion pool)
+        self.assertEqual(by_card["BG30_123"]["price"], 3)
+        self.assertEqual(by_card["BG34_858"]["price"], 3)
+        self.assertEqual(by_card["BG28_504"]["price"], 2)
+
+    def test_unpriced_cards_carry_no_price(self):
+        from coach_ui import render_json
+        analysis = {"board": [], "sell_rank": [], "playable_comps": {},
+                    "shop_rank": [("NOT_IN_ANY_DB", 1.0)]}
+        a = render_json(analysis)
+        self.assertIsNone(a["shop_rank"][0]["price"])
+
+
+class TestGameStateTable(unittest.TestCase):
+    """The per-game state table: _reset() must restore __init__'s state exactly.
+
+    The two used to be hand-synced lists — a field added to one and not the
+    other leaked the previous game's value into the new game (invisible in
+    play, wrong in advice). The table is the single source of truth; this
+    pins it.
+    """
+
+    def test_reset_restores_fresh_state(self):
+        from live_coach import _GAME_DEFAULTS
+        played = LiveCoach()
+        for name in _GAME_DEFAULTS:
+            setattr(played, name, "DIRTY")
+        played._reset()
+        fresh = LiveCoach()
+        for name in _GAME_DEFAULTS:
+            self.assertEqual(played.__dict__[name], fresh.__dict__[name],
+                             f"{name} diverges after _reset()")
+
+
+class TestPickDedup(unittest.TestCase):
+    """An unchanged pending pick must be advised once, not once per tick.
+
+    The guard compared a 5-tuple against a 3-tuple it rebuilt below, so it
+    could never match: the overlay re-pushed identical advice every 0.3 s and
+    the run recorded it to the decision log each time (295 records for 58
+    analyses in one session) — duplication that then shipped in the beta
+    corpus (2026-10-02). Behaviour is what is pinned here, not the tuple
+    shape, so the key may change as long as this holds.
+    """
+
+    def setUp(self):
+        import live
+        self.live = live
+        self._saved = live._last_state
+        live._last_state = None
+        self.coach = mock.Mock()
+        self.coach.choice = {"ctype": "hero", "source": "Choose One",
+                             "options": [("Galakrond", "BG36_HERO_01")],
+                             "picked": None}
+        self.coach._bans_ready = True
+        self.ranked = [("Galakrond", "BG36_HERO_01", 4.9, "a reason")]
+
+    def tearDown(self):
+        self.live._last_state = self._saved
+
+    def _patched(self):
+        return (
+            mock.patch.object(self.live, "rank_choices",
+                              return_value=self.ranked),
+            mock.patch.object(self.live.coach_ui, "update_analysis"),
+            mock.patch.object(self.live.coach_ui, "latest_manual_bans",
+                              return_value=[]),
+            mock.patch.object(self.live.decision_log, "record"),
+        )
+
+    def test_unchanged_pick_is_advised_once(self):
+        a, b, c, d = self._patched()
+        with a, b as ui, c, d as rec:
+            for _ in range(3):
+                self.live._advise_pick(self.coach)
+        self.assertEqual(ui.call_count, 1, "overlay was re-pushed")
+        self.assertEqual(rec.call_count, 1, "advisory was logged twice")
+
+    def test_a_changed_pick_is_advised_again(self):
+        a, b, c, d = self._patched()
+        with a, b as ui, c, d:
+            self.live._advise_pick(self.coach)
+            self.coach.choice = {"ctype": "hero", "source": "Choose One",
+                                 "options": [("Sindragosa", "BG36_HERO_02")],
+                                 "picked": None}
+            self.live._advise_pick(self.coach)
+        self.assertEqual(ui.call_count, 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -22,6 +22,13 @@ echo   Bob's Ledger - Hearthstone Battlegrounds coach
 echo ============================================================
 echo.
 
+rem The program lives in app\, so this folder shows almost nothing: the
+rem launcher, the README, the licence and docs\. Checked BEFORE the Python
+rem work, because the usual reason it is missing is that Windows is running
+rem this file straight out of the .zip - and telling someone to install
+rem Python when the real problem is an unextracted archive wastes their time.
+if not exist "%~dp0app\live.py" goto :no_program
+
 rem --- 1. Python ------------------------------------------------------
 rem A dev checkout's own venv wins; otherwise the py launcher, which is
 rem what the python.org installer provides. `python` last, since on some
@@ -63,11 +70,11 @@ if not errorlevel 1 goto :deps_ok
 echo.
 echo The coach needs one Python package: requests
 echo.
-echo   %PY% -m pip install -r "%~dp0requirements.txt"
+echo   %PY% -m pip install -r "%~dp0app\requirements.txt"
 echo.
 choice /c YN /n /m "Install it now? [Y/N] "
 if errorlevel 2 goto :no_deps
-%PY% -m pip install -r "%~dp0requirements.txt"
+%PY% -m pip install -r "%~dp0app\requirements.txt"
 if errorlevel 1 goto :fail
 goto :deps_ok
 
@@ -151,7 +158,7 @@ rem one shipped inside the zip would point at the packager's disk. (No -Executio
 :make_lnk
 set "LNK=%~1"
 set "LNK=%LNK:'=''%"
-powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%'); $s.TargetPath='%SELF%'; $s.WorkingDirectory='%HERE%'; $s.IconLocation='%HERE%bobs-ledger.ico'; $s.Description='Bobs Ledger - Hearthstone Battlegrounds coach'; $s.Save()"
+powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%'); $s.TargetPath='%SELF%'; $s.WorkingDirectory='%HERE%'; $s.IconLocation='%HERE%app\bobs-ledger.ico'; $s.Description='Bobs Ledger - Hearthstone Battlegrounds coach'; $s.Save()"
 if errorlevel 1 echo Could not create a shortcut at %~1 - dragging this file where you want it works too.
 exit /b 0
 
@@ -189,8 +196,18 @@ rem Stripping a substring leaves debris when the token was "--check=": a lone
 rem "=" would be handed to live.py, which ignores unknown flags - the same
 rem silent-start failure by another door.
 if "%PASS%"=="=" set "PASS="
-%PY% "%~dp0live.py" --open %PASS%
+%PY% "%~dp0app\live.py" --open %PASS%
 if errorlevel 1 goto :fail
+goto :end
+
+:no_program
+echo This file has to run from inside the extracted folder.
+echo.
+echo   Windows extracts only this one file when you run it straight out of
+echo   the .zip, and the coach itself lives in app\ next to it. Right-click
+echo   the downloaded .zip, choose "Extract All...", and run this file from
+echo   the folder that makes.
+echo.
 goto :end
 
 :fail
