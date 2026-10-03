@@ -122,7 +122,8 @@ class TestTheVerifierIsNotDecoration(ShareFixture):
         share.set_choice(True)
         bad = session_report.build(records())
         bad["advisories"][0]["analysis"]["opp_comp"] = {"name": HANDLE}
-        with mock.patch.object(session_report, "build", lambda recs: bad):
+        with mock.patch.object(session_report, "build",
+                               lambda recs, **kw: bad):
             with mock.patch.object(session_report, "decisions_for",
                                    lambda path: records()):
                 with mock.patch.object(share, "post_report",
@@ -137,7 +138,8 @@ class TestTheVerifierIsNotDecoration(ShareFixture):
         share.set_choice(True)
         bad = session_report.build(records())
         bad["advisories"][1]["analysis"]["situation"] = "vs " + FAKE_TAG
-        with mock.patch.object(session_report, "build", lambda recs: bad):
+        with mock.patch.object(session_report, "build",
+                               lambda recs, **kw: bad):
             with mock.patch.object(session_report, "decisions_for",
                                    lambda path: records()):
                 with mock.patch.object(share, "post_report", self.fake_post()):

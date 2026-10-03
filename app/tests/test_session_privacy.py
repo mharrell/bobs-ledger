@@ -164,23 +164,46 @@ class TestVerifierCatchesIntruders(unittest.TestCase):
 
 
 class TestReportIdLinksNothing(unittest.TestCase):
+    """The id is the collector's storage KEY, so a guessable one lets a
+    stranger aim at a specific player's report. It is random now, remembered
+    per session so a re-share does not upload the same game twice."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._saved = session_report.ID_MAP_DIR
+        session_report.ID_MAP_DIR = self._tmp.name
+
+    def tearDown(self):
+        session_report.ID_MAP_DIR = self._saved
+        self._tmp.cleanup()
+
     def test_the_same_session_gets_the_same_id(self):
-        a = session_report.build([advisory(6, handle=HANDLE)])
-        b = session_report.build([advisory(6, handle=HANDLE)])
+        a = session_report.build([advisory(6)], session_key="sess-a")
+        b = session_report.build([advisory(6)], session_key="sess-a")
         self.assertEqual(a["manifest"]["report_id"], b["manifest"]["report_id"])
 
     def test_a_different_session_gets_a_different_id(self):
-        a = session_report.build([advisory(6)])
-        b = session_report.build([advisory(7)])
+        a = session_report.build([advisory(6)], session_key="sess-a")
+        b = session_report.build([advisory(6)], session_key="sess-b")
         self.assertNotEqual(a["manifest"]["report_id"], b["manifest"]["report_id"])
 
-    def test_the_id_is_not_derived_from_the_session_directory(self):
-        """A session directory (or an account id) links a player's sessions
-        together — privacy_scan's own finding category."""
-        one = advisory(6)
-        two = dict(one, log=SESSION_DIR + "-other")
-        self.assertEqual(session_report.report_id_for([one]),
-                         session_report.report_id_for([two]))
+    def test_the_id_is_not_derived_from_the_advisories(self):
+        """The old id was sha256(first ts | count | version) — every input
+        guessable or visible in a report, so the storage key was guessable."""
+        a = session_report.build([advisory(6)], session_key="sess-a")
+        b = session_report.build([advisory(9), advisory(10)],
+                                 session_key="sess-a")
+        self.assertEqual(a["manifest"]["report_id"], b["manifest"]["report_id"])
+
+    def test_with_no_session_key_each_build_is_unique(self):
+        first = session_report.build([advisory(6)])["manifest"]["report_id"]
+        second = session_report.build([advisory(6)])["manifest"]["report_id"]
+        self.assertNotEqual(first, second)
+
+    def test_the_id_is_long_enough_to_be_unguessable(self):
+        rid = session_report.build([advisory(6)], session_key="s")["manifest"]["report_id"]
+        self.assertGreaterEqual(len(rid), 16)
+        self.assertRegex(rid, r"^[A-Za-z0-9_-]{8,64}$")   # the worker's rule
 
 
 class TestInspectRefusesABadReport(unittest.TestCase):

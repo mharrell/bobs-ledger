@@ -39,7 +39,87 @@ const PERSONAL_PATTERNS = [
   /Hearthstone_\d{4}_\d{2}_\d{2}/,    // a session directory name
 ];
 
+//: How long a stored session report is kept.
+//:
+//: Anonymous by design means no one can ask for a specific report to be
+//: deleted — there is nothing to look it up by — so a retention window is the
+//: only honest answer to "delete mine", and it also puts a ceiling on what a
+//: flood can cost in a 1 GB namespace (2026-10-03).
+const RETENTION_DAYS = 90;
+
+//: Conservative bounds on what a real session looks like.
+//:
+//: The ingest is unauthenticated — the client ships in a zip anyone can read,
+//: so it cannot hold a secret — which means fabrication is possible and no
+//: check here can prevent it. What these do is make LAZY fabrication fail.
+//: Deliberately loose: refusing a real player's session is worse than storing
+//: a clever fake, and a refusal reaches the player (share.py prints it)
+//: instead of disappearing.
+function implausible(obj) {
+  const rows = obj.advisories;
+  if (rows.length < 1 || rows.length > 2000) return "advisory count";
+  let last = "";
+  for (const a of rows) {
+    if (typeof a !== "object" || a === null) return "advisory shape";
+    const ts = typeof a.ts === "string" ? a.ts : "";
+    if (!/^\d{4}-\d{2}-\d{2}T/.test(ts)) return "advisory timestamp";
+    if (ts < last) return "timestamps out of order";
+    last = ts;
+    for (const [k, lo, hi] of [["turn", 0, 200], ["gold", 0, 500],
+                              ["tier", 0, 7], ["health", -100, 500]]) {
+      const v = a[k];
+      if (v === undefined || v === null) continue;
+      if (typeof v !== "number" || v < lo || v > hi) return `${k} out of range`;
+    }
+  }
+  return null;
+}
+
+function sameBytes(a, b) {
+  const x = new Uint8Array(a);
+  const y = new Uint8Array(b);
+  if (x.length !== y.length) return false;
+  for (let i = 0; i < x.length; i++) {
+    if (x[i] !== y[i]) return false;
+  }
+  return true;
+}
+
+/** Delete `sessions/<date>/` prefixes older than `days`.
+ *
+ * `days` may be "all", which deletes every stored report. That is the
+ * documented recovery for a flood (see telemetry/README.md) and it is also
+ * how the deletion path is tested, since a report is always stored under
+ * today's date and would otherwise never be old enough to expire.
+ */
+async function sweep(env, days = RETENTION_DAYS) {
+  const purge = days === "all";
+  const cutoff = purge ? "9999-99-99"
+    : new Date(Date.now() - Number(days) * 86400000)
+      .toISOString().slice(0, 10);
+  const listing = await env.BUCKET.list({prefix: "sessions/", limit: 1000});
+  const doomed = listing.keys
+    .map((k) => k.name)
+    .filter((n) => {
+      const m = n.match(/^sessions\/(\d{4}-\d{2}-\d{2})\//);
+      return m !== null && m[1] < cutoff;
+    });
+  for (const name of doomed) {
+    await env.BUCKET.delete(name);
+  }
+  // The free tier lists 1000 keys a day, so a full namespace is swept over
+  // several days rather than failing. Nothing is lost by that: the next run
+  // deletes the next page.
+  return {deleted: doomed.length, cutoff,
+          truncated: listing.list_complete === false};
+}
+
 export default {
+  async scheduled(event, env, ctx) {
+    // Retention runs daily (see [triggers] in deploy/wrangler.toml).
+    ctx.waitUntil(sweep(env));
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
 
@@ -178,8 +258,9 @@ export default {
     // send a report its own verifier rejects.
     //
     // This handler still does not take that on trust. It caps the size,
-    // refuses anything that is not one of our reports, and greps the text for
-    // the shapes we know are personal.
+    // refuses anything that is not one of our reports, greps the text for the
+    // shapes we know are personal, and (2026-10-03) refuses implausible
+    // content and never overwrites a stored report.
     //
     // Not implemented here: rate limiting. That belongs to Cloudflare's rate
     // limiting rules (see telemetry/README.md) - a Worker is stateless and
@@ -208,24 +289,67 @@ export default {
       } catch (e) {
         return new Response("not a session report\n", {status: 400});
       }
-      let manifest = null;
+      let obj = null;
       try {
-        const obj = JSON.parse(text);
-        if (obj.schema === 1 && Array.isArray(obj.advisories)
-            && obj.manifest && typeof obj.manifest.report_id === "string") {
-          manifest = obj.manifest;
-        }
+        obj = JSON.parse(text);
       } catch (e) { /* falls through to the 400 below */ }
+      const manifest = (obj !== null && obj.schema === 1
+                        && Array.isArray(obj.advisories) && obj.manifest
+                        && typeof obj.manifest.report_id === "string")
+        ? obj.manifest : null;
       if (manifest === null) {
         return new Response("not a session report\n", {status: 400});
+      }
+      if (!/^[A-Za-z0-9_-]{8,64}$/.test(manifest.report_id)) {
+        return new Response("bad report id\n", {status: 400});
       }
       if (PERSONAL_PATTERNS.some((re) => re.test(text))) {
         return new Response("report carries personal data\n", {status: 400});
       }
+      const why = implausible(obj);
+      if (why !== null) {
+        return new Response(`implausible report: ${why}\n`, {status: 400});
+      }
       const day = new Date().toISOString().slice(0, 10);
-      await env.BUCKET.put(`sessions/${day}/${manifest.report_id}.json.gz`,
-                           body);
+      const key = `sessions/${day}/${manifest.report_id}.json.gz`;
+      // NEVER overwrite. The id is client-supplied, so without this an
+      // attacker who learned one could REPLACE a real player's session - the
+      // only destructive attack this path had. Reads are also 100x cheaper
+      // than writes on the free tier, and a retried report is byte-identical,
+      // so a repeat costs a read and gets the same answer as the first send.
+      const existing = await env.BUCKET.get(key, {type: "arrayBuffer"});
+      if (existing != null) {
+        const identical = sameBytes(existing, body);
+        return new Response(identical ? "stored\n" : "already stored\n",
+                            {status: identical ? 200 : 409});
+      }
+      await env.BUCKET.put(key, body);
       return new Response("stored\n");
+    }
+
+    // Run the retention sweep now instead of waiting for the cron (keyed:
+    // deleting data is not something an anonymous caller gets to trigger).
+    // `?days=N` narrows the window; `?days=all` purges everything, which is
+    // the documented recovery if the bucket is ever flooded.
+    if (request.method === "POST" && url.pathname === "/sessions/sweep") {
+      if (!env.TELEMETRY_KEY
+          || request.headers.get("X-Telemetry-Key") !== env.TELEMETRY_KEY) {
+        return new Response("bad key\n", {status: 403});
+      }
+      const asked = url.searchParams.get("days");
+      let days = RETENTION_DAYS;
+      if (asked === "all") {
+        days = "all";
+      } else if (asked !== null) {
+        const n = Number(asked);
+        if (!Number.isInteger(n) || n < 0 || n > 3650) {
+          return new Response("days must be 0-3650 or all\n", {status: 400});
+        }
+        days = n;
+      }
+      return new Response(JSON.stringify(await sweep(env, days)) + "\n", {
+        headers: {"Content-Type": "application/json",
+                  "Cache-Control": "no-cache"}});
     }
 
     if (request.method !== "POST") {

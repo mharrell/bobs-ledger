@@ -37,11 +37,14 @@ import gzip
 import hashlib
 import json
 import os
+import secrets
 import sys
 
 from config import HS_LOG_GLOB
 import decision_log
 import privacy_scan
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
 
 SCHEMA = 1
 OUT_DIR_NAME = "session_reports"
@@ -243,18 +246,54 @@ def verify(report, spec=SPEC, path=""):
     return problems
 
 
-def report_id_for(records):
-    """A per-session id that links nothing.
+#: Where the per-session id map lives. A module constant so tests can point it
+#: somewhere disposable.
+ID_MAP_DIR = os.path.join(_HERE, OUT_DIR_NAME)
 
-    Used only so a retried upload of the SAME report can be recognised.
-    Deliberately derived from the advisory timestamps and count rather than
-    from the log path or filename: a session directory or an account id links
-    a player's sessions together, which is exactly what privacy_scan calls a
-    finding.
+
+def _id_map_path():
+    return os.path.join(ID_MAP_DIR, ".report_ids.json")
+
+
+def _load_ids():
+    try:
+        with open(_id_map_path(), encoding="utf-8") as f:
+            return json.load(f) or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def report_id_for(records, session_key=None):
+    """A per-session id that links nothing and cannot be guessed.
+
+    Two jobs, and the first version of this did neither well:
+
+    * It must not be DERIVED from anything, because a derivable id can be
+      guessed — and the collector's storage key IS this id, so a guessable one
+      lets a stranger aim at a specific player's report. The old id was
+      sha256(first timestamp | count | coach version), every input of which is
+      either guessable or visible in a report.
+    * It must be STABLE for one session, or a re-share after a crash would
+      upload the same game twice under two ids. So the random id is remembered
+      against `session_key` (the session's log stem) in a small local file.
+
+    With no session_key the id is simply random: the caller is not sharing a
+    session, so nothing needs to come back to it.
     """
-    first = str(records[0].get("ts", "")) if records else ""
-    blob = f"{first}|{len(records)}|{records[0].get('coach_version', '') if records else ''}"
-    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
+    if not session_key:
+        return secrets.token_hex(8)
+    ids = _load_ids()
+    if session_key in ids:
+        return ids[session_key]
+    new = secrets.token_hex(8)
+    try:
+        os.makedirs(ID_MAP_DIR, exist_ok=True)
+        ids[session_key] = new
+        with open(_id_map_path(), "w", encoding="utf-8") as f:
+            json.dump(ids, f)
+    except OSError:
+        pass                    # unwritable: the id is still unique this run
+    return new
 
 
 def _one(record):
@@ -280,7 +319,7 @@ def _one(record):
     return row
 
 
-def build(records, now=None):
+def build(records, now=None, session_key=None):
     """The report dict for one session's advisories."""
     rows = [_one(r) for r in records]
     return {
@@ -288,7 +327,7 @@ def build(records, now=None):
         "manifest": {
             "created": (now or datetime.datetime.now()).isoformat(
                 timespec="seconds"),
-            "report_id": report_id_for(records),
+            "report_id": report_id_for(records, session_key),
             "coach_version": (records[0].get("coach_version")
                               if records else None),
             "advisories": len(rows),
@@ -379,7 +418,7 @@ def main():
     ap.add_argument("--latest", action="store_true",
                     help="use the newest session log")
     ap.add_argument("-o", "--out",
-                    default=os.path.join(decision_log._HERE, OUT_DIR_NAME))
+                    default=os.path.join(_HERE, OUT_DIR_NAME))
     ap.add_argument("--inspect", metavar="REPORT",
                     help="verify a report against the spec before sending")
     args = ap.parse_args()

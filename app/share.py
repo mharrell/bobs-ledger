@@ -133,7 +133,10 @@ def share_session(log_path, url=None, quiet=False):
     records = session_report.decisions_for(log_path)
     if not records:
         return "nothing"
-    report = session_report.build(records)
+    # The session's log stem keys the random report id, so re-sharing the same
+    # finished game after a crash reuses its id instead of uploading twice.
+    session_key = decision_log.session_stem(log_path)
+    report = session_report.build(records, session_key=session_key)
     report_id = report["manifest"]["report_id"]
     if report_id in _sent_ids():
         return "already"
