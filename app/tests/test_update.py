@@ -7,8 +7,10 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 import zipfile
+from unittest import mock
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
@@ -256,6 +258,60 @@ class TestInstallRoot(unittest.TestCase):
             os.makedirs(inner)
             update._HERE = inner
             self.assertEqual(update._install_root(), inner)
+
+
+class TestUpdatePromptNeverHangs(unittest.TestCase):
+    """The update check runs BEFORE the overlay starts, so a question nobody
+    answers is a coach that never appears: the player double-clicks, does not
+    read the console, and nothing happens. The first version called input()
+    and waited forever (2026-10-03)."""
+
+    def test_no_terminal_means_no_question(self):
+        with mock.patch.object(update.sys, "stdin", io.StringIO("")):
+            start = time.time()
+            self.assertEqual(update._ask("update now? [y/N] ", timeout=5), "")
+            self.assertLess(time.time() - start, 1.0)
+
+    def test_a_terminal_that_never_answers_gives_up(self):
+        import types
+
+        class FakeTTY(io.StringIO):
+            def isatty(self):
+                return True
+
+        fake_msvcrt = types.SimpleNamespace(kbhit=lambda: False,
+                                            getwch=lambda: "")
+        with mock.patch.object(update.sys, "stdin", FakeTTY("")), \
+                mock.patch.dict(sys.modules, {"msvcrt": fake_msvcrt}), \
+                mock.patch("sys.stdout", new_callable=io.StringIO):
+            start = time.time()
+            self.assertEqual(update._ask("update now? [y/N] ", timeout=0.3), "")
+            self.assertLess(time.time() - start, 3.0)
+
+    def test_an_answer_of_y_is_returned(self):
+        import types
+
+        class FakeTTY(io.StringIO):
+            def isatty(self):
+                return True
+
+        fake_msvcrt = types.SimpleNamespace(kbhit=lambda: True,
+                                            getwch=lambda: "y")
+        with mock.patch.object(update.sys, "stdin", FakeTTY("")), \
+                mock.patch.dict(sys.modules, {"msvcrt": fake_msvcrt}), \
+                mock.patch("sys.stdout", new_callable=io.StringIO):
+            self.assertEqual(update._ask("update now? [y/N] ", timeout=1.0), "y")
+
+    def test_declining_returns_declined_without_downloading_anything(self):
+        with mock.patch.object(update, "fetch_manifest",
+                               lambda *a, **k: {"version": "newer123"}), \
+                mock.patch.object(update, "decide",
+                                  lambda *a, **k: ("update", "old -> new")), \
+                mock.patch.object(update, "_ask", lambda *a, **k: ""), \
+                mock.patch.object(update, "download_zip") as dl, \
+                mock.patch("sys.stdout", new_callable=io.StringIO):
+            self.assertEqual(update.run(prompt=True), "declined")
+        dl.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -394,6 +394,42 @@ def migrate_flat_layout(data):
     return done
 
 
+def _ask(prompt_text, timeout=20.0):
+    """A y/n answer from the console that can never hang.
+
+    The update check runs BEFORE the overlay starts (live.py), so a question
+    nobody answers is a coach that never appears: the player double-clicks,
+    does not read the console, and nothing happens. The first version of this
+    called input() and waited forever (2026-10-03).
+
+    No terminal at all — a service, a redirected stdin, a scheduled task —
+    means no question: the answer is "no" and they are asked again next start,
+    which is exactly what a decline does.
+    """
+    if not sys.stdin or not sys.stdin.isatty():
+        return ""
+    print(prompt_text, end="", flush=True)
+    try:
+        import msvcrt
+        import time as _time
+        deadline = _time.time() + timeout
+        while _time.time() < deadline:
+            if msvcrt.kbhit():
+                ch = msvcrt.getwch()
+                print(ch)
+                return ch.strip().lower()
+            _time.sleep(0.05)
+        print()
+        return ""
+    except ImportError:
+        import select
+        ready, _w, _x = select.select([sys.stdin], [], [], timeout)
+        if not ready:
+            print()
+            return ""
+        return sys.stdin.readline().strip().lower()
+
+
 def run(prompt=True, assume_yes=False, key=None, force=False):
     """The full check flow. Returns 'applied', 'current', or 'declined'."""
     manifest = fetch_manifest()
@@ -407,11 +443,7 @@ def run(prompt=True, assume_yes=False, key=None, force=False):
         print(f"Update available: {detail}"
               + (f" — {manifest['note']}" if manifest.get("note") else ""))
         if prompt and not assume_yes:
-            try:
-                answer = input("update now? [y/N] ").strip().lower()
-            except EOFError:
-                answer = ""
-            if answer != "y":
+            if _ask("update now? [y/N] ") != "y":
                 print("skipped — you'll be asked again next start")
                 return "declined"
         data = download_zip(manifest, key=key)
