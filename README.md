@@ -318,6 +318,19 @@ things the license doesn't cover, credited where they came from:
   Entertainment. This is an unofficial fan tool: it reads log files
   only and is not affiliated with or endorsed by Blizzard.
 
+## Something wrong? Ask
+
+The coach reads a log file, so most problems are some version of "it isn't
+seeing my game". Two things make that quick to sort out:
+
+1. Run **`Start Bob's Ledger.cmd --check`** and read the top few lines — it
+   reports the Python it found, whether the dependency is installed, and
+   where it looked for Hearthstone's log folder. That output answers most
+   questions on its own.
+2. Then open an issue: <https://github.com/mharrell/bobs-ledger/issues>.
+   Paste the `--check` output and what you expected to happen; a screenshot
+   of the overlay helps more than a description of it.
+
 ## Troubleshooting
 
 - **`Start Bob's Ledger.cmd` says Python 3 was not found** — install it from
