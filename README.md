@@ -149,5 +149,15 @@ reference are credited inside `meta/comps.json`.
 
 ## Working on the code
 
+**A note on the model tooling you will find in this tree.** I tried a language
+model in the loop early on and decided against it, so nothing on the advising
+path calls one: `live.py`, `live_coach.py`, `value.py` and `coach_ui.py` do not
+import it, and every recommendation comes from the local value function and the
+meta database. The experiment is still here — `coach_llm.py` is the client,
+`compare_models.py` races models against each other, and `patch_notes.py` and
+`check_patch_notes.py` use one to turn official patch notes into the meta DB. It
+stays because it is useful for maintainer work, and none of it ships in a
+release.
+
 *(Section two of this rewrite — for anyone cloning the repository — is not written
 yet. This branch exists so the first section can be read as it will render.)*
