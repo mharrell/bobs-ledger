@@ -43,46 +43,52 @@ release channel for a new version (disable with `--no-update`).
 
 ## Get it
 
-Either path works — the zip is the no-tools route:
+**1. Download the latest release:** <https://github.com/mharrell/bobs-ledger/releases/latest>
+→ click the `.zip` under Assets. (No GitHub account needed; the same file is
+always at <https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip>.)
 
-- **Download the release zip** (no git, no build): fetch
-  `https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.json`,
-  read its `"zip_name"`, then download
-  `https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/<zip_name>`
-  and unzip it anywhere. Zip installs keep themselves current — `live.py`
-  checks the release channel on start and offers updates (decline with
-  `--no-update`).
-- **Git clone** (adds `git pull` updates and the dev tools):
+**2. Unzip it anywhere** — Desktop, Documents, wherever. There is no
+installer and nothing to build.
 
-  ```
-  git clone https://github.com/mharrell/visual-game-coach
-  ```
+**3. Double-click `Start Bob's Ledger.cmd`** in the folder you unzipped. That
+is the whole install:
 
-  A clone is never auto-updated — shas can't prove which side is newer,
-  so the update check stands aside; update with `git pull`.
+- it finds Python 3 (and points you at python.org if there isn't one),
+- checks the one dependency it needs, **asking before it installs anything**,
+- says where Hearthstone's log folder should be,
+- offers a **Bob's Ledger shortcut with its icon** for this folder and your
+  Desktop,
+- starts the coach and opens the overlay in your browser.
 
-`python live.py --version` prints what you're running either way.
+Run it with `--check` to see what it found without starting anything.
+
+After that, **the shortcut is the app** — and it keeps itself current: each
+start checks the release channel and offers a newer version if there is one
+(decline with `--no-update`).
+
+### If you would rather do it by hand
+
+```
+cd <the folder you unzipped>
+python -m pip install -r requirements.txt
+python live.py
+```
+
+### Working on the code
+
+```
+git clone https://github.com/mharrell/bobs-ledger
+```
+
+A clone is never auto-updated — commit shas can't prove which side is newer,
+so the update check stands aside; update with `git pull`. `python live.py
+--version` prints what you're running either way.
 
 ## Quick start
 
-**The short version: unzip the release, then double-click
-`Start Bob's Ledger.cmd`** in the folder it unzipped to. It finds Python,
-checks the one dependency (asking before it installs anything), tells you if
-your Hearthstone log folder is missing, offers to put an icon on your
-Desktop, and starts the coach with the overlay already open in your
-browser. Run it with `--check` to see what it found without starting
-anything.
+Once the launcher has run, there are two things between you and real advice.
 
-The manual path, if you would rather do it yourself:
-
-1. **Install the one runtime dependency:**
-
-   ```
-   cd <unzipped-folder-or-clone>\hearth-coach
-   python -m pip install -r requirements.txt
-   ```
-
-2. **Turn on Hearthstone's file logging.** This is the step everyone
+1. **Turn on Hearthstone's file logging.** This is the step everyone
    misses — by default Hearthstone writes no `Power.log` at all, and with
    no log the coach has nothing to read.
 
@@ -107,29 +113,22 @@ The manual path, if you would rather do it yourself:
    e. Start Hearthstone. The coach looks for logs under
       `C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_<timestamp>\Power.log`.
 
-3. **Run the coach** (in a terminal):
+   (The overlay's welcome card shows this same block, and the launcher tells
+   you if the log folder is missing — you should never have to come back
+   here for it.)
 
-   ```
-   python live.py
-   ```
+2. **Play a game.** With Hearthstone running, the launcher's window prints
+   its advice and the overlay fills in as you play. The overlay starts as a
+   welcome card and shows advice the moment your shop opens.
 
-   With Hearthstone running and a game started, it prints its advice to
-   the terminal and starts the overlay:
-
-   ```
-   Coach UI: http://127.0.0.1:8747/
-   ```
-
-   Open that URL in any browser and park the window beside the game.
-   Useful flags: `python live.py <path-to-Power.log> --poll 0.5` to
-   re-analyze a saved log, `--once` for a single analysis, `--no-ui` to
-   skip the overlay.
-
-4. **Sanity check it's reading you correctly:** during a match, check the
-   state strip in the overlay — your hero, gold, tavern tier and turn
-   should match the game. If the strip is right, everything downstream
-   is trustworthy; if it's stuck on "Waiting for live.py analysis…",
+   Sanity check: the strip at the top shows your hero, gold, tavern tier and
+   turn — they should match the game. If the strip is right, everything
+   downstream is trustworthy. If it stays on "Waiting for live.py analysis…",
    see [Troubleshooting](#troubleshooting).
+
+Useful flags, if you run it from a terminal: `python live.py <path-to-Power.log>
+--poll 0.5` re-analyzes a saved log, `--once` does a single analysis,
+`--no-ui` skips the overlay.
 
 ## The overlay, box by box
 

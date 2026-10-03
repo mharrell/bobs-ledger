@@ -1,4 +1,4 @@
-r"""Shared install paths for the hearth-coach tools.
+r"""Shared install paths for the Bob's Ledger tools.
 
 Every tool hardcoded the Windows client path — a non-default install (or a
 non-Windows machine) meant editing each file separately. One module now owns

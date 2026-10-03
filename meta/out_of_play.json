@@ -4,7 +4,7 @@
   "updated": "2026-09-22",
   "sources": [
     "https://hearthstone.blizzard.com/en-us/news/24302091",
-    "hearth-coach/meta/pool_roster.json (log-mined validation)"
+    "meta/pool_roster.json (log-mined validation)"
   ],
   "tribes": {
     "Naga": {

@@ -15,6 +15,7 @@ note, zip sha256, created} — then PUTs the zip and manifest to the KV
 namespace the collector serves:
 
     GET  <collector>/release/latest.json   (public)
+    GET  <collector>/release/latest.zip    (public — 302 to the current zip)
     GET  <collector>/release/<zip>.zip     (public — the install path)
 
 TWO GATES RUN BEFORE ANYTHING IS UPLOADED (added 2026-10-02, after the
@@ -45,10 +46,9 @@ import sys
 import zipfile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_COACH = os.path.join(_HERE, "hearth-coach")
-sys.path.insert(0, _COACH)
+sys.path.insert(0, _HERE)          # the code sits at the repo root
 
-import privacy_scan  # noqa: E402  (hearth-coach/privacy_scan.py)
+import privacy_scan  # noqa: E402  (privacy_scan.py, beside this file)
 
 # A gate that finds non-ASCII content (accented handles, the em dash in its
 # own report) must not die reporting it: the Windows console is cp1252, and
@@ -226,6 +226,10 @@ def main():
                     help="publish even if the privacy gate finds something")
     ap.add_argument("--allow-dirty", action="store_true",
                     help="publish with uncommitted or stray content")
+    ap.add_argument("--no-github", action="store_true",
+                    help="skip creating/updating the GitHub release (the KV "
+                         "copy still ships, but the Releases page a player "
+                         "downloads from would be left behind)")
     args = ap.parse_args()
 
     version = git_sha()
@@ -319,9 +323,68 @@ def main():
         for p in (tmp_zip, tmp_manifest):
             if os.path.exists(p):
                 os.remove(p)
+
+    # A GitHub release too, so there is a page a human can land on:
+    # /releases/latest shows the version, the note and a Download button. The
+    # README used to tell players to fetch latest.json and read "zip_name" out
+    # of it — an API instruction dressed up as a user instruction, since the
+    # name carries a commit sha nobody can guess (2026-10-02).
+    if not args.no_github:
+        github_release(version, args.note, data)
+
     print("published. Users update via `python update.py` or on their next "
           "live.py start.")
     return 0
+
+
+def github_release(version, note, data):
+    """Attach the zip to the GitHub release for this version.
+
+    Best effort on purpose: the KV copy is what the UPDATER reads, and a
+    GitHub hiccup must not fail a publish — but it is said loudly, because
+    the README sends players to the Releases page.
+    """
+    gh = shutil.which("gh")
+    if not gh:
+        print("  note: `gh` not found — skipping the GitHub release. Players "
+              "can still download from /release/latest.zip")
+        return
+    tmp = os.path.join(os.environ.get("TEMP", _HERE), f"gh_{version}.zip")
+    with open(tmp, "wb") as f:
+        f.write(data)
+    try:
+        exists = subprocess.run([gh, "release", "view", version],
+                                cwd=_HERE, capture_output=True,
+                                timeout=120).returncode == 0
+        if exists:
+            cmd = [gh, "release", "upload", version, tmp, "--clobber"]
+            what = "updated"
+        else:
+            body = (f"{note}\n\n"
+                    "### Install\n\n"
+                    "1. Download and unzip `" + os.path.basename(tmp) +
+                    "` anywhere.\n"
+                    "2. Double-click **Start Bob's Ledger.cmd** in the folder "
+                    "you unzipped.\n\n"
+                    "It finds Python, checks the one dependency (asking "
+                    "first), and starts the overlay. Windows only; "
+                    "Hearthstone's file logging must be on — the coach's "
+                    "welcome card shows the exact setting.\n")
+            cmd = [gh, "release", "create", version, tmp,
+                   "--title", f"Bob's Ledger {version}",
+                   "--notes", body]
+            what = "created"
+        r = subprocess.run(cmd, cwd=_HERE, capture_output=True, timeout=300)
+        if r.returncode != 0:
+            print(f"  WARNING: `gh release {what}` failed — the Releases page "
+                  f"is now BEHIND this release: "
+                  f"{r.stderr.decode()[:200].strip()}")
+        else:
+            print(f"  GitHub release {what}: "
+                  f"https://github.com/mharrell/bobs-ledger/releases/latest")
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
 
 
 if __name__ == "__main__":
