@@ -138,5 +138,50 @@ class TestMissHygiene(unittest.TestCase):
         self.assertIn(TEST_ID, _active_misses())
 
 
+class TestArtCacheDir(unittest.TestCase):
+    """A read-only install folder must not kill the coach at import.
+
+    Windows offers no elevation prompt when the install folder refuses a
+    write — unzip into C:\\Program Files and the create is simply denied — so
+    the unguarded makedirs that used to sit at module scope raised
+    PermissionError [WinError 5] and the process died with a bare traceback
+    before a single piece of advice could be shown (2026-10-02). Art is
+    optional; the crash was not.
+    """
+
+    def test_ensure_dir_reports_failure_instead_of_raising(self):
+        with tempfile.TemporaryDirectory() as td:
+            blocker = os.path.join(td, "a_file")
+            with open(blocker, "w", encoding="utf-8") as f:
+                f.write("not a directory")
+            # A path under a FILE can never be created: the same class of
+            # failure as access-denied, and it is portable to any machine.
+            self.assertFalse(
+                coach_ui.ensure_dir(os.path.join(blocker, "img_cache")))
+
+    def test_ensure_dir_creates_and_reports_success(self):
+        with tempfile.TemporaryDirectory() as td:
+            target = os.path.join(td, "img_cache", "card")
+            self.assertTrue(coach_ui.ensure_dir(target))
+            self.assertTrue(os.path.isdir(target))
+
+    def test_this_checkout_can_write_its_cache(self):
+        """The real module-level answer in a normal checkout — the guard must
+        not silently disable art for everyone to fix the rare read-only case."""
+        self.assertTrue(coach_ui.ART_CACHE_OK)
+
+    def test_no_upstream_fetch_when_there_is_nowhere_to_write(self):
+        """With an unwritable cache, _fetch_render must report failure
+        without spending a network round-trip per card."""
+        saved = coach_ui.ART_CACHE_OK
+        coach_ui.ART_CACHE_OK = False
+        try:
+            with mock.patch("urllib.request.urlopen") as u:
+                self.assertFalse(_fetch_render(TEST_ID))
+                u.assert_not_called()
+        finally:
+            coach_ui.ART_CACHE_OK = saved
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -63,8 +63,32 @@ CARD_DIR = os.path.join(_HERE, "img_cache", "card")
 
 _art_lock = threading.Lock()
 _art_miss_path = os.path.join(_HERE, ".art_miss.json")
-os.makedirs(os.path.join(_HERE, "img_cache"), exist_ok=True)
-os.makedirs(CARD_DIR, exist_ok=True)
+
+
+def ensure_dir(path):
+    """True if path is a directory afterwards, False if it cannot be made.
+
+    A read-only install folder — unzipped into C:\\Program Files, or a
+    managed / one-way-synced folder — refuses the create outright, and
+    Windows offers no elevation prompt for it. An unguarded makedirs here
+    therefore killed the coach at import with a bare PermissionError
+    traceback (WinError 5, reproduced 2026-10-02) before a single piece of
+    advice could be shown. Card art is optional; that crash was not.
+    """
+    try:
+        os.makedirs(path, exist_ok=True)
+        return os.path.isdir(path)
+    except OSError:
+        return False
+
+
+ART_CACHE = os.path.join(_HERE, "img_cache")
+ART_CACHE_OK = ensure_dir(ART_CACHE) and ensure_dir(CARD_DIR)
+if not ART_CACHE_OK:
+    print(f"Note: cannot write the card art cache at {ART_CACHE}\n"
+          f"      The coach runs without card art; everything else works.\n"
+          f"      Unzip it somewhere writable (Desktop or Documents) for\n"
+          f"      the full overlay.")
 try:
     with open(_art_miss_path, encoding="utf-8") as _f:
         _art_miss = json.load(_f)
@@ -110,7 +134,7 @@ def _active_misses():
             c for c, t in _art_miss.items()
             if now - t <= MISS_TTL
             and not os.path.exists(
-                os.path.join(_HERE, "img_cache", f"{c}.png")))
+                os.path.join(ART_CACHE, f"{c}.png")))
 
 
 def _can_retry(cid):
@@ -124,7 +148,9 @@ def _fetch_render(cid, dest_dir=None):
     must not re-hammer upstream.
     """
     if dest_dir is None:
-        dest_dir = os.path.join(_HERE, "img_cache")
+        if not ART_CACHE_OK:
+            return False  # nowhere to put it — do not hammer upstream
+        dest_dir = ART_CACHE
     try:
         req = urllib.request.Request(RENDER_URL.format(cid),
                                      headers={"User-Agent": RENDER_UA})
@@ -1920,7 +1946,7 @@ class _Handler(BaseHTTPRequestHandler):
         m = re.match(r"^/img/([A-Za-z0-9_]+)\.png$", self.path)
         if m:
             cid = m.group(1)
-            path = os.path.join(_HERE, "img_cache", f"{cid}.png")
+            path = os.path.join(ART_CACHE, f"{cid}.png")
             if not os.path.exists(path) and _can_retry(cid):
                 # On-demand: fetch the render now so the hero/trinket/
                 # minion art appears on the next UI poll instead of never.

@@ -47,8 +47,10 @@ release channel for a new version (disable with `--no-update`).
 → click the `.zip` under Assets. (No GitHub account needed; the same file is
 always at <https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip>.)
 
-**2. Unzip it anywhere** — Desktop, Documents, wherever. There is no
-installer and nothing to build.
+**2. Unzip it somewhere you can write** — Desktop or Documents are ideal.
+There is no installer and nothing to build. (Not `C:\Program Files`: Windows
+won't let the coach keep its card-art cache there, so the overlay would run
+without art.)
 
 **3. Double-click `Start Bob's Ledger.cmd`** in the folder you unzipped. That
 is the whole install:
