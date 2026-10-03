@@ -1372,7 +1372,9 @@ poll();
 // The manual escape hatch: blank the overlay now. The server keeps the
 // manual bans on this path; a new game's CREATE_GAME wipes them instead.
 document.getElementById('clearbtn').onclick = async () => {
-  await fetch('/clear', {method: 'POST'});
+  await fetch('/clear', {method: 'POST',
+                         headers: {'Content-Type': 'application/json'},
+                         body: '{}'});
   _etag = null;   // force the next poll to take the welcome payload
   poll();
 };
@@ -2019,8 +2021,67 @@ def _analysis_response(if_none_match=None):
     return 200, headers, payload
 
 
+#: Who the overlay answers. Binding 127.0.0.1 keeps other MACHINES out; it
+#: does not keep other PAGES out. A browser will happily POST to
+#: http://127.0.0.1:8747 from any site it is showing — a cross-origin "simple
+#: request" is sent without a preflight, and the attacker does not need to read
+#: the reply — and with a hostname that resolves to loopback (DNS rebinding) it
+#: can read replies too, because neither Host nor Origin was ever checked.
+#:
+#: Measured before this guard existed: a POST carrying
+#: `Origin: https://evil.example` and `Content-Type: text/plain` flipped the
+#: sharing consent from undecided to ON, and `GET /analysis` with
+#: `Host: evil.example` returned the live analysis. So a page the player merely
+#: visited could opt them into uploads, and (during play) read the overlay's
+#: state, which includes the opponent's handle (2026-10-03).
+#:
+#: Three rules, cheapest first:
+#:   * Host must be a loopback name — a rebinding page sends its own hostname.
+#:   * Origin, when present, must be a loopback origin.
+#:   * A POST must be application/json. A cross-origin page can send only
+#:     text/plain, form-encoded or multipart without a preflight; demanding
+#:     JSON forces one, and the browser then refuses on our behalf because no
+#:     CORS headers are ever sent.
+_LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
+
+
+def _host_only(value):
+    """The hostname inside a Host header or an Origin: lowercased, no port.
+
+    "" when there is nothing usable — including the literal origin "null",
+    which is what a sandboxed frame or a file:// page sends. Neither is our
+    page, so the caller refuses it.
+    """
+    v = (value or "").strip().lower()
+    if not v or v == "null":
+        return ""
+    if "://" in v:
+        v = v.split("://", 1)[1]
+    v = v.split("/", 1)[0]
+    if v.startswith("["):                      # [::1]:8747
+        return v.split("]", 1)[0] + "]"
+    return v.rsplit(":", 1)[0] if ":" in v else v
+
+
 class _Handler(BaseHTTPRequestHandler):
+    def _foreign_caller(self):
+        """True when this request did not come from the overlay's own page.
+
+        Refuses it (403) as a side effect, so a caller only has to return.
+        """
+        host = _host_only(self.headers.get("Host"))
+        if host and host not in _LOOPBACK_HOSTS:
+            self._send(403, "text/plain", b"bad host")
+            return True
+        origin = self.headers.get("Origin")
+        if origin is not None and _host_only(origin) not in _LOOPBACK_HOSTS:
+            self._send(403, "text/plain", b"bad origin")
+            return True
+        return False
+
     def do_GET(self):
+        if self._foreign_caller():
+            return
         if self.path.rstrip("/") == "/analysis":
             code, headers, body = _analysis_response(
                 self.headers.get("If-None-Match"))
@@ -2101,6 +2162,16 @@ class _Handler(BaseHTTPRequestHandler):
                    headers={"Cache-Control": "no-cache"})
 
     def do_POST(self):
+        if self._foreign_caller():
+            return
+        # Application/json is required, not merely expected: it is the line a
+        # cross-origin page cannot cross without a preflight.
+        ctype = (self.headers.get("Content-Type")
+                 or "").split(";")[0].strip().lower()
+        if ctype != "application/json":
+            self._send(415, "text/plain",
+                       b"expected Content-Type: application/json")
+            return
         if self.path.rstrip("/") == "/bans":
             n = int(self.headers.get("Content-Length") or 0)
             try:
