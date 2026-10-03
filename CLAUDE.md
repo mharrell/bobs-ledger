@@ -1,0 +1,99 @@
+# Bob's Ledger
+
+A real-time coaching overlay for Hearthstone Battlegrounds. It reads the game
+from Hearthstone's own `Power.log`, reconstructs the board, and advises each
+buy phase from a **local value function plus growth simulator over a curated
+meta DB**. The live path calls **no model and no API** — `coach_llm.py` is an
+optional maintainer tool for patch-note extraction, and `compare_models.py`
+is a model-comparison harness. Neither is imported by `live.py`,
+`live_coach.py`, `value.py` or `coach_ui.py`, and neither ships in a release.
+
+This repository is the product: the code sits at the root, and the release zip
+is this tree minus the maintainer-only parts (`analysis/`, `telemetry/`,
+`CLAUDE.md`, the LLM tools and caches).
+
+## Worktree discipline
+
+- Code work happens in git worktrees under `.claude/worktrees/`. **Main is the
+  only truth; origin is backup. If it's not in main, it's not done.**
+- Every session that touched code ends with `python sync.py` (commit + merge
+  into main + push) — or ends by explicitly reporting "branch X, N commits,
+  NOT merged".
+- Branch from FRESH main. Starting from a stale base is how the same bug got
+  fixed twice on two branches.
+- After a merge, delete the remote branch too.
+
+## Never break these
+
+- **Privacy.** `sanitize_log.py` redacts every identity in a shared log
+  (BattleTags, bare opponent handles, account ids); `privacy_scan.py` is the
+  independent verifier; `publish_release.py` refuses to publish if any shipped
+  text file carries personal data. Do not weaken the redactor, do not make the
+  verifier share its patterns, and do not add a real handle to a fixture
+  (use the documented placeholders).
+- **The update join.** `VERSION` + `.update_state.json` are stamped into each
+  release and are what let a zip install be told a newer release exists.
+  `update.py::_install_root` tolerates the flat layout and the old nested one.
+- **The two publish gates.** They have deliberate overrides; using one should
+  be a decision, never a convenience.
+
+## Domain facts that keep biting (log ground truth)
+
+- **Minions cost a FLAT 3 gold, all tiers.** Their `tag=479` COST tags are
+  stale legacy tier costs and must not be trusted; `value._buy_prices` is the
+  one price layer. Tavern spells keep their own prices.
+- **Tavern upgrade prices are dynamic**: start at (target+3) gold, drop 1 per
+  round waited — read the live button cost, never compute it.
+- **The per-game ban list is provably NOT in the log** (identical CREATE_GAME
+  across different-ban games). The 5/5 inference is pool-statistical, and the
+  overlay's manual ban picker (`POST /bans`) supplies exact bans.
+- **Casting a spell from HAND is free** — only the tavern BUY charges.
+- **Combat-phase stat gains are non-persistent**, so combat-only buff-givers
+  are `W_COMBAT_SCALE` power, not growth engines.
+- Card ids drift across patches; identity matching prefers names for trinkets
+  and heroes, ids for minions.
+
+## Tool map (see DESIGN.md for the full list)
+
+Live path: `live.py` (monitor + overlay server) → `live_coach.py` (incremental
+analysis) → `value.py` (value function, top move) → `coach_ui.py` (overlay).
+Support: `board_state.py`, `bans.py`, `pool.py`, `lobby.py`, `choices.py`,
+`simulate_growth.py`, `meta.py`, `tribes.py`, `config.py`.
+
+Maintainer: `doctor.py` (one-shot pre-flight verdict — start here),
+`patch_day.py`, `logquery.py`, `review_kit.py`, `replay_review.py`,
+`comp_miner.py`, `pool_roster.py`, `check_meta.py`, `check_patch_db.py`,
+`privacy_scan.py`. Every entry point is bounded to a few lines and takes
+`--json`: output tokens are the expensive side.
+
+## Release & first run
+
+`python publish_release.py --note "..."` builds the zip, runs both gates, and
+PUTs it plus the manifest to the collector's KV namespace (the collector lives
+in `telemetry/`, deployed at `bobs-ledger.workers.dev`; the same URL serves
+every release, so installed copies keep updating). `--dry-run` runs the gates
+without uploading.
+
+Users start with `Start Bob's Ledger.cmd` at the zip root: it finds Python,
+asks before installing `requests`, reports the log folder, offers a Desktop
+shortcut wearing `bobs-ledger.ico`, and runs `live.py --open`. Windows draws
+no icon on a `.cmd`, so the shortcut is the only clickable thing that can wear
+one — and it must be created on the user's machine, since a `.lnk` embeds
+absolute paths.
+
+## Hazards worth remembering
+
+- `publish_release.py` walks the WORKING TREE, not git: an untracked scratch
+  directory once inflated a release from 236 entries to 472. The
+  reproducibility gate catches it; do not paper over it with `--allow-dirty`.
+- `scrape_comps.py --diff` REPORTS but still WRITES — `--dry-run` is the flag
+  that does not. `refresh_trinkets.py` writes by default for the same reason.
+- `python-hslog/` is vendored and TRACKED (upstream's tests are not, because
+  their fixtures carry third-party BattleTags). `parse_bg.py` is the only
+  tool that needs it; `extract_game.py` is stdlib-only.
+- Hearthstone logs live at `C:\Program Files (x86)\Hearthstone\Logs\...`;
+  Hearthstone ROTATES them, so a measurement quoting a session dir may not be
+  re-derivable later.
+- Real logs carry real people's handles. Local `decision_logs/` and
+  `Power.log`s hold everything by design and never leave the machine except
+  through the sanitized corpus path.

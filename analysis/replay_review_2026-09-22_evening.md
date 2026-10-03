@@ -17,7 +17,7 @@ to the end).
 
 ## 1. Read this first: `replay_review` does not reproduce the coach's scout
 
-`hearth-coach/_evening_review.py` (→ `replay_review.py`) feeds the game from
+`_evening_review.py` (→ `replay_review.py`) feeds the game from
 line 0 and calls `LiveCoach.analyze()` **once, at the advise moment**
 (`replay_review._advise_point`). `live.py` calls `analyze()` every poll batch
 (~1 s ≈ 166 log lines here), and `analyze()` is what runs `_ensure_meta()`

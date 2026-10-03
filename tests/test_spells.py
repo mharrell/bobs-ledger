@@ -9,7 +9,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import value
 from value import (_extra_casts, _spell_effect, _spell_fuel_bonus,

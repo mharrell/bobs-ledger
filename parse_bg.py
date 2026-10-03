@@ -11,11 +11,26 @@ Battlegrounds the same player name gets a different player_id per lobby, which
 raises InconsistentPlayerIdError. We split the log into games first and parse
 each with a fresh LogParser to avoid that.
 """
+import os
 import sys
 
-from hslog.export import EntityTreeExporter
-from hslog.parser import LogParser
-from hearthstone.enums import GameTag, GameType, PlayState
+# The parser is VENDORED (python-hslog/), so no install is needed: put it
+# first on the path. It used to resolve only because a dev machine had it
+# pip-installed editable, which meant a clone or a release zip could not
+# import it at all (2026-10-02, the spin-out).
+_VENDOR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "python-hslog")
+if os.path.isdir(_VENDOR) and _VENDOR not in sys.path:
+    sys.path.insert(0, _VENDOR)
+
+try:
+    from hslog.export import EntityTreeExporter
+    from hslog.parser import LogParser
+    from hearthstone.enums import GameTag, GameType, PlayState
+except ImportError as exc:  # noqa: BLE001
+    raise SystemExit(
+        f"parse_bg needs the vendored hslog plus python-hearthstone ({exc}).\n"
+        "  python -m pip install -r requirements-dev.txt") from exc
 
 
 def _enum_name(enum_cls, value):
@@ -72,6 +87,14 @@ def summarize(game, game_type=None):
 
 
 def main():
+    if any(a in ("-h", "--help") for a in sys.argv[1:]) or len(sys.argv) < 2:
+        print("usage: python parse_bg.py <Power.log> [--games N]\n"
+              "  a smoke test for the vendored parser; extract_game.py is\n"
+              "  the stdlib path the coach itself uses.")
+        return 0 if len(sys.argv) > 1 else 1
+    if not os.path.exists(sys.argv[1]):
+        print(f"no such log: {sys.argv[1]}")
+        return 1
     if len(sys.argv) < 2:
         print("usage: python parse_bg.py <Power.log> [--games N]")
         return 1

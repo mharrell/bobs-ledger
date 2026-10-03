@@ -30,7 +30,7 @@ rem PY holds a whole COMMAND, quotes included for a path (this repo's own
 rem path has a space in it) and bare words for `py -3` - so it is expanded
 rem unquoted everywhere below.
 set "PY="
-if exist "%~dp0hearth-coach\.venv\Scripts\python.exe" set PY="%~dp0hearth-coach\.venv\Scripts\python.exe"
+if exist "%~dp0.venv\Scripts\python.exe" set PY="%~dp0.venv\Scripts\python.exe"
 if defined PY goto :have_python
 py -3 --version >nul 2>&1
 if not errorlevel 1 set PY=py -3
@@ -63,11 +63,11 @@ if not errorlevel 1 goto :deps_ok
 echo.
 echo The coach needs one Python package: requests
 echo.
-echo   %PY% -m pip install -r "%~dp0hearth-coach\requirements.txt"
+echo   %PY% -m pip install -r "%~dp0requirements.txt"
 echo.
 choice /c YN /n /m "Install it now? [Y/N] "
 if errorlevel 2 goto :no_deps
-%PY% -m pip install -r "%~dp0hearth-coach\requirements.txt"
+%PY% -m pip install -r "%~dp0requirements.txt"
 if errorlevel 1 goto :fail
 goto :deps_ok
 
@@ -175,7 +175,7 @@ echo.
 set "PASS=%*"
 set "PASS=%PASS:--check=%"
 set "PASS=%PASS:--shortcut=%"
-%PY% "%~dp0hearth-coach\live.py" --open %PASS%
+%PY% "%~dp0live.py" --open %PASS%
 if errorlevel 1 goto :fail
 goto :end
 

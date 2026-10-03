@@ -13,46 +13,62 @@ venv/
 # Stop-hook ack latches (per-session, wt_stop_check.sh)
 .claude/wt-status/
 
-# Vendored dependency — has its own .git (decide: vendor / submodule / keep ignored)
-hearth-coach/python-hslog/
+# NOTE: python-hslog/ is TRACKED. It used to be gitignored, which meant a
+# clone lacked the parser while the release zip had it — the spin-out into
+# this repo made the repo and the release the same tree, so it is vendored
+# properly now (upstream's own tests, which carry third-party BattleTags,
+# are not vendored).
 
-# Scraper cache — downloaded hearthstonejson card list, regenerable
-hearth-coach/.cards_cache.json
-hearth-coach/.cards_full.json
-hearth-coach/.card_races.json
-# refresh_trinkets downloads — hsjson cards + hsreplay guides, regenerable
-hearth-coach/meta/.trinkets_hsjson_cache.json
-hearth-coach/meta/.trinkets_guides_cache.json
-# Observed CARDRACE per card id from local Power.logs (parse_minions
-# --refresh-tribes), regenerable and machine-specific (local log paths)
-hearth-coach/.observed_tribes.json
+# Regenerable caches — downloaded card data, rebuilt by the tools here
+# (parse_minions.py --refresh-tribes, scrape_comps.py, patch_day.py)
+.cards_cache.json
+.cards_full.json
+.observed_tribes.json
+meta/.trinkets_hsjson_cache.json
+meta/.trinkets_guides_cache.json
 
 # On-demand art fetch failures (coach_ui), regenerable
-hearth-coach/.art_miss.json
+.art_miss.json
 
 # Per-user advisory telemetry (the beta corpus pairs these with Power.logs)
-hearth-coach/decision_logs/
+decision_logs/
 
 # Packaged corpus bundles awaiting upload
-hearth-coach/corpus_out/
+corpus_out/
 
-# Generated patch-check artifacts (review reports + last-seen state)
-hearth-coach/patch_reports/
-hearth-coach/meta/.patch_state.json
-hearth-coach/meta/.patch_config.json
-hearth-coach/logs_archive/
+# Local Power.log archives and generated patch-check artifacts
+logs_archive/
+patch_reports/
+meta/.patch_state.json
+meta/.patch_config.json
 
 # Automation caches (logquery/review_kit): regenerable, machine-specific
-hearth-coach/.review_cache/
+.review_cache/
 
 # comp_miner proposals: derived from the local log corpus (which is not in the
 # repo), regenerable, and never a source of truth — promotion is a human edit
 # to meta/comps.json
-hearth-coach/meta/comp_candidates.json
+meta/comp_candidates.json
 
-# corpus bundles never leave the machine un-asked
-corpus_out/
+# YouTube auto-transcripts (third-party caption text, takedown bait):
+# derived research cache — mined into the guides, never republished.
+transcripts/
+meta/transcripts/
+
+# The card->tribe map is downloaded from HearthstoneJSON, but it SHIPS inside
+# every release so a first run needs no network (bans._load_card_races reads
+# it before it would ever fetch). Gitignored because it is regenerable;
+# publish_release.py lists it in UNTRACKED_OK so it still ships.
+.card_races.json
+
+# A built release zip is an artifact, not a source file
+bobs-ledger-*.zip
+
+# Per-install stamps: VERSION is written by publish_release.py into each zip,
+# .update_state.json by update.py on apply. A stale local copy must not be
+# committed or shipped.
 VERSION
+.update_state.json
 
 # Wrangler local state — carries the CF account id / account email
 .wrangler/
@@ -63,24 +79,10 @@ telemetry/.wrangler/
 # Local API-key bootstrap helper (never ships, never commits)
 claude_code_zai_env.sh
 
-# YouTube auto-transcripts (third-party caption text, takedown bait):
-# derived research cache — mined into the guides, never republished.
-# Both spellings: the directory actually lives under meta/, and the original
-# rule named a path that never existed — leaving the caption text untracked
-# but NOT ignored, one `git add -A` from being committed.
-hearth-coach/transcripts/
-hearth-coach/meta/transcripts/
-
-# Per-install update state (the version + publish time this install
-# carries). Written by update.py; publish_release.py stamps a fresh one into
-# every release zip, so a stale local copy must not be committed or shipped.
-.update_state.json
-
 # Scratch dirs used while verifying a release build
 .tmp_*/
 
 # Shortcuts: created by the launcher on the machine that uses them, and they
 # embed absolute paths — never committed, never shipped (publish_release.py
-# excludes *.lnk as well, since it walks the working tree rather than git).
+# excludes *.lnk too, since it walks the working tree rather than git).
 *.lnk
-

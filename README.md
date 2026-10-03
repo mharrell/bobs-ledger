@@ -26,6 +26,14 @@ Hearthstone writes on your disk.
 - Python 3.9 or newer
 - Hearthstone installed and able to run
 
+**There is no AI model in the loop.** The advice is computed on your
+machine by a deterministic value function and growth simulator over a
+curated meta database — no model is called during play, nothing about
+your game is sent anywhere to produce it, and there is no API key to
+configure. (The repo also contains an optional maintainer tool that uses
+a model to extract patch notes into the meta DB; it is not part of the
+coach and is not in a release.)
+
 The coach needs **no API key**. It does not need the internet to advise:
 the advice comes from a local value function plus a meta reference bundled
 in `meta/` (including the card→tribe map, so there is no first-run
@@ -279,12 +287,12 @@ Delete the install folder — the one you unzipped. Nothing is written
 outside it: no registry entries, no services, no data under `AppData`.
 Everything the coach stores lives inside the install:
 
-- `hearth-coach/img_cache/` — downloaded and extracted card art.
-- `hearth-coach/decision_logs/` — the local advisory log (one JSONL line
+- `img_cache/` — downloaded and extracted card art.
+- `decision_logs/` — the local advisory log (one JSONL line
   per advisory).
-- `hearth-coach/.card_races.json` — the card→tribe cache.
+- `.card_races.json` — the card→tribe cache.
 - `.update_state.json` — the install's last-updated stamp, at the install
-  root (next to the `hearth-coach/` folder).
+  root.
 - `Bob's Ledger.lnk` — the shortcut the launcher offers: one here in the
   install folder (it travels with the folder) and optionally one on your
   Desktop. Windows cannot put an icon on a `.cmd`, so a shortcut is the only

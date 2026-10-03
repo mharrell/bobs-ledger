@@ -40,7 +40,27 @@ import urllib.request
 import zipfile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(_HERE)          # the repo/install root
+
+
+def _install_root():
+    """Where VERSION and .update_state.json live.
+
+    A release unpacks the code at the zip's ROOT, so the stamps sit beside
+    this file. The project's earlier layout nested the code one level down
+    (`hearth-coach/`) with the stamps above it, and a checkout of that shape
+    must keep working — so prefer whichever directory actually holds a
+    VERSION file, and fall back to this one (2026-10-02, the spin-out into
+    its own repository made the flat layout the normal case).
+    """
+    if os.path.exists(os.path.join(_HERE, "VERSION")):
+        return _HERE
+    parent = os.path.dirname(_HERE)
+    if os.path.exists(os.path.join(parent, "VERSION")):
+        return parent
+    return _HERE
+
+
+ROOT = _install_root()                 # the install root: VERSION's home
 VERSION_FILE = os.path.join(ROOT, "VERSION")
 STATE_FILE = os.path.join(ROOT, ".update_state.json")
 MANIFEST_URL = os.environ.get(
@@ -50,7 +70,7 @@ UA = "hearth-coach-telemetry/1.0"  # workers.dev 403s the python-urllib UA
 
 #: Zip entries that may never overwrite local data, by path segment.
 #: Matched at ANY depth: every shipped path is nested under the repo folder
-#: (`hearth-coach/decision_logs/...`), so a first-segment-only test never
+#: (`decision_logs/...`), so a first-segment-only test never
 #: fired — the guard was inert while both the docstring and PROTECTED
 #: claimed local data was protected (found 2026-10-02 by applying a
 #: realistically nested zip: decision logs were overwritten).

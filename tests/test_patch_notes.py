@@ -19,11 +19,14 @@ import sys
 import unittest
 from unittest import mock
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import requests as requests_module
 
-import patch_notes
+try:
+    import patch_notes  # noqa: E402
+except ImportError:  # a release ships the coach, not this tooling
+    raise unittest.SkipTest("patch_notes is maintainer tooling and is not in a release")
 from patch_notes import apply_changes, extract_bg_section, html_to_text
 
 

@@ -67,19 +67,21 @@ EXCLUDE_DIRS = {".git", ".claude", "decision_logs", "corpus_out",
                 ".wrangler", "logs_archive", "transcripts"}
 
 #: Paths that never ship, matched as prefixes from the repo root. Basename
-#: matching can't express these — "tests" would drop hearth-coach/tests too.
+#: matching can't express these — "tests" would drop the test suite too.
 EXCLUDE_PATHS = {
     # Internal research: replay reviews name real opponents and session
     # directories. The 2026-09-2x reviews carried the maintainer's own
     # BattleTag and an opponent's handle into a public download.
-    "hearth-coach/analysis",
-    # Maintainer infrastructure: KV namespace id + deploy runbook.
+    "analysis",
+    # Maintainer infrastructure: KV namespace id + deploy runbook. It is the
+    # release channel itself, not something a player runs.
     "telemetry",
-    # Upstream python-hslog keeps real third-party BattleTags in its test
-    # fixtures; shipping someone else's account handles is not ours to do.
-    "hearth-coach/python-hslog/tests",
-    "hearth-coach/python-hslog/.github",
-    "hearth-coach/python-hslog/hslog.egg-info",
+    # The vendored parser ships, but upstream's tests keep real third-party
+    # BattleTags in their fixtures — shipping someone else's account handles
+    # is not ours to do.
+    "python-hslog/tests",
+    "python-hslog/.github",
+    "python-hslog/hslog.egg-info",
 }
 
 EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
@@ -89,22 +91,36 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  "comp_candidates.json",
                  ".dev.vars", "claude_code_zai_env.sh", "VERSION",
                  "CLAUDE.md", "catch_up_main.ps1", "wt_status.ps1",
-                 "register_patch_check.ps1", "sync.py", "publish_release.py"}
+                 "register_patch_check.ps1", "sync.py", "publish_release.py",
+                 # The LLM tooling. The coach advises from a local value
+                 # function and the meta DB — no model is called during play
+                 # — but these made a user-facing download look like an LLM
+                 # product: coach_llm.py is the client, compare_models.py is
+                 # a model-comparison harness, and patch_notes.py /
+                 # check_patch_notes.py / patch_day.py exist only to feed the
+                 # patch-notes extractor. They stay in the repo for the
+                 # maintainer; the release is the rule-based coach
+                 # (2026-10-02).
+                 "coach_llm.py", "compare_models.py", "patch_notes.py",
+                 "check_patch_notes.py", "patch_day.py"}
 
 #: Always written fresh by this script, so a stale local copy must not win
 #: the zip's duplicate-entry race (VERSION is excluded for the same reason).
 GENERATED = ("VERSION", ".update_state.json")
 
 #: Entries allowed to be in the zip without being tracked by git: the two
-#: generated stamps, the vendored parser (gitignored by design, but required
-#: to run, so it must ship), and the card->tribe map. That last one used to
-#: be fetched from HearthstoneJSON on first use — a ~10 MB blocking download
-#: on the live path that also made the README's "no internet for normal
-#: play" false, and that failed silently when offline (2026-10-02).
-#: Shipping the snapshot removes the first-run download; log-derived tribes
-#: still override it for new cards (bans.bans_from_log).
-UNTRACKED_OK = {"VERSION", ".update_state.json", "hearth-coach/.card_races.json"}
-UNTRACKED_OK_PREFIX = ("hearth-coach/python-hslog/",)
+#: generated stamps and the card->tribe map. That last one used to be fetched
+#: from HearthstoneJSON on first use — a ~10 MB blocking download on the live
+#: path that also made the README's "no internet for normal play" false, and
+#: that failed silently when offline (2026-10-02). Shipping the snapshot
+#: removes the first-run download; log-derived tribes still override it for
+#: new cards (bans.bans_from_log).
+UNTRACKED_OK = {"VERSION", ".update_state.json", ".card_races.json"}
+#: The vendored parser used to be gitignored, so a clone lacked it while the
+#: zip had it. It is tracked now (the spin-out made repo and release the same
+#: tree), and this prefix stays as a safety net for a checkout that got it
+#: some other way.
+UNTRACKED_OK_PREFIX = ("python-hslog/",)
 
 
 def git_sha():

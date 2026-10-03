@@ -19,7 +19,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from value import (combat_forecast, sticky_comp_target, top_move,
                    _load_spell_db)
