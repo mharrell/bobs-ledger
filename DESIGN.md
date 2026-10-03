@@ -431,10 +431,11 @@ asserted. Three mechanisms, in order of who they protect:
 `publish_release.py` builds the zip (code + `meta/` + user docs; never
 `analysis/`, `telemetry/`, `CLAUDE.md`, the caches, local data, or any
 `.lnk`), stamps `VERSION` and `.update_state.json`, and PUTs it plus a
-manifest to the collector's KV namespace. Users get it from
-a GitHub release (`/releases/latest`, one click, with the version and
-note on the page) or `GET /release/latest.zip` (a 302 to the current
-zip, for anyone without a GitHub account). `GET /release/latest.json`
+manifest to the collector's KV namespace. Users are pointed at ONE place:
+`GET /release/latest.zip` (a 302 to the current zip, no GitHub account
+needed). A GitHub release is still cut for every version — the version, the
+note and the asset live on that page — but the README does not offer it as a
+second way to do the same thing (2026-10-03). `GET /release/latest.json`
 is the updater's manifest, not a user instruction.
 
 A released zip keeps itself current because the stamp it carries is the
