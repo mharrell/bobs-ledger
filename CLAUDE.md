@@ -59,6 +59,17 @@ one level above the code.
   extraction landing in the wrong place.
 - **The two publish gates.** They have deliberate overrides; using one should
   be a decision, never a convenience.
+- **Consent gates the only outbound player data.** `share.py` sends nothing
+  until the stored answer is yes, refuses a report its own verifier rejects,
+  and never raises into the coach. `session_report.py`'s whitelist `SPEC` IS
+  the privacy control: a field it does not name cannot appear, so adding a
+  field to the report means adding it to the spec on purpose.
+- **`privacy_scan` cannot see a JSON name field.** It matches the shapes the
+  log writes (`PlayerName=`, `Entity=`, `GameAccountId=`) and a handle under
+  a key called `"name"` matches none of them. The opponent's handle rides in
+  `analysis.opp_comp.name` — one real session carried 50 — which is why a
+  bundle of raw decisions could pass "verified clean" while carrying one.
+  Strip by name; do not lean on the scan for that category.
 
 ## Domain facts that keep biting (log ground truth)
 

@@ -426,6 +426,35 @@ asserted. Three mechanisms, in order of who they protect:
    inflated a release from 236 entries to 472). Both have explicit
    overrides so an exception is a decision, not an accident.
 
+### What players send, and how it is bounded
+
+Collection is consented, small, and built from a whitelist rather than a
+filter:
+
+- **Consent is asked once**, on the welcome card, remembered in
+  `.share_consent.json`, and reversible from that card, `share.py on|off`, or
+  `--no-share` for a single session. Undecided sends nothing, and the card's
+  privacy sentence is generated from the state so it cannot drift from what
+  the code does.
+- **What is sent is a distillation**, not the log: `session_report.py` turns
+  154 advisories from a 7.5 MB decision log into 15.6 KB. The bulk it drops
+  (`game_comps` at 38 KB per record, `playable_comps` at 15 KB) is the comp
+  tree, which is not what checks advice against outcomes.
+- **The report cannot carry a person.** `SPEC` names every field allowed, and
+  `verify()` re-walks the finished report against the same spec, so a new
+  analysis field cannot travel by accident. `analysis.opp_comp.name` is the
+  opponent's handle and is excluded by construction — not by a regex.
+- **Transport:** `POST /session` is unauthenticated by design (a secret inside
+  a downloadable client is not a secret) with a 512 KB cap, a shape check and
+  a coarse personal-data net; reading is keyed (`GET /sessions`), and
+  `fetch_sessions.py` pulls reports into `sessions_in/`.
+- **Capacity is the reason for the tier.** At ~16 KB a report the free KV tier
+  holds tens of thousands, against roughly 750 of the 1.3 MB full-log bundles.
+  Full logs stay opt-in through `package_corpus.py`.
+- **Not implemented, deliberately:** rate limiting. A Worker is stateless and
+  KV writes are too scarce to spend counting writes, so that belongs to
+  Cloudflare's rate limiting rules (see telemetry/README.md).
+
 ### Distribution & first run
 
 `publish_release.py` builds the zip (code + `meta/` + user docs; never

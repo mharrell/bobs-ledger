@@ -70,7 +70,12 @@ except Exception:  # noqa: BLE001
 EXCLUDE_DIRS = {".git", ".claude", "decision_logs", "corpus_out",
                 ".review_cache", "__pycache__", ".venv", "venv", ".idea",
                 "img_cache", "node_modules", "patch_reports",
-                ".wrangler", "logs_archive", "transcripts"}
+                ".wrangler", "logs_archive", "transcripts",
+                # Local sharing state: the player's consent answer lives in
+                # .share_consent.json, the copies of everything sent live in
+                # session_reports/, and the maintainer's fetched reports land
+                # in sessions_in/. None of it belongs in a download.
+                "session_reports", "sessions_in"}
 
 #: Paths that never ship, matched as prefixes from the repo root. Basename
 #: matching can't express these — "tests" would drop the test suite too.
@@ -94,6 +99,7 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  ".trinkets_hsjson_cache.json", ".trinkets_guides_cache.json",
                  ".cards_full.json", ".observed_tribes.json",
                  ".patch_state.json", ".patch_config.json",
+                 ".share_consent.json",
                  "comp_candidates.json",
                  ".dev.vars", "claude_code_zai_env.sh", "VERSION",
                  "CLAUDE.md", "catch_up_main.ps1", "wt_status.ps1",

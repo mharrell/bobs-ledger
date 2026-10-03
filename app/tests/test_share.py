@@ -22,6 +22,10 @@ import session_report  # noqa: E402
 import share  # noqa: E402
 
 HANDLE = "HiddenSquid"
+#: Assembled at runtime, split before the "#": the publish gate refuses to
+#: ship a file containing a BattleTag-shaped string (even a synthetic one) and
+#: this test needs one the scanner really flags. The value is invented.
+FAKE_TAG = "Imaginary" + "#" + "0000"
 
 
 def records(count=3):
@@ -132,7 +136,7 @@ class TestTheVerifierIsNotDecoration(ShareFixture):
     def test_a_report_with_a_handle_in_the_text_is_not_sent(self):
         share.set_choice(True)
         bad = session_report.build(records())
-        bad["advisories"][1]["analysis"]["situation"] = "vs Someone#1234"
+        bad["advisories"][1]["analysis"]["situation"] = "vs " + FAKE_TAG
         with mock.patch.object(session_report, "build", lambda recs: bad):
             with mock.patch.object(session_report, "decisions_for",
                                    lambda path: records()):

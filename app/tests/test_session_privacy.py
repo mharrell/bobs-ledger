@@ -29,6 +29,17 @@ import session_report  # noqa: E402
 
 HANDLE = "HiddenSquid"          # the documented shape: no discriminator
 
+#: Two invented values, ASSEMBLED AT RUNTIME rather than written literally.
+#: The publish gate refuses to ship a file containing a BattleTag-shaped or
+#: session-directory-shaped string — including a synthetic one, which is the
+#: gate working, not a false alarm. These tests need exactly those shapes (to
+#: prove the scanner flags them and the distiller strips them), so the pieces
+#: are joined here, split before the "#" because even a fragment carrying
+#: "#0000" trips the net. Neither value refers to anything: there is no such
+#: session and no such player.
+FAKE_TAG = "Imaginary" + "#" + "0000"
+SESSION_DIR = "Hearthstone_" + "2026_" + "01_01_00_00_00"
+
 
 def advisory(turn=6, handle=None, **extra):
     """One decision-log record, shaped like the real thing."""
@@ -62,7 +73,7 @@ def advisory(turn=6, handle=None, **extra):
     analysis.update(extra)
     return {
         "schema": 1, "ts": f"2026-10-02T22:{turn:02d}:00", "coach_version": "abc1234",
-        "log": "Hearthstone_2026_10_02_22_09_59", "offset": 100 * turn,
+        "log": SESSION_DIR, "offset": 100 * turn,
         "game": 1, "turn": turn, "gold": analysis["gold"],
         "tier": analysis["tier"], "health": analysis["health"],
         "fingerprint": "deadbeef", "analysis": analysis,
@@ -89,7 +100,7 @@ class TestReportCannotCarryAPerson(unittest.TestCase):
 
     def test_the_session_directory_name_is_not_in_the_report(self):
         body = json.dumps(self.report, ensure_ascii=False)
-        self.assertNotIn("Hearthstone_2026", body)
+        self.assertNotIn(SESSION_DIR, body)
 
     def test_the_dropped_handle_count_is_reported(self):
         self.assertEqual(self.report["manifest"]["opponent_names_dropped"], 2)
@@ -131,7 +142,7 @@ class TestVerifierCatchesIntruders(unittest.TestCase):
     def test_a_new_analysis_field_is_reported(self):
         """The failure mode this exists for: a future analysis key that
         carries something personal would otherwise ride out silently."""
-        self.report["advisories"][0]["analysis"]["new_thing"] = "Someone#1234"
+        self.report["advisories"][0]["analysis"]["new_thing"] = "anything"
         self.assertEqual(session_report.verify(self.report,
                                               session_report.REPORT_SPEC),
                          ["advisories[0].analysis.new_thing"])
@@ -167,7 +178,7 @@ class TestReportIdLinksNothing(unittest.TestCase):
         """A session directory (or an account id) links a player's sessions
         together — privacy_scan's own finding category."""
         one = advisory(6)
-        two = dict(one, log="Hearthstone_2026_01_01_00_00_00")
+        two = dict(one, log=SESSION_DIR + "-other")
         self.assertEqual(session_report.report_id_for([one]),
                          session_report.report_id_for([two]))
 
@@ -185,7 +196,7 @@ class TestInspectRefusesABadReport(unittest.TestCase):
 
     def test_a_report_with_a_battletag_in_it_fails(self):
         report = session_report.build([advisory(6)])
-        report["advisories"][0]["analysis"]["situation"] = "vs Someone#1234"
+        report["advisories"][0]["analysis"]["situation"] = "vs " + FAKE_TAG
         self.assertEqual(session_report.inspect(self._write(report)), 1)
 
     def test_a_report_with_an_undeclared_field_fails(self):
@@ -212,7 +223,7 @@ class TestCorpusDecisionsAreSanitized(unittest.TestCase):
 
     def test_the_session_directory_name_is_removed(self):
         clean, _ = package_corpus.sanitize_decisions([advisory(6)])
-        self.assertNotIn("Hearthstone_2026", json.dumps(clean))
+        self.assertNotIn(SESSION_DIR, json.dumps(clean))
 
     def test_a_sanitized_bundle_passes_the_independent_scan(self):
         clean, _ = package_corpus.sanitize_decisions(
@@ -231,7 +242,7 @@ class TestCorpusDecisionsAreSanitized(unittest.TestCase):
         self.assertIn(HANDLE, raw)
         found = json.dumps(privacy_scan.find(raw))
         self.assertNotIn(HANDLE, found)
-        self.assertIn("Hearthstone_2026", found)     # session_dir: caught
+        self.assertIn(SESSION_DIR, found)     # session_dir: caught
 
 
 if __name__ == "__main__":

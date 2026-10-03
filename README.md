@@ -42,9 +42,11 @@ coach and is not in a release.)
 The coach needs **no API key**. It does not need the internet to advise:
 the advice comes from a local value function plus a meta reference bundled
 in `meta/` (including the card→tribe map, so there is no first-run
-download). Two things do use the network, both optional to play: card art
-is fetched from HearthstoneJSON on demand, and each start checks the
-release channel for a new version (disable with `--no-update`).
+download). Two things use the network on their own, both optional to play:
+card art is fetched from HearthstoneJSON on demand, and each start checks the
+release channel for a new version (disable with `--no-update`). A third —
+sending a summary of a finished game — happens only if you say yes, and the
+section on what leaves your machine below is precise about it.
 
 ## Get it
 
@@ -253,19 +255,47 @@ What the coach writes on your machine:
 
 - `img_cache/` — downloaded card art.
 - `decision_logs/` — one JSONL line per advisory: what the coach advised,
-  when, on which game state. **Contains no personal data** — card ids and
-  minion names only. (Verified, not assumed: a scan of 31,607 records for
-  BattleTag-shaped text finds none, because player names never reach the
-  analysis.)
+  when, on which game state. No account data, no chat, no file paths.
 
-Nothing is uploaded automatically, ever. The only network traffic the coach
-generates on its own is card art and the start-of-run release check above.
-Sharing data with the maintainer is an explicit manual step:
+  It is **not** free of people, and the old note here was wrong to imply
+  otherwise: every advisory carries the opponent's display handle in
+  `analysis.opp_comp.name` — the one the overlay shows beside their hero.
+  A scan for BattleTag-shaped text finds none of those here because a bare
+  handle has no `#1234` on it, which is exactly why the sharing path strips
+  that field by name instead of trusting a scan to catch it (2026-10-03).
+
+The coach asks once — on the welcome card, where there is nothing to advise
+yet — and sends nothing at all until you answer:
+
+- **Nothing yet, or No** — nothing is sent. That is the default: a fresh
+  install has never sent anything, and the card says so.
+- **Yes** — after each finished game it sends one small summary (~16 KB) of
+  what it advised and what happened, so the advice can finally be checked
+  against outcomes rather than argued about. No names, no chat, no file
+  paths, and not the log.
+
+Either way it is one click to change: the same card carries the toggle, or use
+`python app\share.py off`. `python app\live.py --no-share` skips a single
+session without changing the setting, and `python app\share.py status` says
+where you stand. Every summary it sends is also kept in `session_reports/`, so
+you can read exactly what went.
+
+What goes out is built from a **whitelist**: `session_report.py` names every
+field a summary may contain, so a new field in the coach's analysis cannot
+travel by accident, and the sender refuses to send a summary that fails its
+own verifier. That is not theoretical caution — the opponent's display handle
+lives in the logged analysis (`analysis.opp_comp.name`, the name the overlay
+shows beside their hero) and `privacy_scan.py` cannot see it. The whitelist
+drops it by never naming it.
+
+If you would rather send a whole replay — the sanitized log *and* the decision
+log, which is what makes deep forensics on one game possible — that stays a
+deliberate manual step:
 
 ```
-python package_corpus.py <Power.log>   # bundle: sanitized log + decisions
-python package_corpus.py --inspect corpus_out/<bundle>   # what's inside
-python upload_corpus.py --latest       # upload
+python app\package_corpus.py <Power.log>   # bundle: sanitized log + decisions
+python app\package_corpus.py --inspect corpus_out/<bundle>   # what's inside
+python app\upload_corpus.py --latest       # upload
 ```
 
 `--inspect` decodes a bundle and re-scans its contents with

@@ -23,11 +23,46 @@ account, no PAT.
 ## What a bundle is
 
 `package_corpus.py` produces one gzipped JSON file per session: the
-BattleTag-redacted Power.log (a ~1M-line privacy scan found BattleTags are
-the only personal data Hearthstone writes), that session's decision log,
-and a manifest (raw-log sha256, coach version, counts). One session's
-bundle measured 1.1–1.6 MB. `package_corpus.py --inspect <bundle>` proves
-the contents on any bundle.
+redacted Power.log, that session's decision log, and a manifest (raw-log
+sha256, coach version, counts). One session's bundle measured 1.1–1.6 MB.
+`package_corpus.py --inspect <bundle>` proves the contents on any bundle.
+
+Two corrections to the old note here, both found on 2026-10-03: BattleTags are
+not the only personal data the log writes — Battlegrounds also writes most
+opponents as a bare handle with no discriminator, which a BattleTag scan
+cannot see — and the DECISION log carries the opponent's handle too, in
+`analysis.opp_comp.name`. `sanitize_decisions` strips that by name before the
+bundle is built, because `privacy_scan` does not flag it.
+
+## Session reports (consented, from players)
+
+The collector also accepts the coach's distilled session summaries — a
+different trade from a corpus bundle: about 16 KB, consented on the welcome
+card, and carrying no names by construction.
+
+```
+POST /session                          no key — see below
+GET  /sessions                         maintainer's key: the listing
+GET  /sessions/<date>/<id>.json.gz     maintainer's key: one report
+```
+
+`POST /session` is deliberately unauthenticated. The coach ships as a zip
+anyone can read, so a secret in the client would not be a secret; what stands
+in for one is a 512 KB cap, a shape check (schema + advisories + report_id),
+and a coarse net for BattleTag discriminators, local user paths and session
+directory names. Reading is keyed, because browsing everyone's sessions is not
+something the open internet needs.
+
+**Deployment step that is not in this repository: rate limiting.** An open
+write path wants a Cloudflare rate limiting rule on `/session` (Security → WAF
+→ Rate limiting rules). A Worker is stateless and KV writes are far too scarce
+to spend counting writes, so this cannot live in the Worker. Until that rule
+exists, `/session` is uncapped against a flood: the per-write ceiling is
+512 KB, but the volume is unbounded.
+
+Retrieve reports with `python fetch_sessions.py` (needs
+`HEARTH_TELEMETRY_URL` and `HEARTH_TELEMETRY_KEY`); it skips what is already on
+disk, and `--list` shows what is there without downloading.
 
 ## How it was deployed (for redeploys)
 
