@@ -159,5 +159,77 @@ meta database. The experiment is still here — `coach_llm.py` is the client,
 stays because it is useful for maintainer work, and none of it ships in a
 release.
 
-*(Section two of this rewrite — for anyone cloning the repository — is not written
-yet. This branch exists so the first section can be read as it will render.)*
+### Clone and run it
+
+```
+git clone https://github.com/mharrell/bobs-ledger
+cd bobs-ledger
+python -m pip install -r app\requirements.txt
+python app\live.py
+```
+
+That is the same program the launcher starts. `app\live.py` also takes a log path,
+and `--poll 0.5` re-analyses a saved log, `--once` does a single pass, `--no-ui`
+skips the overlay, `--version` prints what you are running. `python app\doctor.py`
+is the one-shot pre-flight verdict: patch, coverage, art, newest log.
+
+A clone never auto-updates: commit shas cannot prove which side is newer, so the
+release check stands aside and you update with `git pull`.
+
+### The layout
+
+The program lives in `app/`. The root keeps what a player should see — this
+README, `LICENSE`, `docs/`, the launcher — plus what never ships: `analysis/`
+(research notes, some of which name real opponents), `telemetry/` (the release
+channel itself), `CLAUDE.md`, `DESIGN.md`, `ROADMAP.md`.
+
+### Tests
+
+```
+python -m unittest discover -s app/tests
+```
+
+About a thousand tests, ~45 seconds. Some skip by design: the ones that need a
+real `Power.log` or maintainer-only files report as skipped rather than passing
+quietly.
+
+### What not to break
+
+- **The privacy gates, and the sharing whitelist.** `session_report.py`'s `SPEC`
+  names every field a shared summary may contain; a field it does not name cannot
+  appear, so adding one means adding it there deliberately.
+- **The launcher.** `Start Bob's Ledger.cmd` has to stay CRLF and pure ASCII: a
+  bare LF makes cmd.exe mis-parse it, and a stray UTF-8 byte renders as garbage in
+  a console.
+- **The update join.** `VERSION` and `.update_state.json` are stamped into every
+  release and are what let an installed copy learn that a newer one exists.
+- **The install promise.** Outside Hearthstone's own `log.config` — which the
+  launcher edits only when asked, keeping a backup — everything the coach writes
+  stays inside its own folder. Uninstalling is deleting one folder, and that has
+  to stay true.
+
+### Releasing
+
+```
+python app\publish_release.py --note "what changed" --dry-run   # gates only
+python app\publish_release.py --note "what changed"             # publish
+```
+
+It walks the working tree, runs two gates, stamps the version, uploads to the
+collector's KV store and cuts a GitHub release. The gates are the review that
+matters most:
+
+- **PRIVACY** — no BattleTags, opponent handles, account ids, local paths or
+  session names in any shipped text file.
+- **REPRODUCIBILITY** — the zip matches HEAD, with no stray entries.
+
+The version is the commit sha, and `VERSION` is half of the update join: without
+it, an installed copy could never be offered a newer release.
+
+### Where the detail lives
+
+- `DESIGN.md` — architecture, and the reasoning behind it.
+- `CLAUDE.md` — working rules, and the game's log quirks that keep biting.
+- `ROADMAP.md` — phase status.
+- `analysis/` — the research the design came out of (not shipped).
+- `telemetry/README.md` — the collector: its routes, retention and deploy notes.
