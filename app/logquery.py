@@ -38,9 +38,9 @@ import extract_game as eg  # noqa: E402
 import meta  # noqa: E402
 import player_actions as pa  # noqa: E402
 from board_state import GameState  # noqa: E402
+from config import HS_LOG_GLOB, HS_LOG_GLOBS, as_globs  # noqa: E402
 from tribes import canon  # noqa: E402
 
-HS_LOG_GLOB = r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"
 STEP_TURN = re.compile(r"tag=STEP value=MAIN_ACTION")
 HP_OR_ARMOR = re.compile(r"Entity=\[entityName=([^\]]*?) id=(\d+)[^\]]*?"
                          r"cardId=([A-Za-z0-9_]+)[^\]]*?\] tag=(HEALTH|ARMOR) "
@@ -61,7 +61,15 @@ ZONE_IN_LINE = re.compile(r"tag=ZONE value=(\w+)")
 
 
 def newest_log():
-    logs = sorted(glob.glob(HS_LOG_GLOB), key=os.path.getmtime, reverse=True)
+    """The newest local Power.log, whichever shape this machine writes.
+
+    HS_LOG_GLOB stays imported (not redefined) as the public single-shape name
+    older callers use; discovery itself asks for both shapes, because which one
+    a machine writes is a platform question and config owns the answer.
+    """
+    logs = sorted({p for pattern in as_globs(HS_LOG_GLOBS)
+                   for p in glob.glob(pattern)},
+                  key=os.path.getmtime, reverse=True)
     return logs[0] if logs else None
 
 

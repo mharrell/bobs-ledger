@@ -54,11 +54,24 @@ import os
 import re
 import sys
 
+import config
 from tribes import ALL_MARKER, ALL_TRIBES, canon, parts, tribes_from_races
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 ROSTER = os.path.join(_HERE, "meta", "pool_roster.json")
-DEFAULT_LOG_DIR = r"C:\Program Files (x86)\Hearthstone\Logs"
+#: The client's log directory, derived from config so the Windows default and
+#: the HEARTHSTONE_HOME override apply here too. Still one directory for
+#: callers and for `--logs`; the session-dir shape inside it comes from
+#: config.log_globs.
+DEFAULT_LOG_DIR = os.path.join(config.HS_DIR, "Logs")
+#: The session-dir Power.log shape, owned by config. `config.log_globs` builds
+#: its patterns under the CLIENT ROOT, while `log_dir` here is the Logs
+#: directory inside that root, so what belongs here is the part BELOW the
+#: root. Passing the log dir straight to `config.log_globs(log_dir)[0]` would
+#: add a second "Logs", match nothing, and build an empty roster instead of
+#: failing.
+_SESSION_GLOB = os.path.relpath(config.HS_LOG_GLOB,
+                               os.path.join(config.HS_DIR, "Logs"))
 
 #: entityName carries spaces ("Wrath Weaver"), so capture up to " id=<digits>".
 NAME_RE = re.compile(
@@ -175,7 +188,7 @@ def scan_log(path):
 def load_sessions(log_dir=DEFAULT_LOG_DIR):
     """All session logs on disk, oldest first, with their scan result."""
     out = []
-    for path in glob.glob(os.path.join(log_dir, "Hearthstone_*", "Power.log")):
+    for path in glob.glob(os.path.join(log_dir, _SESSION_GLOB)):
         try:
             mtime = os.path.getmtime(path)
         except OSError:

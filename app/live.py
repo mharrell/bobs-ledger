@@ -419,6 +419,12 @@ def _share_finished(log_path, opts=()):
 
 
 def main():
+    # The advice text carries a caution glyph the value module composes
+    # (value._CAUTION_CLAUSE), and Python writes through the locale codec when
+    # stdout is redirected — so a piped or saved `--once` run died with
+    # UnicodeEncodeError instead of printing the advice it had just computed.
+    # Same guard the review tools already carry, for the same reason.
+    sys.stdout.reconfigure(errors="replace")
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     opts = [a for a in sys.argv[1:] if a.startswith("--")]
     if "--version" in opts:

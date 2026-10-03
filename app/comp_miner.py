@@ -39,9 +39,11 @@ sys.path.insert(0, _HERE)
 import extract_game as eg  # noqa: E402
 import meta  # noqa: E402
 import replay_stats as rs  # noqa: E402
+# HS_LOG_GLOB stays a public name (the tests and their skip messages read it),
+# imported rather than redefined; the miner's own default is both shapes.
+from config import HS_LOG_GLOB, HS_LOG_GLOBS, as_globs  # noqa: E402
 from tribes import normalize, parts  # noqa: E402
 
-HS_LOG_GLOB = r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"
 #: Where `--write` proposes candidates. The env override is not decoration: the
 #: test that exercises `--write` pointed at this tracked file, so every suite
 #: run rewrote it (games_scanned 8 -> 6) and one such change was swept into an
@@ -83,10 +85,16 @@ def dominant_tribe(board):
     return tribe if n * 2 > tribed else None
 
 
-def scan(log_glob=HS_LOG_GLOB, limit=None):
-    """[(tribe, placement, [card ids])] for every game in the corpus."""
+def scan(log_glob=HS_LOG_GLOBS, limit=None):
+    """[(tribe, placement, [card ids])] for every game in the corpus.
+
+    `log_glob` takes one glob or several (`config.as_globs`), so a caller
+    naming a single pattern keeps working while the default asks for both
+    known Power.log shapes.
+    """
     out = []
-    paths = sorted(glob.glob(log_glob))
+    paths = sorted({p for pattern in as_globs(log_glob)
+                    for p in glob.glob(pattern)})
     for path in paths[-limit:] if limit else paths:
         try:
             with open(path, encoding="utf-8", errors="replace") as f:
@@ -269,7 +277,9 @@ def main():
     ap.add_argument("--tribe", default=None,
                     help="mine one tribe (default: every tribe with no comp)")
     ap.add_argument("--min-games", type=int, default=DEFAULT_MIN_GAMES)
-    ap.add_argument("--logs", default=HS_LOG_GLOB)
+    ap.add_argument("--logs", default=HS_LOG_GLOBS,
+                    help="one glob or several for the Power.logs to mine "
+                         "(default: both known shapes)")
     ap.add_argument("--limit", type=int, default=None,
                     help="scan only the newest N session logs")
     ap.add_argument("--write", action="store_true",
