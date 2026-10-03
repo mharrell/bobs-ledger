@@ -1,6 +1,7 @@
 """The auto-update contract: check on start, prompt with substance, apply
 atomically over the install while protecting local data, never trusting a
 byte that doesn't match the manifest's hash."""
+import importlib.util
 import io
 import json
 import os
@@ -82,7 +83,7 @@ class TestApplyZip(unittest.TestCase):
     def test_applies_files_and_version_protects_local_data(self):
         data = self._zip({
             "VERSION": "abc1234\n",
-            "hearth-coach/live.py": "print('new')",
+            "live.py": "print('new')",
             "README.md": "new readme",
             "decision_logs/decision_x.jsonl": "LOCAL DATA",
             "../evil.txt": "nope",
@@ -96,7 +97,9 @@ class TestApplyZip(unittest.TestCase):
             self.assertEqual(n, 3)  # VERSION + live.py + README; slip skipped
             with open(os.path.join(td, "VERSION")) as f:
                 self.assertEqual(f.read().strip(), "abc1234")
-            with open(os.path.join(td, "hearth-coach", "live.py")) as f:
+            # The release puts the code at the zip ROOT: the zip and this repo
+            # are the same tree (2026-10-02, the spin-out).
+            with open(os.path.join(td, "live.py")) as f:
                 self.assertIn("new", f.read())
             with open(local) as f:
                 self.assertEqual(f.read(), "LOCAL DATA")
@@ -115,7 +118,7 @@ class TestApplyZip(unittest.TestCase):
         land outside the install (2026-10-02)."""
         for evil in ("C:/evil.dll", "D:/evil.py", "C:evil.dll",
                      "//host/share/e.txt", "a/../../b/c.txt",
-                     "hearth-coach/../../../evil.py"):
+                     "../../../evil.py"):
             data = self._zip({evil: "pwned"})
             with tempfile.TemporaryDirectory() as td:
                 self.assertEqual(update.apply_zip(data, root=td), 0, evil)
@@ -126,33 +129,36 @@ class TestApplyZip(unittest.TestCase):
         first-segment-only PROTECTED test never matched anything — the
         guard was inert while it claimed to protect these dirs."""
         data = self._zip({
-            "hearth-coach/value.py": "print('new')",
-            "hearth-coach/decision_logs/decision_mine.jsonl": "OVERWRITTEN",
-            "hearth-coach/corpus_out/pending.json.gz": "OVERWRITTEN",
-            "hearth-coach/.review_cache/c.json": "OVERWRITTEN",
+            "value.py": "print('new')",
+            "decision_logs/decision_mine.jsonl": "OVERWRITTEN",
+            "corpus_out/pending.json.gz": "OVERWRITTEN",
+            ".review_cache/c.json": "OVERWRITTEN",
         })
         with tempfile.TemporaryDirectory() as td:
-            for rel, body in (("hearth-coach/decision_logs", "decision_mine.jsonl"),
-                              ("hearth-coach/corpus_out", "pending.json.gz"),
-                              ("hearth-coach/.review_cache", "c.json")):
+            for rel, body in (("decision_logs", "decision_mine.jsonl"),
+                              ("corpus_out", "pending.json.gz"),
+                              (".review_cache", "c.json")):
                 os.makedirs(os.path.join(td, *rel.split("/")))
                 with open(os.path.join(td, *rel.split("/"), body),
                           "w", encoding="utf-8") as f:
                     f.write("LOCAL DATA")
             n = update.apply_zip(data, root=td)
             self.assertEqual(n, 1)          # value.py only
-            for rel, body in (("hearth-coach/decision_logs", "decision_mine.jsonl"),
-                              ("hearth-coach/corpus_out", "pending.json.gz"),
-                              ("hearth-coach/.review_cache", "c.json")):
+            for rel, body in (("decision_logs", "decision_mine.jsonl"),
+                              ("corpus_out", "pending.json.gz"),
+                              (".review_cache", "c.json")):
                 with open(os.path.join(td, *rel.split("/"), body),
                           encoding="utf-8") as f:
                     self.assertEqual(f.read(), "LOCAL DATA", rel)
 
+    @unittest.skipUnless(
+        importlib.util.find_spec("publish_release") is not None,
+        "publish_release.py is maintainer tooling and is not in a release")
     def test_update_state_seeded_in_release_lets_a_fresh_zip_update(self):
         """A zip install has no .update_state.json unless the release ships
         one, so the first check could only answer 'unknown' and no update
         was ever offered — the README promised otherwise (2026-10-02)."""
-        root = os.path.dirname(HERE)          # the repo root
+        root = HERE                            # repo root == the zip root
         if root not in sys.path:
             sys.path.insert(0, root)
         import publish_release
@@ -212,6 +218,44 @@ class TestApplyZip(unittest.TestCase):
                              {"HEARTH_TELEMETRY_KEY": "k"}):
             with self.assertRaises(ValueError):
                 update.download_zip(bad)
+
+
+class TestInstallRoot(unittest.TestCase):
+    """VERSION and .update_state.json must be found in BOTH layouts.
+
+    This repo (and so the release zip) puts the code at the root, with the
+    stamps beside `update.py`. The project's earlier layout nested the code
+    one level down with the stamps above it, and `update.py` still has to
+    work in a checkout of that shape — the preference is whichever directory
+    actually holds a VERSION file (2026-10-02, the spin-out).
+    """
+
+    def setUp(self):
+        self._saved = update._HERE
+
+    def tearDown(self):
+        update._HERE = self._saved
+
+    def test_flat_layout_prefers_the_code_directory(self):
+        with tempfile.TemporaryDirectory() as td:
+            open(os.path.join(td, "VERSION"), "w").close()
+            update._HERE = td
+            self.assertEqual(update._install_root(), td)
+
+    def test_nested_layout_finds_the_stamp_above(self):
+        with tempfile.TemporaryDirectory() as td:
+            inner = os.path.join(td, "hearth-coach")
+            os.makedirs(inner)
+            open(os.path.join(td, "VERSION"), "w").close()
+            update._HERE = inner
+            self.assertEqual(update._install_root(), td)
+
+    def test_a_dev_checkout_with_no_stamp_falls_back_to_the_code_dir(self):
+        with tempfile.TemporaryDirectory() as td:
+            inner = os.path.join(td, "code")
+            os.makedirs(inner)
+            update._HERE = inner
+            self.assertEqual(update._install_root(), inner)
 
 
 if __name__ == "__main__":

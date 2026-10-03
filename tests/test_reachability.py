@@ -11,7 +11,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import meta
 from value import (live_reach_sources, _hunt_check, _comp_needs_by_tier,

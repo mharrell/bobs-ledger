@@ -16,7 +16,10 @@ sys.path.insert(0, HERE)
 import doctor  # noqa: E402
 import logquery  # noqa: E402
 import meta  # noqa: E402
-import patch_day  # noqa: E402
+try:  # maintainer tooling; a release zip does not ship it
+    import patch_day  # noqa: E402
+except ImportError:  # noqa: BLE001
+    patch_day = None
 import review_kit  # noqa: E402
 
 GS = "D 12:00:00 GameState.DebugPrintPower() -"
@@ -191,6 +194,8 @@ class TestDoctor(unittest.TestCase):
         self.assertIn(level, (doctor.OK, doctor.WARN))
 
 
+@unittest.skipUnless(patch_day, "patch_day is maintainer tooling and is "
+                     "not in a release")
 class TestPatchDay(unittest.TestCase):
     """The canaries' helpers. Each pins a failure this project actually had."""
 

@@ -445,7 +445,7 @@ def main():
         return 1
     if not path:
         print("No active Power.log found. Hearthstone's file logging is "
-              "probably OFF — enable it per hearth-coach/README.md step 2 "
+              "probably OFF — enable it per README.md step 2 "
               "(the log.config block; the Coach UI welcome card shows the "
               "same steps).")
         if "--once" in opts:

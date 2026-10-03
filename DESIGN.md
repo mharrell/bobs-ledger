@@ -1,13 +1,22 @@
-# Hearthstone Battlegrounds AI Coach — Project Design
+# Bob's Ledger — Design
 
-**Project:** An AI-assisted gaming tool that coaches a human player in real time
-during Hearthstone Battlegrounds. Competes with HSReplay/Firestone stat overlays
-on *reasoning and dynamic, board-specific, explainable advice* rather than raw
-aggregate data volume.
+**Built:** a real-time coach for Hearthstone Battlegrounds. It reads the game's
+own `Power.log`, reconstructs the board, and advises each buy phase. What
+produces the advice is a **deterministic value function plus a growth
+simulator over a curated meta database** — no model is called during play, no
+API key is needed, and nothing about the game leaves the machine.
 
-**Status:** Live coach running (Phase 5 V1 overlay; see ROADMAP.md for phase
-status). The advice model is still a deterministic value function; the LLM
-reasoning layer (Phase 4) is the open build.
+**Why this document mentions LLMs at all.** The project began as an
+exploration of where a language model *would* help in a game coach, and that
+thinking is preserved below (sections 4, 7 and the strategy notes) because it
+explains why the coach is shaped the way it is. Two things came of it, and
+neither is the runtime: `coach_llm.py` + `patch_notes.py` extract Blizzard's
+patch notes into the meta DB (maintainer tooling, absent from a release), and
+`compare_models.py` was a model-comparison harness. The **coach itself calls
+no model**, and any section here that reads as a plan is history, not a
+roadmap item.
+
+**Status:** Live coach running (Phase 5 V1 overlay; see ROADMAP.md).
 
 ---
 
@@ -328,7 +337,7 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 
 ---
 
-## 7. DeepSeek Vision / Model capability (current knowledge)
+## 7. (Research record) Vision models reading card art — not used by the coach
 
 - Open-source vision model: [DeepSeek-VL](https://github.com/deepseek-ai/deepseek-vl)
   (and paper https://arxiv.org/html/2403.05525v2). Current V-series line includes
@@ -347,7 +356,7 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
 ## 8b. Setup & Infrastructure Status
 
 - Working dir: `<repo root> Pangolin\PycharmProjects\visual-game-coach`
-  (repo project folder: `hearth-coach/`).
+  (this repository).
 - Cloned `python-hslog/` (official HearthSim parser).
 - `.venv` created; `requests` available (no SDK install needed for the LLM client).
 - **Tools built:**

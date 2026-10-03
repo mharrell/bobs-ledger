@@ -7,7 +7,7 @@
 — *"36.6 Patch Notes"* (article id 24294373)
 
 This is a **literal transcription** of the two official articles for the meta-DB update.
-Nothing here has been applied to `hearth-coach/meta/` — this document is the input, not the change.
+Nothing here has been applied to `meta/` — this document is the input, not the change.
 Tier/stat/cost values are exactly as printed by Blizzard; card names preserve Blizzard's
 capitalisation and apostrophes.
 
@@ -635,7 +635,7 @@ rotation and the Aberration tribe are both still to be reflected there.
 ## DB update applied (2026-09-22)
 
 This is the record of what the 36.6.1 card-DB update actually wrote. Everything below was derived
-offline from files on this machine; no network fetch was made. Paths are relative to `hearth-coach/`.
+offline from files on this machine; no network fetch was made. Paths are relative to the repo root.
 
 ### 1. Counts
 

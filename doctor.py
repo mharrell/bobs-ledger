@@ -84,7 +84,11 @@ def check_patch(online):
         import patch_notes as pn
         url, article = pn.discover_latest()
     except Exception as exc:  # noqa: BLE001
-        return WARN, f"patch check skipped ({type(exc).__name__}: {exc})"
+        if isinstance(exc, ImportError):
+            # patch_notes.py is maintainer tooling and is not in a
+            # release zip, so --online cannot work on an installed copy.
+            return WARN, ("patch check needs the maintainer tooling "
+                          "(patch_notes.py), which a release does not carry")
     newer = pn._version_key(article.get("title")) > pn._version_key(have)
     if newer:
         return FAIL, (f"NEW PATCH: {article.get('title')} — the DB is on {have}; "

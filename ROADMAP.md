@@ -3,7 +3,7 @@
 Priorities and concrete next steps.
 
 ## Phase 0 — Bootstrap (done)
-- [x] Create project folder `hearth-coach/`
+- [x] Create the project repo
 - [x] Clone official `python-hslog` parser
 - [x] Write `parse_bg.py` smoke-test parser
 - [x] Document design (DESIGN.md), competitors (COMPETITORS.md), opponent-data
@@ -43,7 +43,7 @@ winner from loser.
       a stdlib-unittest golden-test suite in `tests/` (hand-built log excerpts
       reproducing the real session log's quirks, plus a skip-if-absent
       integration test on the newest real Power.log). Run
-      `python -m unittest discover -s tests` from `hearth-coach/`.
+      `python -m unittest discover -s tests` from the repo root.
 - [x] **Hardening pass 1 (2026-08-31)**, after a full-project review:
       - Tribe canonicalization: `tribes.py` is now the single vocabulary
         (canonical singular display names; see "Key decisions"). `comps.json`
@@ -97,7 +97,9 @@ winner from loser.
       comps and **no `provisional: true` row**. The mechanism stays as the path
       for the next tribe the source misses.
 - [x] Patch-notes updater: `patch_notes.py <url>` fetches official patch notes,
-      LLM-extracts before/after changes, and (with `--apply`) writes them into
+      LLM-extracts before/after changes (this is the ONE place a model is called
+anywhere in the project, and it is maintainer tooling that a release does
+not ship), and (with `--apply`) writes them into
       `meta/`. Dry-runs by default; new cards flagged for manual entry.
 - [x] Automated check (review-first): `check_patch_notes.py` discovers the
       latest patch from the Blizzard news page, writes a reviewable report to

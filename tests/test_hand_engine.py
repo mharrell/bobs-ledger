@@ -11,7 +11,7 @@ import os
 import sys
 import unittest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 CHARGER = "BG26_137"     # Bream Counter (+6/+6 per Murloc played, in hand)
 DEPLOYER = "BG27_556"    # Diremuck Forager (start-of-combat hand summon)

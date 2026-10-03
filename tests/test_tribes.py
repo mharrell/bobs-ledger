@@ -4,7 +4,7 @@ import sys
 import unittest
 from unittest import mock
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tribes import (ALL_MARKER, ALL_TRIBES, DISPLAY_TRIBES, canon, is_banned,
                     matches, normalize, overlaps, parts, tribes_from_races)

@@ -2,3 +2,8 @@
 #   python -m pip install -r requirements-dev.txt
 yt-dlp>=2024.1.0   # fetch_transcripts.py (YouTube comp guides)
 UnityPy>=1.20      # hearth_art_extract.py (patch-day card art, local client)
+# parse_bg.py only: the Power.log parser is vendored in python-hslog/,
+# but its own dependency is not. extract_game.py is the stdlib path the
+# coach itself uses, so nothing here is needed to play.
+hslog>=3.0
+hearthstone>=3.0
