@@ -1,8 +1,12 @@
-"""Integration smoke: parse the most recent real session Power.log if it
+"""Integration smoke: parse the most recent FINISHED session Power.log if one
 exists (Hearthstone installed locally). Skipped when absent — the committed
 suite stays deterministic. Catches regressions the hand-built fixtures can
-miss (log format drift, new card-id shapes)."""
-import glob
+miss (log format drift, new card-id shapes).
+
+"Newest" is chosen by real_logs.newest_settled(), not by mtime alone: while the
+game is running the newest log is a file being appended to, and this test then
+fails for reasons that have nothing to do with the code (2026-10-03).
+"""
 import os
 import sys
 import unittest
@@ -11,20 +15,18 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 import live_coach  # noqa: E402
-
-from config import HS_LOG_GLOB as LOG_GLOB
+import real_logs  # noqa: E402
 
 
 def _newest_log():
-    logs = sorted(glob.glob(LOG_GLOB), key=os.path.getmtime, reverse=True)
-    return logs[0] if logs else None
+    return real_logs.newest_settled()
 
 
 class TestRealLog(unittest.TestCase):
     def setUp(self):
         self.log = _newest_log()
         if not self.log:
-            self.skipTest("no Hearthstone session log found")
+            self.skipTest(real_logs.why_none())
 
     def test_turn_one_advises_when_monitor_started_before_game(self):
         """Regression: a game that starts while live.py is already running

@@ -9,7 +9,6 @@ cover the whole class, and the integration test checks the output with
 privacy_scan — separate code from the sanitizer — so a redactor that misses
 a category cannot certify itself clean.
 """
-import glob
 import os
 import sys
 import unittest
@@ -19,7 +18,7 @@ sys.path.insert(0, HERE)
 
 import privacy_scan  # noqa: E402
 from sanitize_log import sanitize_text  # noqa: E402
-from config import HS_LOG_GLOB  # noqa: E402
+import real_logs  # noqa: E402
 
 
 class TestSanitizeText(unittest.TestCase):
@@ -110,12 +109,11 @@ class TestSanitizeText(unittest.TestCase):
     def test_real_log_fully_redacted(self):
         """Integration (local logs): nothing in any personal-data category
         survives, judged by privacy_scan rather than by the redactor."""
-        logs = sorted(glob.glob(HS_LOG_GLOB),
-                      key=os.path.getmtime, reverse=True)
-        if not logs:
-            self.skipTest("no Hearthstone session log found")
+        log = real_logs.newest_settled()
+        if not log:
+            self.skipTest(real_logs.why_none())
         from sanitize_log import read_log
-        text = read_log(logs[0])[:5_000_000]
+        text = read_log(log)[:5_000_000]
         before = privacy_scan.find(text)
         if not before:
             self.skipTest("no personal data in this segment")

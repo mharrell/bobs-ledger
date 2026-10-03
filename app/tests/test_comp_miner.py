@@ -5,12 +5,13 @@ in the pool since 36.6.1 — re-scraped and confirmed: 26 comps, ten original
 tribes only. comp_miner measures our own corpus instead, and the property that
 matters is **honesty**: a tribe seen in two games must be reported as
 insufficient evidence, never dressed up as a comp. The `--write` path must also
-never touch `meta/comps.json`.
+never touch `meta/comps.json` — and it writes its proposal where the test aims
+it (`HEARTH_COMP_CANDIDATES`), never into the tracked file in this repo.
 """
-import glob
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,13 +19,17 @@ sys.path.insert(0, HERE)
 
 import comp_miner as cm  # noqa: E402
 import meta  # noqa: E402
+import real_logs  # noqa: E402
 
 #: id -> display name, straight from the minion DB the miner reads: asserting
 #: against a hardcoded name would just re-type the DB.
 MINION_NAMES = {r.get("id"): r.get("name") for r in (meta._raw("minions.json") or [])}
 
 LOG_GLOB = cm.HS_LOG_GLOB
-REAL_LOGS = sorted(glob.glob(LOG_GLOB))
+#: The real-log tests below only run against a FINISHED session: `--write`
+#: scans the logs, and while the game is writing one it grows underneath the
+#: scan (which is what made the suite slow and flaky, 2026-10-03).
+REAL_LOGS = real_logs.all_logs() if real_logs.newest_settled() else []
 PY = sys.executable
 
 
@@ -180,24 +185,33 @@ class TestAgainstTheRealCorpus(unittest.TestCase):
 
 @unittest.skipUnless(REAL_LOGS, f"no Power.log at {LOG_GLOB}")
 class TestWriteNeverTouchesComps(unittest.TestCase):
-    """`--write` writes its own proposal file and never comps.json."""
+    """`--write` writes its own proposal file and never comps.json.
+
+    The proposal goes to a temporary path, aimed with HEARTH_COMP_CANDIDATES:
+    it used to land on the tracked `meta/comp_candidates.json`, so every run of
+    this suite rewrote that file and the change rode into an unrelated commit.
+    """
 
     def test_write_leaves_comps_json_byte_identical(self):
         comps_path = os.path.join(HERE, "meta", "comps.json")
         with open(comps_path, "rb") as f:
             before = f.read()
-        proc = subprocess.run(
-            [PY, os.path.join(HERE, "comp_miner.py"), "--limit", "6", "--write",
-             "--json"],
-            cwd=HERE, capture_output=True, text=True, encoding="utf-8",
-            env={**os.environ, "PYTHONIOENCODING": "utf-8"})
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        with open(comps_path, "rb") as f:
-            self.assertEqual(f.read(), before, "comp_miner must never write comps.json")
-        if "no games with a dominant tribe" in (proc.stdout or ""):
-            self.skipTest("no log on disk holds a game with a dominant tribe")
-        self.assertTrue(os.path.exists(cm.CANDIDATES),
-                        "--write should produce the candidate proposal file")
+        with tempfile.TemporaryDirectory() as td:
+            proposal = os.path.join(td, "comp_candidates.json")
+            proc = subprocess.run(
+                [PY, os.path.join(HERE, "comp_miner.py"), "--limit", "6",
+                 "--write", "--json"],
+                cwd=HERE, capture_output=True, text=True, encoding="utf-8",
+                env={**os.environ, "PYTHONIOENCODING": "utf-8",
+                     "HEARTH_COMP_CANDIDATES": proposal})
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            with open(comps_path, "rb") as f:
+                self.assertEqual(f.read(), before,
+                                 "comp_miner must never write comps.json")
+            if "no games with a dominant tribe" in (proc.stdout or ""):
+                self.skipTest("no log on disk holds a game with a dominant tribe")
+            self.assertTrue(os.path.exists(proposal),
+                            "--write should produce the candidate proposal file")
 
     def test_promote_is_dry_by_default_in_dry_run_mode(self):
         """--promote --dry-run must print a plan and write nothing at all."""

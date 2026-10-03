@@ -42,7 +42,13 @@ import replay_stats as rs  # noqa: E402
 from tribes import normalize, parts  # noqa: E402
 
 HS_LOG_GLOB = r"C:\Program Files (x86)\Hearthstone\Logs\Hearthstone_*\Power.log"
-CANDIDATES = os.path.join(_HERE, "meta", "comp_candidates.json")
+#: Where `--write` proposes candidates. The env override is not decoration: the
+#: test that exercises `--write` pointed at this tracked file, so every suite
+#: run rewrote it (games_scanned 8 -> 6) and one such change was swept into an
+#: unrelated commit (2026-10-03). A test must be able to aim it somewhere
+#: disposable.
+CANDIDATES = (os.environ.get("HEARTH_COMP_CANDIDATES")
+              or os.path.join(_HERE, "meta", "comp_candidates.json"))
 COMPS_PATH = os.path.join(_HERE, "meta", "comps.json")
 #: A comp mined from fewer games than this is a coincidence, not a pattern.
 DEFAULT_MIN_GAMES = 5
