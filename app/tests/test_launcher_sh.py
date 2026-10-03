@@ -138,5 +138,24 @@ class TestLauncherBehaviour(unittest.TestCase):
                                    f"{findings}")
 
 
+@unittest.skipUnless(os.path.exists(LAUNCHER), "no macOS launcher")
+class TestGitPreservesTheLineEndings(unittest.TestCase):
+    """The byte-format rules above are only real if version control keeps
+    them. core.autocrlf is true on the machine that wrote this, and the first
+    commit warned that a checkout would hand macOS a CRLF `.command` - which
+    bash rejects on the first line. `.gitattributes` is what prevents that, so
+    both launcher rules are load-bearing and are pinned here."""
+
+    def _rules(self):
+        with open(os.path.join(ROOT, ".gitattributes"), encoding="utf-8") as f:
+            return [line.split("#")[0].strip() for line in f]
+
+    def test_the_macos_launcher_stays_lf_through_a_checkout(self):
+        self.assertIn("*.command text eol=lf", self._rules())
+
+    def test_the_windows_launcher_stays_crlf_through_a_checkout(self):
+        self.assertIn("*.cmd text eol=crlf", self._rules())
+
+
 if __name__ == "__main__":
     unittest.main()

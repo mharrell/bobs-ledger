@@ -1,6 +1,13 @@
 # Shell scripts must stay LF — CRLF breaks bash (the Stop hook runs via bash)
 *.sh text eol=lf
 
+# The macOS launcher is a shell script, and core.autocrlf=true on the machine
+# that wrote it: without this rule a fresh checkout hands macOS a CRLF
+# .command, and bash dies on the first line with "$'\r': command not found".
+# The shipped zip is built from the worktree, so this is what keeps a clone -
+# or a macOS CI runner - from producing a launcher nobody can run.
+*.command text eol=lf
+
 # Batch files must be CRLF — cmd.exe mis-parses LF-only .bat/.cmd (labels and
 # goto in particular), and the launcher ships to users inside a zip.
 *.cmd text eol=crlf
