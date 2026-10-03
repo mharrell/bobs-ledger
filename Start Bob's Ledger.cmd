@@ -118,7 +118,13 @@ rem shortcut is the ONLY way to hand someone something clickable that wears
 rem the icon. The copy in this folder is the one that always makes sense (it
 rem travels with the install); the Desktop one is convenience. Asked rather
 rem than assumed, and --check below reports without writing anything.
-if /i "%~1"=="--check" goto :report
+rem Match on a PREFIX: a shell that hands over "--check=" (which happened)
+rem used to miss the exact-match test and fall through to the run below, so
+rem asking for a report silently STARTED the coach instead. Two of those were
+rem left running and held the install directory open (2026-10-02).
+set "ARG1=%~1"
+if /i "%ARG1%"=="--check" goto :report
+if /i "%ARG1:~0,8%"=="--check=" goto :report
 set "WANT_SHORTCUT=0"
 if /i "%~1"=="--shortcut" set "WANT_SHORTCUT=1"
 if "%WANT_SHORTCUT%"=="1" goto :make_shortcuts
@@ -175,6 +181,10 @@ echo.
 set "PASS=%*"
 set "PASS=%PASS:--check=%"
 set "PASS=%PASS:--shortcut=%"
+rem Stripping a substring leaves debris when the token was "--check=": a lone
+rem "=" would be handed to live.py, which ignores unknown flags — the same
+rem silent-start failure by another door.
+if "%PASS%"=="=" set "PASS="
 %PY% "%~dp0live.py" --open %PASS%
 if errorlevel 1 goto :fail
 goto :end
