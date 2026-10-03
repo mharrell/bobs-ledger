@@ -266,6 +266,19 @@ export default {
     // limiting rules (see telemetry/README.md) - a Worker is stateless and
     // KV writes are too scarce to spend counting writes.
     if (request.method === "POST" && url.pathname === "/session") {
+      // Throttle FIRST, before the body is even read: the cheapest way to be
+      // flooded is to have already buffered the flood. The key is the
+      // caller's address used purely as a counter key — nothing about it is
+      // stored — and the limiter is per Cloudflare location (see
+      // deploy/wrangler.toml). Guarded, so the Worker still runs if the
+      // binding is missing (a local dev instance, or a plan without it).
+      if (env.SESSION_LIMITER) {
+        const who = request.headers.get("CF-Connecting-IP") || "unknown";
+        const {success} = await env.SESSION_LIMITER.limit({key: who});
+        if (!success) {
+          return new Response("too many reports\n", {status: 429});
+        }
+      }
       // Refuse an oversized body from its declared length, before reading it.
       const declared = Number(request.headers.get("Content-Length") || 0);
       if (declared > MAX_REPORT_BYTES) {

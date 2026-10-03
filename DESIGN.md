@@ -451,9 +451,13 @@ filter:
 - **Capacity is the reason for the tier.** At ~16 KB a report the free KV tier
   holds tens of thousands, against roughly 750 of the 1.3 MB full-log bundles.
   Full logs stay opt-in through `package_corpus.py`.
-- **Not implemented, deliberately:** rate limiting. A Worker is stateless and
-  KV writes are too scarce to spend counting writes, so that belongs to
-  Cloudflare's rate limiting rules (see telemetry/README.md).
+- **Throttled per location, not globally.** `POST /session` is limited by a
+  Worker rate limiting binding (20/60s, keyed on the caller's address used only
+  as a counter key), checked before the body is read. It is per Cloudflare
+  location, so one source flooding from one place is stopped; a distributed
+  attacker gets N x the allowance. That is the honest bound: a global cap needs
+  a custom domain plus a zone WAF rule, or a KV counter that costs a write per
+  upload.
 
 ### Distribution & first run
 

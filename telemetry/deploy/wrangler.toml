@@ -19,6 +19,22 @@ compatibility_date = "2026-09-30"
 binding = "BUCKET"
 id = "abd7803c581b4470a2834e92ae0006a2"
 
+# Throttling for the open write path (POST /session).
+#
+# This is the Worker-level rate limiter rather than a WAF rate limiting RULE,
+# because rules are zone-scoped and a workers.dev hostname is not a zone in
+# this account — there is no Security/WAF page for it at all (2026-10-03).
+# The limit is per Cloudflare location, so it stops one source flooding from
+# one place, which is the case that protects the 1 GB namespace and the 1,000
+# writes/day; a distributed attacker still gets N x the allowance.
+[[ratelimits]]
+name = "SESSION_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
 # Retention: session reports older than 90 days are deleted daily. Anonymous
 # by design means no one can ask for a specific report to be removed, so a
 # window is the only honest answer to "delete mine" - and it bounds what a
