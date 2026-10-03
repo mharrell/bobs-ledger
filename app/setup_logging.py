@@ -47,16 +47,24 @@ REQUIRED = {"LogLevel": "1", "FilePrinting": "true"}
 BACKUP_SUFFIX = ".bobs-ledger-backup"
 
 
-def config_dir():
+def config_dir(platform=None):
     """Where Hearthstone keeps `log.config`.
 
     `HEARTHSTONE_CONFIG_DIR` overrides it: that is how the tests point this at
     a scratch directory, and how a player with an unusual install redirects it,
     without any risk to the real file.
+
+    macOS keeps the same Blizzard/Hearthstone folder, one level under
+    Preferences instead of AppData:
+    https://github.com/jleclanche/fireplace/wiki/How-to-enable-logging
+    Reading LOCALAPPDATA there would have resolved to `~/Blizzard/Hearthstone`
+    — a directory the game never looks at — and created a log.config in it.
     """
     override = os.environ.get("HEARTHSTONE_CONFIG_DIR")
     if override:
         return override
+    if (platform or sys.platform) == "darwin":
+        return os.path.expanduser("~/Library/Preferences/Blizzard/Hearthstone")
     base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
     return os.path.join(base, "Blizzard", "Hearthstone")
 
@@ -104,15 +112,46 @@ def read_state(path=None):
     return ("ok" if not missing else "incomplete"), missing
 
 
-def hearthstone_running():
-    """The game reads this file at startup, so editing it under the game is
-    asking for the change to be ignored (or reverted)."""
+def _probe(platform=None):
+    """True / False / None — None when this machine has no usable probe.
+
+    Windows asks tasklist and looks for Hearthstone.exe. macOS has no
+    tasklist, and the old `except: return False` meant "not running" on a Mac
+    — which would have let this module edit log.config underneath a live game,
+    the one thing it promises not to do. pgrep ships with macOS and exits 1
+    for "no match", so its exit code is the answer, not its output.
+    """
+    platform = platform or sys.platform
+    if platform == "darwin":
+        for cmd in (["pgrep", "-x", "Hearthstone"],
+                    ["ps", "-Ao", "comm="]):
+            try:
+                proc = subprocess.run(cmd, capture_output=True, text=True,
+                                      timeout=20)
+            except Exception:               # noqa: BLE001 - no pgrep and no ps
+                continue
+            if cmd[0] == "pgrep":
+                return proc.returncode == 0
+            # `ps` prints the whole bundle path, so match the name anywhere.
+            return "Hearthstone" in proc.stdout
+        return None
     try:
         out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Hearthstone.exe"],
                              capture_output=True, text=True, timeout=20).stdout
-    except Exception:                       # noqa: BLE001 - non-Windows, or no tasklist
-        return False
+    except Exception:                       # noqa: BLE001 - no tasklist
+        return None
     return "Hearthstone.exe" in out
+
+
+def hearthstone_running(platform=None):
+    """The game reads this file at startup, so editing it under the game is
+    asking for the change to be ignored (or reverted).
+
+    A machine with no probe at all answers False rather than blocking the
+    player: the edit is still made in place, with the original backed up
+    first, so the worst case is a change the game ignores — not damage.
+    """
+    return _probe(platform) is True
 
 
 def apply(path=None, force=False):

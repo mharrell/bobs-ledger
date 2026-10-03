@@ -119,6 +119,15 @@ draws no icon on a `.cmd`, so the shortcut is the only clickable thing that can 
 one — and it must be created on the user's machine, since a `.lnk` embeds
 absolute paths.
 
+`Start Bob's Ledger.command` is the macOS twin, kept in step by hand. It is
+**unverified**: no Mac has run it, and the packaging machine has no bash to
+even parse it. Platform branches live in `config.py` (client root, launcher
+names, both `Power.log` shapes) and `setup_logging.py` (`log.config` under
+`~/Library/Preferences` on macOS; a `pgrep` probe instead of `tasklist`).
+Dependencies go into a `.venv` rather than `--user`, because Homebrew's Python
+refuses system-wide installs (PEP 668) — and the Windows launcher already
+prefers a venv, so both use the same one.
+
 ## Hazards worth remembering
 
 - `publish_release.py` walks the WORKING TREE, not git: an untracked scratch

@@ -39,6 +39,7 @@ from value import (_load_bg_names, _load_card_db, _load_spell_db,
                    HAND_DEPLOY_KITS, hand_engine, sell_reason)
 import pool
 import meta
+import config
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -1456,9 +1457,9 @@ def welcome_payload():
         "status": "Waiting for your next buy phase — advice appears here the "
                   "moment your shop opens.",
         "hint": "Never seen advice? Hearthstone only writes the log this reads "
-                "when file logging is ON. Run Start Bob's Ledger.cmd again and "
+                f"when file logging is ON. Run {config.launcher()} again and "
                 "say yes to let it turn that on for you — or put this in "
-                "%LocalAppData%\\Blizzard\\Hearthstone\\log.config yourself "
+                f"{config.config_hint()} yourself "
                 "(create the file if it is not there):",
         # The block live.py's console message has always claimed this card
         # shows.

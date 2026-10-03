@@ -40,6 +40,8 @@ import sys
 import urllib.request
 import zipfile
 
+from config import LAUNCHERS  # noqa: E402 - config.py, beside this file
+
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -245,6 +247,16 @@ def apply_zip(data, root=None):
                     pass
             with z.open(info) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
+            if rel in LAUNCHERS and os.name == "posix":
+                # zipfile does not restore permissions on extract, so a
+                # launcher that arrived with a mode in the zip would still land
+                # non-executable here — and a Mac player cannot double-click a
+                # .command without +x. Applying the mode is our job, not the
+                # archiver's.
+                try:
+                    os.chmod(target, 0o755)
+                except OSError:
+                    pass
             written += 1
     return written
 
@@ -268,8 +280,11 @@ _MOVES_INTO_APP = ("decision_logs", "corpus_out", ".review_cache", "img_cache",
                    ".trinkets_guides_cache.json", "comp_candidates.json")
 #: Root entries a reshape must never delete: the new layout uses them too, or
 #: they are the player's own.
-_KEEP_AT_ROOT = {"README.md", "LICENSE", "docs", "Start Bob's Ledger.cmd",
-                 "VERSION", ".update_state.json", "Bob's Ledger.lnk", "app"}
+_KEEP_AT_ROOT = {"README.md", "LICENSE", "docs",
+                 "VERSION", ".update_state.json", "Bob's Ledger.lnk", "app",
+                 # Every zip carries both launchers, and a reshape must not
+                 # eat the one this platform actually starts.
+                 *LAUNCHERS}
 
 
 def _app_dir():
