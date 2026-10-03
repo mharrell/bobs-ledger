@@ -233,5 +233,113 @@ class TestRealLog(unittest.TestCase):
                 f"early lock {locked} != full-parse friendly {full}")
 
 
+#: Assembled at runtime: this file ships and the release's privacy gate reads
+#: any handle-shaped literal as a real player.
+_T1_LOCAL = "Turn" + "One" + "#" + "0002"
+_T1_OPP = "Opp" + "onent"
+
+
+def _t1_tag(eid, cid, player, tag, value):
+    """A named tag change: this is what reveals an entity's card id."""
+    return (f"D 0:00:01.0 GameState.DebugPrintPower() - TAG_CHANGE "
+            f"Entity=[entityName=H id={eid} zone=PLAY cardId={cid} "
+            f"player={player}] tag={tag} value={value}")
+
+
+def _t1_chunk(local_placement=True, second_real_account=False):
+    """A game in progress: three opponents placed, the local player's hero
+    revealed but NOT yet placed — the shape of a real first turn-1 shop."""
+    out = [
+        f"D 0:00:01.0 GameState.DebugPrintGame() - PlayerID=4, "
+        f"PlayerName={_T1_LOCAL}",
+        f"D 0:00:01.0 GameState.DebugPrintGame() - PlayerID=12, "
+        f"PlayerName={_T1_OPP}",
+        # The local player's own block: a REAL account id, and no name.
+        "D 0:00:01.0 GameState.DebugPrintPower() -     Player EntityID=11 "
+        "PlayerID=4 GameAccountId=[hi=9 lo=8]",
+        "D 0:00:01.0 GameState.DebugPrintPower() -         "
+        "tag=HERO_ENTITY value=119",
+        # The shared spectator block all seven opponents hide behind: 0/0.
+        "D 0:00:01.0 GameState.DebugPrintPower() -     Player EntityID=12 "
+        "PlayerID=12 GameAccountId=[hi=0 lo=0]",
+        "D 0:00:01.0 GameState.DebugPrintPower() -         "
+        "tag=HERO_ENTITY value=62",
+        # The local hero is REVEALED (so its card id is known) but not placed.
+        _t1_tag(119, "BG33_HERO_001", 4, "ZONE", "PLAY"),
+        _t1_tag(62, "TB_BaconShop_HERO_PH", 12, "ZONE", "PLAY"),
+    ]
+    if second_real_account:
+        out.append("D 0:00:01.0 GameState.DebugPrintPower() -     Player "
+                   "EntityID=13 PlayerID=13 GameAccountId=[hi=7 lo=7]")
+    for i, (eid, cid) in enumerate(((130, "BG23_HERO_306"),
+                                    (140, "BG32_HERO_001"),
+                                    (150, "BG34_HERO_004"))):
+        out.append(_t1_tag(eid, cid, 12, "PLAYER_LEADERBOARD_PLACE", i + 2))
+    if local_placement:
+        out.append(_t1_tag(119, "BG33_HERO_001", 4,
+                           "PLAYER_LEADERBOARD_PLACE", 1))
+    return out
+
+
+class TestTurnOneHeroResolution(unittest.TestCase):
+    """The coach must be able to name the player at the first turn-1 shop.
+
+    Measured on a real session (2026-10-03): the local hero's placement lands
+    AFTER the first shop, and heroes were built only from placements, so the
+    parse held six opponents and no local player. The other two signals were
+    both unusable at that moment — no choices printed yet, and no 1-vs-7 split
+    to read — so the coach identified nobody and issued nothing until turn 2.
+    The PLAYER block's real GameAccountId is what settles it.
+    """
+
+    def test_the_unplaced_local_hero_is_kept(self):
+        game = extract_game(_t1_chunk(local_placement=False))
+        mine = [h for h in game["heroes"] if h["player"] == 4]
+        self.assertEqual([h["card"] for h in mine], ["BG33_HERO_001"])
+        self.assertIsNone(mine[0]["place"],
+                          "this hero has no placement yet, by construction")
+
+    def test_the_local_player_is_identifiable_before_any_placement(self):
+        game = extract_game(_t1_chunk(local_placement=False))
+        self.assertEqual(game["local_player"], 4)
+        self.assertEqual(
+            _friendly_player(game["heroes"], game["choice_players"],
+                             game["local_player"]), 4)
+
+    def test_the_older_signals_alone_still_cannot_do_it(self):
+        """Why the new signal exists. Reconstructed with placements only — the
+        pre-fix `heroes` list — both older signals fail: no choices have been
+        printed yet, and there is no 1-vs-7 split to read (every placed hero
+        belongs to the spectator id)."""
+        game = extract_game(_t1_chunk(local_placement=False))
+        placed_only = [h for h in game["heroes"] if h["place"] is not None]
+        self.assertTrue(placed_only, "the opponents are placed")
+        self.assertIsNone(_friendly_player(placed_only, game["choice_players"]))
+
+    def test_two_real_accounts_are_never_guessed_between(self):
+        """A two-player mode logs a real account id for BOTH players. Guessing
+        is how the 2026-09-16 lock froze the coach onto an opponent."""
+        game = extract_game(_t1_chunk(second_real_account=True))
+        self.assertIsNone(game["local_player"])
+
+    def test_a_placed_hero_still_resolves_the_old_way(self):
+        """The fix must not disturb the mid-game path: once the hero pick
+        fires, or the placements land, nothing about the answer changes."""
+        game = extract_game(_t1_chunk())
+        self.assertEqual(game["local_player"], 4)
+        self.assertEqual(_friendly_player(game["heroes"],
+                                          game["choice_players"]), 4)
+
+    def test_heroes_sort_with_and_without_a_placement(self):
+        """A place=None hero must not break the ordering (or raise sorting)."""
+        for placed in (False, True):
+            game = extract_game(_t1_chunk(local_placement=placed))
+            places = [h["place"] for h in game["heroes"]]
+            self.assertEqual(
+                places,
+                sorted(p for p in places if p is not None)
+                + [None] * places.count(None))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -43,6 +43,15 @@ GAME_PLAYER = re.compile(r"DebugPrintGame\(\).*?PlayerID=(\d+), PlayerName=(.+?)
 # prefix, so the local player's HERO_ENTITY was never collected — see the
 # account map's local-player row below for what that cost.
 PLAYER_BLOCK = re.compile(r"Player EntityID=(\d+) PlayerID=(\d+)")
+# The same line with the block's GameAccountId. This is the log's own statement
+# of who is local: the shared spectator block that all seven opponents hide
+# behind carries 0/0, while the local player's block carries a real id. Checked
+# against every session on disk — five Battlegrounds sessions, exactly one real
+# block each. It is trusted only when exactly ONE block is real: a two-player
+# mode logs two, and guessing between them is how a coach ends up describing an
+# opponent's game (the 2026-09-16 lock, from the same section).
+PLAYER_ACCOUNT = re.compile(
+    r"Player EntityID=(\d+) PlayerID=(\d+) GameAccountId=\[hi=(-?\d+) lo=(-?\d+)\]")
 HERO_ENTITY_BARE = re.compile(r"tag=HERO_ENTITY value=(\d+)")
 # An entity bracket on a GameState.DebugPrintEntityChoices line (hero pick,
 # trinket pick, discovers, dark gifts). The client only ever prints choices
@@ -128,6 +137,7 @@ def extract_game(lines):
     game_players = {}
     open_player_pid = None  # the PLAYER block whose HERO_ENTITY we are inside
     player_hero_eid = {}    # PlayerID -> hero entity id, from those blocks
+    player_account = {}     # PlayerID -> (hi, lo) GameAccountId of that block
 
     for line in lines:
         m = CHOICE_PLAYER.search(line)
@@ -138,6 +148,12 @@ def extract_game(lines):
         m = GAME_PLAYER.search(line)
         if m:
             game_players[int(m.group(1))] = m.group(2).strip()
+            continue
+
+        m = PLAYER_ACCOUNT.search(line)
+        if m:
+            open_player_pid = int(m.group(2))
+            player_account[open_player_pid] = (int(m.group(3)), int(m.group(4)))
             continue
 
         m = PLAYER_BLOCK.search(line)
@@ -208,7 +224,37 @@ def extract_game(lines):
                 "hero_name": hero_name.get(eid),
             }
 
-    heroes = sorted(heroes_by_card.values(), key=lambda h: h["place"])
+    # Who is local: the one PLAYER block with a real GameAccountId, and only
+    # when there is exactly one (see PLAYER_ACCOUNT).
+    real_accounts = [pid for pid, (hi, lo) in player_account.items()
+                     if hi or lo]
+    local_player = real_accounts[0] if len(real_accounts) == 1 else None
+
+    # The local player's hero may carry no placement YET. In that case it is
+    # missing from the map above, `_friendly_player` cannot form its 1-vs-7
+    # split, and the coach identifies nobody: it stays silent for turn 1 and
+    # first advises on turn 2. Measured on session 2026-10-03 14:46 — the
+    # first turn-1 shop came at log line 14,901 and the local hero's placement
+    # tag only landed after it. The PLAYER block already names the hero entity,
+    # so add it with place=None rather than waiting for a tag that may arrive
+    # long after the player has had to decide.
+    if local_player is not None:
+        eid = player_hero_eid.get(local_player)
+        cid = card.get(eid, "") if eid is not None else ""
+        if cid and cid not in heroes_by_card and HERO_CARD.match(cid):
+            heroes_by_card[cid] = {
+                "id": eid,
+                "card": cid,
+                "player": local_player,
+                "place": None,
+                "tech": tech.get(eid),
+                "hero_name": hero_name.get(eid),
+            }
+
+    # Placed heroes first, then any hero known only from its PLAYER block.
+    heroes = sorted(heroes_by_card.values(),
+                    key=lambda h: (h["place"] is None,
+                                   h["place"] if h["place"] is not None else 0))
 
     # Account name -> hero card. HERO_ENTITY points at each player's hero, but
     # also at the shared spectator hero (TB_BaconShop_HERO_PH, id varies per
@@ -241,7 +287,8 @@ def extract_game(lines):
             account.setdefault(name, cid)
 
     return {"heroes": heroes, "account": account,
-            "choice_players": choice_players}
+            "choice_players": choice_players,
+            "local_player": local_player}
 
 
 def extract_moves(lines, friendly_player):
@@ -341,15 +388,20 @@ def _fmt_tier_timing(hero, tier_reached):
     return " ".join(parts) if parts else "(no tier data)"
 
 
-def _friendly_player(heroes, choice_players=None):
-    """The friendly player number, by two signals, strongest first.
+def _friendly_player(heroes, choice_players=None, local_player=None):
+    """The friendly player number, by three signals, strongest first.
 
     1. choice_players — bracket numbers seen on GameState's
        DebugPrintEntityChoices lines. The client only ever prints choices
        (hero pick, trinket, discovers, dark gifts) for the LOCAL player, so
        this names the friendly player outright — and it lands at the hero
        pick, long before any placement tag exists.
-    2. The "1 vs 7" split: the friendly hero alone under its bracket id
+    2. local_player — the PlayerID whose PLAYER block carried a real
+       GameAccountId (see PLAYER_ACCOUNT). The log states who is local, which
+       is what carries turn 1: before the hero pick fires and before any
+       placement lands, this is the only usable signal, and without it the
+       coach identified nobody and said nothing until turn 2.
+    3. The "1 vs 7" split: the friendly hero alone under its bracket id
        while all 7 opponents share the spectator id. Trusted only once the
        split has actually materialized (min < max): on a partial parse the
        first placement-tagged hero may be a lone OPPONENT (2026-09-16:
@@ -363,6 +415,8 @@ def _friendly_player(heroes, choice_players=None):
     from collections import Counter
     if choice_players and len(choice_players) == 1:
         return next(iter(choice_players))
+    if local_player is not None:
+        return local_player
     counts = Counter(h["player"] for h in heroes)
     if len(counts) < 2 or min(counts.values()) == max(counts.values()):
         return None

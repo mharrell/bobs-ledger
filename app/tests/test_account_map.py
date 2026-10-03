@@ -43,9 +43,13 @@ def _hero(eid, cid, player, place):
             f"player={player}] tag=PLAYER_LEADERBOARD_PLACE value={place}")
 
 
-def _player_block(eid, pid):
+def _player_block(eid, pid, real=True):
+    """A PLAYER block. Only the local player carries a real account id; the
+    shared spectator block that all seven opponents hide behind is 0/0, which
+    is what makes the local player identifiable before any placement lands."""
+    acct = "[hi=1 lo=2]" if real else "[hi=0 lo=0]"
     return (f"D 0:00:01.0 GameState.DebugPrintPower() -     Player "
-            f"EntityID={eid} PlayerID={pid} GameAccountId=[hi=1 lo=2]")
+            f"EntityID={eid} PlayerID={pid} GameAccountId={acct}")
 
 
 def _bare_hero_entity(eid):
@@ -63,7 +67,7 @@ def _fixture():
         f"PlayerName={SPECTATOR_NAME}",
         # Their PLAYER blocks — unnamed — carrying HERO_ENTITY.
         _player_block(11, 4), _bare_hero_entity(119),
-        _player_block(12, 12), _bare_hero_entity(62),
+        _player_block(12, 12, real=False), _bare_hero_entity(62),
         _hero(119, PLAYER_HERO, 4, 1),
         # The spectator's HERO_ENTITY points at the placeholder, as in the log.
         _hero(62, PLACEHOLDER_HERO, 12, 8),

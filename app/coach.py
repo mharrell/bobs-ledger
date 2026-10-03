@@ -45,7 +45,8 @@ def analyze(path, game_index=1):
     chunk = lines[start:end]
 
     game = extract_game(chunk)
-    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"),
+                                game.get("local_player"))
     friendly_hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
     if friendly_hero is None:
         # A truncated or rotated log loses the hero block; without this the
