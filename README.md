@@ -19,6 +19,11 @@ question to price, not a verdict.
 No account access, no game modification — it only reads log files that
 Hearthstone writes on your disk.
 
+<img src="docs/decide.png" alt="The overlay's Decide pane mid-game: DO THIS NOW gives one buy with its reason, and the level step says to level only after that buy" width="560">
+
+*The Decide pane mid-game: the one move, the reason, and the numbers behind
+it. Everything below is what the rest of the overlay adds.*
+
 ## What you need
 
 - Windows (the log paths default to a standard Windows Hearthstone install;
@@ -189,6 +194,12 @@ Reference pane:
   are still being read from the shop rolls (~turn 3-5), every comp stays
   listed with not-yet-confirmed tribes dimmed, and the ban-picker chips
   let you set the banned tribes by hand from the reveal screen.
+
+<img src="docs/trinkets.png" alt="A trinket pick: each option shown with its pick rate and average placement for this board, then the numbered recommendation" width="560">
+
+*Choose 1 during a trinket pick: every option priced by pick rate and
+average placement for the board you actually have, then the one to take.
+Picks with no data say so instead of pretending to rank.*
 
 ## Coach vocabulary
 
