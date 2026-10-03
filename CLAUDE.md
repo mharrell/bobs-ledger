@@ -8,15 +8,36 @@ optional maintainer tool for patch-note extraction, and `compare_models.py`
 is a model-comparison harness. Neither is imported by `live.py`,
 `live_coach.py`, `value.py` or `coach_ui.py`, and neither ships in a release.
 
-This repository is the product: the code sits at the root, and the release zip
-is this tree minus the maintainer-only parts (`analysis/`, `telemetry/`,
-`CLAUDE.md`, the LLM tools and caches).
+This repository is the product, and the release zip is this tree minus the
+maintainer-only parts (`analysis/`, `telemetry/`, `CLAUDE.md`, `DESIGN.md`,
+`ROADMAP.md`, the LLM tools and the caches).
+
+## Layout
+
+**The code lives in `app/`, not at the root.** The root keeps the launcher,
+`README.md`, `LICENSE` and `docs/`, so someone who unzips a release sees the
+thing to click and the documents — and nothing else. The zip mirrors the repo
+(it walks the working tree), with `VERSION` and `.update_state.json` written at
+the zip ROOT: that directory is what `update.py` resolves as the install root,
+one level above the code.
+
+- Suite: `python -m unittest discover -s app/tests` (from the repo root).
+- `app/meta/`, `app/img_cache/`, `app/decision_logs/`, `app/patch_reports/`:
+  the code derives all of these from its own directory, so they moved with it.
+- `analysis/` (research notes, some naming real opponents) and `telemetry/`
+  (the release channel itself) stay at the root and never ship. Maintainer
+  tools that read `analysis/` therefore resolve `dirname(_HERE)/analysis` —
+  deriving it from `_HERE` alone silently turned the patch-coverage gate into
+  a no-op.
+- Installs from before the move are reshaped on update by
+  `update.py::migrate_flat_layout`: local data moves into `app/`, the old loose
+  files are removed, and anything unrecognised at the root is left alone.
 
 ## Worktree discipline
 
 - Code work happens in git worktrees under `.claude/worktrees/`. **Main is the
   only truth; origin is backup. If it's not in main, it's not done.**
-- Every session that touched code ends with `python sync.py` (commit + merge
+- Every session that touched code ends with `python app/sync.py` (commit + merge
   into main + push) — or ends by explicitly reporting "branch X, N commits,
   NOT merged".
 - Branch from FRESH main. Starting from a stale base is how the same bug got
@@ -33,7 +54,9 @@ is this tree minus the maintainer-only parts (`analysis/`, `telemetry/`,
   (use the documented placeholders).
 - **The update join.** `VERSION` + `.update_state.json` are stamped into each
   release and are what let a zip install be told a newer release exists.
-  `update.py::_install_root` tolerates the flat layout and the old nested one.
+  `update.py::_install_root` prefers whichever directory holds a `VERSION`, so
+  the code can sit one level below the stamps (the `app/` layout) without the
+  extraction landing in the wrong place.
 - **The two publish gates.** They have deliberate overrides; using one should
   be a decision, never a convenience.
 
@@ -68,7 +91,7 @@ Maintainer: `doctor.py` (one-shot pre-flight verdict — start here),
 
 ## Release & first run
 
-`python publish_release.py --note "..."` builds the zip, runs both gates, and
+`python app/publish_release.py --note "..."` builds the zip, runs both gates, and
 PUTs it plus the manifest to the collector's KV namespace (the collector lives
 in `telemetry/`, deployed at `bobs-ledger.workers.dev`; the same URL serves
 every release, so installed copies keep updating). `--dry-run` runs the gates
@@ -76,8 +99,8 @@ without uploading.
 
 Users start with `Start Bob's Ledger.cmd` at the zip root: it finds Python,
 asks before installing `requests`, reports the log folder, offers a Desktop
-shortcut wearing `bobs-ledger.ico`, and runs `live.py --open`. Windows draws
-no icon on a `.cmd`, so the shortcut is the only clickable thing that can wear
+shortcut wearing `app/bobs-ledger.ico`, and runs `app\live.py --open`. Windows
+draws no icon on a `.cmd`, so the shortcut is the only clickable thing that can wear
 one — and it must be created on the user's machine, since a `.lnk` embeds
 absolute paths.
 

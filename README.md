@@ -53,9 +53,10 @@ release channel for a new version (disable with `--no-update`).
 always at <https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip>.)
 
 **2. Unzip it somewhere you can write** — Desktop or Documents are ideal.
-There is no installer and nothing to build. (Not `C:\Program Files`: Windows
-won't let the coach keep its card-art cache there, so the overlay would run
-without art.)
+There is no installer and nothing to build. The program is tucked into `app/`,
+so the folder shows only the launcher, this README, the licence and `docs/`.
+(Not `C:\Program Files`: Windows won't let the coach keep its card-art cache
+there, so the overlay would run without art.)
 
 **3. Double-click `Start Bob's Ledger.cmd`** in the folder you unzipped. That
 is the whole install:
@@ -77,8 +78,8 @@ start checks the release channel and offers a newer version if there is one
 
 ```
 cd <the folder you unzipped>
-python -m pip install -r requirements.txt
-python live.py
+python -m pip install -r app\requirements.txt
+python app\live.py
 ```
 
 ### Working on the code
@@ -88,7 +89,7 @@ git clone https://github.com/mharrell/bobs-ledger
 ```
 
 A clone is never auto-updated — commit shas can't prove which side is newer,
-so the update check stands aside; update with `git pull`. `python live.py
+so the update check stands aside; update with `git pull`. `python app\live.py
 --version` prints what you're running either way.
 
 ## Quick start
@@ -133,9 +134,9 @@ Once the launcher has run, there are two things between you and real advice.
    downstream is trustworthy. If it stays on "Waiting for live.py analysis…",
    see [Troubleshooting](#troubleshooting).
 
-Useful flags, if you run it from a terminal: `python live.py <path-to-Power.log>
---poll 0.5` re-analyzes a saved log, `--once` does a single analysis,
-`--no-ui` skips the overlay.
+Useful flags, if you run it from a terminal: `python app\live.py
+<path-to-Power.log> --poll 0.5` re-analyzes a saved log, `--once` does a single
+analysis, `--no-ui` skips the overlay.
 
 ## The overlay, box by box
 
@@ -233,11 +234,11 @@ The meta reference (`meta/*.json`) is a point-in-time snapshot. After a
 game patch:
 
 1. New minions/spells change: run the patch-notes pipeline —
-   `python patch_notes.py` applies official Blizzard patch notes to the
-   meta DB (dry-run by default; `--apply` writes). `python doctor.py`
+   `python app\patch_notes.py` applies official Blizzard patch notes to the
+   meta DB (dry-run by default; `--apply` writes). `python app\doctor.py`
    is the one-command verdict afterwards (patch, coverage, art, newest
    log); it flags anything the refresh missed.
-2. Card art for new cards: re-run `python hearth_art_extract.py` to
+2. Card art for new cards: re-run `python app\hearth_art_extract.py` to
    re-extract art from the local client (needs the optional
    `python -m pip install UnityPy`), or let the overlay fall back to
    HearthstoneJSON — which lags a patch by days; missing art after a
@@ -395,4 +396,8 @@ release zip (its replay reviews name real opponents), so a zip install has
 no `analysis/` directory — that is expected, not a broken install.
 Post-game tools: `replay_review.py` (coach-vs-player
 diff per phase), `replay_stats.py` (replay corpus stats). The test suite:
-`python -m unittest discover -s tests`.
+`python -m unittest discover -s app/tests`.
+
+The program itself lives in `app/`, which is why the folder you unzip shows
+only the launcher, this README, the licence and `docs/`. Command-line tools
+are in there too: `python app\doctor.py`, `python app\update.py --check`.

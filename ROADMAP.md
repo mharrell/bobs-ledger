@@ -43,7 +43,7 @@ winner from loser.
       a stdlib-unittest golden-test suite in `tests/` (hand-built log excerpts
       reproducing the real session log's quirks, plus a skip-if-absent
       integration test on the newest real Power.log). Run
-      `python -m unittest discover -s tests` from the repo root.
+      `python -m unittest discover -s app/tests` from the repo root.
 - [x] **Hardening pass 1 (2026-08-31)**, after a full-project review:
       - Tribe canonicalization: `tribes.py` is now the single vocabulary
         (canonical singular display names; see "Key decisions"). `comps.json`
@@ -397,7 +397,7 @@ tavern-owned) — shop_ranking just silently dropped them.
       headline (with intentions), target comp (pivot to / committing to), state
       strip, level/roll, per-turn triggers, board (golden marks), sell ranking,
       tavern buy ranking ("Buy this"), comps, banned tribes.
-      Run `python live.py` → open `http://127.0.0.1:8747/`.
+      Run `python app\live.py` → open `http://127.0.0.1:8747/`.
 - [x] **Mid-turn updates** (2026-09-01): the monitor used to advise exactly once
       per buy phase and go stale for the rest of the turn. `LiveCoach.
       state_fingerprint()` (gold, tier, board, tavern offers) + a fingerprint
