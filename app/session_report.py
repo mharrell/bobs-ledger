@@ -329,6 +329,17 @@ def write(report, out_dir):
     return path
 
 
+def check(report):
+    """(spec_problems, privacy_findings) for a report dict.
+
+    The same two checks inspect() runs, without going through a file, so the
+    sending path can refuse a report using the identical test a human would
+    run by hand — rather than a lighter one that happens to be convenient.
+    """
+    body = json.dumps(report, ensure_ascii=False)
+    return verify(report, REPORT_SPEC), privacy_scan.find(body)
+
+
 def inspect(path):
     """Is this report safe to send, and does it match the spec?
 
@@ -341,14 +352,12 @@ def inspect(path):
         return 1
     with gzip.open(path, "rt", encoding="utf-8") as f:
         report = json.load(f)
-    body = json.dumps(report, ensure_ascii=False)
     print(f"report: {path} ({os.path.getsize(path) / 1024:.1f} KB)")
     for k, v in report.get("manifest", {}).items():
         print(f"  {k}: {v}")
     print(f"  fields kept per advisory: {len(report['advisories'][0]) if report['advisories'] else 0}")
     print(f"  dropped on purpose: {DROPPED_ON_PURPOSE}")
-    bad = verify(report, REPORT_SPEC)
-    found = privacy_scan.find(body)
+    bad, found = check(report)
     for line in privacy_scan.describe("report", found):
         print(line)
     if bad:
