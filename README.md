@@ -48,9 +48,9 @@ release channel for a new version (disable with `--no-update`).
 
 ## Get it
 
-**1. Download the latest release:** <https://github.com/mharrell/bobs-ledger/releases/latest>
-→ click the `.zip` under Assets. (No GitHub account needed; the same file is
-always at <https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip>.)
+**1. Download it:** <https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip>
+— one link, always the current release, no GitHub account needed. The version
+is in the file name.
 
 **2. Unzip it somewhere you can write** — Desktop or Documents are ideal.
 There is no installer and nothing to build. The program is tucked into `app/`,
