@@ -29,6 +29,21 @@ ENTITY_TAG = re.compile(
 )
 # Entity=<account> tag=HERO_ENTITY value=<id>  (friendly name -> hero entity)
 NAME_HERO = re.compile(r"Entity=([^ ]+) tag=HERO_ENTITY value=(\d+)")
+# The LOCAL player's own name, printed once per game and nowhere else — the
+# DebugPrintGame identity line, which carries a PlayerID and the account name
+# that follows it. (The name is not written out here: this file ships, and the
+# release's privacy gate reads any such field as a real player.)
+# Their PLAYER block carries no name at all, and opponents' names arrive as
+# Entity=<name> in tag changes — so this line is the only place the local
+# player's name appears, and it is exactly the string the purse
+# (RESOURCES / RESOURCES_USED / TEMP_RESOURCES) is keyed by.
+GAME_PLAYER = re.compile(r"DebugPrintGame\(\).*?PlayerID=(\d+), PlayerName=(.+?)\s*$")
+# The PLAYER block that follows it: "Player EntityID=11 PlayerID=4", then its
+# own unnamed "tag=HERO_ENTITY value=119". NAME_HERO requires an Entity=<name>
+# prefix, so the local player's HERO_ENTITY was never collected — see the
+# account map's local-player row below for what that cost.
+PLAYER_BLOCK = re.compile(r"Player EntityID=(\d+) PlayerID=(\d+)")
+HERO_ENTITY_BARE = re.compile(r"tag=HERO_ENTITY value=(\d+)")
 # An entity bracket on a GameState.DebugPrintEntityChoices line (hero pick,
 # trinket pick, discovers, dark gifts). The client only ever prints choices
 # for the LOCAL player, so a player= seen here is the friendly player's
@@ -104,11 +119,30 @@ def extract_game(lines):
     hero_name = {}   # entity id -> entityName (hero display name)
     hero_entity_tags = {}  # account name -> list of hero entity ids (HERO_ENTITY)
     choice_players = set()  # bracket numbers on DebugPrintEntityChoices lines
+    # PlayerID -> PlayerName, from the DebugPrintGame identity lines. There are
+    # TWO of them per game and the second is not the player: the local player's
+    # own line (PlayerID=4, the CURRENT_PLAYER) and one for the shared spectator
+    # id (PlayerID=12) that all seven opponents hide behind, carrying whichever
+    # opponent's name was printed. Both are collected and the hero-entity test
+    # below picks the real one.
+    game_players = {}
+    open_player_pid = None  # the PLAYER block whose HERO_ENTITY we are inside
+    player_hero_eid = {}    # PlayerID -> hero entity id, from those blocks
 
     for line in lines:
         m = CHOICE_PLAYER.search(line)
         if m:
             choice_players.add(int(m.group(1)))
+            continue
+
+        m = GAME_PLAYER.search(line)
+        if m:
+            game_players[int(m.group(1))] = m.group(2).strip()
+            continue
+
+        m = PLAYER_BLOCK.search(line)
+        if m:
+            open_player_pid = int(m.group(2))
             continue
 
         m = ENTITY_TAG.search(line)
@@ -133,6 +167,17 @@ def extract_game(lines):
             name, eid = m.groups()
             hero_entity_tags.setdefault(name, []).append(int(eid))
             continue
+
+        # The local player's HERO_ENTITY has no Entity=<name> prefix (it lives
+        # in the unnamed PLAYER block above), so NAME_HERO cannot see it. Only
+        # accept the bare form inside an open block: a named tag change is
+        # NAME_HERO's job and must not be double-counted here.
+        if open_player_pid is not None and "Entity=" not in line:
+            m = HERO_ENTITY_BARE.search(line)
+            if m:
+                player_hero_eid[open_player_pid] = int(m.group(1))
+                open_player_pid = None
+                continue
 
         m = FULL_ENTITY.search(line)
         if m:
@@ -176,6 +221,24 @@ def extract_game(lines):
             if cid in heroes_by_card:
                 account[name] = cid
                 break
+
+    # The local player's own row. Without it the map holds only the opponents,
+    # so the lookup that resolves the purse — live_coach's
+    # `next(name for name, card in game["account"].items() if card ==
+    # hero_card)` — returns None and every advisory is issued with gold=None.
+    # Measured 2026-10-03: all 212 advisories of a session recorded gold=None
+    # while the player's own purse (RESOURCES - RESOURCES_USED) was known to
+    # board_state, and the plan therefore advised "5. LEVEL" on a turn with
+    # 0 gold left.
+    #
+    # The hero-entity test is what separates the player from the spectator id:
+    # the spectator's HERO_ENTITY points at the placeholder (never a real
+    # hero), so only the player's own line survives it. Picking "the last
+    # identity line" instead picked the spectator and silently did nothing.
+    for pid, name in game_players.items():
+        cid = card.get(player_hero_eid.get(pid, -1), "")
+        if cid in heroes_by_card:
+            account.setdefault(name, cid)
 
     return {"heroes": heroes, "account": account,
             "choice_players": choice_players}
