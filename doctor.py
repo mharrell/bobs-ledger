@@ -109,8 +109,15 @@ def check_art():
     missing_tr = sorted(tids - have)
     label = (f"art: aberration {len(aber) - len(missing_aber)}/{len(aber)}, "
              f"trinkets {len(tids) - len(missing_tr)}/{len(tids)}")
+    if not have:
+        # A release ships no img_cache: art is fetched per card the first
+        # time the overlay shows it. Reporting every id as missing made a
+        # fresh install look broken (2026-10-02).
+        return OK, (f"{label} — nothing cached yet; the overlay fetches "
+                    "each card on first display, so this fills in as "
+                    "you play")
     if missing_tr:
-        return WARN, f"{label} — missing {missing_tr[:3]} (no-carddef ids are expected)"
+        return WARN, f"{label} — missing {missing_tr[:3]}"
     return OK, label
 
 
@@ -213,7 +220,7 @@ def main():
         return 1 if any(v[0] == FAIL for v in checks.values()) else 0
 
     worst = OK
-    print("hearth-coach doctor")
+    print("Bob's Ledger doctor")
     for name, (level, detail) in checks.items():
         if level == FAIL or (level == WARN and worst == OK):
             worst = level
