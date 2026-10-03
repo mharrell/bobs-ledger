@@ -20,6 +20,15 @@ sys.path.insert(0, HERE)
 
 import check_patch_db  # noqa: E402
 
+#: A release ships the coach, not the maintainer's research notes, so
+#: the change list this module audits is legitimately absent there.
+import glob as _glob  # noqa: E402
+_DOCS = _glob.glob(os.path.join(HERE, 'analysis', 'patch_*_changes.md'))
+if not _DOCS:
+    raise unittest.SkipTest(
+        'no analysis/patch_*_changes.md in this install: maintainer docs '
+        'are not shipped')
+
 #: What analysis/patch_3661_changes.md's headings claim (reviewed by hand).
 EXPECTED_COUNTS = {
     "new_minions": 38,

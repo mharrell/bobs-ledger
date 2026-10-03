@@ -144,8 +144,14 @@ def audit(doc_path=None):
     if doc_path is None:
         docs = sorted(glob.glob(os.path.join(ANALYSIS, "patch_*_changes.md")))
         if not docs:
-            return {"problems": ["no analysis/patch_*_changes.md found"],
-                    "sections": {}, "unparsed": [], "accepted": []}
+            # A release ships the coach, not the maintainer's research notes,
+            # so the change list is legitimately absent there. Report it as
+            # N/A instead of a failure: a user running doctor on an installed
+            # copy should not see PROBLEM over a doc that is not supposed to
+            # be there (2026-10-02).
+            return {"problems": [],
+                    "skipped": "no change list in this install "
+                               "(maintainer docs are not shipped)"}
         doc_path = docs[-1]
     with open(doc_path, encoding="utf-8") as f:
         doc = f.read()
@@ -225,6 +231,9 @@ def main():
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 1 if result["problems"] else 0
 
+    if result.get("skipped"):
+        print(f"patch coverage: {result['skipped']}")
+        return 0
     print(f"patch coverage audit: {os.path.basename(result.get('doc') or '?')}")
     for key, names in result["sections"].items():
         print(f"  {key:20} {len(names):3} listed")
