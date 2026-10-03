@@ -14,6 +14,17 @@ import live  # noqa: E402
 from live_coach import LiveCoach  # noqa: E402
 
 
+#: Platform-native on purpose. os.path only splits the separators it knows, so
+#: a hardcoded `C:\x\Power.log` fails these assertions on macOS and Linux for a
+#: reason that is not a bug — the path a real machine hands in is native. One
+#: Windows-only test below keeps the backslash form covered. The session name
+#: is deliberately short (Hearthstone_YYYY_MM_DD, not the full six-part stamp)
+#: so the release's privacy gate does not read it as a real session directory.
+BARE_LOG = os.path.join("x", "Power.log")
+SESSION_LOG = os.path.join("Hearthstone", "Logs", "Hearthstone_2026_01_01",
+                           "Power.log")
+
+
 class _FakeCoach:
     def analyze(self):
         return {"hero": "Test Hero", "tier": 2, "gold": 5, "board": [],
@@ -41,7 +52,7 @@ class TestDecisionLog(unittest.TestCase):
             return [json.loads(l) for l in f if l.strip()]
 
     def test_advise_records_with_join_keys(self):
-        live._advise(_FakeCoach(), force=True, log_path="C:\\x\\Power.log",
+        live._advise(_FakeCoach(), force=True, log_path=BARE_LOG,
                      log_offset=123456, game_no=2)
         entries = self._lines()
         self.assertEqual(len(entries), 1)
@@ -88,15 +99,22 @@ class TestSessionStem(unittest.TestCase):
     PUT a 27 MB bundle carrying every session since 09-04)."""
 
     def test_session_dir_name_wins(self):
+        self.assertEqual(decision_log.session_stem(SESSION_LOG),
+                         "Hearthstone_2026_01_01")
+
+    def test_bare_log_falls_back_to_basename(self):
+        self.assertEqual(decision_log.session_stem(BARE_LOG), "Power.log")
+        self.assertEqual(decision_log.session_stem(None), "unknown")
+
+    @unittest.skipUnless(sys.platform == "win32",
+                         "a backslash path only means one thing on Windows")
+    def test_windows_backslash_paths_resolve_too(self):
         self.assertEqual(
             decision_log.session_stem(
                 r"C:\Hearthstone\Logs\Hearthstone_2026_01_01\Power.log"),
             "Hearthstone_2026_01_01")
-
-    def test_bare_log_falls_back_to_basename(self):
         self.assertEqual(decision_log.session_stem(r"C:\x\Power.log"),
                          "Power.log")
-        self.assertEqual(decision_log.session_stem(None), "unknown")
 
 
 class TestDecisionsForSession(unittest.TestCase):
