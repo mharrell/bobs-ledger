@@ -129,5 +129,88 @@ class TestShareSessionWiring(unittest.TestCase):
                 share.share_session("Power.log", "http://test", True)
 
 
+class TestTheSessionEndBackstop(unittest.TestCase):
+    """The backstop shares only what this run has not already sent.
+
+    A re-built report carries a new `created`, so a duplicate would be a POST
+    the collector refuses (409: same id, different bytes). The rule is cheap to
+    hold and noisy to lose.
+    """
+
+    def setUp(self):
+        import live
+        self.live = live
+        live._shared_games.clear()
+
+    def tearDown(self):
+        self.live._shared_games.clear()
+
+    def _run(self, records, opts=()):
+        sent = []
+
+        def fake_share(log_path, game=None, **kw):
+            sent.append(game)
+            return "sent"
+
+        with mock.patch.object(session_report, "decisions_for",
+                               return_value=records), \
+                mock.patch.object(share, "share_session", fake_share):
+            outcome = self.live._share_finished("Power.log", opts)
+        return sent, outcome
+
+    def test_every_game_of_a_session_is_shared_once(self):
+        records = [_advisory(1), _advisory(2), _advisory(2), _advisory(3)]
+        sent, outcome = self._run(records)
+        self.assertEqual(sent, [1, 2, 3], "one share per game, no repeats")
+        self.assertEqual(outcome, "sent")
+
+    def test_a_second_pass_sends_nothing(self):
+        """The backstop runs on every session switch and at exit."""
+        records = [_advisory(1), _advisory(2)]
+        self._run(records)
+        sent, outcome = self._run(records)
+        self.assertEqual(sent, [])
+        self.assertEqual(outcome, "skipped")
+
+    def test_no_share_sends_nothing_at_all(self):
+        sent, outcome = self._run([_advisory(1)], opts=("--no-share",))
+        self.assertEqual(sent, [])
+        self.assertEqual(outcome, "skipped")
+
+    def test_records_without_a_game_number_fall_back_to_the_session(self):
+        """A legacy record from before the field existed must not become a
+        report for game None, and it must not be dropped either: with no game
+        numbers to work from, the backstop shares the session as a whole, which
+        is what this path did before per-game reports existed."""
+        odd = _advisory(1)
+        odd.pop("game")
+        calls = []
+
+        def fake_share(log_path, game=None, **kw):
+            calls.append(game)
+            return "sent"
+
+        with mock.patch.object(session_report, "decisions_for",
+                               return_value=[odd]), \
+                mock.patch.object(share, "share_session", fake_share):
+            self.live._share_finished("Power.log")
+        self.assertEqual(calls, [None], "one whole-session share, no game")
+
+    def test_a_failure_in_one_game_does_not_stop_the_others(self):
+        sent = []
+
+        def flaky(log_path, game=None, **kw):
+            sent.append(game)
+            if game == 1:
+                raise RuntimeError("network")
+            return "sent"
+
+        with mock.patch.object(session_report, "decisions_for",
+                               return_value=[_advisory(1), _advisory(2)]), \
+                mock.patch.object(share, "share_session", flaky):
+            self.live._share_finished("Power.log")
+        self.assertEqual(sent, [1, 2])
+
+
 if __name__ == "__main__":
     unittest.main()
