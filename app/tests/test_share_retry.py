@@ -33,6 +33,13 @@ import session_report  # noqa: E402
 import share           # noqa: E402
 
 
+#: The session name our fixtures use: the placeholder privacy_scan names as THE
+#: session name fixtures may use. A session directory is a local path, so a
+#: real-looking `Hearthstone_<date>` is a personal-data finding in the publish
+#: gate — correctly, and a fixture has no business inventing one.
+_SESSION_DIR = "Hearthstone_2026_01_01"
+
+
 def _advisory(game, turn=4):
     """One decision record, minimal but shaped like the real ones."""
     return {"schema": 1, "ts": "2026-10-04T11:40:00", "coach_version": "test",
@@ -75,7 +82,7 @@ class ShareLedgerTest(unittest.TestCase):
         # One reply per attempt, and the last one repeats.
         return self.reply[min(len(self.posted), len(self.reply)) - 1]
 
-    def _session(self, name="Hearthstone_2026_10_04_11_36_38", games=(1,)):
+    def _session(self, name=_SESSION_DIR, games=(1,)):
         path = os.path.join(self.tmp.name, name)
         os.makedirs(path, exist_ok=True)
         log = os.path.join(path, "Power.log")
@@ -179,7 +186,7 @@ class ShareLedgerTest(unittest.TestCase):
 
         map_path = os.path.join(share.REPORTS_DIR, ".report_ids.json")
         with open(map_path, encoding="utf-8") as f:
-            report_id = json.load(f)["Hearthstone_2026_10_04_11_36_38#1"]
+            report_id = json.load(f)[_SESSION_DIR + "#1"]
         self.assertTrue(os.path.exists(os.path.join(
             share.REPORTS_DIR, f"report_{report_id}.json.gz")))
 
