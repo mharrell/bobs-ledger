@@ -1,7 +1,7 @@
 {
   "_comment": "Cards the change list names that the meta DB genuinely cannot carry, each with the evidence that closed the question. check_patch_db.py reports these as ACCEPTED and does not fail on them, so a NEW gap still fails the gate instead of the tool being permanently red. Every entry needs a reason AND the evidence that established it - an entry with no evidence is a gap someone talked themselves out of. `seen_not_carried` holds the same kind of entry for cards NO change list names, found instead by the log pre-flight (logquery._unresolved_ids); logquery consults it so the pre-flight stops re-reporting a question that is already answered.",
   "patch": "36.6.1",
-  "updated": "2026-09-23",
+  "updated": "2026-10-04",
   "expected_missing": [
     {
       "kind": "minion",
@@ -26,6 +26,20 @@
       "name": "Blood Golem",
       "reason": "a trinket-SHAPED id that is not a trinket: it is the Golem token BG30_MagicItem_442 (Blood Golem Sticker) summons",
       "evidence": "the client card data gives it an empty description while every real trinket (and every Lesser/Greater `t` variant: BG36_MagicItem_403t, BG36_MagicItem_417t, BG30_MagicItem_914t, BG30_MagicItem_988t) carries text; its name differs from its base's ('Blood Golem' vs 'Blood Golem Sticker') where the Lesser/Greater pairs share a name; and no choice list ever offers it. Carrying it would put a token in the trinket pool, where choices.py ranks picks by trinket effects. tests/test_trinket_meta.py::test_every_trinket_seen_in_a_log_is_in_the_db consults this entry, so a NEW token-shaped id still fails the gate."
+    },
+    {
+      "kind": "battlegrounds_spell_token",
+      "id": "BG33_112t",
+      "name": "Haunted Carapace",
+      "reason": "the spell Carapace Raiser's deathrattle hands over, not a tavern spell the coach can price or buy: it is never in a hand, a shop or on a board",
+      "evidence": "hearthstonejson types it BATTLEGROUND_SPELL (techLevel 3, cost 2) with the placeholder text 'Your minions have +0/+0 until next turn.' - a +0/+0 tier-3 spell is unrevealed data, so there is nothing to price. In the 2026-10-04 session (63 lines naming it) it is created in zone=SECRET (36) and zone=SETASIDE (26) and never once in HAND, PLAY, GRAVEYARD or a shop; six real tavern spells from meta/tavern_spells.json sampled as a control (BG31_880, BG28_503, BG28_810, BG28_897, BG28_966, BG28_512) all appear in PLAY/HAND and never in SECRET, so SECRET is where the engine parks the charge rather than where a player holds a card. Its base id BG33_112 appears in no log at all. tavern_spells.json feeds shop pricing and every entry must carry a curated read (tests/test_spells.py::test_all_spells_annotated), so carrying it would mean inventing a tier and an effect read for a card the log never shows being held or played. The pre-flight keeps reporting it until this entry exists."
+    },
+    {
+      "kind": "battlegrounds_treasure",
+      "id": "BGS_Treasures_014",
+      "name": "The Unlimited Coin",
+      "reason": "a Battlegrounds TREASURE, and the DB has no section for that family: not a pool minion, not a shop-priced tavern spell, not a trinket",
+      "evidence": "hearthstonejson gives it type SPELL (techLevel 2, cost 0, 'Gain 1 Gold. Return this to your hand at end of turn.') and the id prefix BGS_Treasures_* (50 such ids in the card DB, 34 of whose names nothing in meta/ carries). This is NOT a missing Dark Gift: all 43 entries in meta/dark_gifts.json resolve to BG36_MidGameEffect_* ids, a different family. It reached the pre-flight because it does enter the hand - 18 lines in the 2026-10-04 session, zone=SETASIDE (15) and zone=HAND (2). The three files logquery._load_names reads (minions.json, tavern_spells.json, trinkets.json) are the pool minions, the shop-priced tavern spells and the trinkets; a cost-0 treasure that is never bought belongs to none of them, and tavern_spells.json additionally gates on a curated read per entry (tests/test_spells.py::test_all_spells_annotated), so carrying it there means inventing an effect read for a card that cannot be bought. What this entry does NOT fix: while the treasure sits in hand the overlay can still render the raw id. Closing that cosmetically means either a treasures section or teaching logquery._load_names about the family - a decision, not a guess."
     }
   ],
   "out_of_scope": [
@@ -67,6 +81,13 @@
       "id": "BGFYM_002t",
       "was": "a summoned TOKEN with no card data anywhere on this machine, so the DB cannot carry it and it is not a pool minion",
       "resolution": "named from the log itself (entityName=Aberrant Tentacle cardId=BGFYM_002t, 2026-09-24 evening session; HEALTH 2, TAUNT, ABERRATION - the log prints no ATK) and carried in meta/minions.json as a 0-cost token: it sits on boards and gets sold, so the Sell row and replay review must not print the raw id. Goldens (BGFYM_002t_G) resolve by base-strip in the review path."
+    },
+    {
+      "kind": "minion_non_pool",
+      "name": "Timewarped Poet",
+      "id": "BG34_Giant_314",
+      "was": "flagged by the pre-flight as an unnamed id in the newest game (2026-10-04, 5 unresolved ids)",
+      "resolution": "CARRIED in meta/minions.json by hand on 2026-10-04 (t5, 6/7, Dragon) even though it is not a pool minion: it is granted by Poet Portrait (BG32_MagicItem_364) rather than bought, which is why extend_pool.py's id-shape filter excludes the whole BG34_Giant_* Timewarp family. Carrying it is safe because minions.json is an id-KEYED LOOKUP in both consumers (value._load_card_db builds {id: card}, pool._tier_map builds {id: tier}) and shop candidates come from the log, so a non-pool row can never be offered. Carried rather than registered as a gap for the reason the Aberrant Tentacle entry records: the log shows it in zone=PLAY in 360 lines of the newest session, so it sits on boards and can be sold, and the Sell row and replay review must name it."
     }
   ]
 }

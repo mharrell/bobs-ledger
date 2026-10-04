@@ -31,6 +31,9 @@ payoffs that count them.
   murloc Venomous. One poison answer buys the scaling time.
 - **Expert Aviator** (t2) — Rally: summon the highest-Attack minion from your
   hand for the combat — an early tempo bridge while the engine comes online.
+  The 2026-10-04 tier list dropped it from this comp's core (Hackerfin and
+  Kelp Keeper took its place), so it is a bridge to hold if it lands, not a
+  card to hunt.
 
 ## Traps / anti-patterns
 

@@ -357,5 +357,51 @@ class TestPoolIdFamilies(unittest.TestCase):
         self.assertIn("BG26_350", ids, "Bassgill was rendered raw in play")
 
 
+class TestPoolTierHealing(unittest.TestCase):
+    """A tier heal must not erase the marker that says why a row exists.
+
+    `extend_pool.py` fills a null tier from the card DB's techLevel, and it
+    used to stamp `auto_added` unconditionally while doing it — which replaced
+    the hand-written provenance of exactly the rows it healed. Aberrant
+    Tentacle's marker records why the row is there at all ("the player sold one
+    from board and the Sell row printed the raw id"), and the 2026-10-04 run
+    overwrote it with the tool's generic string.
+    """
+
+    MARKER = ("from session logs (2026-09-24 evening review: the player sold "
+              "one from board and the Sell row printed the raw id)")
+
+    def test_heal_fills_a_null_tier_from_the_card_db(self):
+        import extend_pool
+        pool = [{"id": "X", "tier": None}]
+        self.assertEqual(extend_pool.heal_tiers(pool, {"X": {"techLevel": 4}}), 1)
+        self.assertEqual(pool[0]["tier"], 4)
+
+    def test_heal_keeps_a_hand_written_marker(self):
+        import extend_pool
+        pool = [{"id": "BGFYM_002t", "tier": None, "auto_added": self.MARKER}]
+        extend_pool.heal_tiers(pool, {"BGFYM_002t": {"techLevel": 1}})
+        self.assertEqual(pool[0]["auto_added"], self.MARKER)
+        self.assertEqual(pool[0]["tier"], 1, "the heal must still happen")
+
+    def test_heal_stamps_a_row_that_has_no_marker(self):
+        import extend_pool
+        pool = [{"id": "Y", "tier": None}]
+        extend_pool.heal_tiers(pool, {"Y": {"techLevel": 2}})
+        self.assertEqual(pool[0]["auto_added"], "from session logs (extend_pool.py)")
+
+    def test_a_row_with_a_tier_is_untouched(self):
+        import extend_pool
+        pool = [{"id": "Z", "tier": 3, "auto_added": "hand"}]
+        self.assertEqual(extend_pool.heal_tiers(pool, {"Z": {"techLevel": 6}}), 0)
+        self.assertEqual((pool[0]["tier"], pool[0]["auto_added"]), (3, "hand"))
+
+    def test_a_card_the_db_does_not_know_is_left_alone(self):
+        import extend_pool
+        pool = [{"id": "Q", "tier": None}]
+        self.assertEqual(extend_pool.heal_tiers(pool, {}), 0)
+        self.assertIsNone(pool[0]["tier"])
+
+
 if __name__ == "__main__":
     unittest.main()

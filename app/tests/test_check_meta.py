@@ -6,6 +6,7 @@ import sys
 import unittest
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, HERE)
 
 
 class TestCheckMeta(unittest.TestCase):
@@ -44,6 +45,64 @@ class TestCheckMeta(unittest.TestCase):
                 cwd=tmp, capture_output=True, text=True, encoding="utf-8")
             self.assertEqual(r.returncode, 1,
                              "off-vocabulary comp tribe not caught")
+
+
+class TestGuideTierClaim(unittest.TestCase):
+    """A guide's provenance line quotes a tier, and the tier list moves.
+
+    The 2026-10-04 refresh left three guides claiming a tier that no longer
+    existed (`mechs-apm-magnetic` A->S, `murlocs-keyword` S->A,
+    `aberrations-deathrattle-spells` S->B). All three were found by hand; this
+    is the check that finds the fourth one.
+    """
+
+    def _run_with_mutated_meta(self, mutate):
+        """Copy meta/ to a tempdir, mutate comps.json there, run check_meta."""
+        import json
+        import shutil
+        import tempfile
+        comps_path = os.path.join(HERE, "meta", "comps.json")
+        with open(comps_path, encoding="utf-8") as f:
+            comps = json.load(f)
+        mutate(comps)
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(os.path.join(HERE, "meta"), os.path.join(tmp, "meta"))
+            for fn in ("check_meta.py", "tribes.py"):
+                shutil.copy(os.path.join(HERE, fn), os.path.join(tmp, fn))
+            with open(os.path.join(tmp, "meta", "comps.json"), "w",
+                      encoding="utf-8") as f:
+                json.dump(comps, f, indent=2, ensure_ascii=False)
+            return subprocess.run(
+                [sys.executable, "check_meta.py"],
+                cwd=tmp, capture_output=True, text=True, encoding="utf-8")
+
+    def test_a_guide_claiming_a_moved_tier_is_reported(self):
+        """Warning, not error: stale provenance is not broken data — but it
+        must be SAID, and the message has to name the comp and the guide."""
+        def mutate(comps):
+            # the guide claims S; make the comp a B behind its back
+            comp = comps["mechs-apm-magnetic"]
+            self.assertEqual(comp["meta_tier"], "S", "fixture stale")
+            comp["meta_tier"] = "B"
+        r = self._run_with_mutated_meta(mutate)
+        self.assertEqual(r.returncode, 0, f"a stale guide must not gate:\n{r.stderr}")
+        self.assertIn("mechs-apm-magnetic", r.stderr)
+        self.assertIn("still claims", r.stderr)
+        self.assertIn("guides/mechs-apm-magnetic.md", r.stderr)
+
+    def test_a_guide_that_is_not_there_is_reported(self):
+        def mutate(comps):
+            comps["menagerie"]["guide"] = "guides/does-not-exist.md"
+        r = self._run_with_mutated_meta(mutate)
+        self.assertEqual(r.returncode, 0)
+        self.assertIn("names a guide that is not there", r.stderr)
+
+    def test_the_committed_guides_and_tiers_agree_today(self):
+        """The check has to start green, or it is noise nobody reads."""
+        import check_meta
+        warnings = []
+        check_meta._guide_problems(check_meta._load("comps.json"), warnings)
+        self.assertEqual(warnings, [])
 
 
 if __name__ == "__main__":

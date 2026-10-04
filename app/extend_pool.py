@@ -71,6 +71,32 @@ def cards_full():
         return {c.get("id"): c for c in json.load(f)}
 
 
+def heal_tiers(pool, cards):
+    """Fill tier=null from the card DB's techLevel. Returns how many changed.
+
+    Pool minions added before techLevel was filled in carry tier=null, which
+    breaks buy-price affordability (tier IS the price).
+
+    `auto_added` is stamped ONLY on a row that has no marker. The tool used to
+    stamp it unconditionally, which silently replaced the hand-written
+    provenance of rows it healed — Aberrant Tentacle's marker records why the
+    row exists at all ("the player sold one from board and the Sell row printed
+    the raw id"), and the 2026-10-04 run replaced it with this tool's generic
+    string. (Passing `cards` in, rather than calling cards_full() per row, also
+    stops re-parsing the ~36k-entry card DB once per null-tier row.)
+    """
+    healed = 0
+    for m in pool:
+        if m.get("tier") is None:
+            card = cards.get(m.get("id"))
+            if card and card.get("techLevel") is not None:
+                m["tier"] = card["techLevel"]
+                if not m.get("auto_added"):
+                    m["auto_added"] = "from session logs (extend_pool.py)"
+                healed += 1
+    return healed
+
+
 def main():
     do_apply = "--apply" in sys.argv[1:]
     with open(POOL, encoding="utf-8") as f:
@@ -80,14 +106,8 @@ def main():
     missing = sorted(seen - known)
     # Heal tier drift too: pool minions added before techLevel was filled in
     # carry tier=null, which breaks buy-price affordability (tier IS the price).
-    healed = 0
-    for m in pool:
-        if m.get("tier") is None:
-            card = cards_full().get(m.get("id"))
-            if card and card.get("techLevel") is not None:
-                m["tier"] = card["techLevel"]
-                m["auto_added"] = "from session logs (extend_pool.py)"
-                healed += 1
+    cards = cards_full()
+    healed = heal_tiers(pool, cards)
     if healed:
         print(f"tier healed for {healed} minion(s) from .cards_full.json")
     if not missing:
@@ -99,7 +119,6 @@ def main():
         else:
             print("pool is complete for recent logs — nothing to add")
         return 0
-    cards = cards_full()
     additions = []
     for cid in missing:
         card = cards.get(cid)

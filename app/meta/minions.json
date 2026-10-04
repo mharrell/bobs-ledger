@@ -4742,7 +4742,7 @@
   "auto_added": "from session logs (extend_pool.py)"
  },
  {
-  "tier": null,
+  "tier": 1,
   "id": "BGFYM_002t",
   "name": "Aberrant Tentacle",
   "cost": 0,
@@ -4766,5 +4766,81 @@
   "health": 12,
   "text": "Whenever you cast a Tavern spell, give your minions and Deity +4/+3.",
   "auto_added": "36.6.1 additions 2026-09-27 (hsjson; techLevel 7 — an event-tier Aberration above the tavern 1-6; a known Deity-pool feeder, cf. engines.json discard note)"
+ },
+ {
+  "tier": 3,
+  "id": "BG26_LOOT_534",
+  "name": "Gilded Gargoyle",
+  "cost": 3,
+  "tribe": "Undead",
+  "attack": 2,
+  "health": 2,
+  "mechanics": [
+   "DEATHRATTLE"
+  ],
+  "text": "Deathrattle: Add a Coin to your hand.",
+  "tribe_src": "hearthstonejson",
+  "auto_added": "from session logs (extend_pool.py)"
+ },
+ {
+  "tier": 5,
+  "id": "BG33_111",
+  "name": "Carapace Raiser",
+  "cost": 3,
+  "tribe": "Undead",
+  "attack": 6,
+  "health": 3,
+  "mechanics": [
+   "DEATHRATTLE"
+  ],
+  "text": "[x]Deathrattle: Get a\nHaunted Carapace.",
+  "tribe_src": "hearthstonejson",
+  "auto_added": "from session logs (extend_pool.py)"
+ },
+ {
+  "tier": 5,
+  "id": "BG33_828",
+  "name": "Ship Master Eudora",
+  "cost": 3,
+  "tribe": "Pirate",
+  "attack": 8,
+  "health": 3,
+  "mechanics": [
+   "DEATHRATTLE"
+  ],
+  "text": "Deathrattle: Give your\nminions +6/+6.\nGolden ones keep it permanently.",
+  "tribe_src": "hearthstonejson",
+  "auto_added": "from session logs (extend_pool.py)"
+ },
+ {
+  "tier": 5,
+  "id": "BG34_403",
+  "name": "Eternal Tycoon",
+  "cost": 3,
+  "tribe": "Undead",
+  "attack": 4,
+  "health": 8,
+  "mechanics": [
+   "AVENGE"
+  ],
+  "text": "Avenge (5): Summon an Eternal Knight. It attacks immediately.",
+  "tribe_src": "hearthstonejson",
+  "auto_added": "from session logs (extend_pool.py)"
+ },
+ {
+  "tier": 5,
+  "id": "BG34_Giant_314",
+  "name": "Timewarped Poet",
+  "cost": 3,
+  "tribe": "Dragon",
+  "attack": 6,
+  "health": 7,
+  "mechanics": [
+   "DIVINE_SHIELD",
+   "TRIGGER_VISUAL"
+  ],
+  "text": "[x]Divine Shield\nAll your Dragons keep\nBonus Keywords and stats\ngained in combat.",
+  "tribe_src": "hearthstonejson",
+  "auto_added": "carried by hand 2026-10-04: granted by Poet Portrait (BG32_MagicItem_364), not a pool minion, so extend_pool's id-shape filter never sees it - carried because it sits on boards and can be sold (the Aberrant Tentacle precedent)"
  }
 ]
