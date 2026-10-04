@@ -24,6 +24,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import sys
 
 from sanitize_log import sanitize_text
@@ -51,15 +52,69 @@ _PERSON_PATHS = ("analysis.opp_comp.name",)
 _SESSION_PLACEHOLDER = "[session]"
 
 
-def sanitize_decisions(decisions):
-    """(records, handles_dropped) — decisions with the identities removed.
+def _clean_string(value, identities):
+    """(value, hits) — identities swapped for the token the log itself uses.
 
-    A strip of NAMED paths rather than a regex sweep, for the same reason
-    session_report.py works from a whitelist: card names, comp names and hero
-    names are game data and must survive, while one specific key is a person.
+    Embedded as well as exact: a rendered advice line can read "swing at
+    <handle> now", and a leftover substring is the same leak. Word boundaries
+    keep a short handle from eating the letters out of a longer game name that
+    merely contains it.
     """
+    if not identities:
+        return value, 0
+    if value in identities:
+        return identities[value], 1
+    hits = 0
+    for handle, token in identities.items():
+        if handle and handle in value:
+            pattern = re.compile(r"(?<!\w)" + re.escape(handle) + r"(?!\w)")
+            value, n = pattern.subn(token, value)
+            hits += n
+    return value, hits
+
+
+def _scrub(node, identities, counts):
+    """Walk a record, replacing identities wherever they sit."""
+    if isinstance(node, dict):
+        out = {}
+        for key, value in node.items():
+            new_key, hits = _clean_string(key, identities)
+            counts[0] += hits
+            out[new_key] = _scrub(value, identities, counts)
+        return out
+    if isinstance(node, list):
+        return [_scrub(v, identities, counts) for v in node]
+    if isinstance(node, str):
+        value, hits = _clean_string(node, identities)
+        counts[0] += hits
+        return value
+    return node
+
+
+def sanitize_decisions(decisions, identities=None):
+    """(records, removed) — the decisions with every session identity gone.
+
+    WHY THIS IS NOT A LIST OF FIELD NAMES ANY MORE
+
+    It used to pop exactly one key, `analysis.opp_comp.name` — where the
+    overlay's "Hero · Odin3539" line comes from. That single pop was the whole
+    guarantee, and it could not be checked: privacy_scan matches the shapes the
+    LOG writes (PlayerName=, Entity=, account ids), and a bare display handle in
+    a JSON key called "name" matches none of them. One session's bundle carried
+    fifty of them while `inspect` printed "no opponent handles ... in the
+    decisions" (found 2026-10-03, while designing the upload path that would
+    have made it a player-facing leak).
+
+    `identities` is what sanitize_text returned for THIS session's log: every
+    handle it found, mapped to the token it wrote in their place. Checking
+    against that covers any depth, keys as well as values, and fields that did
+    not exist when this was written. The scan does not prove its own success —
+    the caller verifies with identities_left() and refuses to write a bundle
+    that still holds one.
+    """
+    identities = identities or {}
+    counts = [0]
     out = []
-    dropped = 0
     for rec in decisions:
         rec = json.loads(json.dumps(rec))      # never mutate the caller's
         if rec.get("log"):
@@ -67,9 +122,39 @@ def sanitize_decisions(decisions):
         oc = (rec.get("analysis") or {}).get("opp_comp")
         if isinstance(oc, dict) and oc.get("name"):
             oc.pop("name", None)
-            dropped += 1
-        out.append(rec)
-    return out, dropped
+            counts[0] += 1
+        out.append(_scrub(rec, identities, counts))
+    return out, counts[0]
+
+
+def identities_left(records, identities):
+    """Field PATHS still holding an identity. Never the identity itself.
+
+    Exposed so the caller can refuse to write a bundle instead of trusting that
+    the walk caught everything, and returning paths on purpose: reporting a
+    leak by printing the handle is its own leak.
+    """
+    found = []
+
+    def walk(node, path):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                child = f"{path}.{key}" if path else str(key)
+                if key in identities:
+                    found.append(child + " (key)")
+                walk(value, child)
+        elif isinstance(node, list):
+            for i, value in enumerate(node):
+                walk(value, f"{path}[{i}]")
+        elif isinstance(node, str):
+            for handle in identities:
+                if handle and handle in node:
+                    found.append(path)
+                    break
+
+    for i, rec in enumerate(records):
+        walk(rec, f"[{i}]")
+    return found
 
 
 def decisions_for_session(log_path):
@@ -119,11 +204,23 @@ def package(log_path, out_dir):
     if redacted:
         print(f"sanitized: {len(redacted)} identities redacted")
     decisions = decisions_for_session(log_path)
-    decisions, handles_dropped = sanitize_decisions(decisions)
+    # The identities the LOG sanitizer found, handed to the decision sanitizer:
+    # one check against this session's actual people, instead of a list of
+    # field names that only covers what somebody remembered to list.
+    decisions, handles_dropped = sanitize_decisions(decisions, identities=redacted)
     if handles_dropped:
-        print(f"stripped {handles_dropped} opponent handle(s) from the "
-              "decision log — privacy_scan does not see them (see "
+        print(f"stripped {handles_dropped} session identity reference(s) from "
+              "the decision log — privacy_scan does not see bare handles (see "
               "sanitize_decisions)")
+    left = identities_left(decisions, redacted)
+    if left:
+        # Fail closed. A bundle that still names somebody does not get written,
+        # and the report names PATHS: saying which field leaked by printing the
+        # handle would be its own leak.
+        raise SystemExit(
+            f"refusing to package: {len(left)} identity reference(s) survived "
+            f"sanitizing, at {', '.join(left[:3])}"
+            + (" ..." if len(left) > 3 else ""))
 
     bundle = {
         "schema": SCHEMA,
@@ -202,7 +299,12 @@ def inspect(bundle_path):
               "categories above survived sanitizing; please report it.")
         return 1
     print("\n  verified clean by an independent scan: no BattleTags, no "
-          "opponent handles, no account ids, in the log or the decisions.")
+          "account ids, no session names, in the log or the decisions.")
+    print("  opponent HANDLES are a separate check, because a bare display "
+          "name matches nothing a scanner can look for: package() verifies the "
+          "decisions against the identities sanitize_text found in this "
+          "session's own log and refuses to write a bundle that still holds "
+          "one. Re-running package() is what proves it, per session.")
     print("  that is the whole bundle: sanitized log + decision log + "
           "manifest. Nothing else is included.")
     return 0
