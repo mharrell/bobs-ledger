@@ -130,6 +130,10 @@ def audit_game(chunk, game_idx, session):
             "player_buys": buys, "player_actions": {
                 k: actual.get(k) for k in
                 ("upgrades", "refreshes", "sells", "freezes")},
+            # What the plan asked for and what it would have cost, so the
+            # affordability check can be made from the row alone (2026-10-03).
+            "steps": steps, "level_cost": a.get("level_cost"),
+            "shop_costs": a.get("shop_costs") or {},
         })
     # outcome join: the fight AFTER each advised phase moves eff HP by the
     # delta to the next advised phase (buy-phase armor gains are rare and
@@ -139,6 +143,79 @@ def audit_game(chunk, game_idx, session):
         if a_eff is not None and b_eff is not None:
             rows[k]["hp_delta_next_fight"] = b_eff - a_eff
     return rows
+
+
+def plan_cost_violations(rows):
+    """Advisories whose plan asked for something the purse could not buy.
+
+    THE 2026-10-03 BUG, AS A CHECK. That session's coach told the player to
+    LEVEL as step 5 of a turn they had 0 gold left in, and did it in every one
+    of that turn's advisories, because `gold` was None for all 212 records (the
+    local player was missing from the account map). 1119 tests passed through
+    it: nothing asserted that advice has to be POSSIBLE.
+
+    Each step's own cost is tested against the purse at the moment the advisory
+    was issued, rather than summing the plan. The plan is a priority list, not
+    a budget, so summing would flag ordinary "buy this, then level if gold is
+    left" advice as a fault, while a step that cannot be paid for at all is
+    impossible however the rest of the list is ordered.
+
+    Only costs the analysis itself states are used (level_cost, shop_costs), so
+    the check cannot invent a price - a roll's 1 gold, say - and then call the
+    coach wrong for disagreeing with it. Steps with no stated cost are skipped.
+    """
+    bad = []
+    for r in rows:
+        gold = r.get("gold")
+        if gold is None:
+            # The purse being unknown is its own fault, and the 2026-10-03 one;
+            # it belongs to the account-map check, not this one.
+            continue
+        for step in r.get("steps") or []:
+            kind = step.get("kind")
+            if kind == "level":
+                cost, what = r.get("level_cost"), "LEVEL"
+            elif kind == "buy":
+                card = step.get("card") or r.get("card")
+                cost, what = (r.get("shop_costs") or {}).get(card), f"Buy {card}"
+            else:
+                continue
+            if cost is not None and cost > gold:
+                bad.append({"session": r.get("session"), "game": r.get("game"),
+                            "turn": r.get("turn"), "gold": gold,
+                            "step": what, "cost": cost})
+    return bad
+
+
+def player_identified_before_first_shop(chunk):
+    """(identified, detail) - did the coach know whose game this was at the
+    first shop?
+
+    The other 2026-10-03 bug: the local hero's leaderboard placement lands
+    after the first shop in some sessions, `heroes` held only opponents,
+    `_friendly_player` returned None, and the coach issued nothing at all until
+    turn 2 - the turn a new player watches hardest, and the one where an empty
+    overlay reads as "broken".
+
+    This asks the question the player experiences rather than the one the
+    parser finds convenient: when the first shop is on screen, does the coach
+    know who is playing? `analyze()` is the coach's own parse attempt, so
+    calling it here asks what the coach WOULD have known, not what a more
+    forgiving caller could dig out of the same lines.
+
+    Returns (None, reason) when the chunk holds no shop at all, so a caller
+    skips rather than passing something it did not test.
+    """
+    coach = live_coach.LiveCoach()
+    for i, line in enumerate(chunk):
+        coach.feed(line)
+        if coach.actions.in_buying and coach.shop_cards:
+            coach.analyze()
+            if coach.friendly is None or coach.account is None:
+                return False, (f"first shop at line {i}: friendly="
+                               f"{coach.friendly!r} account={coach.account!r}")
+            return True, f"identified by line {i}"
+    return None, "no shop in this chunk"
 
 
 def _classes(r):
