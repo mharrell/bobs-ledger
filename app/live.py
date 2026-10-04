@@ -544,17 +544,27 @@ def main():
         return 0
     # Update check BEFORE coaching begins (never mid-session): one cheap
     # GET; any failure starts the current version normally. An accepted
-    # update re-execs onto the new code so the running coach IS the
-    # version the decision logs will claim.
+    # update restarts onto the new code so the running coach IS the version
+    # the decision logs will claim.
+    #
+    # A CHILD PROCESS, not os.execv. On Windows the execv family joins its
+    # argument list with spaces and no quoting at all, so an install path with a
+    # space in it - the default here, C:\Users\<name with a space>\Downloads\
+    # Bob's Ledger - was handed to Python truncated at the first space:
+    # "can't open file 'C:\\Users\\Silver'". The player hit this on EVERY update
+    # and had to launch the coach several times before it came up, because the
+    # update had applied and the next launch found nothing to do (2026-10-04).
+    # subprocess quotes the arguments properly, and it is what every other
+    # restart in this codebase already uses.
     if "--no-update" not in opts:
         try:
+            import subprocess
             import update
             if update.run(prompt="--yes" not in opts,
                           assume_yes="--yes" in opts) == "applied":
                 print("restarting onto the new version...", flush=True)
-                os.execv(sys.executable, [sys.executable,
-                                          os.path.abspath(__file__)]
-                         + sys.argv[1:])
+                return subprocess.run([sys.executable, os.path.abspath(__file__)]
+                                      + sys.argv[1:]).returncode
         except Exception:  # noqa: BLE001 - update checks never block play
             pass
     poll = 0.3  # fast tail cadence — analysis is ~5ms, so sub-second updates
