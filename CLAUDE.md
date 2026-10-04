@@ -117,7 +117,7 @@ player to re-extract the zip is useless); `update.recover()`, or
 `update.py --recover`, then finishes precisely — including removing files the
 new version added — while `APPLIED` on disk means "do not undo this".
 
-## Where the last session left off (2026-10-04, main d892a7d)
+## Where the last session left off (2026-10-04, main bf242f2)
 
 Sharing sends ONE REPORT PER GAME, and as of main 72d6b60 the share path is
 idempotent per report id. TWO CLAIMS IN AN EARLIER VERSION OF THIS FILE WERE
@@ -175,28 +175,28 @@ updates it. `freshnessLine()` is a pure function and
 `test_overlay_freshness.py` executes it under node. A finished game's plan also
 clears at the game's end rather than at the next `CREATE_GAME`.
 
+**Consent is scoped to the answer** (main bf242f2). A yes covers the games played
+from that point on, and nothing else: a game recorded while the answer was no — or
+before there was one — is never sent, not even later. Before this, answering yes
+uploaded the whole decision log, which is not what "Nothing is sent unless you say
+yes" leads a player to expect and which nothing on screen disclosed. `set_choice`
+already stamped `decided`, so the rule is one comparison in `share._consented()`;
+the overlay says the scope where it asks, and `test_consent_scope.py` owns it.
+Also settled in the same pass: `Clear` brings the CARD back, not the question (the
+README said otherwise and now describes what happens), and `--poll 0.5` — the form
+README:172 documents — parses instead of dying with an `IndexError` at startup.
+
 NEXT, still open:
 
-1. CONSENT, and it needs a decision before code: `Clear` does not bring the
-   sharing question back although README:97-99 tells testers it does, and a yes
-   is RETROACTIVE — games played while sharing was off are uploaded once the
-   answer becomes yes (reproduced). Disclose it or scope it.
-2. `--poll 0.5`, the form README:172 documents, crashes at startup with
-   `IndexError`; only `--poll=0.5` parses, and the value is then taken as the log
-   path, because `live.py` treats every non-`--` token as a position.
-3. An ACCEPTED update whose download fails says nothing at all: `live.py` wraps
-   the whole update call in `except Exception: pass`, so a 404 or a sha mismatch
-   on the zip is invisible to the player.
-4. The launcher's `--check` writes Hearthstone's own `log.config` (outside the
-   install folder) and then prints "nothing was written".
-5. The corpus cannot be counted without the Cloudflare read key
-   (`HEARTH_TELEMETRY_KEY` is not on disk). Until it can be, nobody knows how
-   many distinct games this beta produced — and the duplicate and the frozen
+1. The corpus cannot be counted without the Cloudflare read key
+   (`HEARTH_TELEMETRY_KEY` is not on disk). Until it can be, nobody knows how many
+   distinct games this beta produced — and the duplicate upload and the frozen
    report described above are both in the existing data.
-6. From the wider audit, untouched: the macOS launcher has still never been
-   parsed by any shell on this machine; 9 tests are dead behind
-   `HEARTH_REAL_SESSION_TESTS` (nothing sets it); `upload_corpus.py` and
-   `fetch_sessions.py` ship to players.
+2. From the wider audit, untouched: the macOS launcher has still never been parsed
+   by any shell on this machine (its `--check` fix is reasoned, not run); 9 tests
+   are dead behind `HEARTH_REAL_SESSION_TESTS` (nothing sets it);
+   `upload_corpus.py` and `fetch_sessions.py` ship to players; `README.md` has no
+   test at all, which is how a sentence about `Clear` stayed wrong.
 
 Smaller open items: the KV namespace also holds every `release/…` zip, so filter
 by the `sessions/` prefix rather than scanning (the read key itself is item 5).
