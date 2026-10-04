@@ -300,7 +300,7 @@ def monitor(path, poll=1.0):
                 # that is certain, the other being exit. Sharing here means a
                 # player who leaves the coach running for days still has
                 # every finished game counted.
-                _share_finished(path, opts)
+                _share_finished(path, [a for a in sys.argv[1:] if a.startswith("--")])
                 f.close()
                 path = active
                 f = open(path, "rb")
@@ -638,7 +638,7 @@ def main():
         pass
     finally:
         # The other certain end-of-game moment: the player stops the coach.
-        _share_finished(path, opts)
+        _share_finished(path, [a for a in sys.argv[1:] if a.startswith("--")])
     return 0
 
 
