@@ -548,14 +548,15 @@ def main():
     # the decision logs will claim.
     #
     # A CHILD PROCESS, not os.execv. On Windows the execv family joins its
-    # argument list with spaces and no quoting at all, so an install path with a
-    # space in it - the default here, C:\Users\<name with a space>\Downloads\
-    # Bob's Ledger - was handed to Python truncated at the first space:
-    # "can't open file 'C:\\Users\\Silver'". The player hit this on EVERY update
-    # and had to launch the coach several times before it came up, because the
-    # update had applied and the next launch found nothing to do (2026-10-04).
-    # subprocess quotes the arguments properly, and it is what every other
-    # restart in this codebase already uses.
+    # argument list with spaces and no quoting at all, so an install sitting
+    # under a user folder whose name contains a space - the norm, and the case
+    # on the machine that reported this - was handed to Python truncated at the
+    # first space, and Python answered "can't open file '<the path up to the
+    # first space>'". The player hit this on EVERY update and had to launch the
+    # coach several times before it came up, because the update had applied and
+    # the next launch found nothing to do (2026-10-04). subprocess quotes the
+    # arguments properly, and it is what every other restart in this codebase
+    # already uses.
     if "--no-update" not in opts:
         try:
             import subprocess
