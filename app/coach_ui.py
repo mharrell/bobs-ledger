@@ -473,11 +473,15 @@ _HTML = r"""<!doctype html>
   #freshness { display:none; font-size:12px; font-weight:700;
                color:var(--warn); padding:2px 0 4px; }
   #freshness.on { display:block; }
+  /* Old advice is NORMAL between buy phases (a median 81 s gap against the 8 s
+     this first alarmed on), so it is stated plainly rather than warningly: the
+     alarm colour is reserved for the coach having stopped answering at all. */
+  #freshness.info { display:block; color:var(--dim); font-weight:400; }
 </style>
 </head>
 <body>
 <div id="wrap">
-<div id="statebar">Waiting for live.py analysis…</div>
+<div id="statebar">Waiting for the coach…</div>
 <div id="freshness"></div>
 <button id="clearbtn" title="Blank the overlay — a new game clears it automatically">Clear</button>
 <div id="app">
@@ -494,7 +498,33 @@ let _pollBusy = false;
 //: because render() only runs when the payload CHANGES: once live.py wedges,
 //: the server answers 304 forever and nothing would ever redraw the age.
 let _generated = null;
-const STALE_AFTER = 8;
+//: Epoch MILLISECONDS of the last ANSWER from the coach, whatever its status —
+//: a 304 counts, because it is the server saying it is still there. This is the
+//: only honest liveness signal the page has, and it is the reason the line below
+//: stopped accusing a working coach: advice that has not changed says nothing
+//: about whether the coach is alive. Between buy phases there is nothing to
+//: push, and that gap is a median 81 seconds (measured over 13 real buy phases)
+//: against the 8 this used to alarm on — so for most of the time a player had
+//: the overlay open, it told them a healthy coach was "frozen, not live".
+let _lastAnswer = 0;
+const STALE_AFTER = 8;   // when to say how old the advice is
+const LOST_AFTER = 6;    // seconds with NO answer at all before it is the coach
+//: The whole decision the freshness line makes, as a pure function so the suite
+//: can run it under node instead of trusting the wording by eye. `alarm` is true
+//: only when the coach stopped talking; old advice on its own never alarms.
+function freshnessLine(ageSec, silentSec) {
+  const ago = ageSec >= 120 ? Math.floor(ageSec / 60) + ' min'
+             : ageSec >= 60 ? '1 min'
+             : Math.max(0, Math.round(ageSec)) + 's';
+  if (silentSec > LOST_AFTER) {
+    return {alarm: true,
+            text: 'Lost contact with the coach — last advice ' + ago + ' ago'};
+  }
+  if (ageSec < STALE_AFTER) return {alarm: false, text: ''};
+  return {alarm: false,
+          text: 'Advice from ' + ago + ' ago — it updates when your next shop '
+                + 'opens'};
+}
 async function poll() {
   if (_pollBusy) return;  // a slow response must not pile up ticks
   _pollBusy = true;
@@ -506,6 +536,7 @@ async function poll() {
       headers: _etag ? {'If-None-Match': _etag} : undefined,
     });
     clearTimeout(timer);
+    _lastAnswer = Date.now();
     if (r.status !== 304) {          // 304 = unchanged: header only, no body,
       const raw = await r.text();    // no JSON.parse, no DOM work
       _etag = r.headers.get('ETag');
@@ -522,15 +553,15 @@ async function poll() {
 function tickFreshness() {
   const node = document.getElementById('freshness');
   if (!node) return;
-  // No payload yet = no game yet; the welcome card speaks for itself.
-  if (_generated == null) { node.className = ''; node.textContent = ''; return; }
-  const age = Math.max(0, Math.round(Date.now() / 1000 - _generated));
-  if (age < STALE_AFTER) { node.className = ''; node.textContent = ''; return; }
-  node.className = 'on';
-  const when = age >= 120 ? Math.floor(age / 60) + ' min'
-             : age >= 60 ? '1 min' : age + 's';
-  node.textContent = 'Advice from ' + when + ' ago — is live.py still '
-    + 'running? (it is frozen, not live)';
+  const silent = (Date.now() - _lastAnswer) / 1000;
+  // Nothing to say at all: no advice yet AND the coach is answering.
+  if (_generated == null && silent <= LOST_AFTER) {
+    node.className = ''; node.textContent = ''; return;
+  }
+  const age = _generated == null ? 0 : Date.now() / 1000 - _generated;
+  const line = freshnessLine(age, silent);
+  node.className = line.alarm ? 'on' : (line.text ? 'info' : '');
+  node.textContent = line.text;
 }
 setInterval(tickFreshness, 1000);
 function el(tag, cls, text) {
