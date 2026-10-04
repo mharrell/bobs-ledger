@@ -9,16 +9,25 @@ contents are unaffected), KV namespace
 
 A beta user who only INSTALLS needs nothing but the URL — the release zip
 is public (`GET /release/<name>.zip`, the install path since 2026-10-02;
-the hygiene pass keeps local data out of releases). UPLOADING a corpus
-bundle needs the shared key, i.e. exactly two lines:
+the hygiene pass keeps local data out of releases). READING the corpus back is
+what needs the shared key; uploading does not (`fetch_sessions.py`'s own line:
+"reading is keyed; sending is not"). The key goes in the ENVIRONMENT — nothing
+on this side reads a file, and `.dev.vars` is only ever mentioned in
+`publish_release.py`'s exclusion list, which is why looking for it on disk
+wastes a session:
 
 ```
-HEARTH_TELEMETRY_URL=https://hearth-telemetry-collector.bobs-ledger.workers.dev
-HEARTH_TELEMETRY_KEY=<the shared key — rotate freely via printf | wrangler secret put>
+# Windows, this account, for every new shell
+setx HEARTH_TELEMETRY_KEY "<the shared key — rotate freely via printf | wrangler secret put>"
+# HEARTH_TELEMETRY_URL already defaults to this, so it is only needed elsewhere
+# https://hearth-telemetry-collector.bobs-ledger.workers.dev
 ```
 
-then `python upload_corpus.py --latest` is a plain HTTPS POST. No GitHub
-account, no PAT.
+then `python app\fetch_sessions.py --stats` counts what is stored,
+`python app\fetch_sessions.py --list` names every key, and
+`python app\upload_corpus.py --latest` is a plain HTTPS POST. No GitHub
+account, no PAT. Fetch into a directory outside this repo, or check
+`.gitignore` first: what comes back is other people's data.
 
 ## What a bundle is
 

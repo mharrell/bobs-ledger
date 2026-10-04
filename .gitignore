@@ -41,6 +41,13 @@ decision_logs/
 .share_consent.json
 session_reports/
 
+# Where fetch_sessions.py puts reports it pulls back from the collector. That is
+# OTHER PEOPLE'S data — the beta testers' decisions — landing in a git tree, and
+# this directory was neither ignored nor mentioned in publish_release's
+# exclusions until 2026-10-04, while the tool's own default is to write it here.
+# `sync.py --new` commits untracked files, so the failure mode is a push.
+sessions_in/
+
 # Packaged corpus bundles awaiting upload
 corpus_out/
 
