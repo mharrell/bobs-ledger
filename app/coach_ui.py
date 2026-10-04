@@ -1475,11 +1475,15 @@ def welcome_payload():
                    "the outcome, with no names, no chat and no file paths"
                    + (f" ({sent} shared so far)." if sent else "."))
     elif status == "off":
-        privacy = ("Not sharing: nothing leaves your machine. You can turn "
-                   "it on from here at any time.")
+        privacy = ("Not sharing: nothing leaves your machine. Games played "
+                   "while this was off have not been sent, and turning it on "
+                   "starts from the next game.")
     else:
+        # The scope is said HERE, where the question is asked, because a yes
+        # used to reach back and upload the games already recorded (2026-10-04).
         privacy = ("Nothing has been sent, and nothing will be until you "
-                   "answer. Sharing means one small summary per game — your "
+                   "answer — and then only for games you play from that point "
+                   "on. Sharing means one small summary per game: your "
                    "decisions and the outcome, with no names, no chat and no "
                    "file paths.")
     return json.dumps({

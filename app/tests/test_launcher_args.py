@@ -35,26 +35,40 @@ WIN_ONLY = unittest.skipUnless(sys.platform == "win32", "cmd.exe only")
 def _arg_lines():
     """The launcher's argument handling, exactly as shipped.
 
-    Anchored on the code that assigns ARG1 (the comments above it mention the
-    variable, so they are skipped) and runs up to the line that consumes the
-    result. Anchoring on text the file really contains means the test fails
-    loudly if that block is ever restructured, instead of quietly testing
+    TWO spans, because the handling is in two places for a reason: ARG1 and the
+    `CHECK` flag are read at the top of the file, before the sections that write
+    (recognising `--check` only at the shortcut step is what let `--check`
+    install a package and edit Hearthstone's own log.config while reporting that
+    it had written nothing), while the dispatch that consumes the flag sits with
+    the shortcut prompt it falls through to. Running the two spans together is
+    still the real code: anchoring on text the file really contains means this
+    test fails loudly if either span is restructured, instead of quietly testing
     nothing.
     """
     with open(LAUNCHER, encoding="ascii") as f:
         lines = f.read().splitlines()
-    start = stop = None
-    for i, line in enumerate(lines):
-        if start is None and not line.startswith("rem") and "ARG1=" in line:
-            start = i
-        elif start is not None and line.startswith('set "WANT_SHORTCUT='):
-            stop = i
-            break
-    if start is None or stop is None:
+
+    def index(predicate, start=0):
+        for i in range(start, len(lines)):
+            if predicate(lines[i]):
+                return i
+        return None
+
+    head_start = index(lambda ln: not ln.startswith("rem")
+                       and ln.strip().startswith('if "%~1"=="" (set "ARG1='))
+    head_stop = index(lambda ln: ln.strip().startswith('set "CHECK=0"'),
+                      head_start or 0)
+    tail_start = index(lambda ln: not ln.startswith("rem")
+                       and 'if /i "%ARG1%"=="--check" goto :report' in ln)
+    tail_stop = index(lambda ln: ln.startswith('set "WANT_SHORTCUT='),
+                      tail_start or 0)
+    if None in (head_start, head_stop, tail_start, tail_stop):
         raise AssertionError(
-            "could not find the ARG1 block in the launcher - this test needs "
-            "updating, not deleting")
-    return lines[start:stop]
+            "could not find the argument-handling spans in the launcher - this "
+            "test needs updating, not deleting")
+    # head runs up to and including the last CHECK line (the substring test).
+    head_stop += 1
+    return lines[head_start:head_stop] + lines[tail_start:tail_stop]
 
 
 def _script(arg_lines):
@@ -189,6 +203,39 @@ class TestTheShortcutStepSpeaks(unittest.TestCase):
 
     def test_the_failure_path_still_speaks_too(self):
         self.assertIn("Could not create a shortcut", self.text)
+
+
+@WIN_ONLY
+class TestCheckModeWritesNothing(unittest.TestCase):
+    """`--check` is the README's "look without touching", and it used to touch.
+
+    Measured 2026-10-04, on the shipped launcher: `--check` installed a Python
+    package, created a `.venv`, turned Hearthstone's file logging on — editing
+    the game's own `log.config`, which lives outside the install folder — and
+    then printed "nothing was started, nothing was written". The sentence was
+    false every time it mattered.
+
+    So this runs the REAL launcher end to end with the game's config folder
+    redirected, having answered "yes" to every prompt it might ask. In check mode
+    it must not ask at all, and the folder must still be empty afterwards. The
+    "yes" is what makes this a regression test rather than a smoke test: without
+    a guarded `--check`, feeding Y is exactly how the write happened.
+    """
+
+    def test_check_mode_leaves_the_games_config_alone(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg = os.path.join(td, "hearthstone-config")
+            os.makedirs(cfg)
+            env = dict(os.environ, HEARTHSTONE_CONFIG_DIR=cfg)
+            r = subprocess.run(f'cmd.exe /c ""{LAUNCHER}" --check"',
+                               cwd=ROOT, capture_output=True, text=True,
+                               timeout=300, input="Y\r\n" * 4, env=env)
+            self.assertIn("nothing was written", r.stdout,
+                          f"the launcher did not reach its report: {r.stdout[-400:]}")
+            self.assertEqual(
+                os.listdir(cfg), [],
+                "--check wrote into Hearthstone's own config folder, which is "
+                "outside the install folder and is not its to change")
 
 
 if __name__ == "__main__":

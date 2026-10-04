@@ -17,6 +17,21 @@ setlocal EnableExtensions
 title Bob's Ledger
 cd /d "%~dp0"
 
+rem --check REPORTS; it must not change anything. It is recognised here, before
+rem the sections that write, because it used to be recognised only at the
+rem shortcut step: "--check" would install a Python package, turn Hearthstone's
+rem file logging on (editing the game's own log.config, outside this folder) and
+rem only then print "nothing was started, nothing was written" - a sentence that
+rem was false every time it mattered (measured 2026-10-04).
+rem ARG1 gets a placeholder when there are no arguments: cmd mangles an
+rem UNDEFINED variable in the "%ARG1:~0,8%" test below into "The syntax of the
+rem command is incorrect." and kills the batch on the spot, which is what killed
+rem every plain double-click once (2026-10-02).
+if "%~1"=="" (set "ARG1=.") else set "ARG1=%~1"
+set "CHECK=0"
+if /i "%ARG1%"=="--check" set "CHECK=1"
+if /i "%ARG1:~0,8%"=="--check=" set "CHECK=1"
+
 echo ============================================================
 echo   Bob's Ledger - Hearthstone Battlegrounds coach
 echo ============================================================
@@ -67,6 +82,7 @@ echo   1. Download it from https://www.python.org/downloads/
 echo   2. In the installer, TICK "Add python.exe to PATH"
 echo   3. Run this file again
 echo.
+if "%CHECK%"=="1" goto :end
 choice /c YN /n /m "Open the download page now? [Y/N] "
 if errorlevel 2 goto :end
 start "" "https://www.python.org/downloads/"
@@ -80,8 +96,11 @@ echo               %PY%
 rem --- 2. the one dependency ------------------------------------------
 rem Asked, never assumed: this file is downloaded from the internet, and
 rem one that silently runs pip is the kind people are right to distrust.
+rem In --check mode it is REPORTED, never installed: --check is what the
+rem README offers for looking without touching.
 %PY% -c "import requests" >nul 2>&1
 if not errorlevel 1 goto :deps_ok
+if "%CHECK%"=="1" goto :deps_missing
 echo.
 echo The coach needs one Python package: requests
 echo.
@@ -93,6 +112,11 @@ if errorlevel 2 goto :no_deps
 if errorlevel 1 goto :fail
 goto :deps_ok
 
+:deps_missing
+echo Dependencies: MISSING - requests is not installed
+echo               %PY% -m pip install -r "%~dp0app\requirements.txt"
+goto :deps_done
+
 :no_deps
 echo.
 echo Skipped. The coach will not start without it; run the pip line above
@@ -101,6 +125,7 @@ goto :end
 
 :deps_ok
 echo Dependencies: ok
+:deps_done
 
 rem --- 3. Hearthstone's file logging ----------------------------------
 rem The step nearly everyone misses, and the difference between a coach that
@@ -111,6 +136,7 @@ rem already has one, and replacing it would break their logging), and it
 rem touches that single file and nothing else - keeping a backup first.
 %PY% "%~dp0app\setup_logging.py" --check >nul 2>&1
 if not errorlevel 1 goto :logging_done
+if "%CHECK%"=="1" goto :logging_off_report
 echo.
 echo Hearthstone's file logging is OFF, and the coach cannot advise without it.
 echo.
@@ -133,6 +159,14 @@ echo   %LOCALAPPDATA%\Blizzard\Hearthstone
 echo and make sure [Power] has LogLevel=1 and FilePrinting=true. The README
 echo has the full block.
 if exist "%LOCALAPPDATA%\Blizzard\Hearthstone" start "" "%LOCALAPPDATA%\Blizzard\Hearthstone"
+goto :logging_done
+
+rem --check stops here rather than offering advice that opens Explorer: a report
+rem must not act, and this label is what keeps the closing sentence true.
+:logging_off_report
+echo Hearthstone's file logging: OFF - the coach cannot advise without it
+echo   (run this file normally and say yes, and it will be turned on for you)
+goto :logging_done
 
 :logging_done
 rem Where the game writes the log the coach reads. Told, not created: if it is
@@ -174,12 +208,11 @@ rem than assumed, and --check below reports without writing anything.
 rem Match on a PREFIX: a shell that hands over "--check=" (which happened)
 rem used to miss the exact-match test and fall through to the run below, so
 rem asking for a report silently STARTED the coach instead. Two of those were
-rem left running and held the install directory open (2026-10-02). ARG1 is given
-rem a placeholder when there are no arguments, and that is not cosmetic: cmd
-rem mangles an UNDEFINED variable in the "%ARG1:~0,8%" test below into "The syntax
-rem of the command is incorrect." and kills the batch on the spot - so every plain
-rem double-click died right after "Dependencies: ok" (found 2026-10-02).
-if "%~1"=="" (set "ARG1=.") else set "ARG1=%~1"
+rem left running and held the install directory open (2026-10-02).
+rem ARG1 itself and the CHECK flag are set at the top of this file, because the
+rem sections that WRITE have to know about --check before they run: see the note
+rem there. Only the dispatch lives down here, next to the shortcut prompt it
+rem falls through to.
 if /i "%ARG1%"=="--check" goto :report
 if /i "%ARG1:~0,8%"=="--check=" goto :report
 set "WANT_SHORTCUT=0"

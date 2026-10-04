@@ -314,5 +314,57 @@ class TestUpdatePromptNeverHangs(unittest.TestCase):
         dl.assert_not_called()
 
 
+class TestAFailedDownloadSaysSo(unittest.TestCase):
+    """An update the player ACCEPTED must not fail silently.
+
+    With --yes they were not even asked, so the console was the only signal they
+    could get, and it said nothing: a dropped connection, a 404 on the zip or a
+    sha256 mismatch used to vanish into live.py's blanket guard around run() (an
+    update that fails must never stop play). The coach simply started on the old
+    version and the player had no way to know the update had failed (measured
+    2026-10-04).
+    """
+
+    def _run_with(self, exc):
+        """run() with the download failing, and everything else faked."""
+        out = io.StringIO()
+        with mock.patch.object(update, "recover", lambda *a, **k: ""), \
+                mock.patch.object(update, "load_state",
+                                  lambda *a, **k: {"version": "old1111",
+                                                   "created": "2026-01-01"}), \
+                mock.patch.object(update, "fetch_manifest",
+                                  lambda *a, **k: {"version": "newer999",
+                                                   "note": "fixes the ranking"}), \
+                mock.patch.object(update, "decide",
+                                  lambda *a, **k: ("update", "old1111 -> newer999")), \
+                mock.patch.object(update, "download_zip", side_effect=exc), \
+                mock.patch.object(update, "apply_zip") as applied, \
+                mock.patch("sys.stdout", out):
+            status = update.run(prompt=False, assume_yes=True)
+        return status, out.getvalue(), applied
+
+    def test_a_network_failure_is_reported(self):
+        status, text, applied = self._run_with(
+            OSError("connection reset by peer"))
+        self.assertEqual(status, "current",
+                         "nothing was applied, so this must not claim success")
+        self.assertIn("could not download", text)
+        self.assertIn("newer999", text)
+        applied.assert_not_called()
+
+    def test_a_sha_mismatch_is_reported_too(self):
+        """The other way a download fails: the bytes arrived and are wrong."""
+        status, text, _ = self._run_with(
+            ValueError("zip sha mismatch: got abc123, manifest says def456"))
+        self.assertIn("could not download", text)
+        self.assertIn("sha mismatch", text)
+        self.assertEqual(status, "current")
+
+    def test_it_still_never_raises(self):
+        """live.py wraps this call precisely so a bad update cannot stop play."""
+        status, _, _ = self._run_with(Exception("anything at all"))
+        self.assertEqual(status, "current")
+
+
 if __name__ == "__main__":
     unittest.main()

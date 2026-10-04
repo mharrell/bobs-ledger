@@ -56,6 +56,20 @@ class ShareFixture(unittest.TestCase):
 
     def tearDown(self):
         (share.CONSENT_PATH, share.REPORTS_DIR, share.SENT_PATH) = self._saved
+
+    def consent_on(self):
+        """A stored yes that PREDATES this fixture's records.
+
+        `set_choice` stamps the moment it is called, and a game recorded before
+        the answer is deliberately out of scope (that rule has its own file,
+        test_consent_scope.py). These tests are about what the sharing path does
+        once it may send, so the answer is written as an earlier moment than the
+        2026-10-03 records below rather than as "now".
+        """
+        with open(share.CONSENT_PATH, "w", encoding="utf-8") as f:
+            f.write('{"schema": 1, "share": true, '
+                    '"decided": "2026-10-01T00:00:00"}')
+        return "on"
         self._tmp.cleanup()
 
     def fake_post(self, ok=True, detail="stored", code=200):
@@ -101,12 +115,12 @@ class TestNothingIsSentWithoutConsent(ShareFixture):
         self.assertEqual(self.posted, [])
 
     def test_on_sends(self):
-        share.set_choice(True)
+        self.consent_on()
         self.assertEqual(self.share(), "sent")
         self.assertEqual(len(self.posted), 1)
 
     def test_what_was_sent_is_kept_locally_for_the_player_to_read(self):
-        share.set_choice(True)
+        self.consent_on()
         self.share()
         kept = [f for f in os.listdir(share.REPORTS_DIR)
                 if f.endswith(".json.gz")]
@@ -119,7 +133,7 @@ class TestNothingIsSentWithoutConsent(ShareFixture):
 class TestTheVerifierIsNotDecoration(ShareFixture):
     def test_a_report_that_fails_the_spec_is_never_sent(self):
         """Consent is not permission to send something unverified."""
-        share.set_choice(True)
+        self.consent_on()
         bad = session_report.build(records())
         bad["advisories"][0]["analysis"]["opp_comp"] = {"name": HANDLE}
         with mock.patch.object(session_report, "build",
@@ -135,7 +149,7 @@ class TestTheVerifierIsNotDecoration(ShareFixture):
         self.assertIn("NOT SENT", out.getvalue())
 
     def test_a_report_with_a_handle_in_the_text_is_not_sent(self):
-        share.set_choice(True)
+        self.consent_on()
         bad = session_report.build(records())
         bad["advisories"][1]["analysis"]["situation"] = "vs " + FAKE_TAG
         with mock.patch.object(session_report, "build",
@@ -151,7 +165,7 @@ class TestTheVerifierIsNotDecoration(ShareFixture):
 
 class TestItNeverBreaksPlay(ShareFixture):
     def test_a_network_failure_is_a_word_not_an_exception(self):
-        share.set_choice(True)
+        self.consent_on()
         self.assertEqual(self.share(ok=False, detail="URLError: offline"),
                          "failed")
 
@@ -161,7 +175,7 @@ class TestItNeverBreaksPlay(ShareFixture):
         exception inside post_report came straight out - which is the bug the
         promise exists to rule out, so the code was fixed rather than the
         test."""
-        share.set_choice(True)
+        self.consent_on()
 
         def boom(blob, url=None, timeout=30):
             raise RuntimeError("something nobody predicted")
@@ -182,12 +196,12 @@ class TestItNeverBreaksPlay(ShareFixture):
         self.assertIn("Error", detail)
 
     def test_a_session_with_no_advisories_is_not_a_failure(self):
-        share.set_choice(True)
+        self.consent_on()
         self.assertEqual(self.share(recs=[]), "nothing")
         self.assertEqual(self.posted, [])
 
     def test_the_same_session_is_not_sent_twice(self):
-        share.set_choice(True)
+        self.consent_on()
         self.assertEqual(self.share(), "sent")
         self.assertEqual(self.share(), "already")
         self.assertEqual(len(self.posted), 1)

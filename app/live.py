@@ -616,6 +616,51 @@ def _share_finished(log_path, opts=(), last_game=None):
     return "skipped"
 
 
+def _parse_argv(argv):
+    """(positional args, flags), with `--poll N` paired to its own value.
+
+    Splitting on the leading `--` alone put the VALUE in the positional list,
+    which broke the form this module's usage line and the README both document:
+    `live.py <log> --poll 0.5`. "--poll" then reached `float(o.split("=")[1])`
+    with no "=" and killed the coach at startup with `IndexError: list index out
+    of range`, while "0.5" was left in line to be taken as the log path. Only the
+    `--poll=0.5` spelling ever worked, and nothing in the suite parsed a command
+    line, so both survived unnoticed (found 2026-10-04).
+    """
+    args, opts = [], []
+    rest = list(argv)
+    while rest:
+        token = rest.pop(0)
+        if not token.startswith("--"):
+            args.append(token)
+        elif token == "--poll" and rest and not rest[0].startswith("--"):
+            opts.append("--poll=" + rest.pop(0))
+        else:
+            opts.append(token)
+    return args, opts
+
+
+def _poll_seconds(opts, default=0.3):
+    """The tail cadence from `--poll`/`--poll=N`, or `default`.
+
+    A bad value says what it wanted instead of raising IndexError or a bare
+    ValueError: this runs before the overlay exists, so a traceback here is the
+    whole first run.
+    """
+    for opt in opts:
+        if not opt.startswith("--poll"):
+            continue
+        value = opt.split("=", 1)[1] if "=" in opt else ""
+        try:
+            seconds = float(value)
+        except ValueError:
+            raise SystemExit(f"--poll needs a number of seconds, not {value!r}")
+        if seconds <= 0:
+            raise SystemExit("--poll needs a positive number of seconds")
+        return seconds
+    return default
+
+
 def main():
     # The advice text carries a caution glyph the value module composes
     # (value._CAUTION_CLAUSE), and Python writes through the locale codec when
@@ -623,8 +668,7 @@ def main():
     # UnicodeEncodeError instead of printing the advice it had just computed.
     # Same guard the review tools already carry, for the same reason.
     sys.stdout.reconfigure(errors="replace")
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    opts = [a for a in sys.argv[1:] if a.startswith("--")]
+    args, opts = _parse_argv(sys.argv[1:])
     if "--version" in opts:
         import update
         print(f"Bob's Ledger {update.local_version()}")
@@ -655,11 +699,8 @@ def main():
                                       + sys.argv[1:]).returncode
         except Exception:  # noqa: BLE001 - update checks never block play
             pass
-    poll = 0.3  # fast tail cadence — analysis is ~5ms, so sub-second updates
+    poll = _poll_seconds(opts)  # fast tail cadence — analysis is ~5ms
     ui_on = "--no-ui" not in opts
-    for o in opts:
-        if o.startswith("--poll"):
-            poll = float(o.split("=")[1])
     # Start the overlay server (unless --no-ui) BEFORE the log check: the
     # welcome card names the log.config fix, and it must be on screen in
     # exactly the first-run case where logging isn't enabled yet.

@@ -64,9 +64,12 @@ if [ ! -f "$HERE/app/live.py" ]; then
 	exit 1
 fi
 
-# --check reports and starts nothing. It is matched on a PREFIX, because a
-# shell that hands over "--check=" used to fall through on the Windows
-# launcher and silently START the coach instead of reporting (2026-10-02).
+# --check reports: it starts nothing AND writes nothing. It is matched on a
+# PREFIX, because a shell that hands over "--check=" used to fall through on the
+# Windows launcher and silently START the coach instead of reporting
+# (2026-10-02). The "writes nothing" half was false until 2026-10-04, on both
+# twins: --check went on to install a package, create a venv and edit
+# Hearthstone's own log.config, then printed that sentence anyway.
 CHECK_ONLY=0
 for arg in "$@"; do
 	case "$arg" in
@@ -118,8 +121,17 @@ else
 	echo
 	echo "The coach needs one Python package: requests"
 	echo
-	printf "Install it into a private folder beside the coach? [y/N] "
-	read -r answer || answer=""
+	if [ "$CHECK_ONLY" = "1" ]; then
+		# A report installs nothing. It used to: --check would create a venv,
+		# pip-install requests, write Hearthstone's own log.config (outside this
+		# folder) and then print "nothing ... was written" (measured 2026-10-04
+		# on the Windows twin, which shared the defect).
+		answer="n"
+		echo "(not installing anything: --check only reports)"
+	else
+		printf "Install it into a private folder beside the coach? [y/N] "
+		read -r answer || answer=""
+	fi
 	case "$answer" in
 		[Yy]*)
 			if ! "$PY" -m venv "$HERE/.venv"; then
@@ -141,7 +153,7 @@ else
 			echo
 			echo "Skipped. The coach will not start without it; run this file"
 			echo "again when you are ready."
-			exit 1
+			[ "$CHECK_ONLY" = "1" ] || exit 1
 			;;
 	esac
 fi
@@ -161,8 +173,15 @@ else
 	echo
 	echo "Hearthstone's file logging is OFF, and the coach cannot advise without it."
 	echo
-	printf "Turn it on for me now? [y/N] "
-	read -r answer || answer=""
+	if [ "$CHECK_ONLY" = "1" ]; then
+		# Report it, change nothing: --apply edits the game's own log.config,
+		# which is outside this folder, and a --check run must not.
+		answer="n"
+		echo "(not changing it: --check only reports)"
+	else
+		printf "Turn it on for me now? [y/N] "
+		read -r answer || answer=""
+	fi
 	case "$answer" in
 		[Yy]*)
 			if "$PY" "$HERE/app/setup_logging.py" --apply; then
@@ -179,7 +198,10 @@ else
 			echo "  $HOME/Library/Preferences/Blizzard/Hearthstone"
 			echo "and make sure [Power] has LogLevel=1 and FilePrinting=true. The"
 			echo "README has the full block."
-			open "$HOME/Library/Preferences/Blizzard/Hearthstone" 2>/dev/null || true
+			# Opening Finder is an action too: a report does not take one.
+			[ "$CHECK_ONLY" = "1" ] \
+				|| open "$HOME/Library/Preferences/Blizzard/Hearthstone" 2>/dev/null \
+				|| true
 			;;
 	esac
 fi
