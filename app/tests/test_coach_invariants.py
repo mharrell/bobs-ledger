@@ -34,32 +34,49 @@ def _row(gold, steps, level_cost=None, shop_costs=None, turn=5):
 
 
 class TestPlanCostViolations(unittest.TestCase):
-    """Narrow on purpose: an empty purse needs no price to judge, and with gold
-    in hand the two cost fields have not been confirmed against their writers
-    (three false "impossible buy" findings, 2026-10-04)."""
+    """Asymmetric on purpose: level_cost is a real price (the TechUp button's
+    COST tag), while shop_cost_map carries stale legacy tier costs for minions,
+    so buys are judged only at an empty purse. Both confirmed against their
+    writers 2026-10-04, after three false "impossible buy" findings."""
 
     def test_a_level_with_no_gold_left_is_reported(self):
         """The 2026-10-03 shape: LEVEL planned on a purse of 0."""
         bad = outcome_audit.plan_cost_violations(
-            [_row(0, [{"kind": "level"}], level_cost=7)])
+            [_row(0, [{"kind": "level"}], level_cost=5)])
         self.assertEqual(len(bad), 1)
         self.assertEqual(bad[0]["step"], "LEVEL")
         self.assertEqual(bad[0]["gold"], 0)
+
+    def test_a_level_priced_above_the_purse_is_reported(self):
+        """The general form, now that the price is known to be real: 5 gold
+        cannot pay for a 7 gold button."""
+        bad = outcome_audit.plan_cost_violations(
+            [_row(5, [{"kind": "level"}], level_cost=7)])
+        self.assertEqual([(b["step"], b["cost"]) for b in bad], [("LEVEL", 7)])
+
+    def test_a_level_the_purse_covers_is_left_alone(self):
+        self.assertEqual(outcome_audit.plan_cost_violations(
+            [_row(7, [{"kind": "level"}], level_cost=7)]), [])
+        self.assertEqual(outcome_audit.plan_cost_violations(
+            [_row(9, [{"kind": "level"}], level_cost=5)]), [])
+
+    def test_a_level_with_no_price_available_is_not_judged_when_funded(self):
+        """level_cost() returns None at tier 6, where there is nothing to buy."""
+        self.assertEqual(outcome_audit.plan_cost_violations(
+            [_row(4, [{"kind": "level"}], level_cost=None)]), [])
 
     def test_a_buy_with_no_gold_left_is_reported(self):
         bad = outcome_audit.plan_cost_violations(
             [_row(0, [{"kind": "buy", "card": "BGS_034"}])])
         self.assertEqual([b["step"] for b in bad], ["Buy BGS_034"])
 
-    def test_a_funded_purse_is_not_judged_at_all(self):
-        """2 gold cannot buy a 3-gold minion by the game's rules, but the
-        analysis's cost fields are not a price list this check can trust, so it
-        says nothing rather than guessing."""
+    def test_a_buy_with_gold_in_hand_is_not_judged(self):
+        """2 gold cannot buy a minion, but the only price map available reports
+        stale legacy tier costs for minions, so this check stays quiet rather
+        than repeat the 16/27/28-gold mistake."""
         self.assertEqual(outcome_audit.plan_cost_violations(
             [_row(2, [{"kind": "buy", "card": "BGS_034"}],
-                  shop_costs={"BGS_034": 3})]), [])
-        self.assertEqual(outcome_audit.plan_cost_violations(
-            [_row(1, [{"kind": "level"}], level_cost=5)]), [])
+                  shop_costs={"BGS_034": 27})]), [])
 
     def test_steps_that_are_not_purchases_are_never_flagged(self):
         """A roll or a hold with 0 gold is not the bug: the bug was telling a
