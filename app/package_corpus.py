@@ -45,6 +45,15 @@ SCHEMA = 1
 #: opponent handles ... in the log or the decisions" — one real session had
 #: 50 advisories carrying it (found 2026-10-03, while designing the automatic
 #: upload path that would have made it a player-facing leak).
+#:
+#: MEASURED LATER THE SAME DAY, on the session that prompted the follow-up
+#: work: every identity reference in its 212 raw records (93 of them, across 9
+#: distinct handles) sat in THIS field, so this pop removed all 93 and missed
+#: nothing. The gap was never that this list was too short — it is that nothing
+#: could CHECK it, and that a handle arriving by any other route (advice text,
+#: a field added later) would have shipped with `inspect` still saying clean.
+#: Bundles written BEFORE this pop existed are the ones to distrust, including
+#: anything already uploaded.
 _PERSON_PATHS = ("analysis.opp_comp.name",)
 #: The record's log field: normally just "Power.log", but a record written
 #: from a full path would carry the session DIRECTORY, which links a player's
