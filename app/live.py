@@ -46,6 +46,36 @@ def find_active_log():
     return logs[0] if logs else None
 
 
+def log_age_note(path, now=None):
+    """A line for the console when the log we attached to is not a live game.
+
+    The coach deliberately attaches to the newest Power.log it can find, which
+    is what makes a review after the fact possible — but it used to call that
+    "live-coaching" whatever its age. The first run on a machine that has
+    played before therefore announced an 18-hour-old session as live, with the
+    overlay (correctly) sitting on its welcome state: the console and the
+    window disagreed, and the console was the one that was wrong (2026-10-03).
+    """
+    if not path:
+        return None
+    age = (now or time.time()) - os.path.getmtime(path)
+    recent = int(os.environ.get("LIVE_RECENT", "600"))
+    if age < recent:
+        return None
+    return (f"Note: that session finished {_human_age(age)} ago, so this is "
+            f"your last game, not a live one. The overlay is waiting for a new "
+            f"game and updates the moment you start one.")
+
+
+def _human_age(seconds):
+    """Rough, readable: the exact second does not help anybody."""
+    if seconds < 3600:
+        return f"{int(seconds // 60)} min"
+    if seconds < 86400:
+        return f"{int(seconds // 3600)} h"
+    return f"{int(seconds // 86400)} d"
+
+
 def warn_stale_meta(meta_dir=None):
     """One startup line when the meta DB predates a plausible patch.
 
@@ -235,6 +265,9 @@ def monitor(path, poll=1.0):
     # landed at 17:36-20:27; the user's reports described fixed bugs).
     print(f"Bob's Ledger — live-coaching {path} "
           f"(coach {decision_log.coach_version()})", flush=True)
+    age_note = log_age_note(path)
+    if age_note:
+        print(age_note, flush=True)
     f = open(path, "rb")
     last_offset = _catch_up(f, coach)
     # Deliberately NO force-advise seed here: attaching to a finished or
