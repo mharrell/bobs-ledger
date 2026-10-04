@@ -96,9 +96,18 @@ class TestTheGameFilter(unittest.TestCase):
         self.assertNotEqual(one, two)
 
     def test_the_privacy_whitelist_still_verifies_a_per_game_report(self):
-        ok, problems = session_report.verify(
-            session_report.build([_advisory(2)], session_key="s#2", game=2))
-        self.assertTrue(ok, problems)
+        """verify() walks the WHOLE report here, against the envelope spec.
+
+        The first version of this test unpacked `ok, problems = verify(...)`,
+        but verify() returns a LIST of problems — so `ok` was the string
+        "manifest" and the assertion passed for any report at all. It also
+        checked the report against the one-advisory SPEC instead of REPORT_SPEC,
+        which reports the report's own "manifest"/"advisories" keys as intruders.
+        """
+        problems = session_report.verify(
+            session_report.build([_advisory(2)], session_key="s#2", game=2),
+            session_report.REPORT_SPEC)
+        self.assertEqual(problems, [])
 
 
 class TestShareSessionWiring(unittest.TestCase):
@@ -253,6 +262,124 @@ class TestTheSessionEndBackstop(unittest.TestCase):
                 mock.patch.object(share, "share_session", flaky):
             self.live._share_finished("Power.log")
         self.assertEqual(sent, [1, 2])
+
+
+class TestOnlyFinishedGamesAreShared(unittest.TestCase):
+    """A game that is still being played must never be uploaded.
+
+    The exit backstop runs from main()'s finally, which is exactly where a player
+    who quits mid-game arrives — and it used to share whatever the decision log
+    held, finished or not. Measured 2026-10-04: a turn-5 game went up with 14 of
+    its eventual 128 advisories, and because a report id is minted for good while
+    the collector refuses one id carrying two different bodies, the cloud kept the
+    first sixth of that game permanently (the complete rebuild was refused 409).
+    """
+
+    def setUp(self):
+        import live
+        self.live = live
+        live._shared_games.clear()
+        self.addCleanup(live._shared_games.clear)
+
+    def _run(self, records, last_game=None, opts=()):
+        sent = []
+
+        def fake_share(log_path, game=None, **kw):
+            sent.append(game)
+            return "sent"
+
+        with mock.patch.object(session_report, "decisions_for",
+                               return_value=records), \
+                mock.patch.object(share, "share_session", fake_share):
+            outcome = self.live._share_finished("Power.log", opts, last_game)
+        return sent, outcome
+
+    def test_the_game_being_played_is_not_shared(self):
+        sent, outcome = self._run([_advisory(1)], last_game=(1, False))
+        self.assertEqual(sent, [], "a game that had not ended was uploaded")
+        self.assertEqual(outcome, "skipped")
+
+    def test_an_ended_game_is_shared(self):
+        sent, _ = self._run([_advisory(1)], last_game=(1, True))
+        self.assertEqual(sent, [1])
+
+    def test_the_games_before_the_live_one_are_all_finished(self):
+        """Game 3 starting is proof that games 1 and 2 ended."""
+        sent, _ = self._run([_advisory(1), _advisory(2), _advisory(3)],
+                            last_game=(3, False))
+        self.assertEqual(sent, [1, 2])
+
+    def test_the_exit_path_reads_the_monitors_last_view(self):
+        """main()'s finally has no coach object, so monitor() publishes one.
+
+        Without that bridge the exit path sees None, assumes every game finished,
+        and re-offers the very game the player is in the middle of.
+        """
+        with mock.patch.object(self.live, "_LAST_GAME", (1, False)):
+            sent, outcome = self._run([_advisory(1)])
+        self.assertEqual(sent, [])
+        self.assertEqual(outcome, "skipped")
+
+    def test_a_transport_failure_is_retried_but_a_refusal_is_not(self):
+        """The two failures are not the same, and the memo must agree.
+
+        A transport failure is worth another attempt — it is the game's only
+        chance to be counted. A verifier refusal would be refused again, and
+        re-reading a multi-megabyte decision log every 30 s to be told so helps
+        nobody.
+        """
+        attempts = []
+
+        def fake_share(log_path, game=None, **kw):
+            attempts.append(game)
+            return "failed" if len(attempts) == 1 else "refused"
+
+        with mock.patch.object(share, "share_session", fake_share):
+            self.live._share_game("Power.log", 1)
+            self.live._share_game("Power.log", 1)   # retried after the failure
+            self.live._share_game("Power.log", 1)   # "refused" is final
+        self.assertEqual(attempts, [1, 1])
+
+
+class TestTheVersionStamp(unittest.TestCase):
+    """Which build produced a game's advice, stated honestly.
+
+    `manifest.coach_version` was the FIRST record's version, which is a lie for a
+    game coached across an update — and the corpus exists to compare builds. The
+    measured instance (2026-10-04): the report rebuilt at 11:57:39 claims
+    5b7e83c while 114 of its 128 advisories were recorded by 6bcfbcc, because the
+    player updated mid-game and the coach restarted onto the new code.
+    """
+
+    def _records(self, *versions):
+        out = []
+        for i, version in enumerate(versions):
+            r = _advisory(1, turn=4 + i)
+            r["coach_version"] = version
+            out.append(r)
+        return out
+
+    def test_one_build_is_named(self):
+        report = session_report.build(self._records("abc1234"),
+                                      session_key="s#1", game=1)
+        self.assertEqual(report["manifest"]["coach_version"], "abc1234")
+        self.assertEqual(report["manifest"]["coach_versions"], ["abc1234"])
+
+    def test_a_game_spanning_an_update_claims_no_single_version(self):
+        report = session_report.build(self._records("old1111", "old1111",
+                                                    "new9999"),
+                                      session_key="s#1", game=1)
+        self.assertIsNone(report["manifest"]["coach_version"],
+                          "a mixed report must not be attributed to one build")
+        self.assertEqual(report["manifest"]["coach_versions"],
+                         ["old1111", "new9999"])
+
+    def test_the_new_field_still_passes_the_spec_walk(self):
+        """Adding a manifest field means adding it to MANIFEST_SPEC on purpose."""
+        report = session_report.build(self._records("old1111", "new9999"),
+                                      session_key="s#1", game=1)
+        self.assertEqual(
+            session_report.verify(report, session_report.REPORT_SPEC), [])
 
 
 if __name__ == "__main__":

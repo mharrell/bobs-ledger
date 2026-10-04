@@ -127,6 +127,7 @@ DROPPED_ON_PURPOSE = (
 #: report's own "manifest"/"advisories" keys as intruders (2026-10-03).
 MANIFEST_SPEC = {
     "created": SCALAR, "report_id": SCALAR, "coach_version": SCALAR,
+    "coach_versions": [SCALAR],
     "advisories": SCALAR, "games": SCALAR, "opponent_names_dropped": SCALAR,
 }
 REPORT_SPEC = {"schema": SCALAR, "manifest": MANIFEST_SPEC,
@@ -338,14 +339,23 @@ def build(records, now=None, session_key=None, game=None):
     if game is not None:
         records = [r for r in records if r.get("game") == game]
     rows = [_one(r) for r in records]
+    # Which build produced this advice? The FIRST record's version was the old
+    # answer, and it is a lie for any game coached across an update: the report
+    # rebuilt at 11:57:39 on 2026-10-04 claims 5b7e83c while 114 of its 128
+    # advisories were recorded by 6bcfbcc. The corpus compares builds, so a
+    # mislabeled report is a measurement error in the one field that exists to
+    # prevent it. One version -> that version; several -> null, with the list
+    # beside it, because there is no single honest answer.
+    versions = list(dict.fromkeys(
+        r.get("coach_version") for r in records if r.get("coach_version")))
     return {
         "schema": SCHEMA,
         "manifest": {
             "created": (now or datetime.datetime.now()).isoformat(
                 timespec="seconds"),
             "report_id": report_id_for(records, session_key),
-            "coach_version": (records[0].get("coach_version")
-                              if records else None),
+            "coach_version": versions[0] if len(versions) == 1 else None,
+            "coach_versions": versions,
             "advisories": len(rows),
             "games": len({r.get("game") for r in rows}),
             # Counted from the SOURCE, not the output: the point of the

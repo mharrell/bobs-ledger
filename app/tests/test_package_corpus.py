@@ -31,11 +31,20 @@ class TestPackage(unittest.TestCase):
                    "TAG_CHANGE Entity=Tester#1234 tag=RESOURCES value=3\n"
                    "GameState.DebugPrintPower() - CREATE_GAME\n")
         # a matching decision log with one entry
+        # LOG_DIR is a MODULE global, so it has to be put back: leaving it
+        # pointing at a temp dir that tearDown then deletes meant every test
+        # module discovered after this one ran against a directory that no longer
+        # existed. The visible symptom was quiet and looked like an environment
+        # fact rather than a leak — test_per_game_e2e, the only test that drives
+        # the real per-game share chain, passed on its own and SKIPPED in the
+        # full suite, blaming the machine (found 2026-10-04).
+        self._saved_log_dir = decision_log.LOG_DIR
         decision_log.LOG_DIR = os.path.join(self.tmp.name, "decision_logs")
         decision_log.record({"top_move": "1. roll", "gold": 3, "tier": 1},
                             log_path=self.log, log_offset=42, game_no=1)
 
     def tearDown(self):
+        decision_log.LOG_DIR = self._saved_log_dir
         self.tmp.cleanup()
 
     def test_bundle_contains_both_and_no_tags(self):
