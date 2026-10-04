@@ -36,17 +36,29 @@ OPT_IN = os.environ.get("HEARTH_REAL_SESSION_TESTS") == "1"
 class TestOneReportPerGame(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        """The newest session that has decision logs HERE.
+
+        Not simply the newest session: a game coached by an INSTALLED copy
+        writes its decision log inside that install, not in this repo, so the
+        newest log on the machine can have no records here at all - the first
+        version of this test skipped for exactly that reason, from a build that
+        had coached a game minutes earlier (2026-10-04).
+        """
         with mock.patch.object(real_logs, "MAX_BYTES", 1 << 40):
-            log = real_logs.newest_settled()
-        if not log:
-            raise unittest.SkipTest(real_logs.why_none())
-        records = session_report.decisions_for(log)
-        games = sorted({r.get("game") for r in records
-                        if r.get("game") is not None})
-        if not games:
-            raise unittest.SkipTest("no decision log for a settled session")
-        cls.log = log
-        cls.games = games
+            candidates = real_logs.all_logs()
+        chosen = None
+        for path in candidates:
+            games = sorted({r.get("game")
+                            for r in session_report.decisions_for(path)
+                            if r.get("game") is not None})
+            if games:
+                chosen = (path, games)
+                break
+        if not chosen:
+            raise unittest.SkipTest(
+                "no session on this machine has a decision log in this repo - "
+                "an installed copy keeps its own beside itself, not here")
+        cls.log, cls.games = chosen
 
     def _run(self, tmp, posted):
         def fake_post(*a, **kw):
