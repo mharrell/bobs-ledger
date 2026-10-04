@@ -258,6 +258,10 @@ def monitor(path, poll=1.0):
     automatically. The parse is maintained incrementally (LiveCoach), so each
     analysis is fast (~ms).
     """
+    # The exit backstop in main() reads this module global; without the
+    # declaration these assignments would only rebind a local, and the exit path
+    # would still see None and share an unfinished game.
+    global _LAST_GAME
     coach = LiveCoach()
     # The running process's git commit, printed so a monitor started before a
     # patch lands is identifiable — it keeps its OLD code until restarted
@@ -299,14 +303,24 @@ def monitor(path, poll=1.0):
                 # The previous game is over: this is one of the two moments
                 # that is certain, the other being exit. Sharing here means a
                 # player who leaves the coach running for days still has
-                # every finished game counted.
-                _share_finished(path, [a for a in sys.argv[1:] if a.startswith("--")])
+                # every finished game counted. `coach` here is still the OLD
+                # session's coach, so its game state says whether that
+                # session's last game actually finished.
+                _share_finished(path,
+                                [a for a in sys.argv[1:] if a.startswith("--")],
+                                _game_state(coach))
                 f.close()
                 path = active
                 f = open(path, "rb")
                 coach = LiveCoach()
                 last_offset = _catch_up(f, coach)
-                _advise(coach, force=True)
+                # The join keys are not optional here: without them this
+                # advisory is recorded against no session at all — a
+                # decision_unknown.jsonl line with log, offset and game all
+                # null, which no corpus can ever place against a Power.log.
+                _advise(coach, force=True, log_path=path,
+                        log_offset=last_offset, game_no=coach.game_no)
+                _LAST_GAME = _game_state(coach)
                 in_action = False
                 last_state = None
                 meta_checked_lines = 0
@@ -427,6 +441,10 @@ def monitor(path, poll=1.0):
                     last_err = str(e)
                 last_state = None  # retry the whole state next tick
 
+            # What the exit backstop will consult: main()'s finally has no coach
+            # object, and without this it shares a game that is still in
+            # progress (see _game_state).
+            _LAST_GAME = _game_state(coach)
             # Share a game as soon as it ENDS, instead of waiting for the
             # session to end. Measured 2026-10-04: a player finished a game,
             # closed Hearthstone, and nothing left the machine until they closed
@@ -445,7 +463,8 @@ def monitor(path, poll=1.0):
                     and time.time() - _LAST_SHARE_ATTEMPT[0] > 30):
                 _LAST_SHARE_ATTEMPT[0] = time.time()
                 _share_finished(path,
-                                [a for a in sys.argv[1:] if a.startswith("--")])
+                                [a for a in sys.argv[1:] if a.startswith("--")],
+                                _LAST_GAME)
             time.sleep(poll)
     except KeyboardInterrupt:
         pass
@@ -466,6 +485,39 @@ _shared_games = set()
 #: the measured case) for nothing. Half a minute is far below the time a player
 #: takes between games, and the exit backstop still covers the end of a session.
 _LAST_SHARE_ATTEMPT = [0.0]
+
+#: The monitor's view of the game it is CURRENTLY coaching: (game number, has it
+#: ended). The exit backstop runs from main()'s finally, which has no coach
+#: object, so the monitor keeps the last view here; without it that path shares a
+#: game that has not finished. Measured 2026-10-04: a turn-5 game went up with 14
+#: of its eventual 128 advisories, under a report id no later rebuild could
+#: correct (the complete one was refused 409).
+_LAST_GAME = None
+
+
+def _game_state(coach):
+    """(game number, has this game ended) for a coach, or None."""
+    if coach is None:
+        return None
+    gs = getattr(coach, "gs", None)
+    return (getattr(coach, "game_no", None),
+            bool(getattr(gs, "_game_ended", False)))
+
+
+def _in_progress_game(last_game):
+    """The game number that must NOT be shared yet, or None.
+
+    A game is finished once its own log said so, or once a later game has begun
+    (the decision log's game numbers only move forward). Anything else is still
+    being played, and a report of it is a truncated game frozen under an id that
+    a later, complete rebuild can never overwrite — the collector answers 409 to
+    one id carrying two different bodies, and `manifest.created` makes every
+    rebuild different.
+    """
+    if not last_game:
+        return None
+    game_no, ended = last_game
+    return None if ended else game_no
 
 
 def _share_game(log_path, game, opts=()):
@@ -490,20 +542,32 @@ def _share_game(log_path, game, opts=()):
     try:
         import share
         outcome = share.share_session(log_path, game=game)
-        _shared_games.add(key)
+        # Memoised unless the send can still succeed later: a transport failure
+        # is worth another try, while "refused" (the verifier rejected the very
+        # same content) would be refused again — and re-reading a 6 MB decision
+        # log every 30 s to be told so helps nobody.
+        if outcome != "failed":
+            _shared_games.add(key)
         return outcome
     except Exception as e:          # noqa: BLE001 - never break the coach
         print(f"  (could not share this game: {e})", flush=True)
         return "error"
 
 
-def _share_finished(log_path, opts=()):
-    """The session-end backstop: share whatever this run has not sent yet.
+def _share_finished(log_path, opts=(), last_game=None):
+    """The end-of-session backstop: share every FINISHED game not sent yet.
 
     Kept alongside the game-level share because that one only fires when the
-    coach SEES a game end. A player who quits mid-game, or whose final game
-    ends in the same tick as the session switch, would otherwise leave that game
-    behind - and it is the game they are most likely to still remember.
+    coach SEES a game end. A game that ended while the coach was not looking, or
+    one whose end landed in the same tick as a session switch, would otherwise be
+    left behind - and it is the game the player is most likely to still remember.
+
+    It shares only games that have ENDED. `last_game` is the monitor's view of
+    the game in progress, and that game is skipped: the monitor's own exit path
+    arrives here while the player is mid-game, and an in-progress game's report
+    is a truncated record that its id can never be corrected out of (2026-10-04).
+    A player who quits mid-game therefore leaves that game unsent — which is the
+    honest outcome, and the alternative was permanently wrong data.
 
     When no game numbers are readable - an empty log still being written, or a
     record shape from before the field existed - it falls back to sharing the
@@ -520,7 +584,14 @@ def _share_finished(log_path, opts=()):
     except Exception as e:          # noqa: BLE001 - never break the coach
         print(f"  (could not check for unsent games: {e})", flush=True)
         return "error"
+    if last_game is None:
+        last_game = _LAST_GAME
+    skip = _in_progress_game(last_game)
+    if skip is not None:
+        games = [g for g in games if g != skip]
     if not games:
+        if skip is not None:
+            return "skipped"        # the only game here is still being played
         # Exactly the old per-session behaviour, kept for the case where there
         # is nothing to be per-game about.
         try:
@@ -531,7 +602,7 @@ def _share_finished(log_path, opts=()):
             return "error"
     outcomes = [_share_game(log_path, g, opts) for g in games]
     for outcome in outcomes:
-        if outcome not in ("skipped", "already-sent"):
+        if outcome not in ("skipped", "already-sent", "already"):
             return outcome
     return "skipped"
 
@@ -630,7 +701,11 @@ def main():
         with open(path, encoding="utf-8", errors="replace") as f:
             for line in f:
                 coach.feed(line)
-        _advise(coach)
+        # With the join keys, like every other call site: `--once` writes its
+        # advisory to decision_unknown.jsonl without them (log, offset and game
+        # all null), which no corpus can place against a Power.log.
+        _advise(coach, log_path=path, log_offset=os.path.getsize(path),
+                game_no=coach.game_no)
         return 0
     try:
         monitor(path, poll)
@@ -638,7 +713,10 @@ def main():
         pass
     finally:
         # The other certain end-of-game moment: the player stops the coach.
-        _share_finished(path, [a for a in sys.argv[1:] if a.startswith("--")])
+        # _LAST_GAME is what keeps this from sharing a game that is still being
+        # played when the player quits mid-game.
+        _share_finished(path, [a for a in sys.argv[1:] if a.startswith("--")],
+                        _LAST_GAME)
     return 0
 
 

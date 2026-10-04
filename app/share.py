@@ -14,7 +14,9 @@ leaves. A report that fails either check is NOT sent, and says so loudly: a
 privacy control that silently degrades is worse than none.
 
 The local copy of everything sent stays in session_reports/, so a player can
-read exactly what was shared.
+read exactly what was shared. It is also the retry payload: a report id's content
+is fixed when it is first built, because a rebuild changes `created` and the
+collector refuses one id carrying two different bodies (409).
 
 Consent lives in .share_consent.json next to the code:
   absent or share=None -> not asked yet (the overlay shows the question)
@@ -99,11 +101,53 @@ def _sent_ids():
 
 
 def _remember_sent(report_id):
+    """Record a delivered report id. Never raises.
+
+    This call sits between a successful upload and this module's promise never to
+    raise, so a ledger that cannot be written must not escape into the coach — the
+    report file beside it carries the same fact (2026-10-04).
+    """
     ids = _sent_ids()
     ids.add(report_id)
-    os.makedirs(REPORTS_DIR, exist_ok=True)
-    with open(SENT_PATH, "w", encoding="utf-8") as f:
-        json.dump({"ids": sorted(ids)}, f)
+    try:
+        os.makedirs(REPORTS_DIR, exist_ok=True)
+        with open(SENT_PATH, "w", encoding="utf-8") as f:
+            json.dump({"ids": sorted(ids)}, f)
+    except OSError as e:
+        print(f"  (could not record the sent report id {report_id}: {e})",
+              flush=True)
+
+
+def _local_report_path(report_id):
+    return os.path.join(REPORTS_DIR, f"report_{report_id}.json.gz")
+
+
+def _existing_blob(path):
+    """The bytes already on disk for a report id, or None.
+
+    A report id's content is IMMUTABLE: it is built once and thereafter re-sent
+    byte-for-byte. `manifest.created` is a wall-clock stamp, so rebuilding the
+    same game yields different bytes, and the collector refuses one id carrying
+    two bodies (409) — which is how a game the exit backstop sent at turn 5 stayed
+    frozen at 14 of its eventual 128 advisories, with every later complete rebuild
+    refused (measured 2026-10-04). While the local file exists it IS the payload.
+    """
+    try:
+        with open(path, "rb") as f:
+            return f.read()
+    except OSError:
+        return None
+
+
+def _already_stored(detail):
+    """True when the collector refused a re-POST of an id it already holds.
+
+    A 409 is not a failure: this id's bytes reached the cloud on an earlier
+    attempt whose response we never saw. Treating it as a failure is what made a
+    single truncated report permanent — every retry rebuilt different bytes, so it
+    was refused again, and the id never reached the sent ledger.
+    """
+    return "409" in (detail or "")
 
 
 def post_report(blob, url=None, timeout=30):
@@ -127,6 +171,10 @@ def share_session(log_path, url=None, quiet=False, game=None):
     Never raises and never blocks play: the coach's job is advice, and a
     report that cannot be sent is a lost measurement, not a failure the player
     should have to deal with.
+
+    One report id means ONE payload, for good. A re-send therefore re-POSTs the
+    bytes already on disk rather than rebuilding them, and a 409 means the cloud
+    already has this id — both are what keep a retry able to succeed at all.
     """
     if status() != "on":
         return status()
@@ -147,24 +195,26 @@ def share_session(log_path, url=None, quiet=False, game=None):
     if report_id in _sent_ids():
         return "already"
 
-    problems, findings = session_report.check(report)
-    if problems or findings:
-        # Refuse, loudly. Sending a report its own verifier rejects would
-        # make the verifier decoration.
-        print("  NOT SENT: this report failed verification "
-              f"({len(problems)} spec problem(s), {len(findings)} finding(s)). "
-              "Please report this — nothing was uploaded.")
-        if problems:
-            print(f"    spec: {problems[:5]}")
-        if findings:
-            print(f"    scan: {list(findings)[:5]}")
-        return "refused"
-
-    blob = gzip.compress(json.dumps(report).encode("utf-8"))
     os.makedirs(REPORTS_DIR, exist_ok=True)
-    local = os.path.join(REPORTS_DIR, f"report_{report_id}.json.gz")
-    with open(local, "wb") as f:
-        f.write(blob)
+    local = _local_report_path(report_id)
+    blob = _existing_blob(local)
+    fresh = blob is None
+    if fresh:
+        problems, findings = session_report.check(report)
+        if problems or findings:
+            # Refuse, loudly. Sending a report its own verifier rejects would
+            # make the verifier decoration.
+            print("  NOT SENT: this report failed verification "
+                  f"({len(problems)} spec problem(s), {len(findings)} finding(s)). "
+                  "Please report this — nothing was uploaded.")
+            if problems:
+                print(f"    spec: {problems[:5]}")
+            if findings:
+                print(f"    scan: {list(findings)[:5]}")
+            return "refused"
+        blob = gzip.compress(json.dumps(report).encode("utf-8"))
+        with open(local, "wb") as f:
+            f.write(blob)
 
     try:
         ok, detail = post_report(blob, url=url)
@@ -175,6 +225,14 @@ def share_session(log_path, url=None, quiet=False, game=None):
         # caught the contradiction: it asserted the raise that the promise
         # said could not happen.)
         ok, detail = False, f"{type(e).__name__}: {e}"
+    if not ok and _already_stored(detail):
+        # The id is spent: its bytes ARE the cloud's copy, so stop rebuilding a
+        # report that can never be accepted and stop re-POSTing it every run.
+        _remember_sent(report_id)
+        if not quiet:
+            print(f"  the cloud already holds this report ({detail}); "
+                  "nothing was re-sent")
+        return "already"
     if not ok:
         if not quiet:
             print(f"  could not share this session ({detail}); it is kept in "
@@ -183,9 +241,33 @@ def share_session(log_path, url=None, quiet=False, game=None):
         return "failed"
     _remember_sent(report_id)
     if not quiet:
-        print(f"  shared {len(records)} advisories "
-              f"({len(blob) / 1024:.1f} KB) — {detail}")
+        what = (f"{report['manifest']['advisories']} advisories" if fresh
+                else "the report already built for this game")
+        print(f"  shared {what} ({len(blob) / 1024:.1f} KB) — {detail}")
     return "sent"
+
+
+def share_games(log_path, url=None, quiet=False):
+    """Share each of a session's games as its own report.
+
+    The CLI's path, and it must be per game for the same reason the live path is:
+    a session-level report keys a DIFFERENT report id (the session stem without
+    `#game`), so the two schemes do not dedup against each other and the same
+    advisory set can reach the collector twice under two ids. Measured
+    2026-10-04: one game arrived as two byte-identical reports 31 minutes apart.
+    """
+    records = session_report.decisions_for(log_path)
+    games = sorted({r.get("game") for r in records if r.get("game") is not None})
+    if not games:
+        # Nothing carries a game number (an old record shape): one report for
+        # whatever is there, which cannot collide with a per-game one.
+        return share_session(log_path, url=url, quiet=quiet)
+    outcomes = [share_session(log_path, url=url, quiet=quiet, game=g)
+                for g in games]
+    for outcome in outcomes:
+        if outcome not in ("already", "skipped"):
+            return outcome
+    return "already"
 
 
 def share_latest(url=None, quiet=False):
@@ -193,7 +275,7 @@ def share_latest(url=None, quiet=False):
     logs = sorted(glob.glob(HS_LOG_GLOB), key=os.path.getmtime, reverse=True)
     if not logs:
         return "nothing"
-    return share_session(logs[0], url=url, quiet=quiet)
+    return share_games(logs[0], url=url, quiet=quiet)
 
 
 def main():
