@@ -1,20 +1,24 @@
 """The restart after an update must survive a path with spaces in it.
 
-live.py used to restart itself with os.execv(sys.executable, [sys.executable,
-os.path.abspath(__file__)] + sys.argv[1:]). On Windows the execv family joins
-that argument list with spaces and NO quoting at all, so an install under
-C:\\Users\\<name with a space>\\Downloads\\Bob's Ledger was restarted with the
-path truncated at the first space:
+live.py used to restart itself through os.execv, passing the interpreter and
+this file's absolute path as a list. On Windows the execv family joins that list
+with spaces and no quoting, so an install inside a user folder whose name
+contains a space was restarted with the path cut short at the first space, and
+Python answered:
 
-    C:\\Python312\\python.exe: can't open file 'C:\\Users\\Silver':
-    [Errno 2] No such file or directory
+    can't open file '<the path up to the first space>': [Errno 2] No such file
+    or directory
 
-The player saw that on every update, and because the update itself had applied
-correctly, the next launch found nothing to do and simply worked - which is why
-it looked like "I have to start the coach several times" (2026-10-04). This is
-the shape of test the launcher's own bugs get: the behaviour cannot be exercised
-without a real update, so the invariant that prevents it is pinned instead.
+The player saw it on every update, and because the update itself HAD applied,
+the next launch found nothing to do and simply worked. That is why it looked
+like "I have to start the coach several times" (2026-10-04).
+
+The real behaviour cannot be exercised without a real update, so this pins the
+invariant instead. The check reads the module's AST rather than its text: the
+first version grepped for "os.execv" and failed on the COMMENT that explains why
+os.execv is not used, which is a test measuring prose.
 """
+import ast
 import os
 import subprocess
 import sys
@@ -26,28 +30,39 @@ sys.path.insert(0, HERE)
 LIVE = os.path.join(HERE, "live.py")
 
 
-class TestTheUpdateRestart(unittest.TestCase):
-    def setUp(self):
-        with open(LIVE, encoding="utf-8") as f:
-            self.text = f.read()
+def _calls_in_live():
+    """Every attribute name live.py actually CALLS, comments excluded."""
+    with open(LIVE, encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    called = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            called.add(node.func.attr)
+    return called
 
-    def test_it_does_not_use_the_exec_family(self):
-        """Nothing in live.py may use os.exec*, on any platform: the reason is
-        Windows quoting, and a future call would read as harmless."""
-        for name in ("os.execv", "os.execve", "os.execl", "os.execvp",
-                     "os.spawnv"):
-            self.assertNotIn(name, self.text, f"{name} does not quote its "
-                                             f"arguments on Windows")
+
+class TestTheUpdateRestart(unittest.TestCase):
+    def test_nothing_uses_the_exec_or_spawn_family(self):
+        """Those do not quote their arguments on Windows, and a future call
+        would read as harmless. Comments and docstrings are excluded on
+        purpose: they are where the reason is written down."""
+        called = _calls_in_live()
+        for name in ("execv", "execve", "execl", "execlp", "execvp", "execle",
+                     "spawnv", "spawnl", "system", "popen"):
+            self.assertNotIn(name, called, f"{name}() does not quote its "
+                                           f"arguments on Windows")
 
     def test_it_restarts_through_subprocess_with_a_list(self):
+        with open(LIVE, encoding="utf-8") as f:
+            text = f.read()
         self.assertIn("subprocess.run([sys.executable, os.path.abspath(__file__)]",
-                      self.text)
+                      text)
 
-    def test_the_mechanism_actually_survives_a_space(self):
-        """Proof that the replacement is the right one, run for real: an
-        argument containing spaces arrives intact through subprocess, which is
-        the whole point of the change."""
-        spaced = os.path.join(os.sep, "Users", "A Name With Spaces", "x.py")
+    def test_an_argument_from_a_folder_with_spaces_arrives_intact(self):
+        """The mechanism the fix relies on, run for real: a spaced path handed
+        to subprocess as one list element comes back whole. This is what the
+        exec family failed to do, so it is worth one subprocess to prove."""
+        spaced = os.sep.join([os.sep + "Users", "A Name With Spaces", "x.py"])
         proc = subprocess.run(
             [sys.executable, "-c", "import sys; print(sys.argv[1])", spaced],
             capture_output=True, text=True, timeout=60)
