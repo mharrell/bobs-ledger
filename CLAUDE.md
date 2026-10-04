@@ -117,6 +117,52 @@ player to re-extract the zip is useless); `update.recover()`, or
 `update.py --recover`, then finishes precisely — including removing files the
 new version added — while `APPLIED` on disk means "do not undo this".
 
+## Where the last session left off (2026-10-04, main 6bcfbcc)
+
+Sharing sends ONE REPORT PER GAME now, and that much is proven in the field:
+three games produced three reports in the install's `app\session_reports\`,
+each with `games: 1` (147, 147 and 128 advisories), 85 opponent handles stripped
+by the whitelist before anything left the machine, and all three arrived in
+Cloudflare under `sessions/<date>/<id>.json.gz`. The install-level check that was
+outstanding is DONE; do not redo it.
+
+THREE THINGS TO DO NEXT, in this order.
+
+1. A MEASURED BUG, and the design reason behind its fix. The game-end trigger
+   (the `_LAST_SHARE_ATTEMPT` block in `live.py`'s monitor) fires the instant
+   the log says the game ended, while the coach is still recording that game's
+   last advisories. Cloud copy against local copy:
+
+       451ada39fa79745b   cloud  1557 b   14 advisories  11:42:06
+                          local 11338 b  128 advisories  11:57:39
+
+   The exit backstop then rebuilt the same game with everything known, and the
+   collector refused it (409: same id, different bytes). The cloud keeps the
+   first sixth of that game for good. The trigger has to wait for a game's data
+   to settle — a short idle delay after the end — so the FIRST send is the
+   complete one and the backstop finds nothing left to do.
+
+2. `.sent.json` does not list `451ada39fa79745b` even though its POST arrived,
+   so "was this sent?" cannot be trusted. Fix with (1), since the settle delay
+   decides when that file is written.
+
+3. A smoke test that runs `monitor()` for one tick and fails on any exception.
+   Overdue three times now. Two published builds (5ce8f58, 5b7e83c) crashed on
+   startup with `NameError: name 'opts' is not defined` because `monitor(path,
+   poll)` never received the parsed flags while two of its call sites passed
+   `opts`; 1229 tests passed through both because nothing in the suite ever
+   called `monitor()`. To reproduce by hand:
+   `python app\live.py --no-ui --no-share` against a settled session.
+
+Smaller open items: the Cloudflare read key (`HEARTH_TELEMETRY_KEY`) is not in
+`telemetry\.dev.vars`, so the KV listing needs the dashboard; and the KV
+namespace also holds every `release/…` zip, so filter by the `sessions/` prefix
+rather than scanning. The dashboard download names files
+`sessions_<date>_<id>.json.gz`, and the values are gzip, which is correct.
+
+The `readme-rewrite` branch is still on origin, unmerged and now identical to
+`main`, kept only so a non-technical tester's link keeps working.
+
 Users start with `Start Bob's Ledger.cmd` at the zip root: it finds Python,
 asks before installing `requests`, and **offers to turn Hearthstone's file
 logging on** — `setup_logging.py` edits the game's own `log.config` in place
