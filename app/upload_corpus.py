@@ -29,6 +29,7 @@ import subprocess
 import urllib.request
 
 from config import HS_LOG_GLOB
+import package_corpus
 
 DEFAULT_REPO = "mharrell/hearth-telemetry"
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -119,7 +120,6 @@ def main():
     args = ap.parse_args()
     bundle = args.bundle
     if args.latest or not bundle:
-        import package_corpus
         logs = sorted(glob.glob(HS_LOG_GLOB),
                       key=os.path.getmtime, reverse=True)
         if not logs:
@@ -142,9 +142,30 @@ def main():
         repo = args.repo or os.environ.get("HEARTH_TELEMETRY_REPO",
                                            DEFAULT_REPO)
         destination = f"{repo}/corpus/{os.path.basename(bundle)}"
+    # Verify BEFORE claiming, and before the prompt. The sentence below used to
+    # be printed for whatever file was handed over, and a raw Power.log went up
+    # verbatim — BattleTag, opponent handles and account id included — under a
+    # line saying the log was BattleTag-redacted (measured 2026-10-04).
+    # package_corpus.inspect is the independent scan (privacy_scan, not the
+    # sanitizer's own opinion of its work), and it is the check a human would run
+    # by hand on this same file.
+    print(f"verifying: {bundle}")
+    if not bundle.lower().endswith((".gz", ".json")):
+        print("  not a corpus bundle: only a bundle written by "
+              "package_corpus.py carries a sanitized log.")
+        return 1
+    try:
+        clean = package_corpus.inspect(bundle) == 0
+    except Exception as e:              # noqa: BLE001 - any unreadable bundle
+        print(f"  cannot read this as a corpus bundle "
+              f"({type(e).__name__}: {e}) — nothing uploaded")
+        return 1
+    if not clean:
+        print("REFUSING to upload: the bundle is not clean (above).")
+        return 1
     print(f"about to upload: {bundle}")
-    print("  contents: the BattleTag-redacted Power.log + this session's "
-          "decision log (no other personal data)")
+    print("  contents: the redacted Power.log + this session's decision log, "
+          "verified clean by the checks above (no other personal data)")
     print(f"  destination: {destination}")
     if not args.yes:
         try:
