@@ -134,6 +134,10 @@ def audit_game(chunk, game_idx, session):
             # affordability check can be made from the row alone (2026-10-03).
             "steps": steps, "level_cost": a.get("level_cost"),
             "shop_costs": a.get("shop_costs") or {},
+            # The coach's OWN ranking of the shop: what the disagreement signal
+            # compares the player's buy against, so it never needs a claim
+            # about who is right (see disagreement_rows).
+            "shop_rank": a.get("shop_rank") or [],
         })
     # outcome join: the fight AFTER each advised phase moves eff HP by the
     # delta to the next advised phase (buy-phase armor gains are rare and
@@ -143,6 +147,93 @@ def audit_game(chunk, game_idx, session):
         if a_eff is not None and b_eff is not None:
             rows[k]["hp_delta_next_fight"] = b_eff - a_eff
     return rows
+
+
+def disagreement_rows(rows):
+    """Where the coach's own value function prefers what the player did.
+
+    THE PRIMARY SIGNAL, and the only one here that needs no ground truth about
+    who is right: `shop_rank` is the coach's own scoring of that shop, and the
+    plan's buy step names the card it recommended. If the card the player
+    actually bought scores HIGHER on that same list, the coach has contradicted
+    itself - its ranking and its recommendation disagree, and both are its own
+    numbers. No opinion about optimal play is required to see it.
+
+    Skipped, deliberately, when either card is missing from the ranking: the
+    player may have rolled before buying, and a card the coach never priced is
+    not evidence of anything. `card` can also be a trinket or hero pick rather
+    than a shop card, which is never in shop_rank - those fall out here too.
+    """
+    out = []
+    for r in rows:
+        rank = dict(r.get("shop_rank") or [])
+        coach_card = r.get("card")
+        if coach_card not in rank:
+            continue
+        bought = [c for c in (r.get("player_buys") or []) if c in rank]
+        if not bought:
+            continue
+        best = max(bought, key=lambda c: rank[c])
+        delta = rank[best] - rank[coach_card]
+        if delta <= 0:
+            continue
+        out.append({"session": r.get("session"), "game": r.get("game"),
+                    "turn": r.get("turn"), "gold": r.get("gold"),
+                    "coach": coach_card, "coach_score": rank[coach_card],
+                    "player": best, "player_score": rank[best],
+                    "delta": delta})
+    return sorted(out, key=lambda d: -d["delta"])
+
+
+#: Leads that ask the player to DO something, so "ignored" has a meaning.
+#: A hold or a note cannot be ignored, and counting them would drown the signal.
+_ACTIONABLE = ("buy", "level", "hunt-roll", "roll")
+
+
+def ignored_summary(rows):
+    """[(lead, advised, ignored)] for actionable advice, most ignored first.
+
+    Counting rather than concluding. One ignored level lead means nothing - the
+    player may know something the coach cannot see - but a class ignored in
+    most of its appearances is worth a look, and the totals are printed beside
+    the ignored counts so a pattern can be told from one lobby's habit.
+    """
+    counts = {}
+    for r in rows:
+        lead = r.get("lead")
+        if lead not in _ACTIONABLE:
+            continue
+        followed = (r.get("followed_roll") if lead in ("hunt-roll", "roll")
+                    else r.get(f"followed_{lead}"))
+        total, ignored = counts.get(lead, (0, 0))
+        counts[lead] = (total + 1, ignored + (0 if followed else 1))
+    return sorted(((lead, total, ignored)
+                   for lead, (total, ignored) in counts.items()),
+                  key=lambda row: (-row[2], row[0]))
+
+
+def _print_worklist(rows, top=8):
+    """The ranked worklist, in the order the objective puts the signals."""
+    bad = plan_cost_violations(rows)
+    dis = disagreement_rows(rows)
+    ign = ignored_summary(rows)
+    sessions = {r.get("session") for r in rows}
+    print(f"\n== worklist: {len(rows)} advisories across "
+          f"{len(sessions)} session(s) ==")
+    print("   counts, not verdicts. Every signal below is the coach's own "
+          "arithmetic, and one game is an anecdote however loud it looks.")
+    print(f"\n 1. the coach disagreeing with itself: {len(dis)}")
+    for d in dis[:top]:
+        print(f"      turn {d['turn']}: it said {d['coach']} "
+              f"({d['coach_score']:.1f}), the player bought {d['player']} "
+              f"({d['player_score']:.1f})  +{d['delta']:.1f}")
+    print(f"\n 2. impossible advice: {len(bad)}")
+    for b in bad[:top]:
+        print(f"      turn {b['turn']}: {b['step']} costs {b['cost']} "
+              f"with {b['gold']} gold")
+    print("\n 3. advice not taken, by class:")
+    for lead, total, ignored in ign[:top]:
+        print(f"      {lead}: ignored {ignored} of {total}")
 
 
 def plan_cost_violations(rows):
@@ -362,6 +453,7 @@ def main():
     print(f"\ntotal advised phases: {len(all_rows)} "
           f"across {len({(r['session'], r['game']) for r in all_rows})} games")
     _summarize(all_rows, min_followed)
+    _print_worklist(all_rows)
     if json_path:
         _dump_json(all_rows, json_path)
     return 0
