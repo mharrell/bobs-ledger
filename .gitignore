@@ -21,11 +21,18 @@ venv/
 
 # Regenerable caches — downloaded card data, rebuilt by the tools here
 # (parse_minions.py --refresh-tribes, scrape_comps.py, patch_day.py)
+#
+# Basenames, NOT `meta/...`: these patterns kept a `meta/` prefix when the code
+# moved into app/ (fbd2920) and a pattern with a slash is anchored to the root,
+# so they silently stopped matching `app/meta/...`. The 2026-10-04 refresh
+# surfaced it — `git status` showed the trinket caches as untracked in a tree
+# where `sync.py --new` commits untracked files. A bare basename matches at any
+# depth, which is why `.cards_cache.json` survived the move and these did not.
 .cards_cache.json
 .cards_full.json
 .observed_tribes.json
-meta/.trinkets_hsjson_cache.json
-meta/.trinkets_guides_cache.json
+.trinkets_hsjson_cache.json
+.trinkets_guides_cache.json
 
 # On-demand art fetch failures (coach_ui), regenerable
 .art_miss.json
@@ -54,21 +61,23 @@ corpus_out/
 # Local Power.log archives and generated patch-check artifacts
 logs_archive/
 patch_reports/
-meta/.patch_state.json
-meta/.patch_config.json
+.patch_state.json
+.patch_config.json
 
 # Automation caches (logquery/review_kit): regenerable, machine-specific
 .review_cache/
 
 # comp_miner proposals: derived from the local log corpus (which is not in the
 # repo), regenerable, and never a source of truth — promotion is a human edit
-# to meta/comps.json
-meta/comp_candidates.json
+# to meta/comps.json. NOTE: this one was already committed to the repo before
+# the `meta/` prefix stopped matching (app/meta/comp_candidates.json is tracked);
+# it does not ship (publish_release EXCLUDE_FILES), but untracking it is a
+# decision for the maintainer, not a side effect of fixing the pattern.
+comp_candidates.json
 
 # YouTube auto-transcripts (third-party caption text, takedown bait):
 # derived research cache — mined into the guides, never republished.
 transcripts/
-meta/transcripts/
 
 # The card->tribe map is downloaded from HearthstoneJSON, but it SHIPS inside
 # every release so a first run needs no network (bans._load_card_races reads

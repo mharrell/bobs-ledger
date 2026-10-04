@@ -23,6 +23,7 @@ Usage: python check_meta.py            # validate meta/
 import argparse
 import json
 import os
+import re
 import sys
 from collections import Counter
 
@@ -31,6 +32,16 @@ from tribes import DISPLAY_TRIBES, normalize
 _HERE = os.path.dirname(os.path.abspath(__file__))
 META = os.path.join(_HERE, "meta")
 
+#: A guide's provenance line states which tier the SOURCE had when it was
+#: written ("Our advice for the published A-tier build (hsreplay tier list,
+#: 2026-09-30)"). Nothing compared that claim with the comp's own tier, so the
+#: 2026-10-04 refresh left three guides quoting a tier that no longer existed
+#: (mechs-apm-magnetic A->S, murlocs-keyword S->A, aberrations-deathrattle-spells
+#: S->B) — each found by hand, after the fact. Only 7 of the 14 guides make a
+#: claim at all (the rest are transcript-mined and name no tier), so comparing
+#: them is exact rather than a heuristic.
+TIER_CLAIM_RE = re.compile(r"published ([SAB])-tier build")
+
 
 def _load(name):
     path = os.path.join(META, name)
@@ -38,6 +49,39 @@ def _load(name):
         return None
     with open(path, encoding="utf-8") as f:
         return json.load(f)
+
+
+def _guide_problems(comps, warnings):
+    """A comp's guide must agree with the comp, and must exist.
+
+    Two silent failures are possible here and neither had a check: a guide can
+    keep claiming a tier the tier list has since moved (the player reads stale
+    provenance in the comp box), and a comp can point at a guide file that is
+    not there (the player silently gets card chips and no advice).
+    """
+    for slug, comp in comps.items():
+        if slug.startswith("_") or not isinstance(comp, dict):
+            continue
+        rel = comp.get("guide")
+        if not rel:
+            continue
+        try:
+            with open(os.path.join(META, rel), encoding="utf-8") as f:
+                text = f.read()
+        except OSError:
+            warnings.append(f"comps.json: {slug} names a guide that is not "
+                            f"there ({rel}) — the player gets no advice")
+            continue
+        m = TIER_CLAIM_RE.search(text)
+        if not m:
+            continue
+        actual = comp.get("meta_tier")
+        if actual and m.group(1) != actual:
+            warnings.append(
+                f"comps.json: {slug} is tier {actual} but {rel} still claims "
+                f"the published {m.group(1)}-tier build — the tier list moved, "
+                f"so correct the guide's provenance line (scrape_comps.py "
+                f"--changes dates the move)")
 
 
 def _main_reconfigure_streams():
@@ -148,6 +192,9 @@ def main():
     if unknown:
         warnings.append(f"comps.json: {len(unknown)} core/addon card ids not "
                         f"in minions.json/cards.json: {sorted(unknown)[:8]}...")
+
+    # --- comp guides: the tier claim, and whether the file is there ---------
+    _guide_problems(comps, warnings)
 
     # --- duplicate names (patch_notes.py indexes by name: duplicates are ---
     # --- silently aliased) --------------------------------------------------
