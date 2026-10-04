@@ -88,6 +88,12 @@ GROWTH = (
     [f"{GS}Entity={_LOCAL} tag=RESOURCES value=3"],
 )
 
+#: The same writes, plus the local player's elimination last: the game finishes
+#: DURING the run, which is what lets a test tell "the panel was cleared when the
+#: game ended" apart from "there was never a panel to clear".
+GROWTH_THEN_END = GROWTH + (
+    [f"{GS}TAG_CHANGE Entity={_LOCAL} tag=PLAYSTATE value=LOST"],)
+
 
 def _named_tag(eid, cid, player, tag, value):
     return (f"{GS}TAG_CHANGE Entity=[entityName=H id={eid} zone=PLAY "
@@ -296,6 +302,39 @@ class MonitorSmokeTest(unittest.TestCase):
         live._LAST_GAME = (1, False)
         self.assertEqual(live._share_finished(log), "skipped")
         self.assertEqual(self.posted, [])
+
+    def test_a_finished_game_does_not_leave_its_plan_on_screen(self):
+        """The panel has to clear when the game ends, not at the next game.
+
+        The last buy phase ends well before the game does — 34 s of combat and up
+        to 76 s of post-game in one measured session, and indefinitely for a
+        session's last game, because the only other clear is the NEXT game's
+        `CREATE_GAME`. Until then the player is reading a buy instruction for a
+        game that is over.
+        """
+        log = self._session(_SESSION_DIR, ended=False)
+        self._patch(live, "find_active_log", lambda: log)
+        before = len(self._records())
+
+        self._drive(log, growth=GROWTH_THEN_END)
+
+        self.assertNothingSwallowed()
+        self.assertGreater(len(self._records()), before,
+                           "no advice was recorded, so there was nothing to clear")
+        self.assertIsNone(coach_ui.latest_analysis(),
+                          "the finished game's plan is still on the overlay")
+        self.assertEqual(live._LAST_GAME, (1, True))
+
+    def test_a_live_game_keeps_its_panel(self):
+        """The clear must be triggered by the END, not by old advice."""
+        log = self._session(_SESSION_DIR, ended=False)
+        self._patch(live, "find_active_log", lambda: log)
+
+        self._drive(log)
+
+        self.assertNothingSwallowed()
+        self.assertIsNotNone(coach_ui.latest_analysis(),
+                             "a game still being played lost its panel")
 
     def test_a_session_switch_shares_the_old_session_and_keeps_going(self):
         """The second `NameError` shipped in this branch (fixed in 6bcfbcc).

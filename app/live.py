@@ -441,10 +441,19 @@ def monitor(path, poll=1.0):
                     last_err = str(e)
                 last_state = None  # retry the whole state next tick
 
-            # What the exit backstop will consult: main()'s finally has no coach
+            # A finished game's plan must not stay on screen looking like live
+            # advice. The last buy phase ends well before the game does — 34 s of
+            # combat and up to 76 s of post-game in one measured session, and
+            # indefinitely for a session's last game, because the only other
+            # clear is the NEXT game's CREATE_GAME. The player was reading a buy
+            # instruction for a game that was over.
+            state = _game_state(coach)
+            if state and state[1] and not (_LAST_GAME and _LAST_GAME[1]):
+                coach_ui.clear_analysis()
+            # Also what the exit backstop consults: main()'s finally has no coach
             # object, and without this it shares a game that is still in
             # progress (see _game_state).
-            _LAST_GAME = _game_state(coach)
+            _LAST_GAME = state
             # Share a game as soon as it ENDS, instead of waiting for the
             # session to end. Measured 2026-10-04: a player finished a game,
             # closed Hearthstone, and nothing left the machine until they closed
