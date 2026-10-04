@@ -243,7 +243,7 @@ structurally unmeasurable — a player cannot follow advice that does not
 exist — so the gap corrupts the adherence metric as well as the coaching.
 
 **Resolved since (2026-09-26):** the source now publishes Aberration comps —
-`meta/comps.json` holds **35 comps, 4 of them Aberration**
+`meta/comps.json` holds **24 comps, 4 of them Aberration**
 (`aberrations-deathrattle-spells`, `aberrations-apm-deity`, `aberrations-sludge`
 scraped; `aberrations-deity-feed` promoted from our own corpus) — and **no entry
 carries `provisional: true` today**. The mechanism below is kept because it is
@@ -307,7 +307,7 @@ Design, evidence and the remaining gaps: `analysis/pool_and_out_of_play.md`.
 ### The assets (`meta/`)
 | File | Contents |
 |------|----------|
-| `comps.json` | 35 comps (tier, difficulty, core/addon cards, how-to-play, when-to-commit) |
+| `comps.json` | 24 comps (tier, difficulty, core/addon cards, how-to-play, when-to-commit) |
 | `cards.json` | 89 curated cards (name, tier, tribe, atk/health) |
 | `trinkets.json` | 220 trinket rows (Lesser/Greater/variants; pick rate, avg placement, distribution, guide) |
 | `dark_gifts.json` | 43 dark gifts (name, description; not ranked — see `choices.py`) |
@@ -320,7 +320,12 @@ Design, evidence and the remaining gaps: `analysis/pool_and_out_of_play.md`.
 ### Honest design notes
 - **Staleness:** the meta is point-in-time. Treat as refreshable assets, not live
   data. The comps tier list updates frequently (the newest tier change was ~22h
-  old when last checked); rescrape when the meta moves.
+  old when last checked); rescrape when the meta moves. `scrape_comps.py
+  --changes` is how to ask whether it moved: it prints the source's OWN change
+  metadata (`comp_tier_last_updated`, `comp_previous_tier`,
+  `comp_tier_recently_updated`) newest-first, beside our stored tier — so the
+  question is answerable without trusting the copy whose staleness is in doubt.
+  `--diff` shows card and text edits but can only compare against that copy.
 - **Source access:** hsreplay embeds comps/trinkets data in HTML (scrapable), but
   minions/heroes/dark-gifts load via a **Cloudflare-protected API** — those are
   captured via manual paste. The wiki.gg tavern-spell page is accessible and

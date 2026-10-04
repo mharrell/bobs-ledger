@@ -10,7 +10,6 @@ The fix is not to invent a comp. It is to mine one from our own boards, mark it
 `provisional` with its evidence attached, and make EVERY ranking path treat it as
 second class while every DISPLAY path says what it is.
 """
-import copy
 import json
 import os
 import sys
@@ -228,18 +227,79 @@ class TestPruneKeepsProvisional(unittest.TestCase):
     """`scrape_comps.py --prune` must not delete what the source never owned."""
 
     def test_prune_drops_source_comps_and_keeps_the_mined_one(self):
-        comps = {"beasts-old": {"name": "old"}, "aberrations-deity-feed":
+        comps = {"beasts-old": {"name": "old",
+                                "source": f"{scrape_comps.SOURCE_TAG} via "
+                                          f"scrape_comps.py"},
+                 "aberrations-deity-feed":
                  PROVISIONAL["aberrations-deity-feed"]}
         pruned, kept = scrape_comps.prune_unlisted(comps, keep_slugs=set())
         self.assertEqual(pruned, ["beasts-old"])
         self.assertEqual(kept, ["aberrations-deity-feed"])
         self.assertIn("aberrations-deity-feed", comps)
 
+    def test_prune_keeps_a_first_class_comp_the_source_never_owned(self):
+        """The case the `provisional` flag cannot see, and the shipped one.
+
+        `aberrations-deity-feed` was promoted to a FIRST-CLASS comp on
+        2026-09-26 (player decision), so it carries no `provisional` flag — and
+        a guard keyed on that flag alone therefore deleted a player-curated comp
+        (with mining evidence no re-scrape can rebuild) the moment anyone ran
+        `--top N --prune` after the tier list dropped its neighbours. Ownership
+        is the thing that protects it.
+        """
+        mined = {"name": "Aberrations - Deity Feed", "tribe": AB,
+                 "meta_tier": None, "core": CORE,
+                 "source": "own replay corpus (comp_miner.py, 2026-09-23)"}
+        self.assertNotIn("provisional", mined)
+        comps = {"beasts-old": {"name": "old",
+                                "source": scrape_comps.SOURCE_TAG},
+                 "aberrations-deity-feed": mined}
+        pruned, kept = scrape_comps.prune_unlisted(comps, keep_slugs=set())
+        self.assertEqual(pruned, ["beasts-old"])
+        self.assertEqual(kept, ["aberrations-deity-feed"])
+
+    def test_prune_keeps_a_comp_of_unknown_provenance(self):
+        """Absent from the source's list is not the same as ours to delete:
+        only a comp that NAMES this source may be pruned."""
+        comps = {"mystery": {"name": "hand written, no source field"},
+                 "beasts-old": {"name": "old",
+                                "source": scrape_comps.SOURCE_TAG}}
+        pruned, kept = scrape_comps.prune_unlisted(comps, keep_slugs=set())
+        self.assertEqual(pruned, ["beasts-old"])
+        self.assertEqual(kept, ["mystery"])
+        self.assertIn("mystery", comps)
+
     def test_prune_still_keeps_what_the_source_lists(self):
         comps = {"beasts-live": {"name": "live"}}
         pruned, kept = scrape_comps.prune_unlisted(comps, {"beasts-live"})
         self.assertEqual((pruned, kept), ([], []))
         self.assertIn("beasts-live", comps)
+
+    def test_the_shipped_meta_db_survives_a_prune(self):
+        """Against the REAL file, read the way main() reads it.
+
+        json.load, not meta.comps(): the shipped file carries `_enable_note` as
+        a bare STRING, and meta.comps() strips underscore keys — so the fixture
+        tests here were structurally blind to the AttributeError that
+        `--prune` raised the first time it was pointed at the real file.
+        """
+        with open(os.path.join(HERE, "meta", "comps.json"),
+                  encoding="utf-8") as f:
+            comps = json.load(f)
+        note = comps["_enable_note"]
+        sources = {k: (v.get("source") or "") for k, v in comps.items()
+                   if isinstance(v, dict)}
+        before = [k for k in comps if not k.startswith("_")]
+        pruned, kept = scrape_comps.prune_unlisted(comps, keep_slugs=set())
+        self.assertEqual(kept, ["aberrations-deity-feed"])
+        self.assertIn("aberrations-deity-feed", comps)
+        self.assertEqual(comps["_enable_note"], note, "the file note was touched")
+        self.assertGreater(len(pruned), 1, "nothing scraped was pruned at all")
+        self.assertEqual(len([k for k in comps if not k.startswith("_")]),
+                         len(before) - len(pruned))
+        for slug in pruned:
+            self.assertIn(scrape_comps.SOURCE_TAG, sources[slug],
+                          f"{slug} was pruned but is not this source's")
 
 
 class TestTheShippedEntry(unittest.TestCase):

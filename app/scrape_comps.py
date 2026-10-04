@@ -13,6 +13,12 @@ against the live site (2026-08):
   `comp_tier` (1=S/2=A/3=B), `comp_difficulty` (1/2/3), `comp_core_cards` /
   `comp_addon_cards` (dbfIds), `comp_how_to_play`, `comp_when_to_commit`,
   `comp_common_enablers`, `comp_summary`, `comp_representative_card`.
+- The index page ALSO carries per-comp change metadata, which nothing here
+  read until `--changes` existed: `comp_tier_last_updated`,
+  `comp_previous_tier`, `comp_tier_recently_updated`,
+  `comp_guide_recently_updated`, `comp_last_updated`. It is the site's own
+  account of what it just changed, and the only way to ask "has the tier list
+  moved?" when the thing in doubt is our copy of it.
 - `comp_when_to_commit` / `comp_common_enablers` use `[[Card Name||dbfId]]`
   wiki-links; these are stripped to plain card names.
 - dbfIds map to BG ids (e.g. "BG36_352") via api.hearthstonejson.com.
@@ -31,6 +37,7 @@ hand-added
 Usage:
   python scrape_comps.py <comp_id_or_slug> [more...] [--youtube] [--cards-cache FILE]
   python scrape_comps.py --top N [--prune] [--youtube] [--cards-cache FILE]
+  python scrape_comps.py --changes [--json]
 
   comp_id_or_slug  a numeric comp id (e.g. 20) or a slug (e.g.
                    "nagas-groundbreaker"); slugs are resolved via the index.
@@ -38,7 +45,16 @@ Usage:
                    (hidden/archived comps are filtered out), ranked by tier
                    then tier_rank.
   --prune          (with --top) remove comps from comps.json that are no longer
-                   in the current top-N visible set. Off by default.
+                   in the current top-N visible set — but never a comp this
+                   source does not own (see prune_unlisted). Off by default.
+  --changes        ask the SITE what moved: print each comp's own
+                   comp_tier_last_updated / comp_previous_tier /
+                   comp_tier_recently_updated, newest first, next to our stored
+                   tier. One request, no scrape, no write. Use it to answer
+                   "has the tier list moved?" without trusting our own copy —
+                   which is the only answer available when our copy is the
+                   thing in doubt.
+  --json           (with --changes) print the rows as JSON.
   --diff           print a per-comp change report (tier moves, core/addon
                    swaps, text edits) instead of silently overwriting.
   --youtube        also fetch the YouTube affiliate links for each comp
@@ -320,24 +336,138 @@ def fetch_youtube_links(comp_id):
     return data if isinstance(data, list) else data.get("results", [])
 
 
-def prune_unlisted(comps, keep_slugs):
-    """Drop comps the source no longer lists — but NEVER a provisional one.
+# Every comp this script scrapes carries this in its `source` (build_comp
+# stamps it). It is the ownership mark `prune_unlisted` keys on: `--prune`
+# means "drop what this source no longer lists", so a comp this source never
+# listed is not ours to drop.
+SOURCE_TAG = "hsreplay.net comp pages"
 
-    A provisional comp (comp_miner.py --promote) exists precisely because this
-    source has nothing for its tribe, so pruning "what the source no longer
-    lists" would delete it on every run and silently take the only direction the
-    coach has for that tribe with it. Returns (pruned, kept) slugs.
+
+def _owned_by_source(comp):
+    """True when this comp came from the source page this script scrapes.
+
+    Deliberately strict: only a comp that NAMES this source may be pruned. A
+    comp of unknown provenance is kept, because the destructive default
+    ("absent from the source's list") would otherwise delete hand-curated work
+    on a source page that never had it.
+    """
+    return SOURCE_TAG in str((comp or {}).get("source") or "")
+
+
+def prune_unlisted(comps, keep_slugs):
+    """Drop comps the source no longer lists — but NEVER one it never owned.
+
+    Two kinds survive a prune. A provisional comp (comp_miner.py --promote)
+    exists precisely because this source has nothing for its tribe, so pruning
+    "what the source no longer lists" would delete it on every run and silently
+    take the only direction the coach has for that tribe with it.
+
+    And a comp whose `source` is not this source is not ours to delete at all.
+    The shipped `aberrations-deity-feed` is exactly that: promoted to a
+    first-class comp on 2026-09-26 (player decision) so it carries NO
+    `provisional` flag, which is all the earlier guard keyed on — a plain
+    `--prune` would have deleted a player-curated comp whose mining evidence
+    (`evidence`, `enable_src`) no re-scrape could rebuild. `test_provisional_comps`
+    holds both cases.
+
+    Returns (pruned, kept) slugs.
     """
     pruned, kept = [], []
     for key in list(comps):
-        if key in keep_slugs:
+        # `key.startswith("_")` is a file-level note, not a comp: comps.json
+        # carries `_enable_note` as a bare STRING, and calling .get() on it is
+        # what made `--prune` raise AttributeError the first time it was ever
+        # pointed at the shipped file. (meta.comps() strips underscore keys, so
+        # every test that went through meta.comps() was blind to it.) Note
+        # check_meta.py skips them for the same reason.
+        if key in keep_slugs or key.startswith("_"):
             continue
-        if (comps[key] or {}).get("provisional"):
+        comp = comps[key] if isinstance(comps[key], dict) else {}
+        if comp.get("provisional") or not _owned_by_source(comp):
             kept.append(key)
             continue
         del comps[key]
         pruned.append(key)
     return pruned, kept
+
+
+def tier_changes(records, comps_db=None):
+    """The tier list's OWN account of its recent changes, newest first.
+
+    `records` is the index page's comp records; `comps_db` is our stored
+    comps.json (optional — the rows are the site's, our tier only annotates).
+    The site publishes when it last set each tier (`comp_tier_last_updated`),
+    what the tier was before (`comp_previous_tier`) and its own "this just
+    moved" flag (`comp_tier_recently_updated`), none of which a scrape can
+    infer. Pure, so the shape is testable without a network call.
+    """
+    rows = []
+    for rec in records or []:
+        if not isinstance(rec, dict) or not rec.get("comp_slug"):
+            continue
+        db = (comps_db or {}).get(rec["comp_slug"]) or {}
+        rows.append({
+            "slug": rec["comp_slug"],
+            "name": rec.get("comp_name") or "",
+            "tier": TIER_MAP.get(rec.get("comp_tier"), "?"),
+            "previous_tier": TIER_MAP.get(rec.get("comp_previous_tier"), ""),
+            "tier_last_updated": rec.get("comp_tier_last_updated") or "",
+            "recently_updated": bool(rec.get("comp_tier_recently_updated")),
+            "guide_recently_updated": bool(rec.get("comp_guide_recently_updated")),
+            "db_tier": db.get("meta_tier"),
+        })
+    rows.sort(key=lambda r: r["tier_last_updated"], reverse=True)
+    return rows
+
+
+def format_tier_changes(rows):
+    """Render tier_changes() rows as report lines. Pure, so it is testable."""
+    if not rows:
+        return ["no comp records on the index — nothing to report"]
+    out = [f"tier list: {len(rows)} comps ranked; newest tier change "
+           f"{rows[0]['tier_last_updated'] or 'unknown'}"]
+
+    moved = [r for r in rows if r["recently_updated"]]
+    out.append(f"the site flags {len(moved)} tier move(s) as recent:")
+    for r in moved:
+        behind = ("" if r["db_tier"] in (None, r["tier"])
+                  else f"   [our DB still says {r['db_tier']}]")
+        out.append(f"  {r['slug']:32} {r['previous_tier'] or '?':2} -> "
+                   f"{r['tier']:2}  {r['tier_last_updated']}{behind}")
+
+    stale = [r for r in rows if r["db_tier"] not in (None, r["tier"])]
+    if stale:
+        out.append(f"our copy is behind on {len(stale)} of {len(rows)} "
+                   f"ranked comp(s) — re-run without --changes to take them:")
+        for r in stale:
+            out.append(f"  {r['slug']:32} ours {r['db_tier']} -> live {r['tier']}")
+    else:
+        out.append(f"our copy matches the live tier list on all {len(rows)} "
+                   f"ranked comps")
+    return out
+
+
+def _load_db_safe():
+    """The stored comps, or {} — --changes must work without a readable DB."""
+    try:
+        with open(COMPS_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def report_changes(as_json=False):
+    """Print the tier list's own change history. One request; writes nothing."""
+    resp = requests.get(COMPS_INDEX_URL, headers=_headers(), timeout=60)
+    resp.raise_for_status()
+    rows = tier_changes(list(_all_comp_records(_react_context(resp))),
+                        _load_db_safe())
+    if as_json:
+        print(json.dumps(rows, indent=1, ensure_ascii=False))
+    else:
+        for line in format_tier_changes(rows):
+            print(line)
+    return 0
 
 
 def main():
@@ -351,11 +481,22 @@ def main():
     ap.add_argument("--dry-run", action="store_true",
                     help="scrape and report, but never write meta/comps.json")
     ap.add_argument("--youtube", action="store_true", help="fetch YouTube links too")
+    ap.add_argument("--changes", action="store_true",
+                    help="print the tier list's own record of its recent tier "
+                         "moves (one request, no scrape, no write)")
+    ap.add_argument("--json", action="store_true",
+                    help="(with --changes) print the rows as JSON")
     ap.add_argument("--cards-cache", default=DEFAULT_CARDS_CACHE)
     args = ap.parse_args()
 
+    # --changes is a question about the SITE, so it runs before anything that
+    # needs comps.json or the ~10MB card list: asking "did the tier list move?"
+    # must not depend on the copy whose staleness is in question.
+    if args.changes:
+        return report_changes(args.json)
+
     if args.top is None and not args.comp_ids:
-        ap.error("provide comp ids/slugs or --top N")
+        ap.error("provide comp ids/slugs, --top N or --changes")
 
     with open(COMPS_PATH, encoding="utf-8") as f:
         comps = json.load(f)
@@ -426,7 +567,8 @@ def main():
         for key in pruned:
             print(f"  pruned {key}")
         for key in kept:
-            print(f"  kept {key} (provisional — not owned by this source)")
+            print(f"  kept {key} (not this source's to prune — provisional or "
+                  f"a comp it never owned)")
 
     if args.dry_run:
         # --diff SHOWS differences, it does not prevent writes: running

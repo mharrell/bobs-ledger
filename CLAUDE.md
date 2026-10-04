@@ -186,7 +186,42 @@ Also settled in the same pass: `Clear` brings the CARD back, not the question (t
 README said otherwise and now describes what happens), and `--poll 0.5` — the form
 README:172 documents — parses instead of dying with an `IndexError` at startup.
 
+**The 2026-10-04 tier refresh (late): the tier list had NOT gained comps — it
+had moved four, and dropped eleven.** Checked against the live index rather than
+assumed: all 23 rendered comps were already in `comps.json`, ids above the
+highest one the index exposes all 404, and every one of the 84 comp pages that
+resolve either carries a tier (25, all ours) or is archived. The four moves
+(`mechs-apm-magnetic` A→S, `murlocs-keyword` S→A, `mechs-magnetics-spells` B→A,
+`aberrations-deathrattle-spells` A→B, dated 10-03/10-04 by the source's own
+metadata) were the last four our copy was behind on; the eleven comps the tier
+list no longer lists were pruned, leaving 24. Two facts worth keeping:
+
+* **`--prune` raised `AttributeError` the first time it was ever pointed at the
+  shipped file.** `comps.json` carries `_enable_note` as a bare STRING and
+  `prune_unlisted` called `.get()` on every value; `meta.comps()` strips
+  underscore keys, so every test that went through `meta.comps()` was blind to
+  it. Fixed, and the prune test now reads the file with `json.load` the way
+  `main()` does.
+* **The guard protecting `aberrations-deity-feed` keyed on `provisional`, which
+  the shipped entry deliberately does not carry** (promoted to first-class
+  2026-09-26). A plain prune therefore deleted it. The guard is now provenance:
+  only a comp whose `source` names the scraped source may be pruned.
+
+`scrape_comps.py --changes` now answers "has the tier list moved?" from the
+source's OWN metadata (`comp_tier_last_updated`, `comp_previous_tier`,
+`comp_tier_recently_updated`) — one request, no scrape, no write, and no
+dependence on the copy whose staleness is the question.
+
 NEXT, still open:
+
+0. Left by the tier refresh, small: six guide files now belong to pruned comps
+   (`demons-apm-shop-buff`, `elementals-stat-scaling`, `mechs-magnetics`,
+   `murlocs-apm`, `nagas-groundbreaker`, `nagas-end-of-turn-spell-buff`) — kept
+   deliberately, since the builds do return and the prose was hand-written, but
+   nothing references them until then. And `murlocs-keyword.md` still names
+   **Expert Aviator** as its early tempo bridge, which the 10-04 tier list
+   dropped from that comp's core (it is still in the pool); the guide is
+   players' advice, so rewriting it is a decision, not a scrape.
 
 1. THE CORPUS, MEASURED (2026-10-04, with the read key — `HEARTH_TELEMETRY_KEY`,
    an ENVIRONMENT variable; nothing reads a file, see telemetry/README.md):
