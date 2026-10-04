@@ -426,6 +426,19 @@ def monitor(path, poll=1.0):
                     print(f"  (monitor tick failed: {e})", flush=True)
                     last_err = str(e)
                 last_state = None  # retry the whole state next tick
+
+            # Share a game as soon as it ENDS, instead of waiting for the
+            # session to end. Measured 2026-10-04: a player finished a game,
+            # closed Hearthstone, and nothing left the machine until they closed
+            # the coach window - and a console window closed with the X button
+            # terminates this process without running main()'s cleanup, so the
+            # old timing could lose a whole session from someone who had already
+            # answered yes. _share_finished walks only the games this run has not
+            # sent, so this and the exit backstop cannot double-send one.
+            if (getattr(coach.gs, "_game_ended", False)
+                    and time.time() - _LAST_SHARE_ATTEMPT[0] > 30):
+                _LAST_SHARE_ATTEMPT[0] = time.time()
+                _share_finished(path, opts)
             time.sleep(poll)
     except KeyboardInterrupt:
         pass
@@ -439,6 +452,13 @@ def monitor(path, poll=1.0):
 #: refuses (409: same id, different bytes) rather than a duplicate record. Cheap
 #: to prevent, noisy to ignore.
 _shared_games = set()
+
+#: When the monitor last TRIED to share a finished game. The share happens the
+#: moment a game ends, which means a retry after a failure would otherwise run
+#: on every tick - and each attempt re-reads the session's decision log (6 MB in
+#: the measured case) for nothing. Half a minute is far below the time a player
+#: takes between games, and the exit backstop still covers the end of a session.
+_LAST_SHARE_ATTEMPT = [0.0]
 
 
 def _share_game(log_path, game, opts=()):
