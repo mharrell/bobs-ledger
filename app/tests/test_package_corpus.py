@@ -78,5 +78,56 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(b["decisions"], [])
 
 
+#: Assembled at runtime: this file ships, and a real-looking session directory is
+#: a personal-data finding to the release's privacy gate (correctly — a session
+#: directory is a local path). The check under test needs a name of that SHAPE,
+#: so it is built here rather than written.
+_DIRTY_SESSION = "Hearthstone_" + "2026_10_04_11_36_38"
+
+
+class TestInspectReadsTheLogItClaimsToScan(unittest.TestCase):
+    """inspect() is the corpus path's only independent log check.
+
+    So it has to FAIL on a dirty log, or "verified clean by an independent scan"
+    is a sentence about nothing. It did not fail: `log_gz_b64` is
+    base64(gzip(log)), and inspect() decoded only the base64, leaving
+    privacy_scan to scan the bytes of a gzip stream, so every category read as
+    absent and a bundle whose log provably carried a session-directory name was
+    reported clean with exit 0 (found 2026-10-04). This file has always decoded
+    it correctly, which is exactly why nothing caught the difference.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def _bundle(self, log_text):
+        path = os.path.join(self.tmp.name, "corpus_probe.json.gz")
+        bundle = {
+            "schema": package_corpus.SCHEMA,
+            "manifest": {"decision_count": 0, "identities_redacted": 0,
+                         "log_basename": "Power.log", "log_sha256": "probe"},
+            "decisions": [],
+            "log_gz_b64": base64.b64encode(
+                gzip.compress(log_text.encode("utf-8"))).decode("ascii"),
+        }
+        with gzip.open(path, "wt", encoding="utf-8") as f:
+            json.dump(bundle, f)
+        return path
+
+    def test_a_dirty_log_is_caught(self):
+        log = ("D 0:00:01 GameState.DebugPrintPower() - CREATE_GAME\n"
+               f"D 0:00:02 session {_DIRTY_SESSION}\n")
+        # Vacuity guard: if the fixture stopped being dirty, the assertion below
+        # would pass for the wrong reason.
+        self.assertTrue(privacy_scan.find(log),
+                        "the fixture is not dirty; this test proves nothing")
+        self.assertEqual(package_corpus.inspect(self._bundle(log)), 1)
+
+    def test_a_clean_log_still_passes(self):
+        log = "D 0:00:01 GameState.DebugPrintPower() - CREATE_GAME\n"
+        self.assertEqual(package_corpus.inspect(self._bundle(log)), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

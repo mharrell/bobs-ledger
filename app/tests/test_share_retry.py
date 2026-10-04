@@ -88,8 +88,12 @@ class ShareLedgerTest(unittest.TestCase):
         log = os.path.join(path, "Power.log")
         open(log, "w").close()
         for game in games:
-            decision_log.record(_advisory(game), log_path=log, log_offset=42,
-                                game_no=game)
+            # record() takes an ANALYSIS, not a whole record: handing it the
+            # record nested one inside the other. source_problems() is what
+            # noticed, because a decision log whose analysis carries "analysis"
+            # is not a shape the coach can produce.
+            decision_log.record(_advisory(game)["analysis"], log_path=log,
+                                log_offset=42, game_no=game)
         return log
 
     def _ledger(self):

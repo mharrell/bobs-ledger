@@ -201,16 +201,31 @@ def share_session(log_path, url=None, quiet=False, game=None):
     fresh = blob is None
     if fresh:
         problems, findings = session_report.check(report)
-        if problems or findings:
+        # Two more checks, both against the SOURCE rather than the finished
+        # report, because each covers a blind spot the other two have by
+        # construction: verify() can only report fields it was told about, and by
+        # the time it runs an undeclared field has already been dropped on the
+        # way out — so a new analysis key would vanish without a word. And
+        # privacy_scan cannot see a bare display name, so what the payload gets
+        # checked against is the handles this session itself showed us.
+        sources = session_report.source_problems(records)
+        handles = session_report.identity_findings(report, records)
+        if problems or findings or sources or handles:
             # Refuse, loudly. Sending a report its own verifier rejects would
             # make the verifier decoration.
             print("  NOT SENT: this report failed verification "
-                  f"({len(problems)} spec problem(s), {len(findings)} finding(s)). "
-                  "Please report this — nothing was uploaded.")
-            if problems:
-                print(f"    spec: {problems[:5]}")
-            if findings:
-                print(f"    scan: {list(findings)[:5]}")
+                  f"({len(problems)} spec problem(s), {len(findings)} scan "
+                  f"categor(y/ies), {len(sources)} unaccounted source field(s), "
+                  f"{len(handles)} handle(s)). Please report this — nothing was "
+                  "uploaded.")
+            for label, items in (("spec", problems), ("scan", list(findings)),
+                                 ("source", sources), ("handle", handles)):
+                if items:
+                    print(f"    {label}: {items[:5]}")
+            if sources:
+                print("    a source field the spec does not name is either one to "
+                      "drop on purpose (DROPPED_FROM_ANALYSIS) or one to add to "
+                      "SPEC; nothing is uploaded until it is one of the two.")
             return "refused"
         blob = gzip.compress(json.dumps(report).encode("utf-8"))
         with open(local, "wb") as f:

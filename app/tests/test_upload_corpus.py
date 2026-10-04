@@ -1,6 +1,11 @@
-"""Corpus upload: one Contents-API PUT per bundle; gh CLI or token auth."""
+"""Corpus upload: one Contents-API PUT per bundle; gh CLI or token auth.
+
+Every bundle is verified with package_corpus.inspect before anything leaves, and
+these tests pin that gate as well as the transports.
+"""
 import os
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -8,6 +13,10 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 import upload_corpus  # noqa: E402
+
+#: Assembled, like test_friendly_player.py: this file ships, and a handle-shaped
+#: literal in it reads as a real player to the release's privacy gate.
+_PLACEHOLDER = "Tester" + "#" + "1234"
 
 
 class TestUpload(unittest.TestCase):
@@ -123,6 +132,73 @@ class TestUpload(unittest.TestCase):
                                    return_value="url") as pf:
                 upload_corpus.upload(any_file)
         self.assertEqual(pf.call_args[1]["token"], "t0k")
+
+
+class TestItVerifiesBeforeItClaims(unittest.TestCase):
+    """The upload path said the log was redacted without ever checking.
+
+    It printed "contents: the BattleTag-redacted Power.log ... (no other personal
+    data)" as a fixed sentence about whatever file it was handed, and a raw
+    Power.log went to the collector verbatim — BattleTag, opponent handles and
+    account id — underneath it (measured 2026-10-04). `privacy_scan` was never
+    called on this path at all.
+
+    The detection itself is proven for real in test_package_corpus (inspect() on
+    a bundle whose log carries a session name); what these tests pin is the
+    wiring: nothing leaves until that check has said yes.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.sent = []
+
+    def _main(self, argv, clean=True):
+        def fake_put(url, data, key=None, name=None):
+            self.sent.append(data)
+            return "stored"
+
+        with mock.patch.object(sys, "argv", ["upload_corpus.py"] + argv), \
+                mock.patch.object(upload_corpus, "put_url", fake_put), \
+                mock.patch.object(upload_corpus, "gh_available",
+                                  return_value=True), \
+                mock.patch.dict(os.environ,
+                                {"HEARTH_TELEMETRY_URL":
+                                 "http://collector.example/post"}):
+            return upload_corpus.main()
+
+    def test_a_file_that_is_not_a_bundle_is_refused(self):
+        raw = os.path.join(self.tmp.name, "Power.log")
+        with open(raw, "w", encoding="utf-8") as f:
+            f.write("PlayerName=" + _PLACEHOLDER + " tag=RESOURCES value=3\n")
+        self.assertEqual(self._main([raw, "--yes"]), 1)
+        self.assertEqual(self.sent, [], "a raw log was uploaded")
+
+    def test_a_bundle_that_fails_the_scan_is_refused(self):
+        bundle = os.path.join(self.tmp.name, "corpus_x.json.gz")
+        with open(bundle, "w", encoding="utf-8") as f:
+            f.write("placeholder")
+        with mock.patch.object(upload_corpus.package_corpus, "inspect",
+                               return_value=1):
+            self.assertEqual(self._main([bundle, "--yes"]), 1)
+        self.assertEqual(self.sent, [], "a bundle the scan rejected was uploaded")
+
+    def test_a_clean_bundle_still_uploads(self):
+        bundle = os.path.join(self.tmp.name, "corpus_x.json.gz")
+        with open(bundle, "w", encoding="utf-8") as f:
+            f.write("placeholder")
+        with mock.patch.object(upload_corpus.package_corpus, "inspect",
+                               return_value=0):
+            self.assertEqual(self._main([bundle, "--yes"]), 0)
+        self.assertEqual(len(self.sent), 1)
+
+    def test_an_unreadable_bundle_is_refused(self):
+        """A .json.gz that is not JSON at all: refuse, do not traceback."""
+        bundle = os.path.join(self.tmp.name, "corpus_nope.json.gz")
+        with open(bundle, "wb") as f:
+            f.write(b"not json, not gzip")
+        self.assertEqual(self._main([bundle, "--yes"]), 1)
+        self.assertEqual(self.sent, [])
 
 
 if __name__ == "__main__":

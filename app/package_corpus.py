@@ -296,7 +296,15 @@ def inspect(bundle_path):
         sample = json.dumps(first, ensure_ascii=False)
         print(f"  first decision: {sample[:220]}")
     import base64 as _b64
-    log = _b64.b64decode(bundle["log_gz_b64"]).decode("utf-8", "replace")
+    # gzip.decompress, not just b64decode: `log_gz_b64` is base64(gzip(log)), so
+    # decoding only the base64 handed privacy_scan a stream starting "\x1f\x8b"
+    # and it scanned mojibake. Every category read as absent, so this printed
+    # "verified clean by an independent scan" for a bundle whose log provably
+    # carried a session-directory name — the corpus path's only independent log
+    # check could not fail (found 2026-10-04; test_package_corpus.py:55 has
+    # always decoded it correctly, which is why nothing caught it).
+    log = gzip.decompress(_b64.b64decode(bundle["log_gz_b64"])).decode(
+        "utf-8", "replace")
     findings = privacy_scan.find(log)
     decision_findings = privacy_scan.find(
         json.dumps(bundle["decisions"], ensure_ascii=False))

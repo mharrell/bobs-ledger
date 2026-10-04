@@ -37,12 +37,14 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import secrets
 import sys
 
 from config import HS_LOG_GLOB
 import decision_log
 import privacy_scan
+import tribes
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -55,6 +57,41 @@ OUT_DIR_NAME = "session_reports"
 SCALAR = "scalar"
 MAP_SCALARS = "map-of-scalars"     # dict whose values are all scalars
 DEEP_SCALARS = "nested-scalars"    # scalars nested in dicts/lists
+
+#: The per-game counters the coach keeps. Named ONE BY ONE: a map that accepts
+#: any key is not a whitelist, and `scenario` was `MAP_SCALARS`, so a new
+#: analysis field dropped in here would have shipped without the verifier ever
+#: being able to see it — verify() only reports keys it was told about. A new
+#: counter now costs one line in this dict, which is this module's whole rule,
+#: and source_problems() makes forgetting that line loud rather than silent.
+#: Every key and type below is measured from 641 real advisories.
+_SCENARIO = {
+    "cast_spell": SCALAR, "cast_spell_total": SCALAR,
+    "discover": SCALAR, "discover_total": SCALAR,
+    "play_elemental": SCALAR, "play_elemental_total": SCALAR,
+    "play_mech": SCALAR, "play_mech_total": SCALAR,
+    "play_naga": SCALAR, "play_naga_total": SCALAR,
+    "play_tier3_or_lower": SCALAR, "play_tier3_or_lower_total": SCALAR,
+    "turns": SCALAR,
+    # A LIST, and MAP_SCALARS dropped every element of it: 560 of those 641
+    # advisories carry the trinkets that were offered, and not one reached a
+    # report. Dropping it was the spec's doing, silently, for a whole patch.
+    "trinkets": [SCALAR],
+}
+
+#: One row of the comps panel's progress list. Ten of the twelve values are
+#: scalars; `evidence` is sometimes an object and `needs` is always a list, so
+#: those two keep DEEP_SCALARS — scalars at any depth, and nothing else.
+_COMP_PROGRESS_ROW = {
+    "name": SCALAR, "tribe": SCALAR, "meta_tier": SCALAR,
+    "provisional": SCALAR, "evidence": DEEP_SCALARS, "hits": SCALAR,
+    "lean_hits": SCALAR, "leaning": SCALAR, "ready": SCALAR,
+    "needs": DEEP_SCALARS, "trinket_fit": SCALAR, "tribe_hits": SCALAR,
+}
+
+#: A pending choice: which pick it is, where it came from, and the ranked
+#: options — each of which is a list of scalars (name, card, score, why).
+_CHOICE = {"kind": SCALAR, "source": SCALAR, "ranked": DEEP_SCALARS}
 
 #: The whole report shape. Read it as the answer to "what may leave the
 #: machine": numbers about the game, the advice the coach gave, and the
@@ -95,16 +132,15 @@ SPEC = {
         "top_move_steps": [{"text": SCALAR, "kind": SCALAR, "card": SCALAR,
                             "action": SCALAR, "tag": SCALAR,
                             "reason": SCALAR}],
-        "choice": DEEP_SCALARS,
+        "choice": _CHOICE,
         # comp targeting / progress
         "target_comp": SCALAR,
         "target_comp_label": SCALAR,
         "target_comp_provisional": SCALAR,
-        "comp_progress": DEEP_SCALARS,
+        "comp_progress": [_COMP_PROGRESS_ROW],
         "tribes_seen": SCALAR,
         "banned": [SCALAR],
-        # turn counters (cast_spell_total, play_naga, ...): all small ints
-        "scenario": MAP_SCALARS,
+        "scenario": _SCENARIO,
         # the announced opponent: hero and board only. Never "name". Shapes
         # taken from a real session's payload (`cards` is {card_id: count}).
         "opponent": {"hero_name": SCALAR, "hero": SCALAR, "turn": SCALAR,
@@ -121,6 +157,28 @@ DROPPED_ON_PURPOSE = (
     "reach_sources, sell_rank, target_cards, dark_gifts, engine_recipes, "
     "lobby_opp, opp_pool, opp_trinkets, activations, baseline_opp",
 )
+
+#: Analysis keys the report knowingly does NOT carry, as a machine-readable set.
+#: The prose above is for a reader; this is the one source_problems() consults,
+#: so "we drop this on purpose" and "nobody has thought about this yet" are
+#: different answers instead of the same silence.
+#:
+#: `gold`, `tier`, `health`, `turn` and `game_no` appear at BOTH levels: the
+#: record's own copy is what ships (SPEC names them at the top), and the
+#: analysis repeats them, so the duplicate is dropped here. Every entry was
+#: measured against 641 real advisories; a key in neither set is a finding.
+DROPPED_FROM_ANALYSIS = frozenset({
+    "activation_step", "activations", "bans_manual", "baseline_opp", "board",
+    "buy_step_card", "buy_step_roll", "buy_step_swap_veto", "buy_this",
+    "comp_gap", "comps", "dark_gifts", "discard_target", "engine_recipes",
+    "game_comps", "game_no", "gold", "hand", "hand_plan", "health",
+    "hunt_targets", "last_opp_stats", "level_cost", "lobby_opp", "never_won",
+    "opp_age", "opp_comp", "opp_pool", "opp_quiet", "opp_stats", "opp_trinkets",
+    "out_of_pool", "own_pool", "playable_comps", "reach_sources", "sell_rank",
+    "shop_costs", "shop_rank", "shop_seen", "target_cards",
+    "target_comp_evidence", "target_state", "tier", "tribe_pressure",
+    "tribe_roster", "tribes_detecting", "turn",
+})
 
 #: The envelope around the rows. Verified separately, because SPEC above
 #: describes ONE advisory: checking the whole file against it reported the
@@ -403,6 +461,121 @@ def check(report):
     """
     body = json.dumps(report, ensure_ascii=False)
     return verify(report, REPORT_SPEC), privacy_scan.find(body)
+
+
+def _spec_keys(spec):
+    """The key set a dict spec declares, or None when it is not a dict spec."""
+    return set(spec) if isinstance(spec, dict) else None
+
+
+def source_problems(records):
+    """Analysis fields the records carry that the spec does not account for.
+
+    verify() walks the REPORT, and by then an undeclared field is already gone —
+    project() dropped it on the way out. So the control is safe but blind: a new
+    analysis field, or a new key inside one of the named maps, disappears without
+    anybody being told. That is how `scenario.trinkets` went missing from 560 of
+    641 real advisories for a whole patch, and how a field added to `scenario`
+    would have shipped unremarked — MAP_SCALARS accepted any key it was handed,
+    so the verifier was never told to look for one.
+
+    This is the other half: what the SOURCE carries must be either named by SPEC
+    or listed in DROPPED_FROM_ANALYSIS, so "we drop this deliberately" and
+    "nobody has thought about this yet" stop being the same silence. The sending
+    path refuses on a finding, deliberately — a report is not worth losing
+    quietly, and the fix is one line in the spec.
+    """
+    problems = []
+    top = _spec_keys(SPEC["analysis"])
+    for i, record in enumerate(records):
+        a = record.get("analysis") or {}
+        if not isinstance(a, dict):
+            problems.append(f"[{i}].analysis: not an object")
+            continue
+        for key in sorted(set(a) - top - DROPPED_FROM_ANALYSIS):
+            problems.append(f"[{i}].analysis.{key}: not in SPEC and not "
+                            "dropped on purpose")
+        # One level into the named maps: a new key HERE is exactly the shape the
+        # old open MAP_SCALARS let through unexamined.
+        for key, spec in (("scenario", SPEC["analysis"]["scenario"]),
+                          ("choice", SPEC["analysis"]["choice"])):
+            declared = _spec_keys(spec)
+            value = a.get(key)
+            if declared and isinstance(value, dict):
+                for k in sorted(set(value) - declared):
+                    problems.append(f"[{i}].analysis.{key}.{k}: not in SPEC")
+        declared = _spec_keys(SPEC["analysis"]["comp_progress"][0])
+        progress = a.get("comp_progress")
+        if declared and isinstance(progress, list):
+            for row in progress:
+                if isinstance(row, dict):
+                    for k in sorted(set(row) - declared):
+                        problems.append(
+                            f"[{i}].analysis.comp_progress[].{k}: not in SPEC")
+    return problems
+
+
+def _game_vocabulary(report):
+    """Words this payload uses as GAME terms, not as identities.
+
+    A player is free to call themselves after a tribe or a comp — and one of the
+    four handles in the real sessions on this machine is literally "Demon", which
+    the payload then carries 88 times inside the banned-tribe and comp-tribe
+    columns. A check that called that a leak would refuse to share for that
+    player in every single game, which is worse than the leak it was guarding
+    against: it would silently end their measurement. So a word the report itself
+    uses as vocabulary is not evidence of anything.
+    """
+    words = {t.lower() for t in tribes.DISPLAY_TRIBES}
+    for row in report.get("advisories", []):
+        a = row.get("analysis") or {}
+        for t in (a.get("banned") or []):
+            if isinstance(t, str):
+                words.add(t.lower())
+        for cp in (a.get("comp_progress") or []):
+            if isinstance(cp, dict):
+                for key in ("tribe", "name"):
+                    v = cp.get(key)
+                    if isinstance(v, str):
+                        words.add(v.lower())
+    return words
+
+
+def identity_findings(report, records):
+    """Handles this session showed us, found inside the report about to leave.
+
+    privacy_scan cannot look for a bare Battlegrounds display name: it matches
+    the shapes the log writes (`PlayerName=`, `Entity=`, `GameAccountId=`) and a
+    name under a JSON key matches none of them. This check does not have to
+    guess, because the session's own records say exactly which handles were in
+    play — `analysis.opp_comp.name` is where every handle rides (50 in one real
+    session, 93 in another). So the question becomes evidential rather than
+    heuristic: does anything we are about to send contain one of the names this
+    session already showed us? A card name cannot trip it, because a card name is
+    not in that set.
+
+    Word boundaries, not a substring: an opponent called "Ann" must not be found
+    inside "Annoy-o-Module". Names the payload itself uses as game vocabulary are
+    skipped (see _game_vocabulary) because their presence is explained by the
+    game, not by an identity. What remains invisible is a handle that is also a
+    card name the coach happens to print, and a handle that never reached
+    `opp_comp` in the first place; source_problems() and the SPEC walk cover the
+    other directions.
+    """
+    names = set()
+    for record in records:
+        opp = (record.get("analysis") or {}).get("opp_comp") or {}
+        name = opp.get("name")
+        if isinstance(name, str) and len(name.strip()) >= 3:
+            names.add(name.strip())
+    vocabulary = _game_vocabulary(report)
+    names = {n for n in names if n.lower() not in vocabulary}
+    if not names:
+        return []
+    body = json.dumps(report, ensure_ascii=False)
+    return sorted(n for n in names
+                  if re.search(rf"(?<!\w){re.escape(n)}(?!\w)", body,
+                               re.IGNORECASE))
 
 
 def inspect(path):
