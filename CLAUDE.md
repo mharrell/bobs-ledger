@@ -188,10 +188,28 @@ README:172 documents — parses instead of dying with an `IndexError` at startup
 
 NEXT, still open:
 
-1. The corpus cannot be counted without the Cloudflare read key
-   (`HEARTH_TELEMETRY_KEY` is not on disk). Until it can be, nobody knows how many
-   distinct games this beta produced — and the duplicate upload and the frozen
-   report described above are both in the existing data.
+1. THE CORPUS, MEASURED (2026-10-04, with the read key — `HEARTH_TELEMETRY_KEY`,
+   an ENVIRONMENT variable; nothing reads a file, see telemetry/README.md):
+   **six stored reports are FOUR games, and not one of them came from a fixed
+   build.**
+
+   * Two games are stored TWICE, under two ids each: `1f4abb4e70e3` =
+     `be2253ec8e05ea21` (the 10-02 22:16 game) and `f50bc4c4d71af87c` =
+     `69c55cfcefde1724` (the 10-04 10:30 game), with byte-identical advisory
+     sets. Any count over "6 reports" therefore double-counts half the corpus.
+   * `451ada39fa79745b` holds **14 of that game's 128 advisories, permanently**:
+     the collector has no delete route and refuses a replacement (409), so the
+     other 114 exist only in the install's local copy.
+   * Distinct advisories: **527**, against the 828 those files sum to. Coach
+     versions `38b9aef`, `ef2a33f`, `4a16e0c`, `5b7e83c` all predate every fix
+     described above, and no report carries `coach_versions` — so nothing in the
+     cloud was produced by fixed code, and the first clean games are whichever
+     the testers play next. `scenario.trinkets` in a report is the cheap marker
+     of post-9bbf45e code.
+
+   Four games cannot support a conclusion about advice, so the README's "has not
+   been measured" caveat stands. What the count does show is that the two defects
+   above were not hypothetical.
 2. From the wider audit, untouched: the macOS launcher has still never been parsed
    by any shell on this machine (its `--check` fix is reasoned, not run); 9 tests
    are dead behind `HEARTH_REAL_SESSION_TESTS` (nothing sets it);
@@ -199,8 +217,7 @@ NEXT, still open:
    test at all, which is how a sentence about `Clear` stayed wrong.
 
 Smaller open items: the KV namespace also holds every `release/…` zip, so filter
-by the `sessions/` prefix rather than scanning (the read key itself is item 5).
-The dashboard download names files
+by the `sessions/` prefix rather than scanning. The dashboard download names files
 `sessions_<date>_<id>.json.gz`, and the values are gzip, which is correct.
 
 The `readme-rewrite` branch is still on origin, unmerged and now identical to
