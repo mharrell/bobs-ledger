@@ -50,6 +50,15 @@ GAME = "D 0:00:01.0 GameState.DebugPrintGame() - "
 _LOCAL = "Tester" + "#" + "1234"
 _OPP = "Player" + "#" + "1234"
 
+#: Session directory names for the fixtures. `Hearthstone_2026_01_01` is the
+#: placeholder privacy_scan names as THE session name our fixtures use: a session
+#: directory is a local path, so a real-looking `Hearthstone_<date>` is a
+#: personal-data finding in the publish gate (correctly — the first version of
+#: this file invented one and the gate refused the release). The second name
+#: deliberately carries no timestamp at all.
+_SESSION_DIR = "Hearthstone_2026_01_01"
+_NEXT_SESSION_DIR = "Hearthstone_test_next"
+
 #: The signatures monitor() prints when it swallows a failure. Asserting on them
 #: is what makes this a smoke test rather than a crash test.
 SWALLOWED = ("(monitor tick failed:", "(line skipped:", "(coach skipped:")
@@ -229,7 +238,7 @@ class MonitorSmokeTest(unittest.TestCase):
 
     def test_a_tick_runs_and_the_advice_path_produces_an_advisory(self):
         """The overdue one: one game, real ticks, real advice, no exception."""
-        log = self._session("Hearthstone_2026_10_04_11_36_38")
+        log = self._session(_SESSION_DIR)
         self._patch(live, "find_active_log", lambda: log)
         before = len(self._records())
 
@@ -256,7 +265,7 @@ class MonitorSmokeTest(unittest.TestCase):
         This is the line the first `NameError` shipped on. It needs the log to
         say the game ended, which is why the fixture does.
         """
-        log = self._session("Hearthstone_2026_10_04_11_36_38")
+        log = self._session(_SESSION_DIR)
         self._patch(live, "find_active_log", lambda: log)
 
         self._drive(log)
@@ -274,7 +283,7 @@ class MonitorSmokeTest(unittest.TestCase):
         report id no later rebuild could correct (2026-10-04). The game here has
         not ended, so there is nothing complete to send.
         """
-        log = self._session("Hearthstone_2026_10_04_11_36_38", ended=False)
+        log = self._session(_SESSION_DIR, ended=False)
         self._patch(live, "find_active_log", lambda: log)
 
         self._drive(log)
@@ -295,8 +304,8 @@ class MonitorSmokeTest(unittest.TestCase):
         switching to the new one must share it — and the new session, which is
         mid-game, must send nothing.
         """
-        first = self._session("Hearthstone_2026_10_04_10_00_00")
-        second = self._session("Hearthstone_2026_10_04_11_36_38", ended=False)
+        first = self._session(_NEXT_SESSION_DIR)
+        second = self._session(_SESSION_DIR, ended=False)
         self._patch(live, "find_active_log", lambda: second)
 
         self._drive(first)
@@ -311,8 +320,8 @@ class MonitorSmokeTest(unittest.TestCase):
         with open(share.REPORTS_DIR + os.sep + ".report_ids.json",
                   encoding="utf-8") as f:
             ids = json.load(f)
-        self.assertIn("Hearthstone_2026_10_04_10_00_00#1", ids)
-        self.assertNotIn("Hearthstone_2026_10_04_11_36_38#1", ids)
+        self.assertIn(_NEXT_SESSION_DIR + "#1", ids)
+        self.assertNotIn(_SESSION_DIR + "#1", ids)
 
     def test_the_monitor_survives_a_log_it_cannot_open(self):
         """A missing log is a startup error, not a swallowed tick.
