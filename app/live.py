@@ -435,10 +435,17 @@ def monitor(path, poll=1.0):
             # old timing could lose a whole session from someone who had already
             # answered yes. _share_finished walks only the games this run has not
             # sent, so this and the exit backstop cannot double-send one.
+            #
+            # The flags are read from argv HERE rather than passed in: monitor()
+            # takes (path, poll) and this line shipped as `opts`, which is a name
+            # that only exists in main(). The NameError killed the monitor on its
+            # first tick in 5ce8f58, so the overlay came up and never advised -
+            # the worst shape a release can have (2026-10-04).
             if (getattr(coach.gs, "_game_ended", False)
                     and time.time() - _LAST_SHARE_ATTEMPT[0] > 30):
                 _LAST_SHARE_ATTEMPT[0] = time.time()
-                _share_finished(path, opts)
+                _share_finished(path,
+                                [a for a in sys.argv[1:] if a.startswith("--")])
             time.sleep(poll)
     except KeyboardInterrupt:
         pass
