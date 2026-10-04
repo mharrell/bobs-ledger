@@ -212,7 +212,7 @@ if [ "$CHECK_ONLY" = "1" ]; then
 fi
 
 echo
-echo "Starting the coach. The overlay opens in your browser."
+echo "Starting Bob's Ledger."
 echo "Leave this window open while you play; Ctrl+C here stops it."
 echo
 
