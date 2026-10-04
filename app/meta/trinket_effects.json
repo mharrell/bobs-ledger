@@ -199,15 +199,6 @@
   },
   "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
  },
- "BG30_MagicItem_420t": {
-  "base_value": 14,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
- },
  "BG30_MagicItem_924": {
   "base_value": 14,
   "synergy": {
@@ -227,6 +218,15 @@
   "note": "after 14 spells, Tavern spells give extra +4/+4 (Bubble Crown)"
  },
  "BG35_MagicItem_840": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Elemental"
+   ]
+  },
+  "note": "Chromadrake + one every turn (Chromatic Tear)"
+ },
+ "BG35_MagicItem_840t": {
   "base_value": 12,
   "synergy": {
    "tribes": [
@@ -437,15 +437,6 @@
   },
   "note": "random Choose One card + another per turn (Glass of Perspective)"
  },
- "BG36_MagicItem_303t": {
-  "base_value": 10,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "random Choose One card + another per turn (Glass of Perspective)"
- },
  "BG36_MagicItem_220": {
   "base_value": 10,
   "synergy": {
@@ -474,15 +465,6 @@
   "note": "end of turn: maximum gold +1 (Goblin Wallet) — compounding income"
  },
  "BG36_MagicItem_302": {
-  "base_value": 12,
-  "synergy": {
-   "keywords": [
-    "golden"
-   ]
-  },
-  "note": "end of turn: board +1/+1, improves with goldens played (Gold Mallet)"
- },
- "BG36_MagicItem_302t": {
   "base_value": 12,
   "synergy": {
    "keywords": [
@@ -560,6 +542,19 @@
   "note": "combat: left/right Divine Shield (Holy Mallet)"
  },
  "BG36_MagicItem_810": {
+  "base_value": 16,
+  "synergy": {
+   "tribes": [
+    "Mechanical"
+   ],
+   "keywords": [
+    "spell",
+    "magnetic"
+   ]
+  },
+  "note": "end of turn: 12/12 satellite, improves per spell cast (Inductive Gyroblade)"
+ },
+ "BG36_MagicItem_810t": {
   "base_value": 16,
   "synergy": {
    "tribes": [
@@ -726,16 +721,16 @@
   },
   "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
  },
- "BG30_MagicItem_544": {
-  "base_value": 12,
+ "BG30_MagicItem_914t": {
+  "base_value": 10,
   "synergy": {
-   "tribes": [
-    "Elemental"
+   "keywords": [
+    "hand"
    ]
   },
-  "note": "per Elemental played: Tavern Elementals +3/+2 permanently (Nomi Sticker)"
+  "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
  },
- "BG30_MagicItem_544t": {
+ "BG30_MagicItem_544": {
   "base_value": 12,
   "synergy": {
    "tribes": [
@@ -805,16 +800,16 @@
   },
   "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
  },
- "BG32_MagicItem_361": {
+ "BG35_MagicItem_850t": {
   "base_value": 14,
   "synergy": {
    "keywords": [
-    "economy"
+    "spell"
    ]
   },
-  "note": "Discover a typed T4 minion, another copy each turn (Portable Factory)"
+  "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
  },
- "BG32_MagicItem_361t": {
+ "BG32_MagicItem_361": {
   "base_value": 14,
   "synergy": {
    "keywords": [
@@ -1053,15 +1048,6 @@
   "note": "Discover a T3 Darkmoon Prize, every 3 turns (Tickatus Sticker)"
  },
  "BG35_MagicItem_823": {
-  "base_value": 6,
-  "synergy": {
-   "keywords": [
-    "economy"
-   ]
-  },
-  "note": "discover a 2-cost Minor Timewarp minion (Timeworn Candelabra)"
- },
- "BG35_MagicItem_823t": {
   "base_value": 6,
   "synergy": {
    "keywords": [
@@ -1728,16 +1714,16 @@
   },
   "note": "Your minions have +1 Attack, improved by every card discarded this game (Hammer of Twilight, LESSER). Read from the client card data rather than the name: BG36_MagicItem_403 is the Lesser (+1 Attack, type Lesser) and BG36_MagicItem_403t the Greater (+2/+1). The two shared a name AND a read until 2026-09-23 — exactly the Lesser/Greater aliasing risk the discard doc logged as assumption A3 — so the Lesser now carries its own floor. Board-wide on the spell-point scale: 6 minions x 1 Attack = 6, growing with the discard count, undiscounted because the floor is already low."
  },
- "BG36_MagicItem_403t": {
-  "base_value": 6,
+ "BG36_MagicItem_404": {
+  "base_value": 4,
   "synergy": {
    "keywords": [
-    "discard"
+    "spell"
    ]
   },
-  "note": "Your minions have +1 Attack, improved by every card discarded this game (Hammer of Twilight, LESSER). Read from the client card data rather than the name: BG36_MagicItem_403 is the Lesser (+1 Attack, type Lesser) and BG36_MagicItem_403t the Greater (+2/+1). The two shared a name AND a read until 2026-09-23 — exactly the Lesser/Greater aliasing risk the discard doc logged as assumption A3 — so the Lesser now carries its own floor. Board-wide on the spell-point scale: 6 minions x 1 Attack = 6, growing with the discard count, undiscounted because the floor is already low."
+  "note": "After you cast a Tavern spell, give your Deity +4/+4 (Corrupted Baton, LESSER; the Greater BG36_MagicItem_404t is +10/+10 and the two shared a read until 2026-09-23). Same shape as the Greater read — spell-fuelled DEITY POOL, not board stats, paid out only when the Deity awakens — scaled to the printed numbers (4 vs 10)."
  },
- "BG36_MagicItem_404": {
+ "BG36_MagicItem_404t": {
   "base_value": 4,
   "synergy": {
    "keywords": [
@@ -2001,15 +1987,6 @@
   },
   "note": "Get a random Magnetic Volumizer, and another at the start of every turn (Volumizer Portrait, Lesser). A repeating Magnetic body: it grows a Mech board each turn and each copy can be magnetized onto a body, so it is priced with the recurring generators (Orb of the Unknown 6 for one random Lesser Trinket, Converter Portrait 8) at 8 for the Lesser tier."
  },
- "BG36_MagicItem_423t": {
-  "base_value": 8,
-  "synergy": {
-   "keywords": [
-    "magnetic"
-   ]
-  },
-  "note": "Get a random Magnetic Volumizer, and another at the start of every turn (Volumizer Portrait, Lesser). A repeating Magnetic body: it grows a Mech board each turn and each copy can be magnetized onto a body, so it is priced with the recurring generators (Orb of the Unknown 6 for one random Lesser Trinket, Converter Portrait 8) at 8 for the Lesser tier."
- },
  "BG32_MagicItem_232": {
   "base_value": 5,
   "synergy": {
@@ -2075,5 +2052,74 @@
   "base_value": 0,
   "synergy": {},
   "note": "Spellcraft token created by Ophidian Staff (BG35_MagicItem_872): the Reborn implement it hands a Beast. Never offered as a pick — this read exists for the log-coverage gate; all of the value is priced on the Staff itself."
+ },
+ "BG30_MagicItem_886": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "divine_shield"
+   ]
+  },
+  "note": "Whenever you summon a minion, give it Divine Shield, 5 times per combat (Reinforced Shield). It counts summoned tokens too, which is what makes it the wide-board answer; priced just above Protective Ring's 4 random Pirates because the cap is higher and any summon triggers it.",
+  "review": "priced from the card text 2026-10-04 - a first pass, confirm once played."
+ },
+ "BG32_MagicItem_205": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Undead"
+   ],
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "Get a Maw Caster (t4 Undead: battlecry destroy a friendly Undead to Discover an Undead) and 2 Gold whenever you destroy a minion outside combat (Maw Caster Portrait). The body is a real tier-4 minion and the gold engine runs on the destroys the Undead build already performs.",
+  "review": "priced from the card text 2026-10-04 - the gold half is conditional on destroys, so this is the body-plus-conditional-engine band (Conch Portrait 8), not the unconditional economy band."
+ },
+ "BG32_MagicItem_363": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Dragon"
+   ],
+   "keywords": [
+    "divine_shield"
+   ]
+  },
+  "note": "Whenever a friendly Dragon attacks, give it Divine Shield, 3 times per combat (Faerie Dragon Scale). Dragons all attack, so the cap is usually reached; it is Dragon-gated, hence a step under Protective Ring's 4 random Pirates.",
+  "review": "priced from the card text 2026-10-04 - a first pass, confirm once played."
+ },
+ "BG32_MagicItem_364": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Dragon"
+   ],
+   "keywords": [
+    "divine_shield"
+   ]
+  },
+  "note": "Get a Timewarped Poet (t5 1-cost Dragon with Divine Shield; all your Dragons keep Bonus Keywords and stats gained in combat) - Poet Portrait. A get-a-body portrait is usually 4 (Automaton Portrait); raised because the aura is the Dragon build's own payoff rather than a combat token.",
+  "review": "priced from the card text 2026-10-04 - the recurring half only lands with a Dragon board."
+ },
+ "BG36_MagicItem_213": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "divine_shield"
+   ]
+  },
+  "note": "Start of Combat: give your Rally minions Divine Shield (Lightfeather Sticker). The shields land before the first attack, and it scales with how many Rally minions the board runs; no tribe, because Rally spans them.",
+  "review": "priced from the card text 2026-10-04 - narrower than Protective Ring's 4 Pirates, so it sits below it."
+ },
+ "BG35_MagicItem_872t": {
+  "base_value": 0,
+  "synergy": {},
+  "note": "Spellcraft token created by Ophidian Staff (BG35_MagicItem_872): the +2/+2 and Reborn implement it hands a Beast, client type SPELL rather than a trinket. Never offered as a pick - this read exists for the log-coverage gate; all of the value is priced on the Staff itself."
+ },
+ "BG36_MagicItem_417te": {
+  "base_value": 0,
+  "synergy": {},
+  "note": "The enchantment Makeshift Master's Spellcraft leaves on the chosen minion (BG36_MagicItem_417, Greater; client type ENCHANTMENT): 'after this gains stats this turn, also give the stats to your Deity'. Never offered as a pick - this read exists for the log-coverage gate; the value is priced on Makeshift Master itself."
  }
 }
