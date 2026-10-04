@@ -689,7 +689,18 @@ def run(prompt=True, assume_yes=False, key=None, force=False):
             if _ask("update now? [y/N] ") != "y":
                 print("skipped — you'll be asked again next start")
                 return "declined"
-        data = download_zip(manifest, key=key)
+        try:
+            data = download_zip(manifest, key=key)
+        except Exception as e:      # noqa: BLE001 - any transport/verify failure
+            # The player has already been TOLD an update is available, and with
+            # --yes was not even asked, so this cannot be silent. A dropped
+            # connection, a 404 on the zip or a sha256 mismatch used to vanish
+            # into live.py's blanket guard around this call: the coach started on
+            # the old version and said nothing at all (measured 2026-10-04).
+            print(f"could not download {manifest['version']} "
+                  f"({type(e).__name__}: {e}). Starting the version you have; "
+                  "you will be offered it again next time.")
+            return "current"
         n = apply_zip(data)
         if not n:
             # Nothing was applied, so this install is exactly as it was — say

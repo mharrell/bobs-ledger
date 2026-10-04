@@ -165,6 +165,28 @@ def post_report(blob, url=None, timeout=30):
         return False, f"{type(e).__name__}: {e}"
 
 
+def _consented(records):
+    """Only the records written AFTER the player said yes.
+
+    The answer is scoped to the moment it was given: a game played while the
+    answer was no — or before any answer existed — is never sent, not even later.
+    It used to be swept up instead: answering yes uploaded every game already in
+    the decision log, which is not what "Nothing is sent unless you say yes"
+    leads a player to expect, and nothing on screen disclosed it (found
+    2026-10-04, reproduced). `set_choice` stamps `decided` for exactly this, and
+    every record carries the `ts` it was written at in the same ISO format, so
+    the comparison is two strings.
+
+    A consent file that `set_choice` did not write has no `decided`: the moment
+    of the answer is then unknown, and no record can be shown to predate it.
+    """
+    decided = load().get("decided")
+    if not isinstance(decided, str) or not decided:
+        return records
+    return [r for r in records
+            if isinstance(r.get("ts"), str) and r["ts"] >= decided]
+
+
 def share_session(log_path, url=None, quiet=False, game=None):
     """Distil, verify and send one session. Returns a short outcome word.
 
@@ -175,11 +197,27 @@ def share_session(log_path, url=None, quiet=False, game=None):
     One report id means ONE payload, for good. A re-send therefore re-POSTs the
     bytes already on disk rather than rebuilding them, and a 409 means the cloud
     already has this id — both are what keep a retry able to succeed at all.
+
+    What it may send is scoped by the consent answer in TWO ways: nothing at all
+    unless the answer is yes, and then only the games played since it was given.
     """
     if status() != "on":
         return status()
     records = session_report.decisions_for(log_path)
+    # Only what was recorded after the answer. A game the player played before
+    # saying yes was played under "nothing leaves your machine", and it stays
+    # that way — see _consented.
+    records = _consented(records)
+    if game is not None:
+        # Filtered HERE as well as in build(), because the two filters have to be
+        # applied before the emptiness test: otherwise a game whose records are
+        # all pre-answer produced an empty report and POSTED it (found by the
+        # consent test, 2026-10-04).
+        records = [r for r in records if r.get("game") == game]
     if not records:
+        # "nothing" covers the empty log, the session where every game predates
+        # the answer, and the game that was played before it: in each case there
+        # is nothing this install may send, which is not a failure.
         return "nothing"
     # The session's log stem keys the random report id, so re-sharing the same
     # finished game after a crash reuses its id instead of uploading twice.

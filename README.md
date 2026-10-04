@@ -91,12 +91,19 @@ The first time it starts, the coach asks whether it may send a short summary of
 each finished game back to me. **Nothing is sent unless you say yes**, and saying
 no changes nothing else about the coach.
 
+Saying yes covers the games you play **from that point on**. Anything you played
+before you answered — while the answer was no, or before there was one — was
+played under "nothing leaves your machine", and it is never sent, not even after
+you say yes.
+
 If you say yes, a summary is your decisions and how the game went: turn, gold,
 tavern tier, health, what was advised, and what happened next. Not your name, not
 the chat, not your file paths, and not your log file. A copy of everything sent
 is kept in `session_reports/` in the app folder, so you can read it yourself. To
-change your mind, press **Clear** at the top-right of the overlay to bring the
-question back.
+change your mind, press **Clear** at the top-right of the overlay: the card comes
+back, with a switch you can turn either way. (Once you have answered, it shows
+that switch rather than the question — the question is only asked when you have
+not answered yet.)
 
 Why I ask: the advice has not been measured against results yet, and those
 summaries are how it gets measured.
