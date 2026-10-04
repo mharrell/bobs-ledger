@@ -319,8 +319,24 @@ def _one(record):
     return row
 
 
-def build(records, now=None, session_key=None):
-    """The report dict for one session's advisories."""
+def build(records, now=None, session_key=None, game=None):
+    """The report dict for one session's advisories — or for one game's.
+
+    `game` filters to a single game, using the `game` field the decision
+    records already carry. Sharing moved from per-session to per-game on
+    2026-10-04, after a measured case: the player finished a game, closed
+    Hearthstone, and nothing left the machine until they closed the coach
+    window. Two costs to that — an abandoned session shared nothing at all if
+    the console window was closed with the X button (which terminates the
+    process instead of running live.py's cleanup), and every report that did go
+    mixed several games together.
+
+    Nothing about WHAT a summary contains changes here. SPEC and verify() are
+    still the whole privacy story; this only decides how much of it is in one
+    report.
+    """
+    if game is not None:
+        records = [r for r in records if r.get("game") == game]
     rows = [_one(r) for r in records]
     return {
         "schema": SCHEMA,
