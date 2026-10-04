@@ -40,12 +40,30 @@ def _advisory(game, turn=5, cid="BGS_034"):
 class TestTheGameFilter(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        # The id map is a file beside the logs; keep the real one out of it.
-        self._old = session_report.ID_MAP_DIR
-        session_report.ID_MAP_DIR = self.tmp.name
+        # EVERYTHING that writes goes to the temp dir: the id map beside the
+        # logs, and share.py's report, sent-ledger and consent files. Patching
+        # only the id map left these tests writing empty reports into the real
+        # session_reports/ folder and recording them as sent - found by running
+        # the end-to-end check and finding a 67-byte report whose id was the
+        # literal "x" one of the stubs returns (2026-10-04).
+        self._patches = [
+            mock.patch.object(session_report, "ID_MAP_DIR", self.tmp.name),
+            mock.patch.object(share, "REPORTS_DIR", self.tmp.name),
+            mock.patch.object(share, "SENT_PATH",
+                              os.path.join(self.tmp.name, ".sent.json")),
+            mock.patch.object(share, "CONSENT_PATH",
+                              os.path.join(self.tmp.name, "consent.json")),
+        ]
+        for patch in self._patches:
+            patch.start()
+        # Consent is the player's, not the developer's: these tests must not
+        # pass or fail according to what this machine happens to have answered.
+        with open(share.CONSENT_PATH, "w", encoding="utf-8") as f:
+            f.write('{"schema": 1, "share": true}')
 
     def tearDown(self):
-        session_report.ID_MAP_DIR = self._old
+        for patch in self._patches:
+            patch.stop()
         self.tmp.cleanup()
 
     def test_only_the_named_game_is_included(self):
@@ -86,6 +104,31 @@ class TestTheGameFilter(unittest.TestCase):
 class TestShareSessionWiring(unittest.TestCase):
     """share_session is pointed at one game: the filter is passed through and
     the id key carries the game, which is what keeps the re-send identical."""
+
+    def setUp(self):
+        # THIS is the class that calls the real share_session, so this is the
+        # class that needs every directory redirected. The first attempt at
+        # fixing the leak patched TestTheGameFilter instead - a class that never
+        # writes anything - and a stub still landed in the real
+        # session_reports/ folder on the next run (2026-10-04).
+        self.tmp = tempfile.TemporaryDirectory()
+        self._patches = [
+            mock.patch.object(session_report, "ID_MAP_DIR", self.tmp.name),
+            mock.patch.object(share, "REPORTS_DIR", self.tmp.name),
+            mock.patch.object(share, "SENT_PATH",
+                              os.path.join(self.tmp.name, ".sent.json")),
+            mock.patch.object(share, "CONSENT_PATH",
+                              os.path.join(self.tmp.name, "consent.json")),
+        ]
+        for patch in self._patches:
+            patch.start()
+        with open(share.CONSENT_PATH, "w", encoding="utf-8") as f:
+            f.write('{"schema": 1, "share": true}')
+
+    def tearDown(self):
+        for patch in self._patches:
+            patch.stop()
+        self.tmp.cleanup()
 
     def _capture(self, **kwargs):
         captured = {}
