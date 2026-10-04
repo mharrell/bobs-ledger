@@ -213,7 +213,14 @@ def ignored_summary(rows):
 
 
 def _print_worklist(rows, top=8):
-    """The ranked worklist, in the order the objective puts the signals."""
+    """The ranked worklist, in the order the objective puts the signals.
+
+    Every finding names its session and game. The first sweep across six
+    sessions produced three impossible buys and no way to tell WHICH session
+    each came from, which made the tool useless for the one thing a worklist is
+    for: going and looking at the advisory.
+    """
+    short = lambda s: (s or "?").replace("Hearthstone_", "")  # noqa: E731
     bad = plan_cost_violations(rows)
     dis = disagreement_rows(rows)
     ign = ignored_summary(rows)
@@ -224,13 +231,14 @@ def _print_worklist(rows, top=8):
           "arithmetic, and one game is an anecdote however loud it looks.")
     print(f"\n 1. the coach disagreeing with itself: {len(dis)}")
     for d in dis[:top]:
-        print(f"      turn {d['turn']}: it said {d['coach']} "
-              f"({d['coach_score']:.1f}), the player bought {d['player']} "
-              f"({d['player_score']:.1f})  +{d['delta']:.1f}")
+        print(f"      {short(d['session'])} g{d['game']} turn {d['turn']}: "
+              f"it said {d['coach']} ({d['coach_score']:.1f}), the player "
+              f"bought {d['player']} ({d['player_score']:.1f})  "
+              f"+{d['delta']:.1f}")
     print(f"\n 2. impossible advice: {len(bad)}")
     for b in bad[:top]:
-        print(f"      turn {b['turn']}: {b['step']} costs {b['cost']} "
-              f"with {b['gold']} gold")
+        print(f"      {short(b['session'])} g{b['game']} turn {b['turn']}: "
+              f"{b['step']} costs {b['cost']} with {b['gold']} gold")
     print("\n 3. advice not taken, by class:")
     for lead, total, ignored in ign[:top]:
         print(f"      {lead}: ignored {ignored} of {total}")
