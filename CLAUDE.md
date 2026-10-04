@@ -117,10 +117,10 @@ player to re-extract the zip is useless); `update.recover()`, or
 `update.py --recover`, then finishes precisely — including removing files the
 new version added — while `APPLIED` on disk means "do not undo this".
 
-## Where the last session left off (2026-10-04, main 72d6b60)
+## Where the last session left off (2026-10-04, main d892a7d)
 
 Sharing sends ONE REPORT PER GAME, and as of main 72d6b60 the share path is
-idempotent per report id. TWO CLAIMS IN THE PREVIOUS VERSION OF THIS FILE WERE
+idempotent per report id. TWO CLAIMS IN AN EARLIER VERSION OF THIS FILE WERE
 WRONG — the artifacts say so, so do not re-diagnose from the old text:
 
 * "three games produced three reports" counted FILES, not games. Two of the
@@ -146,35 +146,61 @@ delivered, and both outcomes are recorded.
 the game-end share line and a session switch — where the two `opts` NameErrors
 shipped — and it fails if nothing was advised or if a tick SWALLOWED an exception,
 because `monitor()` catches per-tick and per-line errors and keeps looping by
-design. Reintroducing the `opts` NameError fails it (the other 1229 tests still
-pass through it).
+design. Reintroducing the `opts` NameError fails it.
 
-NEXT, from the 2026-10-04 review, none of these fixed yet:
+**The report spec is now a control with teeth, and that has an operational cost
+worth knowing before it surprises anyone.** `scenario`, `choice` and
+`comp_progress` name their keys one by one instead of accepting any map, and
+`source_problems()` reads the SOURCE — so **a new analysis field, or a new key
+inside one of those maps, now REFUSES the send** until it is added to `SPEC` or
+listed in `DROPPED_FROM_ANALYSIS` (`session_report.py`). That is deliberate: the
+alternative is what happened to `scenario.trinkets`, dropped silently from 560 of
+641 real advisories for a whole patch. The refusal names the field and the fix is
+one line. `identity_findings()` additionally refuses a payload containing any
+handle the session's own records showed — the check `privacy_scan` cannot do,
+since a bare display name matches nothing it looks for — with handles that are
+also game vocabulary exempt, because one real opponent is literally called
+"Demon" and the payload carries that word 88 times as a tribe.
 
-1. `package_corpus.inspect()` decodes `log_gz_b64` WITHOUT `gzip.decompress`
-   (`package_corpus.py:299`), so the corpus path's only independent log check
-   scans mojibake and reports "verified clean" for any bundle. Its test decodes
-   it correctly, which is why nothing caught it.
-2. The report whitelist is only a whitelist where it names keys: `scenario`,
-   `choice` and `comp_progress` are open maps (`session_report.py:98-107`) and no
-   string field's CONTENT is checked, so a bare handle in `top_move_steps[].reason`
-   POSTs with `verify()` and `privacy_scan` both clean — demonstrated with a real
-   `share_session`. (`scenario.trinkets` is a list, so MAP_SCALARS drops it too.)
-3. `upload_corpus.py` posts whatever path it is handed while printing that the log
-   was BattleTag-redacted; `privacy_scan` is never called on that path.
-4. The overlay calls a healthy coach "frozen, not live" during every combat phase
-   (`coach_ui.py:497`'s 8 s threshold against a median 81 s between buy phases),
-   and a finished game's plan stays on screen until the next `CREATE_GAME`.
-5. `Clear` does not bring the sharing question back although README:97-99 tells
-   testers it does, and consent is RETROACTIVE: games played while sharing was off
-   are uploaded once the answer becomes yes.
-6. Nothing tests the publish gates, and deleting `privacy_scan`'s whole
-   `player_name` category passes all 1252 tests.
+`package_corpus.inspect()` really decompresses the log now (it scanned mojibake,
+so the corpus path's only independent log check could never fail), and
+`upload_corpus.py` runs it and refuses before uploading — it used to print "the
+BattleTag-redacted Power.log" over a raw log it had never checked.
 
-Smaller open items: the Cloudflare read key (`HEARTH_TELEMETRY_KEY`) is not in
-`telemetry\.dev.vars`, so the KV listing needs the dashboard; and the KV
-namespace also holds every `release/…` zip, so filter by the `sessions/` prefix
-rather than scanning. The dashboard download names files
+The overlay's freshness line no longer accuses a working coach: the gap between
+buy phases is a median 81 seconds (measured over 13 real phases), and 8 seconds
+of it used to read "is live.py still running? (it is frozen, not live)". Only a
+coach that has stopped ANSWERING alarms now; old advice says when the next shop
+updates it. `freshnessLine()` is a pure function and
+`test_overlay_freshness.py` executes it under node. A finished game's plan also
+clears at the game's end rather than at the next `CREATE_GAME`.
+
+NEXT, still open:
+
+1. CONSENT, and it needs a decision before code: `Clear` does not bring the
+   sharing question back although README:97-99 tells testers it does, and a yes
+   is RETROACTIVE — games played while sharing was off are uploaded once the
+   answer becomes yes (reproduced). Disclose it or scope it.
+2. `--poll 0.5`, the form README:172 documents, crashes at startup with
+   `IndexError`; only `--poll=0.5` parses, and the value is then taken as the log
+   path, because `live.py` treats every non-`--` token as a position.
+3. An ACCEPTED update whose download fails says nothing at all: `live.py` wraps
+   the whole update call in `except Exception: pass`, so a 404 or a sha mismatch
+   on the zip is invisible to the player.
+4. The launcher's `--check` writes Hearthstone's own `log.config` (outside the
+   install folder) and then prints "nothing was written".
+5. The corpus cannot be counted without the Cloudflare read key
+   (`HEARTH_TELEMETRY_KEY` is not on disk). Until it can be, nobody knows how
+   many distinct games this beta produced — and the duplicate and the frozen
+   report described above are both in the existing data.
+6. From the wider audit, untouched: the macOS launcher has still never been
+   parsed by any shell on this machine; 9 tests are dead behind
+   `HEARTH_REAL_SESSION_TESTS` (nothing sets it); `upload_corpus.py` and
+   `fetch_sessions.py` ship to players.
+
+Smaller open items: the KV namespace also holds every `release/…` zip, so filter
+by the `sessions/` prefix rather than scanning (the read key itself is item 5).
+The dashboard download names files
 `sessions_<date>_<id>.json.gz`, and the values are gzip, which is correct.
 
 The `readme-rewrite` branch is still on origin, unmerged and now identical to
