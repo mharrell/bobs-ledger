@@ -117,42 +117,59 @@ player to re-extract the zip is useless); `update.recover()`, or
 `update.py --recover`, then finishes precisely — including removing files the
 new version added — while `APPLIED` on disk means "do not undo this".
 
-## Where the last session left off (2026-10-04, main 6bcfbcc)
+## Where the last session left off (2026-10-04, main 72d6b60)
 
-Sharing sends ONE REPORT PER GAME now, and that much is proven in the field:
-three games produced three reports in the install's `app\session_reports\`,
-each with `games: 1` (147, 147 and 128 advisories), 85 opponent handles stripped
-by the whitelist before anything left the machine, and all three arrived in
-Cloudflare under `sessions/<date>/<id>.json.gz`. The install-level check that was
-outstanding is DONE; do not redo it.
+Sharing sends ONE REPORT PER GAME, and as of main 72d6b60 the share path is
+idempotent per report id. TWO CLAIMS IN THE PREVIOUS VERSION OF THIS FILE WERE
+WRONG — the artifacts say so, so do not re-diagnose from the old text:
 
-THREE THINGS TO DO NEXT, in this order.
+* "three games produced three reports" counted FILES, not games. Two of the
+  three were one game's advisory set uploaded twice under two ids, because a
+  session-level report keys a different id from a per-game one and the two
+  schemes did not dedup against each other. `share_latest` is per game now.
+* The truncated upload was NOT the game-end trigger firing early. That game ran
+  to turn 13; the log's only `PLAYSTATE=LOST` is at 11:57:38, while
+  `.report_ids.json` was already minted at 11:42:06 holding 14 of the game's
+  eventual 128 advisories. It was the EXIT backstop — a Ctrl-C mid-game — so a
+  settle delay after the game end would not have prevented it. `_share_finished`
+  now shares only games that have ENDED, and `monitor()` publishes its view of
+  the live game (`_LAST_GAME`) for `main()`'s finally, which has no coach.
 
-1. A MEASURED BUG, and the design reason behind its fix. The game-end trigger
-   (the `_LAST_SHARE_ATTEMPT` block in `live.py`'s monitor) fires the instant
-   the log says the game ended, while the coach is still recording that game's
-   last advisories. Cloud copy against local copy:
+The `.sent.json` gap was the write ORDER, not the timing. The ledger entry was
+written only after a completed response and never for a 409, so a lost response
+left the cloud holding a report the client denied sending — and every retry
+rebuilt the payload, which `manifest.created` makes different bytes, so the 409
+became permanent. A report id's file IS the payload now, a 409 counts as
+delivered, and both outcomes are recorded.
 
-       451ada39fa79745b   cloud  1557 b   14 advisories  11:42:06
-                          local 11338 b  128 advisories  11:57:39
+`monitor()` has a smoke test (`app/tests/test_monitor_smoke.py`). It has to reach
+the game-end share line and a session switch — where the two `opts` NameErrors
+shipped — and it fails if nothing was advised or if a tick SWALLOWED an exception,
+because `monitor()` catches per-tick and per-line errors and keeps looping by
+design. Reintroducing the `opts` NameError fails it (the other 1229 tests still
+pass through it).
 
-   The exit backstop then rebuilt the same game with everything known, and the
-   collector refused it (409: same id, different bytes). The cloud keeps the
-   first sixth of that game for good. The trigger has to wait for a game's data
-   to settle — a short idle delay after the end — so the FIRST send is the
-   complete one and the backstop finds nothing left to do.
+NEXT, from the 2026-10-04 review, none of these fixed yet:
 
-2. `.sent.json` does not list `451ada39fa79745b` even though its POST arrived,
-   so "was this sent?" cannot be trusted. Fix with (1), since the settle delay
-   decides when that file is written.
-
-3. A smoke test that runs `monitor()` for one tick and fails on any exception.
-   Overdue three times now. Two published builds (5ce8f58, 5b7e83c) crashed on
-   startup with `NameError: name 'opts' is not defined` because `monitor(path,
-   poll)` never received the parsed flags while two of its call sites passed
-   `opts`; 1229 tests passed through both because nothing in the suite ever
-   called `monitor()`. To reproduce by hand:
-   `python app\live.py --no-ui --no-share` against a settled session.
+1. `package_corpus.inspect()` decodes `log_gz_b64` WITHOUT `gzip.decompress`
+   (`package_corpus.py:299`), so the corpus path's only independent log check
+   scans mojibake and reports "verified clean" for any bundle. Its test decodes
+   it correctly, which is why nothing caught it.
+2. The report whitelist is only a whitelist where it names keys: `scenario`,
+   `choice` and `comp_progress` are open maps (`session_report.py:98-107`) and no
+   string field's CONTENT is checked, so a bare handle in `top_move_steps[].reason`
+   POSTs with `verify()` and `privacy_scan` both clean — demonstrated with a real
+   `share_session`. (`scenario.trinkets` is a list, so MAP_SCALARS drops it too.)
+3. `upload_corpus.py` posts whatever path it is handed while printing that the log
+   was BattleTag-redacted; `privacy_scan` is never called on that path.
+4. The overlay calls a healthy coach "frozen, not live" during every combat phase
+   (`coach_ui.py:497`'s 8 s threshold against a median 81 s between buy phases),
+   and a finished game's plan stays on screen until the next `CREATE_GAME`.
+5. `Clear` does not bring the sharing question back although README:97-99 tells
+   testers it does, and consent is RETROACTIVE: games played while sharing was off
+   are uploaded once the answer becomes yes.
+6. Nothing tests the publish gates, and deleting `privacy_scan`'s whole
+   `player_name` category passes all 1252 tests.
 
 Smaller open items: the Cloudflare read key (`HEARTH_TELEMETRY_KEY`) is not in
 `telemetry\.dev.vars`, so the KV listing needs the dashboard; and the KV
@@ -188,6 +205,11 @@ prefers a venv, so both use the same one.
 - `publish_release.py` walks the WORKING TREE, not git: an untracked scratch
   directory once inflated a release from 236 entries to 472. The
   reproducibility gate catches it; do not paper over it with `--allow-dirty`.
+- A release cannot be built from a linked worktree: `.git` is a FILE there, and
+  `EXCLUDE_DIRS` only prunes directory names, so the zip picks it up and the
+  reproducibility gate refuses (`1 entry/entries in the zip are not tracked by
+  git: .git`). Run the gates from the main checkout — which is where publishing
+  happens anyway.
 - `scrape_comps.py --diff` REPORTS but still WRITES — `--dry-run` is the flag
   that does not. `refresh_trinkets.py` writes by default for the same reason.
 - `python-hslog/` is vendored and TRACKED (upstream's tests are not, because
