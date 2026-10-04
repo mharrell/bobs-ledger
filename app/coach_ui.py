@@ -819,7 +819,9 @@ function renderWelcome(a) {
   ref.innerHTML = '';
   statebar.textContent = '';
   const card = el('div', 'welcome');
-  card.appendChild(el('h1', 'w-title', a.product || "Bob's Ledger"));
+  // `title` only exists on the end-of-game card ("Game over"); a first-run card
+  // is headed by the product name.
+  card.appendChild(el('h1', 'w-title', a.title || a.product || "Bob's Ledger"));
   card.appendChild(el('div', 'w-tag', a.tagline || ''));
   card.appendChild(el('div', 'w-status', a.status || ''));
   card.appendChild(el('div', 'w-hint', a.hint || ''));
@@ -1468,7 +1470,54 @@ def set_share_choice(share_it):
         return "unknown"
 
 
-def welcome_payload():
+def _ordinal(n):
+    """1st, 2nd, 3rd … 11th, 21st. A lobby seats eight, so 1st-8th is all the
+    card can ever show, but a general helper costs three lines and "11st" would
+    be a wrong nobody would trust anything else after."""
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def _game_over_line(game_over):
+    """One sentence about how the game ended, from what we actually know.
+
+    The placement is in the analysis (`current_place`), so the card can name it
+    rather than say "the game ended" — and every branch has to read as English
+    with the fields missing, because a coach that attached to a finished session
+    never advised at all and knows none of them.
+    """
+    place = game_over.get("placement")
+    turn = game_over.get("turn")
+    if place == 1:
+        line = "First place — well played."
+    elif isinstance(place, int) and 1 < place <= 8:
+        line = f"You placed {_ordinal(place)}."
+    else:
+        line = "That game is finished."
+    if turn:
+        line += f" Round {turn}."
+    return line
+
+
+def welcome_payload(game_over=None):
+    """The card the overlay shows when there is nothing to advise.
+
+    TWO occasions wear this card, and they must not look alike:
+
+    * a fresh start, or a manual Clear — the player needs the log.config steps;
+    * the end of a game — the player needs to know the coach is still there.
+
+    Until 2026-10-04 both drew the SAME card, so a finished game and a dead coach
+    were indistinguishable on screen. The field report that produced this: the
+    coach had advised through the whole final buy phase (turn 15), shared the
+    complete game (268 advisories, 268 in the cloud) and stopped exactly when
+    combat began — which is right, there is no shop to advise on — and the player
+    watching the recap asked whether it had crashed. `game_over` carries what the
+    last analysis knew, so the card can say what happened.
+    """
     status, sent = share_status()
     if status == "on":
         privacy = ("Sharing one small summary per game — your decisions and "
@@ -1486,21 +1535,12 @@ def welcome_payload():
                    "on. Sharing means one small summary per game: your "
                    "decisions and the outcome, with no names, no chat and no "
                    "file paths.")
-    return json.dumps({
+    payload = {
         "welcome": True,
         "product": "Bob's Ledger",
         "tagline": "A real-time Hearthstone Battlegrounds coach",
         "status": "Waiting for your next buy phase — advice appears here the "
                   "moment your shop opens.",
-        "hint": "Never seen advice? Hearthstone only writes the log this reads "
-                f"when file logging is ON. Run {config.launcher()} again and "
-                "say yes to let it turn that on for you — or put this in "
-                f"{config.config_hint()} yourself "
-                "(create the file if it is not there):",
-        # The block live.py's console message has always claimed this card
-        # shows.
-        "steps": "[Power]\nLogLevel=1\nFilePrinting=true\n"
-                 "ConsolePrinting=false\nScreenshots=false",
         "privacy": privacy,
         "share": {"status": status,
                   "ask": status == "undecided",
@@ -1511,7 +1551,30 @@ def welcome_payload():
                   "no": "No thanks",
                   "toggle": ("Turn sharing off" if status == "on"
                              else "Turn sharing on")},
-    }).encode()
+    }
+    if game_over:
+        payload["title"] = "Game over"
+        # Only the fields we actually have: a null the page would have to
+        # special-case is worse than an absent one (the convention
+        # session_report.OMIT exists for the same reason).
+        payload["game_over"] = {k: v for k, v in game_over.items()
+                               if v is not None}
+        payload["tagline"] = _game_over_line(game_over)
+        payload["status"] = ("The coach is still running, watching for your "
+                             "next game — advice starts again the moment your "
+                             "next shop opens.")
+    else:
+        payload["hint"] = ("Never seen advice? Hearthstone only writes the log "
+                           f"this reads when file logging is ON. Run "
+                           f"{config.launcher()} again and say yes to let it "
+                           "turn that on for you — or put this in "
+                           f"{config.config_hint()} yourself "
+                           "(create the file if it is not there):")
+        # The block live.py's console message has always claimed this card
+        # shows.
+        payload["steps"] = ("[Power]\nLogLevel=1\nFilePrinting=true\n"
+                            "ConsolePrinting=false\nScreenshots=false")
+    return json.dumps(payload).encode()
 
 
 _state = _State()
@@ -1532,6 +1595,28 @@ def clear_analysis(keep_bans=False):
         _state.etag = hashlib.sha1(_state.payload).hexdigest()
         if not keep_bans:
             _state.manual_bans = None
+
+
+def show_game_over(analysis=None):
+    """Replace the finished game's panel with the end-of-game card.
+
+    Called the moment the log says the game ended. The panel must go — the plan
+    it holds is advice for a game that is over — but the replacement must not be
+    the first-run card: that is what made a finished game look like a dead coach
+    (2026-10-04). `analysis` is whatever was last pushed, or None when the coach
+    never advised; only its summary values are read, so nothing of the plan
+    survives.
+    """
+    analysis = analysis or {}
+    game_over = {"placement": analysis.get("current_place"),
+                 "turn": analysis.get("turn")
+                         or (analysis.get("scenario") or {}).get("turns"),
+                 "health": analysis.get("health"),
+                 "tier": analysis.get("tier")}
+    with _state.lock:
+        _state.analysis = None
+        _state.payload = welcome_payload(game_over=game_over)
+        _state.etag = hashlib.sha1(_state.payload).hexdigest()
 
 
 def store_manual_bans(tribes):

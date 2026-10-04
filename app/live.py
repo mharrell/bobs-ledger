@@ -447,9 +447,18 @@ def monitor(path, poll=1.0):
             # indefinitely for a session's last game, because the only other
             # clear is the NEXT game's CREATE_GAME. The player was reading a buy
             # instruction for a game that was over.
+            #
+            # And what replaces it must not be the FIRST-RUN card: that card is
+            # what a fresh install shows, so "the game ended" and "the coach
+            # died" looked identical on screen. Measured in the field
+            # 2026-10-04: the coach advised through the whole final buy phase,
+            # shared the complete game and stopped exactly when combat began —
+            # correct, there is no shop to advise on — while the player watched
+            # the recap and asked whether it had crashed. The card now says what
+            # happened, from the placement the last analysis already carried.
             state = _game_state(coach)
             if state and state[1] and not (_LAST_GAME and _LAST_GAME[1]):
-                coach_ui.clear_analysis()
+                coach_ui.show_game_over(coach_ui.latest_analysis())
             # Also what the exit backstop consults: main()'s finally has no coach
             # object, and without this it shares a game that is still in
             # progress (see _game_state).

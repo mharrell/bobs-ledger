@@ -325,6 +325,24 @@ class MonitorSmokeTest(unittest.TestCase):
                           "the finished game's plan is still on the overlay")
         self.assertEqual(live._LAST_GAME, (1, True))
 
+    def test_a_finished_game_leaves_a_card_that_says_so(self):
+        """What replaces the panel is the point, and it is what the field
+        report was about: the overlay fell back to the FIRST-RUN card, the same
+        one a fresh install shows, so "the game ended" and "the coach died" were
+        the same screen. Asserted on the payload the page actually polls."""
+        log = self._session(_SESSION_DIR, ended=False)
+        self._patch(live, "find_active_log", lambda: log)
+
+        self._drive(log, growth=GROWTH_THEN_END)
+
+        served = json.loads(coach_ui._analysis_response()[2])
+        self.assertEqual(served.get("title"), "Game over",
+                         "the finished game fell back to the first-run card")
+        self.assertIn("still running", served.get("status", ""))
+        self.assertNotIn("steps", served,
+                         "the log.config block belongs on a first run, not after "
+                         "a game")
+
     def test_a_live_game_keeps_its_panel(self):
         """The clear must be triggered by the END, not by old advice."""
         log = self._session(_SESSION_DIR, ended=False)
