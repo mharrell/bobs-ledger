@@ -121,7 +121,7 @@ def post_report(blob, url=None, timeout=30):
         return False, f"{type(e).__name__}: {e}"
 
 
-def share_session(log_path, url=None, quiet=False):
+def share_session(log_path, url=None, quiet=False, game=None):
     """Distil, verify and send one session. Returns a short outcome word.
 
     Never raises and never blocks play: the coach's job is advice, and a
@@ -136,7 +136,13 @@ def share_session(log_path, url=None, quiet=False):
     # The session's log stem keys the random report id, so re-sharing the same
     # finished game after a crash reuses its id instead of uploading twice.
     session_key = decision_log.session_stem(log_path)
-    report = session_report.build(records, session_key=session_key)
+    if game is not None:
+        # One report id per GAME, and stable for that game's lifetime: the
+        # collector answers 409 when the same id arrives with different bytes,
+        # so a re-send has to be byte-identical, and each game is its own
+        # report now (2026-10-04).
+        session_key = f"{session_key}#{game}"
+    report = session_report.build(records, session_key=session_key, game=game)
     report_id = report["manifest"]["report_id"]
     if report_id in _sent_ids():
         return "already"
