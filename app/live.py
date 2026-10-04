@@ -433,22 +433,80 @@ def monitor(path, poll=1.0):
         f.close()
 
 
-def _share_finished(log_path, opts=()):
-    """Send a finished session's summary, if the player agreed to share.
+#: Games this process has already shared, keyed by (session, game). The
+#: session-end backstop runs after every game-level share, and a report rebuilt
+#: later carries a new `created`, so re-sending one is a POST the collector
+#: refuses (409: same id, different bytes) rather than a duplicate record. Cheap
+#: to prevent, noisy to ignore.
+_shared_games = set()
 
-    Quiet and total: it reports nothing when sharing is off, undecided or
-    already done, and an error in it can never reach the player as a problem
-    with the coach. `--no-share` skips this session without changing the
-    stored choice — consent is a standing answer, not a permanent one.
+
+def _share_game(log_path, game, opts=()):
+    """Send ONE finished game's summary, if the player agreed to share.
+
+    Per game rather than per session since 2026-10-04, after a measured case:
+    the player finished a game, closed Hearthstone, and nothing left the
+    machine until they closed the coach window. Two costs to that, and the
+    first is the one that matters - a console window closed with the X button
+    terminates the process instead of running this file's cleanup, so a whole
+    session shared nothing at all, from a player who had answered yes.
+
+    Quiet and total, like the session version it replaces: sharing off,
+    undecided, already done, or an error here are all reported to nobody. The
+    error is printed for the console, never raised into the coach.
     """
-    if "--no-share" in opts:
+    if "--no-share" in opts or game is None:
         return "skipped"
+    key = (os.path.basename(os.path.dirname(log_path or "")), game)
+    if key in _shared_games:
+        return "already-sent"
     try:
         import share
-        return share.share_session(log_path)
+        outcome = share.share_session(log_path, game=game)
+        _shared_games.add(key)
+        return outcome
     except Exception as e:          # noqa: BLE001 - never break the coach
-        print(f"  (could not share this session: {e})", flush=True)
+        print(f"  (could not share this game: {e})", flush=True)
         return "error"
+
+
+def _share_finished(log_path, opts=()):
+    """The session-end backstop: share whatever this run has not sent yet.
+
+    Kept alongside the game-level share because that one only fires when the
+    coach SEES a game end. A player who quits mid-game, or whose final game
+    ends in the same tick as the session switch, would otherwise leave that game
+    behind - and it is the game they are most likely to still remember.
+
+    When no game numbers are readable - an empty log still being written, or a
+    record shape from before the field existed - it falls back to sharing the
+    session as a whole rather than sharing nothing. Losing a session to a
+    parsing detail is the failure this whole file is arranged to avoid.
+    """
+    if "--no-share" in opts or not log_path:
+        return "skipped"
+    try:
+        import session_report
+        games = sorted({r.get("game")
+                        for r in session_report.decisions_for(log_path)
+                        if r.get("game") is not None})
+    except Exception as e:          # noqa: BLE001 - never break the coach
+        print(f"  (could not check for unsent games: {e})", flush=True)
+        return "error"
+    if not games:
+        # Exactly the old per-session behaviour, kept for the case where there
+        # is nothing to be per-game about.
+        try:
+            import share
+            return share.share_session(log_path)
+        except Exception as e:      # noqa: BLE001 - never break the coach
+            print(f"  (could not share this session: {e})", flush=True)
+            return "error"
+    outcomes = [_share_game(log_path, g, opts) for g in games]
+    for outcome in outcomes:
+        if outcome not in ("skipped", "already-sent"):
+            return outcome
+    return "skipped"
 
 
 def main():
