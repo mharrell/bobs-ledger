@@ -259,41 +259,37 @@ def plan_cost_violations(rows):
     left" advice as a fault, while a step that cannot be paid for at all is
     impossible however the rest of the list is ordered.
 
-    Only costs the analysis itself states are used (level_cost, shop_costs), so
-    the check cannot invent a price - a roll's 1 gold, say - and then call the
-    coach wrong for disagreeing with it. Steps with no stated cost are skipped.
+    DELIBERATELY NARROW, after two rounds of learning what cannot be trusted:
 
-    UNDER SUSPICION (2026-10-04): a sweep of six sessions produced three
-    "impossible" buys priced at 16, 27 and 28 gold, which is not what a minion
-    costs. Replaying one showed the cards WERE in the tavern and shop_costs
-    priced them that way - and that the same field held a single plausible
-    entry moments earlier in the same turn, filling in per card as the shop
-    settles, which is what a score-to-beat does and a price list does not. Until
-    the field's meaning is settled against the code that writes it, treat these
-    findings as the CHECK's fault rather than the coach's. The level cases stay
-    trustworthy: level_cost is a price, the 2026-10-03 plan agreed with it, and
-    the purse is read independently.
+    * With an EMPTY purse, any planned buy or level is impossible whatever those
+      things cost. That needs no price, so none is invented - and it is exactly
+      the 2026-10-03 case, where every advisory of a turn told the player to
+      LEVEL with 0 gold left.
+    * With gold in hand, judging a step requires its true price, and neither
+      `level_cost` nor `shop_costs` has been confirmed against the code that
+      writes it. A sweep of six sessions priced three buys at 16, 27 and 28 gold
+      - no minion costs that - while the same field held one plausible entry
+      moments earlier in the SAME turn, filling in per card as the shop settles.
+      That is what a score-to-beat does; a price list does not. `shop_costs`
+      comes from shop_cost_map() and is applied to spells, not to minions.
+
+    So this reports the unambiguous case and says so, rather than dressing the
+    instrument's arithmetic up as the coach's. Extending it to a funded purse
+    means settling what shop_cost_map and level_cost actually mean first.
     """
     bad = []
     for r in rows:
-        gold = r.get("gold")
-        if gold is None:
-            # The purse being unknown is its own fault, and the 2026-10-03 one;
-            # it belongs to the account-map check, not this one.
+        if r.get("gold") != 0:
             continue
         for step in r.get("steps") or []:
             kind = step.get("kind")
-            if kind == "level":
-                cost, what = r.get("level_cost"), "LEVEL"
-            elif kind == "buy":
-                card = step.get("card") or r.get("card")
-                cost, what = (r.get("shop_costs") or {}).get(card), f"Buy {card}"
-            else:
+            if kind not in ("level", "buy"):
                 continue
-            if cost is not None and cost > gold:
-                bad.append({"session": r.get("session"), "game": r.get("game"),
-                            "turn": r.get("turn"), "gold": gold,
-                            "step": what, "cost": cost})
+            bad.append({"session": r.get("session"), "game": r.get("game"),
+                        "turn": r.get("turn"), "gold": 0,
+                        "step": ("LEVEL" if kind == "level"
+                                 else f"Buy {step.get('card') or r.get('card')}"),
+                        "cost": "any gold"})
     return bad
 
 

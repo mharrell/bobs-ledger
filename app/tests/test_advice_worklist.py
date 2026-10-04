@@ -125,10 +125,9 @@ class TestThePrintedWorklist(unittest.TestCase):
     def test_an_impossible_step_is_shown_with_its_purse(self):
         row = _row([(SAID, 1.0)], bought=(), lead="level")
         row["steps"] = [{"kind": "level"}]
-        row["level_cost"] = 7
         row["gold"] = 0
         text = self._output([row])
-        self.assertIn("LEVEL costs 7 with 0 gold", text)
+        self.assertIn("LEVEL costs any gold with 0 gold", text)
 
 
 if __name__ == "__main__":

@@ -34,43 +34,50 @@ def _row(gold, steps, level_cost=None, shop_costs=None, turn=5):
 
 
 class TestPlanCostViolations(unittest.TestCase):
-    def test_a_level_it_cannot_pay_for_is_reported(self):
-        """The 2026-10-03 shape: LEVEL (cost 7) on a purse of 0."""
+    """Narrow on purpose: an empty purse needs no price to judge, and with gold
+    in hand the two cost fields have not been confirmed against their writers
+    (three false "impossible buy" findings, 2026-10-04)."""
+
+    def test_a_level_with_no_gold_left_is_reported(self):
+        """The 2026-10-03 shape: LEVEL planned on a purse of 0."""
         bad = outcome_audit.plan_cost_violations(
             [_row(0, [{"kind": "level"}], level_cost=7)])
         self.assertEqual(len(bad), 1)
         self.assertEqual(bad[0]["step"], "LEVEL")
-        self.assertEqual(bad[0]["cost"], 7)
         self.assertEqual(bad[0]["gold"], 0)
 
-    def test_a_buy_it_cannot_pay_for_is_reported(self):
+    def test_a_buy_with_no_gold_left_is_reported(self):
         bad = outcome_audit.plan_cost_violations(
-            [_row(2, [{"kind": "buy", "card": "BGS_034"}],
-                  shop_costs={"BGS_034": 3})])
+            [_row(0, [{"kind": "buy", "card": "BGS_034"}])])
         self.assertEqual([b["step"] for b in bad], ["Buy BGS_034"])
 
-    def test_an_affordable_plan_is_left_alone(self):
+    def test_a_funded_purse_is_not_judged_at_all(self):
+        """2 gold cannot buy a 3-gold minion by the game's rules, but the
+        analysis's cost fields are not a price list this check can trust, so it
+        says nothing rather than guessing."""
         self.assertEqual(outcome_audit.plan_cost_violations(
-            [_row(10, [{"kind": "level"}, {"kind": "buy", "card": "X"}],
-                  level_cost=7, shop_costs={"X": 3})]), [])
+            [_row(2, [{"kind": "buy", "card": "BGS_034"}],
+                  shop_costs={"BGS_034": 3})]), [])
+        self.assertEqual(outcome_audit.plan_cost_violations(
+            [_row(1, [{"kind": "level"}], level_cost=5)]), [])
 
-    def test_a_step_the_analysis_prices_not_at_all_is_not_guessed(self):
-        """A roll costs 1 gold in the game, but the analysis does not say so:
-        the check must not invent the number and then call the coach wrong."""
+    def test_steps_that_are_not_purchases_are_never_flagged(self):
+        """A roll or a hold with 0 gold is not the bug: the bug was telling a
+        player to BUY or LEVEL something."""
         self.assertEqual(outcome_audit.plan_cost_violations(
             [_row(0, [{"kind": "roll"}, {"kind": "note"},
-                      {"kind": "buy", "card": "UNPRICED"}])]), [])
+                      {"kind": "hold"}, {"kind": "sell"}])]), [])
 
     def test_an_unknown_purse_is_skipped_not_passed(self):
         """gold=None was the account-map bug (fixed 2026-10-03). It has its own
-        check; this one must not count it as an affordable plan either."""
+        check; this one must not count it as an empty purse either."""
         self.assertEqual(outcome_audit.plan_cost_violations(
             [_row(None, [{"kind": "level"}], level_cost=7)]), [])
 
     def test_the_report_carries_enough_to_find_the_phase(self):
         bad = outcome_audit.plan_cost_violations(
-            [_row(1, [{"kind": "level"}], level_cost=5, turn=9)])
-        self.assertEqual((bad[0]["turn"], bad[0]["gold"]), (9, 1))
+            [_row(0, [{"kind": "level"}], turn=9)])
+        self.assertEqual((bad[0]["turn"], bad[0]["gold"]), (9, 0))
 
 
 @NO_SESSION
