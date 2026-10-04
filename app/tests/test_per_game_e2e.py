@@ -6,12 +6,14 @@ this machine that actually has decision logs. Only the POST is stubbed, so
 nothing leaves the machine, and every directory that writes is redirected to a
 scratch folder.
 
-Opt in with HEARTH_REAL_SESSION_TESTS=1: it reads a real session's decision log
-(megabytes) and distils it, which is slower than the rest of the suite and
-depends on this machine having played a game. The install-level version of this
-check — watching the files appear under a released install while the player is
-mid-session — cannot be done from here and needs the build published and a game
-played.
+Opt in is gone, deliberately. It was gated on HEARTH_REAL_SESSION_TESTS=1 and
+that gate was wrong twice over: this test does NOT replay a Power.log (the
+expensive thing the other opt-in tests do) - it reads a decision log, which
+takes about a second - and an opt-in that nobody can actually set is not a
+test. Three attempts to run it failed on shell plumbing rather than on the
+code: `set X=1 && python ...` is cmd.exe syntax and does nothing in PowerShell,
+where `set` aliases Set-Variable. It runs by default now and skips only for the
+honest reason, when no session on the machine has a decision log.
 """
 import glob
 import os
@@ -28,11 +30,7 @@ import real_logs  # noqa: E402
 import session_report  # noqa: E402
 import share  # noqa: E402
 
-OPT_IN = os.environ.get("HEARTH_REAL_SESSION_TESTS") == "1"
 
-
-@unittest.skipUnless(OPT_IN, "set HEARTH_REAL_SESSION_TESTS=1 to replay a "
-                             "real session's decision log")
 class TestOneReportPerGame(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -105,14 +103,25 @@ class TestOneReportPerGame(unittest.TestCase):
             self.assertEqual(second, [], "re-running posted again")
 
     def test_each_report_holds_exactly_one_game(self):
-        """The point of the change: not one lump per session."""
+        """The point of the change: not one lump per session.
+
+        Reads the report file rather than calling session_report.inspect, which
+        takes a report dict and not a path - the first version of this test
+        passed it a path and errored (2026-10-04).
+        """
+        import gzip
+        import json
         with tempfile.TemporaryDirectory() as tmp:
             self._run(tmp, [])
             for path in self._reports(tmp):
-                with mock.patch.object(session_report, "ID_MAP_DIR", tmp):
-                    report = session_report.inspect(path)
-                self.assertEqual(report["manifest"]["games"], 1,
-                                 os.path.basename(path))
+                with gzip.open(path, "rt", encoding="utf-8") as f:
+                    report = json.load(f)
+                manifest = report["manifest"]
+                self.assertEqual(manifest["games"], 1,
+                                 f"{os.path.basename(path)} holds "
+                                 f"{manifest['games']} games")
+                self.assertGreater(manifest["advisories"], 0,
+                                   f"{os.path.basename(path)} holds no advice")
 
 
 if __name__ == "__main__":
