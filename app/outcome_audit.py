@@ -262,6 +262,17 @@ def plan_cost_violations(rows):
     Only costs the analysis itself states are used (level_cost, shop_costs), so
     the check cannot invent a price - a roll's 1 gold, say - and then call the
     coach wrong for disagreeing with it. Steps with no stated cost are skipped.
+
+    UNDER SUSPICION (2026-10-04): a sweep of six sessions produced three
+    "impossible" buys priced at 16, 27 and 28 gold, which is not what a minion
+    costs. Replaying one showed the cards WERE in the tavern and shop_costs
+    priced them that way - and that the same field held a single plausible
+    entry moments earlier in the same turn, filling in per card as the shop
+    settles, which is what a score-to-beat does and a price list does not. Until
+    the field's meaning is settled against the code that writes it, treat these
+    findings as the CHECK's fault rather than the coach's. The level cases stay
+    trustworthy: level_cost is a price, the 2026-10-03 plan agreed with it, and
+    the purse is read independently.
     """
     bad = []
     for r in rows:
