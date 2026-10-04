@@ -491,7 +491,12 @@ def main():
         try:
             server = coach_ui.start_server()
             url = f"http://127.0.0.1:{server.server_address[1]}/"
-            print(f"Coach UI: {url}")
+            # Printed AFTER the update check, deliberately: the launcher used
+            # to announce "the overlay opens in your browser" before this line
+            # ran anything, so the one thing a first run needs to know - that
+            # it checked for an update and found what it found - arrived after
+            # the claim it belonged to (2026-10-03).
+            print(f"Opening the overlay in your browser: {url}")
             if "--open" in opts:
                 # The click-launcher's path. It must open the port we
                 # ACTUALLY bound — a busy 8747 steps to 8748, so the launcher

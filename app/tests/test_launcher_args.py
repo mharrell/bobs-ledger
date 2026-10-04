@@ -170,5 +170,26 @@ class TestInterruptedUpdateRecovery(unittest.TestCase):
         self.assertNotIn("del ", self.text[start:end])
 
 
+class TestTheShortcutStepSpeaks(unittest.TestCase):
+    """Answering Y to the shortcut prompt used to produce nothing at all.
+
+    The helper printed only on FAILURE, so a player who asked for a shortcut
+    could not tell whether they had one - and the first run is exactly when
+    they are looking for it. Pinned by reading the file, like the recovery
+    step, because running this branch means creating real shortcuts on the
+    machine that runs the tests.
+    """
+
+    def setUp(self):
+        with open(LAUNCHER, encoding="ascii") as f:
+            self.text = f.read()
+
+    def test_a_created_shortcut_is_confirmed(self):
+        self.assertIn("if not errorlevel 1 echo Created:", self.text)
+
+    def test_the_failure_path_still_speaks_too(self):
+        self.assertIn("Could not create a shortcut", self.text)
+
+
 if __name__ == "__main__":
     unittest.main()

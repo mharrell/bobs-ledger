@@ -206,6 +206,7 @@ set "LNK=%~1"
 set "LNK=%LNK:'=''%"
 powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%'); $s.TargetPath='%SELF%'; $s.WorkingDirectory='%HERE%'; $s.IconLocation='%HERE%app\bobs-ledger.ico'; $s.Description='Bobs Ledger - Hearthstone Battlegrounds coach'; $s.Save()"
 if errorlevel 1 echo Could not create a shortcut at %~1 - dragging this file where you want it works too.
+if not errorlevel 1 echo Created: %~1
 exit /b 0
 
 :report
@@ -232,7 +233,7 @@ goto :end
 
 :run
 echo.
-echo Starting the coach. The overlay opens in your browser.
+echo Starting Bob's Ledger.
 echo Leave this window open while you play; Ctrl+C here stops it.
 echo.
 set "PASS=%*"
