@@ -46,7 +46,17 @@ _WRITE = re.compile(
 _SEAT_TAG = re.compile(
     r"TAG_CHANGE Entity=(\S+) tag=BACON_CURRENT_COMBAT_PLAYER_ID value=(\d+)")
 STAGED_CREATOR = "TB_BaconShop_8P_PlayerE"
-META_TAGS = ("CONTROLLER", "CARDTYPE", "CREATOR", "PREMIUM", "ZONE_POSITION")
+#: Writes worth keeping per staged entity. ATK/HEALTH are here because a
+#: seat's board STRENGTH is not recoverable from card ids: `cards` counts
+#: copies, and joining those to the card DB yields BASE stats, which understate
+#: a buffed board by roughly 10x (measured on the 2026-10-02 session).
+#:
+#: They arrive as BARE-entity TAG_CHANGE writes (`Entity=282 tag=ATK value=2`)
+#: and never as indented block tags — verified against a real log: 2662 bare
+#: ATK writes, 0 block-form. `_WRITE` already matches that shape, so listing
+#: them here is the whole parsing change.
+META_TAGS = ("CONTROLLER", "CARDTYPE", "CREATOR", "PREMIUM", "ZONE_POSITION",
+             "ATK", "HEALTH")
 
 
 def base_cid(cid):
@@ -64,16 +74,32 @@ class LobbyScout:
 
     def __init__(self):
         self._meta = {}        # eid -> {card, controller, cardtype, creator,
-                               #        premium, zonepos}
+                               #        premium, zonepos, atk, health}
         self._cur = None       # eid of the entity block being read
         self._creators = set() # entity ids of the staging enchantment
         self._open = None      # round being captured:
                                # {turn, own, eids: [eid in feed order]}
-        self._rounds = {}      # turn -> {"own", "eids"} (closed, unresolved)
+        self._rounds = {}      # turn -> {"own", "eids", "stats"} (closed)
         self._resolved = set()
+        self._stats = {}       # eid -> [atk, health], live staged values
         self.seats = {}        # seat -> {"cards": Counter, "turn": int,
-                               #        "goldens": set, "name": str}
+                               #        "goldens": set, "name": str,
+                               #        "stats": int, "stats_n": int}
         self._names = {}       # account name -> seat (last nonzero)
+
+    def reset(self):
+        """Forget the game. Every field here is per-game state.
+
+        Called by live_coach on CREATE_GAME. Without it the scout outlives the
+        game it describes: `seats` keeps the previous game's boards, and its
+        freshness test (`cur_turn - rec["turn"] <= max_age`) then reads them as
+        FRESH, because the age goes NEGATIVE early in a new game. That surfaced
+        as the overlay's "Next opponent" panel rendering a stranger's comp as
+        the announced opponent (found 2026-10-04). Seat ids are account slots,
+        so they line up across games — which is why the stale record was
+        accepted silently rather than failing loudly.
+        """
+        self.__init__()
 
     def __eq__(self, other):
         # Value identity for the _reset() contract (test_live_updates pins
@@ -82,7 +108,7 @@ class LobbyScout:
             return NotImplemented
         return all(getattr(self, a) == getattr(other, a)
                    for a in ("_meta", "_creators", "_open", "_rounds",
-                             "_resolved", "seats", "_names"))
+                             "_resolved", "_stats", "seats", "_names"))
 
     # ---- feeding -------------------------------------------------------
 
@@ -122,7 +148,7 @@ class LobbyScout:
             # update lines describe existing entities — count creates and
             # shows, not every stat re-description.)
             if self._open is not None and not is_update:
-                self._open["eids"].append(eid)
+                self._open["eids"].add(eid)
         else:
             m = _WRITE.search(line)
             if m:
@@ -171,6 +197,19 @@ class LobbyScout:
                 e["controller"] = int(val)
             except ValueError:
                 pass
+        elif tag in ("ATK", "HEALTH"):
+            # Live staged stats. Ported whole to the round at close_round()
+            # (see there for why the snapshot must be taken then).
+            try:
+                v = int(val)
+                if v < 0:
+                    return
+            except ValueError:
+                return
+            e[tag.lower()] = v
+            self._stats.setdefault(eid, [0, 0])[0 if tag == "ATK" else 1] = v
+            if self._open is not None:
+                self._open["eids"].add(eid)
         else:
             e[tag.lower()] = val
 
@@ -178,13 +217,37 @@ class LobbyScout:
 
     def open_round(self, turn, own):
         """The buy phase just ended (MAIN_END): combat staging begins.
-        `own` is pool.own_holdings(board, hand) at this exact moment."""
-        self._open = {"turn": turn, "own": Counter(own or {}), "eids": []}
+        `own` is pool.own_holdings(board, hand) at this exact moment.
+
+        `eids` is a SET because a stat write names its entity outright rather
+        than arriving in block order, so the same entity can be named more than
+        once and there is no useful order to preserve: `_opp_board` re-derives
+        the board's structure from ZONE_POSITION, and the stat snapshot is
+        built by explicit per-entity lookup.
+        """
+        self._open = {"turn": turn, "own": Counter(own or {}), "eids": set()}
 
     def close_round(self):
         """The next buy phase started (MAIN_ACTION): the combat window is
-        over. materialize the staged counters per controller."""
+        over. materialize the staged counters per controller.
+
+        The staged STATS are ported to the round HERE rather than read at
+        resolve time, because an entity's ATK/HEALTH is written several times:
+        staged values, then combat wear, then a zeroed/reset pair at teardown.
+        Reading later records a corpse (measured: a 7-minion board summing to
+        one minion's stats), and reading the max records combat-only buffs,
+        which are explicitly NON-persistent (CLAUDE.md). The close of the
+        window is the last moment the board still reads as the board.
+        """
         if self._open is not None:
+            snap = {}
+            for eid in self._open["eids"]:
+                pair = self._stats.get(eid)
+                if pair is None:
+                    continue
+                ctrl = (self._meta.get(eid) or {}).get("controller")
+                snap[eid] = (ctrl, pair[0], pair[1])
+            self._open["stats"] = snap
             self._rounds[self._open["turn"]] = self._open
             self._open = None
 
@@ -208,7 +271,7 @@ class LobbyScout:
             seat = pairing.get(turn)
             if seat is None:
                 continue
-            board, goldens, hero = self._opp_board(rnd, friendly)
+            board, goldens, hero, stats, counts = self._opp_board(rnd, friendly)
             if board is None:
                 continue
             prev = self.seats.get(seat) or {}
@@ -217,6 +280,13 @@ class LobbyScout:
             # the counter — keep them for the pool ledger (an upper bound
             # on holds) but never show them as the composition preview.
             blended = sum(board.values()) > 7
+            # Board STRENGTH, which `cards` cannot supply: card ids joined to
+            # the card DB give BASE stats, and a buffed board reads ~10x low
+            # (measured). None when nothing staged a readable ATK/HEALTH pair.
+            # Suppressed on a blended record for the same reason the
+            # composition preview is: the counter is an upper bound on
+            # holdings, so a total taken over it would be one too.
+            opp_ctrl = next((c for c in stats if c != friendly), None)
             self.seats[seat] = {
                 "cards": board,
                 "turn": turn,
@@ -224,14 +294,19 @@ class LobbyScout:
                 "hero": hero or prev.get("hero"),
                 "name": self._name_of(seat) or prev.get("name"),
                 "blended": blended,
+                "stats": None if (blended or opp_ctrl is None)
+                         else stats.get(opp_ctrl),
+                "stats_n": None if (blended or opp_ctrl is None)
+                           else counts.get(opp_ctrl),
             }
             updated.append(seat)
         return updated
 
     def _opp_board(self, rnd, friendly):
         """The fight board from a round's staged burst, minus our own
-        holdings, clamped at zero. Returns (counter, goldens, hero_cid) or
-        (None, (), None) when nothing staged.
+        holdings, clamped at zero. Returns (counter, goldens, hero_cid,
+        stats_by_controller, minion_count_by_controller) or
+        (None, (), None, {}, {}) when nothing staged.
 
         Phase 0 ground truth: a combat window stages boards as fresh
         entities under ONE shared combat-slot controller, and the board
@@ -266,22 +341,23 @@ class LobbyScout:
                 continue   # copies under OUR number are ours, never theirs
             base = base_cid(card)
             golden = e.get("premium") == "1" or base != card
-            ents.append((ctrl, base, golden, e.get("zonepos") or 0))
+            ents.append((ctrl, base, golden, e.get("zonepos") or 0, eid))
         if not ents:
-            return None, (), None
+            return None, (), None, {}, {}
         # Split into position runs (a new run starts at zonepos == 1).
         runs = []
         cur = None
-        for ctrl, base, golden, pos in ents:
+        for ctrl, base, golden, pos, eid in ents:
             if pos == 1 or cur is None:
                 cur = {"count": Counter(), "goldens": set(), "reach": 0,
-                       "ctrls": Counter(), "idx": len(runs)}
+                       "ctrls": Counter(), "eids": [], "idx": len(runs)}
                 runs.append(cur)
             cur["count"][base] += 3 if golden else 1
             if golden:
                 cur["goldens"].add(base)
             cur["reach"] = max(cur["reach"], pos)
             cur["ctrls"][ctrl] += 1
+            cur["eids"].append((ctrl, eid))
 
         def score(r):
             total = sum(r["ctrls"].values())
@@ -296,8 +372,23 @@ class LobbyScout:
             if left > 0:
                 opp[cid] = left
         win_ctrl = best["ctrls"].most_common(1)[0][0]
+        # Board strength per controller, summed over EXACTLY the entities that
+        # formed the winning run — the same set the counter above describes.
+        # Nesting it by controller is what lets resolve_completed label the
+        # opponent's total without re-implementing any of the run selection
+        # (an earlier attempt re-derived it and admitted entities that were
+        # never on the board: a 14-entity "board" totalling 1253).
+        stats = {}
+        counts = {}
+        for ctrl, eid in best["eids"]:
+            pair = (rnd.get("stats") or {}).get(eid)
+            if not pair:
+                continue
+            _ctrl, atk, hp = pair
+            stats[ctrl] = stats.get(ctrl, 0) + atk + hp
+            counts[ctrl] = counts.get(ctrl, 0) + 1
         return (opp or None), best["goldens"], \
-            (hero if hero_ctrl == win_ctrl else None)
+            (hero if hero_ctrl == win_ctrl else None), stats, counts
 
     def _name_of(self, seat):
         for name, s in self._names.items():
@@ -308,9 +399,21 @@ class LobbyScout:
     # ---- consumers -------------------------------------------------------
 
     def fresh_seats(self, cur_turn, max_age=2):
-        """Seats whose snapshot is at most `max_age` rounds old."""
-        return {s for s, rec in self.seats.items()
-                if cur_turn - rec["turn"] <= max_age}
+        """Seats whose snapshot is at most `max_age` rounds old.
+
+        A NEGATIVE age (the record is from a LATER turn than `cur_turn`) is
+        rejected rather than accepted: `cur_turn - rec["turn"] <= max_age` is
+        true for any record from a future turn, which is how a previous game's
+        seat read as fresh in the first round of the next one. `reset()` is the
+        real fix; this keeps the arithmetic from ever hiding the same mistake
+        again.
+        """
+        out = set()
+        for s, rec in self.seats.items():
+            age = cur_turn - rec["turn"]
+            if 0 <= age <= max_age:
+                out.add(s)
+        return out
 
     def merged_holdings(self, cur_turn, max_age=2):
         """Counter of every fresh seat's held copies (base cid -> n)."""
