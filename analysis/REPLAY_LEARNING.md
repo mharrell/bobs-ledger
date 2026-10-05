@@ -257,12 +257,12 @@ already a base-cid counter, and `committed(tribe, min_copies, matches)` already
 resolves "this seat is on that tribe", with membership delegated to the tribe DB
 (compounds, Amalgams) rather than string equality.
 
-### The scout leaks across games (found while checking, 2026-10-04)
+### The scout leaks across games (found while checking, 2026-10-04 — FIXED, main `5bf2bc0`)
 
 `live_coach._reset()` runs on every `CREATE_GAME` and rebuilds `gs` and `actions`
-— but **never recreates or clears `self._scout`**. `LobbyScout` has no reset
+— but **never recreated or cleared `self._scout`**. `LobbyScout` had no reset
 method (`lobby.py`), and `seats` is instance state. Verified by probe: a seat
-resolved at turn 10 of one game is still in `seats` during the *next* game.
+resolved at turn 10 of one game was still in `seats` during the *next* game.
 
 Its freshness test then reads it as **fresh**, because the age goes negative and
 the check is `<= max_age`:
@@ -315,16 +315,32 @@ matters.
 
 ## 5. Preconditions — data plumbing before any modelling
 
-Each of these silently corrupts the loop if skipped.
+Each of these silently corrupts the loop if skipped. **Items 2 and 9 are DONE**
+(main `5bf2bc0`, 2026-10-04); the rest are open.
 
 1. **Stop discarding combat detail.** `live_coach.py:721-726` keeps only
    `(player, atk+health)`; retain card, atk, health and keywords per minion. This
    is the simulator's entire training set.
-2. **Capture seat stats.** Add ATK/HEALTH to `lobby.py`'s `META_TAGS` handling
-   (§4). The tags arrive as bare-entity `TAG_CHANGE` writes, which `_WRITE`
-   already matches — no new parsing. Must be captured **at resolve time** from
-   the staged entity, not joined from card ids later (base stats understate a
-   buffed board by roughly 10x, measured).
+2. **Capture seat stats — DONE** (`lobby.py`, main `5bf2bc0`). ATK/HEALTH are in
+   `META_TAGS`, and each seat record now carries `stats` (Σ atk+hp of the
+   opponent's minions in the winning position run, frozen at the combat window's
+   CLOSE) and `stats_n` (that minion count). Both are `None` when nothing staged
+   a readable pair, and forced `None` on a `blended` record — the counter there
+   is an upper bound, so a total over it would be one too.
+
+   Two facts worth keeping:
+
+   * **The snapshot must be taken at `close_round()`, not at resolve time.**
+     ATK/HEALTH are written several times per entity — staged values, then
+     combat wear, then a zeroed/reset pair at teardown. Reading later records a
+     corpse (measured: a "board" of 1253), and reading the max records
+     combat-only buffs, which are explicitly non-persistent (CLAUDE.md).
+   * **The first attempt re-derived the board subset and was wrong.** A naive
+     "staged entities minus our controller" filter admitted entities that were
+     never on the board (14 entities, 1253 stats). The fix routes the stats
+     through `_opp_board`'s existing winner-run selection, so the number
+     describes exactly the entities the composition counter does. `lobby._meta`
+     tracks no ZONE, so nothing weaker could have disambiguated it.
 3. **Call `analyze()` on a cadence in every offline replay.** The scout only
    populates when `friendly` is known, and `friendly` comes from `analyze()` →
    `_ensure_meta()`. A whole-log feed with no `analyze()` yields **zero** scout
@@ -346,10 +362,13 @@ Each of these silently corrupts the loop if skipped.
 8. **`opp_age` can be non-null while `opp_stats` is `None`** — the age then
    describes the *lobby* anchor, not the preview the forecast used. Any
    fresh-vs-stale slice inherits this.
-9. **The scout carries a previous game's seats into the next game** (§4).
-   Recreate/reset the scout on `_reset()`, reject negative ages in the freshness
-   test, and cover the game boundary with a test. Fix this **before** adding any
-   history to `seats`.
+9. **The scout carries a previous game's seats into the next game — DONE**
+   (main `5bf2bc0`). `LobbyScout.reset()` clears every per-game field,
+   `live_coach._reset()` calls it on `CREATE_GAME`, and `fresh_seats` now
+   rejects a NEGATIVE age — the arithmetic that made the leak silent, since
+   `cur_turn - rec["turn"] <= max_age` is true for any record from a future
+   turn. `test_lobby.TestGameBoundary` owns the boundary; three of those cases
+   are the ones that would have caught it.
 
 ---
 
