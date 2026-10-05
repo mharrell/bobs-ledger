@@ -212,16 +212,45 @@ source's OWN metadata (`comp_tier_last_updated`, `comp_previous_tier`,
 `comp_tier_recently_updated`) — one request, no scrape, no write, and no
 dependence on the copy whose staleness is the question.
 
+**Both doctor warnings are closed, and the run that closed them found three
+more bugs.** The guide's tier claim is now CHECKED (`check_meta._guide_problems`):
+a provenance line quoting a tier the comp no longer has, or a comp pointing at a
+guide file that is not there, is a warning. Only 7 of the 14 guides make a claim
+at all (the rest are transcript-mined and name no tier), so it is exact rather
+than heuristic, and it would have caught all three lines the refresh left stale.
+Then:
+
+* **`refresh_trinkets.py` had 7 NEED CURATION, of which TWO are not trinkets.**
+  The client card data settles it with a `type` field the tool never read:
+  `BG35_MagicItem_872t` (Ophidian Staff's Spellcraft token) is a **SPELL** and
+  `BG36_MagicItem_417te` (Made for the Master) an **ENCHANTMENT**, while the
+  other 12 additions are `BATTLEGROUND_TRINKET`. They follow the existing
+  `BG35_MagicItem_872te` precedent — carried with `base_value: 0` and a note
+  saying the value is priced on the base — rather than being priced as picks. A
+  type-aware filter would stop the tool from ever ADDS-ing them, but the shape
+  proxy is deliberate (a new token-shaped id should still get reported), so that
+  is a decision, not an oversight.
+* **`extend_pool.heal_tiers` stamped `auto_added` over hand-written
+  provenance.** Aberrant Tentacle's marker records why the row exists ("the
+  player sold one from board and the Sell row printed the raw id") and the
+  2026-10-04 run replaced it with the tool's generic string. The heal is now
+  marker-preserving and extracted, so it is testable.
+* **The `.gitignore`'s `meta/...` patterns stopped matching at the `app/` move**
+  (fbd2920): a pattern containing a slash is anchored to the root, so
+  `app/meta/.trinkets_*_cache.json` and `app/meta/.patch_state.json` were NOT
+  ignored — in a tree where `sync.py --new` commits untracked files. Basenames
+  now. `app/meta/comp_candidates.json` was already committed before the pattern
+  broke and is still tracked; untracking it is the maintainer's call.
+
 NEXT, still open:
 
 0. Left by the tier refresh, small: six guide files now belong to pruned comps
    (`demons-apm-shop-buff`, `elementals-stat-scaling`, `mechs-magnetics`,
    `murlocs-apm`, `nagas-groundbreaker`, `nagas-end-of-turn-spell-buff`) — kept
    deliberately, since the builds do return and the prose was hand-written, but
-   nothing references them until then. And `murlocs-keyword.md` still names
-   **Expert Aviator** as its early tempo bridge, which the 10-04 tier list
-   dropped from that comp's core (it is still in the pool); the guide is
-   players' advice, so rewriting it is a decision, not a scrape.
+   nothing references them until then. (The other half of this item is DONE:
+   `murlocs-keyword.md` no longer presents Expert Aviator, which the 10-04 tier
+   list dropped from that comp's core, as a card to hunt.)
 
 1. THE CORPUS, MEASURED (2026-10-04, with the read key — `HEARTH_TELEMETRY_KEY`,
    an ENVIRONMENT variable; nothing reads a file, see telemetry/README.md):
