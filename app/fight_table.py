@@ -220,8 +220,17 @@ def rows_for(chunk, session, game_idx):
             # `health` is ALREADY effective HP (HEALTH - DAMAGE; the code
             # subtracts the DAMAGE tag itself, live_coach.py:1393), so it is
             # true HP and not the base 30 the raw tag carries.
+            # `health` is RAW HP — the DAMAGE tag subtracted from the base, but
+            # ARMOR NOT INCLUDED. This trips people up (it tripped up the
+            # first version of this tool's own cross-check against the cloud
+            # reports): a hero sitting at health 30 with armor 3 is at 33
+            # effective, and one at health 30 armor 0 has lost 3 — the two
+            # look identical if only `health` is read. `eff_hp` is the column
+            # to use, and `damage` is derived from it.
             "health": a.get("health"),
             "armor": a.get("armor"),
+            "eff_hp": (None if a.get("health") is None
+                       else a["health"] + (a.get("armor") or 0)),
             # The per-round ceiling on ONE lost fight (BACON_COMBAT_DAMAGE_CAP,
             # escalating 2/5/10/15). Kept because P(damage < cap) is one of the
             # three bands the reshaped target has to report.
