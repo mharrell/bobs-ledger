@@ -504,11 +504,12 @@ it runs, or it will be judged against a standard the data cannot meet.
 > answerable, and it was answered by a different route; see the model result
 > below.)
 
-> **A SECOND RESULT, AND IT REPLACES PHASE 2's PREMISE (2026-10-05,
-> `app/fight_model.py`).** The crude simulator was going to be justified by
-> "the keywords the ratio ignores must matter". Measured on the same 48 usable
-> advisories, with **leave-one-GAME-out** validation (a row-wise split would
-> leak: rows in a game share a hero, an opponent pool and a run of luck):
+> **A SECOND RESULT — SUPERSEDED IN PART, SEE "THE ANCHOR PROBLEM" BELOW
+> (2026-10-05, `app/fight_model.py`).** The crude simulator was going to be
+> justified by "the keywords the ratio ignores must matter". Measured on the
+> same 48 usable advisories, with **leave-one-GAME-out** validation (a row-wise
+> split would leak: rows in a game share a hero, an opponent pool and a run of
+> luck):
 >
 > | model | held-out AUC |
 > |---|---|
@@ -608,6 +609,49 @@ it runs, or it will be judged against a standard the data cannot meet.
 > (+0.61), which is the number a real formula would use: survivors are only
 > knowable *after* the fight, but their staged count is visible *before*.
 >
+
+> **5. THE ANCHOR PROBLEM — and the 0.78 AUC WAS LOOKAHEAD (2026-10-05).** This
+> is the most important correction in this document, and it invalidates the
+> headline number above.
+>
+> `fight_model.features_of` builds its ratio from `their_board` — the opponent's
+> board **as observed during combat**, which exists only *because we already
+> fought them*. The shipped forecast cannot use that. It works from
+> `opp_stats` / `lobby_opp` / `baseline_opp`, and on this corpus that anchor is
+> the actual opponent in **1 advisory out of 52**. So the model was graded
+> against an input that does not exist at decision time.
+>
+> Separating the two, same rows, leave-one-game-out:
+>
+> | ratio built from | AUC | available at decision time? |
+> |---|---|---|
+> | their OBSERVED board | 0.19 | **no** — it is the outcome of the fight |
+> | the forecast's OWN anchor | **0.46** | yes — this is what ships |
+>
+> Neither is informative, and the first is inverted: the model has learned
+> "high ratio → lose" on the observed-board input, which is a lookahead
+> artefact (a big board in the corpus is often the *survivor* of a fight we
+> won, so the variable is downstream of the label).
+>
+> **The deployed model, on the deployable anchor: AUC 0.23, accuracy 69%
+> against a constant of 69%.** Its calibration collapses into one bucket — 57
+> of 58 rows land in 0.20–0.40 — so it has not learned a probability
+> distribution at all, it has learned to output the base rate and rank rows
+> backwards.
+>
+> **What this means.** The earlier "0.78 AUC with one parameter, calibrated
+> within a few points" was an artefact of grading against a post-hoc variable.
+> The honest state is: **on the input the coach actually has, no model tried
+> here shows established signal.** The 0.78 should not be quoted again.
+>
+> **And it is not a modelling failure.** The input is the problem: the coach is
+> asked to predict a specific fight while knowing almost nothing about the
+> opponent. That is precisely the maintainer's original objection — "there is
+> too much missing information to promise favored" — now measured rather than
+> asserted. **No amount of model work fixes an input that does not contain the
+> answer**, which is the strongest possible argument for the §1 framing
+> (a distribution over outcomes against a distribution of opponents) and
+> against any of it being solved by better fitting.>
 > **Together these give the three bands the maintainer asked for**, at the
 > granularity the data supports. Over the current corpus — **62 advisories, 6
 > games, 60 labelled, 18 lost (30%)**:
