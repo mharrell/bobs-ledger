@@ -485,6 +485,15 @@ class LiveCoach:
         self.game_no += 1
         self._init_game_state()
         self._reset_meta()
+        # The scout is per-game state (seats, resolved rounds, the account
+        # names behind them). Leaving it standing was a live bug: `seats` kept
+        # the PREVIOUS game's boards, seat ids are account slots so they line
+        # up across games, and the freshness test compares
+        # `cur_turn - rec["turn"] <= max_age` — which goes NEGATIVE early in a
+        # new game and therefore reads a stale seat as FRESH. The overlay's
+        # "Next opponent" panel then rendered a stranger's comp as the
+        # announced opponent (found 2026-10-04; pinned by test_lobby).
+        self._scout.reset()
 
     def feed(self, line):
         if _GAME_START.search(line):
