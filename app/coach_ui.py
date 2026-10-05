@@ -89,9 +89,9 @@ RENDER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 # raw portraits) for the hover tooltip, kept in their own subdir so the two art
 # kinds don't get confused. The kinds no longer share a source, so they no
 # longer share a miss list either: a card missing from one says nothing about
-# the other (see _art_miss_card).
-CARD_DIR = os.path.join(_HERE, "img_cache", "card")
-
+# the other (see _art_miss_card). Both it and ART_CACHE are resolved below,
+# once, by resolve_art_cache() — it is the install's cache unless the install
+# folder cannot be written to.
 _art_lock = threading.Lock()
 _art_miss_path = os.path.join(_HERE, ".art_miss.json")
 
@@ -114,13 +114,74 @@ def ensure_dir(path):
         return False
 
 
-ART_CACHE = os.path.join(_HERE, "img_cache")
-ART_CACHE_OK = ensure_dir(ART_CACHE) and ensure_dir(CARD_DIR)
+def user_cache_root(env=None, home=None, platform=None):
+    """The per-user cache directory to fall back to when the install is
+    read-only: %LOCALAPPDATA%\\bobs-ledger on Windows, ~/Library/Caches on
+    macOS, $XDG_CACHE_HOME or ~/.cache elsewhere.
+
+    Written as a function of `env`/`home`/`platform` rather than reading the
+    globals, so the choice is testable on any machine instead of only the one
+    whose layout happens to be under test.
+    """
+    env = os.environ if env is None else env
+    home = home if home is not None else os.path.expanduser("~")
+    platform = sys.platform if platform is None else platform
+    if platform == "win32":
+        base = env.get("LOCALAPPDATA") or os.path.join(home, "AppData", "Local")
+    elif platform == "darwin":
+        base = os.path.join(home, "Library", "Caches")
+    else:
+        base = env.get("XDG_CACHE_HOME") or os.path.join(home, ".cache")
+    return os.path.join(base, "bobs-ledger")
+
+
+def resolve_art_cache(install_dir, fallback=None):
+    """Where this install keeps card art: (root, card_dir, ok, source).
+
+    `img_cache/` in the install folder is what the maintainer, the extractor
+    and doctor's art check all mean by "the cache", so it stays the first
+    choice. A player who unzipped into the system programs directory, or into
+    a managed / one-way-synced folder, cannot write there — Windows offers no
+    elevation prompt, so every write is simply refused.
+
+    Until now that meant giving up on art entirely and silently: `/img`
+    answered 404 for every card and the page drew placeholders that look
+    exactly like a card upstream does not have (reproduced 2026-10-04 — the
+    same face as the CDN bug, so nobody could tell them apart). Falling back
+    to a per-user directory means such an install still gets art; only a
+    machine with no writable location at all runs art-free, and then the note
+    says so.
+
+    `fallback` is the exact directory to use as the cache root when the
+    install's own is unusable (tests pass one; production leaves it None and
+    gets `<user cache>/img_cache`).
+    """
+    install_root = os.path.join(install_dir, "img_cache")
+    if ensure_dir(install_root) and ensure_dir(os.path.join(install_root, "card")):
+        return install_root, os.path.join(install_root, "card"), True, "install"
+    root = fallback if fallback is not None else os.path.join(
+        user_cache_root(), "img_cache")
+    if ensure_dir(root) and ensure_dir(os.path.join(root, "card")):
+        return root, os.path.join(root, "card"), True, "user"
+    return install_root, os.path.join(install_root, "card"), False, "none"
+
+
+ART_CACHE, CARD_DIR, ART_CACHE_OK, ART_CACHE_SOURCE = resolve_art_cache(_HERE)
 if not ART_CACHE_OK:
-    print(f"Note: cannot write the card art cache at {ART_CACHE}\n"
+    print(f"Note: cannot write the card art cache at {ART_CACHE}, nor a "
+          f"per-user one.\n"
           f"      The coach runs without card art; everything else works.\n"
           f"      Unzip it somewhere writable (Desktop or Documents) for\n"
           f"      the full overlay.")
+elif ART_CACHE_SOURCE == "user":
+    print(f"Note: {_HERE} is not writable, so card art is kept in\n"
+          f"      {ART_CACHE}\n"
+          f"      instead. Everything else works normally.")
+# The miss list rides with the cache when the cache had to move: in a
+# read-only install the write was refused silently, so the same 404s were
+# re-attempted after every restart.
+if ART_CACHE_SOURCE == "user" and ART_CACHE_OK:
+    _art_miss_path = os.path.join(ART_CACHE, ".art_miss.json")
 try:
     with open(_art_miss_path, encoding="utf-8") as _f:
         _art_miss = json.load(_f)
