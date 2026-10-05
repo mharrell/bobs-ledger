@@ -469,6 +469,90 @@ direction. Check B is therefore **not** "is the extrapolation accurate" but "is
 the *sign* of the change informative", and it should be phrased that way before
 it runs, or it will be judged against a standard the data cannot meet.
 
+> **RUN 2026-10-05 (`app/check_b.py`) — UNANSWERABLE AT THIS CORPUS SIZE, and
+> that is the finding.** A rate needs **three** sightings per seat: two to fit
+> the slope, one to test it. The archived games supply **11 seats with 2+
+> sightings and exactly 2 with 3+** — and a `blended` sighting is unusable, so
+> the backtest runs on **n=2**. Four candidates were scored (last-seen,
+> lobby-median, pooled-mean-rate, own-rate); the tool now refuses to present
+> them as a result and prints `UNDERPOWERED` instead, because reporting an MAE
+> off n=2 is the "one game is an anecdote however loud" failure this project
+> keeps catching.
+>
+> **What the data CAN answer, and does.** The maintainer's actual intuition was
+> "it's turn 10 and they're on Unbound Tempest, so they've probably been
+> growing" — which asks whether a seat's stat total is predicted by the TURN,
+> with 24 sightings instead of 2:
+>
+> ```
+> slope +6.4 stats per turn;  R^2 = 0.45
+> residual spread: 29 stats, against board totals running 9-182
+> ```
+>
+> So the **level** is genuinely predictable from the turn (about 45% of the
+> spread), and the per-seat **residual is roughly as large as the signal** — a
+> point projection of one seat would be wrong by ~29 stats on boards that range
+> over 9-182. That is the quantitative case for tiers 2-3 of §3 (lobby
+> percentile, corpus prior) over tier 1 (project this specific opponent), and it
+> independently supports shipping **Step 1 of the tracker and not Step 2**.
+>
+> **The honest conclusion: Check B cannot be re-run until the corpus grows.**
+> It needs roughly 3x the games before the per-seat projection can be tested at
+> all, and the decision it gates (Step 2) is therefore deferred on evidence
+> rather than on taste. (That is a statement about the *per-seat projection*.
+> The related question — "how strong do we need to be" — turned out to be
+> answerable, and it was answered by a different route; see the model result
+> below.)
+
+> **A SECOND RESULT, AND IT REPLACES PHASE 2's PREMISE (2026-10-05,
+> `app/fight_model.py`).** The crude simulator was going to be justified by
+> "the keywords the ratio ignores must matter". Measured on the same 48 usable
+> advisories, with **leave-one-GAME-out** validation (a row-wise split would
+> leak: rows in a game share a hero, an opponent pool and a run of luck):
+>
+> | model | held-out AUC |
+> |---|---|
+> | stat ratio only | **0.78** |
+> | keyword/shape features only | **0.44** |
+> | both | 0.72 |
+>
+> **The keyword features are at or below chance on their own, and adding them
+> HURTS by 0.06 AUC** — four extra parameters fitted to 48 rows cost more than
+> they contribute. `VENOMOUS` occurs **twice** in the entire corpus, so the
+> keyword budget this plan proposed was cut down by the data, not by taste.
+> **Do not build a keyword simulator on this evidence.** That is the cheap
+> experiment doing its job: the premise is dead before the largest piece of
+> work on the roadmap gets written.
+>
+> **What survives is better.** The ratio carries REAL signal (0.78 AUC) that
+> the shipped rule **throws away by thresholding**: Check A measured that same
+> rule at 57% accuracy, on a feature that ranks fights at 0.78. The 1.3/0.8
+> binning destroys the information. So the actionable change is not a simulator
+> and not new features — it is to **stop binning and publish the probability**.
+> A ONE-parameter version (ratio → P(loss)), held out:
+>
+> ```
+> bucket      n   lost   predicted
+> 0.00-0.10   7     0%         6%
+> 0.10-0.20  17    12%        16%
+> 0.20-0.35  15    27%        25%
+> 0.35-1.01   9    56%        47%
+> ```
+>
+> Calibrated within a few points at every level, and the three bands the
+> maintainer asked for fall straight out of it:
+>
+> | band | n | actually lost |
+> |---|---|---|
+> | not losing | 24 | **8%** |
+> | around even | 17 | **29%** |
+> | likely losing | 7 | **57%** |
+>
+> On accuracy this scores 75% against the constant's 77% — because at a 23%
+> base rate, accuracy is the wrong metric and a discriminating rule that cannot
+> abstain still "loses". AUC is the honest measure of whether it knows
+> anything, and 0.78 with one fitted weight is a large improvement on 0.50.
+
 ---
 
 ## 8. Phases
