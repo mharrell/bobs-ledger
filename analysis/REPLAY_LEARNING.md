@@ -630,6 +630,31 @@ it runs, or it will be judged against a standard the data cannot meet.
 > those is testable again when the corpus grows, and none of them needs the
 > simulator.
 
+> **4. THE CLOUD CORPUS CAN ALREADY GRADE ALL OF THIS — no SPEC change needed
+> (checked 2026-10-05).** This matters because the corpus is about to grow, and
+> the window to make incoming games usable closes once they are played.
+>
+> * **`health` is in `SPEC` at the RECORD level and populated on 206 of 212
+>   advisories in a real report.** Since `lost` is derived from the effective-HP
+>   delta between consecutive advisories *within one game*, the outcome label is
+>   already uploadable, and the reports carry the `turn` needed to key it.
+> * **`damage_cap`, `armor`, `board_stats`, `forecast`, `damage_last` and the
+>   opponent's COMPOSITION are all in the spec** — the input side of every model
+>   here except per-minion stats.
+> * **The one genuine gap is per-minion atk/health on both sides.** `board` is
+>   dropped on purpose and `opponent.cards` is a count map, so a cloud game can
+>   be GRADED but a fight simulator could not be FITTED from it. That is the
+>   only thing a SPEC change would buy, and nothing currently planned needs it.
+>
+> **A trap in reading those reports, worth writing down because it caught this
+> author.** The report's `health` is RAW HP — armor excluded. A hero at health
+> 30 with armor 3 sits at 33 effective, while one at health 30 with armor 0 has
+> lost 3; reading only `health` makes those two identical. Comparing the
+> report's series against the local log produced a 5-of-6-turns disagreement
+> that was **entirely the comparison's fault** — the two agree exactly once
+> armor is included, and the report was right all along. `fight_table` now
+> carries an explicit `eff_hp` column so the distinction cannot be missed again.
+
 ---
 
 ## 8. Phases
