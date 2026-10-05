@@ -553,6 +553,83 @@ it runs, or it will be judged against a standard the data cannot meet.
 > abstain still "loses". AUC is the honest measure of whether it knows
 > anything, and 0.78 with one fitted weight is a large improvement on 0.50.
 
+> **A THIRD PASS, AND IT WALKS THE SECOND ONE BACK PARTLY (2026-10-05,
+> `app/robustness.py` and `app/damage_model.py`).**
+>
+> **1. The AUC is not yet an established effect.** Bootstrapping over GAMES
+> (not rows — rows inside a game share a hero, an opponent pool and a run of
+> luck, so a row bootstrap reports precision the data cannot support), 200
+> resamples:
+>
+> ```
+> median AUC 0.70   95% interval [0.43, 0.84]
+> 92% of resamples above 0.50
+> ```
+>
+> **The interval crosses 0.50.** The point estimate moved from 0.78 to 0.71
+> merely by including one more game (6 instead of 5) — which is the
+> instability the bootstrap is measuring, and a warning against quoting 0.78 as
+> if it were a property of the coach. The ratio's signal is *suggestive and
+> directionally consistent*, not established. **More games is the fix, and it
+> is the same conclusion Check B reached by a different route.**
+>
+> **2. The verdict format has a ceiling on this data — and it is not a tuning
+> problem.** Sweeping every single threshold on the ratio:
+>
+> ```
+> constant (never lost)          68% accuracy
+> best single threshold (<0.52)  64%
+> shipped rule (<0.80)           59%
+> ```
+>
+> **No threshold beats the constant**, and the shipped 1.3/0.8 pair sits 5
+> points below the best available cut. So "mis-tuned" is too generous an
+> explanation: even perfectly tuned, this design loses to saying nothing. That
+> is the strongest version of the argument for publishing a probability
+> instead of a verdict. (Caveat, established while writing the tests: this
+> ceiling is a property of THIS data's overlap, not an arithmetic law — a
+> separable ranking is solved perfectly by a threshold. Three synthetic
+> attempts to reproduce it failed for exactly that reason, and the test file
+> now says so instead of dressing a data property up as a theorem.)
+>
+> **3. The damage question — the maintainer's actual ask — is answerable.** On
+> the 11 lost fights with damage > 0:
+>
+> | | |
+> |---|---|
+> | damage range | 4 – 15, median 10 |
+> | **cap actually reached** | **2 of 11 (18%)** |
+> | P(damage < cap \| lost) | **82%** |
+> | their staged minions vs damage | Spearman **+0.61** |
+>
+> So "a loss costs you the cap" is wrong **82%** of the time — the single most
+> useful correction here, because the pessimistic read is the one a cautious
+> coach would default to. Damage does scale with the attacker's staged board
+> (+0.61), which is the number a real formula would use: survivors are only
+> knowable *after* the fight, but their staged count is visible *before*.
+>
+> **Together these give the three bands the maintainer asked for**, at the
+> granularity the data supports. Over the current corpus — **62 advisories, 6
+> games, 60 labelled, 18 lost (30%)**:
+>
+> | band | evidence |
+> |---|---|
+> | P(win or tie) — no damage | **42 of 60** labelled advisories |
+> | P(loss, damage < cap) | **82%** of losses |
+> | P(loss, damage at cap) | **18%** of losses |
+>
+> (The percentages are over the 11 losses that carry a readable damage figure,
+> since a damaged-but-unreadable fight cannot be placed in a band. Figures
+> earlier in this section were computed on the 48-58 row samples the models
+> could use, which is why they differ slightly in `n`.)
+>
+> **The honourable overall reading: the shape of the fix is established and the
+> magnitude is not.** The verdict is the wrong output format; a calibrated
+> probability is the right one; the ratio carries real but not-yet-significant
+> signal; the keywords carry none; damage is usually survivable. Every one of
+> those is testable again when the corpus grows, and none of them needs the
+> simulator.
+
 ---
 
 ## 8. Phases
