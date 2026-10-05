@@ -64,6 +64,46 @@ import fight_table
 FEATURES = ("log_ratio", "shield_diff", "taunt_diff", "reborn_diff",
             "body_diff")
 
+#: True when a row's ratio came from the opponent's OBSERVED board, which
+#: exists only because we already fought them. The shipped forecast cannot see
+#: it — it works from `opp_stats` / `lobby_opp` / `baseline_opp`, and on this
+#: corpus that anchor is the real opponent in ONE advisory out of 52.
+#:
+#: This is not hypothetical. Grading the ratio off the observed board scored
+#: AUC 0.78 and was quoted as a result; the same model on the anchor the coach
+#: actually has scores **0.23** — worse than chance, because the observed-board
+#: variable is partly downstream of the label (a large board is often the
+#: SURVIVOR of a fight we won, so "big board" correlates with having won).
+#: `deployable_shares()` is the guard.
+def leaked_anchor(rows):
+    """How many of these rows resolved their opponent board from a fight.
+
+    `their_board` is populated by `fight_table` from the combat snapshots, so a
+    non-empty one on a row whose advisory preceded the fight means the anchor
+    is post-hoc. Returns the fraction, for `deployable_shares`.
+    """
+    if not rows:
+        return 0.0
+    return sum(1 for r in rows if r.get("their_board")) / len(rows)
+
+
+def deployable_shares(fraction):
+    """Refuse a headline number built on features that cannot ship.
+
+    Called with the share of a run's rows whose ratio rested on an OBSERVED
+    opponent board. Above zero, the run is measuring an input that is
+    unavailable at decision time, so its accuracy is not a result about the
+    coach — say so instead of reporting it.
+    """
+    if fraction > 0:
+        return (f"WARNING: {fraction:.0%} of rows anchored the ratio on the "
+                f"opponent's\n  OBSERVED board. That input does not exist at "
+                f"decision time (the coach\n  has the real opponent in ~1 "
+                f"advisory in 52), so any accuracy below is\n  LOOKAHEAD and "
+                f"must not be quoted. Use the forecast's own anchor — see\n  "
+                f"analysis/REPLAY_LEARNING.md §7 item 5.")
+    return None
+
 
 def _count(board, kw):
     return sum(1 for m in (board or []) if kw in (m.get("keywords") or []))
@@ -167,6 +207,19 @@ def main():
     print(f"== keywords vs the stat ratio: logistic model ==")
     print(f"   {len(usable)} usable advisories over {len(games)} game(s) "
           f"(both boards present and an outcome label)")
+
+    # The guard, printed BEFORE any accuracy, so a lookahead number can never
+    # be read without its warning attached. This model requires both boards to
+    # exist, and `their_board` comes from the combat snapshots — so every row
+    # here rests on an observation that only exists because we already fought
+    # them. The numbers below are therefore diagnostic of the FEATURES, not a
+    # measurement of the shipped coach.
+    warn = deployable_shares(leaked_anchor([r for r, _x in usable]))
+    if warn:
+        print()
+        for line in warn.splitlines():
+            print("   " + line)
+    print()
 
     # ---- leave-one-GAME-out ------------------------------------------------
     correct = model_right = 0
