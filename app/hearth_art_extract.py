@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """Extract card art from the local Hearthstone client into img_cache/.
 
-HearthstoneJSON's render service lags the current patch: returning minions
-(old ids) and most heroes render, but brand-new minions, the newest heroes,
-and ALL trinkets (BGxx_MagicItem_NNN) 404 upstream — and hearthstone.wiki.gg
-is Cloudflare-blocked. The game's own assets carry 100% of the art:
+Why this exists: the game's own assets carry 100% of the art, offline, with no
+dependency on a render service's coverage. Its original premise — that
+HearthstoneJSON 404s ALL trinkets and every brand-new minion — was only half
+true, and is corrected here (2026-10-04): those cards ARE served, at a
+different path than coach_ui used to fetch. `/v1/bgs/latest/enUS/256x/{}.png`
+covers current-patch Battlegrounds minions, tavern spells, trinkets and
+tokens, `/v1/render/latest/...` covers heroes, golden `_G` ids and returning
+cards, and `/v1/orig/{}.png` serves the square portraits; coach_ui now tries
+all three. This tool remains the OFFLINE path — a player with no working route
+to the CDN still gets art out of the client they already have installed, and
+the client-extracted portraits are the same square kind `/v1/orig/` serves.
 
   carddef-*.unity3d    CardDef objects: card id (GameObject name) ->
                        portrait art asset name (m_PortraitTexturePath,

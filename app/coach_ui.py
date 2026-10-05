@@ -45,21 +45,51 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_PORT = 8747
 
-# On-demand card art. HearthstoneJSON's render build lags the current patch:
-# returning cards (old ids), heroes and trinkets render, but brand-new
-# minions and the newest heroes 404 upstream (and the wiki is
-# Cloudflare-blocked), so those stay as UI placeholders / text tooltips.
-RENDER_URL = "https://art.hearthstonejson.com/v1/render/latest/enUS/256x/{}.png"
-MISS_TTL = 3600.0  # seconds before re-attempting a card id that 404'd
+# On-demand card art: TWO kinds of image, so TWO sources (probed 2026-10-04,
+# per id class — see PORTRAIT_URLS/CARD_URLS below).
+#
+# The single /v1/render/... URL this used to fetch from 404s EVERY
+# current-patch Battlegrounds card: minions, tavern spells, trinkets and
+# tokens. A fresh install therefore drew placeholders for most of the board
+# while the maintainer's checkout looked fine, because its art had arrived
+# through a different door — hearth_art_extract.py pulling portraits out of
+# the local game client, which no player has. Nothing here may assume that
+# door: the tiles and the tooltip must be reachable from the CDN alone.
+#
+#   portrait  the square raw art the 56x56 tile shows and its 4.5x hover zoom
+#             enlarges. /v1/orig/ answers for EVERY id class that has art at
+#             all (minions, spells, trinkets, tokens, heroes, golden `_G`),
+#             so one URL suffices.
+#   render    the framed card WITH name/text for the hover tooltip, 256x388.
+#             /v1/bgs/... is the Battlegrounds render — it covers the current
+#             patch but 404s heroes and `_G` — while /v1/render/... covers
+#             exactly the other way round (returning ids, heroes, golden).
+#             Two sources that each 404 half the catalogue is why this is a
+#             CHAIN rather than a URL.
+PORTRAIT_URLS = ("https://art.hearthstonejson.com/v1/orig/{}.png",)
+CARD_URLS = (
+    "https://art.hearthstonejson.com/v1/bgs/latest/enUS/256x/{}.png",
+    "https://art.hearthstonejson.com/v1/render/latest/enUS/256x/{}.png",
+)
+#: The generic (non-Battlegrounds) render, kept named so the chain's second
+#: source is greppable from the tools that reason about it.
+RENDER_URL = CARD_URLS[1]
+MISS_TTL = 3600.0       # upstream HAS no art for this id — stop asking
+SOFT_MISS_TTL = 120.0   # we could not REACH upstream — ask again soon
+#: 256x512 raw art is 150-360KB; 5s was tight enough that a slow first paint
+#: counted as a miss for an hour (see SOFT_MISS_TTL for why that no longer
+#: costs an hour either).
+ART_TIMEOUT = 10
 # A bare "Mozilla/5.0" now gets 403 from the art CDN (2026-09-09 probe) —
 # the on-demand fetches need a plausible full browser User-Agent.
 RENDER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
              "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36")
 
 # Full-card renders (framed layout WITH name/text, unlike img_cache root's
-# raw portraits) for the hover tooltip, kept in their own subdir so the two
-# art kinds don't get confused. Same upstream URL as the /img fetch, so the
-# two endpoints share one miss list — a card that 404s upstream misses both.
+# raw portraits) for the hover tooltip, kept in their own subdir so the two art
+# kinds don't get confused. The kinds no longer share a source, so they no
+# longer share a miss list either: a card missing from one says nothing about
+# the other (see _art_miss_card).
 CARD_DIR = os.path.join(_HERE, "img_cache", "card")
 
 _art_lock = threading.Lock()
@@ -100,17 +130,48 @@ except (OSError, ValueError):
 
 _miss_last_write = [0.0]  # last on-disk flush of the miss list (rate-limit)
 
+#: Transport failures (timeout, DNS, refused), kept OUT of `_art_miss`: a card
+#: upstream really does not have and a card we merely failed to reach are
+#: different answers, and conflating them meant one slow first paint drew a
+#: placeholder for an hour for a card whose art was sitting right there.
+_art_soft = {}
 
-def _remember_miss(cid):
+#: Tooltip-render misses, kept apart from portrait misses because the two
+#: endpoints read different sources (`CARD_URLS` vs `PORTRAIT_URLS`).
+_art_miss_card = {}
+
+#: Ids with a download in flight. The page polls every 300ms and rebuilds its
+#: DOM, so a 150-360KB portrait that takes a second would otherwise be asked
+#: for — and downloaded — several times over (worst on a fresh install's first
+#: board, where every tile is a miss at once). ThreadingHTTPServer gives each
+#: request its own thread, so this guard is what keeps it to one download.
+_art_inflight = set()
+
+
+def _remember_miss(cid, hard=True, card=False):
+    """Note that cid has no art (hard) or could not be reached (soft).
+
+    Only a hard miss for the PORTRAIT is persisted to `.art_miss.json`: that
+    file is the client's placeholder list (GET /artmiss), and a soft miss must
+    not land on it or the page would placeholder a card that may well load on
+    the next poll. The card-render list is deliberately in-memory — it feeds
+    one hover endpoint, so crash recovery buys nothing.
+    """
     with _art_lock:
-        _art_miss[cid] = time.time()
+        now = time.time()
+        if not hard:
+            _art_soft[cid] = now
+            return
+        misses = _art_miss_card if card else _art_miss
+        misses[cid] = now
         # Prune entries already dead to _can_retry — the file used to grow
         # without bound (502 ids and counting). The in-memory dict is the
         # gate; the disk write is only crash recovery, so it is rate-limited
         # (it used to rewrite the whole file on every miss).
-        now = time.time()
-        for c in [c for c, t in _art_miss.items() if now - t > MISS_TTL]:
-            del _art_miss[c]
+        for c in [c for c, t in misses.items() if now - t > MISS_TTL]:
+            del misses[c]
+        if card:
+            return
         if now - _miss_last_write[0] >= 30.0:
             _miss_last_write[0] = now
             try:
@@ -139,31 +200,85 @@ def _active_misses():
                 os.path.join(ART_CACHE, f"{c}.png")))
 
 
-def _can_retry(cid):
-    return time.time() - _art_miss.get(cid, 0) > MISS_TTL
+def _can_retry(cid, card=False):
+    """True when cid is worth another upstream request.
+
+    Two clocks: a hard miss waits MISS_TTL, a transport failure only
+    SOFT_MISS_TTL. The soft clock is shared by both endpoints — if upstream is
+    unreachable, it is unreachable for the tooltip too.
+    """
+    now = time.time()
+    if now - _art_soft.get(cid, 0) <= SOFT_MISS_TTL:
+        return False
+    misses = _art_miss_card if card else _art_miss
+    return now - misses.get(cid, 0) > MISS_TTL
 
 
-def _fetch_render(cid, dest_dir=None):
-    """Download the HearthstoneJSON render for cid into dest_dir (img_cache
-    root by default). True on success. The browser re-requests images on
-    every DOM rebuild, so a miss is remembered for MISS_TTL — repeated polls
-    must not re-hammer upstream.
+def _fetch_render(cid, dest_dir=None, urls=None, card=False):
+    """Download cid's art into dest_dir (img_cache root by default).
+
+    Walks `urls` in order, because one source does not cover the catalogue:
+    a Battlegrounds card 404s on the generic render and a hero 404s on the
+    Battlegrounds one, so the card chain tries both. True on success.
+
+    A 404 from EVERY url means upstream has no art: that is a hard miss.
+    Anything else (timeout, DNS, connection reset) is a soft one, so a flaky
+    link costs a two-minute retry instead of an hour of placeholders. The
+    browser re-requests images on every DOM rebuild, so both are remembered —
+    repeated polls must not re-hammer upstream.
     """
     if dest_dir is None:
         if not ART_CACHE_OK:
             return False  # nowhere to put it — do not hammer upstream
         dest_dir = ART_CACHE
+    if urls is None:
+        urls = CARD_URLS if card else PORTRAIT_URLS
+    with _art_lock:
+        if cid in _art_inflight:
+            return False  # another thread is already downloading it
+        _art_inflight.add(cid)
     try:
-        req = urllib.request.Request(RENDER_URL.format(cid),
-                                     headers={"User-Agent": RENDER_UA})
-        with urllib.request.urlopen(req, timeout=5) as r:
-            data = r.read()
-        with open(os.path.join(dest_dir, f"{cid}.png"), "wb") as f:
-            f.write(data)
+        return _download(cid, dest_dir, urls, card)
+    finally:
+        with _art_lock:
+            _art_inflight.discard(cid)
+
+
+def _download(cid, dest_dir, urls, card):
+    """The fetch itself — see _fetch_render for the contract and the guard."""
+    saw_404 = False
+    for url in urls:
+        try:
+            req = urllib.request.Request(url.format(cid),
+                                         headers={"User-Agent": RENDER_UA})
+            with urllib.request.urlopen(req, timeout=ART_TIMEOUT) as r:
+                data = r.read()
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                saw_404 = True
+                continue  # not at this source; the next one may have it
+            _remember_miss(cid, hard=False)
+            return False
+        except Exception:
+            _remember_miss(cid, hard=False)
+            return False
+        try:
+            with open(os.path.join(dest_dir, f"{cid}.png"), "wb") as f:
+                f.write(data)
+        except OSError:
+            return False  # nowhere to put it
+        with _art_lock:
+            if card:
+                _art_miss_card.pop(cid, None)
+            else:
+                _art_miss.pop(cid, None)
+            _art_soft.pop(cid, None)
         return True
-    except Exception:
-        _remember_miss(cid)
-        return False
+    if saw_404:
+        _remember_miss(cid, card=card)
+    else:
+        _remember_miss(cid, hard=False)  # empty chain — treat as unreachable
+    return False
 
 _HTML = r"""<!doctype html>
 <html lang="en">
@@ -633,17 +748,19 @@ function box(title, body) {
   if (body) b.appendChild(body);
   return b;
 }
-// Card ids with no art upstream (the render build lags the patch; trinkets
-// have none at all), fetched once from GET /artmiss: thumb() renders the
-// placeholder directly, so ~500 known misses stop paying a 404 round-trip
-// per tile per rebuild. Keyed by the EXACT id requested — /img does not
+// Card ids upstream has NO art for at all (the /img and /card chains both
+// 404'd), fetched once from GET /artmiss: thumb() renders the placeholder
+// directly, so they stop paying a 404 round-trip per tile per rebuild. The
+// list is portrait misses only — a card whose tooltip render is missing
+// still gets its tile. Keyed by the EXACT id requested — /img does not
 // strip the golden _G suffix.
 const MISSES = new Set();
 fetch('/artmiss').then(r => r.json()).then(j => {
   (j.misses || []).forEach(cid => MISSES.add(cid));
 }).catch(() => {});
-// Card art thumbnail (img_cache/ via /img/<id>.png, fetched by fetch_art.py).
-// Hides itself gracefully when no art is cached (current-set BG-only cards).
+// Card art thumbnail (img_cache/ via /img/<id>.png, fetched on demand from
+// the portrait source — see PORTRAIT_URLS). Hides itself gracefully when no
+// art is cached and upstream has none either.
 // Hover shows the full card render (framed layout WITH text) via /card/,
 // falling back to a text box from the meta DB, then to the old portrait zoom.
 function thumbPh(cid, name) {
@@ -663,9 +780,9 @@ function thumb(cid, name) {
   img.onmouseenter = () => hoverCard(img, cid, name);
   img.onmouseleave = leaveCard;
   img.onerror = () => {
-    // No art available (render build lags the patch; trinkets have none
-    // upstream): a same-size placeholder keeps every row aligned. The id
-    // joins MISSES so sibling tiles of the same card skip the 404 too.
+    // No art available for this id (both chains 404'd — see _fetch_render):
+    // a same-size placeholder keeps every row aligned. The id joins MISSES so
+    // sibling tiles of the same card skip the 404 too.
     MISSES.add(cid);
     img.replaceWith(thumbPh(cid, name));
   };
@@ -2221,8 +2338,11 @@ class _Handler(BaseHTTPRequestHandler):
             cid = m.group(1)
             path = os.path.join(ART_CACHE, f"{cid}.png")
             if not os.path.exists(path) and _can_retry(cid):
-                # On-demand: fetch the render now so the hero/trinket/
+                # On-demand: fetch the PORTRAIT now so the hero/trinket/
                 # minion art appears on the next UI poll instead of never.
+                # The tile is 56x56 with object-fit:cover, so a framed
+                # 256x388 card render would be cropped here — the square raw
+                # art is what this endpoint is for (PORTRAIT_URLS).
                 _fetch_render(cid)
             if os.path.exists(path):
                 with open(path, "rb") as f:
@@ -2262,13 +2382,15 @@ class _Handler(BaseHTTPRequestHandler):
         if m:
             # The hover tooltip's full render (framed card WITH text),
             # cached in img_cache/card/. Golden ids resolve to the base
-            # card; misses share the /img miss list (same upstream URL).
+            # card. Its own source chain and its own miss list: a hero is
+            # missing from the Battlegrounds render and a current-patch
+            # minion from the generic one (CARD_URLS).
             cid = m.group(1)
             if cid.endswith("_G"):
                 cid = cid[:-2]
             path = os.path.join(CARD_DIR, f"{cid}.png")
-            if not os.path.exists(path) and _can_retry(cid):
-                _fetch_render(cid, dest_dir=CARD_DIR)
+            if not os.path.exists(path) and _can_retry(cid, card=True):
+                _fetch_render(cid, dest_dir=CARD_DIR, urls=CARD_URLS, card=True)
             if os.path.exists(path):
                 with open(path, "rb") as f:
                     self._send(200, "image/png", f.read(),

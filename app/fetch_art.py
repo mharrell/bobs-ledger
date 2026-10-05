@@ -1,13 +1,27 @@
 #!/usr/bin/env python3
-"""Pre-fetch card art into img_cache/ for the coaching UI.
+"""Pre-fetch card PORTRAITS into img_cache/ for the coaching UI.
 
-Sources the 256x card renders from art.hearthstonejson.com (free, no key).
-Coverage is PARTIAL for Battlegrounds: heroes (TB_BaconShop_HERO_*) and
-trinkets (BGxx_MagicItem_*) render reliably; only ~35% of pool minions and
-~26% of tavern spells do (current-set BG-only cards are missing from the
-renderer). The UI falls back to name-only for cache misses, and a fuller
-extraction (UnityPy over the local game client) can drop into the same
-cache later — img_cache/<cardId>.png is the only contract.
+Sources the square raw art from art.hearthstonejson.com (free, no key) — the
+same kind and the same source coach_ui fetches on demand, so a pre-populated
+cache and a lazily filled one look identical. The TOOLTIP renders (framed
+cards WITH text, 256x388) are the other kind and live in img_cache/card/;
+coach_ui fetches those on hover, and they are deliberately not this tool's job
+(fetching them for every pool id would triple the download for art nobody has
+hovered).
+
+Coverage (probed per id class 2026-10-04): this URL answers for EVERY class
+that has art at all — minions, tavern spells, trinkets, tokens, heroes and
+golden `_G` ids — because it serves the original art rather than a rendered
+card, which is what the old `v1/render/...` path got wrong: that one 404s
+every current-patch Battlegrounds card (minions, spells, trinkets, tokens) and
+serves returning ids, heroes and golden, so a fresh install drew placeholders
+across most of the board. The URLs now come from coach_ui so the two tools
+cannot drift apart again.
+
+The UI falls back to name-only for the ids that have no art anywhere
+(unreleased machinery, e.g. BG36_MagicItem_417te); a fuller offline extraction
+(UnityPy over the local game client, hearth_art_extract.py) drops into the
+same cache — img_cache/<cardId>.png is the only contract.
 
 The id set: every id in meta/minions.json + meta/tavern_spells.json, plus
 hero and trinket ids observed in recent session logs (those DBs are
@@ -26,11 +40,15 @@ import sys
 import urllib.request
 
 from config import HS_LOG_GLOB as LOG_GLOB
+from coach_ui import ART_CACHE as CACHE, PORTRAIT_URLS, RENDER_UA
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-CACHE = os.path.join(_HERE, "img_cache")
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-ART = "https://art.hearthstonejson.com/v1/render/latest/enUS/256x/{}.png"
+
+# coach_ui holds the UA as a bare string and wraps it per request; this module
+# wants the headers dict. Deriving it keeps ONE copy of the value, and the
+# shape is asserted by a test — importing the string into the dict slot made
+# every request die with "'str' object has no attribute 'items'" (2026-10-04).
+UA = {"User-Agent": RENDER_UA}
 
 # Hero/trinket id families as they appear in logs (heroes.json has NO ids;
 # trinket log ids are patch-drifted vs trinkets.json).
@@ -67,19 +85,26 @@ def _pool_ids():
     return ids
 
 
+def portrait_urls(cid):
+    """The sources to try for cid's portrait, in order (coach_ui's chain)."""
+    return [url.format(cid) for url in PORTRAIT_URLS]
+
+
 def _fetch(cid, force=False):
     dest = os.path.join(CACHE, f"{cid}.png")
     if os.path.exists(dest) and os.path.getsize(dest) > 0 and not force:
         return "cached"
-    try:
-        req = urllib.request.Request(ART.format(cid), headers=UA)
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = r.read()
+    for url in portrait_urls(cid):
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=15) as r:
+                data = r.read()
+        except Exception:
+            continue  # try the next source, exactly like coach_ui does
         with open(dest, "wb") as f:
             f.write(data)
         return "fetched"
-    except Exception:
-        return "missing"  # 404s are expected for current-set BG-only cards
+    return "missing"  # no source has it: unreleased machinery, not a bug
 
 
 def main():
@@ -94,9 +119,8 @@ def main():
         n = sum(1 for v in results.values() if v == r)
         if n:
             print(f"  {label}: {n}")
-    print(f"art available for {got}/{len(ids)} ids "
-          f"({len(results) - got} missing from the renderer — UI falls "
-          f"back to names)")
+    print(f"portrait art for {got}/{len(ids)} ids "
+          f"({len(results) - got} have none anywhere — UI falls back to names)")
     return 0
 
 

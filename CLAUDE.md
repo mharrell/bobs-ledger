@@ -242,6 +242,47 @@ Then:
   now. `app/meta/comp_candidates.json` was already committed before the pattern
   broke and is still tracked; untracking it is the maintainer's call.
 
+**The distributed build had almost no card art, and the cause was one URL.** A
+player's fresh install drew placeholders across most of the board — every
+current-patch minion, tavern spell, trinket and token — while the maintainer's
+checkout looked fine, because its art had come out of the local game client
+via `hearth_art_extract.py`, a door no player has. The app fetched everything
+from `/v1/render/latest/enUS/256x/`, and probed per class (2026-10-04):
+
+| class | `render` | `bgs` | `orig` |
+|---|---|---|---|
+| current-patch minion / spell / trinket / token | **404** | 200 | 200 |
+| returning minion, `BGS_` | 200 | 200 | 200 |
+| hero, golden `_G` | 200 | **404** | 200 |
+
+So no single source covers the catalogue, and each endpoint needs its own:
+
+* **`/img` (tiles) → `/v1/orig/`**, the square raw art. The tile is 56x56 with
+  `object-fit: cover`, so the framed 256x388 render it used to get was cropped
+  there; `orig` is also the one source that answers for every class that has
+  art at all. **182 framed renders had already accumulated in the portrait
+  cache** from that mix-up (heroes, byte-identical to the render URL) — they
+  are card-kind art, so they were moved into `img_cache/card/`, and the
+  portrait cache is now 915/915 square.
+* **`/card` (tooltip) → `bgs` then `render`**, both framed 256x388, chained
+  because each 404s half the catalogue.
+* `fetch_art.py` carried **its own copy** of the dead URL and filed framed
+  renders into the portrait cache — the same bug in a second place, now reading
+  coach_ui's chains so the two cannot drift (and the UA, which coach_ui holds as
+  a bare string and this tool wanted as a headers dict, is asserted by a test:
+  importing the string into the dict slot killed every request).
+
+Two refinements came with it. A **timeout is no longer "this card has no art"**:
+transport failures have their own 120s clock and stay OFF `/artmiss`, so one
+slow first paint no longer placeholders a card for an hour. And an **in-flight
+guard** keeps the 300ms poll from downloading the same 300KB portrait several
+times over while the first request is still running.
+
+Still open from this: a **read-only install folder** disables art entirely
+(`ART_CACHE_OK` False) and the only signal is a startup `Note:` line — worth a
+visible hint in the overlay. And the fix reaches testers only through a
+release; `publish_release.py` has NOT been run for it.
+
 NEXT, still open:
 
 0. Left by the tier refresh, small: six guide files now belong to pruned comps

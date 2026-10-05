@@ -95,6 +95,54 @@ class TestArtHeaders(unittest.TestCase):
             coach_ui._miss_last_write[0] = saved_writer
 
 
+class TestArtEndpointSources(unittest.TestCase):
+    """Each endpoint must fetch its OWN kind of art, from its OWN source.
+
+    This wiring WAS the distributed bug (2026-10-04): both routes shared one
+    URL and one cache kind, and that URL 404s every current-patch Battlegrounds
+    card, so a fresh install drew placeholders across most of the board while
+    the maintainer's checkout (filled from the game client) looked fine. The
+    fetch is patched out, so these assert what each route ASKS FOR.
+    """
+
+    def _drive(self, path):
+        import io
+        from unittest import mock
+        h = object.__new__(coach_ui._Handler)
+        h.path = path
+        h.command = "GET"
+        h.request_version = "HTTP/1.1"
+        h.requestline = f"GET {path} HTTP/1.1"
+        h.client_address = ("127.0.0.1", 0)
+        h.headers = {}
+        h.wfile = io.BytesIO()
+        with mock.patch.object(coach_ui, "_fetch_render",
+                               return_value=False) as fetch:
+            h.do_GET()
+        self.assertEqual(fetch.call_count, 1, f"{path} did not try to fetch")
+        return fetch.call_args
+
+    def test_the_tile_route_fetches_a_portrait(self):
+        args, kwargs = self._drive("/img/ZZZ_TEST_WIRE.png")
+        self.assertEqual(args, ("ZZZ_TEST_WIRE",))
+        self.assertFalse(kwargs.get("card"),
+                         "the 56x56 tile must get the square portrait source")
+        self.assertIsNone(kwargs.get("dest_dir"),
+                          "portraits live in img_cache root")
+
+    def test_the_tooltip_route_fetches_a_card_render(self):
+        args, kwargs = self._drive("/card/ZZZ_TEST_WIRE.png")
+        self.assertEqual(args, ("ZZZ_TEST_WIRE",))
+        self.assertTrue(kwargs.get("card"))
+        self.assertEqual(kwargs.get("dest_dir"), coach_ui.CARD_DIR)
+        self.assertEqual(kwargs.get("urls"), coach_ui.CARD_URLS)
+
+    def test_the_tooltip_route_strips_the_golden_suffix(self):
+        args, _ = self._drive("/card/ZZZ_TEST_WIRE_G.png")
+        self.assertEqual(args, ("ZZZ_TEST_WIRE",),
+                         "golden ids resolve to the base render")
+
+
 class TestWelcomeAndClear(unittest.TestCase):
     """The deliberate empty state: fresh boot, a new game's CREATE_GAME,
     and the page's Clear button all serve the welcome — never the previous
