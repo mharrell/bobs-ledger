@@ -410,34 +410,52 @@ the ~38 labelled fights. This number is the baseline any simulator must beat, an
 establishing it costs almost nothing. Most projects skip this step and cannot
 answer "was the new thing better?"
 
-> **ANSWERED 2026-10-05 — and it is damning.** `app/fight_table.py` graded all
-> **52** labelled advisories in the 5 archived games (the live session is
-> skipped). The verdicts the player actually read, against what happened:
+> **ANSWERED 2026-10-05 — and it is worse than damning.** `app/fight_table.py`
+> graded the archived games. First, the label had to be fixed, and the fix is
+> itself a finding (below). With the corrected label, over **50 advisories in 5
+> games** (2 ties excluded, see below):
 >
 > | verdict | n | lost | loss rate |
 > |---|---|---|---|
-> | favored | 21 | 8 | **38%** |
-> | close fight | 13 | 8 | 62% |
-> | behind | 14 | 7 | **50%** |
+> | favored | 21 | 5 | 24% |
+> | close fight | 13 | 2 | 15% |
+> | behind | 14 | 4 | 29% |
 >
-> Directional accuracy **57%**, against **54%** for the constant "never lost".
-> **The ordering is inverted**: `behind` loses *less* often (50%) than
-> `close fight` (62%). A three-way classifier that beats a constant by three
-> points, with its own classes out of order, is not separating the cases it
-> claims to separate.
+> Directional accuracy **57%** — against **78%** for the constant "never
+> lost". The forecast is **21 points WORSE than always saying "you won't lose
+> this fight"**, and the class ordering is still not monotone (`close fight`
+> at 15% loses least of all, `behind` at 29% is the worst). The base rate is
+> only 22% losses, so a rule has to discriminate hard to beat a constant, and
+> this one does not discriminate at all.
 >
-> One structural fact falls out of the same table, and it guards against
-> over-reading the above: **only 1 of 52 advisories had a FRESH opponent
-> preview.** Everything else was graded against the lobby median or the corpus
-> baseline, because `opp_stats` is usable only within 2 rounds
-> (`live_coach.py:822`). So the ratio is being asked to predict a specific fight
-> from a number that usually does not describe that opponent — the strongest
-> argument yet for the distribution framing in §1, and a caution against reading
-> 57% as purely the ratio's fault.
+> **The label bug, and why it matters beyond this table.** The first version
+> joined the coach's own `_predamage_turns` bucket. That bucket is stamped when
+> the stat log drains (`live_coach._drain_stats`), and entries that arrive
+> before the hero parses queue in `_stat_pending`, so the index SLIDES — the
+> row's `turn` and the bucket's turn describe different fights. Result: 11 of
+> 24 "losses" showed no damage, and 2 "wins" showed damage. Both are
+> impossible, and that impossibility is what exposed it.
 >
-> This is the baseline the reshape needed. The old approach is measurably close
-> to worthless, so a simulator has something real to beat — and we have a number
-> to report either way.
+> The corrected label is read from the LOG: a turn is one `MAIN_ACTION`, its
+> combat is the window to the next one, and damage is the change in
+> `(DAMAGE - ARMOR)` across it. `lost` is **damage taken**, and ties are
+> flagged, not folded in. Measured over **67 fights: `PREDAMAGE > 0` is exactly
+> (damage taken) ∪ (tie)** — 18 had both, 4 had predamage with no health change
+> at all, and **zero** had damage without predamage. So predamage cannot tell a
+> loss from a tie, and the health arithmetic can. `test_fight_table.py` pins all
+> four cases including the armor one, because armor is absorbed before HP and
+> ignoring it is what made 15 of 24 losses read as "no damage".
+>
+> One structural fact guards against over-reading the 57%: **only 1 of 50
+> advisories had a FRESH opponent preview.** The rest were graded against the
+> lobby median or the corpus baseline, because `opp_stats` is usable only within
+> 2 rounds (`live_coach.py:822`). The ratio is being asked to predict a specific
+> fight from a number that usually does not describe that opponent — the
+> strongest argument yet for the distribution framing in §1.
+>
+> Either way the reshape now has what it needed: the current forecast is
+> measurably worse than a constant, so a simulator has a real bar to clear and
+> we have a before-number to report.
 
 **Check B — does the growth projection work?** Replay the archived logs with the
 extended seat capture and ask: for seats seen twice, how well does `Δstats/Δturn`

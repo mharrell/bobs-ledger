@@ -78,6 +78,74 @@ class TestTheirBoard(unittest.TestCase):
         self.assertEqual(fight_table._their_board(FakeCoach({}), 9, 1), [])
 
 
+class TestFightOutcomes(unittest.TestCase):
+    """The outcome label, read from the LOG rather than from the coach.
+
+    Every number in Check A rests on this, and the first version of the tool
+    got it wrong by joining the coach's own `_predamage_turns` bucket. That
+    bucket is stamped when the stat log drains, so it SLIDES for turns that
+    arrive before the hero parses (`_stat_pending`) — producing a table where
+    11 of 24 "losses" showed no damage, i.e. the label and the damage described
+    different fights.
+    """
+
+    HERO = 106
+    GS = "D 12:00:00.0000000 GameState.DebugPrintPower() - "
+
+    def _log(self, armor_before=None, armor_after=None, damage_after=None,
+             predamage=False):
+        """Two buy phases with one combat window between them."""
+        gs = self.GS
+        lines = []
+        if armor_before is not None:
+            lines.append(f"{gs}TAG_CHANGE Entity={self.HERO} "
+                         f"tag=ARMOR value={armor_before}")
+        lines.append(f"{gs}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # t1
+        lines.append(f"{gs}Entity=GameEntity tag=STEP value=MAIN_END")
+        if predamage:
+            lines.append(f"{gs}TAG_CHANGE Entity={self.HERO} "
+                         f"tag=PREDAMAGE value=10")
+            lines.append(f"{gs}TAG_CHANGE Entity={self.HERO} "
+                         f"tag=PREDAMAGE value=0")
+        if armor_after is not None:
+            lines.append(f"{gs}TAG_CHANGE Entity={self.HERO} "
+                         f"tag=ARMOR value={armor_after}")
+        if damage_after is not None:
+            lines.append(f"{gs}TAG_CHANGE Entity={self.HERO} "
+                         f"tag=DAMAGE value={damage_after}")
+        lines.append(f"{gs}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # t2
+        return [ln + "\n" for ln in lines] + ["D 12:00:01.0 X - filler\n"]
+
+    def test_damage_taken_is_a_loss(self):
+        o = fight_table.fight_outcomes(
+            self._log(damage_after=9, predamage=True), self.HERO)
+        self.assertTrue(o[1]["lost"])
+        self.assertEqual(o[1]["damage"], 9)
+        self.assertFalse(o[1]["tie"])
+
+    def test_predamage_with_no_damage_is_a_tie_not_a_loss(self):
+        # the winner takes 0 and so does a tie, so predamage alone cannot tell
+        # them apart — which is why `lost` reads the health writes instead
+        o = fight_table.fight_outcomes(self._log(predamage=True), self.HERO)
+        self.assertFalse(o[1]["lost"])
+        self.assertEqual(o[1]["damage"], 0)
+        self.assertTrue(o[1]["tie"])
+
+    def test_clean_win_is_neither_lost_nor_tie(self):
+        o = fight_table.fight_outcomes(self._log(), self.HERO)
+        self.assertFalse(o[1]["lost"])
+        self.assertFalse(o[1]["tie"])
+
+    def test_armor_absorbing_the_hit_still_counts(self):
+        # Armor goes before HP, so a lost fight can strip ARMOR and leave true
+        # HP untouched. Ignoring armor read 15 of 24 losses as "no damage";
+        # the code's own rule is "a won combat never drops health+armor".
+        o = fight_table.fight_outcomes(
+            self._log(armor_before=10, armor_after=6), self.HERO)
+        self.assertTrue(o[1]["lost"])
+        self.assertEqual(o[1]["damage"], 4)      # 10 armor -> 6 armor
+
+
 class TestVerdict(unittest.TestCase):
     def test_reads_the_shipped_strings(self):
         self.assertEqual(fight_table.verdict_of(

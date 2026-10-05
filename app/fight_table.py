@@ -33,9 +33,12 @@ friendly hero's PREDAMAGE writes: the code's own rule is "the winner takes 0"
 it compares coach-recorded HP at phase N to coach-recorded HP at phase N+1, so
 one parser sits on both sides and a health bug moves both together.
 
-KNOWN LIMIT OF THE LABEL: a win and a tie are NOT distinguishable — neither
-writes hero damage. `lost` is therefore "did not win or tie". The `damage`
-column exists beside it because that is where the distinction partly survives.
+KNOWN LIMIT OF THE LABEL: a win and a tie are NOT distinguishable from the
+predamage flag alone — neither wins nor ties cost health. Measured over 67
+fights, `PREDAMAGE > 0` is exactly (damage taken) UNION (tie): 18 had both, 4
+had predamage with no health change, and ZERO had damage without predamage. So
+`lost` is defined as DAMAGE TAKEN (from the health writes), and ties are
+flagged separately rather than counted as losses.
 
 Usage:
   python fight_table.py                    # every archived session log
@@ -95,6 +98,69 @@ def _board(minions):
             for m in (minions or [])]
 
 
+def fight_outcomes(chunk, hero_id):
+    """{turn: {"lost": bool, "damage": int|None}} read from the LOG alone.
+
+    Independent of the coach on purpose. The coach publishes per-turn damage
+    (`analysis.damage_last`) computed from ITS OWN health series, and its
+    `_predamage_turns` bucket is stamped when the stat log drains — which
+    happens later for turns that arrive before the hero parses
+    (`_stat_pending`), so the bucket index does not line up with a row's `turn`.
+    Joining on those gave a table where 11 of 24 "losses" showed no damage and
+    2 "wins" showed damage, i.e. the label and the damage described different
+    fights.
+
+    Here a turn is counted the same way the rows are: one per
+    `tag=STEP value=MAIN_ACTION`. The window from that turn's `MAIN_END` to the
+    next `MAIN_ACTION` is its combat. Damage taken is the change in
+    (DAMAGE accumulated - ARMOR) across that window, which is true HP moving:
+    the hero's HEALTH tag is the BASE and is never rewritten this season, so
+    HEALTH alone says nothing (the 2026-09-08 Guff session read 30 all game
+    while sitting at 19).
+    """
+    import re
+    ent = (r"(?:Entity=%s\b|Entity=\[[^\]]*id=%s\b)" % (hero_id, hero_id))
+    wr = re.compile(ent + r"[^\n]*?tag=(HEALTH|DAMAGE|ARMOR|PREDAMAGE) "
+                          r"value=(-?\d+)")
+    turn = 0
+    in_buy = False
+    dmg = armor = 0
+    at_buy, at_end, lost = {}, {}, set()
+    for line in chunk:
+        if "GameState." in line:
+            if "tag=STEP value=MAIN_ACTION" in line:
+                if turn:
+                    at_end[turn] = (dmg, armor)
+                turn += 1
+                in_buy = True
+                at_buy[turn] = (dmg, armor)
+            elif "tag=STEP value=MAIN_END" in line and in_buy:
+                in_buy = False
+        m = wr.search(line)
+        if m:
+            tag, v = m.group(1), int(m.group(2))
+            if tag == "DAMAGE":
+                dmg = v
+            elif tag == "ARMOR":
+                armor = v
+            elif tag == "PREDAMAGE" and v > 0 and not in_buy:
+                lost.add(turn)
+    out = {}
+    for t, (d0, a0) in at_buy.items():
+        d1, a1 = at_end.get(t, (d0, a0))
+        dmg = (d1 - a1) - (d0 - a0)
+        # `lost` is DAMAGE TAKEN, which is the unambiguous reading. Measured
+        # over 67 fights in the 5 archived games, PREDAMAGE>0 is exactly
+        # (damage > 0) UNION (tie): 18 fights had both, 4 had predamage with
+        # no health change at all, and ZERO had damage without predamage. So
+        # predamage alone cannot tell a loss from a tie, and the damage
+        # arithmetic can — which is why this reads the health writes rather
+        # than the predamage flag.
+        out[t] = {"lost": dmg > 0, "damage": dmg,
+                  "tie": dmg == 0 and t in lost}
+    return out
+
+
 def rows_for(chunk, session, game_idx):
     """One row per advised buy phase, with the following fight's outcome."""
     game = extract_game(chunk)
@@ -150,7 +216,16 @@ def rows_for(chunk, session, game_idx):
             "hero": (hero or {}).get("hero_name"),
             "placement": (hero or {}).get("place"),
             "turn": a.get("turn"), "tier": a.get("tier"),
-            "gold": a.get("gold"), "health": a.get("health"),
+            "gold": a.get("gold"),
+            # `health` is ALREADY effective HP (HEALTH - DAMAGE; the code
+            # subtracts the DAMAGE tag itself, live_coach.py:1393), so it is
+            # true HP and not the base 30 the raw tag carries.
+            "health": a.get("health"),
+            "armor": a.get("armor"),
+            # The per-round ceiling on ONE lost fight (BACON_COMBAT_DAMAGE_CAP,
+            # escalating 2/5/10/15). Kept because P(damage < cap) is one of the
+            # three bands the reshaped target has to report.
+            "damage_cap": a.get("damage_cap"),
             "our_stats": a.get("board_stats"),
             # the anchor the forecast actually used, in its own preference
             # order (value.combat_forecast: fresh preview, then lobby, then
@@ -167,24 +242,23 @@ def rows_for(chunk, session, game_idx):
             "buy_this": a.get("buy_this"),
             "shop_rank": [list(e) if isinstance(e, (list, tuple)) else e
                           for e in (a.get("shop_rank") or [])],
-            "lost": None, "damage": None,
+            "lost": None, "damage": None, "tie": None,
         })
     # ---- the outcome join, after the whole game is fed ---------------------
-    # The fight that follows buy phase k is stamped bucket k+1 by live_coach's
-    # own convention: combat detail prints under the NEXT phase's MAIN_ACTION,
-    # so a positive PREDAMAGE there means the fight in that window was lost
-    # ("the winner takes 0"; ties take 0 too).
-    pred = coach._predamage_turns
+    # Outcomes come from the LOG (`fight_outcomes`), not from the coach's
+    # buckets, and they are joined on the row's own `turn`: the advisory at
+    # buy phase k is about the fight fought during turn k.
+    hero_id = (next((h.get("id") for h in game["heroes"]
+                     if h["player"] == friendly), None))
+    outcomes = fight_outcomes(chunk, hero_id) if hero_id else {}
     for r in rows:
         t = r.get("turn")
-        if t is None:
-            continue
-        r["lost"] = (t + 1) in pred
-        r["their_board"] = _their_board(coach, t, friendly)
-    # Damage across the fight = the health drop between successive advisories.
-    for a, b in zip(rows, rows[1:]):
-        if a.get("health") is not None and b.get("health") is not None:
-            a["damage"] = a["health"] - b["health"]
+        r["their_board"] = _their_board(coach, t, friendly) if t else []
+        o = outcomes.get(t)
+        if o:
+            r["lost"] = o["lost"]
+            r["damage"] = o["damage"]
+            r["tie"] = o["tie"]
     return rows
 
 
@@ -229,9 +303,13 @@ def baseline_report(rows):
     print(f"\n== Check A: the current stat-ratio rule, measured ==")
     print(f"   {len(scored)} advisories with an outcome label, "
           f"{len({(r['session'], r['game']) for r in scored})} game(s)")
-    print("   `lost` = the friendly hero took PREDAMAGE in the following "
-          "fight.\n   A WIN AND A TIE ARE INDISTINGUISHABLE here (neither "
-          "writes hero damage).")
+    print("   `lost` = the friendly hero's effective HP (hp+armor) DROPPED "
+          "across that turn's\n   combat window, read from the log. A TIE "
+          "takes no damage and is NOT a loss —\n   it is counted separately, "
+          "not folded in.")
+    ties = sum(1 for r in scored if r.get("tie"))
+    if ties:
+        print(f"   ({ties} ties in the sample, excluded from `lost`.)")
     by = {}
     for r in scored:
         by.setdefault(verdict_of(r.get("forecast")), []).append(r)
