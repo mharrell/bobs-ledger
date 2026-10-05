@@ -147,7 +147,79 @@ straight line does not.
 badly wrong in both directions. Cap the horizon, widen the band per turn, and
 show a range — never a single number.
 
+### Measured: the trajectories exist, and they are noisy (2026-10-04)
+
+A probe substituted a recording `LobbyScout` into a real `LiveCoach` (so the
+phase tracking and pairing are production code, with only the resolve step
+keeping history instead of overwriting) and ran it over the 5 non-fragment
+archived logs. Results:
+
+```
+seats per game:           [7, 6, 7, 7, 7]
+seats with 2+ sightings:  3, 3, 4, 4, 6
+example:  seat 3: t6:9 -> t12:25     seat 7: t5:11 -> t11:19
+          seat 8: t2:10 -> t9:38 -> t10:28
+consecutive-sighting deltas: n=25
+  mean +5.1   median +7.0   stdev 9.2
+  positive 18 (72%)   negative 5 (20%)   zero 2 (8%)
+```
+
+Three findings, one of them decisive:
+
+1. **Trajectories are real.** Every substantive game yields 2+ sightings for
+   3-6 seats, and one seat per game gets 3. So "where were they X turns ago"
+   is a question the data can answer — **with 2-3 points, not a curve.**
+2. **The signal is noisy, and the noise is the interesting part.** 20% of
+   consecutive sightings show a *weaker* board, and the spread (stdev 9.2)
+   exceeds the median gain (+7.0). That is the maintainer's observation
+   ("much more than expected, but also much less") showing up as variance
+   rather than as trend — which is an argument for reporting **direction and
+   rate with a widening band**, never a point projection.
+3. **The absolute level is wrong**, so this needs a fix before use — see the
+   three blockers below.
+
+### Three blockers found by building it
+
+1. **`META_TAGS` has no ATK/HEALTH.** Verified: `tag=ATK` appears **only** as
+   bare-entity `TAG_CHANGE` writes (2662 in one game) and **never** in indented
+   block form (0). That is the exact shape `lobby._WRITE` already matches, so
+   listing the two tags is the whole change — no new parsing.
+2. **The scout is dormant unless `analyze()` is called.** `_scout.open_round`
+   is gated on `live_coach.friendly` (`live_coach.py:511`), and `friendly` is
+   set only by `analyze()` → `_ensure_meta()`. Feeding a whole log without
+   periodic `analyze()` left the scout **completely empty** (0 seats, 0
+   rounds). This is the hazard `replay_review` documents for opponent pairing,
+   and it applies to the entire scout. **Every offline replay that wants scout
+   data must call `analyze()` on a cadence**, or it will silently measure
+   nothing.
+3. **Base stats, not live stats.** `resolve_completed` stores card **counts**;
+   joining those to the card DB gives *base* stats, understating a buffed
+   board by a wide margin (the probe's totals were ~10x low). The fix is to
+   keep the staged entity's live ATK/HEALTH at resolve time, not to join ids
+   later — which is why blocker 1 and this one are the same piece of work.
+
+A fourth, inherent limit: combat snapshots capture a board **mid-fight** as
+deaths empty it. `_resolve_boards` already picks "the snapshot with the most
+opponent presence" for exactly this reason, and any stat series inherits the
+resulting wobble. Expect it in the noise above.
+
+### What follows for the projection
+
+The rate is worth having, but the honest output at this sample size is a
+**direction with a range**, not a number: "seat 3 was 9 on turn 6 and 25 on turn
+12 — gaining steadily" is supportable; "seat 3 will be 41 on turn 15" is not,
+because the spread across sightings is larger than the median gain. Report the
+observation, mark it with its round, and let the band widen — the same discipline
+as §3.
+
 ### The self-validating property
+
+The projection is testable **for free**: the next time we meet that seat, compare
+what we predicted against what we saw. So the check gets built in from the start,
+producing a real error distribution instead of an opinion — and the noise
+measured above is exactly what that check would quantify.
+
+
 
 The projection is testable **for free**: the next time we meet that seat, compare
 what we predicted against what we saw. So the check gets built in from the start,
@@ -248,23 +320,33 @@ Each of these silently corrupts the loop if skipped.
 1. **Stop discarding combat detail.** `live_coach.py:721-726` keeps only
    `(player, atk+health)`; retain card, atk, health and keywords per minion. This
    is the simulator's entire training set.
-2. **Capture seat stats.** Add ATK/HEALTH for staged entities to `lobby.py`'s
-   `META_TAGS` handling (§4). Without it there is no stat history at all.
-3. **`top_move_steps[].card` is `None`** even when `action` names the card
+2. **Capture seat stats.** Add ATK/HEALTH to `lobby.py`'s `META_TAGS` handling
+   (§4). The tags arrive as bare-entity `TAG_CHANGE` writes, which `_WRITE`
+   already matches — no new parsing. Must be captured **at resolve time** from
+   the staged entity, not joined from card ids later (base stats understate a
+   buffed board by roughly 10x, measured).
+3. **Call `analyze()` on a cadence in every offline replay.** The scout only
+   populates when `friendly` is known, and `friendly` comes from `analyze()` →
+   `_ensure_meta()`. A whole-log feed with no `analyze()` yields **zero** scout
+   data — measured, twice. Any harness that wants scout/opponent data must
+   reproduce the live cadence or it will silently measure nothing. This is the
+   same hazard `replay_review` documents for opponent pairing, generalised to
+   the whole scout.
+4. **`top_move_steps[].card` is `None`** even when `action` names the card
    ("Play Tasty Lobster x2"). Anything keying off `step['card']` — including
    `outcome_audit._plan_shape`'s `pick` branch — sees nothing. Blocks rung 4.
-4. **A final-placement label does not exist in the analysis dict.** Only the live
+5. **A final-placement label does not exist in the analysis dict.** Only the live
    `current_place`, and nothing re-runs `analyze()` after death, so the game-over
    card inherits the last pre-death standing.
-5. **`gold` is `None` for all 212 records** of the 10-03 session (both levels)
+6. **`gold` is `None` for all 212 records** of the 10-03 session (both levels)
    while 10-02 has it on 152/154. Confirm the claimed account-map fix against the
    current build; a `None` purse is a label bug, not a missing value.
-6. **`damage_last` is written twice** (`live_coach.py:1510` and `:1632`).
+7. **`damage_last` is written twice** (`live_coach.py:1510` and `:1632`).
    Redundant today; a future edit to one site will diverge from the other.
-7. **`opp_age` can be non-null while `opp_stats` is `None`** — the age then
+8. **`opp_age` can be non-null while `opp_stats` is `None`** — the age then
    describes the *lobby* anchor, not the preview the forecast used. Any
    fresh-vs-stale slice inherits this.
-8. **The scout carries a previous game's seats into the next game** (§4).
+9. **The scout carries a previous game's seats into the next game** (§4).
    Recreate/reset the scout on `_reset()`, reject negative ages in the freshness
    test, and cover the game boundary with a test. Fix this **before** adding any
    history to `seats`.
@@ -314,6 +396,12 @@ extended seat capture and ask: for seats seen twice, how well does `Δstats/Δtu
 predict the next sighting? If it is good, the projection earns its place in the
 feed. If it is poor, we have spent a week instead of a quarter — and Step 2 of the
 tracker is cancelled on evidence rather than on taste.
+
+The probe already gives this a pessimistic prior (§3): with 2-3 sightings per seat
+and a spread larger than the median gain, a curve cannot be fitted — only a
+direction. Check B is therefore **not** "is the extrapolation accurate" but "is
+the *sign* of the change informative", and it should be phrased that way before
+it runs, or it will be judged against a standard the data cannot meet.
 
 ---
 
