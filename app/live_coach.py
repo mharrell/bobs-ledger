@@ -723,15 +723,27 @@ class LiveCoach:
         # identifies it). Each snapshot carries the phase it was captured in
         # so the resolver can keep only real fight boards. Snapshots fire on
         # plays AND combat deaths, so a turn accumulates several.
+        #
+        # Each minion is kept as a 6-tuple, NOT as (player, atk+health). The
+        # sum was the only thing the live forecast needed, but it discards the
+        # card, the split, the golden flag and the KEYWORDS — and those are
+        # what a fight actually turns on (a divine shield absorbs a hit, a
+        # venomous minion removes one, attack order decides who trades first).
+        # A scalar total cannot see any of it, which is why every fight was a
+        # training example being thrown away. board_state._record_snapshot
+        # already freezes these per snapshot, so this is a projection
+        # widening, not new parsing.
         if len(self.gs.snapshots) > self._snap_seen:
             new = self.gs.snapshots[self._snap_seen:]
             self._snap_seen = len(self.gs.snapshots)
             for snap in new:
                 self._snap_by_turn.setdefault(self.actions.turn, []).append({
                     "phase": self._phase,
-                    "minions": [(m["player"],
-                                 (m.get("atk") or 0) + (m.get("health") or 0))
-                                for m in snap],
+                    "minions": [
+                        (m.get("player"), m.get("card"), m.get("atk") or 0,
+                         m.get("health") or 0, bool(m.get("golden")),
+                         tuple(sorted(m.get("keywords") or ())))
+                        for m in snap],
                 })
         # Track when the friendly's tier changed, for the upgrade-price
         # fallback (the price drops 1 per turn you stay at a tier).
@@ -810,9 +822,15 @@ class LiveCoach:
             self._resolved.add(t)
             best = None
             for snap in snaps:
-                opp = [(p, s) for p, s in snap.get("minions", [])
-                       if p not in (self.friendly, None)]
-                stats = sum(s for _p, s in opp)
+                # Minions are 6-tuples (player, card, atk, health, golden,
+                # keywords) since the fight-table widening. A bare
+                # (player, stat_total) pair is still accepted so that older
+                # fixtures — and any stale snapshot built before the change —
+                # keep resolving: the stat scout only ever wanted the total.
+                opp = [m for m in snap.get("minions", [])
+                       if m[0] not in (self.friendly, None)]
+                stats = sum((m[2] + m[3]) if len(m) > 3 else m[1]
+                            for m in opp)
                 if best is None or stats > best[0]:
                     best = (stats, len(opp))
             pid = self._pairing.get(t)
