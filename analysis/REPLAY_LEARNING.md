@@ -410,6 +410,35 @@ the ~38 labelled fights. This number is the baseline any simulator must beat, an
 establishing it costs almost nothing. Most projects skip this step and cannot
 answer "was the new thing better?"
 
+> **ANSWERED 2026-10-05 — and it is damning.** `app/fight_table.py` graded all
+> **52** labelled advisories in the 5 archived games (the live session is
+> skipped). The verdicts the player actually read, against what happened:
+>
+> | verdict | n | lost | loss rate |
+> |---|---|---|---|
+> | favored | 21 | 8 | **38%** |
+> | close fight | 13 | 8 | 62% |
+> | behind | 14 | 7 | **50%** |
+>
+> Directional accuracy **57%**, against **54%** for the constant "never lost".
+> **The ordering is inverted**: `behind` loses *less* often (50%) than
+> `close fight` (62%). A three-way classifier that beats a constant by three
+> points, with its own classes out of order, is not separating the cases it
+> claims to separate.
+>
+> One structural fact falls out of the same table, and it guards against
+> over-reading the above: **only 1 of 52 advisories had a FRESH opponent
+> preview.** Everything else was graded against the lobby median or the corpus
+> baseline, because `opp_stats` is usable only within 2 rounds
+> (`live_coach.py:822`). So the ratio is being asked to predict a specific fight
+> from a number that usually does not describe that opponent — the strongest
+> argument yet for the distribution framing in §1, and a caution against reading
+> 57% as purely the ratio's fault.
+>
+> This is the baseline the reshape needed. The old approach is measurably close
+> to worthless, so a simulator has something real to beat — and we have a number
+> to report either way.
+
 **Check B — does the growth projection work?** Replay the archived logs with the
 extended seat capture and ask: for seats seen twice, how well does `Δstats/Δturn`
 predict the next sighting? If it is good, the projection earns its place in the
