@@ -278,10 +278,28 @@ slow first paint no longer placeholders a card for an hour. And an **in-flight
 guard** keeps the 300ms poll from downloading the same 300KB portrait several
 times over while the first request is still running.
 
-Still open from this: a **read-only install folder** disables art entirely
-(`ART_CACHE_OK` False) and the only signal is a startup `Note:` line — worth a
-visible hint in the overlay. And the fix reaches testers only through a
-release; `publish_release.py` has NOT been run for it.
+**That fix went out as `f648af6`**, verified from a player's side rather than
+from the publish log: the public manifest serves it, the downloaded zip's
+sha256 matches, and the SHIPPED `coach_ui.py` carries the new sources. Testers
+were on `2196a27`, so that release also carried the tier refresh and the
+guide/trinket/pool fixes. (The first two publish attempts were refused by the
+Cloudflare API with `Authentication error [code: 10000]` — intermittent, not
+credentials: reads always worked, the OAuth token refreshed itself, and a
+retry of both the publish and a later key-delete succeeded. Re-run on that
+error.)
+
+**The read-only install folder is fixed too, because it wore the same face.**
+With no writable `img_cache`, `/img` answered 404 for every card and the page
+drew placeholders — indistinguishable from the CDN bug, and reproduced as such
+(a card whose art is 249896 bytes upstream served 404 in that state).
+`resolve_art_cache()` now falls back to a per-user cache
+(`%LOCALAPPDATA%\bobs-ledger\img_cache`, `~/Library/Caches/...`,
+`$XDG_CACHE_HOME` or `~/.cache`), so such an install still GETS art instead of
+being told to move; the miss list rides along, since in a read-only install its
+write was refused silently and every restart re-attempted the same 404s. Only a
+machine with no writable location at all runs art-free, and the startup note
+says so. Worth remembering: the fix was NOT in the published `f648af6`, so an
+install in a read-only folder needs the NEXT release.
 
 NEXT, still open:
 
