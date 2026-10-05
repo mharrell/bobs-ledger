@@ -325,6 +325,109 @@ class TestFetchChain(unittest.TestCase):
         self.assertNotIn(TEST_ID, coach_ui._art_inflight)
 
 
+class TestArtCacheFallback(unittest.TestCase):
+    """A read-only install folder must still GET art, not just be warned.
+
+    Unzipping into Program Files (or a one-way-synced folder) is legitimate,
+    and Windows offers no elevation prompt, so img_cache/ cannot be created
+    there. The old behaviour gave up silently: /img answered 404 for every
+    card and the page drew placeholders — the SAME face as the CDN bug fixed
+    in the same week, so nobody could tell the two apart (reproduced
+    2026-10-04: a card whose art is 249896 bytes upstream served 404 in that
+    state). Now the cache moves to a per-user directory and art works.
+    """
+
+    def test_an_unwritable_install_falls_back_to_the_per_user_dir(self):
+        with tempfile.TemporaryDirectory() as td:
+            install = os.path.join(td, "install")
+            os.makedirs(install)
+            # A FILE where img_cache/ must go: the portable stand-in for
+            # access-denied (the same trick TestArtCacheDir uses).
+            with open(os.path.join(install, "img_cache"), "w") as f:
+                f.write("not a directory")
+            # `fallback` is the cache ROOT to use, exactly (production passes
+            # nothing and gets <user cache>/img_cache).
+            user = os.path.join(td, "user-cache", "img_cache")
+            root, card, ok, source = coach_ui.resolve_art_cache(install, user)
+            self.assertTrue(ok, "art must still work")
+            self.assertEqual(source, "user")
+            self.assertEqual(root, user)
+            self.assertEqual(card, os.path.join(user, "card"))
+            self.assertTrue(os.path.isdir(card))
+
+    def test_a_writable_install_keeps_its_own_cache(self):
+        with tempfile.TemporaryDirectory() as td:
+            unused = os.path.join(td, "unused")
+            root, card, ok, source = coach_ui.resolve_art_cache(td, unused)
+            self.assertEqual((ok, source), (True, "install"))
+            self.assertEqual(root, os.path.join(td, "img_cache"))
+            self.assertFalse(os.path.exists(unused),
+                             "the fallback must not be created when unneeded")
+
+    def test_no_writable_location_anywhere_reports_not_ok(self):
+        """The residual case, and the only one that still runs art-free."""
+        with tempfile.TemporaryDirectory() as td:
+            install = os.path.join(td, "install")
+            os.makedirs(install)
+            user = os.path.join(td, "user-cache", "img_cache")
+            for blocker in (os.path.join(install, "img_cache"), user):
+                os.makedirs(os.path.dirname(blocker), exist_ok=True)
+                with open(blocker, "w") as f:
+                    f.write("not a directory")
+            _, _, ok, source = coach_ui.resolve_art_cache(install, user)
+            self.assertFalse(ok)
+            self.assertEqual(source, "none")
+
+    def test_the_per_user_root_is_per_platform(self):
+        def norm(p):
+            return p.replace("\\", "/")
+        self.assertEqual(
+            norm(coach_ui.user_cache_root(
+                env={"LOCALAPPDATA": "C:\\Users\\x\\AppData\\Local"},
+                home="C:\\Users\\x", platform="win32")),
+            "C:/Users/x/AppData/Local/bobs-ledger")
+        self.assertEqual(
+            norm(coach_ui.user_cache_root(env={}, home="/Users/x",
+                                          platform="darwin")),
+            "/Users/x/Library/Caches/bobs-ledger")
+        self.assertEqual(
+            norm(coach_ui.user_cache_root(env={"XDG_CACHE_HOME": "/tmp/c"},
+                                          home="/home/x", platform="linux")),
+            "/tmp/c/bobs-ledger")
+        self.assertEqual(
+            norm(coach_ui.user_cache_root(env={}, home="/home/x",
+                                          platform="linux")),
+            "/home/x/.cache/bobs-ledger")
+        # No LOCALAPPDATA (a stripped-down Windows env) still resolves.
+        self.assertEqual(
+            norm(coach_ui.user_cache_root(env={}, home="C:\\Users\\x",
+                                          platform="win32")),
+            "C:/Users/x/AppData/Local/bobs-ledger")
+
+    def test_the_fallback_never_lives_inside_the_install(self):
+        """A read-only install must not be handed back as its own fallback:
+        the art would still be unwritable, and the failure would be invisible
+        for a second reason instead of one."""
+        with tempfile.TemporaryDirectory() as td:
+            install = os.path.join(td, "install")
+            os.makedirs(install)
+            with open(os.path.join(install, "img_cache"), "w") as f:
+                f.write("not a directory")
+            elsewhere = os.path.join(td, "elsewhere", "img_cache")
+            root, _, ok, source = coach_ui.resolve_art_cache(install, elsewhere)
+            self.assertEqual((ok, source, root), (True, "user", elsewhere))
+            self.assertFalse(
+                os.path.abspath(root).startswith(os.path.abspath(install)
+                                                 + os.sep))
+
+    def test_this_checkout_uses_its_own_cache(self):
+        """The module-level answer here, and the one the maintainer, the
+        extractor and doctor's art check all assume."""
+        self.assertEqual(coach_ui.ART_CACHE_SOURCE, "install")
+        self.assertEqual(coach_ui.ART_CACHE,
+                         os.path.join(HERE, "img_cache"))
+
+
 class TestFetchArtTool(unittest.TestCase):
     """`fetch_art.py` had the SAME bug in a second place: its own copy of the
     URL that 404s current-patch cards, writing framed 256x388 renders into the
