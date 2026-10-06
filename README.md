@@ -110,10 +110,10 @@ to what you actually did, and what the fight afterwards cost.
 - **The fight after it** — effective HP gained or lost across the next combat.
   Negative means it hurt.
 
-It also says how much of itself it *could not* judge. A plan that leads with a
-spell cast is reported as **not graded** rather than counted either way, and the
-count is printed on the summary: it will not pretend to have assessed a decision
-it cannot see.
+It also says how much of itself it *could not* judge. A plan that opens with a
+minion swap, or with a spell whose card it could not resolve, is reported as
+**not graded** rather than counted either way, and the count is printed on the
+summary — it will not pretend to have assessed a decision it cannot see.
 
 The summary prints how the phases you followed went against the phases you
 didn't — and says plainly that this is **observational, not causal**, because

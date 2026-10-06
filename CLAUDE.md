@@ -25,12 +25,16 @@ code), and `test_readme_claims.py` is the control CLAUDE.md item 3 asked for.
 row per advised buy phase, the model's line beside what the player actually did,
 and the effective HP the following fight cost. The end-of-game card links to it
 (`/review`), and `live._settle_up_in_background` builds it off-thread the moment
-a game ends — off-thread because it replays the game. **What it cannot grade yet,
-and why it says so out loud:** a plan that leads with a `cast` (or swap/play/pick)
-reads "not graded" — 8 of 16 phases on the first real game — because
-`value.top_move` leaves `card` as None on a cast step. That fix belongs in the
-planner and in `player_actions` (which counts spells cast instead of naming
-them), NOT in settle_up.
+a game ends — off-thread because it replays the game. **The cast-grading gap is
+CLOSED (2026-10-06)**: a plan that led with a cast used to read "not graded"
+(8 of 16 phases on the first real game) because `value.top_move` derived every
+step's `card` by parsing the rendered text, so only a buy step ever resolved
+one, and `player_actions` counted spells instead of naming them. `_top_move_text`
+now records which card each hand step is about and `player_actions` records
+`spell_ids`; the same game reports ONE ungraded phase (a swap). What stays
+ungraded and why: a swap needs the sell AND its replacement as a pair, and a
+cast-led `taken` is weaker evidence than a buy-led one (a turn casting several
+spells can satisfy "Cast X" incidentally) — the summary prints both facts.
 
 **The name stays "Bob's Ledger", decided 2026-10-06.** It was already the pun:
 Bob runs the Battlegrounds tavern, and a ledger is the tavernkeeper's book. The
