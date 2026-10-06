@@ -149,27 +149,65 @@ every turn ends in a cliff to nothing.
 
 ## 4. Plan
 
-**Phase A — the extractor (next).** One replay pass that drives the coach (per
-3.1) and keeps it, so a single pass yields both the existing audit rows and the
-per-turn timeline. Output per turn: `{buy_end: board, combat_start: {ours,
-theirs}, battle_end: board}` where each board is the structured
-`{card, atk, health, golden, keywords}` shape `fight_table._board` already
-produces. Verified against this game by eye before anything renders it — the
-three states above are the expected values.
+**Phase A — the extractor. DONE** (`app/turn_review.py`). Per turn: buy-end
+board, combat-start boards for both sides, battle-end board, plus lag and notes.
+Verified against the 10-06 game, where T5/T6/T7 match the hand-measured states
+exactly. 31 tests over a pure `_turn_rows()` assembler.
 
-**Phase B — the metrics.** Gold held/spent, board stats at buy-end (persisted
-series), comp commitment, and the two blunder detectors. Each labelled with what
-it is and is not: stat total is not the value function's opinion, and a blunder
-detector that fires is a question, never a verdict.
+**Phase B — the metrics. DONE, and it caught a bug in itself.** All four, in
+`turn_review`, rendered by `settle_up`:
 
-**Phase C — render it.** Per-turn cards in the Settle Up page: the board as
-three rows of tiles (ours/theirs where they exist), the stat and gold deltas, and
-any blunder flag with the reason. This is where the review finally shows a
-picture of the game rather than a line of text per phase.
+- **Gold** — `tier_review._spend` prices every purchased card through
+  `value._buy_prices`, the one price layer. **The first version did `3 × buys`
+  and was wrong**: 5 of that game's 24 buys were tavern SPELLS (Enchanted Lasso,
+  Repair Job, Armor Stash, Energizing Chamber, Natural Blessing), which keep
+  their own prices — Repair Job costs 2, so pricing it at 3 inflates the turn.
+  Measured totals for the game: 22 cards for 62g, 32 rolls for 32g, 5 levels,
+  **120g countable spend** across 15 turns. Still not included, and named as
+  such: a hero power that costs gold.
+- **Board value** — stat total at buy end, differenced per turn (persistent
+  stats only, per trap 3.2). T6 growth +37, T9 +63, T10 +599.
+- **Comp commitment** — projected straight from the analysis's own
+  `comp_progress`, so the per-turn series is free. It names the target from T9
+  in this game.
+- **Blunders (sell side)** — `_sell_questions`: a card whose role is comp
+  core / addon / glue / engine / scaler that LEFT while a filler STAYED, both
+  roles from `value.sell_reason`, the same function the live "Your board" row
+  prints, so the review cannot disagree with what the player was shown. Two
+  fired in this game (a Fire Baller, an Elite Navigator). Named `sell_questions`
+  because that is what they are: a comp core is sometimes right to sell, and
+  this cannot see the player's reasoning.
 
-**Phase D — the boring half of the ask.** Grade the casts (`value.top_move`
+Two smaller things Phase B settled, both worth keeping:
+
+- **The sell list can repeat a card.** Turn 7 reports
+  `['TB_BaconUps_159', 'Fire Baller', 'Fire Baller']` — three entries for two
+  distinct cards. The review asks one question per distinct card+role; whether
+  `player_actions` is double-counting a single sell is an OPEN question for that
+  module and its other consumers, not something to fix by deduping here.
+- **The lag note needs a buy board to lag.** Turn 1 has no buy snapshot, and the
+  first version printed "1 minion was played after the last buy-phase snapshot"
+  directly above "no buy-phase board snapshot".
+
+**Phase C — render it. DONE (text + HTML).** `settle_up` now carries
+`timeline`, and both renderers show it: console gets a TURN BY TURN section
+before the phase list, and the page gets one card per turn with `went in` /
+`they had` / `kept`, the gold and stat deltas, the comp target, and any sell
+question. Boards are text ("Locked-up Mutineer 6/3, Crackling Cyclone 2/1\*",
+`*` = golden) rather than card tiles, because the page is standalone and art
+lives behind the overlay's `/img` route. A timeline failure is recorded as
+`timeline_error` and the phase list still renders — never silent.
+
+**Phase D — the rest of the ask, OPEN.** Grade the casts (`value.top_move`
 writes `card: None` on a cast step; `player_actions` counts spells instead of
 naming them) and a session/history view across games.
+
+**One cost to know.** A review is now TWO full replays of the game — the phase
+rows (`outcome_audit.audit_game`) and the timeline (`turn_review.timeline`) —
+about 10 s for a 15-turn game. `outcome_audit.audit_game` could take an injected
+coach so one pass serves both; that refactor is the obvious next efficiency win
+and was deliberately not done at the end of a session in a shared, tested
+function.
 
 **Standing constraint, unchanged by any of this.** Nothing here may appear on
 the LIVE page. The timeline is a verdict-shaped artefact — it says what the
