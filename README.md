@@ -98,8 +98,28 @@ worth. Nothing on the page names a move.
 ## Settle Up (the review)
 
 When a game ends, the card on screen offers **Settle up**. That is where the
-model's plan lives: a line for every buy phase of the game you just played, next
-to what you actually did, and what the fight afterwards cost.
+model's plan lives, and it is the only place you see it.
+
+**The part the game never shows you: the board, three times a turn.** For every
+turn the review prints what you went in with, what your opponent brought, and
+what you kept — plus what the turn cost.
+
+    t5  7g  board 15 stats (+12)  spent 7g
+       you went in with: Locked-up Mutineer 6/3, Crackling Cyclone 2/1 x2,
+                         Wolf Pup 3/6, Fire Baller 4/3
+       they brought    : Dune Dweller 3/3, Fetid Corroder 3/3
+       you kept        : Wolf Pup 3/6, Locked-up Mutineer 6/3, Fire Baller 4/3,
+                         Crackling Cyclone 2/1 x2
+
+The numbers on that line are the turn's own: gold at the end of the buy phase,
+your board's total attack + health and how much it changed, and what you spent
+on cards, rolls and levelling. A turn marked **?** is one worth a second look —
+you sold a key card while a filler stayed on the board. It is a question, not a
+verdict, and a turn where you sold most of your board is labelled a rebuild
+instead, because that is what it is. Keep an eye out for `*` after a minion's
+stats: that one is golden.
+
+**Then the phase-by-phase view**, which is where the plan is:
 
 - **Model** — the plan it would have played, e.g. "1. LEVEL to tier 4 · 2. Buy
   Bronze Warden".
@@ -114,8 +134,10 @@ summary — it will not pretend to have assessed a decision it cannot see.
 
 The summary prints how the phases you followed went against the phases you
 didn't — and says plainly that this is **observational, not causal**, because
-following a plan is easier in games you were already winning. Read it as a
-reason to look at a turn, never as a score.
+following a plan is easier in games you were already winning. It also warns you
+when the count leans on turns that opened with a spell, because a turn that
+casts several spells can satisfy "cast the one it named" by accident. Read any
+of it as a reason to look at a turn, never as a score.
 
 The review opens in its own browser tab from the end-of-game card. To keep one,
 or to review any game still in the log, run this in the window you started the

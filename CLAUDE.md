@@ -211,7 +211,63 @@ Both messages are pure functions so they cannot drift back into blaming logging:
 whether the resolved root actually has a `Logs/` folder — and neither prints a
 path from this machine, because the overlay ends up in screenshots.
 
-## Where the last session left off (2026-10-04, main bf242f2)
+## Where THIS session left off (2026-10-06, main ff84f05)
+
+A large session. Everything below is on main and pushed; the suite was 1595
+green at each commit and both publish gates passed at each release.
+
+**Three releases went out, and players are on the third:**
+
+| version | what |
+| --- | --- |
+| `94a07de` | the pivot: the live overlay stops advising (`LIVE_VERDICT_KEYS`) |
+| `2ef006c` | Settle Up ships: the review, the turn-by-turn boards, session/history |
+| `3233929` | the four stale `docs/` screenshots removed (the directory is gone) |
+
+**1. The pivot (`PIVOT.md`).** The live page shows state, not verdicts; the
+model's plan is shown only after the game. One choke point
+(`coach_ui.render_json` drops `LIVE_VERDICT_KEYS`) and one control
+(`test_live_view.py` asserts all three halves). `test_readme_claims.py` is the
+README-vs-code control that CLAUDE.md item 3 had been asking for since 10-05.
+
+**2. The review (`app/settle_up.py`).** Reachable three ways: the end-of-game
+card's link, the `/review` route, and the CLI (`--latest`, `--session`,
+`--history N`, `--json`, `--html`). Built on `outcome_audit.audit_game`.
+
+**3. The turn timeline (`app/turn_review.py`).** The board at three points per
+turn — buy end, combat start (BOTH sides), battle end — from the combat staging
+burst the log already carried. Design, evidence and the trap list:
+`analysis/SETTLE_UP_BOARDS.md`. Every trap there was measured, and two of them
+would have produced a confident wrong answer: a feed-only replay leaves
+`friendly` None so BOTH boards look like the opponent's, and combat snapshots
+carry non-persistent buffs so board growth must be read at buy end.
+
+**4. The cast-grading gap is closed at the source** — see the top of this file.
+
+**5. `sync.py` was fixed**, because it failed twice in a row the way this repo
+uses it: git calls ran from `<root>/app` (so `--new` could not add a root-level
+file) and the merge did `git checkout main`, which git refuses from a linked
+worktree. `worktree_for()` merges in whichever directory holds main. Covered by
+`test_sync.py`; verified by using it.
+
+OPEN, and each is recorded where the next session will trip over it:
+
+1. **`player_actions` may double-count a single sell.** Measured: turn 7 of the
+   10-06 game reports `['TB_BaconUps_159', 'Fire Baller', 'Fire Baller']` — three
+   entries for two cards. Deduped only where the review asks its question; the
+   underlying count feeds `fight_table` and the audits too, so it needs its own
+   look rather than a fix in the consumer.
+2. **A review costs TWO replays per game** (~10 s for 15 turns): the phase rows
+   and the timeline run separate passes. `outcome_audit.audit_game` taking an
+   injected coach would make it one.
+3. **A swap-led plan is still ungraded** — grading one needs the sell AND the
+   play that replaced it as a pair, which the row does not carry.
+4. **`docs/` has no screenshots** (see Layout, above). Replacements not taken.
+5. **The replay-reviewer idea is captured in `ROADMAP.md`**, including the
+   maintainer's decision that "save" writes the Power.log slice — with the three
+   guards that folder will need, none of which exists yet.
+
+## Where the 2026-10-04 session left off (main bf242f2)
 
 Sharing sends ONE REPORT PER GAME, and as of main 72d6b60 the share path is
 idempotent per report id. TWO CLAIMS IN AN EARLIER VERSION OF THIS FILE WERE

@@ -105,9 +105,22 @@ disk, and `--list` shows what is there without downloading.
 
 ## Gotchas learned on the first live run
 
+- **A publish that reports success is not yet live, and the gap has fooled a
+  verification pass.** Measured 2026-10-06, twice in a row: `publish_release.py`
+  printed `uploaded release/latest.json` and `published`, and a read of
+  `GET /release/latest.json` seconds later still returned the PREVIOUS version —
+  its old `created`, its old `zip_bytes` — while a retry ~30 s later returned the
+  new one. This is KV's eventual consistency, not a failed upload, and the two
+  are indistinguishable from the client side. So: verify against the public URL
+  after publishing, RETRY the read before concluding anything failed, and never
+  treat the publish log line as proof. The zip is often readable before the
+  manifest is (`GET /release/<name>.zip` fetches an object that was never
+  overwritten), so the manifest is the one to poll.
 - **User-Agent matters**: workers.dev bot filtering 403s the default
   `Python-urllib` UA before the worker runs. `upload_corpus.put_url` sends
-  `hearth-coach-telemetry/1.0` — keep a real UA on any new client.
+  `hearth-coach-telemetry/1.0` — keep a real UA on any new client. (Every
+  hand-written verification script needs it too: the first read of the manifest
+  in that 2026-10-06 pass died on a bare 403 for exactly this reason.)
 - `npx wrangler kv key list` needs `--remote` to see production (v4
   defaults to local dev storage).
 
