@@ -1,12 +1,25 @@
 # Bob's Ledger
 
-A real-time coaching overlay for Hearthstone Battlegrounds. It reads the game
-from Hearthstone's own `Power.log`, reconstructs the board, and advises each
-buy phase from a **local value function plus growth simulator over a curated
+**READ `PIVOT.md` FIRST.** As of 2026-10-06 the product is split in two, and that
+split governs every UI decision from here: **the live overlay ships STATE, and
+the model's verdict ships after the fact, in the review.** `PIVOT.md` carries the
+reasoning, the corrections to the claim that triggered it, and the phase plan.
+
+A Battlegrounds board reader and (in progress) post-game review. It reads the
+game from Hearthstone's own `Power.log` and reconstructs the board; the numbers
+it shows come from a **local value function plus growth simulator over a curated
 meta DB**. The live path calls **no model and no API** — `coach_llm.py` is an
 optional maintainer tool for patch-note extraction, and `compare_models.py`
 is a model-comparison harness. Neither is imported by `live.py`,
 `live_coach.py`, `value.py` or `coach_ui.py`, and neither ships in a release.
+
+**The plan is still computed — it is only kept off the live page.**
+`value.top_move` runs on every buy phase, `decision_log.record()` writes it, and
+`coach_ui.LIVE_VERDICT_KEYS` is the single list that keeps it out of the overlay
+payload. Do not "simplify" that by deleting the producer: the review and the
+corpus are what the plan is FOR. `test_live_view.py` asserts all three halves of
+that contract (dropped from the page, kept in the analysis, read by no page
+code), and `test_readme_claims.py` is the control CLAUDE.md item 3 asked for.
 
 This repository is the product, and the release zip is this tree minus the
 maintainer-only parts (`analysis/`, `telemetry/`, `CLAUDE.md`, `DESIGN.md`,
@@ -425,9 +438,16 @@ NEXT, still open:
 2. From the wider audit, untouched: the macOS launcher has still never been parsed
    by any shell on this machine (its `--check` fix is reasoned, not run); 9 tests
    are dead behind `HEARTH_REAL_SESSION_TESTS` (nothing sets it);
-   `upload_corpus.py` and `fetch_sessions.py` ship to players; `README.md` has no
-   test at all, which is how a sentence about `Clear` stayed wrong.
-3. **The README now makes claims about the CODE, and nothing checks them**
+   `upload_corpus.py` and `fetch_sessions.py` ship to players; `README.md` had no
+   test at all until 2026-10-06, which is how a sentence about `Clear` stayed
+   wrong — and how the whole "DO THIS NOW" pitch survived in prose a day after it
+   stopped being true of the code.
+3. DONE (2026-10-06) — `app/tests/test_readme_claims.py` is the control, and it
+   asserts both halves: the README still makes the no-process/no-memory/
+   no-synthetic-input claims, and none of the named APIs appear anywhere under
+   `app/` (plus a check that the walk actually reaches `live.py`, because a
+   control that cannot fail is not a control). The original item, kept for the
+   reasoning: **The README makes claims about the CODE, and nothing checks them**
    (2026-10-05, added with the README's new "Is this allowed?" section). That
    section tells players what the coach does and does not do to their machine, and
    two of its sentences are load-bearing: it "does not touch the game's process or

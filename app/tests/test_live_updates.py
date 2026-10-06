@@ -1081,7 +1081,10 @@ class TestRenderJsonComps(unittest.TestCase):
                               "core": ["BG30_111"], "addons": []}}}
         a = render_json(analysis)
         self.assertFalse(a["comps"][0]["core"][0]["banned"])
-        self.assertEqual(a["buy_step_card"], None)
+        # The plan's buy step is not in the live payload at all any more
+        # (2026-10-06, PIVOT.md). test_live_view.py owns that contract; this is
+        # the copy that used to ride along here unchecked.
+        self.assertNotIn("buy_step_card", a)
 
     def test_dark_gifts_are_not_in_the_payload(self):
         """Player call, 2026-09-23: "remove that list of Dark gifts on the

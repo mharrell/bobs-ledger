@@ -1,10 +1,17 @@
 # Bob's Ledger
 
-<img src="docs/decide.png" alt="The overlay mid-game: DO THIS NOW gives one buy with its reason, and the level step underneath" width="560">
+A tracker for **Hearthstone Battlegrounds** that reads the game's own log file
+and shows you the board you actually have: what each of your minions is worth,
+which pieces of a comp you hold and which you are missing, how hard the lobby is
+pressing, what each tavern offer costs, and how close this hero is to dying.
 
-A real-time coach for **Hearthstone Battlegrounds**. It watches the game you are
-already playing, reads the board you actually have, and tells you the best move
-this turn — with the reason why.
+**It shows you the state, not the instruction.** It does not tell you what to
+buy, and that is a deliberate limit rather than a missing feature — see
+[Is this allowed?](#is-this-allowed) for the reasoning. Where the model's own
+opinion appears it appears as a number you read, never as a move it names. What
+the model *would* have played is still computed and recorded to your own disk;
+showing it back to you after the game — as a review, when the decision it
+describes can no longer be acted on — is the next thing being built.
 
 **Windows only.** It reads the log file Hearthstone writes on your own PC and
 asks for no account. It does not modify the game — the one file it can change is
@@ -76,13 +83,20 @@ you are done.
 The overlay opens as a page in your browser and updates as you play — not a
 second game window, so put it on another monitor or leave it behind the game.
 
-- **Left — the decision.** The one move for this turn, in large text, with the
-  reason underneath and the numbers behind it.
-- **Right — the reference.** Your shop ranked for the board you have, the comps
-  worth committing to and how close you are to each, and what your next opponent
-  is likely bringing.
+- **Left — where the game stands.** How strong your board is against the next
+  opponent and against the lobby, how close this hero is to dying and to what,
+  what is in your hand, and how charged a hand-engine is.
+- **Right — the reference.** Your board with each minion's value and its role,
+  the comp this board reads as closest to and which of its pieces you hold, how
+  close each candidate comp is to its commit threshold, who in the lobby is
+  contesting which tribe, and the tavern's offers with their prices and pool
+  counts — in the order the game shows them, not ranked.
 
-It ranks the awkward picks too: heroes, trinkets, discovers.
+Every card carries the same facts: its tier, its text on hover, and what it is
+worth. Nothing on the page names a move.
+
+*The screenshots in `docs/` still show the previous layout. They are being
+re-shot; the panel they picture no longer exists.*
 
 ## The one question it asks you
 
@@ -106,46 +120,54 @@ back, with a switch you can turn either way. (Once you have answered, it shows
 that switch rather than the question — the question is only asked when you have
 not answered yet.)
 
-Why I ask: the advice has not been measured against results yet, and those
+Why I ask: the model's plan has not been measured against results yet, and those
 summaries are how it gets measured.
 
-## One honest thing about the advice
+## One honest thing about the model
 
-Bob's Ledger is a second opinion, not an oracle. Its recommendations have not yet
-been checked against outcomes, and its own audits say some of them — the ones
-about when to level up especially — may be wrong. Treat a surprising call as a
-question worth pricing, not a verdict.
+Bob's Ledger's value function is a second opinion, not an oracle. Its judgements
+have not been checked against outcomes, and its own audits say some of them — the
+ones about when to level up especially — may be wrong. On the live page you read
+them as numbers and decide for yourself; in the review they will be shown
+alongside what actually happened, which is the only honest way to present them.
 
 ## Is this allowed?
 
 Worth answering straight, because it is the first thing a lot of people ask.
 
-**This is real-time assistance, and that is not a technicality.** It reads the
-board you actually have and tells you what to buy, every buy phase. It is not a
-spreadsheet of statistics you interpret yourself, and it does not pretend to be.
-If you think anything past raw data is cheating, this is past raw data, and you
-should not use it.
+**The live overlay shows state, not instructions, and that is a deliberate
+limit.** It reads the board you actually have and tells you what is true about
+it: your stats against theirs, what your minions are worth, which comp pieces you
+hold, what each offer costs. It does not name a move. That line was drawn
+deliberately, and what it does and does not buy is worth being precise about.
 
 Some facts, kept apart from that judgement:
 
 - **Blizzard's rules do cover this, so read the next line rather than a
   comfortable one.** The EULA does not name "real-time assistance" anywhere, but
   it does prohibit software that "facilitates the gameplay" and grants "an
-  advantage over other players not using such methods". It is hard to argue that
-  does not describe a tool that tells you what to buy. What it clearly does not
-  describe is a bot or a hack: this does not touch the game's process or its
-  memory, does not automate input, and reads the log file Hearthstone writes to
-  your own disk. The one file it will change is Hearthstone's own logging
-  setting, and only if you say yes. The wording above is quoted from
+  advantage over other players not using such methods". **A statistics overlay
+  grants that advantage too** — the clause does not mention verdicts, so
+  "showing you numbers" is not a safe harbour, and I am not going to pretend it
+  is. What the wording plainly does not describe is a bot or a hack: this does
+  not touch the game's process or its memory, does not automate input, and reads
+  the log file Hearthstone writes to your own disk. The one file it will change
+  is Hearthstone's own logging setting, and only if you say yes. The wording
+  above is quoted from
   [Section 1.C of Blizzard's EULA](https://www.blizzard.com/en-us/legal/fba4d00f-c7e4-4883-b8b9-1b4500a402ea/blizzard-end-user-license-agreement)
   — read it yourself rather than taking my summary of it.
-- **So the honest case is precedent, not permission — and it is a judgement
-  call.** Nothing in Blizzard's rules "expressly authorizes" a log-reading
+- **So what the limit actually buys is a smaller, easier-to-defend surface — not
+  permission.** Nothing in Blizzard's rules "expressly authorizes" a log-reading
   overlay; Deck Tracker, Firestone and stat overlays have instead been used
   openly for years without enforcement, which is a real reason to think this is
   fine and not a promise that it is. Blizzard reserves the right to read its own
   words differently whenever it likes. I am not a lawyer and this is not legal
   advice.
+- **Not telling you what to buy is a product decision as much as a legal
+  one.** The plan a coach hands you is the least checked thing it produces, and
+  a number you interpret yourself is worth more than a verdict you cannot audit.
+  Showing the model's plan *after* the game is the part that can be checked
+  against what happened.
 - **None of that makes it appropriate everywhere.** Turn it off for tournaments
   and any organised event. Their rules bar outside help outright, and in that
   setting the question is not even close.
@@ -160,12 +182,12 @@ Some facts, kept apart from that judgement:
 ## Two more things worth knowing
 
 - **Patch days.** After a Hearthstone patch the coach's reference data lags a few
-  days, so advice can be less sharp until it catches up. It looks for a new
+  days, so its numbers can be less sharp until it catches up. It looks for a new
   version every time you start.
-- **Where it comes from.** The advice is worked out on your own PC, from
-  Hearthstone's log plus a reference file that ships with the app — nothing is
-  sent anywhere to produce it, and it works with your internet off. Only the card
-  pictures need a connection.
+- **Where it comes from.** Every number on the page is worked out on your own PC,
+  from Hearthstone's log plus a reference file that ships with the app — nothing
+  is sent anywhere to produce it, and it works with your internet off. Only the
+  card pictures need a connection.
 
 ## If something's wrong
 
@@ -173,14 +195,14 @@ Some facts, kept apart from that judgement:
   Unzip it first (step 2), then run it from the folder you get.
 - **It says Python was not found.** Install Python from python.org, tick **Add
   python.exe to PATH**, and run the file again.
-- **The overlay keeps waiting for advice.** Two things cause that, and the
-  overlay says which one you have. Either Hearthstone's file logging is still
-  off — the overlay shows that same setting on screen — or the coach is looking
-  in the wrong place, because your game is installed somewhere other than the
-  usual folder. The window you started it from prints the one-line command that
-  fixes the second one for good.
-- **The advice stops changing.** The overlay says how long ago it was written, so
-  you can tell stale advice from live advice.
+- **The overlay keeps waiting.** Two things cause that, and the overlay says which
+  one you have. Either Hearthstone's file logging is still off — the overlay shows
+  that same setting on screen — or the coach is looking in the wrong place,
+  because your game is installed somewhere other than the usual folder. The
+  window you started it from prints the one-line command that fixes the second
+  one for good.
+- **The page stops changing.** The overlay says how long ago the last read was
+  written, so you can tell a stale read from a live one.
 - **It says the folder cannot be written to.** Move the `Bob's Ledger` folder to
   Documents or the Desktop and start it again.
 
@@ -203,10 +225,10 @@ reference are credited inside `meta/comps.json`.
 ## Working on the code
 
 **A note on the model tooling you will find in this tree.** I tried a language
-model in the loop early on and decided against it, so nothing on the advising
-path calls one: `live.py`, `live_coach.py`, `value.py` and `coach_ui.py` do not
-import it, and every recommendation comes from the local value function and the
-meta database. The experiment is still here — `coach_llm.py` is the client,
+model in the loop early on and decided against it, so nothing on the live path
+calls one: `live.py`, `live_coach.py`, `value.py` and `coach_ui.py` do not
+import it, and every number on the page comes from the local value function and
+the meta database. The experiment is still here — `coach_llm.py` is the client,
 `compare_models.py` races models against each other, and `patch_notes.py` and
 `check_patch_notes.py` use one to turn official patch notes into the meta DB. It
 stays because it is useful for maintainer work, and none of it ships in a
@@ -242,9 +264,17 @@ channel itself), `CLAUDE.md`, `DESIGN.md`, `ROADMAP.md`.
 python -m unittest discover -s app/tests
 ```
 
-About a thousand tests, ~45 seconds. Some skip by design: the ones that need a
+About 1,500 tests, ~60 seconds. Some skip by design: the ones that need a
 real `Power.log` or maintainer-only files report as skipped rather than passing
 quietly.
+
+Two of them are posture controls rather than behaviour tests, and they are the
+reason the paragraph at the top of this file can be trusted: one asserts this
+README's claims about what the coach does to your machine *and* that the
+corresponding capability (process or memory access, synthetic input) is absent
+from `app/`; the other asserts that the live payload carries no verdict — no
+plan, no named buy, no pick — while the analysis keeps every one of them for the
+decision log and the review.
 
 ### What not to break
 

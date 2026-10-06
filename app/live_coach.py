@@ -1638,6 +1638,14 @@ class LiveCoach:
                                            trinkets=trinket_recs),
             "sell_rank": ranked,
             "shop_rank": shop,
+            # The offers in the ORDER THE LOG LISTS THEM (2026-10-06). This is
+            # pure state, and it is the only copy of that order: shop_rank is
+            # value.shop_ranking's output, sorted most-valuable-first, and the
+            # overlay renders the tavern row from it. A best-first row is the
+            # recommendation, so the page re-sorts by this instead and the
+            # scores become facts beside each card rather than a ranking
+            # (PIVOT.md §2).
+            "shop_offers": self.tavern_offers(),
             "buy_this": shop[0][0] if shop else None,
             "choice": choice_advice,
             "target_comp": target["name"] if target else None,

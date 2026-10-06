@@ -30,14 +30,26 @@ class TestThresholdsPayload(unittest.TestCase):
     def test_thresholds_match_value_constants(self):
         out = coach_ui.render_json(_base_analysis())
         self.assertEqual(out["thresholds"]["dying_hp"], DYING_HEALTH)
-        self.assertEqual(out["thresholds"]["sell_safe_below"],
-                         SELL_FILLER_SCORE)
 
-    def test_buy_label_is_gone(self):
+    def test_the_sell_split_threshold_is_gone(self):
+        """It existed only to draw the "Safe to sell | Do not sell" split, and
+        that split WAS the verdict (2026-10-06, PIVOT.md). SELL_FILLER_SCORE is
+        still a value.py constant and still gates the destroy-spell fuel tag —
+        the payload just has no consumer for it now."""
+        self.assertNotIn("sell_safe_below",
+                         coach_ui.render_json(_base_analysis())["thresholds"])
+
+    def test_the_plan_is_not_in_the_payload(self):
+        """Was `buy_label`; the whole plan went in the same direction, and
+        test_live_view.py owns the full contract."""
         a = _base_analysis()
         a["top_move"] = "1. LEVEL to tier 5"
+        a["top_move_steps"] = [{"text": "LEVEL", "kind": "level"}]
         out = coach_ui.render_json(a)
         self.assertNotIn("buy_label", out)
+        self.assertNotIn("top_move", out)
+        self.assertNotIn("top_move_steps", out)
+        self.assertIn("top_move", a, "the analysis keeps the plan")
 
 
 class TestFuelGate(unittest.TestCase):
