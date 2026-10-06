@@ -112,11 +112,14 @@ SYNTHETIC_NAMES = {"TestAccount", "Space2000", "TestPlayer", "Friendly",
 #: regexes) reads as a name.
 _HAS_LETTER = re.compile(r"[^\W\d_]", re.UNICODE)
 
-#: The one session name our fixtures use. It is a placeholder with an
-#: impossible timestamp, and it is named here rather than left as a loose
-#: regex exemption so that "which session names are allowed" has exactly one
-#: answer.
-SYNTHETIC_SESSIONS = {"Hearthstone_2026_01_01"}
+#: The session names our fixtures use, and the ONLY ones. They are placeholders
+#: with an impossible timestamp (they predate the project), named here rather
+#: than left as a loose regex exemption so that "which session names are
+#: allowed" has exactly one answer. Keep the list short, and never add a name
+#: that came out of a log: `test_fight_table_archive.py` shipped two REAL local
+#: session names as fixture strings, which is a shape this list cannot excuse,
+#: and the privacy gate refused the release for it (2026-10-06).
+SYNTHETIC_SESSIONS = {"Hearthstone_2026_01_01", "Hearthstone_2026_01_02"}
 
 
 def _is_fake_account(hi, lo):
