@@ -128,14 +128,27 @@ should not use it.
 
 Some facts, kept apart from that judgement:
 
-- **Blizzard has not prohibited this.** It does not touch the game's process or
-  its memory, does not automate input, and reads the log file Hearthstone writes
-  to your own disk. Tools in this category — Deck Tracker, Firestone, stat
-  overlays — have been used openly for years. The one file it will change is
-  Hearthstone's own logging setting, and only if you say yes.
-- **"Not prohibited" is not the same as "appropriate everywhere".** Turn it off
-  for tournaments and any organised event. Their rules usually bar outside help
-  outright, whatever Blizzard's position is.
+- **Blizzard's rules do cover this, so read the next line rather than a
+  comfortable one.** The EULA does not name "real-time assistance" anywhere, but
+  it does prohibit software that "facilitates the gameplay" and grants "an
+  advantage over other players not using such methods". It is hard to argue that
+  does not describe a tool that tells you what to buy. What it clearly does not
+  describe is a bot or a hack: this does not touch the game's process or its
+  memory, does not automate input, and reads the log file Hearthstone writes to
+  your own disk. The one file it will change is Hearthstone's own logging
+  setting, and only if you say yes. The wording above is quoted from
+  [Section 1.C of Blizzard's EULA](https://www.blizzard.com/en-us/legal/fba4d00f-c7e4-4883-b8b9-1b4500a402ea/blizzard-end-user-license-agreement)
+  — read it yourself rather than taking my summary of it.
+- **So the honest case is precedent, not permission — and it is a judgement
+  call.** Nothing in Blizzard's rules "expressly authorizes" a log-reading
+  overlay; Deck Tracker, Firestone and stat overlays have instead been used
+  openly for years without enforcement, which is a real reason to think this is
+  fine and not a promise that it is. Blizzard reserves the right to read its own
+  words differently whenever it likes. I am not a lawyer and this is not legal
+  advice.
+- **None of that makes it appropriate everywhere.** Turn it off for tournaments
+  and any organised event. Their rules bar outside help outright, and in that
+  setting the question is not even close.
 - **Keep it off stream if that worries you.** In practice this kind of thing gets
   noticed because it was on screen in a screenshot or a clip, not because
   anything detected it.
