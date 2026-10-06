@@ -1,0 +1,165 @@
+# Pivot — the live overlay stops advising; the verdict moves after the game
+
+**Decided 2026-10-06.** The live path ships *state*. The prescriptive engine —
+`value.top_move`, the numbered plan, the pick verdict, the sell verdict — keeps
+running and keeps being recorded, and is shown **only once the decision it
+describes can no longer be acted on**. Phase 3 (a mid-combat retrospective on
+the phase that just closed) is deliberately NOT in v1.
+
+This file is maintainer-only and never ships (it is named in
+`publish_release.EXCLUDE_FILES` alongside `DESIGN.md` / `ROADMAP.md`).
+
+---
+
+## 1. Why — and what is actually true
+
+The trigger was an AI-written summary of Blizzard policy asserting that
+"providing decision-making … is highly likely to be classified as a violation",
+that Warden detects such tools and bans automatically and without warning, and
+that a "pencil and paper" rule makes real-time advice a breach. Three parts of
+that are wrong. The plan is shaped by the corrections, not by the claim:
+
+1. **Warden is not this app's risk vector, and no pivot changes that.** Warden
+   targets memory, packet and input manipulation. This app reads a text file the
+   game writes to the player's own disk. Verified by grep on 2026-10-06, before
+   this document was written: `SendInput|SetCursorPos|mouse_event|keybd_event|
+   pyautogui|OpenProcess|ReadProcessMemory|WriteProcessMemory|
+   CreateRemoteThread` is **zero matches** across `app/`. (`CLAUDE.md` item 3
+   wants that property test-locked — the code side *and* the README claim that
+   depends on it. Still open.)
+2. **"Decision-making is highly likely a ToS violation" is not a Blizzard
+   sentence.** No Blizzard document draws that line. The clause actually in play
+   (EULA 1.C) prohibits software that "facilitates the gameplay" and grants "an
+   advantage over other players not using such methods" — and a *pure statistics
+   overlay grants that advantage too*. The clause does not name verdicts. So
+   descriptive-vs-prescriptive is a **risk dial, not a safe/unsafe switch**: read
+   strictly, "your opponent has a 4/4" is as exposed as "kill the 4/4".
+3. **The precedent for prescriptive overlay advice is public and long.** HSReplay's
+   *Bob's Buddy* rated every minion in the tavern and flagged the buy; HearthArena
+   has named a best pick for every Arena card since 2014; Firestone ships BG hero
+   tier lists and per-minion ratings today. Log-reading trackers have never been
+   the enforcement target — input automation has.
+
+What survives those corrections is a **real but different risk: discretionary and
+reputational.** Blizzard may reread its own words whenever it likes, and what
+invites that is *attention* — a stream, a viral post, tournament use, or a
+download page advertising "tells you what to buy". That is worth engineering
+against, and it is why this pivot optimises for **defensibility and attention
+profile** rather than for a verb blacklist. (Not legal advice; nobody here is a
+lawyer.)
+
+The second reason is product, not risk. README already concedes that the
+recommendations "have not yet been checked against outcomes" and that the
+leveling calls "may be wrong". A live oracle making unvalidated calls is the
+weakest use of this asset. A review whose headline number is **the model's own
+track record** is the strongest — and it is the one thing no stat overlay has.
+
+## 2. The prescriptive surface leaving the live path
+
+Ground truth, read out of
+`app/decision_logs/decision_Hearthstone_2026_10_03_14_46_54.jsonl` — this is what
+a player actually saw:
+
+```
+1. Cast Them Apples (buff dies with this shop · buy the buffed minions this turn)
+ · 2. Swap: play Bronze Warden, sell Flittering Bat (3.3 vs -1.2 · clearly better)
+ · 3. LEVEL (access to tier 4) · 4. Buy Bronze Warden (surviving until we can commit)
+```
+
+and `1. PICK Diremuck Forager (best available)`.
+
+| Site | Says today | Becomes |
+|---|---|---|
+| `coach_ui.py:1151` | panel headed **"Do this now"** | a situation panel |
+| `coach_ui.py:1155-1251` | numbered steps, `act` verbs, the `hero` step, `if locked, pick Y` | gone from the live render |
+| `coach_ui.py:987` `KIND_CHIP` | `LV/PICK/BUY/SELL/ROLL/CAST/PLAY/HOLD/SWAP/DISC` | review renderer only |
+| `value._top_move_text` / `top_move` | the numbered plan | unchanged — a review-only producer |
+| `choices.py` | `PICK X (best available)` / `(pick 18%, avg #4.77)` | option tiles with per-option facts, no "best" |
+| `live.py::_advise_pick` | `PICK X` | descriptive |
+| `value.sell_recommendation` | `Safe to sell \| do not sell` | each minion's own number, no verdict |
+| `shop_rank` / `buy_this` | an ordering plus a named headline buy | facts per offer; no headline |
+| `target_comp` / `hunt_targets` | "what you're hunting" | owned vs missing comp pieces |
+
+The prescriptive part is **one panel plus a handful of payload fields**. This is
+not a rewrite.
+
+## 3. What does not change
+
+`board_state.py` reconstruction, `pool`/`bans`/`lobby`, the curated meta DB and
+the comp guides, `simulate_growth`, `fight_model` / `combat_forecast`, the damage
+model, `tribes`, `config`, the whole privacy architecture (`sanitize_log`,
+`privacy_scan`, `share` consent scope, the `session_report` whitelist), the
+decision log and telemetry corpus, and **`value.py` in full**. The live screen
+keeps: state strip, situation line, DANGER/fragility band, next opponent's comp,
+hand, TARGET COMP tiles, COMP DIRECTION meter, LOBBY PRESSURE, TAVERN row,
+PLAYABLE COMPS, level price.
+
+What the live screen loses is the answer. It becomes a very good instrument and
+stops being an oracle.
+
+## 4. Plan
+
+**Phase 0 — pin the posture (first, small).** Write the contract into `DESIGN.md`:
+what ships live (state), what ships after the fact (verdict), and the property
+that must never regress (no process/memory/input access). Add the two controls
+`CLAUDE.md` item 3 asks for: a test asserting README's no-process/no-input claims
+*and* that those API names stay absent from `app/`, and a **live-payload contract
+test** asserting the coach's live output carries no verdict fields — that is what
+stops this pivot from silently reverting.
+
+**Phase 1 — the live overlay becomes descriptive.** `coach_ui.py`, `live.py`,
+`choices.py` per the table in §2; `live_coach.py::analyze` stops emitting
+`top_move`, `top_move_steps`, `buy_this`, the `choice.ranked` order and
+instruction-shaped `target_comp` — while still **computing and logging** them, so
+the review keeps its input. Drift guard for the kind/chip sets, like the existing
+`KIND_CHIP` ↔ `_STEP_KINDS` one.
+
+**Phase 2 — promote the review to the product.** One entry point assembling the
+per-phase join (`replay_review`), the outcome join (`fight_table`) and adherence
+(`outcome_audit`) into a report rendered by the **existing** page — it already
+draws steps, tiles, the tavern row and the danger line, so no second renderer.
+The end-of-game card in `coach_ui.py` becomes "Review this game"; unlike the live
+panel it is *supposed* to carry verdicts. Headline: the model's record, with
+`outcome_audit`'s own observational caveat (following advice correlates with easy
+spots) intact.
+
+**Phase 3 — excluded from v1, kept on the table.** The half-step: during combat,
+show the phase that just **closed** — that exact shop, the model's line, what the
+player did. Strong teaching, and defensible because the decision is over and the
+shop is gone. Its guard is testable: a retrospective is keyed to a closed phase
+and **never** carries live shop state (the `MAIN_ACTION`/settle seam that
+`replay_review._advise_point` already uses). Do not ship this until Phase 1+2 have
+stood on their own.
+
+**Phase 4 — docs, packaging, naming.** README's "Is this allowed?" currently says
+*"It reads the board you actually have and tells you what to buy, every buy
+phase"* — after Phase 1 that sentence is false and must be rewritten to the new
+factual posture and test-locked. `publish_release.py` already carries
+`EXCLUDE_FILES`/`EXCLUDE_PATHS`, so "the prescriptive build stays with the
+maintainer" is a packaging change, not a fork. And because attention is the
+actual risk, the word "coach" in the UI, the repo description and the release
+notes is a deliberate decision, not a leftover.
+
+## 5. Hazards specific to this change
+
+- **`session_report.SPEC` has teeth** and `source_problems()` reads the SOURCE: a
+  new analysis field, or a new key inside `scenario` / `choice` / `comp_progress`,
+  **refuses the upload** until it is named in `SPEC` or listed in
+  `DROPPED_FROM_ANALYSIS`. Removing fields from the live payload is the same
+  class of change — do it as a decision, not as a side effect.
+- **`publish_release.py` walks the WORKING TREE, not git.** This file is
+  maintainer-only for that reason and is excluded by basename; a new root-level
+  doc that is not added to `EXCLUDE_FILES` would ship to players on the next
+  release. The reproducibility gate catches untracked entries, not unwanted ones.
+- **The overlay is the product's face.** A review product that still greets the
+  player with a verdict-shaped panel on the live path has not pivoted, however
+  the docs read. The Phase 0 contract test is what makes the difference real.
+
+## 6. Open decisions (not yet made)
+
+1. Does the maintainer keep a live-coach build for personal use, excluded from
+   the release? (Cheap via `EXCLUDE_FILES`; it moves the risk to whoever opts in.)
+2. Naming and attention profile: keep "coach" in the UI, or move the product's
+   language to the ledger/review framing it now is?
+3. Whether the review's first screen leads with the model's line or with the
+   player's own decisions, scored.

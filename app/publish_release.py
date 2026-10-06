@@ -125,7 +125,11 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  # Repo plumbing and maintainer docs. They stay in the repo
                  # for whoever works on the coach; a player's folder is the
                  # launcher, the README, the licence, docs/ and app/.
-                 ".gitattributes", ".gitignore", "DESIGN.md", "ROADMAP.md"}
+                 # PIVOT.md is the ToS/posture decision record: it argues about
+                 # what the product is allowed to say, which is the last thing a
+                 # player's download should carry.
+                 ".gitattributes", ".gitignore", "DESIGN.md", "ROADMAP.md",
+                 "PIVOT.md"}
 
 #: Always written fresh by this script, so a stale local copy must not win
 #: the zip's duplicate-entry race (VERSION is excluded for the same reason).
