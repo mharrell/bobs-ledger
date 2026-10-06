@@ -67,8 +67,16 @@ one level above the code.
 - Suite: `python -m unittest discover -s app/tests` (from the repo root).
 - `app/meta/`, `app/img_cache/`, `app/decision_logs/`, `app/patch_reports/`:
   the code derives all of these from its own directory, so they moved with it.
-- `analysis/` (research notes, some naming real opponents) and `telemetry/`
-  (the release channel itself) stay at the root and never ship. Maintainer
+- `analysis/` (research notes) and `telemetry/` (the release channel itself) stay
+  at the root and never ship. **MEASURED 2026-10-07**, because "some naming real
+  opponents" sat in this file for months without ever being checked and it turns
+  out to overstate what is there: no opponent handle, player-name, account id or
+  JSON name-key value appears in any tracked `analysis/` file, or anywhere in the
+  repository's entire history. What the notes DO carry is the maintainer's own
+  session directory names, and opponents described by hero and archetype rather
+  than named. The exclusion stays regardless — `publish_release` walks the
+  WORKING TREE, so an untracked note could ship without git ever seeing it, which
+  is the shape of the incident the exclusion was written for. Maintainer
   tools that read `analysis/` therefore resolve `dirname(_HERE)/analysis` —
   deriving it from `_HERE` alone silently turned the patch-coverage gate into
   a no-op.
@@ -327,6 +335,24 @@ the commit shas ARE this project's release version strings and the
 the maintainer's own (it looks like it, from the commit that removed it) and
 accept it, or rewrite. Recorded rather than decided.
 
+**DECISION (2026-10-07): NO history rewrite.** The one BattleTag is the
+maintainer's own — one distinct value in 479 commits, in two test fixtures, and
+the commit that took it out is literally "the gate that caught my own fixtures".
+The scan puts the rest of the picture beyond doubt: `player_name`,
+`player_entity` and `account_id` findings number **zero** across all of history,
+and no `"name"` key in any tracked `analysis/` file carries a person. So the tag
+is a self-disclosure of a gaming handle, not a credential, and it is not worth
+rewriting 479 commit ids — which are this project's release version strings.
+
+**What was actually published is a separate question, and it is clean too.**
+git history is not the only thing shipped: `analysis/` went out in early
+releases. Every release on the GitHub Releases page (31 of them, from `2a6fb40`
+to `91be599`, enumerated through `api.github.com/repos/mharrell/bobs-ledger/
+releases?per_page=100`) carries **zero privacy findings and no `analysis/` at
+all**. Caveat worth keeping: that is the GitHub list, and an early KV-only
+release would not appear in it, so this measures the audit trail rather than
+proving nobody ever received a note.
+
 Two scanner bugs the tests caught, both the kind that under-report quietly:
 git stores identical content once, so a report built from `rev-list --objects`
 names ONE path while the value may sit in several (`_paths_touching` fixes it);
@@ -350,12 +376,13 @@ Still open from the same audit, in the order worth doing them:
    player in, and `GET /analysis` (live board plus the opponent's handle). A
    per-run token in the overlay URL would close it.
 2. **`analysis/` is in a PUBLIC repository** (confirmed 2026-10-07: the GitHub
-   API answers 200 to an unauthenticated request, and `analysis/` is tracked —
-   41 files). `analysis/replay_review_2026-09-22.md:3` names the maintainer's own
-   BattleTag plus a session directory. "Not shipped" was only ever about the zip.
-   The decision is the same one the history scan raises: remove the folder, put
-   it somewhere private, or rewrite history — and note that removing it now
-   leaves every earlier copy in the history anyway.
+   API answers 200 to an unauthenticated request; `analysis/` is 41 tracked
+   files). After the history scan this is a BUSINESS decision, not a privacy one:
+   the folder carries no opponent identity — measured, not assumed — just one
+   session directory per file and the maintainer's own research. "Not shipped"
+   only ever meant "not in the zip", which is the reviewer's fair point; the
+   remaining question is whether the research notes should be public at all, and
+   removing them now would not remove them from history anyway.
 3. `requests>=2.28` is unpinned, and the maintainer corpus tools
    (`upload_corpus.py`, `fetch_sessions.py`, `scrape_comps.py`,
    `refresh_trinkets.py`, `hearth_art_extract.py`) still ship to players.
