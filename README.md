@@ -12,7 +12,8 @@ Hearthstone's own logging setting, and only if you say yes to it (see
 [turning on logging](#turn-on-hearthstones-logging)).
 
 **[Install it](#install-it)** · **[Turn on logging](#turn-on-hearthstones-logging)** ·
-**[The question it asks you](#the-one-question-it-asks-you)** · **[Something's wrong](#if-somethings-wrong)**
+**[Is this allowed?](#is-this-allowed)** · **[The question it asks you](#the-one-question-it-asks-you)** ·
+**[Something's wrong](#if-somethings-wrong)**
 
 ## What you need
 
@@ -114,6 +115,34 @@ Bob's Ledger is a second opinion, not an oracle. Its recommendations have not ye
 been checked against outcomes, and its own audits say some of them — the ones
 about when to level up especially — may be wrong. Treat a surprising call as a
 question worth pricing, not a verdict.
+
+## Is this allowed?
+
+Worth answering straight, because it is the first thing a lot of people ask.
+
+**This is real-time assistance, and that is not a technicality.** It reads the
+board you actually have and tells you what to buy, every buy phase. It is not a
+spreadsheet of statistics you interpret yourself, and it does not pretend to be.
+If you think anything past raw data is cheating, this is past raw data, and you
+should not use it.
+
+Some facts, kept apart from that judgement:
+
+- **Blizzard has not prohibited this.** It does not touch the game's process or
+  its memory, does not automate input, and reads the log file Hearthstone writes
+  to your own disk. Tools in this category — Deck Tracker, Firestone, stat
+  overlays — have been used openly for years. The one file it will change is
+  Hearthstone's own logging setting, and only if you say yes.
+- **"Not prohibited" is not the same as "appropriate everywhere".** Turn it off
+  for tournaments and any organised event. Their rules usually bar outside help
+  outright, whatever Blizzard's position is.
+- **Keep it off stream if that worries you.** In practice this kind of thing gets
+  noticed because it was on screen in a screenshot or a clip, not because
+  anything detected it.
+- **You are allowed to disagree with the paragraph above.** Some people draw this
+  line where raw data ends and reasonable people land on both sides of it. It is
+  a fair position, and the answer is to not run the coach — not to find a
+  cleverer reason it is fine.
 
 ## Two more things worth knowing
 

@@ -376,6 +376,25 @@ NEXT, still open:
    are dead behind `HEARTH_REAL_SESSION_TESTS` (nothing sets it);
    `upload_corpus.py` and `fetch_sessions.py` ship to players; `README.md` has no
    test at all, which is how a sentence about `Clear` stayed wrong.
+3. **The README now makes claims about the CODE, and nothing checks them**
+   (2026-10-05, added with the README's new "Is this allowed?" section). That
+   section tells players what the coach does and does not do to their machine, and
+   two of its sentences are load-bearing: it "does not touch the game's process or
+   its memory" and "does not automate input". Both were verified by hand before
+   writing them — `grep` for `SendInput|SetCursorPos|mouse_event|keybd_event|
+   pyautogui|OpenProcess|ReadProcessMemory|WriteProcessMemory|CreateRemoteThread`
+   over `app/` is still zero matches — but a grep run once is not a control. A
+   future branch that adds a memory or input path would leave the README asserting
+   the opposite of the truth, which is the `Clear` failure mode again in the one
+   place a player goes to decide whether to trust the thing. The test is cheap:
+   assert the README still carries the no-process/no-input claims AND assert those
+   API names stay absent from `app/`, so breaking either side fails.
+4. **An unverified assumption is load-bearing in the README's own navigation.**
+   The new section's `#is-this-allowed` anchor assumes the slugger strips the `?`.
+   GitHub's rule is well attested and stable, and it could not be executed here.
+   Cheap to check: open the README on the repo page and click the nav link. If it
+   ever stops working the section becomes unreachable from the top of the file,
+   which is the one place a reader who needs it will look.
 
 Smaller open items: the KV namespace also holds every `release/…` zip, so filter
 by the `sessions/` prefix rather than scanning. The dashboard download names files
