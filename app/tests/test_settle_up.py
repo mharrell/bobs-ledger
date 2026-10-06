@@ -169,7 +169,13 @@ class TestReport(unittest.TestCase):
     def _report(self, **over):
         rep = {
             "schema": settle_up.SCHEMA, "created": "2026-10-06T12:00:00",
-            "session": "Hearthstone_2026_10_06_10_52_24", "log": "Power.log",
+            # NOT a real session directory name. The first version of this
+            # fixture carried the one from the run I was looking at, and the
+            # publish gate refused the release: privacy_scan flags
+            # `Hearthstone_YYYY_MM_DD_HH_MM_SS` as session_dir, and app/tests
+            # SHIPS. A fixture that has to look realistic to be valid would be
+            # a fixture worth having; this one only has to render.
+            "session": "test-session", "log": "Power.log",
             "game": 1, "hero": "Chenvaala", "placement": 2,
             "phases": [{"turn": 1, "tier": 1, "gold": 3, "eff_hp": 45,
                         "plan": "1. Buy <Buzzing> Vermin (tempo)",
