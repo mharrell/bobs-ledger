@@ -514,6 +514,66 @@ tavern-owned) — shop_ranking just silently dropped them.
 
 ---
 
+## Ideas — not scheduled
+
+Captured so they are not lost, not committed to. Each one names the constraint
+that will decide it, because in this repo that is usually the expensive part.
+
+### Replay reviewer in the overlay (maintainer's ask, 2026-10-06)
+
+> "Toggle between Current game info and a replay reviewer. The reviewer has a
+> dropdown where you can select the most recent game and review the turns, or
+> select a saved replay to review (**include version**). Also a button to save
+> the most recent game for their records."
+
+**The constraint that decides the design.** The reviewer may only ever offer
+games that have **ENDED**. The live payload carries no verdict by construction
+(`coach_ui.LIVE_VERDICT_KEYS`, `PIVOT.md`), and a reviewer that could show the
+game in progress would put the plan back on screen while it is still
+actionable — which is the one thing the pivot forbids. So "the most recent game"
+means the last **finished** game, never the one being played, and the toggle
+must not become a way around the split.
+
+**The version stamp is not a nicety, it is what makes a saved game readable.**
+Reviewing a saved replay re-derives the plan from the log using whatever code is
+installed *now*. `decision_log` already writes `coach_version` for exactly this
+reason ("advice is only re-derivable from a log under the exact code that
+produced it"), and the beta corpus is already damaged by the absence of a
+version in the shared reports — nothing in the cloud came from a known build.
+A saved game without a version would silently attribute today's value function
+to a decision made by an older one.
+
+**What already exists, so this is assembly rather than a new engine:**
+- `coach_ui.set_review` / the `/review` route already hold ONE game's report.
+  The toggle is a page change plus a route that takes a game id instead of
+  always serving the last game.
+- `settle_up.build(log_path, game_index)` already takes a game index, so the
+  dropdown is "pick a game in a log" — the missing piece is a list of games to
+  offer, not the ability to review one.
+- `decision_log.coach_version()` stamps the version at record time.
+- `review_kit.py` caches per-session replay output and `logquery.py` answers
+  questions about a log — what games exist and what is in them is already
+  written, for the maintainer.
+
+**The open question to settle BEFORE building: what does "save" write?** Three
+options, and the difference is a privacy decision rather than a storage one.
+1. **The review report** (HTML/JSON). Derived and harmless, small — but it
+   cannot be re-derived later under newer code, so it is a snapshot, not a
+   replay.
+2. **The decision-log records for that game.** No personal data by design (the
+   decision log's own docstring: card ids and minion names only). Enough to
+   re-read the PLAN side, but not the boards (those come from the Power.log) and
+   not the player's actions.
+3. **The Power.log slice for that game.** Makes a full review re-runnable —
+   boards, actions, outcomes — but it carries real players' handles. Sharing
+   one would require `sanitize_log.py`, and the standing rule is that handles
+   never leave the machine except through the sanitized corpus path.
+
+The honest full version is 2+3 kept inside the app's own folder and never
+shared; 1 is the cheap one. Say which on purpose.
+
+---
+
 ## Key decisions locked so far
 - **Canonical tribe representation (2026-08-31):** singular display names
   ("Elemental", "Mech", ...) owned by `tribes.py`; meta JSON and code compare
