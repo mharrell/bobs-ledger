@@ -87,7 +87,56 @@ Retrieve reports with `python fetch_sessions.py` (needs
 `HEARTH_TELEMETRY_URL` and `HEARTH_TELEMETRY_KEY`); it skips what is already on
 disk, and `--list` shows what is there without downloading.
 
+## Signing a release (2026-10-07)
+
+The update channel used to check a zip's sha256 against a manifest served from
+the SAME server as the zip. That proves integrity — the download was not
+corrupted — and nothing else: whoever can rewrite the manifest can rewrite the
+hash beside it, so a compromised Cloudflare account (or KV namespace, or this
+laptop) could have shipped code to every install that answered "y". Same for
+the GitHub release page, which carries a second copy of the same zip.
+
+Now every release carries an Ed25519 signature over the manifest, and the
+public key is pinned in the client (`app/release_sig.py`, `PUBKEY_B64`).
+`app/update.py` refuses a manifest whose signature does not verify, refuses it
+even under `--force`, and `--check` reports the same refusal instead of
+advertising an update that cannot apply.
+
+The private key is the one thing that must never travel: not in this repo, not
+in a release zip, not in Cloudflare, not in CI, not in a chat window. Make it
+once, keep it offline (a password manager entry or an offline machine; the file
+it writes is 32 raw bytes, and a 64-character hex copy works too):
+
+```
+python app\release_sig.py --keygen %USERPROFILE%\.bobs-ledger-release.key
+# paste the printed PUBKEY_B64 line into app/release_sig.py, commit it, then:
+setx HEARTH_SIGNING_KEY "%USERPROFILE%\.bobs-ledger-release.key"
+python app\publish_release.py --note "..."        # refuses without the key
+```
+
+`publish_release.py` has a **signing gate** with two teeth, both rehearsed
+against a throwaway key when it was written: it refuses to publish with no key
+at all, and it refuses when the key it was handed is not the key this build
+pins (that mistake would otherwise surface on players' machines, one "REFUSING
+this update" at a time). Relay the pin mistake the other way — pinning a new
+key while the old one publishes — and the same gate catches it.
+
+Two consequences worth knowing before they surprise you:
+
+* **The first signed release is the cutover.** Installs running older code
+  don't check signatures and update normally onto it; from then on, an
+  unsigned or differently-signed manifest is refused by everything that took
+  that release. So `PUBKEY_B64` has to be filled in and committed in the same
+  commit that ships the check.
+* **Losing the private key costs every player one manual reinstall.** No
+  bypass flag exists, deliberately — that is the same property that makes the
+  channel worth having — so recovery is: make a new key, pin it, publish, and
+  the release that carries the new pin is the one players download by hand.
+  Back the key up somewhere that is not this repo, and check the backup by
+  re-deriving the public key (`python app\release_sig.py --pubkey <path>`).
+
 ## How it was deployed (for redeploys)
+
 
 1. `npx wrangler login` (browser OAuth).
 2. `npx wrangler kv namespace create BUCKET` — KV, not R2: no payment card

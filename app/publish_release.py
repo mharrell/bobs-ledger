@@ -35,6 +35,7 @@ Both have explicit overrides (`--allow-personal`, `--allow-dirty`) so a
 deliberate exception is a decision rather than an accident.
 """
 import argparse
+import base64
 import datetime
 import hashlib
 import io
@@ -55,6 +56,7 @@ _REPO = os.path.dirname(_HERE)
 sys.path.insert(0, _HERE)          # the code sits in app/
 
 import privacy_scan  # noqa: E402  (privacy_scan.py, beside this file)
+import release_sig  # noqa: E402  (release_sig.py + ed25519.py, beside this file)
 from config import LAUNCHERS  # noqa: E402  (config.py, beside this file)
 
 # A gate that finds non-ASCII content (accented handles, the em dash in its
@@ -107,6 +109,12 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  # packager's path, and the reproducibility gate would refuse
                  # it as an untracked entry anyway.
                  ".hs_home.json",
+                 # The release signing key (2026-10-07). The private half never
+                 # travels, and naming it here means a maintainer who keeps it
+                 # inside the tree cannot ship it by accident — the thing the
+                 # whole update channel's trust rests on must not be one
+                 # --allow-dirty away from a public download.
+                 ".bobs-ledger-release.key", "release_signing_key",
                  "comp_candidates.json",
                  ".dev.vars", "claude_code_zai_env.sh", "VERSION",
                  "CLAUDE.md", "catch_up_main.ps1", "wt_status.ps1",
@@ -273,6 +281,11 @@ def main():
                     help="skip creating/updating the GitHub release (the KV "
                          "copy still ships, but the Releases page a player "
                          "downloads from would be left behind)")
+    ap.add_argument("--signing-key", metavar="PATH",
+                    help="the offline Ed25519 private key to sign this release "
+                         "with (default: $HEARTH_SIGNING_KEY). Required: an "
+                         "unsigned release is refused by every install that "
+                         "has the signature check.")
     args = ap.parse_args()
 
     version = git_sha()
@@ -320,6 +333,56 @@ def main():
     else:
         print("  PASS — the zip matches HEAD, with no stray entries.")
 
+    print("\nsigning gate:")
+    key_path = args.signing_key or os.environ.get("HEARTH_SIGNING_KEY")
+    private_key = None
+    if not key_path:
+        blocked = True
+        print("  FAIL — no signing key: pass --signing-key PATH, or set "
+              "HEARTH_SIGNING_KEY.")
+        print("  Every install that has the check refuses an unsigned release, "
+              "so there is nothing to publish without a key. Make one with:")
+        print("    python app/release_sig.py --keygen ~/.bobs-ledger-release.key")
+    else:
+        try:
+            private_key = release_sig.read_private_key(key_path)
+            public = release_sig.ed25519.public_key_of(private_key)
+        except (ValueError, OSError) as exc:
+            blocked = True
+            print(f"  FAIL — cannot use the key at {key_path}: {exc}")
+        else:
+            print(f"  key: {key_path}  fingerprint "
+                  f"{release_sig.fingerprint(public)}")
+            # The pin is what INSTALLS check, so a release signed by a key the
+            # shipped client does not carry is a release nobody can install.
+            # That failure would only show up on a player's machine, one
+            # "REFUSING this update" at a time, so it is caught here instead.
+            shipped = release_sig.pinned_public_key(env={})
+            if shipped is None:
+                blocked = True
+                print("  FAIL — app/release_sig.py pins no public key "
+                      "(PUBKEY_B64 is empty), so nothing could verify this "
+                      "release. Paste this line in and publish again:")
+                print(f'    PUBKEY_B64 = '
+                      f'"{base64.b64encode(public).decode("ascii")}"')
+            elif shipped != public:
+                blocked = True
+                print(f"  FAIL — this build pins "
+                      f"{release_sig.fingerprint(shipped)}, but {key_path} is "
+                      f"{release_sig.fingerprint(public)}. Publishing now would "
+                      f"ship a release that every install refuses.")
+            else:
+                ok, why = release_sig.verify_manifest(
+                    release_sig.sign_manifest({"probe": 1}, private_key),
+                    public)
+                if not ok:
+                    blocked = True
+                    print(f"  FAIL — the key cannot sign and verify a probe "
+                          f"manifest: {why}")
+                else:
+                    print("  PASS — signed with the pinned key, and a probe "
+                          "manifest round-trips through the verifier.")
+
     if blocked:
         print("\nREFUSING to publish. Nothing was uploaded.")
         return 1
@@ -337,6 +400,13 @@ def main():
         "zip_sha256": sha,
         "zip_bytes": len(data),
     }
+    # Signed LAST, over every field above: the signature covers the note a
+    # player is shown, the timestamp that decides "newer", and the sha256 that
+    # chains to the zip itself (2026-10-07).
+    manifest = release_sig.sign_manifest(manifest, private_key)
+    signer = release_sig.fingerprint(
+        release_sig.ed25519.public_key_of(private_key))
+    print(f"\nsigned with {signer} (sig {manifest['sig'][:16]}...)")
     tmp_zip = os.path.join(os.environ.get("TEMP", _HERE),
                            f"rel_{version}.zip")
     tmp_manifest = os.path.join(os.environ.get("TEMP", _HERE),

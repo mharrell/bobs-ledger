@@ -56,6 +56,15 @@ session_reports/
 # under app/ (the fbd2920 mistake, one line up in this file's history).
 .hs_home.json
 
+# The release signing key: the Ed25519 PRIVATE key the publisher keeps offline.
+# It has no business in this repo, in a release zip, or anywhere near Cloudflare,
+# and `sync.py --new` commits untracked files — which is why the basename guard
+# matters here more than it looks. Its public half is pinned in
+# app/release_sig.py (PUBKEY_B64), and the private half is what the whole update
+# channel's trust now rests on (2026-10-07).
+.bobs-ledger-release.key
+release_signing_key
+
 # Where fetch_sessions.py puts reports it pulls back from the collector. That is
 # OTHER PEOPLE'S data — the beta testers' decisions — landing in a git tree, and
 # this directory was neither ignored nor mentioned in publish_release's
