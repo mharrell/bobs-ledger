@@ -32,6 +32,7 @@ Usage:
 """
 import argparse
 import datetime
+import functools
 import glob
 import gzip
 import hashlib
@@ -43,6 +44,7 @@ import sys
 
 from config import HS_LOG_GLOB
 import decision_log
+import meta
 import privacy_scan
 import tribes
 
@@ -525,6 +527,12 @@ def _game_vocabulary(report):
     player in every single game, which is worse than the leak it was guarding
     against: it would silently end their measurement. So a word the report itself
     uses as vocabulary is not evidence of anything.
+
+    This is the coarse half of the exemption and it is read from the payload, so
+    it covers the columns whose values ARE vocabulary. The precise half is
+    _game_name_spans, which exempts a word only where it sits inside a name the
+    game defines — that one is what keeps a card name from reading as a handle
+    (the 2026-10-05 refusal).
     """
     words = {t.lower() for t in tribes.DISPLAY_TRIBES}
     for row in report.get("advisories", []):
@@ -541,6 +549,83 @@ def _game_vocabulary(report):
     return words
 
 
+def _game_names():
+    """Every name the GAME defines that a report can print.
+
+    Read from the same curated DBs the coach names its objects from, so the
+    catalogue cannot drift from the text a report carries: every minion, tavern
+    spell, trinket, hero and comp, plus the tribes. A report prints these names
+    because they ARE the thing it is advising about, which makes their words
+    game vocabulary — and a player is free to call themselves after one.
+    """
+    names = set(tribes.DISPLAY_TRIBES)
+    for rows in (meta.minions(), meta.spells(), meta.trinkets(), meta.heroes()):
+        for row in rows:
+            name = row.get("name")
+            if isinstance(name, str):
+                names.add(name)
+    for row in (meta.cards() or {}).values():
+        if isinstance(row, dict) and isinstance(row.get("name"), str):
+            names.add(row["name"])
+    for comp in meta.comps().values():
+        if isinstance(comp, dict) and isinstance(comp.get("name"), str):
+            names.add(comp["name"])
+    # Three characters is the floor: a two-letter "name" would blanket spans over
+    # prose it does not own. A missing DB contributes nothing and the rest of the
+    # catalogue still works — meta.py's accessors are forgiving by design.
+    return {n.strip() for n in names if len(n.strip()) >= 3}
+
+
+@functools.lru_cache(maxsize=8)
+def _game_name_pattern(words=()):
+    """The catalogue as one case-insensitive alternation, or None when empty.
+
+    `words` restricts it to the names that CONTAIN one of them, which is what
+    keeps this cheap: a span can only explain a handle occurrence if the span's
+    text contains the handle, so a name without the word in it cannot be the
+    answer. The live call passes the handle words it actually matched — the
+    difference between scanning 791 names over a 330 KB payload (630 ms, when
+    this was written) and scanning the one or two that could matter.
+
+    Longest first: with the names sorted by length the most specific one wins, so
+    "Snazzy Phantom" is one span rather than a shorter name nested inside a
+    longer one. Cached — a patch changes the catalogue, not a process.
+    """
+    names = _game_names()
+    if words:
+        wanted = tuple(w.lower() for w in words)
+        names = {n for n in names if any(w in n.lower() for w in wanted)}
+    if not names:
+        return None
+    alternation = "|".join(re.escape(n)
+                           for n in sorted(names, key=len, reverse=True))
+    return re.compile(rf"(?<!\w)(?:{alternation})(?!\w)", re.IGNORECASE)
+
+
+def _game_name_spans(body, words=()):
+    """[(start, end)] of every game-defined name the body prints.
+
+    These are the stretches of the payload where a handle-shaped word is the
+    game talking, not an identity leaking: the "Phantom" in "Snazzy Phantom" is
+    there because the coach is offering that card, not because anybody is called
+    that, and only a payload that prints the card can be explained this way.
+
+    `words` are the handle words that actually matched; the catalogue is limited
+    to the names that contain one of them, which cannot lose an explanation (a
+    span has to contain the handle to cover it) and is what makes this cheap.
+    """
+    pattern = _game_name_pattern(tuple(sorted(words)))
+    if pattern is None:
+        return []
+    return [m.span() for m in pattern.finditer(body)]
+
+
+def _inside(span, spans):
+    """Is `span` wholly inside one of `spans`?"""
+    start, end = span
+    return any(s <= start and end <= e for s, e in spans)
+
+
 def identity_findings(report, records):
     """Handles this session showed us, found inside the report about to leave.
 
@@ -551,16 +636,30 @@ def identity_findings(report, records):
     play — `analysis.opp_comp.name` is where every handle rides (50 in one real
     session, 93 in another). So the question becomes evidential rather than
     heuristic: does anything we are about to send contain one of the names this
-    session already showed us? A card name cannot trip it, because a card name is
-    not in that set.
+    session already showed us?
 
     Word boundaries, not a substring: an opponent called "Ann" must not be found
-    inside "Annoy-o-Module". Names the payload itself uses as game vocabulary are
-    skipped (see _game_vocabulary) because their presence is explained by the
-    game, not by an identity. What remains invisible is a handle that is also a
-    card name the coach happens to print, and a handle that never reached
-    `opp_comp` in the first place; source_problems() and the SPEC walk cover the
-    other directions.
+    inside "Annoy-o-Module". An occurrence is then explained two ways, and both
+    have to hold before the name is dropped: the payload must not use the word as
+    its own vocabulary (_game_vocabulary), and the occurrence must not sit inside
+    a name the GAME defines (_game_name_spans).
+
+    That second exemption is not a nicety. It was measured on 2026-10-05: an
+    opponent's display handle was a word inside an Undead minion's name, the
+    payload named that minion because a discover offered it
+    (`choice.ranked[2]`), and the coincidence refused the whole game's report —
+    `1 handle(s)`, with the spec walk, the privacy scan and the source check all
+    clean. Nothing was uploaded; that game's measurement was simply lost, for a
+    word the game put there. The fix keeps the check's teeth in the direction
+    that matters: an occurrence that stands on its own is still a finding.
+
+    What remains invisible: a handle that is also a whole game name (exempt by
+    the same rule the "Demon" case needed), a handle that never reached
+    `opp_comp` in the first place, and — the accepted false-positive risk — a
+    handle that is an ordinary word of the coach's OWN prose, which no
+    catalogue can enumerate ("hold", "cost", "the rest of your hand"). A
+    refusal names the handle it saw, which is how this one was found.
+    source_problems() and the SPEC walk cover the other directions.
     """
     names = set()
     for record in records:
@@ -573,9 +672,21 @@ def identity_findings(report, records):
     if not names:
         return []
     body = json.dumps(report, ensure_ascii=False)
-    return sorted(n for n in names
-                  if re.search(rf"(?<!\w){re.escape(n)}(?!\w)", body,
-                               re.IGNORECASE))
+    matched = {}
+    for name in names:
+        hits = [m.span() for m in
+                re.finditer(rf"(?<!\w){re.escape(name)}(?!\w)", body,
+                            re.IGNORECASE)]
+        if hits:
+            matched[name] = hits
+    if not matched:
+        # The common case by far, and the reason the span scan is built HERE
+        # rather than up front: with no occurrence to explain there is nothing
+        # for the catalogue to excuse, and a report costs nothing to clear.
+        return []
+    spans = _game_name_spans(body, matched)
+    return sorted(name for name, hits in matched.items()
+                  if any(not _inside(hit, spans) for hit in hits))
 
 
 def inspect(path):

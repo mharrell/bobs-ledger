@@ -14,7 +14,10 @@ made against the SOURCE rather than the output:
 * source_problems()        — a source field the spec does not account for, so the
                              drop is deliberate instead of invisible
 * identity_findings()      — a handle this very session showed us, found in the
-                             payload (privacy_scan cannot see a bare display name)
+                             payload (privacy_scan cannot see a bare display name),
+                             and the game's OWN names it must not fire on: on
+                             2026-10-05 a card the advice named refused a whole
+                             game's report because the handle was a word inside it.
 """
 import datetime
 import gzip
@@ -49,6 +52,34 @@ def _advisory(**analysis):
     return {"schema": 1, "ts": "2026-10-04T10:30:00", "coach_version": "test",
             "log": "Power.log", "offset": 100, "game": 1, "turn": 5, "gold": 3,
             "tier": 2, "health": 30, "analysis": base}
+
+
+def _card_word():
+    """(full game name, one word of it) taken from the DB the coach prints from.
+
+    Derived rather than written down, for two reasons. This file ships, and a
+    handle-shaped literal in it reads as a real player to the release's privacy
+    gate — the same reason `_OPP` above is assembled. And a hard-coded card would
+    rot the day the patch rotates it out, while the rule under test ("a word
+    inside a name the game defines is not a handle") has to hold for whichever
+    cards are current.
+
+    The word is required to be distinctive: not a game name on its own, and
+    printed by exactly one name in the catalogue, so "printed inside the card
+    that owns it" and "standing alone" are different payloads and not an
+    accident of what else the body happens to contain.
+    """
+    catalogue = session_report._game_names()
+    for full in sorted(catalogue):
+        if " " not in full:
+            continue
+        word = full.rsplit(" ", 1)[1]
+        if len(word) < 4 or not word.isalpha() or word in catalogue:
+            continue
+        owners = [n for n in catalogue if word.lower() in n.lower()]
+        if len(owners) == 1:
+            return full, word
+    raise AssertionError("no distinctive multi-word game name in the meta DB")
 
 
 class TestSourceProblems(unittest.TestCase):
@@ -156,6 +187,47 @@ class TestIdentityFindings(unittest.TestCase):
         self.assertEqual(session_report.identity_findings(self._report(records),
                                                           records), [])
 
+    def test_a_handle_that_is_a_word_inside_a_card_name_is_not_flagged(self):
+        """Measured 2026-10-05: the CARD puts the word there, not the person.
+
+        An opponent's display handle was a word inside an Undead minion's name.
+        The payload named that minion because a discover offered it
+        (`choice.ranked[2]`), and the coincidence refused the whole game's report
+        with every other control clean — 1 handle, nothing uploaded, that game's
+        measurement simply gone. The real game is not worth re-buying to test, so
+        the fixture takes its word from the card DB instead: a handle that IS
+        that word, and a payload that prints the card it belongs to.
+        """
+        card, word = _card_word()
+        records = [_advisory(
+            opp_comp={"name": word},
+            choice={"kind": "discover", "source": "Patient Scout",
+                    "ranked": [[card, "BG36_515", 3.4, ""]]})]
+        self.assertEqual(session_report.identity_findings(self._report(records),
+                                                          records), [])
+
+    def test_the_same_word_standing_alone_is_still_flagged(self):
+        """The exemption is positional, so the check keeps its teeth: the same
+        word in prose the game does not own is exactly the leak this exists for."""
+        _, word = _card_word()
+        records = [_advisory(opp_comp={"name": word},
+                             situation=f"vs {word}: 240 vs 140")]
+        self.assertEqual(session_report.identity_findings(self._report(records),
+                                                          records), [word])
+
+    def test_a_card_name_does_not_excuse_a_handle_printed_beside_it(self):
+        """One explained occurrence must not hide an unexplained one."""
+        card, word = _card_word()
+        records = [_advisory(
+            opp_comp={"name": word},
+            choice={"kind": "discover", "source": "Patient Scout",
+                    "ranked": [[card, "BG36_515", 3.4, ""]]},
+            top_move_steps=[{"text": "x", "kind": "buy", "card": None,
+                             "action": None, "tag": None,
+                             "reason": f"scout {word}"}])]
+        self.assertEqual(session_report.identity_findings(self._report(records),
+                                                          records), [word])
+
     def test_no_opponent_handle_means_nothing_to_look_for(self):
         records = [_advisory(top_move=f"scout {_OPP}")]
         self.assertEqual(session_report.identity_findings(self._report(records),
@@ -233,6 +305,24 @@ class TestTheSendingPathRefuses(unittest.TestCase):
         self.assertEqual(len(self.posted), 1)
         report = json.loads(gzip.decompress(self.posted[0]))
         self.assertEqual(session_report.check(report), ([], {}))
+
+    def test_a_card_name_that_contains_the_handle_still_sends(self):
+        """The 2026-10-05 bug report, end to end: the wire must stay open.
+
+        That game was refused at the game end and never re-attempted, so the
+        refusal cost the measurement outright — which is why this asserts the
+        send itself rather than only identity_findings().
+        """
+        card, word = _card_word()
+        log = self._session(_advisory(
+            opp_comp={"name": word},
+            choice={"kind": "discover", "source": "Patient Scout",
+                    "ranked": [[card, "BG36_515", 3.4, ""]]}))
+        self.assertEqual(share.share_session(log, game=1, quiet=True), "sent")
+        self.assertEqual(len(self.posted), 1)
+        report = json.loads(gzip.decompress(self.posted[0]))
+        self.assertEqual(report["advisories"][0]["analysis"]["choice"]["ranked"]
+                         [0][0], card)
 
 
 if __name__ == "__main__":
