@@ -102,6 +102,13 @@ one level above the code.
   extraction landing in the wrong place.
 - **The two publish gates.** They have deliberate overrides; using one should
   be a decision, never a convenience.
+- **The release signature (2026-10-07).** `release_sig.py` pins the public key an
+  install will accept, and `update.py` refuses an unsigned or mis-signed
+  manifest — with **no bypass flag**, because `--force` overrides the direction
+  guess, never the identity check. `publish_release.py` will not publish without
+  the offline key, and refuses a key the shipped `PUBKEY_B64` does not pin. Do
+  not weaken the verification to make a publish convenient, and never let the
+  private key into this repo, the zip, or the Cloudflare account.
 - **Consent gates the only outbound player data.** `share.py` sends nothing
   until the stored answer is yes, refuses a report its own verifier rejects,
   and never raises into the coach. `session_report.py`'s whitelist `SPEC` IS
@@ -149,7 +156,11 @@ Maintainer: `doctor.py` (one-shot pre-flight verdict — start here),
 PUTs it plus the manifest to the collector's KV namespace (the collector lives
 in `telemetry/`, deployed at `bobs-ledger.workers.dev`; the same URL serves
 every release, so installed copies keep updating). `--dry-run` runs the gates
-without uploading.
+without uploading. There are **three** gates since 2026-10-07: privacy,
+reproducibility, and the **signing** gate — the release must be signed with the
+offline key (`--signing-key`, or `HEARTH_SIGNING_KEY`) and with the very key the
+shipped `PUBKEY_B64` pins. `telemetry/README.md` has the operator's section,
+including what losing that key costs.
 
 Applies are atomic: `apply_zip` stages the release in `.staging`, verifies it
 against the zip, then moves each file into place with the copies it replaces
@@ -210,6 +221,74 @@ Both messages are pure functions so they cannot drift back into blaming logging:
 `live.no_log_advice()` and `coach_ui._welcome_hint()`, the latter branching on
 whether the resolved root actually has a `Logs/` folder — and neither prints a
 path from this machine, because the overlay ends up in screenshots.
+
+## Where the 2026-10-07 session left off (release channel hardened)
+
+Triggered by a security audit of the whole app after a Reddit thread called it a
+"security nightmare". The audit's verdict was that most of that was wrong and
+one part was right, and the right part is now fixed:
+
+**1. Releases are SIGNED, and an unproven release is never installed.** This was
+the real finding. `update.download_zip` checked a zip's sha256 against a manifest
+fetched from the same server, so the check proved integrity and nothing about
+authorship — a compromised Cloudflare account (or KV namespace, or this laptop,
+or the GitHub account's copy of the same zip) could have shipped code to every
+install that answered "y".
+
+* `app/ed25519.py` — RFC 8032 Appendix A's implementation, extracted MECHANICALLY
+  from the RFC text (no constant retyped by hand), Ed448/SHA-3 dropped.
+  `app/tests/rfc8032_vectors.json` holds section 7.1's five vectors, also
+  extracted by script; `test_ed25519.py` runs them, and because Ed25519 is
+  deterministic a wrong constant fails rather than merely verifying less.
+* `app/release_sig.py` — the policy: a pinned `PUBKEY_B64`, a canonical form that
+  covers every manifest field except the signature (so `note`, `created`,
+  `zip_bytes` and `zip_sha256` are all inside it), `verify_manifest` returning
+  (ok, reason) and failing closed on everything unproven, plus keygen/read.
+* `update.verified_manifest()` verifies exactly when an update would be OFFERED —
+  not on every start, so an up-to-date install is not nagged about a channel it
+  cannot act on. **`--force` is not a bypass**: it overrides the direction guess,
+  never the identity check. `--check` refuses what the installer refuses.
+* `publish_release.py` gained a **signing gate**: no key, no publish; and a key
+  the shipped pin does not match is refused too (that mistake would otherwise
+  surface one "REFUSING this update" at a time, on players' machines).
+  `telemetry/README.md` has the operator's section, including the cost of losing
+  the key: one manual reinstall per player, because there is no bypass flag.
+* `update.PROTECTED`, `publish_release.EXCLUDE_FILES` and `.gitignore` all refuse
+  the key file, the repo's usual three-place rule for local state.
+
+**2. Size caps.** `download_zip` streamed nothing before: `r.read()` took whatever
+the server sent into memory, and extraction had no ceiling. Now the SIGNED
+`zip_bytes` is the cap (with `MAX_ZIP_BYTES` as the ceiling for a manifest
+without one), and `stage_release` refuses more than `MAX_ENTRIES` entries or
+`MAX_TOTAL_BYTES` declared bytes before writing anything.
+
+**THE OPERATIONAL FACT THAT MATTERS MOST: `PUBKEY_B64` is still empty.** Until
+the maintainer runs `python app/release_sig.py --keygen <offline path>`, pastes
+the printed line into `app/release_sig.py` and commits it, **every install
+running this code REFUSES an offered update** and says so in as many words. That
+is the fail-closed design working, not a bug — but it means the pin and the
+release that carries the check have to ship together. Existing installs are
+unaffected until they take that release, because their code does not check
+signatures at all.
+
+Suite: 1644 green (12 skipped), and both directions of the signing gate were
+rehearsed against a throwaway key — no key refuses, an unpinned key refuses, a
+pinned key passes and round-trips a probe manifest.
+
+Still open from the same audit, in the order worth doing them:
+
+1. **The loopback control plane has no auth token.** The Host/Origin/JSON guard
+   is browser-shaped and correct for what it defends (cross-site requests), but a
+   local process — any user's, on a shared PC — can still `POST /share` to opt the
+   player in, and `GET /analysis` (live board plus the opponent's handle). A
+   per-run token in the overlay URL would close it.
+2. **`analysis/replay_review_2026-09-22.md` is tracked and pushed** and line 3
+   names the maintainer's own BattleTag plus a session directory. The privacy
+   gate scans the ZIP, not git — it is worth checking whether that repo is
+   public, and there is no repo-side scan today.
+3. `requests>=2.28` is unpinned, and the maintainer corpus tools
+   (`upload_corpus.py`, `fetch_sessions.py`, `scrape_comps.py`,
+   `refresh_trinkets.py`, `hearth_art_extract.py`) still ship to players.
 
 ## Where THIS session left off (2026-10-06, main ff84f05)
 

@@ -13,8 +13,12 @@ import zipfile
 from unittest import mock
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, HERE)
+_TESTS = os.path.join(HERE, "tests")
+for _p in (HERE, _TESTS):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
+import release_key_fixture as fixture  # noqa: E402  (tests/)
 import update  # noqa: E402
 
 MANIFEST = {"schema": 1, "version": "abc1234", "note": "tempo mode",
@@ -179,15 +183,26 @@ class TestApplyZip(unittest.TestCase):
         from unittest import mock
 
         good_zip = self._zip({"VERSION": "x\n"})
-        good = dict(MANIFEST, zip_sha256=hashlib.sha256(good_zip).hexdigest())
+        # zip_bytes is a CAP now, not decoration: it is inside the signed body,
+        # so the size a publisher states is the size the client will read.
+        good = dict(MANIFEST, zip_bytes=len(good_zip),
+                    zip_sha256=hashlib.sha256(good_zip).hexdigest())
         captured = {}
 
         class R:
             def __init__(self, data):
                 self._d = data
+                self._at = 0
 
-            def read(self):
-                return self._d
+            def read(self, size=None):
+                # download_zip reads in bounded chunks now (a hostile server no
+                # longer gets to decide how much memory the coach spends), so
+                # the fake has to behave like a stream rather than a buffer.
+                if size is None:
+                    size = len(self._d) - self._at
+                chunk = self._d[self._at:self._at + size]
+                self._at += len(chunk)
+                return chunk
 
             def __enter__(self):
                 return self
@@ -303,8 +318,12 @@ class TestUpdatePromptNeverHangs(unittest.TestCase):
             self.assertEqual(update._ask("update now? [y/N] ", timeout=1.0), "y")
 
     def test_declining_returns_declined_without_downloading_anything(self):
+        # The manifest has to be genuinely SIGNED now: an unproven release is
+        # refused before the prompt, so an unsigned fixture here would be
+        # testing the refusal instead of the decline (2026-10-07).
+        self.addCleanup(fixture.pin())
         with mock.patch.object(update, "fetch_manifest",
-                               lambda *a, **k: {"version": "newer123"}), \
+                               lambda *a, **k: fixture.signed()), \
                 mock.patch.object(update, "decide",
                                   lambda *a, **k: ("update", "old -> new")), \
                 mock.patch.object(update, "_ask", lambda *a, **k: ""), \
@@ -327,14 +346,19 @@ class TestAFailedDownloadSaysSo(unittest.TestCase):
 
     def _run_with(self, exc):
         """run() with the download failing, and everything else faked."""
+        # Signed, so the failure under test is the DOWNLOAD and not the
+        # signature gate that now stands in front of it (2026-10-07).
+        self.addCleanup(fixture.pin())
         out = io.StringIO()
         with mock.patch.object(update, "recover", lambda *a, **k: ""), \
                 mock.patch.object(update, "load_state",
                                   lambda *a, **k: {"version": "old1111",
                                                    "created": "2026-01-01"}), \
                 mock.patch.object(update, "fetch_manifest",
-                                  lambda *a, **k: {"version": "newer999",
-                                                   "note": "fixes the ranking"}), \
+                                  lambda *a, **k: fixture.signed(dict(
+                                      fixture.MANIFEST,
+                                      version="newer999",
+                                      note="fixes the ranking"))), \
                 mock.patch.object(update, "decide",
                                   lambda *a, **k: ("update", "old1111 -> newer999")), \
                 mock.patch.object(update, "download_zip", side_effect=exc), \

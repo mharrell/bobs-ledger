@@ -3,11 +3,18 @@
 
 Flow (also wired into live.py's startup): GET the update manifest from the
 collector, decide direction against this install (see decide()), and if the
-release is NEWER — after a y/N prompt — download the release zip, verify its
+release is NEWER — and its Ed25519 signature verifies against the key pinned in
+`release_sig.py` — after a y/N prompt, download the release zip, verify its
 sha256 against the manifest, and extract it over the install directory.
 Your local data (decision_logs/, corpus_out/, .review_cache/ and the
 dev-side .claude/.git) is never touched. live.py restarts itself when an
 update applies, so a checked-and-accepted update is one prompt.
+
+The signature is not optional and has no bypass flag (2026-10-07). A sha256
+from the release server proves the download was not corrupted; it says nothing
+about who published it, because whoever can rewrite the manifest can rewrite
+the hash next to it. The signature is what makes the release channel a channel
+rather than a backdoor with a checksum.
 
 Direction: release versions are git shas — there is no ordering. The
 manifest's publish timestamp decides, compared against the timestamp this
@@ -40,6 +47,7 @@ import sys
 import urllib.request
 import zipfile
 
+import release_sig  # noqa: E402 - sits beside this file, with ed25519.py
 from config import LAUNCHERS  # noqa: E402 - config.py, beside this file
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -89,7 +97,28 @@ PROTECTED = {"decision_logs", "corpus_out", ".review_cache", ".git",
              # release carries it — but a player whose game sits on another
              # drive would silently go back to being told "no log folder" if
              # an update ever overwrote it.
-             ".hs_home.json"}
+             ".hs_home.json",
+             # A release signing key has no business inside an install folder,
+             # and the one thing worse than it being there is an update
+             # overwriting it (2026-10-07).
+             ".bobs-ledger-release.key", "release_signing_key"}
+
+#: The largest release zip this client will read, in bytes.
+#:
+#: `download_zip` used to call `r.read()` on a 300-second timeout: whatever the
+#: server sent, however large, was read into memory and then unpacked over the
+#: install. The manifest's own `zip_bytes` is the exact cap — and it is SIGNED
+#: now, so it is the publisher's number rather than the server's — with this as
+#: the ceiling for a manifest that does not carry one (2026-10-07).
+MAX_ZIP_BYTES = 64 * 1024 * 1024
+
+#: Extraction ceilings, checked BEFORE anything is written to `.staging`.
+#: A zip's declared sizes are metadata its author writes, so these are the
+#: cheap refusal rather than the whole defence: zipfile truncates each member
+#: at its declared size and verifies a CRC, which turns a lying header into a
+#: BadZipFile instead of a full disk (2026-10-07).
+MAX_ENTRIES = 20000
+MAX_TOTAL_BYTES = 256 * 1024 * 1024
 
 #: A release is unpacked here first, while the install keeps running the
 #: version it started with. `new/` is the staged release, `old/` holds every
@@ -185,18 +214,41 @@ def decide(local, manifest, state=None):
 
 
 def download_zip(manifest, key=None):
-    """The release zip's bytes, sha-verified against the manifest."""
+    """The release zip's bytes, sha-verified against the manifest.
+
+    Read in bounded chunks: the manifest's SIGNED `zip_bytes` is the cap when it
+    carries one, and MAX_ZIP_BYTES otherwise. The sha256 below is what proves
+    the bytes are the ones the signature covers — but only once the manifest
+    itself has been proven (verify_manifest), because a hash that arrives with
+    the file it describes proves nothing about who sent it (2026-10-07).
+    """
     key = key or os.environ.get("HEARTH_TELEMETRY_KEY")
     name = manifest.get("zip_name") or ""
     if not name.replace("-", "").replace("_", "").replace(".", "").isalnum():
         raise ValueError(f"suspicious zip name: {name!r}")
+    declared = manifest.get("zip_bytes")
+    limit = MAX_ZIP_BYTES
+    where = "this client's ceiling"
+    if isinstance(declared, int) and 0 < declared <= MAX_ZIP_BYTES:
+        limit, where = declared, "the manifest"
     headers = {"User-Agent": UA}
     if key:
         headers["X-Telemetry-Key"] = key
     req = urllib.request.Request(
         MANIFEST_URL.rsplit("/", 1)[0] + "/" + name, headers=headers)
+    chunks, total = [], 0
     with urllib.request.urlopen(req, timeout=300) as r:
-        data = r.read()
+        while True:
+            chunk = r.read(65536)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > limit:
+                raise ValueError(
+                    f"the release is longer than the {limit} bytes allowed by "
+                    f"{where} — refusing to read any more of it")
+            chunks.append(chunk)
+    data = b"".join(chunks)
     sha = hashlib.sha256(data).hexdigest()
     if sha != manifest.get("zip_sha256"):
         raise ValueError(
@@ -303,7 +355,19 @@ def stage_release(data, root=None):
     os.makedirs(new, exist_ok=True)
     entries, problems = [], []
     with zipfile.ZipFile(io.BytesIO(data)) as z:
-        for info in z.infolist():
+        infos = z.infolist()
+        # Refused BEFORE a single byte is decompressed, so a bomb costs one
+        # central-directory read rather than a disk.
+        if len(infos) > MAX_ENTRIES:
+            raise ValueError(f"the release lists {len(infos)} entries, more "
+                             f"than the {MAX_ENTRIES} this client will unpack")
+        declared_total = sum(i.file_size for i in infos if not _protected(
+            (i.filename or "").replace("\\", "/")))
+        if declared_total > MAX_TOTAL_BYTES:
+            raise ValueError(f"the release unpacks to {declared_total} bytes, "
+                             f"more than the {MAX_TOTAL_BYTES} this client "
+                             f"will write")
+        for info in infos:
             rel = (info.filename or "").replace("\\", "/")
             if _protected(rel):
                 continue
@@ -470,6 +534,12 @@ def apply_zip(data, root=None):
         entries, refused = stage_release(data, root)
     except (OSError, zipfile.BadZipFile) as exc:
         LAST_ERROR = f"could not unpack the release: {exc}"
+        _clear_staging(root)
+        return 0
+    except ValueError as exc:
+        # A cap refused it (too many entries, or too many bytes). The release
+        # is left alone and the reason is carried out to the player.
+        LAST_ERROR = f"refused this release: {exc}"
         _clear_staging(root)
         return 0
     LAST_REFUSED = refused
@@ -673,6 +743,36 @@ def _ask(prompt_text, timeout=20.0):
         return sys.stdin.readline().strip().lower()
 
 
+def verified_manifest(manifest, action, force=False):
+    """(manifest, refusal) — the manifest, but only once it is PROVEN signed.
+
+    Verification runs exactly when an update would be OFFERED, not on every
+    start. An install that is already up to date has nothing to lose from an
+    unsigned manifest, and telling that player the channel looks tampered with
+    every single launch would be noise about something they cannot act on. The
+    moment it matters is the moment something is about to be installed.
+
+    `--force` is INCLUDED on purpose. It overrides the direction guess ("is this
+    newer?"), which is a judgement call; it does not override "is this ours?",
+    which is not. A signature check with a bypass flag is the bypass flag.
+    """
+    if not manifest or (action != "update" and not force):
+        return manifest, None
+    ok, why = release_sig.verify_manifest(manifest)
+    return (manifest, None) if ok else (None, why)
+
+
+def _print_refusal(why):
+    """Say exactly what happened, and what it means. Never raise."""
+    print(f"REFUSING this update: {why}.")
+    print("  Nothing was downloaded and nothing was changed. A release whose")
+    print("  signature does not verify is never installed: the whole point of")
+    print("  the signature is that the release server alone cannot put code")
+    print("  on your machine. If you did not expect this, it is worth taking")
+    print("  seriously — it means the published release was changed by")
+    print("  something other than the person holding the signing key.")
+
+
 def run(prompt=True, assume_yes=False, key=None, force=False):
     """The full check flow. Returns 'applied', 'current', or 'declined'."""
     # Before anything else: if a previous update was killed part way through,
@@ -683,6 +783,10 @@ def run(prompt=True, assume_yes=False, key=None, force=False):
         print(f"Update recovery: {recovered}.")
     manifest = fetch_manifest()
     action, detail = decide(local_version(), manifest, load_state())
+    manifest, refusal = verified_manifest(manifest, action, force=force)
+    if refusal:
+        _print_refusal(refusal)
+        return "unproven"
     if action == "current":
         print("Bob's Ledger is up to date.")
         return "current"
@@ -758,6 +862,13 @@ def main():
     if args.check:
         m = fetch_manifest()
         action, detail = decide(local_version(), m, load_state())
+        # --check reports what an install WOULD do, so it has to refuse the same
+        # release the installer would refuse. Otherwise it advertises an update
+        # that can never be applied.
+        m, refusal = verified_manifest(m, action, force=args.force)
+        if refusal:
+            _print_refusal(refusal)
+            return 2
         if action == "update":
             print(f"update available: {detail}"
                   + (f" — {m.get('note')}" if m.get("note") else ""))
