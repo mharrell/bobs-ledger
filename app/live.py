@@ -18,6 +18,7 @@ import glob
 import json
 import os
 import sys
+import threading
 import time
 
 from choices import choice_kind, rank_choices
@@ -154,6 +155,32 @@ _last_board = None  # (card, atk, health) fingerprint of the last advised board
 
 
 _last_state = None  # last fingerprint the console was advised on
+
+
+def _settle_up_in_background(log_path, game_no):
+    """Build the finished game's review, off the monitor's thread.
+
+    This is where the model's plan is allowed to appear (PIVOT.md): the live
+    payload carries none of it, and the review runs only once the game it
+    describes is over. It REPLAYS the game through the coach, which is seconds
+    of work — so it cannot run on the tick that has to keep answering the log,
+    and it must never raise into the coach, for the same reason share.py is
+    wrapped the same way. A review that fails to build leaves the overlay's
+    /review page saying "still putting it together", which is a worse outcome
+    than a review and a much better one than a dead coach.
+    """
+    def work():
+        try:
+            import settle_up
+            rep = settle_up.build(log_path, game_no)
+            label = (f"Settle up — {rep.get('hero') or 'your game'}"
+                     + (f", finished {rep['placement']}"
+                        if rep.get("placement") else ""))
+            coach_ui.set_review(settle_up.render_html(rep), label)
+        except Exception:  # noqa: BLE001
+            pass
+
+    threading.Thread(target=work, daemon=True).start()
 
 
 def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
@@ -485,6 +512,9 @@ def monitor(path, poll=1.0):
             state = _game_state(coach)
             if state and state[1] and not (_LAST_GAME and _LAST_GAME[1]):
                 coach_ui.show_game_over(coach_ui.latest_analysis())
+                # ... and offer the review of THAT game. Off-thread: it
+                # replays the game, and this tick still has a log to answer.
+                _settle_up_in_background(path, state[0])
             # Also what the exit backstop consults: main()'s finally has no coach
             # object, and without this it shares a game that is still in
             # progress (see _game_state).
