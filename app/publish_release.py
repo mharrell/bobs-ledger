@@ -116,6 +116,14 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  # --allow-dirty away from a public download.
                  ".bobs-ledger-release.key", "release_signing_key",
                  "comp_candidates.json",
+                 # Maintainer tooling that reads this repository's own history
+                 # and can print what it finds unmasked (`--full`). A player has
+                 # no history to scan, and the one thing it must not do is
+                 # travel: it exists to find names, not to carry them.
+                 "history_scan.py",
+                 # The secrets-scan config: maintainer tooling, and the
+                 # allowlist in it is about this repo's test vectors.
+                 ".gitleaks.toml",
                  ".dev.vars", "claude_code_zai_env.sh", "VERSION",
                  "CLAUDE.md", "catch_up_main.ps1", "wt_status.ps1",
                  "register_patch_check.ps1", "sync.py", "publish_release.py",

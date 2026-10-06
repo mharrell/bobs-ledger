@@ -288,7 +288,56 @@ a successful publish, so "did it work?" needs a minute of retries, not a
 re-publish. Both are in `telemetry/README.md`'s gotchas already; they reproduced
 exactly as written.
 
-Suite: 1645 green (11 skipped — the pin-coherence test now RUNS rather than
+**3. The history scan (2026-10-07).** The audit's other real point: the privacy
+gate scans the ZIP, so a value committed once and replaced with a placeholder
+later passes every gate and stays in a public repository forever. Two tools now
+answer that, and both are documented here because neither is obvious:
+
+    gitleaks git . --log-opts="--all" --redact --no-banner   # credentials
+    python app/history_scan.py                               # identities (--json, --full)
+
+`gitleaks` (installed via winget, 8.30.1) found **5 leaks in 479 commits, all
+false positives** — `app/tests/rfc8032_vectors.json` holds fields literally
+called `secret_key` (RFC 8032's public test vectors), which its generic-api-key
+rule reads as "secret" + high entropy. `.gitleaks.toml` allowlists exactly that
+rule, path and shape, and extends the default ruleset rather than replacing it,
+so tomorrow's real key in that file is still a finding. Rehearsed: clean after,
+on both history and the working tree.
+
+`app/history_scan.py` runs `privacy_scan` (the gate's own verifier, never a
+second copy of the patterns) over every blob reachable from every ref, one row
+per (value, file) with a blob count, masked unless `--full`, and it does not
+ship (`EXCLUDE_FILES`). The baseline on 2026-10-07: **19 places, 38 blob
+occurrences, 5 still in the working tree** — one session directory each in
+`CLAUDE.md`, `PIVOT.md` and `analysis/SETTLE_UP_BOARDS.md`, plus two `user_path`
+false positives (`telemetry/README.md`'s own `C:\Users\<you>` example, and
+`telemetry/collector.js`'s detector pattern in a comment). All three
+session-dir files are maintainer-only, so nothing personal is in a shipped file.
+
+**The one finding that matters is a BattleTag.** It was committed on 2026-10-02
+into two SHIPPED test files (`app/tests/test_share.py`,
+`app/tests/test_session_privacy.py`) and removed the same day in `91858dc` —
+"Docs for what actually happens, and the gate that caught my own fixtures" — so
+the gate did its job while the file was live. It is history-only now, and
+`https://api.github.com/repos/mharrell/bobs-ledger` answers **200 to an
+unauthenticated request: the repository is public.** Getting it out of history
+means `git-filter-repo` and a force-push, which rewrites every commit id — and
+the commit shas ARE this project's release version strings and the
+`VERSION`/manifest version of every published zip. So: decide whether the tag is
+the maintainer's own (it looks like it, from the commit that removed it) and
+accept it, or rewrite. Recorded rather than decided.
+
+Two scanner bugs the tests caught, both the kind that under-report quietly:
+git stores identical content once, so a report built from `rev-list --objects`
+names ONE path while the value may sit in several (`_paths_touching` fixes it);
+and one commit subject in this repo carries a BOM, which crashed the report
+mid-print on a cp1252 console — the same fix and the same reason as
+`publish_release.py`'s. Also worth knowing: the gate DOES scan `.py`
+(`privacy_scan.TEXT_SUFFIXES`), which was news to me — it refused the first
+version of `test_history_scan.py` because a docstring spelled the tag shape out
+literally, so that wording changed.
+
+Suite: 1657 green (11 skipped — the pin-coherence test now RUNS rather than
 skipping, which is itself the proof the pin is real), and both directions of the
 signing gate were rehearsed against a throwaway key — no key refuses, an unpinned
 key refuses, a pinned key passes and round-trips a probe manifest.
@@ -300,10 +349,13 @@ Still open from the same audit, in the order worth doing them:
    local process — any user's, on a shared PC — can still `POST /share` to opt the
    player in, and `GET /analysis` (live board plus the opponent's handle). A
    per-run token in the overlay URL would close it.
-2. **`analysis/replay_review_2026-09-22.md` is tracked and pushed** and line 3
-   names the maintainer's own BattleTag plus a session directory. The privacy
-   gate scans the ZIP, not git — it is worth checking whether that repo is
-   public, and there is no repo-side scan today.
+2. **`analysis/` is in a PUBLIC repository** (confirmed 2026-10-07: the GitHub
+   API answers 200 to an unauthenticated request, and `analysis/` is tracked —
+   41 files). `analysis/replay_review_2026-09-22.md:3` names the maintainer's own
+   BattleTag plus a session directory. "Not shipped" was only ever about the zip.
+   The decision is the same one the history scan raises: remove the folder, put
+   it somewhere private, or rewrite history — and note that removing it now
+   leaves every earlier copy in the history anyway.
 3. `requests>=2.28` is unpinned, and the maintainer corpus tools
    (`upload_corpus.py`, `fetch_sessions.py`, `scrape_comps.py`,
    `refresh_trinkets.py`, `hearth_art_extract.py`) still ship to players.
