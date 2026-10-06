@@ -1680,6 +1680,35 @@ def _game_over_line(game_over):
     return line
 
 
+def _welcome_hint():
+    """The first-run hint, led by the cause that can actually apply here.
+
+    There are two reasons a player sees this card with no advice, and this
+    card used to name only one of them: file logging off. A player whose game
+    is installed on another drive was therefore told to fix a setting that was
+    already right — the launcher had just switched it on — while the coach
+    looked at a folder that does not hold their game. `config` resolves the
+    client root now, so which cause it is can be answered here instead of
+    guessed.
+
+    No path from this machine appears in the text: this string is drawn in the
+    overlay and ends up in every screenshot of it, which is why
+    `config.config_hint()` is an env-var form in the first place.
+    """
+    logging_fix = (f"put this in {config.config_hint()} yourself "
+                   f"(create the file if it is not there):")
+    if os.path.isdir(os.path.join(config.HS_DIR, "Logs")):
+        return ("Never seen advice? Hearthstone only writes the log this reads "
+                f"when file logging is ON. Run {config.launcher()} again and "
+                f"say yes to let it turn that on for you — or {logging_fix}")
+    return ("Never seen advice? There is no Hearthstone log folder where the "
+            "coach looked, so the game is probably installed somewhere else — "
+            "the console window behind this page says how to point the coach "
+            "at it, once. (If the game IS in the usual place, then file "
+            f"logging is off: run {config.launcher()} again and say yes, or "
+            f"{logging_fix})")
+
+
 def welcome_payload(game_over=None):
     """The card the overlay shows when there is nothing to advise.
 
@@ -1742,12 +1771,7 @@ def welcome_payload(game_over=None):
                              "next game — advice starts again the moment your "
                              "next shop opens.")
     else:
-        payload["hint"] = ("Never seen advice? Hearthstone only writes the log "
-                           f"this reads when file logging is ON. Run "
-                           f"{config.launcher()} again and say yes to let it "
-                           "turn that on for you — or put this in "
-                           f"{config.config_hint()} yourself "
-                           "(create the file if it is not there):")
+        payload["hint"] = _welcome_hint()
         # The block live.py's console message has always claimed this card
         # shows.
         payload["steps"] = ("[Power]\nLogLevel=1\nFilePrinting=true\n"

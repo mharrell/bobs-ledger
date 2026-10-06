@@ -117,6 +117,57 @@ player to re-extract the zip is useless); `update.recover()`, or
 `update.py --recover`, then finishes precisely — including removing files the
 new version added — while `APPLIED` on disk means "do not undo this".
 
+## The client root is RESOLVED, not assumed (2026-10-06)
+
+`config.resolve_home()` owns the answer now, in this order: `HEARTHSTONE_HOME`,
+then `app/.hs_home.json` (written by `config.py --set`, and IGNORED when the
+folder it names has gone, so a drive that changed letter cannot pin a dead
+path), then the Windows uninstall entry, then the platform default, then a drive
+walk, then the default again — so the worst case is exactly what every earlier
+version did. `HS_HOME_SOURCE` carries HOW it was chosen, which is what lets a
+message name the folder instead of guessing at the reason.
+
+The failure it replaces was THREE lines that cannot all be true: "File logging
+is on" (the launcher had just switched it on), "no Hearthstone log folder at
+`C:\Program Files (x86)\Hearthstone\Logs`", and "Hearthstone's file logging is
+probably OFF". The false one sent the player to fix a setting that already
+worked. `Logs/` lives INSIDE the client root; `log.config` does not — it is under
+%LOCALAPPDATA% — which is why the logging switch worked on a non-default install
+all along while the log lookup did not.
+
+Measured 2026-10-06, so nobody has to re-derive it:
+
+* The key is `HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\
+  Uninstall\Hearthstone` → `InstallLocation` (and `DisplayIcon`, the game's own
+  exe, as the second chance). It MUST be read with `KEY_WOW64_32KEY`: the game
+  is 32-bit, and a 64-bit Python asking the default view gets "file not found"
+  while the key sits right there. `HKCU` carries no Hearthstone entry here.
+* Two dead ends, both checked: `HKLM\SOFTWARE\WOW6432Node\Blizzard
+  Entertainment\Hearthstone` does not exist, and `HKCU\SOFTWARE\Blizzard
+  Entertainment\Hearthstone` holds nothing but Unity display settings. Battle.net's
+  own `C:\ProgramData\Battle.net\Agent\product.db` (6081 bytes here) carries no
+  readable install path in UTF-8 or UTF-16 decoding — it needs the protobuf schema.
+* A Google Drive letter answers `GetDriveTypeW == 3` (DRIVE_FIXED), so that
+  filter does NOT keep the walk off a cloud mount. That is why the walk is last
+  and only runs when nothing above it answered.
+* **No D:\ install has ever been tested here.** The registry step is attested by
+  mechanism (the key is rewritten when the game is installed or moved), the
+  drive walk is the belt for it, and `test_client_home.py` pins the ORDER with
+  the sources mocked — not the machine.
+
+`app/.hs_home.json` is local state, and is guarded in all three places that
+matter: a BASENAME in `.gitignore` (`sync.py --new` commits untracked files),
+`publish_release.EXCLUDE_FILES` (machine-specific, and the reproducibility gate
+would refuse it), and `update.PROTECTED` (a memory of the right folder is worth
+nothing if an update overwrites it). `HEARTHSTONE_HOME_FILE` moves it, which is
+how the tests avoid writing into `app/` and how a read-only install can still
+remember.
+
+Both messages are pure functions so they cannot drift back into blaming logging:
+`live.no_log_advice()` and `coach_ui._welcome_hint()`, the latter branching on
+whether the resolved root actually has a `Logs/` folder — and neither prints a
+path from this machine, because the overlay ends up in screenshots.
+
 ## Where the last session left off (2026-10-04, main bf242f2)
 
 Sharing sends ONE REPORT PER GAME, and as of main 72d6b60 the share path is

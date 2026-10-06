@@ -206,17 +206,14 @@ else
 	esac
 fi
 
-# Where the game writes the log the coach reads. Told, not created: if it
-# is not there the game is probably installed elsewhere, which is fine, but
-# the coach has to be pointed at it.
-LOGDIR="/Applications/Hearthstone/Logs"
-if [ ! -d "$LOGDIR" ]; then
-	echo
-	echo "Note: no Hearthstone log folder at"
-	echo "  $LOGDIR"
-	echo "If the game lives elsewhere that is fine - the coach looks in the"
-	echo "standard place and can be pointed with HEARTHSTONE_HOME."
-fi
+# Where the coach will read the log from, asked of the CODE rather than
+# guessed here. Both launchers used to hardcode the client root, so a game
+# installed somewhere else was reported as "no log folder" and the coach then
+# blamed file logging, which this file had just switched ON (2026-10-06).
+# config.py owns the answer on both platforms: HEARTHSTONE_HOME, then the
+# folder this install was told to use, then the usual place, then a scan.
+# One line, and it writes nothing - so --check stays honest.
+"$PY" "$HERE/app/config.py" --show
 
 if [ "$CHECK_ONLY" = "1" ]; then
 	echo

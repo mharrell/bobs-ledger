@@ -48,6 +48,14 @@ decision_logs/
 .share_consent.json
 session_reports/
 
+# Where THIS machine was told Hearthstone lives, written by `config.py --set`
+# when the game is not in the usual place (2026-10-06). Machine-specific, so it
+# must not be committed — and `sync.py --new` commits untracked files, which is
+# how a bare basename pattern here matters more than it looks: a pattern with a
+# slash is anchored to the root and stops matching once the file is written
+# under app/ (the fbd2920 mistake, one line up in this file's history).
+.hs_home.json
+
 # Where fetch_sessions.py puts reports it pulls back from the collector. That is
 # OTHER PEOPLE'S data — the beta testers' decisions — landing in a git tree, and
 # this directory was neither ignored nor mentioned in publish_release's

@@ -17,7 +17,7 @@ Hearthstone's own logging setting, and only if you say yes to it (see
 
 ## What you need
 
-- A Windows PC with Hearthstone installed.
+- A Windows PC with Hearthstone installed — on any drive.
 - Python 3 — free. If it is missing, the app tells you and links you to it.
 - Five minutes, most of it the download.
 
@@ -33,7 +33,7 @@ let the coach keep its card pictures there.) You get a folder called
 
 **3. Double-click `Start Bob's Ledger.cmd`** in that folder. That is the whole
 install. It finds Python, asks before adding the one small extra it needs, tells
-you where Hearthstone's log folder should be, offers a **shortcut with its own
+you where it will read Hearthstone's log from, offers a **shortcut with its own
 icon** for the folder and your Desktop, then opens the overlay in your browser.
 
 Windows may ask once whether to run a file from an "unknown publisher" — the
@@ -173,8 +173,12 @@ Some facts, kept apart from that judgement:
   Unzip it first (step 2), then run it from the folder you get.
 - **It says Python was not found.** Install Python from python.org, tick **Add
   python.exe to PATH**, and run the file again.
-- **The overlay keeps waiting for advice.** Hearthstone's logging is probably
-  still off. The overlay shows that same setting on screen.
+- **The overlay keeps waiting for advice.** Two things cause that, and the
+  overlay says which one you have. Either Hearthstone's file logging is still
+  off — the overlay shows that same setting on screen — or the coach is looking
+  in the wrong place, because your game is installed somewhere other than the
+  usual folder. The window you started it from prints the one-line command that
+  fixes the second one for good.
 - **The advice stops changing.** The overlay says how long ago it was written, so
   you can tell stale advice from live advice.
 - **It says the folder cannot be written to.** Move the `Bob's Ledger` folder to
