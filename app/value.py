@@ -3143,11 +3143,16 @@ def _top_move_text(analysis):
                 label += f" x{n}"
             if s.get("why"):
                 label += f" ({s['why']})"
-            hand_parts.append(label)
+            # The VERB is carried beside the label, because the plan's order
+            # depends on it: a free hand cast may precede the buy, a play may
+            # not. Losing the verb here is what produced the inversion below.
+            hand_parts.append((s["verb"], label))
         if len(hand_parts) > 3:
+            # Keep the cap on RENDERED rows, before the split — the parts that
+            # survive are the ones the player reads.
             extra = len(hand_parts) - 3
-            hand_parts = hand_parts[:3] + [f"then the rest of your hand "
-                                           f"({extra} more)"]
+            hand_parts = hand_parts[:3] + [("note", f"then the rest of your "
+                                                    f"hand ({extra} more)")]
 # The stay decision (Q1) trails the buys: what the comp is missing
 # lives here (this tier or below), and the player should know the
 # level was declined on purpose.
@@ -3170,8 +3175,25 @@ def _top_move_text(analysis):
         if not hand_parts:
             analysis["buy_step_roll"] = parts[-1]  # the Buy box mirrors it
     if parts or hand_parts:
-        return " · ".join(f"{i}. {p}"
-                          for i, p in enumerate(hand_parts + parts, 1))
+        # ORDER THE PLAN BY WHAT IS LEGAL, not by which section built it.
+        #
+        # `hand_parts + parts` put EVERY hand action ahead of the buy, and the
+        # verb was lost in the process. The module comment above justifies that
+        # for a CAST — a one-shot shop buff ("Them Apples") must be cast before
+        # the buy to affect what the buy lands on, and casts are FREE — but the
+        # same order was applied to plain PLAYS, which is backwards: a play
+        # needs a board slot, and making one is the buy's job. Counted over
+        # this machine's decision logs: 579 of 706 plans with a buy put a hand
+        # action first, e.g. "1. Play Sprightly Scarab x2 · 2. Buy Scarlet
+        # Skull" on a full board.
+        #
+        # So: free casts (and discards, likewise not board slots) lead, the
+        # plan's own steps follow, and PLAYS land after them. Holds are not
+        # actions and sort last — "Hold X" is an instruction not to act.
+        lead = [p for v, p in hand_parts if v in ("cast", "discard")]
+        trail = [p for v, p in hand_parts if v in ("play", "hold", "note")]
+        return " · ".join(f"{i}. {p}" for i, p in
+                          enumerate(lead + parts + trail, 1))
     # Nothing affordable and nothing to level: roll unless there's no gold at all.
     # Committed and hunting pieces is the endgame (2026-09-04: "we committed,
     # we have it, now we scale it to kingdom come") — say so instead of a
