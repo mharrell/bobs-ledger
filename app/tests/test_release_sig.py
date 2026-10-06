@@ -10,6 +10,7 @@ The fixture key is synthetic (`bytes(range(32))`); the real private key lives
 offline and is never in this repository or in a release.
 """
 import base64
+import json
 import os
 import sys
 import tempfile
@@ -93,6 +94,21 @@ class TestSignAndVerify(unittest.TestCase):
         ok, why = release_sig.verify_manifest(forged)
         self.assertFalse(ok)
         self.assertIn("does not match the pinned key", why)
+
+    def test_the_signature_survives_the_json_round_trip(self):
+        """The manifest is published as JSON TEXT and parsed back on the client,
+        and `publish_release` writes it with ensure_ascii=False. The signature
+        covers the VALUES, so a release note carrying an em dash or an accented
+        character has to verify after that trip — this is the one place the
+        signature could agree in Python and disagree over the wire."""
+        manifest = fixture.signed(dict(fixture.MANIFEST,
+                                       note="tempo mode \u2014 caf\u00e9 \u2603"))
+        wire = json.dumps(manifest, ensure_ascii=False)
+        ok, why = release_sig.verify_manifest(json.loads(wire))
+        self.assertTrue(ok, why)
+        # ...and the same value re-encoded the other way must not matter either.
+        escaped = json.dumps(manifest, ensure_ascii=True)
+        self.assertTrue(release_sig.verify_manifest(json.loads(escaped))[0])
 
 
 class TestUnprovenReleasesAreRefused(unittest.TestCase):
