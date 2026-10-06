@@ -47,7 +47,7 @@ import zipfile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))     # the code: <repo>/app
 #: The tree that SHIPS — one level above the code, so a player's folder is
-#: the launcher, the README, the licence, docs/ and app/ and nothing else.
+#: the launcher, the README, the licence and app/ and nothing else.
 #: git and the zip walk both need this rather than _HERE: `git ls-files` run
 #: from a subdirectory lists only that subdirectory, which would have made
 #: every shipped file look stray (2026-10-02).
@@ -124,7 +124,7 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  "check_patch_notes.py", "patch_day.py",
                  # Repo plumbing and maintainer docs. They stay in the repo
                  # for whoever works on the coach; a player's folder is the
-                 # launcher, the README, the licence, docs/ and app/.
+                 # launcher, the README, the licence and app/.
                  # PIVOT.md is the ToS/posture decision record: it argues about
                  # what the product is allowed to say, which is the last thing a
                  # player's download should carry.

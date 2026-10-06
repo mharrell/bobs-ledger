@@ -53,7 +53,7 @@ echo.
 :update_recovery_done
 
 rem The program lives in app\, so this folder shows almost nothing: the
-rem launcher, the README, the licence and docs\. Checked BEFORE the Python
+rem launcher, the README and the licence. Checked BEFORE the Python
 rem work, because the usual reason it is missing is that Windows is running
 rem this file straight out of the .zip - and telling someone to install
 rem Python when the real problem is an unextracted archive wastes their time.
