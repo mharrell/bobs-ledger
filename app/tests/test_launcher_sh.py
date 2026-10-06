@@ -119,11 +119,22 @@ class TestLauncherBehaviour(unittest.TestCase):
 
     def test_macos_paths_and_no_windows_leftovers(self):
         text = _text()
-        self.assertIn("/Applications/Hearthstone/Logs", text)
         self.assertIn("Library/Preferences/Blizzard/Hearthstone", text)
         for windows in ("%LOCALAPPDATA%", "OneDrive", "tasklist", ".lnk",
                         "powershell"):
             self.assertNotIn(windows, text)
+
+    def test_the_client_root_is_asked_of_config_not_assumed(self):
+        """The log folder used to be the literal /Applications/Hearthstone/Logs
+        here, and %ProgramFiles(x86)%\\... in the Windows twin. A player whose
+        game is installed somewhere else was therefore told the folder was
+        missing - and then that file logging was probably off, which the
+        launcher had just switched ON, so they went and fixed the setting that
+        already worked. config.py is the one place allowed to name a client
+        root, and both launchers ask it (2026-10-06)."""
+        text = _text()
+        self.assertIn('app/config.py" --show', text)
+        self.assertNotIn("/Applications/Hearthstone", text)
 
     def test_it_says_it_is_unverified(self):
         """The file has never been run. Anyone reading it deserves to know

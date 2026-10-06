@@ -31,6 +31,7 @@ from collections import OrderedDict
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
+import config  # noqa: E402
 import logquery  # noqa: E402
 import meta  # noqa: E402
 
@@ -142,11 +143,28 @@ def check_roster():
                  f"registry check {'clean' if ok else 'CONFLICTS'}")
 
 
+def check_client_root():
+    """Does the client root this run resolved actually hold the game's logs?
+
+    The root is resolved (`config.resolve_home`) rather than assumed, so this
+    line answers the question a player with the game on another drive used to
+    have to answer by hand: where is the coach looking, and why there. No Logs
+    folder is a warning, never a failure — a game that has not been started
+    since it was installed has not written one yet.
+    """
+    sessions = glob.glob(os.path.join(config.HS_DIR, "Logs", "Hearthstone_*"))
+    if sessions:
+        return OK, (f"{config.HS_DIR} ({config.HS_HOME_SOURCE}); "
+                    f"{len(sessions)} session(s)")
+    return WARN, (f"no Logs folder under {config.HS_DIR} "
+                  f"({config.HS_HOME_SOURCE})")
+
+
 def check_unresolved():
     """Would a review of the newest session render raw card ids?"""
     path = logquery.newest_log()
     if not path:
-        return WARN, "no Power.log found"
+        return WARN, 'no Power.log found (see the "client root" line for where it looked)'
     sess = logquery.Session(path)
     row = logquery.q_games(sess, argparse.Namespace(game=None))[-1]
     n = row["unresolved"]
@@ -209,6 +227,7 @@ def main():
     checks["art"] = check_art()
     checks["trinkets"] = check_unrecorded_trinkets()
     checks["discard engine"] = _engine_check()
+    checks["client root"] = check_client_root()
     checks["newest log"] = check_unresolved()
     if args.full:
         checks["suite"] = _gated(None, "test suite", "-m", "unittest",

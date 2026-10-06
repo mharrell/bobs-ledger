@@ -22,7 +22,7 @@ import time
 
 from choices import choice_kind, rank_choices
 from coach import describe
-from config import HS_LOG_GLOB, HS_LOG_GLOBS, launcher
+from config import HS_DIR, HS_HOME_SOURCE, HS_LOG_GLOB, HS_LOG_GLOBS, launcher
 from live_coach import LiveCoach
 from tribes import DISPLAY_TRIBES
 import coach_ui
@@ -74,6 +74,35 @@ def _human_age(seconds):
     if seconds < 86400:
         return f"{int(seconds // 3600)} h"
     return f"{int(seconds // 86400)} d"
+
+
+def no_log_advice(root=None, source=None, python=None, config_py=None):
+    """The lines to print when no Power.log was found, as a list of strings.
+
+    Three claims used to be made here at once and only one could be true: that
+    file logging was probably off, that the launcher would fix that, and — in
+    the other window, one line earlier — that logging had just been turned on.
+    A coach that found no log knows exactly one thing: where it looked, and
+    why it looked there. So that is what this says, followed by the two things
+    a player can do about it.
+
+    A pure function so a test can execute it: the sentence that sent players
+    to fix a setting that already worked is not coming back (2026-10-06).
+    """
+    root = root or HS_DIR
+    source = source or HS_HOME_SOURCE
+    config_py = config_py or os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "config.py")
+    return [
+        f"No Power.log under {root}",
+        f"  (that folder came from {source}; both known log layouts were "
+        f"checked there)",
+        "  If the game is installed somewhere else, tell the coach once:",
+        f'    "{python or sys.executable}" "{config_py}" --set '
+        f'"<the folder holding Hearthstone.exe>"',
+        f"  If it IS installed there, Hearthstone's file logging is off: run "
+        f"{launcher()} again and say yes when it offers to turn that on.",
+    ]
 
 
 def warn_stale_meta(meta_dir=None):
@@ -740,10 +769,8 @@ def main():
         print(f"log not found: {path}")
         return 1
     if not path:
-        print("No active Power.log found. Hearthstone's file logging is "
-              f"probably OFF. Run {launcher()} again and say yes "
-              "when it offers to turn that on for you - or see the README "
-              "section \"Turn on Hearthstone's logging\".")
+        for line in no_log_advice():
+            print(line)
         if "--once" in opts:
             return 1
         print("Waiting for a Power.log to appear (start Hearthstone; "

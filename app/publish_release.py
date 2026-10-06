@@ -101,6 +101,12 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  ".cards_full.json", ".observed_tribes.json",
                  ".patch_state.json", ".patch_config.json",
                  ".share_consent.json",
+                 # Where THIS install was told the game lives (2026-10-06).
+                 # Machine-specific, written by config.py --set, and read at
+                 # import by every tool: shipping it would hand a player the
+                 # packager's path, and the reproducibility gate would refuse
+                 # it as an untracked entry anyway.
+                 ".hs_home.json",
                  "comp_candidates.json",
                  ".dev.vars", "claude_code_zai_env.sh", "VERSION",
                  "CLAUDE.md", "catch_up_main.ps1", "wt_status.ps1",

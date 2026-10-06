@@ -83,7 +83,13 @@ PROTECTED = {"decision_logs", "corpus_out", ".review_cache", ".git",
              # shared: an update must never overwrite either, and a consent
              # question silently re-asked after an update would be its own
              # kind of wrong.
-             ".share_consent.json", "session_reports"}
+             ".share_consent.json", "session_reports",
+             # Where THIS install was told Hearthstone lives (2026-10-06).
+             # config.py --set writes it, config.py reads it at import, and no
+             # release carries it — but a player whose game sits on another
+             # drive would silently go back to being told "no log folder" if
+             # an update ever overwrote it.
+             ".hs_home.json"}
 
 #: A release is unpacked here first, while the install keeps running the
 #: version it started with. `new/` is the staged release, `old/` holds every

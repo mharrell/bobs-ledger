@@ -169,16 +169,15 @@ echo   (run this file normally and say yes, and it will be turned on for you)
 goto :logging_done
 
 :logging_done
-rem Where the game writes the log the coach reads. Told, not created: if it is
-rem not there the game is probably installed elsewhere, which is fine, but the
-rem coach has to be pointed at it.
-set "LOGDIR=%ProgramFiles(x86)%\Hearthstone\Logs"
-if exist "%LOGDIR%" goto :shortcut_step
-echo.
-echo Note: no Hearthstone log folder at
-echo   %LOGDIR%
-echo If the game lives elsewhere that is fine - the coach looks in the
-echo standard place and can be pointed with HEARTHSTONE_HOME.
+rem Where the coach will read the log from, asked of the CODE rather than
+rem guessed here. This line used to be "%ProgramFiles(x86)%\Hearthstone\Logs",
+rem so a game installed on another drive - or in another folder on C: - was
+rem reported as missing, and the coach then blamed file logging, which this
+rem file had just switched ON. config.py owns the answer: HEARTHSTONE_HOME,
+rem then the folder this install was told to use, then the registry's
+rem InstallLocation, then the usual place, then this machine's own drives
+rem (2026-10-06). One line, and it writes nothing - so --check stays honest.
+%PY% "%~dp0app\config.py" --show
 
 :shortcut_step
 rem Paths for the shortcut step. ROOT/SELFRAW stay raw for batch use; HERE/
