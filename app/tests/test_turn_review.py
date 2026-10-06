@@ -70,6 +70,136 @@ class TestStatTotal(unittest.TestCase):
         self.assertEqual(tr.stats([]), 0)
 
 
+class TestSpend(unittest.TestCase):
+    """Gold out, with its parts named. Purchases are priced through
+    `value._buy_prices`, never at a flat 3 — the bug this class exists for."""
+
+    def test_parts_are_named_and_summed(self):
+        s = tr._spend({"buys": ["A", "B"], "refreshes": 3, "upgrades": 1}, 4)
+        self.assertEqual(s["cards_bought"], 2)
+        self.assertEqual(s["card_gold"], 6, "unpriced minions are a FLAT 3")
+        self.assertEqual(s["roll_gold"], 3, "a roll costs 1")
+        self.assertEqual(s["level_gold"], 4, "the level cost comes from the log")
+        self.assertEqual(s["total"], 13)
+
+    def test_a_tavern_spell_is_priced_at_its_own_cost(self):
+        # Measured: 5 of the 24 buys in the 2026-10-06 game were tavern spells.
+        # Repair Job costs 2, so pricing it at a flat 3 inflates the total.
+        s = tr._spend({"buys": ["MINION", "BG_SPELL"], "refreshes": 0},
+                      None, prices={"BG_SPELL": 2, "MINION": 3})
+        self.assertEqual(s["card_gold"], 5)
+        self.assertEqual(s["card_costs"], [("MINION", 3), ("BG_SPELL", 2)])
+        self.assertEqual(s["total"], 5)
+
+    def test_an_unpriced_card_falls_back_to_the_flat_minion_price(self):
+        s = tr._spend({"buys": ["UNKNOWN"]}, None, prices={})
+        self.assertEqual(s["card_gold"], 3)
+
+    def test_level_gold_is_absent_when_no_level_was_taken(self):
+        s = tr._spend({"buys": ["A"], "refreshes": 0, "upgrades": 0}, 4)
+        self.assertFalse(s["levelled"])
+        self.assertIsNone(s["level_gold"])
+        self.assertEqual(s["total"], 3)
+
+    def test_an_unknown_level_cost_does_not_invent_one(self):
+        s = tr._spend({"upgrades": 1}, None)
+        self.assertIsNone(s["level_gold"])
+        self.assertEqual(s["total"], 0)
+
+    def test_nothing_done_is_zero(self):
+        self.assertEqual(tr._spend({}, None)["total"], 0)
+
+    def test_sells_are_not_subtracted(self):
+        # Sells are gold IN; netting them here would hide the gross spend the
+        # player actually committed.
+        s = tr._spend({"buys": ["A"], "sells": ["B", "C"]}, None)
+        self.assertEqual(s["total"], 3)
+
+
+class TestCommitment(unittest.TestCase):
+    def test_projects_the_analysiss_own_comp_progress(self):
+        a = {"target_comp": "Elementals - Livin' Large", "comp_gap": None,
+             "comp_progress": [
+                 {"name": "Elementals - Livin' Large", "hits": 2, "ready": True,
+                  "needs": [{"card": "X"}]},
+                 {"name": "Mechs - Y", "hits": 0, "ready": False, "needs": []}]}
+        c = tr._commitment(a)
+        self.assertEqual(c["target"], "Elementals - Livin' Large")
+        self.assertEqual(c["progress"][0]["hits"], 2)
+        self.assertTrue(c["progress"][0]["ready"])
+        self.assertEqual(c["progress"][0]["owned"], 1)
+
+    def test_a_game_with_no_target_still_projects(self):
+        c = tr._commitment({})
+        self.assertIsNone(c["target"])
+        self.assertEqual(c["progress"], [])
+
+
+class TestSellQuestions(unittest.TestCase):
+    """The maintainer's example, made computable: sold a key card while a
+    throwaway stayed."""
+
+    CORE, FILLER = "BG_CORE", "BG_FILLER"
+    #: What the real caller passes (`value._load_card_db()`), trimmed. A DB is
+    #: required because the role strings come from value.sell_reason, and an
+    #: empty or absent one cannot classify anything — see the guard test.
+    DB = {CORE: {}, FILLER: {}}
+
+    def _analysis(self, core=(CORE,)):
+        return {"target_comp": "Mechs - Y",
+                "target_cards": {"core": [{"card": c} for c in core],
+                                 "addons": []},
+                "playable_comps": {"mechs-y": {"name": "Mechs - Y"}},
+                "banned": []}
+
+    def _board(self, *cards):
+        return [{"card": c, "atk": 1, "health": 1, "golden": False,
+                 "keywords": []} for c in cards]
+
+    def test_selling_a_core_while_a_filler_stays_is_a_question(self):
+        qs = tr._sell_questions([self.CORE], self._board(self.FILLER),
+                                self._analysis(), card_db=self.DB)
+        self.assertEqual(len(qs), 1)
+        self.assertEqual(qs[0]["sold"], self.CORE)
+        self.assertEqual(qs[0]["role"], "comp core")
+        self.assertEqual(qs[0]["kept_fillers"], [self.FILLER])
+
+    def test_selling_the_filler_is_not_a_question(self):
+        qs = tr._sell_questions([self.FILLER], self._board(self.CORE),
+                                self._analysis(), card_db=self.DB)
+        self.assertEqual(qs, [], "selling the throwaway is what was asked for")
+
+    def test_selling_a_core_with_no_filler_left_is_not_a_question(self):
+        # Nothing cheap was kept, so there was no better card to sell.
+        qs = tr._sell_questions([self.CORE], self._board(self.CORE),
+                                self._analysis(), card_db=self.DB)
+        self.assertEqual(qs, [])
+
+    def test_the_same_sell_twice_asks_once(self):
+        # Measured: turn 7 of the 10-06 game lists Fire Baller twice.
+        qs = tr._sell_questions([self.CORE, self.CORE],
+                                self._board(self.FILLER),
+                                self._analysis(), card_db=self.DB)
+        self.assertEqual(len(qs), 1)
+
+    def test_without_a_card_db_nothing_is_classified(self):
+        # An unclassifiable card is not evidence of a blunder, so the detector
+        # returns nothing rather than defaulting it into a role. An EMPTY DB
+        # counts as no DB: `{}` classifies every unknown card as a filler, so
+        # the kept side would look like it was all throwaways and the detector
+        # would fire on nothing at all.
+        for db in (None, {}):
+            self.assertEqual(
+                tr._sell_questions([self.CORE], self._board(self.FILLER),
+                                   self._analysis(), card_db=db), [],
+                f"a DB of {db!r} must not classify anything")
+
+    def test_nothing_sold_is_no_questions(self):
+        self.assertEqual(
+            tr._sell_questions([], self._board(self.FILLER),
+                               self._analysis(), card_db=self.DB), [])
+
+
 class TestTheTimelineInvariants(unittest.TestCase):
     """The decisions that make the reconstruction honest rather than merely
     present. These go through `_turn_rows`, the real assembler — a test that

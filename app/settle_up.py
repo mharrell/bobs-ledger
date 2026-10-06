@@ -196,6 +196,51 @@ def _verdict(row):
     return f"not graded ({lead})", "ungraded"
 
 
+def _fmt_board(board, names):
+    """One board as text: "Locked-up Mutineer 6/3, Crackling Cyclone 2/1*".
+
+    A trailing `*` marks a golden minion. Text rather than tiles on purpose: the
+    standalone report is readable with no server running, and the card art it
+    would need lives behind the overlay's /img route.
+    """
+    if not board:
+        return ""
+    return ", ".join(
+        f"{names.get(m.get('card'), m.get('card'))} {m.get('atk')}/"
+        f"{m.get('health')}" + ("*" if m.get("golden") else "")
+        for m in board)
+
+
+def _timeline(log_path, game_index, names):
+    """The per-turn board timeline, formatted for the report.
+
+    Wrapped rather than allowed to raise: this is a SECOND full replay of the
+    game (about 5 s on a 15-turn game) and the phase rows above are the part
+    that must survive its failure. A failure is recorded in the report as
+    `timeline_error` rather than swallowed — a review missing its boards should
+    say so, not look like a review of a game with no boards.
+    """
+    try:
+        import turn_review
+        tl = turn_review.timeline(log_path, game_index)
+    except Exception as exc:  # noqa: BLE001
+        return None, f"{type(exc).__name__}: {exc}"
+    for row in tl["turns"]:
+        row["buy_end_text"] = _fmt_board(row["buy_end"], names)
+        row["combat_ours_text"] = _fmt_board(row["combat_start"]["ours"], names)
+        row["combat_theirs_text"] = _fmt_board(row["combat_start"]["theirs"], names)
+        row["battle_end_text"] = _fmt_board(row["battle_end"], names)
+        # The sell questions were ids; name them here, where the name DB is.
+        for q in row["sell_questions"]:
+            q["sold_name"] = names.get(q["sold"], q["sold"])
+            q["kept_filler_names"] = [names.get(c, c) for c in q["kept_fillers"]]
+        row["took_names"] = {
+            "bought": [names.get(c, c) for c in row["took"]["bought"]],
+            "sold": [names.get(c, c) for c in row["took"]["sold"]],
+        }
+    return tl, None
+
+
 def build(log_path, game_index=1):
     """The review for one game of one log. Pure reading — writes nothing.
 
@@ -240,6 +285,7 @@ def build(log_path, game_index=1):
         })
 
     head = rows[0] if rows else {}
+    timeline, timeline_error = _timeline(log_path, game_index, names)
     return {
         "schema": SCHEMA,
         "created": datetime.datetime.now().isoformat(timespec="seconds"),
@@ -250,6 +296,8 @@ def build(log_path, game_index=1):
         "placement": head.get("placement"),
         "phases": phases,
         "totals": _totals(phases, head),
+        "timeline": timeline,
+        "timeline_error": timeline_error,
         "caveat": CAVEAT,
     }
 
@@ -310,6 +358,38 @@ def render_text(rep):
     if not rep["phases"]:
         out.append("No advised buy phase in this game — nothing to settle.")
         return "\n".join(out)
+
+    # TURN BY TURN — the board, three times per turn. This is the part no
+    # in-game screen can show you: what you went in with, what they brought, and
+    # what survived.
+    tl = rep.get("timeline")
+    if rep.get("timeline_error"):
+        out.append(f"(the turn-by-turn boards could not be built: "
+                   f"{rep['timeline_error']})")
+        out.append("")
+    elif tl and tl.get("turns"):
+        out.append("TURN BY TURN")
+        out.append("")
+        for r in tl["turns"]:
+            s, sp = r["stats"], r["spend"]
+            out.append(f"t{r['turn']}  {r['gold']}g  board {s['buy_end']} stats"
+                       f"{' (' + format(s['growth'], '+d') + ')' if s['growth'] is not None else ''}"
+                       f"  spent {sp['total']}g"
+                       + (f"  comp {r['commitment']['target']}" if r["commitment"]["target"] else ""))
+            out.append(f"   you went in with: {r['combat_ours_text'] or r['buy_end_text'] or '(no board read)'}")
+            if r["combat_theirs_text"]:
+                out.append(f"   they brought    : {r['combat_theirs_text']}")
+            out.append(f"   you kept        : {r['battle_end_text'] or '(not readable)'}")
+            for q in r.get("sell_questions") or []:
+                out.append(f"   ? sold {q.get('sold_name')} ({q['role']}) while "
+                           f"keeping {', '.join(q.get('kept_filler_names') or [])}")
+            for n in r["notes"]:
+                out.append(f"   note: {n}")
+            out.append("")
+        out.append("")
+
+    out.append("PHASE BY PHASE")
+    out.append("")
     for p in rep["phases"]:
         head = (f"t{p['turn']}  tier {p['tier']}  gold {p['gold']}"
                 f"  eff HP {p['eff_hp']}")
@@ -342,6 +422,60 @@ def render_text(rep):
     out.append("")
     out.append("NOTE: " + rep["caveat"])
     return "\n".join(out)
+
+
+def _timeline_html(rep):
+    """The turn-by-turn board section of the report page.
+
+    This is the part no in-game screen can show: the board as it went into the
+    fight, what the opponent brought, and what survived. Rendered as text
+    boards rather than card tiles because the page is standalone — card art
+    lives behind the overlay's /img route and would leave the report broken the
+    moment the coach is closed.
+    """
+    e = html.escape
+    tl = rep.get("timeline")
+    if rep.get("timeline_error"):
+        return ('<div class=caveat>The turn-by-turn boards could not be built '
+                f'({e(str(rep["timeline_error"]))}). The phase list below is '
+                'unaffected.</div>')
+    if not tl or not tl.get("turns"):
+        return ""
+
+    blocks = []
+    for r in tl["turns"]:
+        s, sp = r["stats"], r["spend"]
+        growth = (f'<span class=grw>{s["growth"]:+d}</span>'
+                  if s["growth"] is not None else "")
+        comp = (f'<span class=comp>{e(r["commitment"]["target"])}</span>'
+                if r["commitment"]["target"] else "")
+        flags = []
+        for q in r.get("sell_questions") or []:
+            flags.append(
+                f'<div class=q>? sold <b>{e(str(q.get("sold_name")))}</b> '
+                f'({e(q["role"])}) while keeping '
+                f'{e(", ".join(q.get("kept_filler_names") or []))} '
+                f'&mdash; worth a look, not a verdict</div>')
+        for n in r["notes"]:
+            flags.append(f'<div class=note>{e(n)}</div>')
+        went_in = r["combat_ours_text"] or r["buy_end_text"] or "(no board read)"
+        blocks.append(
+            f'  <section class=turn>\n'
+            f'    <div class=thead><span class=tturn>Turn {r["turn"]}</span>'
+            f'<span class=tmeta>{r["gold"]}g &middot; board {s["buy_end"]} stats '
+            f'{growth} &middot; spent {sp["total"]}g</span>{comp}</div>\n'
+            f'    <div class=brow><span class=blbl>went in</span>'
+            f'<span>{e(went_in)}</span></div>\n'
+            f'    <div class=brow><span class=blbl>they had</span>'
+            f'<span class=them>{e(r["combat_theirs_text"]) or "&mdash;"}</span></div>\n'
+            f'    <div class=brow><span class=blbl>kept</span>'
+            f'<span>{e(r["battle_end_text"]) or "&mdash;"}</span></div>\n'
+            f'    {"".join(flags)}\n'
+            f'  </section>')
+    return ('<h2 class=sect>TURN BY TURN</h2>'
+            '<div class=sub>What you went in with, what they brought, and what '
+            'you kept &mdash; the board at three points in every turn.</div>'
+            + "\n".join(blocks))
 
 
 def render_html(rep):
@@ -423,6 +557,25 @@ def render_html(rep):
   .verdict.taken {{ color:var(--good); }}
   .verdict.ignored {{ color:var(--warn); }}
   .verdict.none {{ color:var(--dim); font-weight:400; }}
+  /* Turn-by-turn boards. This section is the one thing the game itself never
+     shows: what you went in with, what they brought, what survived. */
+  .sect {{ font-size:13px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--gold); margin:26px 0 2px; border-top:1px solid var(--gridline);
+    padding-top:14px; }}
+  .turn {{ background:var(--panel); border:1px solid var(--border);
+    border-radius:6px; padding:8px 11px; margin:8px 0; }}
+  .thead {{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }}
+  .tturn {{ font-weight:700; }}
+  .tmeta {{ color:var(--dim); font-size:12px; }}
+  .grw {{ color:var(--good); }}
+  .comp {{ margin-left:auto; color:var(--gold); font-size:12px; }}
+  .brow {{ display:flex; gap:9px; align-items:baseline; margin-top:3px; }}
+  .blbl {{ color:var(--dim); font-size:11px; text-transform:uppercase;
+    letter-spacing:.06em; flex:none; width:56px; }}
+  .them {{ color:var(--bad); }}
+  .q {{ color:var(--warn); font-size:12px; margin:3px 0 0 65px; }}
+  .note {{ color:var(--dim); font-size:12px; font-style:italic;
+    margin:2px 0 0 65px; }}
 </style></head><body><div class=wrap>
 <h1>Settle Up</h1>
 <div class=sub>{who}{placement} · {e(rep['log'])} game {e(str(rep['game']))} · {e(rep['session'])}</div>
@@ -433,6 +586,9 @@ def render_html(rep):
   <span><b>{t['bled_total']}</b> effective HP bled</span>
 </div>
 <div class=caveat>{e(rep['caveat'])}</div>
+{_timeline_html(rep)}
+<h2 class=sect>PHASE BY PHASE</h2>
+<div class=sub>What the model would have played, and what the log says you did.</div>
 {chr(10).join(rows)}
 <div class=sub style="margin-top:14px">Generated by Bob's Ledger · schema {SCHEMA} · {e(rep['created'])}</div>
 </div></body></html>

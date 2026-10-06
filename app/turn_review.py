@@ -36,6 +36,7 @@ from extract_game import split_game_chunks
 from fight_table import _board as _struct_board
 from live_coach import LiveCoach
 from outcome_audit import _phases, SETTLE
+from value import _buy_prices, _load_card_db
 
 
 def _snap_board(minions, friendly, side):
@@ -81,14 +82,32 @@ def stats(board):
 
 
 def _drive(chunk):
-    """Feed the chunk the way the audit does, returning (coach, analysis_by_turn).
+    """One pass over a game: (coach, info_by_turn, header_friendly).
 
-    One pass: walk the buy phases, settle inside each one (the shop has stopped
-    changing), and call analyze(). That call is what resolves `friendly` and
-    populates `_snap_by_turn`; feeding alone populates neither usefully.
+    Walks the buy phases, settles inside each one (the shop has stopped
+    changing), and calls analyze() — that call is what populates
+    `_snap_by_turn`; feeding alone gives the snapshots but no per-turn analysis.
+
+    **`friendly` is resolved from the game header FIRST, not from the coach.**
+    `extract_game` + `_friendly_player` name the player from the heroes, which
+    does not depend on analyze() having run; the coach's own resolution is the
+    fallback. That ordering is the fix for the measured failure where a
+    feed-only replay left `coach.friendly` as None and every minion was
+    attributed to the opponent — with the header player, the boards split
+    correctly even if no analysis ever succeeds.
+
+    Player actions are parsed here too, on the phase slice, exactly as
+    `outcome_audit.audit_game` does — gold spend, sells and rolls all come from
+    them, and a second pass to collect them would double the replay.
     """
+    from extract_game import extract_game, _friendly_player
+    from player_actions import parse_actions
+
+    game = extract_game(chunk)
+    header_friendly = _friendly_player(game["heroes"], game.get("choice_players"))
+
     coach = LiveCoach()
-    seen = {}
+    info = {}
     j = 0
     n = len(chunk)
     for lo, hi in _phases(chunk):
@@ -110,14 +129,147 @@ def _drive(chunk):
                 j += 1
                 break
             j += 1
-        if a:
-            turn = (a.get("scenario") or {}).get("turns")
-            if turn is not None and turn not in seen:
-                seen[turn] = a
-    return coach, seen
+        if not a:
+            continue
+        turn = (a.get("scenario") or {}).get("turns")
+        if turn is None or turn in info:
+            continue
+        actual = {}
+        if header_friendly is not None:
+            acts = parse_actions(chunk[lo:hi], friendly=header_friendly)
+            actual = acts[0] if acts else {}
+        info[turn] = {"analysis": a, "actual": actual}
+    return coach, info, header_friendly
 
 
-def _turn_rows(snaps, analysis, friendly, final_board=None):
+def _spend(actual, level_cost, prices=None):
+    """Countable gold OUT this turn, with its parts named rather than summed away.
+
+    **Every bought card is priced through `value._buy_prices`** — the one price
+    layer — not at a flat 3. The naive "3 × buys" is wrong: measured on the
+    2026-10-06 game, 5 of its 24 buys were tavern SPELLS (Enchanted Lasso,
+    Repair Job, Armor Stash, Energizing Chamber, Natural Blessing), which keep
+    their own per-spell prices. Minions are a FLAT 3 at every tier; spells are
+    not, and a spell priced at 3 inflates the total.
+
+    What it still does NOT include: a hero power that costs gold, and any spend
+    the log does not attribute to a buy, a roll or the level button. So it is
+    close to exact for purchases and a slight UNDER-count otherwise — the parts
+    are returned so a renderer never has to present the total as the whole
+    story.
+    """
+    buys = list(actual.get("buys") or [])
+    costs = [(prices or {}).get(c, 3) for c in buys]
+    rolls = actual.get("refreshes") or 0
+    levelled = bool(actual.get("upgrades"))
+    out = {"cards_bought": len(buys), "card_gold": sum(costs),
+           "card_costs": list(zip(buys, costs)),
+           "rolls": rolls, "roll_gold": rolls,
+           "levelled": levelled, "level_gold": level_cost if levelled else None}
+    out["total"] = out["card_gold"] + out["roll_gold"] + (out["level_gold"] or 0)
+    return out
+
+
+def _commitment(analysis):
+    """Comp commitment at this turn's buy end, straight from the analysis.
+
+    `live_coach.analyze()` already computes `comp_progress` (how close each
+    candidate comp is to its commit threshold) and names the target comp, so
+    this is a projection, not a second computation — the per-turn series is
+    free once the replay exists.
+    """
+    prog = analysis.get("comp_progress") or []
+    return {
+        "target": analysis.get("target_comp"),
+        "gap": analysis.get("comp_gap"),
+        "progress": [{"name": r.get("name"), "hits": r.get("hits"),
+                      "ready": bool(r.get("ready")),
+                      "owned": len([n for n in (r.get("needs") or [])]),
+                      } for r in prog[:3]],
+    }
+
+
+#: Roles that make a card worth KEEPING on the board it sits on, and roles that
+#: make it the obvious thing to sell instead. `value.sell_reason` is the single
+#: source of these strings — the same function the overlay's "Your board" row
+#: prints, so a blunder call cannot drift from what the player was shown.
+_HIGH_ROLES = frozenset({"comp core", "comp addon", "comp glue",
+                         "engine piece", "scaler"})
+_LOW_ROLES = frozenset({"filler", "off-comp filler", "off-comp body",
+                        "stats only — no comp role"})
+
+
+def _took(actual):
+    """The card ids that moved this turn — what the gold was spent ON.
+
+    Kept as ids rather than prose: `settle_up` already owns the one place that
+    turns ids into words, and two formatters for the same thing would drift.
+    """
+    return {"bought": list(actual.get("buys") or []),
+            "sold": list(actual.get("sells") or []),
+            "triples": len(actual.get("triples") or []),
+            "hero_power": actual.get("hero_power") or 0,
+            "spells_cast": actual.get("spells") or 0}
+
+
+def _sell_questions(sold_ids, end_board, analysis, card_db):
+    """Sell-side blunder candidates: a key card sold while a filler stayed.
+
+    THE MAINTAINER'S EXAMPLE, made computable: "selling a key minion instead of
+    the throwaway". The comparison is between the role of each card SOLD this
+    turn and the roles of the cards the player KEPT — read off the board at buy
+    end, which is by definition what remained.
+
+    It returns QUESTIONS, never verdicts, and the naming says so. A comp core is
+    sometimes exactly right to sell (making room for a triple, a duplicate core,
+    a pivot the model has not caught up with), and this function cannot see the
+    player's reasoning. What it can see is that a high-role card left the board
+    while a low-role card stayed — which is worth a look, and is not a mistake
+    until a human says it is.
+    """
+    from value import sell_reason
+    if not card_db:
+        # Without the card DB no role can be classified, and an unclassified
+        # card is not evidence of a blunder. Return nothing rather than
+        # defaulting every sold card into a "filler" it may not be.
+        return []
+    tc = analysis.get("target_cards") or {}
+    core = {c.get("card") for c in (tc.get("core") or []) if isinstance(c, dict)}
+    addons = {c.get("card") for c in (tc.get("addons") or []) if isinstance(c, dict)}
+    comp = None
+    for c in (analysis.get("playable_comps") or {}).values():
+        if isinstance(c, dict) and c.get("name") == analysis.get("target_comp"):
+            comp = c
+            break
+    banned = set(analysis.get("banned") or [])
+
+    def role(cid, tribe=None):
+        rec = card_db.get(cid) or {}
+        return sell_reason({"card": cid, "tribe": tribe or rec.get("race")},
+                           rec, comp=comp, core=core, addons=addons,
+                           banned_tribes=banned)
+
+    kept = [(m.get("card"), role(m.get("card"))) for m in (end_board or [])]
+    low_kept = [(c, r) for c, r in kept if r in _LOW_ROLES]
+    out = []
+    seen = set()
+    for cid in sold_ids or []:
+        r = role(cid)
+        # ONE question per distinct card+role. The sell list can carry the same
+        # id more than once — measured: turn 7 of the 10-06 game reports
+        # ['TB_BaconUps_159', 'Fire Baller', 'Fire Baller'], three entries for
+        # two distinct cards, whether because two copies really were sold or
+        # because one sell is printed in two log shapes. Either way the review
+        # asks the same question twice, and "did they sell the engine piece
+        # while a filler stayed" is one question about one decision.
+        if r in _HIGH_ROLES and low_kept and (cid, r) not in seen:
+            seen.add((cid, r))
+            out.append({"sold": cid, "role": r,
+                        "kept_fillers": [c for c, _r in low_kept]})
+    return out
+
+
+def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
     """Assemble the per-turn rows from snapshots. PURE — no coach, no log.
 
     Split out of `timeline()` so the reconstruction's decisions are testable
@@ -158,7 +310,9 @@ def _turn_rows(snaps, analysis, friendly, final_board=None):
         else:
             battle_end = []
 
-        a = analysis.get(t) or {}
+        entry = info.get(t) or {}
+        a = entry.get("analysis") or {}
+        actual = entry.get("actual") or {}
         bstats = stats(buy_end)
         notes = []
         # The buy-phase snapshots LAG the real end of the buy phase: they fire
@@ -175,7 +329,10 @@ def _turn_rows(snaps, analysis, friendly, final_board=None):
             notes.append("player identity was never resolved in this game, so "
                          "no board can be attributed to a side")
         else:
-            if lag > 0:
+            # The lag note needs a buy board to lag. Turn 1 has no buy-phase
+            # snapshot at all, and saying "1 minion was played after the last
+            # buy-phase snapshot" there contradicted the very next note.
+            if lag > 0 and buy_end:
                 notes.append(
                     f"{lag} minion(s) were played after the last buy-phase "
                     f"snapshot — the combat board is the full picture")
@@ -199,6 +356,13 @@ def _turn_rows(snaps, analysis, friendly, final_board=None):
                 "theirs": stats(theirs_at_combat),
                 "combat_ours": stats(ours_at_combat),
             },
+            "spend": _spend(actual, a.get("level_cost"), _buy_prices(a)),
+            "took": _took(actual),
+            "commitment": _commitment(a),
+            # Sell-side questions, from the roles of what left vs what stayed.
+            # Empty when there is no card DB or nothing sold, never guessed at.
+            "sell_questions": _sell_questions(actual.get("sells"), buy_end, a,
+                                              card_db),
             "lag": max(0, lag),
             "notes": notes,
         })
@@ -214,10 +378,13 @@ def timeline(log_path, game_index=1):
     where each turn is:
 
         {turn, gold, buy_end, combat_start: {ours, theirs}, battle_end,
-         stats: {buy_end, growth, theirs}, notes: [...]}
+         stats: {buy_end, growth, theirs, combat_ours}, spend, took,
+         commitment, sell_questions, lag, notes}
 
     `notes` carries what the reconstruction is NOT, per turn, so a renderer
-    cannot accidentally present an inference as a fact.
+    cannot accidentally present an inference as a fact. `sell_questions` is
+    likewise named for what it is: a card that left while a filler stayed is
+    worth a look, not a mistake until a human says so.
     """
     with open(log_path, encoding="utf-8", errors="replace") as fh:
         lines = fh.read().splitlines()
@@ -227,8 +394,9 @@ def timeline(log_path, game_index=1):
                          f"game(s); game {game_index} does not exist")
     lo, hi = bounds[game_index - 1]
     chunk = lines[lo:hi]
-    coach, analysis = _drive(chunk)
-    friendly = coach.friendly
+    coach, info, header_friendly = _drive(chunk)
+    # The header player wins when the coach never resolved one (see _drive).
+    friendly = header_friendly if header_friendly is not None else coach.friendly
     snaps = getattr(coach, "_snap_by_turn", {}) or {}
 
     # The last turn has no successor to read its survivors from. board_state's
@@ -240,11 +408,11 @@ def timeline(log_path, game_index=1):
     if friendly is not None and hasattr(coach.gs, "final_board"):
         final_board = _struct_board(coach.gs.final_board(friendly)[0])
 
-    rows = _turn_rows(snaps, analysis, friendly, final_board)
+    rows = _turn_rows(snaps, info, friendly, final_board, card_db=_load_card_db())
     turns = sorted(snaps)
-    first = (analysis.get(turns[0]) or {}) if turns else {}
+    first = (info.get(turns[0]) or {}).get("analysis") or {} if turns else {}
     return {"turns": rows,
             "hero": first.get("hero"),
             "friendly": friendly,
-            "phases_analyzed": len(analysis),
+            "phases_analyzed": len(info),
             "turn_count": len(turns)}
