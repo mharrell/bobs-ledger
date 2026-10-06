@@ -1,0 +1,31 @@
+# gitleaks config: the secrets half of the history scan.
+#
+# gitleaks cannot know what THIS project's personal data looks like — a
+# BattleTag, an opponent's display handle, a session directory name — so it is
+# only half the story. `privacy_scan` (app/privacy_scan.py) is the other half,
+# and the two are run together:
+#
+#   gitleaks git . --log-opts="--all" --redact --no-banner
+#   python app/history_scan.py          # privacy_scan over every blob ever committed
+#
+# This file exists for the allowlist below, and it EXTENDS the default ruleset
+# rather than replacing it, so every upstream rule keeps working.
+
+[extend]
+useDefault = true
+
+# RFC 8032 section 7.1 publishes its Ed25519 test vectors as JSON with a field
+# literally called "secret_key", holding a 64-character hex seed.
+# `app/tests/rfc8032_vectors.json` mirrors that, because the test asserts the
+# RFC's own values byte-for-byte, and gitleaks reads "secret" + high entropy
+# and flags all five (2026-10-07, the first full-history scan — the only five
+# findings in 479 commits).
+#
+# These are public constants printed in the RFC itself: not credentials, never
+# were. The allowlist is scoped to the rule, the path AND the shape, so a real
+# key pasted into that file tomorrow is still a finding.
+[[allowlists]]
+description = "RFC 8032 section 7.1 test vectors - public constants, not secrets"
+paths = ['''app/tests/rfc8032_vectors\.json$''']
+regexTarget = "match"
+regexes = ['''"secret_key"\s*:\s*"[0-9a-f]{64}"''']
