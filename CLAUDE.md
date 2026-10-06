@@ -160,7 +160,45 @@ one line. `identity_findings()` additionally refuses a payload containing any
 handle the session's own records showed — the check `privacy_scan` cannot do,
 since a bare display name matches nothing it looks for — with handles that are
 also game vocabulary exempt, because one real opponent is literally called
-"Demon" and the payload carries that word 88 times as a tribe.
+"Demon" and the payload carries that word 88 times as a tribe. (That exemption
+grew a positional half on 2026-10-05; see below.)
+
+**The handle check refused a clean game because a CARD NAME contains the
+handle (2026-10-05).** An announced opponent's display handle was a word inside
+an Undead minion's name. Advisory 62 of the 10-05 07:53 session ranked that
+minion — a Patient Scout discover, `choice.ranked[2]` — and
+`identity_findings()`, which searches the finished payload as TEXT, read the
+card name as a leaked handle and refused the whole game: `1 handle(s)`, with the
+spec walk, the privacy scan and the source check all clean. Nothing was
+uploaded, and a game-end refusal is not retried, so the refusal WAS the lost
+measurement. The old docstring's claim that "a card name cannot trip it, because
+a card name is not in that set" only holds while no player is named after a
+card.
+
+The rule is positional now instead of a word list. An occurrence of a handle
+counts only when the payload does not use the word as its own vocabulary
+(`_game_vocabulary`, unchanged) AND the occurrence does not sit inside a name
+the GAME defines (`_game_name_spans` — minions, tavern spells, trinkets, heroes,
+cards, comps and the tribes, read from the same DBs the coach prints from, so
+the catalogue cannot drift from the text). The catalogue is filtered to the
+names containing a matched handle word before compiling: the unrestricted
+alternation cost 630 ms on a 330 KB report, the filtered one ~35 ms, and no
+explanation can be lost that way, since a span has to contain the handle to
+cover it. Still a finding: the same word standing on its own, or printed beside
+the card name (`test_a_card_name_does_not_excuse_a_handle_printed_beside_it`).
+Still invisible: a handle that IS a whole game name (the same trade the "Demon"
+exemption makes), and a handle that is an ordinary word of the coach's own prose
+("hold", "cost", "the rest of your hand"), which no catalogue can enumerate —
+that one has not been observed yet, and the refusal prints the handle it saw,
+which is how this one was caught.
+
+Both files are in `app/tests/test_report_whitelist.py`, whose fixture derives
+its handle word from the card DB rather than writing one down (a handle-shaped
+literal in a shipped file reads as a real player to the privacy gate). The
+refused game is still in the INSTALL's log at
+`Downloads\Bob's Ledger\app\decision_logs\decision_Hearthstone_2026_10_05_07_53_34.jsonl`,
+so `python app\share.py latest` re-shares it once the fix is installed there —
+it was never sent, so its report id is unspent and the rebuild is byte-fresh.
 
 `package_corpus.inspect()` really decompresses the log now (it scanned mojibake,
 so the corpus path's only independent log check could never fail), and
