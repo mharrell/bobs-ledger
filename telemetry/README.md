@@ -108,6 +108,7 @@ once, keep it offline (a password manager entry or an offline machine; the file
 it writes is 32 raw bytes, and a 64-character hex copy works too):
 
 ```
+cd <the repo root>            # every command in this section is relative to it
 python app\release_sig.py --keygen %USERPROFILE%\.bobs-ledger-release.key
 # paste the printed PUBKEY_B64 line into app/release_sig.py, commit it, then:
 setx HEARTH_SIGNING_KEY "%USERPROFILE%\.bobs-ledger-release.key"
