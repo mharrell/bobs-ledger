@@ -5,10 +5,10 @@ split governs every UI decision from here: **the live overlay ships STATE, and
 the model's verdict ships after the fact, in the review.** `PIVOT.md` carries the
 reasoning, the corrections to the claim that triggered it, and the phase plan.
 
-A Battlegrounds board reader and (in progress) post-game review. It reads the
-game from Hearthstone's own `Power.log` and reconstructs the board; the numbers
-it shows come from a **local value function plus growth simulator over a curated
-meta DB**. The live path calls **no model and no API** — `coach_llm.py` is an
+A Battlegrounds board reader and a post-game review. It reads the game from
+Hearthstone's own `Power.log` and reconstructs the board; the numbers it shows
+come from a **local value function plus growth simulator over a curated meta
+DB**. The live path calls **no model and no API** — `coach_llm.py` is an
 optional maintainer tool for patch-note extraction, and `compare_models.py`
 is a model-comparison harness. Neither is imported by `live.py`,
 `live_coach.py`, `value.py` or `coach_ui.py`, and neither ships in a release.
@@ -20,6 +20,25 @@ payload. Do not "simplify" that by deleting the producer: the review and the
 corpus are what the plan is FOR. `test_live_view.py` asserts all three halves of
 that contract (dropped from the page, kept in the analysis, read by no page
 code), and `test_readme_claims.py` is the control CLAUDE.md item 3 asked for.
+
+**The review EXISTS** (`app/settle_up.py` — the pivot's Phase 2, 2026-10-06): one
+row per advised buy phase, the model's line beside what the player actually did,
+and the effective HP the following fight cost. The end-of-game card links to it
+(`/review`), and `live._settle_up_in_background` builds it off-thread the moment
+a game ends — off-thread because it replays the game. **What it cannot grade yet,
+and why it says so out loud:** a plan that leads with a `cast` (or swap/play/pick)
+reads "not graded" — 8 of 16 phases on the first real game — because
+`value.top_move` leaves `card` as None on a cast step. That fix belongs in the
+planner and in `player_actions` (which counts spells cast instead of naming
+them), NOT in settle_up.
+
+**The name stays "Bob's Ledger", decided 2026-10-06.** It was already the pun:
+Bob runs the Battlegrounds tavern, and a ledger is the tavernkeeper's book. The
+pivot made the existing name MORE accurate, not less — it was always the odd part
+of the old positioning. A rename would also cost ~26 files, including both
+launcher filenames, the Cloudflare workers.dev subdomain every installed copy's
+updater points at, and the desktop shortcuts already made on players' machines.
+The bar-tab language lives in the review's name instead: "Settle up".
 
 This repository is the product, and the release zip is this tree minus the
 maintainer-only parts (`analysis/`, `telemetry/`, `CLAUDE.md`, `DESIGN.md`,

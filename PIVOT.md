@@ -114,14 +114,35 @@ instruction-shaped `target_comp` — while still **computing and logging** them,
 the review keeps its input. Drift guard for the kind/chip sets, like the existing
 `KIND_CHIP` ↔ `_STEP_KINDS` one.
 
-**Phase 2 — promote the review to the product.** One entry point assembling the
-per-phase join (`replay_review`), the outcome join (`fight_table`) and adherence
-(`outcome_audit`) into a report rendered by the **existing** page — it already
-draws steps, tiles, the tavern row and the danger line, so no second renderer.
-The end-of-game card in `coach_ui.py` becomes "Review this game"; unlike the live
-panel it is *supposed* to carry verdicts. Headline: the model's record, with
-`outcome_audit`'s own observational caveat (following advice correlates with easy
-spots) intact.
+**Phase 2 — promote the review to the product. DONE (2026-10-06).** Shipped as
+`app/settle_up.py`, reachable three ways: the end-of-game card's "Settle up" link,
+the overlay server's `/review` route (`coach_ui._review_response`, built
+off-thread by `live._settle_up_in_background` so the monitor's tick keeps
+answering the log), and `python app/settle_up.py --latest` for any game still in
+the log.
+
+It is built on `outcome_audit.audit_game` — the per-phase join that already
+existed for the audit tooling (plan, the player's actual actions, the HP delta
+across the following fight), at the one-row-per-buy-phase grain. That is what
+this plan predicted: the pieces were already there, and the work was assembling
+them and giving them a face.
+
+**One deliberate deviation from this plan.** It was to be rendered by the
+existing page. It is not: the overlay page is a 300ms-polling JS app driven by
+`/analysis`, and a review should be something a player can keep and read without
+a process running, so `render_html` writes a standalone page. The cost is a
+second small stylesheet; the benefit is a report with no state and no server.
+
+**What it cannot grade — measured, and LEFT OPEN.** A phase whose plan leads with
+a `cast` (or a swap, a play, a pick) reads **not graded**, and the count is
+printed rather than hidden. On the first real game measured (2026-10-06, 16
+advised phases, Chenvaala, 2nd) that was **8 of 16**, because `value.top_move`
+leaves `card` as None on a cast step — the card it wants cast exists only inside
+the `action` prose ("Cast Them Apples"), and matching prose against the log is
+the "formatting used as data" failure the audit flagged elsewhere. The real fix is
+populating `card` in the planner plus `player_actions` recording WHICH spell was
+cast (`turns[-1]["spells"]` counts them today). Until then the review states its
+own coverage.
 
 **Phase 3 — excluded from v1, kept on the table.** The half-step: during combat,
 show the phase that just **closed** — that exact shop, the model's line, what the

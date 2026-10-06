@@ -7,11 +7,11 @@ pressing, what each tavern offer costs, and how close this hero is to dying.
 
 **It shows you the state, not the instruction.** It does not tell you what to
 buy, and that is a deliberate limit rather than a missing feature — see
-[Is this allowed?](#is-this-allowed) for the reasoning. Where the model's own
-opinion appears it appears as a number you read, never as a move it names. What
-the model *would* have played is still computed and recorded to your own disk;
-showing it back to you after the game — as a review, when the decision it
-describes can no longer be acted on — is the next thing being built.
+[Is this allowed?](#is-this-allowed) for the reasoning. While you play, the
+model's opinion appears as a number you read, never as a move it names. Its plan
+for each turn is still worked out and written to your own disk, and you see it
+**after the game**, in [Settle Up](#settle-up-the-review) — where the decision it
+describes can no longer be acted on.
 
 **Windows only.** It reads the log file Hearthstone writes on your own PC and
 asks for no account. It does not modify the game — the one file it can change is
@@ -98,6 +98,34 @@ worth. Nothing on the page names a move.
 *The screenshots in `docs/` still show the previous layout. They are being
 re-shot; the panel they picture no longer exists.*
 
+## Settle Up (the review)
+
+When a game ends, the card on screen offers **Settle up**. That is where the
+model's plan lives: a line for every buy phase of the game you just played, next
+to what you actually did, and what the fight afterwards cost.
+
+- **Model** — the plan it would have played, e.g. "1. LEVEL to tier 4 · 2. Buy
+  Bronze Warden".
+- **You** — what the log says you did: bought, rolled, levelled up, sold.
+- **The fight after it** — effective HP gained or lost across the next combat.
+  Negative means it hurt.
+
+It also says how much of itself it *could not* judge. A plan that leads with a
+spell cast is reported as **not graded** rather than counted either way, and the
+count is printed on the summary: it will not pretend to have assessed a decision
+it cannot see.
+
+The summary prints how the phases you followed went against the phases you
+didn't — and says plainly that this is **observational, not causal**, because
+following a plan is easier in games you were already winning. Read it as a
+reason to look at a turn, never as a score.
+
+The review opens in its own browser tab from the end-of-game card. To keep one,
+or to review any game still in the log, run this in the window you started the
+coach from:
+
+    python app\settle_up.py --latest --html my-review.html
+
 ## The one question it asks you
 
 <img src="docs/first-run.png" alt="The first-run card: the log.config block to copy, a line saying nothing has been sent yet, and the question with Yes and No buttons" width="560">
@@ -163,11 +191,12 @@ Some facts, kept apart from that judgement:
   fine and not a promise that it is. Blizzard reserves the right to read its own
   words differently whenever it likes. I am not a lawyer and this is not legal
   advice.
-- **Not telling you what to buy is a product decision as much as a legal
-  one.** The plan a coach hands you is the least checked thing it produces, and
-  a number you interpret yourself is worth more than a verdict you cannot audit.
-  Showing the model's plan *after* the game is the part that can be checked
-  against what happened.
+- **Two things are true at once, and the review is the honest half.** Not naming
+  a move while you play is the limit this tool accepted. But the model's plan
+  was never the problem by itself — an unmeasured plan asserted at you mid-turn
+  was. Settle Up shows it after the game, beside what actually happened and how
+  much of it the review could judge, which is the version of this that can be
+  checked rather than believed.
 - **None of that makes it appropriate everywhere.** Turn it off for tournaments
   and any organised event. Their rules bar outside help outright, and in that
   setting the question is not even close.

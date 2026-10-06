@@ -54,13 +54,31 @@ verdicts. And it is not a claim that the model was wrong to have opinions: the
 plan is the part of this project worth keeping, and the review is where it can
 be measured against outcomes instead of asserted at a player mid-turn.
 
-**Not yet built:** the review itself (PIVOT.md Phase 2). Until it exists, the
-plan is recorded locally and readable through the maintainer tools; the player
-sees the state overlay. Do not describe the review as shipping until it does.
+**The review exists as of 2026-10-06** (`settle_up.py`, PIVOT.md Phase 2): one
+row per advised buy phase, the model's line beside what the player actually did,
+and the effective HP the following fight cost. Reachable three ways — the
+end-of-game card's "Settle up" link, the overlay server's `/review` route, and
+`python app/settle_up.py --latest` for any game still in the log.
+
+What it does NOT yet grade: a phase whose plan leads with a `cast` (or a swap, a
+play, a pick) is reported as **not graded**, and the count is printed rather than
+hidden. On the first real game measured — 2026-10-06, 16 advised phases — that
+was **8 of 16**, because `value.top_move` leaves `card` as None on a cast step,
+so the only name in the payload is prose ("Cast Them Apples"). Matching prose
+against the log is the "formatting used as data" failure the audit flagged
+elsewhere. The fix is one line in the planner plus `player_actions` recording
+WHICH spell was cast (it currently only counts them). Until then the review
+states its own coverage instead of guessing at it.
 
 ---
 
 ## 1. Vision / One-line Pitch
+
+**Superseded for the live path by §0 (2026-10-06).** What follows is the pitch
+this project was built on and the reasoning behind the engine, which is still
+exactly what produces the numbers — but the live overlay no longer says "here's
+the best move", and the model's line appears only in the review. Kept because
+every section below assumes it.
 
 A real-time Battlegrounds coaching overlay that reads the live board and gives
 **dynamic, explainable advice** — competing with HSReplay/Firestone stat overlays

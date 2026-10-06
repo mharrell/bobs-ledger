@@ -1006,6 +1006,20 @@ function renderWelcome(a) {
   if (a.steps) card.appendChild(el('pre', 'w-steps', a.steps));
   card.appendChild(el('div', 'w-priv', a.privacy || ''));
   if (a.share) card.appendChild(shareRow(a.share));
+  // The review (2026-10-06, PIVOT.md Phase 2). The plan is not on this page
+  // any more — this is where a player goes to see it, and the whole point is
+  // that it appears only once the game it describes is over. A plain link
+  // rather than a fetch: the report is a standalone page, and opening it in
+  // its own tab is what lets a player keep it.
+  if (a.review_url) {
+    const row = el('div', 'w-share');
+    const link = el('a', 'w-share-btn', a.review_label || 'Settle up');
+    link.href = a.review_url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    row.appendChild(link);
+    card.appendChild(row);
+  }
   decide.appendChild(card);
 }
 // Consent lives on the welcome card, because that is the one screen every
@@ -1573,6 +1587,11 @@ class _State:
         # minutes to converge, so a 5-tap override at hero pick is the
         # precise path (2026-09-19; the list itself is not in any log).
         self.manual_bans = None
+        # The finished game's review (settle_up.render_html), or None. Built
+        # off-thread by live.py when a game ends, because it REPLAYS the game
+        # and the monitor's tick has to keep answering the log (2026-10-06).
+        self.review = None
+        self.review_label = None
 
 
 #: The deliberate empty state (fresh boot, a new game's first tick, or a
@@ -1728,8 +1747,14 @@ def welcome_payload(game_over=None):
                                if v is not None}
         payload["tagline"] = _game_over_line(game_over)
         payload["status"] = ("The coach is still running, watching for your "
-                             "next game — advice starts again the moment your "
-                             "next shop opens.")
+                             "next game — the board read starts again the "
+                             "moment your next shop opens.")
+        # The link to the review. Shown on the END-OF-GAME card only: it is the
+        # one moment the plan may be seen, and making it a link (rather than
+        # rendering the plan here) is what keeps the plan off this page
+        # entirely (PIVOT.md).
+        payload["review_url"] = "/review"
+        payload["review_label"] = "Settle up — what the model would have played"
     else:
         payload["hint"] = _welcome_hint()
         # The block live.py's console message has always claimed this card
@@ -1779,6 +1804,72 @@ def show_game_over(analysis=None):
         _state.analysis = None
         _state.payload = welcome_payload(game_over=game_over)
         _state.etag = hashlib.sha1(_state.payload).hexdigest()
+
+
+def set_review(html_text, label=None):
+    """Hand the finished game's review to the overlay, for /review to serve.
+
+    The pivot's other half (PIVOT.md §4 Phase 2): the model's plan is not in the
+    live payload at all, and this is how a player gets to see it — after the
+    game, on a page of its own. `live.py` builds it off-thread when a game ends,
+    because building it replays the game.
+
+    A review that fails to build leaves `review` as it was, so /review answers
+    "still putting it together" rather than a broken page.
+    """
+    body = (html_text or "").encode("utf-8")
+    with _state.lock:
+        _state.review = body or None
+        _state.review_label = label
+
+
+def review_meta():
+    """(is it ready, its label) — for tests and for the pending page."""
+    with _state.lock:
+        return _state.review is not None, _state.review_label
+
+
+def _review_response():
+    """(code, headers, body) for GET /review. Pure, like _analysis_response —
+    so the pending path is testable without a socket."""
+    with _state.lock:
+        body = _state.review
+    headers = {"Cache-Control": "no-store"}
+    if body is None:
+        return 200, headers, _review_pending_page().encode("utf-8")
+    return 200, headers, body
+
+
+def _review_pending_page():
+    """What /review says before the review exists.
+
+    Two honest cases, and the page names which: a game is being reviewed right
+    now (the build replays it, so it takes a few seconds), or nothing has
+    finished yet this run. It also names the command that works on any past
+    game, because the overlay's review only ever covers the game that just
+    ended — the logs are on disk and `settle_up.py` reads them.
+    """
+    ready, _label = review_meta()
+    if _state.analysis is not None:
+        line = "A game is in progress. The review appears here when it ends."
+    else:
+        line = ("No finished game this session yet. Start a game and the "
+                "review appears here when it ends — or run "
+                "<code>python app\\settle_up.py --latest</code> in the window "
+                "you started the coach from, for any game already in the log.")
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Settle Up</title>
+<style>
+  body {{ margin:0; background:#0d0d0d; color:#fff; padding:40px;
+    font:15px/1.5 "Segoe UI", system-ui, sans-serif; }}
+  .wrap {{ max-width:560px; margin:0 auto; }}
+  h1 {{ color:#ffd97a; font-size:22px; margin:0 0 6px; }}
+  p {{ color:#c3c2b7; }}
+  code {{ background:#242422; padding:1px 5px; border-radius:3px; }}
+</style></head><body><div class=wrap>
+<h1>Settle Up</h1>
+<p>{line}</p>
+</div></body></html>"""
 
 
 def store_manual_bans(tribes):
@@ -2410,6 +2501,14 @@ class _Handler(BaseHTTPRequestHandler):
             code, headers, body = _analysis_response(
                 self.headers.get("If-None-Match"))
             self._send(code, "application/json", body, headers=headers)
+            return
+        if self.path.rstrip("/") == "/review":
+            # The model's plan, after the game (2026-10-06, PIVOT.md). Served
+            # from the same loopback server as the overlay so the end-of-game
+            # card can link to it without writing a file anywhere, and
+            # no-store because it is replaced every game.
+            code, headers, body = _review_response()
+            self._send(code, "text/html; charset=utf-8", body, headers=headers)
             return
         if self.path.rstrip("/") == "/artmiss":
             # Served BEFORE the /img regex (the pattern would otherwise not

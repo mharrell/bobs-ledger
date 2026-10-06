@@ -488,5 +488,77 @@ class TestForeignCallers(unittest.TestCase):
         self.assertEqual(coach_ui._host_only(None), "")
 
 
+class TestReviewRoute(unittest.TestCase):
+    """GET /review — the pivot's other half, reachable from the overlay.
+
+    The live payload carries no plan at all (test_live_view.py), so this route
+    and the end-of-game link are the ONLY way a player ever sees the model's
+    line. If this regressed to a 404, the plan would simply be gone from the
+    product with every other test still passing.
+    """
+
+    def setUp(self):
+        self._saved = (coach_ui._state.review, coach_ui._state.review_label,
+                       coach_ui._state.analysis)
+        coach_ui._state.review = None
+        coach_ui._state.review_label = None
+        coach_ui._state.analysis = None
+
+    def tearDown(self):
+        (coach_ui._state.review, coach_ui._state.review_label,
+         coach_ui._state.analysis) = self._saved
+
+    def test_no_game_yet_says_so_and_names_the_fallback(self):
+        code, headers, body = coach_ui._review_response()
+        text = body.decode("utf-8")
+        self.assertEqual(code, 200)
+        self.assertEqual(headers["Cache-Control"], "no-store")
+        self.assertIn("No finished game this session yet", text)
+        # The CLI is the honest fallback: the overlay's review only ever covers
+        # the game that just ended, and the logs are on disk.
+        self.assertIn("settle_up.py", text)
+
+    def test_a_game_in_progress_is_not_reported_as_never_having_played(self):
+        coach_ui._state.analysis = {"hero": "Chenvaala"}
+        _code, _headers, body = coach_ui._review_response()
+        self.assertIn("in progress", body.decode("utf-8"))
+
+    def test_a_ready_review_is_served_verbatim(self):
+        coach_ui.set_review("<html>THE REVIEW</html>", "Settle up — Chenvaala")
+        code, _headers, body = coach_ui._review_response()
+        self.assertEqual(code, 200)
+        self.assertEqual(body.decode("utf-8"), "<html>THE REVIEW</html>")
+        ready, label = coach_ui.review_meta()
+        self.assertTrue(ready)
+        self.assertIn("Chenvaala", label)
+
+    def test_an_empty_review_falls_back_to_pending_rather_than_a_blank_page(self):
+        coach_ui.set_review("", "label")
+        _code, _headers, body = coach_ui._review_response()
+        self.assertIn(b"Settle Up", body)
+
+
+class TestTheGameOverCardLinksToTheReview(unittest.TestCase):
+    def test_the_link_rides_the_end_of_game_card(self):
+        import json as _json
+        payload = _json.loads(
+            coach_ui.welcome_payload(game_over={"placement": 2, "turn": 16})
+            .decode("utf-8"))
+        self.assertEqual(payload["review_url"], "/review")
+        self.assertIn("Settle up", payload["review_label"])
+
+    def test_a_fresh_install_is_not_offered_a_review(self):
+        # The first-run card is not a game-over card; offering a review of a
+        # game that was never played would be the "dead coach looks finished"
+        # confusion in reverse.
+        import json as _json
+        payload = _json.loads(coach_ui.welcome_payload().decode("utf-8"))
+        self.assertNotIn("review_url", payload)
+
+    def test_the_page_can_draw_the_link(self):
+        self.assertIn("a.review_url", coach_ui._HTML)
+        self.assertIn("review_label", coach_ui._HTML)
+
+
 if __name__ == "__main__":
     unittest.main()
