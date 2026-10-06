@@ -58,6 +58,15 @@ from config import HS_LOG_GLOB
 from extract_game import split_game_chunks, extract_game, _friendly_player
 import live_coach
 
+#: Durable Power.log copies, at the repo ROOT (one level above the code), which
+#: is where the project already keeps maintainer-only working data — and where
+#: `.gitignore` already excludes it, because these logs carry real handles.
+#: Resolved from __file__, the way the patch-coverage gate had to be: deriving
+#: it from the module's own directory alone silently pointed nowhere.
+ARCHIVE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "logs_archive")
+
 #: Lines without a new offer set = the options block is fully printed, so this
 #: is the settled shop the live loop advises on (replay_review SETTLE).
 SETTLE = 20
@@ -356,6 +365,171 @@ def baseline_report(rows):
                   f"lost {100 * sum(1 for r in rs if r['lost']) / len(rs):.0f}%")
 
 
+def archived_logs():
+    """Power.logs saved under `logs_archive/`, newest first.
+
+    Hearthstone ROTATES its logs, so a session measured today is not
+    re-derivable tomorrow — and every finding in the plan is only as good as
+    the ability to re-measure it. The archive is the durable copy (gitignored:
+    these carry real handles and never leave the machine except through the
+    sanitized corpus path).
+
+    Archived logs are read FIRST and win over a live session of the same name:
+    a live one may still be growing, so it is the less trustworthy copy.
+    """
+    out = {}
+    for p in glob.glob(os.path.join(ARCHIVE_DIR, "*Power.log")):
+        # `<session>__Power.log` -> `<session>`
+        name = os.path.basename(p).split("__")[0]
+        out[name] = p
+    return out
+
+
+def all_logs(include_live=False):
+    """[(session, path)] — the archive plus any session not already in it."""
+    seen = archived_logs()
+    out = [(name, path) for name, path in sorted(seen.items())]
+    for p in sorted(glob.glob(HS_LOG_GLOB), key=os.path.getmtime):
+        name = os.path.basename(os.path.dirname(p))
+        if name in seen:
+            continue          # the archive's copy is the durable, complete one
+        if not include_live and time.time() - os.path.getmtime(p) < 1800:
+            continue          # half-written; see the note in main()
+        out.append((name, p))
+    return out
+
+
+def rows_from_decisions(session, where=None, game_idx=1):
+    """Rows for a game whose Power.log is GONE, rebuilt from its decision log.
+
+    Hearthstone rotates its logs, and this has already cost one game: the
+    2026-10-02 session's Power.log no longer exists, so the fight table cannot
+    read it at all — even though its decision log is intact and carries
+    everything the CHECK A question needs.
+
+    What this loses, and it must not be quietly glossed over:
+
+      * the outcome is derived from the log's own recorded effective HP
+        (`health` + `armor`, consecutive advisories) rather than from the
+        combat's DAMAGE/ARMOR writes, so it is the coach's series instead of
+        an independent read of the log. That is the circularity the grader is
+        supposed to avoid — acceptable only because the alternative for this
+        game is nothing at all, and it is labelled `outcome_from="decisions"`.
+      * `our_board` / `their_board` do not exist, so no feature can be built.
+        The row still carries `our_stats` / `their_stats` / `forecast`, which
+        is exactly what Check A scores.
+
+    Rows are keyed to the first advisory of each turn, so the grain matches
+    `rows_for`'s one-row-per-buy-phase.
+    """
+    import decision_log
+    if where is None:
+        where = decision_log.LOG_DIR
+    path = os.path.join(where, f"decision_{session}.jsonl")
+    if not os.path.exists(path):
+        return []
+    records = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                try:
+                    records.append(json.loads(line))
+                except ValueError:
+                    continue
+    by_turn = {}
+    for r in records:
+        t = r.get("turn")
+        if t is None or t in by_turn:
+            continue           # one row per buy phase, like rows_for
+        by_turn[t] = r
+    rows = []
+    for t in sorted(by_turn):
+        r = by_turn[t]
+        a = r.get("analysis") or {}
+        hp = a.get("health")
+        rows.append({
+            "session": session, "game": game_idx,
+            "hero": a.get("hero"), "placement": None,
+            "turn": t, "tier": a.get("tier"), "gold": a.get("gold"),
+            "health": hp, "armor": a.get("armor"),
+            "eff_hp": None if hp is None else hp + (a.get("armor") or 0),
+            "damage_cap": a.get("damage_cap"),
+            "our_stats": a.get("board_stats"),
+            "their_stats": (a.get("opp_stats") or a.get("lobby_opp")
+                            or a.get("baseline_opp")),
+            "opp_age": a.get("opp_age"),
+            "fresh": a.get("opp_stats") is not None,
+            "forecast": None,       # rebuilt below from top_move's companion
+            "our_board": [], "their_board": [],
+            "top_move_steps": a.get("top_move_steps") or [],
+            "buy_this": a.get("buy_this"), "shop_rank": a.get("shop_rank") or [],
+            "lost": None, "damage": None, "tie": None,
+            "outcome_from": "decisions",
+        })
+        # `forecast` is not a decision-log field — it is computed by analyze()
+        # and stored on the record only in the session-report projection. The
+        # verbatim string is recoverable from `situation`, but the VERDICT
+        # parser needs the forecast shape, so leave it None rather than guess:
+        # a fabricated forecast would score the wrong rule.
+        rows[-1]["forecast"] = _forecast_from_record(r)
+    # outcome: effective-HP drop between consecutive advisories.
+    #
+    # TIES ARE NOT DETECTABLE HERE, and saying so beats guessing. In the log
+    # path a tie is (no damage) AND (predamage > 0) — the winner takes 0 and a
+    # tie takes 0, so predamage is what separates them. A decision log has no
+    # predamage, so a zero-damage interval could be a tie OR a clean win; an
+    # earlier version of this function called every zero interval a tie, which
+    # inflated the tie count from 2 to 5. `tie` stays None.
+    prev = None
+    for row in rows:
+        if prev is not None and prev["eff_hp"] is not None \
+                and row["eff_hp"] is not None:
+            d = prev["eff_hp"] - row["eff_hp"]
+            prev["damage"] = d
+            prev["lost"] = d > 0
+            prev["tie"] = None
+        prev = row
+    return rows
+
+
+def _forecast_from_record(record):
+    """The forecast string for a decision record, or None.
+
+    Regenerating it would grade TODAY's code over a game played by an older
+    build, which is a different question. Records written by builds that stored
+    the string have it under `analysis.forecast`; older ones do not, and those
+    rows are honestly left without a verdict.
+    """
+    a = record.get("analysis") or {}
+    fc = a.get("forecast")
+    return fc if isinstance(fc, str) else None
+
+
+def _decision_only_sessions(covered, where=None):
+    """[(session, rows)] for decision logs whose Power.log is unavailable.
+
+    `where` is a decision-log directory. It must be given explicitly rather
+    than discovered: `decision_logs/` is gitignored and therefore lives inside
+    whichever copy wrote it — the installed build has its own, this checkout
+    has another, and a git worktree has none. Auto-discovery silently found
+    nothing and dropped a game from the measurement, which is exactly the
+    class of quiet loss this table exists to avoid.
+    """
+    if not where:
+        return []
+    out = []
+    for name in sorted(os.listdir(where)) if os.path.isdir(where) else []:
+        if not (name.startswith("decision_") and name.endswith(".jsonl")):
+            continue
+        sess = name[len("decision_"):-len(".jsonl")]
+        if sess in covered or sess == "unknown":
+            continue
+        rows = rows_from_decisions(sess, where)
+        if rows:
+            out.append((sess, rows))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("paths", nargs="*", help="Power.log files")
@@ -363,27 +537,36 @@ def main():
     ap.add_argument("--live", action="store_true",
                     help="include the newest log even if it is still being "
                          "written")
+    ap.add_argument("--decisions", metavar="DIR",
+                    help="a decision_logs/ directory to pick up games whose "
+                         "Power.log has ROTATED AWAY. Explicit because that "
+                         "directory is gitignored and lives inside whichever "
+                         "copy wrote it — the install, this checkout, or "
+                         "neither, in a worktree.")
     args = ap.parse_args()
-    paths = args.paths or sorted(glob.glob(HS_LOG_GLOB),
-                                 key=os.path.getmtime)
+    sources = ([(os.path.basename(os.path.dirname(p)), p) for p in args.paths]
+               if args.paths else all_logs(include_live=args.live))
     all_rows = []
-    for p in paths:
-        # An in-progress session is a half-written game: its last phase has no
-        # following fight, and Hearthstone rotates logs, so a row from it is
-        # not re-derivable later. Skipped unless asked for (outcome_audit's
-        # freshness guard, same reason).
-        if not args.live and not args.paths and \
-                time.time() - os.path.getmtime(p) < 1800:
-            print(f"(skipping live file: {os.path.basename(p)})")
-            continue
+    covered = set()
+    for sess, p in sources:
+        covered.add(sess)
         lines = open(p, encoding="utf-8", errors="replace").readlines()
-        sess = os.path.basename(os.path.dirname(p))
         for gi, (s, e) in enumerate(split_game_chunks(lines), 1):
             rows = rows_for(lines[s:e], sess, gi)
             all_rows += rows
             if rows:
                 print(f"{sess} g{gi}: {len(rows)} advisories  "
                       f"hero={rows[0]['hero']} place={rows[0]['placement']}")
+    # Sessions whose Power.log has ROTATED AWAY still have a decision log, and
+    # its health series is enough for the verdict question. Without this the
+    # oldest games silently vanish from every measurement — one already has.
+    if not args.paths and args.decisions:
+        for sess, rows in _decision_only_sessions(covered, args.decisions):
+            all_rows += rows
+            print(f"{sess} g1: {len(rows)} advisories  "
+                  f"(from the DECISION LOG — its Power.log has rotated off; "
+                  f"outcome is the coach's own HP series, not an independent "
+                  f"read)")
     print(f"\n{len(all_rows)} advisory rows across "
           f"{len({(r['session'], r['game']) for r in all_rows})} game(s)")
     if all_rows:
