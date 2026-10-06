@@ -95,9 +95,6 @@ second game window, so put it on another monitor or leave it behind the game.
 Every card carries the same facts: its tier, its text on hover, and what it is
 worth. Nothing on the page names a move.
 
-*The screenshots in `docs/` still show the previous layout. They are being
-re-shot; the panel they picture no longer exists.*
-
 ## Settle Up (the review)
 
 When a game ends, the card on screen offers **Settle up**. That is where the
@@ -136,8 +133,6 @@ single-game review is instant by comparison.
     python app\settle_up.py --history 3
 
 ## The one question it asks you
-
-<img src="docs/first-run.png" alt="The first-run card: the log.config block to copy, a line saying nothing has been sent yet, and the question with Yes and No buttons" width="560">
 
 The first time it starts, the coach asks whether it may send a short summary of
 each finished game back to me. **Nothing is sent unless you say yes**, and saying
@@ -292,9 +287,13 @@ release check stands aside and you update with `git pull`.
 ### The layout
 
 The program lives in `app/`. The root keeps what a player should see — this
-README, `LICENSE`, `docs/`, the launcher — plus what never ships: `analysis/`
+README, `LICENSE`, the launcher — plus what never ships: `analysis/`
 (research notes, some of which name real opponents), `telemetry/` (the release
 channel itself), `CLAUDE.md`, `DESIGN.md`, `ROADMAP.md`.
+
+There are no screenshots in the tree at the moment. The old ones showed the
+pre-pivot overlay and went out in the 2026-10-06 releases; the replacements will
+land with a layout that still exists.
 
 ### Tests
 

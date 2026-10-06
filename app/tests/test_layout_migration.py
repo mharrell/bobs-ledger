@@ -26,7 +26,7 @@ import update  # noqa: E402
 
 #: Root files of an install that was NOT touched by the reshape.
 SURVIVORS = ("README.md", "LICENSE", "Start Bob's Ledger.cmd", "VERSION",
-             ".update_state.json", "docs/decide.png", "my_notes.txt",
+             ".update_state.json", "screenshot.png", "my_notes.txt",
              "my_script.py")
 
 
@@ -68,10 +68,12 @@ class LayoutFixture(unittest.TestCase):
                    '{"advice": "keep me"}\n')
         self.write(os.path.join("img_cache", "ABC.png"), "PNG")
         self.write(".art_miss.json", "{}\n")
-        # documents and stamps that must survive
+        # documents and stamps that must survive. The PNG stands in for a file a
+        # player left at the root, which the reshape must not touch — it used to
+        # be `docs/decide.png`, a directory the repo no longer has (2026-10-06).
         self.write("README.md", "# Bob's Ledger\n")
         self.write("LICENSE", "MIT\n")
-        self.write(os.path.join("docs", "decide.png"), "PNG")
+        self.write("screenshot.png", "PNG")
         self.write("Start Bob's Ledger.cmd", "@echo off\r\n")
         self.write("VERSION", "b42b652\n")
         self.write(".update_state.json", '{"version": "b42b652"}\n')

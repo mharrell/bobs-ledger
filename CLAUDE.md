@@ -51,8 +51,15 @@ maintainer-only parts (`analysis/`, `telemetry/`, `CLAUDE.md`, `DESIGN.md`,
 ## Layout
 
 **The code lives in `app/`, not at the root.** The root keeps the launcher,
-`README.md`, `LICENSE` and `docs/`, so someone who unzips a release sees the
-thing to click and the documents — and nothing else. The zip mirrors the repo
+`README.md` and `LICENSE`, so someone who unzips a release sees the
+thing to click and the documents — and nothing else. There is **no `docs/`
+directory any more**: its four screenshots showed the pre-pivot overlay (the
+"DO THIS NOW" panel that the 2026-10-06 pivot deleted) and shipped in the
+`94a07de` and `2ef006c` releases; they were removed rather than re-captioned, and
+the replacements have not been taken yet. Any new shot must show a layout that
+still exists — and if a README sentence describes the screenshots, it needs
+updating in the same change, because a stale sentence about a picture is the
+same failure as a stale sentence about the code. The zip mirrors the repo
 (it walks the working tree), with `VERSION` and `.update_state.json` written at
 the zip ROOT: that directory is what `update.py` resolves as the install root,
 one level above the code.

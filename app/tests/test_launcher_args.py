@@ -25,7 +25,7 @@ import unittest
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # app/
 #: The launcher sits one level ABOVE the code: a player's folder is the
-#: launcher, the README, the licence, docs/ and app/ (2026-10-02).
+#: launcher, the README, the licence and app/ (2026-10-02).
 ROOT = os.path.dirname(HERE)
 LAUNCHER = os.path.join(ROOT, "Start Bob's Ledger.cmd")
 
