@@ -1,22 +1,62 @@
 # Bob's Ledger — Design
 
-**Built:** a real-time coach for Hearthstone Battlegrounds. It reads the game's
-own `Power.log`, reconstructs the board, and advises each buy phase. What
-produces the advice is a **deterministic value function plus a growth
-simulator over a curated meta database** — no model is called during play, no
-API key is needed, and nothing about the game leaves the machine.
+**Built:** a Battlegrounds board reader and (in progress) a post-game review. It
+reads the game's own `Power.log`, reconstructs the board, and shows what is true
+about it. What produces those numbers is a **deterministic value function plus a
+growth simulator over a curated meta database** — no model is called during play,
+no API key is needed, and nothing about the game leaves the machine.
 
 **Why this document mentions LLMs at all.** The project began as an
 exploration of where a language model *would* help in a game coach, and that
 thinking is preserved below (sections 4, 7 and the strategy notes) because it
-explains why the coach is shaped the way it is. Two things came of it, and
+explains why the engine is shaped the way it is. Two things came of it, and
 neither is the runtime: `coach_llm.py` + `patch_notes.py` extract Blizzard's
 patch notes into the meta DB (maintainer tooling, absent from a release), and
-`compare_models.py` was a model-comparison harness. The **coach itself calls
+`compare_models.py` was a model-comparison harness. The **live path calls
 no model**, and any section here that reads as a plan is history, not a
 roadmap item.
 
-**Status:** Live coach running (Phase 5 V1 overlay; see ROADMAP.md).
+**Status:** Live overlay running (Phase 5 V1 overlay; see ROADMAP.md), now
+shipping state only — see §0.
+
+---
+
+## 0. Posture: what ships live, what ships after the fact (2026-10-06)
+
+**The live path ships STATE. The verdict ships after the fact, in the review.**
+Full reasoning, the corrections to the claim that triggered it, and the phase
+plan are in `PIVOT.md` (maintainer-only, and never published).
+
+The split, precisely:
+
+| Live (the overlay)                                                            | After the fact (the review)                        |
+| ----------------------------------------------------------------------------- | -------------------------------------------------- |
+| Board stats vs the next opponent and vs the lobby; fragility band; scout strip  | The model's line for the phase, step by step        |
+| Each board minion's value number and its composition role                       | The card it would have bought, and why              |
+| The tavern's offers in the game's own order, with price, pool count and role    | The pick it would have taken                        |
+| Comp pieces owned/missing; commit-readiness meters; lobby pressure              | What the player actually did, and what it cost      |
+| Hero/trinket/discover options with their own scores — no winner named           | Adherence and outcome, per advice class             |
+
+**The mechanism is one choke point.** `coach_ui.render_json()` is the only place
+the page's view is built, and it drops every key in `LIVE_VERDICT_KEYS`. The
+analysis keeps all of them: `decision_log.record()` writes it, and
+`replay_review` / `outcome_audit` / `fight_table` read it back. So the engine is
+untouched — `value.top_move` still computes the numbered plan on every buy
+phase — and only its destination changed. `test_live_view.py` asserts all three
+halves (dropped from the page, kept in the analysis, read by no page code), and
+`test_readme_claims.py` asserts the README's claims about the machine *and* that
+the capability is absent from `app/`.
+
+**Two things this posture does NOT claim.** It is not a claim of safety: EULA
+1.C prohibits software that "facilitates the gameplay" and grants an advantage,
+and a statistics overlay grants that advantage too — the clause does not mention
+verdicts. And it is not a claim that the model was wrong to have opinions: the
+plan is the part of this project worth keeping, and the review is where it can
+be measured against outcomes instead of asserted at a player mid-turn.
+
+**Not yet built:** the review itself (PIVOT.md Phase 2). Until it exists, the
+plan is recorded locally and readable through the maintainer tools; the player
+sees the state overlay. Do not describe the review as shipping until it does.
 
 ---
 

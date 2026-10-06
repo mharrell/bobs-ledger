@@ -155,7 +155,8 @@ SPEC = {
 DROPPED_ON_PURPOSE = (
     "opp_comp.name (the opponent's handle), log (session directory name), "
     "offset, fingerprint, board[], hand[], hand_plan[], shop_rank[], "
-    "shop_seen[], game_comps, playable_comps, own_pool, out_of_pool, "
+    "shop_offers[], shop_seen[], game_comps, playable_comps, own_pool, "
+    "out_of_pool, "
     "reach_sources, sell_rank, target_cards, dark_gifts, engine_recipes, "
     "lobby_opp, opp_pool, opp_trinkets, activations, baseline_opp",
 )
@@ -177,7 +178,7 @@ DROPPED_FROM_ANALYSIS = frozenset({
     "hunt_targets", "last_opp_stats", "level_cost", "lobby_opp", "never_won",
     "opp_age", "opp_comp", "opp_pool", "opp_quiet", "opp_stats", "opp_trinkets",
     "out_of_pool", "own_pool", "playable_comps", "reach_sources", "sell_rank",
-    "shop_costs", "shop_rank", "shop_seen", "target_cards",
+    "shop_costs", "shop_offers", "shop_rank", "shop_seen", "target_cards",
     "target_comp_evidence", "target_state", "tier", "tribe_pressure",
     "tribe_roster", "tribes_detecting", "turn",
 })

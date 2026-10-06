@@ -181,10 +181,15 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     ranked = rank_choices(kind, c["options"], [], None)
     if not ranked:
         return
-    best = ranked[0]
-    # An unranked pick (no data — score None) is never blessed: the old
-    # "1. PICK Entities[0]" read as advice (2026-09-08 hero-power stance
-    # discover). Say the options carry no ranking instead.
+    # NO "pick X" — not in the payload and not in the console (2026-10-06,
+    # PIVOT.md). The hero pick is the most consequential decision of the game,
+    # and "1. PICK X — if locked, Y" was the plainest instruction this app
+    # produced. The options still ride `choice` with their own scores and
+    # reasons (what each one is worth is a fact about the card, and the
+    # reference DBs are what produce it), so the panel lists them and the
+    # choice stays the player's. The old code also had a "no data" branch that
+    # printed "your call" — with the verdict gone, the two cases differ only in
+    # whether the scores exist, which the lines themselves show.
     base = {"hero": None, "tier": None, "gold": None, "board": [],
             "banned": list(manual), "sell_rank": [], "shop_rank": [],
             "scenario": {}, "target_cards": None, "comps": [],
@@ -197,14 +202,7 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
             "tribe_roster": DISPLAY_TRIBES,
             "game_no": getattr(coach, "game_no", None),
             "choice": {"kind": kind, "source": c["source"], "ranked": ranked}}
-    if best[2] is None:
-        a = dict(base, top_move="no data on these options — your call")
-    else:
-        a = dict(base, top_move=(
-            "1. PICK " + best[0]
-            + (f" ({best[3]})" if best[3] else "")
-            + (f" — if locked, {ranked[1][0]}"
-               if kind == "hero" and len(ranked) > 1 else "")))
+    a = dict(base)
     # Store the SAME key that was compared above. Rebuilding a shorter tuple
     # here meant the comparison could never be equal, so this guard never
     # fired: identical advice was re-pushed on every 0.3 s tick and recorded
@@ -214,17 +212,16 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     coach_ui.update_analysis(a)
     decision_log.record(a, log_path=log_path, log_offset=log_offset,
                         game_no=game_no)
-    fallback = f" (or {ranked[1][0]} if locked)" if (kind == "hero" and len(ranked) > 1) else ""
     print("\n" + "=" * 52)
-    if best[2] is None:
-        print(f"CHOOSE 1 ({kind}) — no data, your call:")
+    if ranked[0][2] is None:
+        print(f"CHOOSE 1 ({kind}) — no data on these options:")
         for n, _cid, _s, why in ranked:
             print(f"       {n}" + (f"  [{why}]" if why else ""))
     else:
-        print(f"CHOOSE 1 ({kind}) — pick {best[0]}{fallback}")
+        print(f"CHOOSE 1 ({kind}) — the options and what each scores:")
         for n, _cid, s, why in ranked:
-            mark = " <-- " if n == best[0] else "     "
-            print(f"  {mark}{n}" + (f"  [{s:.1f} {why}]" if s is not None and why else ""))
+            bits = ([f"{s:.1f}"] if s is not None else []) + ([why] if why else [])
+            print(f"     {n}" + (f"  [{'; '.join(bits)}]" if bits else ""))
     print("=" * 52 + "\n", flush=True)
 
 

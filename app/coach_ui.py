@@ -6,13 +6,19 @@ situation analysis here each buy phase; the server exposes it as JSON at
 `/analysis` (ETag/304 — the page polls at 300ms and unchanged pushes cost a
 header) and serves a static HTML/CSS/JS page at `/`.
 Layout (2026-09-24 rework): two panes on a wide window — DECIDE (the state
-strip, the "Do this now" plan with its kind-chipped hero step, Your hand,
-Hand engine) sticky and never scrolled away; REFERENCE (Next opponent, Sell,
-Looking for, Comp direction meters, Lobby pressure, ranked Tavern, Playable
-comps) scrolls. Below ~1200px the original single priority column returns,
-decide first. Colors come from the token block at the top of the stylesheet
-(a test fails on hex drift); severity uses the status palette with a mark
-and a word, never color alone.
+strip, the Situation panel — the model's read of the game, the danger band, a
+pending pick's options — Your hand, Hand engine) sticky and never scrolled
+away; REFERENCE (Next opponent, Your board, Comp pieces, Comp direction
+meters, Lobby pressure, Tavern, Playable comps) scrolls. Below ~1200px the
+original single priority column returns, decide first. Colors come from the
+token block at the top of the stylesheet (a test fails on hex drift); severity
+uses the status palette with a mark and a word, never color alone.
+**This page shows STATE, never a verdict** (2026-10-06, PIVOT.md): the panel
+that used to say "Do this now" and the tavern row that used to be ranked
+best-first are the two visible ends of it, and render_json's
+LIVE_VERDICT_KEYS is the mechanism. The model's plan is still computed and
+still recorded — it is shown after the game, in the review, where the decision
+it describes cannot be acted on.
 Design: analysis/DESIGN_COACHING_UI.md. Tile names carry a '*N' tavern-tier
 badge (2026-09-09); hovering a tile shows the full card render — framed
 layout WITH text (img_cache/card/, fetched on demand) — or, when upstream
@@ -44,6 +50,37 @@ import config
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_PORT = 8747
+
+#: Fields the LIVE overlay never receives (2026-10-06, PIVOT.md).
+#:
+#: The live path ships STATE; the verdict ships after the fact, in the review
+#: built from `decision_logs/` — where the decision it describes can no longer
+#: be acted on. render_json() is the ONE place the page's view is built, so
+#: this is the one place the split has to hold: `value.top_move` keeps
+#: computing all of it, `decision_log.record()` keeps receiving ALL of it (the
+#: review and the corpus need it, and the analysis never leaves the machine),
+#: and the page gets what is left after these are dropped.
+#:
+#: Why drop rather than stop computing: the numbering, the ordering and the
+#: "Buy X" verb are the part that reads as an instruction, and they are exactly
+#: what a review needs in order to compare the player's line against the
+#: model's. Deleting the producers would delete the product's one real asset —
+#: PIVOT.md §3. Dropped rather than never-computed so nothing downstream can
+#: quietly reintroduce a key: `test_live_view.py` asserts each name here is
+#: ABSENT from the rendered payload and PRESENT in the analysis it came from.
+LIVE_VERDICT_KEYS = frozenset({
+    "top_move",            # the numbered plan, as text
+    "top_move_steps",      # ... and its structured steps (kind/action/reason)
+    "buy_this",            # the headline card the plan picked
+    "buy_step_card",       # the same pick, rewritten by the slot arbiter
+    "buy_step_roll",       # "roll instead" — the plan's other outcome
+    "buy_step_swap_veto",  # "not worth a board slot" — a verdict about a card
+    "buy_roll_text",       # the Buy box's copy of the roll step
+    "discard_target",      # which card the plan wants fed to a discard outlet
+    "hand_plan",           # the hand's ordered plan (the `hand` rows carry it)
+    "hunt_targets",        # "go find these" — a shopping list, not a state
+    "target_state",        # "pivot" / "committing" — a directive about direction
+})
 
 # On-demand card art: TWO kinds of image, so TWO sources (probed 2026-10-04,
 # per id class — see PORTRAIT_URLS/CARD_URLS below).
@@ -367,8 +404,9 @@ _HTML = r"""<!doctype html>
     --critical:#d03b3b;  /* DYING only — 3.6:1, large marks never small text */
     /* coach identity: currency / commit */
     --gold:#ffd97a;
-    /* step-kind accents (categorical, not status) */
-    --k-level:#8fb8ff; --k-cast:#cbb2ff; --k-sell:#e0a06a; --k-spell:#7ab8f0;
+    /* Spell tag accent. The other three (--k-level, --k-cast, --k-sell) only
+       ever colored plan-step chips and went with them (2026-10-06). */
+    --k-spell:#7ab8f0;
     /* severity band tints; --crit-ink carries the dying band's body text */
     --warn-bg:rgba(250,178,25,.13);  --warn-border:rgba(250,178,25,.38);
     --crit-bg:rgba(208,59,59,.16);   --crit-border:rgba(208,59,59,.45);
@@ -432,16 +470,15 @@ _HTML = r"""<!doctype html>
          padding:7px 9px; }
   .box h3 { margin:0 0 4px; font-size:11px; letter-spacing:.06em;
             text-transform:uppercase; color:var(--dim); }
-  /* The instruction panel is THE element: gold border, big numbered steps. */
+  /* The situation panel leads the page: gold border. It used to be "Do this
+     now" with big numbered steps; the steps are gone (2026-10-06, PIVOT.md) —
+     what it carries now is state, danger and a pending pick's options. */
   .instructions { border:2px solid var(--gold); padding:10px 12px; }
   .instructions h3 { color:var(--gold); font-size:12px; }
-  .instructions .step { font-size:19px; padding:3px 0; }
   .instructions .footline { margin-top:6px; padding-top:5px;
                             border-top:1px solid var(--border);
                             color:var(--dim); font-size:13px; }
-  .instructions .pickline { font-size:19px; font-weight:700;
-                            color:var(--good); padding:3px 0; }
-  /* The situation read: the plan's one-line thread. */
+  /* The situation read: direction, strength, danger in one line. */
   .instructions .situation { font-size:14px; font-weight:600;
                              color:var(--warn); padding:2px 0 3px; }
   /* DANGER: the fragility band as its own line. The 2026-09-18 loss was a
@@ -460,35 +497,11 @@ _HTML = r"""<!doctype html>
                                 border:1px solid var(--crit-border); }
   .instructions .danger.dying .dmark { color:var(--critical); }
   #statebar .warn { color:var(--warn); font-weight:700; }
-  /* Plan steps render from structured data: kind chip, then the action (ink —
-     identity is the chip's text + border accent, never the text color), the
-     tag and the ONE reason under it, the remaining clauses behind hover. */
-  .instructions .step .stepbody { display:inline-block; }
-  .instructions .step .act { font-weight:700; }
-  .instructions .step .chip { font-size:10px; font-weight:700;
-                              letter-spacing:.05em; color:var(--text-2);
-                              border:1px solid var(--border); border-radius:3px;
-                              padding:0 4px; margin-right:6px;
-                              vertical-align:2px; }
-  .instructions .step .chip.k-level { border-color:var(--k-level); }
-  .instructions .step .chip.k-buy   { border-color:var(--good); }
-  .instructions .step .chip.k-pick  { border-color:var(--gold); }
-  .instructions .step .chip.k-sell  { border-color:var(--k-sell); }
-  .instructions .step .chip.k-cast  { border-color:var(--k-cast); }
-  .instructions .step .chip.k-play  { border-color:var(--k-cast); }
-  .instructions .step .chip.k-swap  { border-color:var(--warn); }
-  .instructions .step .tag { color:var(--dim); font-size:12px; font-weight:600;
-                             margin-left:6px; border:1px solid var(--border);
-                             border-radius:3px; padding:0 4px; }
-  .instructions .step .why { color:var(--text-2); font-size:13px;
-                             font-weight:400; line-height:1.3; }
-  .instructions .step .more { cursor:help; color:var(--dim); opacity:.6; }
-  /* Step 1 is the view's ONE hero: the biggest text on the page, anchored by
-     a gold bar. (A pending pick gates the turn — the pick line above already
-     reads first, so the hero rule stays honest.) */
-  .instructions .step.hero { font-size:22px; padding:2px 0 4px;
-                             border-left:3px solid var(--gold);
-                             padding-left:8px; }
+  /* (The plan-step rules lived here: the kind chip, the action, the tag, the
+     reason, the hover clone, and "step 1 is the view's ONE hero". All of it
+     styled the numbered plan, which the live page no longer renders — the step
+     vocabulary went with it on 2026-10-06, PIVOT.md. The `.hero` rule's whole
+     premise was that one line was the answer.) */
   /* Horizontal game-like card tiles: thumb on top, name below. */
   .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
   .tile { display:flex; flex-direction:column; align-items:center; gap:2px;
@@ -498,24 +511,18 @@ _HTML = r"""<!doctype html>
                  text-overflow:ellipsis; white-space:nowrap; }
   .tile .tsub { font-size:11px; color:var(--text-2); }
   .tile .xcount { color:var(--dim); font-size:11px; }
-  .tile.buynow .tname { color:var(--gold); font-weight:700; }
-  /* Sell groups: safe | divider | keep, all on one horizontal line. */
-  .sellrow { display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; }
-  .sellgroup { display:flex; flex-direction:column; gap:4px; min-width:0; }
-  .sellgroup .grouplabel { font-size:12px; font-weight:700;
-                           letter-spacing:.05em; text-transform:uppercase; }
-  .sellgroup.safe .grouplabel { color:var(--good); }
-  .sellgroup.keep .grouplabel { color:var(--bad); }
-  .sellgroup.safe .tname { color:var(--good); }
-  .sellgroup.keep .tname { color:var(--bad); }
-  .gdivider { width:2px; align-self:stretch; flex:none;
-              background:var(--border); border-radius:1px; }
+  /* (`.tile.buynow` — the plan's pick glowing gold in the shop row — went with
+     the ranking itself: one lit tile is the recommendation the live page no
+     longer makes, 2026-10-06.) */
+  /* (The sell groups lived here: "Safe to sell | Do not sell" as two labelled
+     columns with a divider and good/bad name colors. Both labels are verdicts;
+     the box is "Your board" now, one row of numbers and roles.) */
   /* Hand-charge engine row: deployer on board? slot free? charging? */
   .engrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .engbit { font-size:12px; color:var(--text-2); }
   .engbit.ok { color:var(--good); }
   .engbit.bad { color:var(--bad); font-weight:700; }
-  /* Target-comp tiles: what you're hunting fully opaque, owned faded. */
+  /* Target-comp tiles: missing pieces fully opaque, owned faded. */
   .tile.comprow { opacity:.4; }
   .tile.comprow.missing { opacity:1; }
   /* A banned-tribe piece of a hybrid comp: struck out, dim. */
@@ -537,8 +544,8 @@ _HTML = r"""<!doctype html>
   img.thumb.canzoom:hover { transform:scale(4.5); transform-origin:center bottom;
                     position:relative; z-index:5; }
   .thumb.golden { box-shadow:0 0 0 2px var(--gold); }
-  /* The plan's buy glows in the tavern tiles. */
-  img.thumb.buynowart { box-shadow:0 0 0 2px var(--gold); }
+  /* (The tavern's "this is the buy" glow went with the plan's pick —
+     2026-10-06.) */
   /* Hover card: the full framed render (with text) near the tile, or — when
      upstream has no render for the card — a text box fed from the meta DB. */
   #tip { position:fixed; z-index:50; max-width:300px; }
@@ -580,11 +587,9 @@ _HTML = r"""<!doctype html>
   .cguidemd { font-size:12px; line-height:1.5; color:var(--text-2);
               white-space:pre-wrap; margin:3px 0 0; font-family:inherit;
               max-height:320px; overflow-y:auto; }
-  /* Top move: each numbered priority step on its own line */
-  .step { font-size:16px; font-weight:700; line-height:1.4; padding:1px 0; }
-  .stepnum { color:var(--gold); margin-right:7px; }
+  /* (The plan's per-step line and its gold step number lived here. The plan is
+     not rendered on the live page any more — 2026-10-06, PIVOT.md.) */
   .target { font-size:14px; font-weight:600; color:var(--gold); }
-  .target .pivot { color:var(--warn); }
   .tag-core { color:var(--gold); }
   .tag-spell { color:var(--k-spell); }
   .tag-addon { color:var(--warn); }
@@ -694,11 +699,11 @@ function freshnessLine(ageSec, silentSec) {
              : Math.max(0, Math.round(ageSec)) + 's';
   if (silentSec > LOST_AFTER) {
     return {alarm: true,
-            text: 'Lost contact with the coach — last advice ' + ago + ' ago'};
+            text: 'Lost contact with the coach — last read ' + ago + ' ago'};
   }
   if (ageSec < STALE_AFTER) return {alarm: false, text: ''};
   return {alarm: false,
-          text: 'Advice from ' + ago + ' ago — it updates when your next shop '
+          text: 'Read from ' + ago + ' ago — it updates when your next shop '
                 + 'opens'};
 }
 async function poll() {
@@ -856,7 +861,6 @@ function tile(cid, name, sub, opts) {
   const t = el('div', 'tile' + (opts.cls ? ' ' + opts.cls : ''));
   const img = thumb(cid, name);
   if (opts.golden) img.classList.add('golden');
-  if (opts.cls === 'buynow') img.classList.add('buynowart');
   t.appendChild(img);
   const nm = el('div', 'tname', badgeName(cid, name));
   if (opts.n > 1) nm.appendChild(el('span', 'xcount', '  ×' + opts.n));
@@ -980,15 +984,11 @@ function compRow(c) {
   wrap.appendChild(body);
   return wrap;
 }
-// Step-kind chips: 2-4 characters of text — font-independent (no glyphs)
-// and never the only carrier (the action word is ink; the chip's border
-// adds the kind accent). value._STEP_KINDS is the source of the kind set;
-// a drift-guard test fails when the two diverge.
-const KIND_CHIP = {
-  level: 'LV', pick: 'PICK', buy: 'BUY', sell: 'SELL', roll: 'ROLL',
-  cast: 'CAST', play: 'PLAY', hold: 'HOLD', swap: 'SWAP', discard: 'DISC',
-  note: 'NOTE',
-};
+// (The step-kind chip map lived here: LV/PICK/BUY/SELL/ROLL/CAST/PLAY/HOLD/
+// SWAP/DISC, one per kind in value._STEP_KINDS. It went with the numbered plan
+// — the chips labelled instructions, and the live page does not render any
+// (2026-10-06, PIVOT.md). value._STEP_KINDS still exists: it is how the plan's
+// steps are typed for the review and the corpus.)
 function renderWelcome(a) {
   const decide = document.getElementById('col-decide');
   const ref = document.getElementById('col-ref');
@@ -1148,13 +1148,16 @@ function render(a) {
     a.out_of_pool.forEach(t => statebar.appendChild(el('span', 'oop', t)));
   }
 
-  // INSTRUCTIONS — the explicit, do-this-now panel. A pending pick gates
-  // everything, so it reads first; then the numbered plan steps; then the
-  // level/roll reference line.
+  // SITUATION — what is true right now. This pane was headed "Do this now"
+  // and carried the numbered plan; the plan is not in the payload any more
+  // (2026-10-06, PIVOT.md), so what is left is the state: where the build
+  // stands, how close this hero is to dying, what the offers cost, and — when
+  // one is pending — the options a pick is choosing between. A pending pick
+  // still leads, because it gates everything else on the screen.
   const instr = el('div', 'box instructions');
-  instr.appendChild(el('h3', null, 'Do this now'));
-  // The situation read: the plan's thread (direction, strength, danger) in
-  // one line, so the numbered steps read as a story instead of a list.
+  instr.appendChild(el('h3', null, 'Situation'));
+  // The situation read: direction, strength, danger — the model's read of the
+  // game, in one line.
   if (a.situation) instr.appendChild(el('div', 'situation', a.situation));
   // DANGER — its own line, not clause three of a long row. The 2026-09-18 loss
   // is the reason it exists: 14 HP, bled 10 in two of three fights, every level
@@ -1177,27 +1180,25 @@ function render(a) {
     instr.appendChild(danger);
   }
   // The empty-shop gap (after a buy/roll the offers vanish from the log for
-  // a second or two before the game re-prints them) holds the old plan —
+  // a second or two before the game re-prints them) holds the last read —
   // saying so makes the lag legible instead of looking like a freeze
   // (2026-09-07 'the coach has seized up' report).
   if ((!a.shop_rank || !a.shop_rank.length) && (a.board || []).length) {
     instr.appendChild(el('div', 'none',
-      'reading the new shop… (the plan above is from your last action)'));
+      'reading the new shop… (this read is from your last action)'));
   }
+  // A PENDING PICK — the options and what each one is worth. The "PICK X"
+  // line and the "if locked, pick Y" fallback are gone (2026-10-06, PIVOT.md):
+  // the hero pick is the most consequential decision of the game, and naming
+  // one was the plainest instruction the app produced. Each option's own score
+  // and note stay — that is a fact about the card, from the same reference
+  // DBs the rest of the page reads — so the panel lists them and the choice is
+  // the player's.
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
-    const [name, cid, score, why] = a.choice.ranked[0];
-    // An unranked pick (no data — score null) is never blessed as "PICK X":
-    // the first listed option read as advice (2026-09-08 Trip Vouchers
-    // discover). Say the options carry no ranking instead.
-    const line = score == null
-      ? el('div', 'pickline', 'no data on these options — your call')
-      : el('div', 'pickline', 'PICK ' + badgeName(cid, name)
-                             + (why ? ' — ' + why : ''));
-    instr.appendChild(line);
-    if (a.choice.kind === 'hero' && a.choice.ranked.length > 1) {
-      instr.appendChild(el('div', 'none',
-        'if locked, pick ' + a.choice.ranked[1][0]));
-    }
+    const scored = a.choice.ranked.some(r => r[2] != null);
+    instr.appendChild(el('div', 'none', scored
+      ? 'Your pick — the options and what each scores:'
+      : 'Your pick — no data on these options:'));
     const alts = el('div', 'tiles');
     a.choice.ranked.forEach(([n, c, s, w]) => {
       alts.appendChild(tile(c, n, w != null ? w : (s != null ? s.toFixed(1) : null)));
@@ -1213,43 +1214,12 @@ function render(a) {
       instr.appendChild(el('div', 'cline', n + ' — ' + pickGuides[n]));
     });
   }
-  if (a.top_move) {
-    // Render from the STRUCTURED steps (value.top_move side-writes
-    // top_move_steps: {action, tag, reason, details, kind, card}) — the
-    // string is never re-parsed here. That was the audit's "formatting used
-    // as data" finding: rewording a message could silently break the page.
-    // Identity rides the kind chip (text, not color); the action word is
-    // ink. Step 1 is the view's ONE hero — unless a pending pick gates the
-    // turn, in which case the pick line above already leads.
-    const steps = a.top_move_steps || [];
-    if (steps.length) {
-      steps.forEach((s, i) => {
-        const kind = s.kind || 'note';
-        const line = el('div', 'step k-' + kind + (i === 0 ? ' hero' : ''));
-        line.appendChild(el('span', 'stepnum', i + 1));
-        const body = el('span', 'stepbody');
-        body.appendChild(el('span', 'chip k-' + kind,
-                           KIND_CHIP[kind] || 'NOTE'));
-        body.appendChild(el('span', 'act', s.action || s.text || ''));
-        if (s.tag) body.appendChild(el('span', 'tag', s.tag));
-        if (s.reason) body.appendChild(el('div', 'why', s.reason));
-        if ((s.details || []).length) {
-          // Hover rather than on-screen: the reasons are real, they are just
-          // not all worth a row while you have 30 seconds to spend gold.
-          const more = el('div', 'why more', '…');
-          more.title = s.details.join(' · ');
-          body.appendChild(more);
-        }
-        line.appendChild(body);
-        instr.appendChild(line);
-      });
-    } else {
-      // Minimal payload (the Choose-1 push carries only the string).
-      a.top_move.split(' · ').forEach(step => {
-        instr.appendChild(el('div', 'step', step));
-      });
-    }
-  }
+  // The numbered plan is NOT rendered here any more (2026-10-06, PIVOT.md).
+  // `value.top_move` still computes it, `decision_log` still records it, and
+  // the post-game review still reads it back — the live page is the one place
+  // it must not appear. It is not merely hidden: render_json() drops the keys
+  // (LIVE_VERDICT_KEYS), so there is nothing here to draw. The step-chip
+  // vocabulary went with it, and test_live_view.py fails if either returns.
   // Level/roll reference: the button's real price. An analysis without a
   // level_cost (never the live loop's case) shows no level line at all —
   // tier+1 was the old wrong model, never a fallback price.
@@ -1298,25 +1268,21 @@ function render(a) {
     ref.appendChild(box('Next opponent', body));
   }
 
-  // The plan's actual buy (highlighted in the shop tiles below too).
-  const stepCard = a.buy_step_card || null;
+  // (The plan's buy card lived here, to glow the matching shop tile. The row
+  // is in the game's own order now and nothing is highlighted — 2026-10-06.)
 
-  // HAND — casts from hand are free, stuck minions play free; the ranked
-  // order here is the plan's hand steps (they're numbered in the panel too).
-  // A `discard` verb (2026-09-23): the plan is feeding this card to a board
-  // outlet that discards it, because the card's own text says discarding beats
-  // casting it — it must not render as "play".
+  // HAND — what is in it and what each card is worth. Casting from hand is
+  // free and a stuck minion plays for free (log ground truth), so the score
+  // here is a value read, not a price. The ACTION VERB the plan attaches to
+  // each row ("cast" / "play" / "hold") is gone from the payload — a verb is
+  // an instruction — so this box lists the hand; what to do with it is the
+  // player's (2026-10-06, PIVOT.md).
   if (a.hand && a.hand.length) {
     const tiles = el('div', 'tiles');
     a.hand.forEach(s => {
-      // The plan's chosen discard fodder is named on the tile ("the plan's
-      // discard") — discard_target rode the payload unrendered until now.
-      const fodder = a.discard_target && a.discard_target === s.card;
-      const sub = (s.verb === 'cast' ? 'cast' : s.verb === 'hold' ? 'hold'
-                   : s.verb === 'discard' ? 'discard' : 'play')
-        + (s.score != null ? ' · ' + s.score.toFixed(0) : '')
-        + (fodder ? ' · the plan\'s discard' : '');
-      tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
+      tiles.appendChild(tile(s.card, s.name,
+                             s.score != null ? s.score.toFixed(0) : null,
+                             {golden: s.golden}));
     });
     decide.appendChild(box('Your hand', tiles));
   }
@@ -1324,60 +1290,50 @@ function render(a) {
   // HAND ENGINE — a hand-charge kit (Bream Counter + Diremuck Forager is
   // the known one): the charger grows IN HAND and the deployer summons it
   // at start of combat. Each fact is a live check; the 2026-09-10 game
-  // died with both broken and nothing on screen said so.
+  // died with both broken and nothing on screen said so. The checks state
+  // what is true; they used to carry the instruction ("play your chargers").
   if (a.engine) {
     const e = a.engine;
     const body = el('div', 'engrow');
     const bit = (text, cls) => body.appendChild(el('span', 'engbit' + (cls ? ' ' + cls : ''), text));
     if (e.on_board) bit('✓ ' + e.deployer_name + ' on board', 'ok');
-    else bit('✗ ' + e.deployer_name + ' NOT on board — play your chargers', 'bad');
+    else bit('✗ ' + e.deployer_name + ' NOT on board', 'bad');
     if (e.space) bit('✓ slot free', 'ok');
     else bit('✗ board full — the summon needs a free slot', 'bad');
     bit(e.charging + ' charging');
     decide.appendChild(box('Hand engine', body));
   }
 
-  // SELL — one horizontal line: safe to sell | divider | do not sell.
-  // The split is the value function's own filler threshold (SELL_FILLER_SCORE,
-  // shipped as thresholds.sell_safe_below — what top_move calls "a clear filler").
-  const sellSafe = el('div', 'tiles');
-  const sellKeep = el('div', 'tiles');
+  // YOUR BOARD — every minion with its value number and its composition role
+  // (comp core, engine piece, filler...). One row, lowest first. This box used
+  // to be "Sell", split into "Safe to sell" and "Do not sell": both labels are
+  // verdicts, and the split is exactly the sort of "sell this one" the live
+  // path no longer gives (2026-10-06, PIVOT.md). The numbers and the roles are
+  // facts about your own board; what to do about them is the player's call.
+  const sellTiles = el('div', 'tiles');
   (a.sell_rank || []).forEach(s => {
     // Board minions only — a hand card can't be sold until it's played
     // (player rule 2026-09-09), so render_json keeps hand entries out.
-    // A Butchering-fuel undead reads "cast it instead of selling".
     const sub = s.score.toFixed(0)
       + (s.why ? ' · ' + s.why : '')
-      + (s.fuel ? ' · cast, not sell' : '');
-    const safe = s.score < (TH.sell_safe_below || 15);
-    const t = tile(s.card, s.name, sub,
-                   {golden: s.golden, n: s.n, cls: safe ? 'safe' : 'keep'});
-    (safe ? sellSafe : sellKeep).appendChild(t);
+      + (s.fuel ? ' · destroy-spell fuel' : '');
+    sellTiles.appendChild(tile(s.card, s.name, sub,
+                               {golden: s.golden, n: s.n}));
   });
-  const sellBody = el('div', 'sellrow');
-  const safeG = el('div', 'sellgroup safe');
-  safeG.appendChild(el('span', 'grouplabel', 'Safe to sell'));
-  safeG.appendChild(sellSafe.children.length ? sellSafe : el('div', 'none', '—'));
-  sellBody.appendChild(safeG);
-  if (sellKeep.children.length) {
-    sellBody.appendChild(el('div', 'gdivider'));
-    const keepG = el('div', 'sellgroup keep');
-    keepG.appendChild(el('span', 'grouplabel', 'Do not sell'));
-    keepG.appendChild(sellKeep);
-    sellBody.appendChild(keepG);
-  }
-  ref.appendChild(box('Sell', sellBody));
+  ref.appendChild(box('Your board', sellTiles.children.length
+    ? sellTiles : el('div', 'none', '—')));
 
-  // TARGET COMP — what you're hunting: horizontal tiles, missing pieces
-  // fully opaque, owned pieces faded. A PROVISIONAL target (mined from our own
-  // games, no published comp exists for the tribe) is labelled here and in the
-  // comp-direction rows: the plan coaches it, but the player must be able to
-  // tell it apart from a published comp at a glance.
+  // TARGET COMP — the comp the model reads this board as closest to, as
+  // horizontal tiles: missing pieces fully opaque, owned pieces faded. The
+  // wording used to be "what you're hunting" / "committing to X", which is a
+  // direction to build in; what is left is the comp's own contents and which
+  // of them you hold (2026-10-06, PIVOT.md). A PROVISIONAL comp (mined from our
+  // own games, no published comp exists for the tribe) is labelled here and in
+  // the comp-direction rows so the player can tell it apart at a glance.
   if (a.target_comp) {
-    const pivot = a.target_state === 'pivot';
     const ev = a.target_comp_evidence || {};
     const body = el('div', 'target',
-      (pivot ? 'pivot to ' : 'committing to ') + a.target_comp
+      'closest comp: ' + a.target_comp
       + (a.target_comp_provisional
          ? '  [provisional' + (ev.games ? ' — ' + ev.games + ' of our games' : '')
            + (ev.top4 != null ? ', top4 ' + ev.top4 : '') + ']'
@@ -1414,7 +1370,9 @@ function render(a) {
       });
       body.appendChild(guide);
     }
-    ref.appendChild(box('Looking for (' + (pivot ? 'pivot' : 'comp') + ')', body));
+    // "Looking for (comp/pivot)" was a shopping list heading. The box is now
+    // the comp's contents, so the heading says whose contents they are.
+    ref.appendChild(box('Comp pieces', body));
   }
 
   // COMP DIRECTION — commit-readiness meter: how close each candidate comp
@@ -1441,8 +1399,12 @@ function render(a) {
         r.name + (r.provisional ? ' [prov]' : '')));
       row.appendChild(el('span', 'mstat',
         (r.name === a.target_comp
-          ? (a.target_state === 'pivot' ? 'pivoting — committed' : 'committed')
-          : r.ready ? 'ready to commit'
+          // "pivoting — committed" / "committed" was a direction to keep
+          // going; target_state is out of the live payload (2026-10-06), so
+          // what is left is the same word the box above uses: which comp the
+          // model reads this board as closest to, and how far along it is.
+          ? 'closest comp'
+          : r.ready ? 'at the commit threshold'
           : r.leaning ? 'leaning · openers on board'
           : (r.tribe_hits || 0) >= 2
             ? 'one core card away · tribe signal'
@@ -1471,32 +1433,30 @@ function render(a) {
     ref.appendChild(box('Lobby pressure', body));
   }
 
-  // TAVERN — the ranked shop as a horizontal card row (game-like); the
-  // plan's buy glows gold. Score + price under each card. Pool chips
-  // (phase 1): copies left in the shared pool beyond OUR holdings —
-  // opponent holdings aren't subtracted yet, so this is a floor, not a
-  // lobby total (analysis/pool_availability.md).
+  // TAVERN — the offers as a horizontal card row, in the order the game
+  // shows them. Each card carries its price, its value score, whether it is a
+  // piece of the closest comp or a spell, and how many are left in the shared
+  // pool beyond OUR holdings (opponent holdings aren't subtracted yet, so that
+  // chip is a floor, not a lobby total — analysis/pool_availability.md).
+  //
+  // It used to be "Tavern (ranked)": sorted most-valuable-first by
+  // value.shop_ranking, with the plan's pick glowing gold and the slot
+  // arbiter's veto printed over it. The ordering and the glow ARE the
+  // recommendation — a tier score beside a card is a fact, a row ordered by
+  // it and one tile lit up is a verdict (2026-10-06, PIVOT.md) — so
+  // render_json re-sorts by live_coach's `shop_offers` (the log's own order)
+  // and buy_step_card / buy_step_swap_veto are not in the payload at all.
   if (a.shop_rank && a.shop_rank.length) {
     const body = el('div');
-    // A buy the slot arbiter vetoed: the shop tile must not keep glowing gold
-    // for a card the plan just argued against (board_swap.md).
-    const vetoed = a.buy_step_swap_veto || null;
-    if (vetoed) {
-      body.appendChild(el('div', 'none',
-        'not worth a board slot this turn: ' + vetoed
-        + ' — see the swap line in Do this now'));
-    }
     const tiles = el('div', 'tiles');
     a.shop_rank.forEach(s => {
       const sub = (s.price != null ? s.price + 'g · ' : '') + s.score.toFixed(0)
         + (s.tag ? ' · ' + s.tag : '')
         + (s.pool ? ' · ' + s.pool : '');
-      tiles.appendChild(tile(s.card, s.name, sub,
-                             {cls: (s.card === stepCard && !vetoed) ? 'buynow' : null,
-                              golden: s.golden}));
+      tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
     });
     body.appendChild(tiles);
-    ref.appendChild(box('Tavern (ranked)', body));
+    ref.appendChild(box('Tavern', body));
   } else {
     ref.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
   }
@@ -1698,12 +1658,12 @@ def _welcome_hint():
     logging_fix = (f"put this in {config.config_hint()} yourself "
                    f"(create the file if it is not there):")
     if os.path.isdir(os.path.join(config.HS_DIR, "Logs")):
-        return ("Never seen advice? Hearthstone only writes the log this reads "
-                f"when file logging is ON. Run {config.launcher()} again and "
-                f"say yes to let it turn that on for you — or {logging_fix}")
-    return ("Never seen advice? There is no Hearthstone log folder where the "
-            "coach looked, so the game is probably installed somewhere else — "
-            "the console window behind this page says how to point the coach "
+        return ("Never seen a board read? Hearthstone only writes the log this "
+                f"reads when file logging is ON. Run {config.launcher()} again "
+                f"and say yes to let it turn that on for you — or {logging_fix}")
+    return ("Never seen a board read? There is no Hearthstone log folder where "
+            "the coach looked, so the game is probably installed somewhere else "
+            "— the console window behind this page says how to point the coach "
             "at it, once. (If the game IS in the usual place, then file "
             f"logging is off: run {config.launcher()} again and say yes, or "
             f"{logging_fix})")
@@ -1746,8 +1706,8 @@ def welcome_payload(game_over=None):
         "welcome": True,
         "product": "Bob's Ledger",
         "tagline": "A real-time Hearthstone Battlegrounds coach",
-        "status": "Waiting for your next buy phase — advice appears here the "
-                  "moment your shop opens.",
+        "status": "Waiting for your next buy phase — the board read appears here "
+                  "the moment your shop opens.",
         "privacy": privacy,
         "share": {"status": status,
                   "ask": status == "undecided",
@@ -1975,9 +1935,18 @@ def _comps_by_slug():
 
 
 def render_json(analysis):
-    """Enrich coach.analyze output with card names for frontend display."""
+    """Enrich coach.analyze output with card names for frontend display.
+
+    This builds the LIVE view, so it is also where the verdicts stop: every
+    name in LIVE_VERDICT_KEYS is dropped here, and nothing below may re-add
+    one (the explicit assignments that used to copy top_move's buy step are
+    gone with it). The analysis itself is untouched — it is what
+    `decision_log.record()` writes and what the review reads back.
+    """
     names = _load_bg_names()
     a = dict(analysis)
+    for _k in LIVE_VERDICT_KEYS:
+        a.pop(_k, None)
     # When this advice was produced. The page shows its age once it stops
     # being fresh, so a wedged live.py cannot pass for a live one (2026-10-02):
     # the overlay is only written on a successful analyze, and a frozen frame
@@ -2000,6 +1969,11 @@ def render_json(analysis):
         else:
             g["n"] += 1
             g["score"] = min(g["score"], round(v))
+    # Lowest score first. This used to be the "safe to sell | do not sell"
+    # split — the two group labels ARE a verdict, so they are gone (2026-10-06,
+    # PIVOT.md) and what is left is a sorted list of your own board with each
+    # minion's number and its composition role. The row is a fact about the
+    # board, not an instruction about it.
     sell.sort(key=lambda g: g["score"])
     # Hand minions are NOT in the Sell row: a hand minion can't be sold —
     # it has to be played first (player-corrected 2026-09-09, superseding
@@ -2050,10 +2024,18 @@ def render_json(analysis):
     # Hand-charge engine status (2026-09-10: the Forager/Counter kit died
     # silently — the overlay now shows deployer on board? space? charging).
     a["engine"] = hand_engine(analysis.get("hand") or [], analysis["board"])
-    # The hand: casts/plays ranked for the "Your hand" tiles (free actions —
-    # the plan's numbered steps carry them too; this row is the reference).
-    a["hand"] = [dict(s, name=names.get(s["card"], s["card"]))
-                 for s in analysis.get("hand", [])]
+    # The hand, as FACTS: what is in it, what it is worth. value.hand_plan
+    # also returns an action per row ("cast" / "play" / "hold") and the plan's
+    # reason for it, and both ride the analysis the decision log keeps — but a
+    # verb is an instruction, and the live page does not carry instructions
+    # (2026-10-06, PIVOT.md). Dropped here rather than in hand_plan(), so the
+    # review keeps the plan it needs.
+    hand_rows = []
+    for s in analysis.get("hand", []):
+        row = {k: v for k, v in s.items() if k not in ("verb", "why")}
+        row["name"] = names.get(s["card"], s["card"])
+        hand_rows.append(row)
+    a["hand"] = hand_rows
     # Tag shop entries by comp membership (core/addon) or kind (spell), so the
     # shop list shows why each card matters without opening the comp DB.
     # Each row also carries its tavern price: minions a FLAT 3 (the patch's
@@ -2080,6 +2062,31 @@ def render_json(analysis):
     held = dict(analysis.get("own_pool") or {})
     for c, n in (analysis.get("opp_pool") or {}).items():
         held[c] = held.get(c, 0) + n
+    # THE TAVERN ROW IS IN THE GAME'S OWN ORDER (2026-10-06, PIVOT.md).
+    # value.shop_ranking returns most-valuable-first, and a best-first row IS
+    # the recommendation — the ranking is the verdict, not just the score
+    # beside it. live_coach hands us `shop_offers` (the offers in the order the
+    # log lists them), so each tile keeps every FACT — its price, its pool
+    # count, whether it is a comp piece, its value score — and loses the
+    # ordering that made one of them "the" buy. `buy_this` (the named headline)
+    # is in LIVE_VERDICT_KEYS, so the page cannot name one either.
+    #
+    # setdefault: two copies of the same minion CAN sit in one tavern, and
+    # tavern_offers() does not dedupe while shop_rank does. First occurrence
+    # wins, which is how a player reads the row.
+    _order = {}
+    for _i, _cid in enumerate(analysis.get("shop_offers") or []):
+        _order.setdefault(_cid, _i)
+    if _order:
+        _ranked = sorted(analysis.get("shop_rank", []),
+                         key=lambda cv: _order.get(cv[0], 1 << 30))
+    else:
+        # No offer list: an analysis recorded before this field existed (the
+        # review renders old records), or a shop that has not parsed. Sort by
+        # card id rather than leaving value.shop_ranking's order in place —
+        # arbitrary is fine, best-first is the one thing this row must never
+        # silently become again.
+        _ranked = sorted(analysis.get("shop_rank", []), key=lambda cv: str(cv[0]))
     a["shop_rank"] = [dict(card=c, name=names.get(c, c), score=round(v),
                            price=prices.get(c),
                            pool=(pool.chip(c, held)
@@ -2089,7 +2096,7 @@ def render_json(analysis):
                                 "spell" if c in spells else
                                 "deploys hand" if c.rstrip("_G") in deployers
                                 else None))
-                      for c, v in analysis.get("shop_rank", [])]
+                      for c, v in _ranked]
     # Next-opponent composition (phase 2): the seat's last-known board as
     # named tiles, golden-flagged, biggest first. Age rides along — the box
     # says "as of round N" so a stale preview never reads current.
@@ -2215,10 +2222,11 @@ def render_json(analysis):
                                   tier_rank.get(c["meta_tier"], 3),
                                   c["name"] or ""))
     a["comps"] = comp_rows
-    # The Buy box mirrors the top move's actual buy/roll step (buy_step_card /
-    # buy_step_roll are written by value.top_move), so the two can't disagree.
-    a["buy_step_card"] = analysis.get("buy_step_card")
-    a["buy_roll_text"] = analysis.get("buy_step_roll")
+    # The Buy box's mirrors of top_move's steps (buy_step_card / buy_step_roll)
+    # and the slot arbiter's veto are GONE from the live view — they are three
+    # spellings of "buy this one", i.e. LIVE_VERDICT_KEYS (2026-10-06). It also
+    # retires a field that had already gone dead: buy_roll_text was copied on
+    # every push and read by no line of the page.
     # The curated guide for each offered trinket. 110 of the 220 trinket rows
     # carry one and nothing rendered them — on the one screen where a wrong
     # pick costs the whole game, and where the panel already shows pick% and
@@ -2233,17 +2241,6 @@ def render_json(analysis):
                    if row and row[0] in _by_name}
         if _guides:
             a["choice"] = dict(_choice, guides=_guides)
-    # A buy the SLOT arbiter talked the plan out of (analysis/board_swap.md):
-    # value.top_move rewrites its step and records the card here, so the Buy box
-    # cannot keep blessing a card the numbers just argued against.
-    a["buy_step_swap_veto"] = analysis.get("buy_step_swap_veto")
-    # Which card the plan is feeding to a discard outlet, and why (analysis/
-    # discard_mechanic.md): the hand box and the plan must name the same card.
-    a["discard_target"] = analysis.get("discard_target")
-    # Structured steps from value.top_move — [{text, kind, card}]. The JS
-    # renders from these (2026-09-24 flip, the audit's render-at-the-edge
-    # rework); the string is the fallback for the minimal Choose-1 payload.
-    a["top_move_steps"] = analysis.get("top_move_steps") or []
     # Scout strip (gates 3+4): our stat total vs the next opponent's
     # last-known board (exact — we fought them), else the lobby median /
     # corpus baseline (~ estimate).
@@ -2268,11 +2265,13 @@ def render_json(analysis):
     # shipping state the page has no use for.
     a.pop("dark_gifts", None)
     a["opp_trinkets"] = analysis.get("opp_trinkets") or []
-    # Thresholds the JS would otherwise hard-code (dying HP, the sell
-    # safe/keep split) — value.py's constants are the single source; the
-    # page reads them with fallbacks so an old payload still renders.
-    a["thresholds"] = {"dying_hp": DYING_HEALTH,
-                       "sell_safe_below": SELL_FILLER_SCORE}
+    # Thresholds the JS would otherwise hard-code — value.py's constants are
+    # the single source; the page reads them with fallbacks so an old payload
+    # still renders. `sell_safe_below` was here too, for the safe/keep split
+    # the Sell box used to draw; that split was a verdict, so the constant no
+    # longer has a consumer on the page (2026-10-06) — SELL_FILLER_SCORE still
+    # gates the destroy-spell fuel tag below, server-side.
+    a["thresholds"] = {"dying_hp": DYING_HEALTH}
     # Per-card display metadata for the overlay (2026-09-09): the tavern tier
     # for the '*N' name badge and the card text for the hover tooltip — so
     # cards whose full render isn't upstream (new sets, trinkets) still get

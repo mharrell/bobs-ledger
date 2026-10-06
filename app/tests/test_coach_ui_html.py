@@ -58,24 +58,26 @@ class TestTokenDiscipline(unittest.TestCase):
                          + ", ".join(missing))
 
 
-class TestKindChips(unittest.TestCase):
-    """The plan steps render a text chip per step kind. value._STEP_KINDS is
-    the source of the kind set; when value grows a kind and the JS chip map
-    doesn't, the step silently renders the NOTE chip — this keeps the two
-    from diverging."""
+class TestKindChipsAreGone(unittest.TestCase):
+    """This class used to assert that every kind in value._STEP_KINDS had a
+    chip in the page's KIND_CHIP map, both directions — a genuine drift guard,
+    because a kind with no chip rendered as NOTE.
 
-    def test_every_step_kind_has_a_chip(self):
+    The map and the plan it labelled left the live page on 2026-10-06
+    (PIVOT.md): the chips were instruction labels ("BUY", "LEVEL", "SELL") on
+    the numbered plan, and the live path ships state, not instructions. The
+    guard is inverted rather than deleted, so this still fails if a step chip
+    comes back — and it asserts the OTHER half too, that value.py kept the
+    kinds the review and the corpus read."""
+
+    def test_the_page_has_no_chip_map(self):
+        self.assertNotIn("KIND_CHIP", _HTML)
+
+    def test_value_still_defines_the_step_kinds(self):
         from value import _STEP_KINDS
-        m = re.search(r"const KIND_CHIP = \{(.*?)\};", _HTML, re.S)
-        self.assertTrue(m, "KIND_CHIP map not found in the page JS")
-        chips = set(re.findall(r"(\w+):\s*'", m.group(1)))
         kinds = {k for _prefix, k in _STEP_KINDS}
-        self.assertEqual(kinds - chips, set(),
-                         "step kinds with no chip in the JS map: "
-                         + ", ".join(sorted(kinds - chips)))
-        self.assertEqual(chips - kinds, set(),
-                         "chips for kinds value.py no longer emits: "
-                         + ", ".join(sorted(chips - kinds)))
+        self.assertIn("buy", kinds)
+        self.assertIn("level", kinds)
 
 
 if __name__ == "__main__":
