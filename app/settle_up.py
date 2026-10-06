@@ -30,26 +30,35 @@ Three things per row, kept apart on purpose:
     followed. NEGATIVE IS BLEEDING. A phase with no following fight says so
     instead of showing a zero.
 
-WHAT IT CANNOT GRADE, MEASURED
+WHAT IT COULD NOT GRADE, AND WHAT CLOSED (2026-10-06)
 
-On the 2026-10-06 session (16 advised phases, Chenvaala, 2nd place) EIGHT of
-sixteen phases led with a `cast` step, and this review calls all eight "not
-graded" rather than guessing. The reason is precise and worth writing down:
-`value.top_move` leaves `card` as **None** on a cast step, so the card it wants
-cast exists only inside the `action` string ("Cast Them Apples"). Matching that
-prose against the spells the log shows being cast would be exactly the
-"formatting used as data" failure the audit flagged elsewhere, so it is not
-done. The fix is one line in the planner (populate `card` on cast steps) and
-`player_actions` recording WHICH spell was cast — it currently counts them
-(`turns[-1]["spells"]`) rather than naming them. Until then the totals print the
-ungraded count, because a review that shows three graded phases out of sixteen
-without saying so reads as if it graded sixteen.
+The first review could not judge a phase whose plan led with a cast, a play, a
+swap or a pick — **8 of the 16 advised phases** in the game it was measured on.
+A cast step carried `card: None` (`value.top_move` derived each step's card by
+parsing the rendered text, and only a buy step ever resolved one), and
+`player_actions` counted spells rather than naming them, so there was nothing to
+match on either side.
+
+Both ends now carry ids: `_top_move_text` records which card each hand step is
+about, and `player_actions` records `spell_ids`. The same game reports ONE
+ungraded phase, a swap.
+
+Two limits remain, and the summary prints both rather than hiding them:
+
+  * a SWAP needs the sell AND the play that replaced it as a pair, which the row
+    does not carry, so swap-led phases stay out of the counts;
+  * a phase LED BY A CAST counts for less than one led by a buy. A turn that
+    casts several spells can satisfy "Cast X" incidentally, and a split that
+    silently mixed the two would overstate the stronger signal.
 
 THE HONESTY RULE, which every summary here repeats because it is the whole
 reason this is honest at all: following the model is CORRELATED with easy
 spots. A "followed" row looking better is not evidence the model is right, and
 `outcome_audit` refuses to claim otherwise. This prints the split and the
-caveat; it does not print a score.
+caveat; it does not print a score. (The 2026-10-06 game is a good reminder: it
+reports took-the-plan at -3.2 mean HP against -1.2 for did-not, i.e. following
+the plan looked WORSE, at n=9 against n=5. That is a reason to look at phases,
+which is all it was ever offered as.)
 
 WHAT IT READS, AND THE ONE THING IT LOSES
 
@@ -192,7 +201,36 @@ def _verdict(row):
         if row.get("followed_roll"):
             return "taken", "taken"
         return "not taken", "ignored"
-    # swap / cast / play / hold / pick — a real plan this row cannot grade.
+    if lead == "cast":
+        # GRADABLE SINCE 2026-10-06. It was not before: `value.top_move` left
+        # `card` as None on a cast step (the plan names the spell only in prose)
+        # and `player_actions` counted spells instead of naming them, so 8 of 16
+        # phases in the 2026-10-06 game read "not graded". Both now carry ids.
+        named = row.get("card")
+        cast = row.get("spells_cast") or []
+        if not named:
+            # The plan led with a cast but no card resolved (a token the DB
+            # cannot name, say). "Cast something else" would be a guess.
+            return "not graded (cast, card unresolved)", "ungraded"
+        if named in cast:
+            return "cast as planned", "taken"
+        if cast:
+            return "cast something else", "ignored"
+        return "not cast", "ignored"
+    if lead == "play":
+        # Same shape for a hand minion: the plan says "Play X", the log says
+        # which minions actually entered PLAY from hand.
+        named = row.get("card")
+        played = row.get("plays") or []
+        if not named:
+            return "not graded (play, card unresolved)", "ungraded"
+        if named in played:
+            return "played as planned", "taken"
+        if played:
+            return "played something else", "ignored"
+        return "not played", "ignored"
+    # swap / hold / pick — and a card-less `discard`, which is an Activate step
+    # (see outcome_audit._plan_shape): a real plan this row cannot grade.
     return f"not graded ({lead})", "ungraded"
 
 
@@ -308,6 +346,7 @@ def _totals(phases, head):
               "pass": 0, "ungraded": 0}
     bled = 0
     graded = 0
+    graded_by_lead = {}
     taken_hp, ignored_hp = [], []
     for p in phases:
         counts[p["kind"]] = counts.get(p["kind"], 0) + 1
@@ -315,6 +354,8 @@ def _totals(phases, head):
         if o is None:
             continue
         graded += 1
+        lead = p.get("lead") or "?"
+        graded_by_lead[lead] = graded_by_lead.get(lead, 0) + 1
         # Negative is bleeding; only the damage counts as cost.
         if o < 0:
             bled += -o
@@ -328,6 +369,13 @@ def _totals(phases, head):
 
     return {
         "counts": counts,
+        # Which CLASS of lead each graded phase had. Cast-led phases are now
+        # gradable, and they are NOT interchangeable with buy-led ones: a turn
+        # that casts several spells can satisfy "Cast X" incidentally, so a
+        # cast-led `taken` is weaker evidence of following the plan than a
+        # buy-led one. The renderer says so when any are present, because a
+        # split that silently mixes the two overstates the stronger one.
+        "graded_by_lead": graded_by_lead,
         "graded_phases": graded,
         # Coverage, said out loud. A review that quietly shows three graded
         # phases out of sixteen reads as if it graded sixteen; this is the
@@ -417,8 +465,13 @@ def render_text(rep):
                    f"(n={t['ignored_n']})")
     if t["ungraded_phases"]:
         out.append(f"{t['ungraded_phases']} of {c['phases']} phases led with a "
-                   f"move this review cannot grade (cast/swap/play/pick) - it "
+                   f"move this review cannot grade (swap/hold/pick) - it "
                    f"makes no claim about those.")
+    cast_graded = (t.get("graded_by_lead") or {}).get("cast", 0)
+    if cast_graded:
+        out.append(f"({cast_graded} graded phase(s) led with a cast. A turn that "
+                   f"casts several spells can satisfy \"Cast X\" incidentally, so "
+                   f"those count for less than a buy-led phase.)")
     out.append("")
     out.append("NOTE: " + rep["caveat"])
     return "\n".join(out)

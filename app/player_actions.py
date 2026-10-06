@@ -98,7 +98,11 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
         return {"turn": n, "buys": [], "sells": [], "triples": [], "refreshes": 0,
                 "freezes": 0, "upgrades": 0, "hero_power": 0,
                 "plays": [], "rearranges": 0, "dark_gifts": 0, "choices": [],
-                "spells": 0}
+                # `spells` stays the COUNT (existing callers read it as one);
+                # `spell_ids` names them, which is what lets the review grade a
+                # plan that leads with "Cast X" (2026-10-06). A count cannot
+                # answer "did they cast the one it named".
+                "spells": 0, "spell_ids": []}
 
     for line in chunk:
         m = STEP_RE.search(line)
@@ -177,6 +181,7 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             # buy button. (Hero powers are handled above and continue first.)
             if cid not in _load_bg_minion_ids() and not cid.startswith("TB_BaconShop_DragBuy"):
                 turns[-1]["spells"] += 1
+                turns[-1]["spell_ids"].append(cid)
                 continue
 
         m = ENTITY.search(line)

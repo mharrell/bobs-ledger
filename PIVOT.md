@@ -133,16 +133,19 @@ existing page. It is not: the overlay page is a 300ms-polling JS app driven by
 a process running, so `render_html` writes a standalone page. The cost is a
 second small stylesheet; the benefit is a report with no state and no server.
 
-**What it cannot grade — measured, and LEFT OPEN.** A phase whose plan leads with
-a `cast` (or a swap, a play, a pick) reads **not graded**, and the count is
-printed rather than hidden. On the first real game measured (2026-10-06, 16
-advised phases, Chenvaala, 2nd) that was **8 of 16**, because `value.top_move`
-leaves `card` as None on a cast step — the card it wants cast exists only inside
-the `action` prose ("Cast Them Apples"), and matching prose against the log is
-the "formatting used as data" failure the audit flagged elsewhere. The real fix is
-populating `card` in the planner plus `player_actions` recording WHICH spell was
-cast (`turns[-1]["spells"]` counts them today). Until then the review states its
-own coverage.
+**What it cannot grade — measured, and mostly CLOSED (2026-10-06).** When the
+review first shipped, a phase whose plan led with a `cast` (or a swap, a play, a
+pick) read **not graded**: 8 of the 16 advised phases in the 10-06 game, because
+`value.top_move` left `card` as None on a cast step and `player_actions` counted
+spells instead of naming them.
+
+That is fixed at the source rather than worked around: `_top_move_text` now
+records which card each hand step is about (while it still holds the ids), and
+`player_actions` records `spell_ids`. The same game now reports **1 ungraded**
+(a swap-led plan), with the rest judged. Two limits stayed, and the review prints
+both: a swap needs the sell AND its replacement as a pair, which the row does not
+carry; and a cast-led `taken` is weaker evidence than a buy-led one, because a
+turn that casts several spells can satisfy "Cast X" incidentally.
 
 **Phase 3 — excluded from v1, kept on the table.** The half-step: during combat,
 show the phase that just **closed** — that exact shop, the model's line, what the

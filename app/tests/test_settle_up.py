@@ -109,8 +109,46 @@ class TestVerdicts(unittest.TestCase):
         self.assertEqual(kind, "ungraded")
         self.assertIn("swap", label)
 
-    def test_a_cast_led_plan_is_ungraded_not_ignored(self):
-        self.assertEqual(settle_up._verdict(_row(lead="cast"))[1], "ungraded")
+    def test_a_cast_led_plan_is_graded_now(self):
+        """It was UNGRADED until 2026-10-06 — `value.top_move` left `card` None
+        on a cast step and `player_actions` only counted spells, so 8 of the 16
+        phases in the 2026-10-06 game could not be judged. Both now carry ids."""
+        self.assertEqual(
+            settle_up._verdict(_row(lead="cast", card="SPELL_A",
+                                    spells_cast=["SPELL_A"])),
+            ("cast as planned", "taken"))
+        self.assertEqual(
+            settle_up._verdict(_row(lead="cast", card="SPELL_A",
+                                    spells_cast=["SPELL_B"])),
+            ("cast something else", "ignored"))
+        self.assertEqual(
+            settle_up._verdict(_row(lead="cast", card="SPELL_A", spells_cast=[])),
+            ("not cast", "ignored"))
+
+    def test_a_cast_with_no_resolved_card_stays_ungraded(self):
+        # An Activate step parses as kind `discard`, and a token the card DB
+        # cannot name leaves no card to match. "Cast something else" would be a
+        # guess dressed as a judgement.
+        label, kind = settle_up._verdict(_row(lead="cast", card=None,
+                                              spells_cast=["SPELL_B"]))
+        self.assertEqual(kind, "ungraded")
+        self.assertIn("unresolved", label)
+
+    def test_a_play_led_plan_is_graded(self):
+        self.assertEqual(
+            settle_up._verdict(_row(lead="play", card="MINION_A",
+                                    plays=["MINION_A"])),
+            ("played as planned", "taken"))
+        self.assertEqual(
+            settle_up._verdict(_row(lead="play", card="MINION_A", plays=[])),
+            ("not played", "ignored"))
+
+    def test_a_swap_is_still_ungraded(self):
+        # Grading a swap needs the sell AND the play that replaced it; the row
+        # carries neither as a pair, so it stays out of the counts.
+        label, kind = settle_up._verdict(_row(lead="swap", card="X"))
+        self.assertEqual(kind, "ungraded")
+        self.assertIn("swap", label)
 
 
 class TestActed(unittest.TestCase):
@@ -164,6 +202,19 @@ class TestTotals(unittest.TestCase):
         # The summary must never travel without it.
         self.assertIn("Observational", settle_up._totals([], {})["caveat"])
 
+    def test_graded_phases_are_broken_down_by_lead(self):
+        """Cast-led phases are gradable now, and they are NOT interchangeable
+        with buy-led ones — the split has to be able to say so."""
+        phases = [
+            {"kind": "taken", "outcome": -6, "lead": "buy"},
+            {"kind": "taken", "outcome": 0, "lead": "cast"},
+            {"kind": "ignored", "outcome": -2, "lead": "cast"},
+            {"kind": "ungraded", "outcome": None, "lead": "swap"},
+        ]
+        t = settle_up._totals(phases, {})
+        self.assertEqual(t["graded_by_lead"], {"buy": 1, "cast": 2})
+        self.assertEqual(t["graded_phases"], 3,
+                         "an ungraded phase is not in the breakdown either")
 
 class TestReport(unittest.TestCase):
     def _report(self, **over):
@@ -219,6 +270,25 @@ class TestReport(unittest.TestCase):
         self.assertIn("cannot grade", text)
         self.assertIn("no fight after this phase", text)
         self.assertIn("Observational", text)
+
+    def test_the_cast_signal_is_weaker_and_the_text_says_so(self):
+        # A turn that casts several spells can satisfy "Cast X" incidentally, so
+        # a summary that mixed cast-led and buy-led phases would overstate the
+        # cast-led ones. The line only appears when such a phase was graded.
+        rep = self._report(phases=[
+            {"turn": 5, "tier": 5, "gold": 9, "eff_hp": 30, "plan": "1. Cast X",
+             "lead": "cast", "kind": "taken", "verdict": "cast as planned",
+             "named": "X", "reasons": [], "acted": "cast X", "buys": [],
+             "outcome": -4, "outcome_note": None},
+        ])
+        rep["totals"] = settle_up._totals(rep["phases"], {})
+        text = settle_up.render_text(rep)
+        self.assertIn("led with a cast", text)
+        self.assertIn("incidentally", text)
+
+        rep["phases"][0]["lead"] = "buy"
+        rep["totals"] = settle_up._totals(rep["phases"], {})
+        self.assertNotIn("led with a cast", settle_up.render_text(rep))
 
 
 class TestBuildWalksALog(unittest.TestCase):

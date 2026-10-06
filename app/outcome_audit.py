@@ -61,6 +61,13 @@ def _plan_shape(analysis):
         return "pick", first.get("card")
     if text.startswith("pass"):
         return "pass", None
+    # cast / play / hold / discard: the step's own card since 2026-10-06 —
+    # `value.top_move` resolves it from the label it emitted, so a cast-led plan
+    # now names the spell it wants instead of returning None and being
+    # ungradable. "Activate ..." also parses as kind `discard` and carries no
+    # card, which is why the grader must treat a card-less discard as unknown.
+    if kind in ("cast", "play", "hold", "discard"):
+        return kind, first.get("card")
     return kind or "note", None
 
 
@@ -130,6 +137,12 @@ def audit_game(chunk, game_idx, session):
             "player_buys": buys, "player_actions": {
                 k: actual.get(k) for k in
                 ("upgrades", "refreshes", "sells", "freezes")},
+            # Which spells were cast and which hand minions were played, BY ID.
+            # A cast-led plan can only be graded against these (2026-10-06); the
+            # counts the row used to carry alone could not answer "did they cast
+            # the one it named".
+            "spells_cast": list(actual.get("spell_ids") or []),
+            "plays": list(actual.get("plays") or []),
             # What the plan asked for and what it would have cost, so the
             # affordability check can be made from the row alone (2026-10-03).
             "steps": steps, "level_cost": a.get("level_cost"),

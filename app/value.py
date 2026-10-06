@@ -1656,9 +1656,14 @@ def top_move(analysis):
                                      from these (2026-09-24) instead of
                                      re-parsing the strings.
     Kind is one of level/pick/buy/sell/roll/cast/play/note; `card` is the
-    resolved buy card (buy_step_card) when the step is the buy.
+    resolved buy card (buy_step_card) when the step is the buy, and — since
+    2026-10-06 — the resolved card for a HAND step (cast/play/hold/discard),
+    recovered from `analysis["hand_step_cards"]`, which `_top_move_text` writes
+    while it still holds the ids. Without it a cast step carried `card: None`
+    and a cast-led plan could not be graded by anything downstream.
     """
     text = _top_move_text(analysis)
+    hand_cards = analysis.get("hand_step_cards") or {}
     steps = []
     for p in text.split(" · "):
         body = re.sub(r"^\d+\. ", "", p)
@@ -1667,6 +1672,12 @@ def top_move(analysis):
         card = analysis.get("buy_step_card") if kind == "buy" else None
         step = {"text": body, "kind": kind, "card": card}
         step.update(split_step(body))
+        # Matched on the emitted label, NOT on position: an "Activate ..." step
+        # also parses as kind `discard` (see _STEP_KINDS), so positional matching
+        # would hand a hand-card id to an activation.
+        hand = hand_cards.get(body)
+        if hand and kind in ("cast", "play", "hold", "discard"):
+            step["card"] = hand.get("card")
         steps.append(step)
     analysis["top_move_steps"] = steps
     return text
@@ -3146,13 +3157,13 @@ def _top_move_text(analysis):
             # The VERB is carried beside the label, because the plan's order
             # depends on it: a free hand cast may precede the buy, a play may
             # not. Losing the verb here is what produced the inversion below.
-            hand_parts.append((s["verb"], label))
+            hand_parts.append((s["verb"], label, s["card"]))
         if len(hand_parts) > 3:
             # Keep the cap on RENDERED rows, before the split — the parts that
             # survive are the ones the player reads.
             extra = len(hand_parts) - 3
             hand_parts = hand_parts[:3] + [("note", f"then the rest of your "
-                                                    f"hand ({extra} more)")]
+                                                    f"hand ({extra} more)", None)]
 # The stay decision (Q1) trails the buys: what the comp is missing
 # lives here (this tier or below), and the player should know the
 # level was declined on purpose.
@@ -3190,10 +3201,22 @@ def _top_move_text(analysis):
         # So: free casts (and discards, likewise not board slots) lead, the
         # plan's own steps follow, and PLAYS land after them. Holds are not
         # actions and sort last — "Hold X" is an instruction not to act.
-        lead = [p for v, p in hand_parts if v in ("cast", "discard")]
-        trail = [p for v, p in hand_parts if v in ("play", "hold", "note")]
-        return " · ".join(f"{i}. {p}" for i, p in
-                          enumerate(lead + parts + trail, 1))
+        lead = [(v, p) for v, p, _c in hand_parts if v in ("cast", "discard")]
+        trail = [(v, p) for v, p, _c in hand_parts if v in ("play", "hold", "note")]
+        # WHICH CARD each hand step is about, recorded while the id is still in
+        # hand (2026-10-06). `top_move` rebuilds the structured steps by parsing
+        # this rendered text, so every step's `card` used to be lost except the
+        # buy's — which left a cast step saying "Cast Them Apples" with
+        # `card: None`, and made a plan that LEADS with a cast ungradable in the
+        # review (8 of 16 phases in the 2026-10-06 game). The label is the key
+        # because it is produced here and matched there in the same call, so it
+        # is not a cross-module text contract; labels are unique within a plan
+        # (duplicates are collapsed into one row with an "xN" count).
+        analysis["hand_step_cards"] = {
+            label: {"card": cid, "verb": verb} for verb, label, cid in hand_parts
+            if cid}
+        rows = ([p for _v, p in lead] + parts + [p for _v, p in trail])
+        return " · ".join(f"{i}. {p}" for i, p in enumerate(rows, 1))
     # Nothing affordable and nothing to level: roll unless there's no gold at all.
     # Committed and hunting pieces is the endgame (2026-09-04: "we committed,
     # we have it, now we scale it to kingdom come") — say so instead of a

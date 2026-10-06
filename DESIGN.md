@@ -60,15 +60,18 @@ and the effective HP the following fight cost. Reachable three ways — the
 end-of-game card's "Settle up" link, the overlay server's `/review` route, and
 `python app/settle_up.py --latest` for any game still in the log.
 
-What it does NOT yet grade: a phase whose plan leads with a `cast` (or a swap, a
-play, a pick) is reported as **not graded**, and the count is printed rather than
-hidden. On the first real game measured — 2026-10-06, 16 advised phases — that
-was **8 of 16**, because `value.top_move` leaves `card` as None on a cast step,
-so the only name in the payload is prose ("Cast Them Apples"). Matching prose
-against the log is the "formatting used as data" failure the audit flagged
-elsewhere. The fix is one line in the planner plus `player_actions` recording
-WHICH spell was cast (it currently only counts them). Until then the review
-states its own coverage instead of guessing at it.
+What remains ungraded, and it is now ONE phase rather than eight: a plan that
+leads with a `swap` (which needs the sell AND the play that replaced it — the
+row carries neither as a pair), or a `cast`/`play` whose card never resolved
+(a token the card DB cannot name). Measured on the first real game
+(2026-10-06, 16 advised phases): **1 ungraded, was 8** before `value.top_move`
+began resolving the card on a hand step and `player_actions` began naming the
+spells it cast rather than counting them.
+
+The other honest limit that came with it: a graded phase LED BY A CAST counts
+for less than one led by a buy. A turn that casts several spells can satisfy
+"Cast X" incidentally, so the split mixes a strong signal with a weak one — and
+the summary says so on screen whenever cast-led phases are in the count.
 
 ---
 
