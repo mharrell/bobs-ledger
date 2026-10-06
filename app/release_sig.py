@@ -51,7 +51,7 @@ import ed25519            # vendored RFC 8032 Ed25519, beside this file
 #: that cannot check a signature must not pretend an unsigned release is fine;
 #: it has to say so out loud, because the alternative is a client that keeps
 #: installing whatever the server sends and calls that "verifying".
-PUBKEY_B64 = ""
+PUBKEY_B64 = "eUPhYxVly7fZDVD+lJlgGTtQ7XxLopX26h7mQJx77HU="
 
 #: The manifest fields that carry the signature, and which algorithm it is.
 #: `sig_alg` is inside the signed body, so it cannot be rewritten to point at
