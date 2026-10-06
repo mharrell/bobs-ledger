@@ -1,36 +1,66 @@
 #!/usr/bin/env python3
 """Sync work to main and origin in ONE command, so a session needs one approval.
 
-Why this exists: `origin` is `git@github.com:...`, git-for-windows runs ssh
-through MSYS, and the agent's sandbox cannot start MSYS processes — every push
-fails with `couldn't create signal pipe, Win32 error 5` until it is approved for
-wider access. That is a per-*command* cost, so the fix is not a cleverer
-transport (HTTPS was tried and is blocked for the same reason: git runs a `!`
-credential helper through `sh.exe`, and even `gh auth git-credential`, which
-answers correctly when run directly, is spawned via sh) — the fix is to make the
-whole sequence ONE command that asks once.
+Why this exists: a push from the agent's sandbox needs wider access, and that is
+a per-*command* cost. Measured on this checkout 2026-10-06: `origin` is
+`https://github.com/mharrell/bobs-ledger.git` with `credential.helper=manager`
+(NOT the `git@github.com:...` ssh remote an earlier version of this docstring
+described), and an unapproved `git push` dies in the credential helper —
+`failed to execute prompt script (exit code 66)` then `could not read Username
+for 'https://github.com': No such file or directory` — because Git Credential
+Manager cannot spawn under the sandbox. Approved once, the same push succeeds.
+So the fix is not a cleverer transport but ONE command that asks once.
 
 So: this script does the worktree ceremony the project requires — commit,
 merge the current branch into main, prune the merged branch, push — and prints
-at most a few lines about what it did. Run it as the last act of a session:
+at most a few lines about what it did. Run it as the last act of a session,
+FROM THE WORKTREE the session worked in:
 
-    python sync.py --message "what changed"     # commit, merge, push
-    python sync.py --dry-run                    # say what it would do
+    python app/sync.py --message "what changed"   # commit, merge, push
+    python app/sync.py --dry-run                  # say what it would do
+
+It works from a linked worktree: the merge runs in whichever directory holds
+main (`worktree_for`), instead of `git checkout main`, which git refuses when
+main is checked out somewhere else. Paths are resolved from the REPO ROOT, not
+from this file's own `app/` directory, so `--new` can add a root-level file.
 
 It refuses to invent a commit message, refuses to run with a dirty tree it
 cannot attribute, and never force-pushes. A merge conflict stops it with the
 conflicted paths printed — resolving that is a judgement call, not automation.
+Two things it does NOT do: delete the worktree it ran in (finish that session
+first), or delete the merged branch — that is left to a later judgement, not
+automation.
 """
 import argparse
 import os
 import subprocess
 import sys
 
-REPO = os.path.dirname(os.path.abspath(__file__))
+_HERE = os.path.dirname(os.path.abspath(__file__))
 
 
-def git(*args, check=True, capture=True):
-    p = subprocess.run(["git", *args], cwd=REPO, capture_output=capture,
+def _repo_root():
+    """The REPO ROOT — which is NOT this file's directory.
+
+    The code lives in `app/`, so `dirname(__file__)` is `<root>/app`, and that
+    is what every git call here used to run from. git does not mind (it finds
+    the root from any subdirectory), but the PATHS do: a `status --porcelain`
+    path is root-relative, so `git add PIVOT.md` run from `app/` dies with
+    `fatal: pathspec 'PIVOT.md' did not match any files`. Every untracked file
+    this script had ever been asked to add lived under `app/` — which is why
+    `--new` looked like it worked until a root-level doc (2026-10-06).
+    """
+    p = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=_HERE,
+                       capture_output=True, text=True)
+    root = (p.stdout or "").strip()
+    return root or os.path.dirname(_HERE)
+
+
+REPO = _repo_root()
+
+
+def git(*args, check=True, capture=True, cwd=None):
+    p = subprocess.run(["git", *args], cwd=cwd or REPO, capture_output=capture,
                        text=True)
     if check and p.returncode != 0:
         raise SystemExit(f"git {' '.join(args)} failed:\n"
@@ -41,6 +71,28 @@ def git(*args, check=True, capture=True):
 def lines(*args, **kw):
     out = git(*args, **kw)
     return [ln for ln in out.splitlines() if ln.strip()]
+
+
+def worktree_for(branch):
+    """The directory where `branch` is checked out, or None.
+
+    `git checkout main` cannot work from a LINKED worktree: main is checked
+    out in the primary one and git refuses with "'main' is already used by
+    worktree at ...". The project's own discipline is work-in-a-worktree, so
+    the merge has to run IN whichever directory holds main instead of
+    checking it out here — and `worktree list --porcelain` is what says which.
+    (An older version of this script simply called `git checkout main`, which
+    made `sync.py` fail at the merge step for every worktree session.)
+    """
+    out = subprocess.run(["git", "worktree", "list", "--porcelain"], cwd=REPO,
+                         capture_output=True, text=True).stdout or ""
+    path = None
+    for line in out.splitlines():
+        if line.startswith("worktree "):
+            path = line[len("worktree "):].strip()
+        elif line.startswith("branch ") and line.strip().endswith("/" + branch):
+            return path
+    return None
 
 
 def main():
@@ -106,16 +158,27 @@ def main():
         print(f"  committed: {git('log', '-1', '--oneline')}")
     # 2. merge the branch into main
     if branch != "main":
-        git("checkout", "main")
-        p = subprocess.run(["git", "merge", "--no-edit", branch], cwd=REPO,
+        # Merge WHERE MAIN LIVES. From a linked worktree that is another
+        # directory, and checking main out here is impossible — see
+        # worktree_for().
+        holder = worktree_for("main")
+        merge_dir = REPO
+        if holder and os.path.realpath(holder) != os.path.realpath(REPO):
+            merge_dir = holder
+            print(f"  (main is checked out at {holder}; merging there)")
+        else:
+            git("checkout", "main")
+        p = subprocess.run(["git", "merge", "--no-edit", branch], cwd=merge_dir,
                            capture_output=True, text=True)
         if p.returncode != 0:
-            conflicted = lines("diff", "--name-only", "--diff-filter=U")
+            conflicted = lines("diff", "--name-only", "--diff-filter=U",
+                               cwd=merge_dir)
             print("! merge conflict — resolve deliberately, nothing pushed")
             for c in conflicted[:10]:
                 print(f"    {c}")
             return 3
-        print(f"  merged {branch}: {git('log', '-1', '--oneline')}")
+        print(f"  merged {branch}: "
+              f"{git('log', '-1', '--oneline', cwd=merge_dir)}")
     # 3. push
     if not args.no_push:
         p = subprocess.run(["git", "push", "origin", "main"], cwd=REPO,
