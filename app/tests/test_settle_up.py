@@ -291,6 +291,137 @@ class TestReport(unittest.TestCase):
         self.assertNotIn("led with a cast", settle_up.render_text(rep))
 
 
+class TestSessionAggregation(unittest.TestCase):
+    """The session and history views: pure aggregation over full reports."""
+
+    def _rep(self, game=1, placement=2, hero="Chenvaala", boards=(10, 30, 52),
+             sells=(2, 0, 1), phases=("taken", "ignored", "taken"),
+             bled=9, level=None, timeline=True, error=None, blank_turn=False):
+        turns = []
+        for i, b in enumerate(boards):
+            # The STRUCTURED board must be present for the turn to count: the
+            # summary filters on it, not on the stat number, so a turn whose
+            # board could not be read is left out of the peak rather than
+            # counted as a zero.
+            board = [] if (blank_turn and i == 0) else [
+                {"card": "X", "atk": b, "health": 0, "golden": False,
+                 "keywords": []}]
+            turns.append({"turn": i + 1,
+                          "stats": {"buy_end": b, "growth": None,
+                                    "theirs": 0, "combat_ours": b},
+                          "spend": {"total": 5, "cards_bought": 1,
+                                    "card_gold": 3, "card_costs": [],
+                                    "rolls": 1, "roll_gold": 1,
+                                    "levelled": False, "level_gold": None},
+                          "sell_questions": [{"sold": f"S{j}", "role": "scaler",
+                                              "kept_fillers": ["F"]}
+                                             for j in range(sells[i])],
+                          "commitment": {"target": None, "progress": []},
+                          "combat_start": {"ours": [], "theirs": []},
+                          "buy_end": board, "battle_end": [], "lag": 0,
+                          "notes": []})
+        counts = {"phases": len(phases), "taken": 0, "ignored": 0, "none": 0,
+                  "pass": 0, "ungraded": 0}
+        for k in phases:
+            counts[k] = counts.get(k, 0) + 1
+        return {"game": game, "hero": hero, "placement": placement,
+                "timeline": ({"turns": turns} if timeline else None),
+                "timeline_error": error,
+                "totals": {"counts": counts, "bled_total": bled}}
+
+    def test_summarise_reads_the_report_not_a_second_pass(self):
+        s = settle_up._summarise(self._rep())
+        self.assertEqual(s["turns"], 3)
+        self.assertEqual(s["spent"], 15, "5 gold per turn x 3")
+        self.assertEqual(s["peak_board"], 52)
+        self.assertEqual(s["final_board"], 52, "the last buy-end board")
+        self.assertEqual(s["sell_questions"], 3)
+        self.assertEqual(s["taken"], 2)
+        self.assertEqual(s["phases_tracked"], 3)
+
+    def test_a_turn_with_no_board_read_is_left_out_of_the_peak(self):
+        # Not counted as a zero: "we could not read the board" is not "the board
+        # was worth nothing", and a zero would drag the peak down.
+        s = settle_up._summarise(self._rep(boards=(0, 30, 52), blank_turn=True))
+        self.assertEqual(s["peak_board"], 52)
+        self.assertEqual(s["final_board"], 52)
+
+    def test_summarise_survives_a_missing_timeline(self):
+        s = settle_up._summarise(self._rep(timeline=False, error="boom"))
+        self.assertEqual(s["turns"], 0)
+        self.assertEqual(s["spent"], 0)
+        self.assertIsNone(s["final_board"])
+        self.assertEqual(s["timeline_error"], "boom")
+        self.assertEqual(s["taken"], 2, "the phase rows still summarise")
+
+    def test_median_handles_odd_even_and_empty(self):
+        self.assertEqual(settle_up._median([3, 1, 2]), 2)
+        self.assertEqual(settle_up._median([2, 4]), 3)
+        self.assertIsNone(settle_up._median([]))
+        self.assertIsNone(settle_up._median([None, None]),
+                          "an unknown placement is not a zero")
+
+    def test_session_totals_sum_and_do_not_rank(self):
+        t = settle_up._session_totals([
+            settle_up._summarise(self._rep(game=1, placement=2)),
+            settle_up._summarise(self._rep(game=2, placement=7, hero="Tickatus",
+                                           bled=20, sells=(0, 0, 0))),
+        ])
+        self.assertEqual(t["games"], 2)
+        self.assertEqual(t["placements"], [2, 7])
+        self.assertEqual(t["best"], 2)
+        self.assertEqual(t["median_placement"], 4.5)
+        self.assertEqual(t["phases"], 6)
+        self.assertEqual(t["bled"], 29)
+        self.assertEqual(t["spent"], 30)
+        self.assertEqual(t["sell_questions"], 3)
+        self.assertEqual(t["median_final_board"], 52)
+        self.assertIn("Observational", t["caveat"])
+
+    def test_session_totals_of_nothing_is_safe(self):
+        t = settle_up._session_totals([])
+        self.assertEqual(t["games"], 0)
+        self.assertIsNone(t["best"])
+        self.assertEqual(t["phases"], 0)
+
+    def test_a_game_with_no_placement_does_not_break_the_median(self):
+        t = settle_up._session_totals([
+            settle_up._summarise(self._rep(placement=None)),
+            settle_up._summarise(self._rep(game=2, placement=1)),
+        ])
+        self.assertEqual(t["placements"], [1])
+        self.assertEqual(t["best"], 1)
+
+
+class TestHistoryWiring(unittest.TestCase):
+    """`build_history` over a stub log: the shape, not the numbers."""
+
+    def _log(self, games=1):
+        lines = []
+        for g in range(games):
+            lines.append(f"D 10:0{g}:00.0000000 GameState.DebugPrintPower() - CREATE_GAME")
+            lines.append("D 10:0%d:01.0000000 GameState.DebugPrintPower() - TAG_CHANGE" % g)
+        return lines
+
+    def test_history_aggregates_every_log_it_is_given(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            paths = []
+            for i in (1, 2):
+                p = os.path.join(td, f"Power{i}.log")
+                with open(p, "w", encoding="utf-8") as fh:
+                    fh.write("\n".join(self._log()))
+                paths.append(p)
+            rep = settle_up.build_history(paths)
+        self.assertEqual(len(rep["logs"]), 2)
+        self.assertEqual([lg["games"] for lg in rep["logs"]], [1, 1],
+                         "a CREATE_GAME counts as a game even when nothing in it "
+                         "is playable — the summariser reports it with zeroes")
+        self.assertEqual(rep["totals"]["games"], 2)
+        self.assertIn("Observational", rep["caveat"])
+        self.assertIn("session(s)", settle_up.render_history_text(rep))
+
+
 class TestBuildWalksALog(unittest.TestCase):
     """The cheap log-level test: a stub built from CREATE_GAME markers, which
     is what the splitter keys on. It pins the bounds check — the first version

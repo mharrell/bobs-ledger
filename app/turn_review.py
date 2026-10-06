@@ -213,19 +213,31 @@ def _took(actual):
 
 
 def _sell_questions(sold_ids, end_board, analysis, card_db):
-    """Sell-side blunder candidates: a key card sold while a filler stayed.
+    """One sell-side question per TURN: a key card sold while a filler stayed.
 
     THE MAINTAINER'S EXAMPLE, made computable: "selling a key minion instead of
     the throwaway". The comparison is between the role of each card SOLD this
     turn and the roles of the cards the player KEPT — read off the board at buy
     end, which is by definition what remained.
 
+    **One question per turn, not per card.** The first version fired per sold
+    card and produced 12 questions in an 11-turn game, nearly all of them the
+    same sentence: the identical filler sat on the board while four scalers were
+    sold, so it printed that board state four times. One turn is one decision
+    about what to sell, and it gets one line.
+
+    **A turn that sells most of its board is a REBUILD, and is labelled as one.**
+    Selling four minions at once is repositioning or pivoting, not four mistakes
+    — the choice the detector can actually see (this card over that filler) is
+    not what happened there. `rebuild` is set so a renderer can say "rebuilt the
+    board" instead of implying a blunder, and a count of sell questions can keep
+    meaning what it says. Three is the threshold: a five-minion board selling
+    three has committed to a new board, and below that the swap reading holds.
+
     It returns QUESTIONS, never verdicts, and the naming says so. A comp core is
     sometimes exactly right to sell (making room for a triple, a duplicate core,
-    a pivot the model has not caught up with), and this function cannot see the
-    player's reasoning. What it can see is that a high-role card left the board
-    while a low-role card stayed — which is worth a look, and is not a mistake
-    until a human says it is.
+    a pivot the model has not caught up with), and this cannot see the player's
+    reasoning.
     """
     from value import sell_reason
     if not card_db:
@@ -251,22 +263,25 @@ def _sell_questions(sold_ids, end_board, analysis, card_db):
 
     kept = [(m.get("card"), role(m.get("card"))) for m in (end_board or [])]
     low_kept = [(c, r) for c, r in kept if r in _LOW_ROLES]
-    out = []
-    seen = set()
+    # Distinct cards, in the order they were sold. The list can repeat an id —
+    # measured: turn 7 of the 10-06 game reports ['TB_BaconUps_159',
+    # 'Fire Baller', 'Fire Baller'], three entries for two cards.
+    seen, sold = set(), []
     for cid in sold_ids or []:
-        r = role(cid)
-        # ONE question per distinct card+role. The sell list can carry the same
-        # id more than once — measured: turn 7 of the 10-06 game reports
-        # ['TB_BaconUps_159', 'Fire Baller', 'Fire Baller'], three entries for
-        # two distinct cards, whether because two copies really were sold or
-        # because one sell is printed in two log shapes. Either way the review
-        # asks the same question twice, and "did they sell the engine piece
-        # while a filler stayed" is one question about one decision.
-        if r in _HIGH_ROLES and low_kept and (cid, r) not in seen:
-            seen.add((cid, r))
-            out.append({"sold": cid, "role": r,
-                        "kept_fillers": [c for c, _r in low_kept]})
-    return out
+        if cid not in seen:
+            seen.add(cid)
+            sold.append((cid, role(cid)))
+    high = [(c, r) for c, r in sold if r in _HIGH_ROLES]
+    if not high or not low_kept:
+        return []
+    best = high[0]
+    return [{
+        "sold": best[0], "role": best[1],
+        "also_sold": [{"card": c, "role": r} for c, r in high[1:]],
+        "sold_count": len(sold),
+        "kept_fillers": [c for c, _r in low_kept],
+        "rebuild": len(sold) >= 3,
+    }]
 
 
 def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):

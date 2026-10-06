@@ -272,6 +272,8 @@ def _timeline(log_path, game_index, names):
         for q in row["sell_questions"]:
             q["sold_name"] = names.get(q["sold"], q["sold"])
             q["kept_filler_names"] = [names.get(c, c) for c in q["kept_fillers"]]
+            q["also_names"] = [names.get(a["card"], a["card"])
+                               for a in q.get("also_sold") or []]
         row["took_names"] = {
             "bought": [names.get(c, c) for c in row["took"]["bought"]],
             "sold": [names.get(c, c) for c in row["took"]["sold"]],
@@ -429,8 +431,13 @@ def render_text(rep):
                 out.append(f"   they brought    : {r['combat_theirs_text']}")
             out.append(f"   you kept        : {r['battle_end_text'] or '(not readable)'}")
             for q in r.get("sell_questions") or []:
-                out.append(f"   ? sold {q.get('sold_name')} ({q['role']}) while "
-                           f"keeping {', '.join(q.get('kept_filler_names') or [])}")
+                if q.get("rebuild"):
+                    out.append(f"   ~ rebuilt the board: sold {q['sold_count']} "
+                               f"({q.get('sold_name')} and others) — a "
+                               f"repositioning, not a one-for-one choice")
+                else:
+                    out.append(f"   ? sold {q.get('sold_name')} ({q['role']}) while "
+                               f"keeping {', '.join(q.get('kept_filler_names') or [])}")
             for n in r["notes"]:
                 out.append(f"   note: {n}")
             out.append("")
@@ -504,11 +511,17 @@ def _timeline_html(rep):
                 if r["commitment"]["target"] else "")
         flags = []
         for q in r.get("sell_questions") or []:
-            flags.append(
-                f'<div class=q>? sold <b>{e(str(q.get("sold_name")))}</b> '
-                f'({e(q["role"])}) while keeping '
-                f'{e(", ".join(q.get("kept_filler_names") or []))} '
-                f'&mdash; worth a look, not a verdict</div>')
+            if q.get("rebuild"):
+                flags.append(
+                    f'<div class=note>~ rebuilt the board: sold {q["sold_count"]} '
+                    f'({e(str(q.get("sold_name")))} and others) &mdash; a '
+                    f'repositioning, not a one-for-one choice</div>')
+            else:
+                flags.append(
+                    f'<div class=q>? sold <b>{e(str(q.get("sold_name")))}</b> '
+                    f'({e(q["role"])}) while keeping '
+                    f'{e(", ".join(q.get("kept_filler_names") or []))} '
+                    f'&mdash; worth a look, not a verdict</div>')
         for n in r["notes"]:
             flags.append(f'<div class=note>{e(n)}</div>')
         went_in = r["combat_ours_text"] or r["buy_end_text"] or "(no board read)"
@@ -529,6 +542,253 @@ def _timeline_html(rep):
             '<div class=sub>What you went in with, what they brought, and what '
             'you kept &mdash; the board at three points in every turn.</div>'
             + "\n".join(blocks))
+
+
+def _summarise(rep):
+    """One game as a single row, for the session view. Pure.
+
+    Everything comes off the full report, which already holds both the phase
+    rows and the timeline — so the session view is an aggregation, not a second
+    reconstruction.
+    """
+    tl = rep.get("timeline") or {}
+    turns = tl.get("turns") or []
+    boards = [t["stats"]["buy_end"] for t in turns if t["buy_end"]]
+    c = rep["totals"]["counts"]
+    return {
+        "game": rep["game"], "hero": rep["hero"], "placement": rep["placement"],
+        "phases": c["phases"], "taken": c["taken"], "ignored": c["ignored"],
+        "ungraded": c["ungraded"],
+        "phases_tracked": c["phases"] - c["ungraded"],
+        "bled": rep["totals"]["bled_total"],
+        "turns": len(turns),
+        "spent": sum(t["spend"]["total"] for t in turns),
+        "peak_board": max(boards) if boards else None,
+        "final_board": boards[-1] if boards else None,
+        "sell_questions": sum(len(t["sell_questions"]) for t in turns),
+        "timeline_error": rep.get("timeline_error"),
+    }
+
+
+def _median(xs):
+    xs = sorted(x for x in xs if x is not None)
+    if not xs:
+        return None
+    mid = len(xs) // 2
+    return xs[mid] if len(xs) % 2 else round((xs[mid - 1] + xs[mid]) / 2, 1)
+
+
+def _session_totals(summaries):
+    """The aggregate across games. Pure. No score, deliberately.
+
+    It counts and it sums; it does not rank the player. Placements are reported
+    as they came, with the median, because a session is far too small a sample
+    to call a trend — and the same observational caveat rides along.
+    """
+    if not summaries:
+        return {"games": 0, "placements": [], "best": None, "median_placement": None,
+                "phases": 0, "taken": 0, "ignored": 0, "ungraded": 0, "bled": 0,
+                "spent": 0, "sell_questions": 0, "median_final_board": None,
+                "caveat": CAVEAT}
+    places = [s["placement"] for s in summaries if s["placement"]]
+    finals = [s["final_board"] for s in summaries if s["final_board"]]
+    return {
+        "games": len(summaries),
+        "placements": places,
+        "best": min(places) if places else None,
+        "median_placement": _median(places),
+        "phases": sum(s["phases"] for s in summaries),
+        "taken": sum(s["taken"] for s in summaries),
+        "ignored": sum(s["ignored"] for s in summaries),
+        "ungraded": sum(s["ungraded"] for s in summaries),
+        "bled": sum(s["bled"] for s in summaries),
+        "spent": sum(s["spent"] for s in summaries),
+        "sell_questions": sum(s["sell_questions"] for s in summaries),
+        "median_final_board": _median(finals),
+        "caveat": CAVEAT,
+    }
+
+
+def build_session(log_path, limit=None):
+    """Every game in one log, summarised. One full review per game.
+
+    Cost, stated rather than hidden: each game runs the same two replays a
+    single-game review does (about 7 s for a 15-turn game), so a five-game
+    session is roughly half a minute. There is no caching layer here — the
+    maintainer's `review_kit.py` caches per-session replays for its own use, and
+    borrowing that machinery is a separate piece of work.
+    """
+    with open(log_path, encoding="utf-8", errors="replace") as fh:
+        lines = fh.read().splitlines()
+    from decision_log import session_stem
+    session = session_stem(log_path)
+    bounds = list(split_game_chunks(lines))
+    count = len(bounds) if limit is None else min(limit, len(bounds))
+    summaries = [_summarise(build(log_path, gi)) for gi in range(1, count + 1)]
+    return {
+        "schema": SCHEMA,
+        "created": datetime.datetime.now().isoformat(timespec="seconds"),
+        "session": session,
+        "log": os.path.basename(log_path),
+        "games": summaries,
+        "totals": _session_totals(summaries),
+        "caveat": CAVEAT,
+    }
+
+
+def build_history(log_paths, limit_games=None):
+    """Several sessions, aggregated. One full review per game.
+
+    The same aggregation as the session view, applied across logs — so the
+    numbers mean the same thing whether you are looking at one night or ten.
+    COST, stated: every game is replayed twice (about 7 s each), so five games
+    per session over three sessions is minutes, not seconds. It takes an
+    explicit flag for that reason and never runs on the game-end path.
+    """
+    games, logs = [], []
+    for path in log_paths:
+        s = build_session(path, limit=limit_games)
+        games.extend(s["games"])
+        logs.append({"log": s["log"], "session": s["session"],
+                     "games": len(s["games"])})
+    return {
+        "schema": SCHEMA,
+        "created": datetime.datetime.now().isoformat(timespec="seconds"),
+        "logs": logs,
+        "games": games,
+        "totals": _session_totals(games),
+        "caveat": CAVEAT,
+    }
+
+
+def recent_logs(count):
+    """The newest `count` session logs, newest first."""
+    paths = [p for p in glob.glob(HS_LOG_GLOB) if os.path.getsize(p)]
+    paths.sort(key=os.path.getmtime, reverse=True)
+    return paths[:count]
+
+
+def _games_table_text(games):
+    out = ["game  hero            place  turns  phases  took  left  ungraded"
+           "  spent  peak board  final board  ?sells"]
+    for s in games:
+        out.append(
+            f"{s['game']:<5} {(s['hero'] or '?')[:15]:<15} "
+            f"{str(s['placement'] or '?'):<6} {s['turns']:<6} {s['phases']:<7} "
+            f"{s['taken']:<5} {s['ignored']:<5} {s['ungraded']:<9} "
+            f"{s['spent']:<6} {str(s['peak_board'] or '?'):<11} "
+            f"{str(s['final_board'] or '?'):<12} {s['sell_questions']}")
+        if s["timeline_error"]:
+            out.append(f"      (boards unavailable: {s['timeline_error']})")
+    return out
+
+
+def render_history_text(rep):
+    """The cross-session view: which logs, then the same table and aggregate."""
+    out = [f"SETTLE UP — {len(rep['logs'])} session(s), "
+           f"{rep['totals']['games']} game(s)", ""]
+    for lg in rep["logs"]:
+        out.append(f"  {lg['session']}: {lg['games']} game(s)")
+    out.append("")
+    out.extend(_games_table_text(rep["games"]))
+    t = rep["totals"]
+    out.append("")
+    out.append(f"{t['games']} game(s): placements {t['placements'] or 'unknown'}"
+               f" (best {t['best']}, median {t['median_placement']})")
+    out.append(f"{t['phases']} advised phases, {t['taken']} taken, "
+               f"{t['ignored']} not taken, {t['ungraded']} ungraded")
+    out.append(f"bled {t['bled']} effective HP; {t['spent']} gold countable spend")
+    if t["sell_questions"]:
+        out.append(f"{t['sell_questions']} sell question(s)")
+    out.append("")
+    out.append("NOTE: " + rep["caveat"])
+    return "\n".join(out)
+
+
+def render_session_text(rep):
+    """The session view as console text: one line per game, then the aggregate."""
+    out = [f"SETTLE UP — session {rep['session']}  ({len(rep['games'])} game(s))",
+           ""]
+    if not rep["games"]:
+        out.append("No game in this log could be reviewed.")
+        return "\n".join(out)
+    out.extend(_games_table_text(rep["games"]))
+    t = rep["totals"]
+    out.append("")
+    out.append(f"{t['games']} game(s): placements {t['placements'] or 'unknown'}"
+               f" (best {t['best']}, median {t['median_placement']})")
+    out.append(f"{t['phases']} advised phases, {t['taken']} taken, "
+               f"{t['ignored']} not taken, {t['ungraded']} ungraded")
+    out.append(f"bled {t['bled']} effective HP across the session; "
+               f"{t['spent']} gold countable spend")
+    if t["sell_questions"]:
+        out.append(f"{t['sell_questions']} sell question(s) - a key card sold "
+                   f"while a filler stayed")
+    out.append("")
+    out.append("NOTE: " + rep["caveat"])
+    return "\n".join(out)
+
+
+def render_session_html(rep):
+    """The session page: a table of games, then the aggregate."""
+    e = html.escape
+    t = rep["totals"]
+    rows = []
+    for s in rep["games"]:
+        warn = (f'<div class=note>boards unavailable: '
+                f'{e(str(s["timeline_error"]))}</div>' if s["timeline_error"] else "")
+        rows.append(
+            f'  <tr><td>{s["game"]}</td><td>{e(s["hero"] or "?")}</td>'
+            f'<td>{e(str(s["placement"] or "?"))}</td><td>{s["turns"]}</td>'
+            f'<td>{s["taken"]}/{s["phases_tracked"] - s["taken"]}</td>'
+            f'<td>{s["spent"]}g</td><td>{s["final_board"] or "?"}</td>'
+            f'<td>{s["sell_questions"] or ""}</td></tr>{warn}')
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Settle Up — session</title>
+<style>
+  :root {{ --bg:#0d0d0d; --panel:#1a1a19; --panel2:#242422; --text:#fff;
+    --text-2:#c3c2b7; --dim:#898781; --border:rgba(255,255,255,.10);
+    --good:#0ca30c; --warn:#fab219; --bad:#ec835a; --gold:#ffd97a;
+    --gridline:#2c2c2a; }}
+  body {{ margin:0; background:var(--bg); color:var(--text); padding:24px;
+    font:14px/1.5 "Segoe UI", system-ui, sans-serif; }}
+  .wrap {{ max-width:900px; margin:0 auto; }}
+  h1 {{ font-size:24px; color:var(--gold); margin:0 0 2px; }}
+  .sub {{ color:var(--dim); font-size:12px; }}
+  .caveat {{ border-left:3px solid var(--warn); padding:6px 10px; margin:14px 0;
+    color:var(--text-2); background:var(--panel); font-size:12px; }}
+  table {{ border-collapse:collapse; width:100%; margin-top:12px;
+    background:var(--panel); border:1px solid var(--border); border-radius:6px; }}
+  th, td {{ text-align:left; padding:5px 8px; font-size:13px;
+    border-bottom:1px solid var(--gridline); }}
+  th {{ color:var(--dim); font-size:11px; text-transform:uppercase;
+    letter-spacing:.06em; font-weight:700; }}
+  td:nth-child(n+3) {{ font-variant-numeric:tabular-nums; }}
+  .totals {{ display:flex; gap:18px; flex-wrap:wrap; margin:16px 0 4px;
+    padding:10px 12px; background:var(--panel); border:1px solid var(--border);
+    border-radius:6px; }}
+  .totals b {{ color:var(--gold); font-variant-numeric:tabular-nums; }}
+  .note {{ color:var(--dim); font-size:12px; font-style:italic; }}
+</style></head><body><div class=wrap>
+<h1>Settle Up</h1>
+<div class=sub>session {e(rep['session'])} &middot; {e(rep['log'])} &middot; {len(rep['games'])} game(s)</div>
+<div class=totals>
+  <span><b>{t['games']}</b> games</span>
+  <span>placements {e(str(t['placements'] or 'unknown'))}</span>
+  <span><b>{t['phases']}</b> advised phases</span>
+  <span><b>{t['taken']}</b> taken</span>
+  <span><b>{t['ignored']}</b> not taken</span>
+  <span><b>{t['bled']}</b> effective HP bled</span>
+  <span><b>{t['spent']}g</b> spend</span>
+</div>
+<div class=caveat>{e(rep['caveat'])}</div>
+<table><tr><th>game</th><th>hero</th><th>place</th><th>turns</th>
+  <th>took/skipped</th><th>spend</th><th>final board</th><th>?</th></tr>
+{chr(10).join(rows)}
+</table>
+<div class=sub style="margin-top:14px">Generated by Bob's Ledger &middot; schema {SCHEMA} &middot; {e(rep['created'])}</div>
+</div></body></html>
+"""
 
 
 def render_html(rep):
@@ -671,6 +931,12 @@ def main(argv=None):
     ap.add_argument("game", nargs="?", type=int, default=1)
     ap.add_argument("--latest", action="store_true",
                     help="use the newest session log")
+    ap.add_argument("--session", action="store_true",
+                    help="review EVERY game in the log, summarised (one full "
+                         "review per game, so it costs ~7s per game)")
+    ap.add_argument("--history", type=int, metavar="N", default=None,
+                    help="aggregate the newest N session logs across games. "
+                         "SLOW: every game is replayed twice (~7s each)")
     ap.add_argument("--json", action="store_true", help="the report as JSON")
     ap.add_argument("--html", metavar="PATH",
                     help="write a standalone review page here")
@@ -686,6 +952,30 @@ def main(argv=None):
     if not os.path.exists(log):
         print(f"No such log: {log}")
         return 2
+
+    if args.history:
+        paths = recent_logs(args.history)
+        if not paths:
+            print("No session logs found to build a history from.")
+            return 2
+        rep = build_history(paths)
+        if args.json:
+            print(json.dumps(rep, indent=2, ensure_ascii=False))
+        else:
+            print(render_history_text(rep))
+        return 0
+
+    if args.session:
+        rep = build_session(log)
+        if args.html:
+            with open(args.html, "w", encoding="utf-8") as fh:
+                fh.write(render_session_html(rep))
+            print(f"wrote {args.html}")
+        if args.json:
+            print(json.dumps(rep, indent=2, ensure_ascii=False))
+        elif not args.html:
+            print(render_session_text(rep))
+        return 0
 
     rep = build(log, args.game)
 

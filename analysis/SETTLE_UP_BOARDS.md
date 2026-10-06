@@ -198,9 +198,38 @@ question. Boards are text ("Locked-up Mutineer 6/3, Crackling Cyclone 2/1\*",
 lives behind the overlay's `/img` route. A timeline failure is recorded as
 `timeline_error` and the phase list still renders — never silent.
 
-**Phase D — the rest of the ask, OPEN.** Grade the casts (`value.top_move`
-writes `card: None` on a cast step; `player_actions` counts spells instead of
-naming them) and a session/history view across games.
+**Phase D — the rest of the ask. DONE (2026-10-06).**
+
+- **The cast-grading gap is closed at the source.** `value.top_move` derived
+  every step's `card` by PARSING the rendered text, so only a buy step ever
+  resolved one, and `player_actions` counted spells instead of naming them.
+  `_top_move_text` now records which card each hand step is about while it still
+  holds the ids, and `player_actions` records `spell_ids`. Same game:
+  **8 ungraded phases → 1** (a swap). `_plan_shape` reports the card for
+  cast/play, and `_verdict` grades both.
+- **A session view and a history view.** `--session` summarises every game in a
+  log; `--history N` aggregates the newest N logs. Both ride the same pure
+  `_summarise` / `_session_totals` pair, so the numbers mean the same thing at
+  one night or ten. Cost is stated in the flag's help: every game is replayed
+  twice (~7 s), so history is minutes and never runs on the game-end path.
+
+**The sell detector needed a second pass, and this is why.** The first version
+fired per sold card and produced **12 questions in an 11-turn game**, nearly all
+of them the same sentence: one filler (`BG36_210`) sat on the board while four
+scalers were sold in a single turn, so that board state printed four times. Two
+changes:
+
+- **One question per turn**, naming the strongest card sold and the filler kept,
+  plus `also_sold` for the rest. One turn is one decision about what to sell.
+- **A turn that sells most of its board is a REBUILD**, and says so. Selling
+  four minions at once is repositioning or pivoting, not four mistakes — the
+  choice the detector can see (this card over that filler) is not what happened
+  there. Threshold is three sold; `rebuild` rides the question so a renderer
+  cannot present it as a blunder.
+
+The same session, after: **14 questions → 6**, and of game 2's four entries
+three are labelled rebuilds and one is a real question ("sold Mechagnome
+Interpreter (scaler) while keeping Hoarding Hyena").
 
 **One cost to know.** A review is now TWO full replays of the game — the phase
 rows (`outcome_audit.audit_game`) and the timeline (`turn_review.timeline`) —
