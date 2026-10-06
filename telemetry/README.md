@@ -121,6 +121,29 @@ pins (that mistake would otherwise surface on players' machines, one "REFUSING
 this update" at a time). Relay the pin mistake the other way — pinning a new
 key while the old one publishes — and the same gate catches it.
 
+**Back the key up**, and check the copy by re-deriving the public half: it must
+print the fingerprint that `publish_release.py` reports, or that file is not the
+key. Copying the file needs nothing printed:
+
+```
+Copy-Item "$env:USERPROFILE\.bobs-ledger-release.key" "E:\bobs-ledger-release.key"
+python app\release_sig.py --pubkey "E:\bobs-ledger-release.key"
+```
+
+For a password manager, the 64-character hex survives copy-paste anywhere:
+
+```
+cd <the repo root>
+python -c "import sys;sys.path.insert(0,'app');import release_sig;print(release_sig.read_private_key(r'C:\Users\<you>\.bobs-ledger-release.key').hex())"
+```
+
+**The `cd` is not decoration.** `'app'` is a relative path, so that one-liner
+works only from the repo root — run it from anywhere else and it dies with
+`ModuleNotFoundError: No module named 'release_sig'`, which reads like a broken
+install rather than a wrong directory (measured 2026-10-07, given to the
+maintainer as a bare command and hit immediately). Every other command here
+assumes the repo root for the same reason.
+
 Two consequences worth knowing before they surprise you:
 
 * **The first signed release is the cutover.** Installs running older code
