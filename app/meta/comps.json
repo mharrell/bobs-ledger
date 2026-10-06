@@ -76,7 +76,8 @@
     "meta_tier": "A",
     "core": [
       "BG23_318",
-      "BG33_318"
+      "BG33_318",
+      "BG36_700"
     ],
     "addons": [
       "BG36_243",
@@ -96,7 +97,7 @@
   "pirates-apm-golden": {
     "name": "Pirates - APM Golden",
     "difficulty": "Easy",
-    "meta_tier": "B",
+    "meta_tier": "A",
     "core": [
       "BG33_823",
       "BG36_344",
@@ -131,7 +132,8 @@
       "BG32_873",
       "BG21_004",
       "BG26_174",
-      "BG_LOE_077"
+      "BG_LOE_077",
+      "BG30_121"
     ],
     "summary": "Scale and consume shop",
     "when_to_commit": "Buffed Shop (Devilish Distractor) + Twisted Wrathguard",
@@ -194,23 +196,22 @@
   "quilboar-choose-one": {
     "name": "Quilboar - Choose One",
     "difficulty": "Hard",
-    "meta_tier": "B",
+    "meta_tier": "A",
     "core": [
+      "BG36_331",
       "BG34_684",
       "BG31_326",
       "BG31_323",
       "BG33_885"
     ],
     "addons": [
+      "BG36_243",
       "BG31_327",
-      "BG36_331",
-      "BG26_ICC_901",
-      "BG23_017",
-      "BG36_510"
+      "BG23_017"
     ],
     "summary": "Play Choose One cards to scale",
-    "when_to_commit": "Gem rat + Turbo Hogrider",
-    "common_enablers": "Gem Rat",
+    "when_to_commit": "Gem rat/Bramble Tunneler + Turbo Hogrider",
+    "common_enablers": "gem scaling (Gem Rat)",
     "representative_card": "BG31_323",
     "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
     "tribe": "Quilboar",
@@ -314,7 +315,7 @@
   "undead-apm-undead": {
     "name": "Undead - APM Undead",
     "difficulty": "Easy",
-    "meta_tier": "A",
+    "meta_tier": "S",
     "core": [
       "BG25_010",
       "BG36_515",
@@ -337,7 +338,7 @@
   "murlocs-tidecaller": {
     "name": "Murlocs - Tidecaller",
     "difficulty": "Medium",
-    "meta_tier": "A",
+    "meta_tier": "B",
     "core": [
       "BG_LOE_077",
       "BG27_556",
@@ -513,11 +514,11 @@
     "core": [
       "BG_LOE_077",
       "BG35_883",
-      "BG36_640"
+      "BG36_640",
+      "BG30_121"
     ],
     "addons": [
       "BG32_821",
-      "BG30_121",
       "BG28_633",
       "BG36_523",
       "BG36_370",
@@ -542,12 +543,12 @@
       "BG33_825",
       "BG33_823",
       "BG36_851",
-      "BG36_506",
       "BG26_149"
     ],
     "addons": [
       "BG36_523",
-      "BG_LOE_077"
+      "BG_LOE_077",
+      "BG36_506"
     ],
     "summary": "Attach bigger and bigger magnetics",
     "when_to_commit": "Infinite gold (Sky Admiral Rogers + Proud Privateer) + Auto Reveille",
@@ -585,7 +586,7 @@
   "elementals-living-azerite": {
     "name": "Elementals - Living Azerite",
     "difficulty": "Medium",
-    "meta_tier": "A",
+    "meta_tier": "S",
     "core": [
       "BG35_881",
       "BG35_883",
@@ -610,19 +611,18 @@
   "aberrations-sludge": {
     "name": "Aberrations - Sludge",
     "difficulty": "Medium",
-    "meta_tier": "A",
+    "meta_tier": "B",
     "core": [
-      "BG25_354",
-      "BG36_300",
+      "BG26_ICC_901",
+      "BG32_821",
       "BG36_115",
       "BG36_320",
       "BG36_104"
     ],
     "addons": [
-      "BG32_821",
       "BG36_103",
       "BG36_312",
-      "BG26_ICC_901"
+      "BG36_300"
     ],
     "summary": "Discard sludges to scale",
     "when_to_commit": "Spell generation (Nightmare Corroder, Sludge Portrait) + Spell Power (N'raqi Frostcaller)",
@@ -638,8 +638,6 @@
     "difficulty": "Easy",
     "meta_tier": "S",
     "core": [
-      "BG33_823",
-      "BG33_825",
       "BG28_633",
       "BG35_883",
       "BG_LOE_077"
@@ -649,6 +647,8 @@
       "BG36_762",
       "BG36_640",
       "BG36_523",
+      "BG33_823",
+      "BG33_825",
       "BG30_121",
       "BG36_370"
     ],
@@ -659,5 +659,97 @@
     "source": "hsreplay.net comp pages (scrape_comps.py)",
     "tribe": "Quilboar",
     "how_to_play": "APM shop-buff engine: Rogers mints a Bounty every 9 gold and Privateer casts Bounties twice, while Balinda doubles friendly-targeted spells. Stream spells into Devilish Distractor to pump the tavern +2/+2 per cast, then Felboar consumes the buffed shop every 3 spells. Blood Gems (Surveyor/Geomant) are cheap fuel; keep the carry left-most for Geomant overflow."
+  },
+  "demons-deathrattle-shop-buff": {
+    "name": "Demons - Deathrattle/Shop Buff",
+    "difficulty": "Hard",
+    "meta_tier": "A",
+    "core": [
+      "BG25_354",
+      "BG36_362",
+      "BG36_731"
+    ],
+    "addons": [
+      "BG35_883",
+      "BG35_155",
+      "BG36_503"
+    ],
+    "summary": "Scale and eat the shop with deathrattles.",
+    "when_to_commit": "Early Sacrificial Wrathguard",
+    "common_enablers": "Sacrificial Wrathguard",
+    "representative_card": "BG36_362",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Demon",
+    "how_to_play": "Deathrattle shop-buff: press Sacrificial Wrathguard's Activate (1) every turn - its deathrattle gives minions in the Tavern +2/+2 for the rest of the game - and let Titus Rivendare trigger it twice. Imp-lusionist deaths feed you Methodical Madness (choose a Demon; it consumes 2 random Tavern minions to gain their stats and bonus keywords), which is how the buffed Tavern becomes board stats, and Balinda Stonehearth casts each one twice. Soulkeeping Jailer's Activate (2) is the bulk eater: every Demon consumes a random Tavern minion. Twisted Wrathguard refills the shop with Fodder after each sell, so keep buying and selling to keep the conversion running."
+  },
+  "quilboar-gems-from-hand": {
+    "name": "Quilboar - Gems from Hand",
+    "difficulty": "Hard",
+    "meta_tier": "A",
+    "core": [
+      "BG30_121",
+      "BG36_370",
+      "BG33_885"
+    ],
+    "addons": [
+      "BG23_017",
+      "BG35_883",
+      "BG26_817",
+      "BG28_583",
+      "BG28_582"
+    ],
+    "summary": "Add buffed gems to hand",
+    "when_to_commit": "Gem scaling (Sanguine Refiner) + Hot Air Surveyor",
+    "common_enablers": "Gem scaling (Sanguine Refiner)",
+    "representative_card": "BG30_121",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Quilboar",
+    "how_to_play": "Blood Gems played from HAND: Hot-Air Surveyor makes every gem you play from hand cast an extra time, so the payoff is a hand full of gems rather than one gem a turn. Victorious Geomant's Activate (2) hands you 6 at once and casts the overflow onto your left-most minion - keep the carry there - and Mangled Bandit trades a discard for 3 more. Scale the gems themselves with Sanguine Refiner's Rally and Sanguine Champion's battlecry and deathrattle; both boosts are permanent. Balinda Stonehearth doubles each gem you cast, and Geomagus Roogug chains a second gem off itself whenever one lands on it."
+  },
+  "murlocs-magicfin": {
+    "name": "Murlocs - Magicfin",
+    "difficulty": "Easy",
+    "meta_tier": "A",
+    "core": [
+      "BG26_ICC_901",
+      "BG22_403",
+      "BG_LOE_077",
+      "BG33_890t",
+      "BG33_891",
+      "BG32_821"
+    ],
+    "addons": [
+      "BG34_633",
+      "BG34_638t"
+    ],
+    "summary": "Teach Murlocs spells and proc them",
+    "when_to_commit": "Brann Bronzebeard + Magicfin Mycologist + Young Murk-eye",
+    "common_enablers": "Magicfin Mycologist\nBrann Bronzebeard",
+    "representative_card": "BG33_890t",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Murloc",
+    "how_to_play": "Taught-spell Murlocs: buy a Tavern spell every turn so Magicfin Mycologist hands you a 1/1 Murloc carrying that spell, then re-cast it - Brann Bronzebeard doubles the carry minion's battlecry, and Young Murk-Eye triggers an adjacent battlecry again at end of turn (Drakkari Enchanter makes that twice). Felfire Conjurer and Red Chromadrake are the scaling half: each permanently improves what your Tavern spells give, so the spells you teach get better all game. Draconic Warden's battlecry and deathrattle keep the Chromadrakes coming. Easiest line in the family to pilot - park the token next to Murk-Eye and buy spells."
+  },
+  "dragons-copebringer": {
+    "name": "Dragons - Copebringer",
+    "difficulty": "Hard",
+    "meta_tier": "B",
+    "core": [
+      "BG36_849",
+      "BG36_364",
+      "BGS_040",
+      "BG29_813"
+    ],
+    "addons": [
+      "TB_BaconShop_HERO_60_Buddy",
+      "BGS_034"
+    ],
+    "summary": "Proc Divine Shields to scale",
+    "when_to_commit": "Early Hopebringer + shields",
+    "common_enablers": "Divine Shields (Bronze Warden)",
+    "representative_card": "BG36_364",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Dragon",
+    "how_to_play": "Divine-shield engine: Hopebringer gives your board +3/+3 at the start of combat and improves permanently every time a friendly minion loses Divine Shield, so the whole plan is to pop shields. Heroic Broodmother gains one on each Rally and attacks immediately at the start of combat; Nadina the Red re-shields 3 Dragons when she dies; Bronze Warden's divine shield plus reborn is two losses in one body. Park the Dragons you care about beside Persistent Poet - it keeps their combat stats and bonus keywords for good. Crimson Hand Centurion is a cheap extra shield that also grows off Verdant Spheres."
   }
 }
