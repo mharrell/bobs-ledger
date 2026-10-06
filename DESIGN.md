@@ -54,11 +54,23 @@ verdicts. And it is not a claim that the model was wrong to have opinions: the
 plan is the part of this project worth keeping, and the review is where it can
 be measured against outcomes instead of asserted at a player mid-turn.
 
-**The review exists as of 2026-10-06** (`settle_up.py`, PIVOT.md Phase 2): one
-row per advised buy phase, the model's line beside what the player actually did,
-and the effective HP the following fight cost. Reachable three ways — the
-end-of-game card's "Settle up" link, the overlay server's `/review` route, and
-`python app/settle_up.py --latest` for any game still in the log.
+**The review exists as of 2026-10-06** (`settle_up.py` + `turn_review.py`,
+PIVOT.md Phase 2 and the turn-timeline work that followed it).
+
+Its headline is the thing the game itself never shows: **the board at three
+points in every turn** — what the player went in with, what the opponent
+brought (the combat staging burst carries BOTH boards with live stats), and what
+survived into the next turn — plus that turn's gold, its board growth, its comp
+commitment, and a `?` on any turn where a key card was sold while a filler
+stayed (a question, never a verdict; a turn that sells most of its board is
+labelled a rebuild instead). Reconstruction, evidence and the measured traps:
+`analysis/SETTLE_UP_BOARDS.md`.
+
+Beneath that sits the phase-by-phase view: one row per advised buy phase, the
+model's line beside what the player actually did, and the effective HP the
+following fight cost. Reachable three ways — the end-of-game card's "Settle up"
+link, the overlay server's `/review` route, and `python app/settle_up.py`
+(`--latest`, `--session`, `--history N`, `--json`, `--html`).
 
 What remains ungraded, and it is now ONE phase rather than eight: a plan that
 leads with a `swap` (which needs the sell AND the play that replaced it — the

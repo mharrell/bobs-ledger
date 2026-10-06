@@ -423,7 +423,15 @@ tavern-owned) — shop_ranking just silently dropped them.
       visible action went from p90 123 chars / max 174 to p90 26 / max 74, and
       action+reason to p90 44. See `analysis/LEVELING_MODEL.md` §"The FRAGILE
       band and damage memory".
-- [ ] Post-game replay review UI.
+- [x] **Post-game replay review UI** (2026-10-06): `settle_up.py`, reached from
+      the end-of-game card, the overlay's `/review` route, or the CLI. Per turn
+      it shows the board at three points (buy end, combat start for BOTH sides,
+      battle end) plus gold spent, board growth, comp commitment and sell
+      questions, then a phase-by-phase view of the plan against what the player
+      did. `--session` and `--history N` aggregate. See
+      `analysis/SETTLE_UP_BOARDS.md` for the reconstruction's measured traps.
+      Still open from this: the in-overlay reviewer with a game picker and a
+      save button (see Ideas below).
 - [x] **Selection ranker** (`choices.py`, 2026-09-01): the coach now advises on
       the picks it could only count before — hero (1 of 4), trinkets (Lesser/
       Greater), and minion discovers. Parses `DebugPrintEntityChoices` blocks
