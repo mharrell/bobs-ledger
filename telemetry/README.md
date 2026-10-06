@@ -165,6 +165,15 @@ Two consequences worth knowing before they surprise you:
   treat the publish log line as proof. The zip is often readable before the
   manifest is (`GET /release/<name>.zip` fetches an object that was never
   overwritten), so the manifest is the one to poll.
+- **`Authentication error [code: 10000]` from the Cloudflare API is
+  intermittent, not a credential problem — re-run the publish.** Measured
+  2026-10-04 and again on the 2026-10-07 signed cutover: reads always work, the
+  OAuth token refreshes itself, and an immediate retry succeeds. The failure is
+  informative if you read where it stopped: the KV PUTs run zip-then-manifest, so
+  dying on the zip means the channel is still serving the previous release and
+  nothing is half-published. The 2026-10-07 attempt also re-confirmed the
+  eventual-consistency note above — a read seconds after `published` returned the
+  OLD manifest, and a few seconds later the new one.
 - **User-Agent matters**: workers.dev bot filtering 403s the default
   `Python-urllib` UA before the worker runs. `upload_corpus.put_url` sends
   `hearth-coach-telemetry/1.0` — keep a real UA on any new client. (Every

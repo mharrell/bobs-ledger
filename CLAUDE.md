@@ -262,18 +262,36 @@ the server sent into memory, and extraction had no ceiling. Now the SIGNED
 without one), and `stage_release` refuses more than `MAX_ENTRIES` entries or
 `MAX_TOTAL_BYTES` declared bytes before writing anything.
 
-**THE OPERATIONAL FACT THAT MATTERS MOST: `PUBKEY_B64` is still empty.** Until
-the maintainer runs `python app/release_sig.py --keygen <offline path>`, pastes
-the printed line into `app/release_sig.py` and commits it, **every install
-running this code REFUSES an offered update** and says so in as many words. That
-is the fail-closed design working, not a bug — but it means the pin and the
-release that carries the check have to ship together. Existing installs are
-unaffected until they take that release, because their code does not check
-signatures at all.
+**THE PIN IS SET AND THE CUTOVER RELEASE IS PUBLISHED (2026-10-07).**
+`PUBKEY_B64` pins the key with fingerprint `4d8fc45534ba558d`. The private half
+is `%USERPROFILE%\.bobs-ledger-release.key` on this machine — 32 raw bytes, ACL'd
+to the user, its name guarded in `.gitignore`, `EXCLUDE_FILES` and `PROTECTED` —
+and `HEARTH_SIGNING_KEY` points at it. **It has not been backed up off this
+machine yet, and that is the one outstanding action**: losing it costs every
+player one manual reinstall, because there is no bypass flag.
 
-Suite: 1644 green (12 skipped), and both directions of the signing gate were
-rehearsed against a throwaway key — no key refuses, an unpinned key refuses, a
-pinned key passes and round-trips a probe manifest.
+Release `91be599` is signed, published to KV and to the GitHub release, and was
+verified from the PLAYER's side rather than from the publish log: the live
+manifest verifies against the pinned key, the zip's sha256 and byte count match
+the manifest, the pin inside the published zip matches this checkout, the
+SHIPPED updater run from inside that zip (from a state reading `3233929`) offers
+the update and exits 1 — which is only reachable through a successful
+verification — and that same shipped code refuses a manifest whose `note` was
+rewritten, printing the key fingerprint in the refusal.
+
+Two things that surprise people publishing here, both hit while doing the above:
+`Authentication error [code: 10000]` from the Cloudflare API is intermittent —
+re-run it (that attempt died on the zip PUT, before the manifest, so the channel
+kept serving the old release and nothing was half-published). And KV's eventual
+consistency means `latest.json` can still serve the PREVIOUS manifest right after
+a successful publish, so "did it work?" needs a minute of retries, not a
+re-publish. Both are in `telemetry/README.md`'s gotchas already; they reproduced
+exactly as written.
+
+Suite: 1645 green (11 skipped — the pin-coherence test now RUNS rather than
+skipping, which is itself the proof the pin is real), and both directions of the
+signing gate were rehearsed against a throwaway key — no key refuses, an unpinned
+key refuses, a pinned key passes and round-trips a probe manifest.
 
 Still open from the same audit, in the order worth doing them:
 
