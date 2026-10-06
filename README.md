@@ -126,6 +126,15 @@ coach from:
 
     python app\settle_up.py --latest --html my-review.html
 
+**A whole session, or your last few.** `--session` reviews every game in the
+newest log and puts them in one table — placements, boards, spend, and how often
+you took the plan. `--history 3` does the same across your three newest logs.
+Both re-read every game in full, so they take a few seconds per game; the
+single-game review is instant by comparison.
+
+    python app\settle_up.py --latest --session
+    python app\settle_up.py --history 3
+
 ## The one question it asks you
 
 <img src="docs/first-run.png" alt="The first-run card: the log.config block to copy, a line saying nothing has been sent yet, and the question with Yes and No buttons" width="560">

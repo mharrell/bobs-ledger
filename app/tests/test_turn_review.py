@@ -182,6 +182,34 @@ class TestSellQuestions(unittest.TestCase):
                                 self._analysis(), card_db=self.DB)
         self.assertEqual(len(qs), 1)
 
+    def test_one_question_per_turn_not_per_card(self):
+        """The first version fired per sold card and produced 12 questions in an
+        11-turn game, nearly all the SAME sentence: one filler sat on the board
+        while four scalers were sold, so it printed that board state four
+        times."""
+        qs = tr._sell_questions(["BG_A", "BG_B", "BG_C", "BG_D"],
+                                self._board(self.FILLER),
+                                self._analysis(core=("BG_A", "BG_B", "BG_C", "BG_D")),
+                                card_db=self.DB)
+        self.assertEqual(len(qs), 1, "one turn is one decision about what to sell")
+        self.assertEqual(qs[0]["sold_count"], 4)
+        self.assertIn("also_sold", qs[0])
+
+    def test_selling_most_of_the_board_is_labelled_a_rebuild(self):
+        # Selling four minions at once is repositioning, not four mistakes: the
+        # choice this detector can see (this card over that filler) is not what
+        # happened there. The flag lets a renderer say so.
+        qs = tr._sell_questions(["BG_A", "BG_B", "BG_C"],
+                                self._board(self.FILLER),
+                                self._analysis(core=("BG_A", "BG_B", "BG_C")),
+                                card_db=self.DB)
+        self.assertTrue(qs[0]["rebuild"])
+
+    def test_a_single_sell_is_not_a_rebuild(self):
+        qs = tr._sell_questions([self.CORE], self._board(self.FILLER),
+                                self._analysis(), card_db=self.DB)
+        self.assertFalse(qs[0]["rebuild"])
+
     def test_without_a_card_db_nothing_is_classified(self):
         # An unclassifiable card is not evidence of a blunder, so the detector
         # returns nothing rather than defaulting it into a role. An EMPTY DB
