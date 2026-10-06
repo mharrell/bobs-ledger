@@ -7,6 +7,13 @@ that can be re-derived and one that cannot.
 
 Tested with a temporary archive and a stubbed live glob, because the real
 `logs_archive/` is machine-local, gitignored, and holds other people's handles.
+
+The session names are the registered placeholders
+(`privacy_scan.SYNTHETIC_SESSIONS`), not whatever session this machine happened
+to be playing: this file SHIPS, and the first version of it carried two real
+local session names as fixture strings. The privacy gate refused the 2026-10-06
+release over exactly that — one file, three findings — because a real session
+name in a shipped file is the same category of leak as a real handle.
 """
 import os
 import sys
@@ -36,15 +43,15 @@ class TestArchivedLogs(unittest.TestCase):
         return path
 
     def test_finds_power_logs_and_strips_the_suffix(self):
-        self._touch("Hearthstone_2026_10_04_10_27_10__Power.log")
-        self._touch("Hearthstone_2026_10_05_07_53_34__Power.log")
+        self._touch("Hearthstone_2026_01_01__Power.log")
+        self._touch("Hearthstone_2026_01_02__Power.log")
         got = fight_table.archived_logs()
-        self.assertEqual(sorted(got), ["Hearthstone_2026_10_04_10_27_10",
-                                       "Hearthstone_2026_10_05_07_53_34"])
+        self.assertEqual(sorted(got), ["Hearthstone_2026_01_01",
+                                       "Hearthstone_2026_01_02"])
 
     def test_ignores_files_that_are_not_power_logs(self):
         """A loose .txt or a notes file must not be read as a game."""
-        self._touch("Hearthstone_2026_10_04_10_27_10__Power.log")
+        self._touch("Hearthstone_2026_01_01__Power.log")
         self._touch("notes.txt")
         self._touch("README.md")
         self.assertEqual(len(fight_table.archived_logs()), 1)
@@ -73,8 +80,8 @@ class TestAllLogs(unittest.TestCase):
         # a fake live tree: <root>/<session>/Power.log
         self.live = os.path.join(self.tmp.name, "live")
         os.makedirs(self.live)
-        for sess in ("Hearthstone_2026_10_04_10_27_10",
-                     "Hearthstone_2026_10_09_12_00_00"):
+        for sess in ("Hearthstone_2026_01_01",
+                     "Hearthstone_2026_01_02"):
             d = os.path.join(self.live, sess)
             os.makedirs(d)
             with open(os.path.join(d, "Power.log"), "w", encoding="utf-8") as f:
@@ -88,14 +95,14 @@ class TestAllLogs(unittest.TestCase):
 
     def test_duplicate_session_is_listed_once_and_the_archive_wins(self):
         arch = os.path.join(self.tmp.name,
-                            "Hearthstone_2026_10_04_10_27_10__Power.log")
+                            "Hearthstone_2026_01_01__Power.log")
         with open(arch, "w", encoding="utf-8") as f:
             f.write("x")
         got = dict(fight_table.all_logs(include_live=True))
         self.assertEqual(len(got), 2)
-        self.assertEqual(got["Hearthstone_2026_10_04_10_27_10"], arch)
+        self.assertEqual(got["Hearthstone_2026_01_01"], arch)
         # the live-only session is still picked up
-        self.assertIn("Hearthstone_2026_10_09_12_00_00", got)
+        self.assertIn("Hearthstone_2026_01_02", got)
 
     def test_a_fresh_live_log_is_skipped_unless_asked_for(self):
         """Half-written sessions are excluded by default (the 1800s guard)."""
@@ -107,8 +114,8 @@ class TestAllLogs(unittest.TestCase):
     def test_live_logs_are_included_when_asked(self):
         names = [n for n, _p in fight_table.all_logs(include_live=True)]
         self.assertEqual(sorted(names),
-                         ["Hearthstone_2026_10_04_10_27_10",
-                          "Hearthstone_2026_10_09_12_00_00"])
+                         ["Hearthstone_2026_01_01",
+                          "Hearthstone_2026_01_02"])
 
 
 class TestArchiveLocation(unittest.TestCase):
