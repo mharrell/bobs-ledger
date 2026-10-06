@@ -1,6 +1,7 @@
 # Aberrations — Sludge
 
-> Our advice for the published A-tier build (hsreplay tier list, 2026-09-30).
+> Our advice for the published B-tier build (hsreplay tier list, 2026-10-06;
+> demoted from A on that date).
 > Written as original advice for this coach; card texts read from the DB.
 
 ## The engine

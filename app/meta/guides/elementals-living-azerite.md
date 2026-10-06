@@ -1,6 +1,7 @@
 # Elementals — Living Azerite
 
-> Our advice for the published A-tier build (hsreplay tier list, 2026-09-30).
+> Our advice for the published S-tier build (hsreplay tier list, 2026-10-06;
+> promoted from A on that date).
 > Written as original advice for this coach; card texts read from the DB.
 
 ## The engine
