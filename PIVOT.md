@@ -179,11 +179,28 @@ notes is a deliberate decision, not a leftover.
   player with a verdict-shaped panel on the live path has not pivoted, however
   the docs read. The Phase 0 contract test is what makes the difference real.
 
-## 6. Open decisions (not yet made)
+## 6. Decisions
+
+**Still open:**
 
 1. Does the maintainer keep a live-coach build for personal use, excluded from
    the release? (Cheap via `EXCLUDE_FILES`; it moves the risk to whoever opts in.)
-2. Naming and attention profile: keep "coach" in the UI, or move the product's
-   language to the ledger/review framing it now is?
-3. Whether the review's first screen leads with the model's line or with the
-   player's own decisions, scored.
+
+**Settled since this list was written (2026-10-06), kept here so they are not
+reopened by accident:**
+
+2. ~~Naming and attention profile: keep "coach" in the UI, or move the product's
+   language to the ledger/review framing?~~ **The name stays "Bob's Ledger".**
+   It was already the pun — Bob runs the tavern, a ledger is the tavernkeeper's
+   book — and the pivot made the existing name *more* accurate rather than less.
+   A rename would also cost ~26 files including both launcher filenames, the
+   workers.dev subdomain every installed copy's updater points at, and shortcuts
+   already on players' machines. The bar-tab language went into the review's own
+   name instead: **Settle up**. (See CLAUDE.md.)
+3. ~~Whether the review's first screen leads with the model's line or with the
+   player's own decisions, scored.~~ **Answered by building it:** the first
+   screen is neither — it is the TURN BY TURN board section (what you went in
+   with, what they brought, what you kept), and the model's line follows in the
+   phase-by-phase view. The question assumed a single choice between two scored
+   framings, and the thing that turned out to be worth leading with was the
+   reconstruction the game itself cannot show.
