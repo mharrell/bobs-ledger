@@ -555,22 +555,59 @@ to a decision made by an older one.
   questions about a log — what games exist and what is in them is already
   written, for the maintainer.
 
-**The open question to settle BEFORE building: what does "save" write?** Three
-options, and the difference is a privacy decision rather than a storage one.
-1. **The review report** (HTML/JSON). Derived and harmless, small — but it
-   cannot be re-derived later under newer code, so it is a snapshot, not a
-   replay.
-2. **The decision-log records for that game.** No personal data by design (the
-   decision log's own docstring: card ids and minion names only). Enough to
-   re-read the PLAN side, but not the boards (those come from the Power.log) and
-   not the player's actions.
-3. **The Power.log slice for that game.** Makes a full review re-runnable —
-   boards, actions, outcomes — but it carries real players' handles. Sharing
-   one would require `sanitize_log.py`, and the standing rule is that handles
-   never leave the machine except through the sanitized corpus path.
+**DECIDED (2026-10-06, maintainer): "save" writes the Power.log slice.**
 
-The honest full version is 2+3 kept inside the app's own folder and never
-shared; 1 is the cheap one. Say which on purpose.
+> "The Power.log slice. This is the data that they will review. Separate from
+> what gets sent to us. And we want to be able to recreate things faithfully.
+> We can trim it down over time if we find that we can."
+
+So the saved replay is the game's own log lines, and the point of saving it is
+that the review can be **recreated faithfully** — same slice, same code version,
+same boards, same actions, same outcome. That rules out the two cheaper options
+for the player-facing feature: a saved HTML report cannot be re-derived under
+newer code (a snapshot, not a replay), and the decision-log records alone carry
+the PLAN side but neither the boards nor the player's actions.
+
+**"Separate from what gets sent to us" is the load-bearing half of that.** The
+save path writes to the player's own disk and is NOT part of the sharing path:
+`share.py` still sends nothing until the consent answer is yes, and the corpus
+path (`package_corpus` → `sanitize_log` → the collector) is untouched. A saved
+game is a local record, the same category as the `Power.log` and
+`decision_logs/` already sitting in the install. What must not happen later is a
+"share my saved games" button that reaches the network without going through the
+consent gate and the sanitized path — the handles are in that slice by design.
+
+**Two things to verify when it gets built, both cheap:**
+- **A slice must replay standalone.** `settle_up.build` currently reads a whole
+  log and splits it; whether one game's lines replayed on their own give the
+  same review is an empirical question (the parser may want lines before that
+  game's `CREATE_GAME`). `extract_game.split_game_chunks` already yields the
+  (start, end) pair, so producing a slice is trivial — proving it reproduces the
+  same report is the test, and it should be a test, not an assumption.
+- **The slice needs its manifest.** The version stamp is what makes it readable
+  (above), so a saved game is a pair: the lines PLUS `{coach_version, session,
+  game index, hero, placement, created}` — the same shape `package_corpus.py`
+  already writes for its bundles.
+
+**The folder needs the same three guards `decision_logs/` has**, and this is the
+part that would bite hardest if forgotten: a basename in `.gitignore` (`sync.py
+--new` commits untracked files), an entry in `publish_release.EXCLUDE_DIRS`
+(otherwise a release ships a player's saved logs — the worst privacy failure
+available in this repo), and a name in `update.PROTECTED` (an update must never
+delete the player's records). Checked 2026-10-06: `decision_logs` has all three,
+and **none** of the obvious names for the new folder (`saved_games`, `replays`,
+`saved_replays`) has any of them — so the three edits belong in the same commit
+that creates the directory, not in a follow-up.
+
+**Trim later, not now.** Start with the whole slice; what can be dropped (hero
+selection, the pre-game bootstrap, seat chatter) is a question for measurement,
+and the guide for answering it is `BG_LOG_STRUCTURE.md` plus whatever the first
+saved games turn out not to need. Do not pre-optimise the slice before there is
+a saved game to bisect.
+
+Superseded options, recorded so they are not re-litigated: the review report
+alone (derived, harmless, but cannot be re-derived under newer code) and the
+decision-log records alone (no personal data by design, but plan-side only).
 
 ---
 
