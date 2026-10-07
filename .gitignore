@@ -65,6 +65,11 @@ session_reports/
 .bobs-ledger-release.key
 release_signing_key
 
+# Saved game reviews (the Settle Up tab's store, app/saved_replays/): one
+# JSON per game the player chose to keep. Per-user data, the same class as
+# decision_logs/ — basename pattern, for the sync.py --new reason above.
+saved_replays/
+
 # Where fetch_sessions.py puts reports it pulls back from the collector. That is
 # OTHER PEOPLE'S data — the beta testers' decisions — landing in a git tree, and
 # this directory was neither ignored nor mentioned in publish_release's
