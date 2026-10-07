@@ -78,6 +78,28 @@ coach reads.
 If you use Hearthstone Deck Tracker or Firestone, this file exists already and
 you are done.
 
+## The two tabs
+
+The page you get has **two tabs at the top**, and they answer the two different
+questions a Battlegrounds game leaves you with:
+
+- **Another Round** — the live view, and where you start. Everything the coach
+  knows while you are playing is on this tab: your board and what it is worth,
+  the next opponent, the lobby, the shop. You read it and decide; it never names
+  a move. The next section describes it, and the screenshots in `docs/` do not
+  cover it yet — it is the one screen still waiting for a picture.
+- **Settle Up** — the review, and it is about games that are **over**. Pick a
+  saved game from the dropdown and read it turn by turn: the board you brought,
+  the one your opponent brought, who won, and — folded away — the plan the model
+  would have played, beside what you actually did. Where a turn's fights ran
+  together and the winner cannot be read, it says so rather than picking one. It
+  is empty until you save a game, which is what **Save replay** on the
+  end-of-game card is for. [Its own section is below.](#settle-up-the-review)
+
+The tab you are on is remembered across a page reload, and switching between them
+never interrupts the live view: the page keeps reading the game on both tabs, so
+leaving Another Round to look at an old game costs you nothing.
+
 ## What you'll see
 
 The overlay opens as a page in your browser and updates as you play — not a
@@ -174,8 +196,9 @@ Each turn card opens on **Shop** — the board you opened with and the board you
 closed the shopping on, plus what the turn did (cards played, gold spent, board
 value gained, a level-up, a hero power, a trinket), and the model's line for that
 phase. **Battle** is your board and your opponent's, theirs on top, the way the
-game shows a fight. **Result** says who won, what each side kept, and what the
-fight cost you in effective HP.
+game shows a fight. **Result** says who won — or says that the turn's fights ran
+together and the winner cannot be read, which is honest rather than a guess —
+what each side kept, and what the fight cost you in effective HP.
 
 <img src="docs/turn-shop.png" alt="One turn open on Shop: the board it opened with, the board it closed the shopping on, what the turn did, and the model's line with what you did and what the following fight cost" width="780">
 <img src="docs/turn-battle.png" alt="The same turn on Battle: your opponent's board on top and yours below it, from the fight's opening burst" width="780">
