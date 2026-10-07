@@ -1859,19 +1859,20 @@ function settleTurnCard(r, phases) {
   card.appendChild(head);
   // Three views of one turn (2026-10-07): the shop from open to close, the
   // fight after beginning-of-combat effects, and the result — who survived
-  // and what it cost. Battle is the default — the boards are the reason the
-  // section exists. Old saves carry none of the new fields; every row falls
-  // back to the text the standalone page still renders.
+  // and what it cost. **Shop is the default** (2026-10-07): it is the view the
+  // player's own decisions are read from, and the one that carries the phase
+  // rows and the turn's events. Old saves carry none of the new fields; every
+  // row falls back to the text the standalone page still renders.
   const btns = document.createElement('div');
   btns.className = 'tbtns';
   const bodies = {};
   const sections = [['shop', 'Shop'], ['battle', 'Battle'],
                     ['aftermath', 'Result']];
   for (const [key, label] of sections) {
-    const b = el('button', 'tbtn' + (key === 'battle' ? ' on' : ''), label);
+    const b = el('button', 'tbtn' + (key === 'shop' ? ' on' : ''), label);
     const body = document.createElement('div');
     body.className = 'tbody';
-    body.style.display = key === 'battle' ? '' : 'none';
+    body.style.display = key === 'shop' ? '' : 'none';
     b.onclick = () => {
       for (const [k] of sections) {
         bodies[k].style.display = k === key ? '' : 'none';

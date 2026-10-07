@@ -70,7 +70,8 @@ class LayoutFixture(unittest.TestCase):
         self.write(".art_miss.json", "{}\n")
         # documents and stamps that must survive. The PNG stands in for a file a
         # player left at the root, which the reshape must not touch — it used to
-        # be `docs/decide.png`, a directory the repo no longer has (2026-10-06).
+        # be `docs/decide.png`, a file that went with the 2026-10-06 screenshot
+        # set (docs/ itself is back, with a current set, since 10-07).
         self.write("README.md", "# Bob's Ledger\n")
         self.write("LICENSE", "MIT\n")
         self.write("screenshot.png", "PNG")

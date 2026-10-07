@@ -125,5 +125,53 @@ class TestTheCodeCannotMakeThemFalse(unittest.TestCase):
             self.assertIn(required, seen)
 
 
+class TestTheScreenshotsMatchTheReadme(unittest.TestCase):
+    """The README's pictures, in both directions.
+
+    The four shots that used to live in `docs/` showed the pre-pivot overlay —
+    `decide.png` was captioned "DO THIS NOW gives one buy with its reason", the
+    panel the 2026-10-06 pivot deleted — and they SHIPPED in the `94a07de` and
+    `2ef006c` releases before anyone noticed. A picture is a claim about the
+    layout, and nothing checked it: not a test, not a gate (`privacy_scan` reads
+    TEXT_SUFFIXES, which no image has). So both halves are asserted now, the same
+    shape as the claims above:
+
+      * every `docs/...` image the README shows is really there (a rename or a
+        deletion cannot leave a broken picture in the one document a player reads);
+      * every file in `docs/` is shown BY the README (a shipped zip should carry
+        no orphan: a picture no reader can reach is dead weight, and the old set
+        rotted precisely because nothing tied the files to the text).
+
+    What this CANNOT check is what a picture shows — a screenshot of a layout
+    that no longer exists passes both. That is what CLAUDE.md's rule about
+    re-shooting is for, and why the images are re-taken in the same change as the
+    layout that moved.
+    """
+
+    DOCS = os.path.join(ROOT, "docs")
+
+    def _referenced(self):
+        with open(README, encoding="utf-8") as fh:
+            return sorted(set(re.findall(r'<img src="(docs/[^"]+)"', fh.read())))
+
+    def test_every_picture_the_readme_shows_exists(self):
+        shown = self._referenced()
+        self.assertTrue(shown, "the README no longer shows any picture — if that "
+                               "is deliberate, delete docs/ and this test with it")
+        missing = [p for p in shown
+                   if not os.path.exists(os.path.join(ROOT, p.replace("/", os.sep)))]
+        self.assertEqual(missing, [], f"the README points at missing images: {missing}")
+
+    def test_no_screenshot_ships_that_the_readme_never_shows(self):
+        if not os.path.isdir(self.DOCS):
+            self.skipTest("no docs/ directory")
+        on_disk = {"docs/" + n for n in os.listdir(self.DOCS)
+                   if n.lower().endswith(".png")}
+        orphans = sorted(on_disk - set(self._referenced()))
+        self.assertEqual(orphans, [],
+                         "these ship in the zip but appear in no README section: "
+                         + ", ".join(orphans))
+
+
 if __name__ == "__main__":
     unittest.main()
