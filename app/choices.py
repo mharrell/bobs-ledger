@@ -113,29 +113,46 @@ def _locked_heroes():
 
 
 def rank_choices(kind, options, board=None, comps=None, comp=None, hero=None):
-    """Rank a pending choice's options. Returns [(name, card_id, score, why)].
+    """Rank a pending choice's options: [(name, card_id, score, facts, order)].
 
-    `options`: [(entity_name, card_id)] from the choice block. `board`/`comps`
-    feed the synergy terms (dominant tribe, comp fit). `comp`: the SAME
-    evidence-based target the caller displays (live_coach's sticky target) —
-    discover scores AND labels key on it, so a pick panel can never bless a
-    card of a comp the overlay isn't showing. `hero`: the current hero's
-    name — feeds the trinket ranker's capped hero-power engine term (an
-    offered trinket that completes a mechanical recipe for THIS hero).
-    Locked heroes (the player's list) are filtered out of hero rankings.
+    `options`: [(entity_name, card_id)] from the choice block, IN THE ORDER THE
+    GAME OFFERED THEM. `board`/`comps` feed the synergy terms (dominant tribe,
+    comp fit). `comp`: the SAME evidence-based target the caller displays
+    (live_coach's sticky target) — discover scores AND labels key on it, so a
+    pick panel can never bless a card of a comp the overlay isn't showing.
+    `hero`: the current hero's name — feeds the trinket ranker's capped
+    hero-power engine term (an offered trinket that completes a mechanical
+    recipe for THIS hero). Locked heroes (the player's list) are filtered out
+    of hero rankings.
+
+    **The rows stay SCORE-ORDERED, and that is not presentation.** Row 0 is
+    what `value._top_move_text` records as the plan's PICK (and row 1 its
+    locked fallback), so this order is the review's and the corpus's record of
+    what the model wanted — keep it. `order` is the option's position in the
+    list the GAME showed, which is what the overlay renders in: the pick panel
+    shows facts per option, in the game's own order, and must not let a sort be
+    read as a recommendation (2026-10-07; the shop row's rule since 2026-10-06).
     """
     if kind == "hero":
         locked = _locked_heroes()
-        return _rank_heroes([o for o in options if o[0] not in locked])
-    if kind == "trinket":
-        return _rank_trinkets(options, board, comp=comp, hero=hero)
-    if kind == "discover":
-        return _rank_discover(options, board, comps, comp)
-    return [(n, c, None, "") for n, c in options]
+        rows = _rank_heroes([o for o in options if o[0] not in locked])
+    elif kind == "trinket":
+        rows = _rank_trinkets(options, board, comp=comp, hero=hero)
+    elif kind == "discover":
+        rows = _rank_discover(options, board, comps, comp)
+    else:
+        rows = [(n, c, None, "") for n, c in options]
+    # Stamp each row with the option's position in the list the GAME showed.
+    # The rankers above rank; this is the one place that knows the offered
+    # order, so every kind gets the slot and a locked hero's removal cannot
+    # renumber the options that are left.
+    order = {cid: i for i, (_n, cid) in enumerate(options)}
+    return [tuple(row[:4]) + (order.get(row[1], 0),) for row in rows]
 
 
 def _rank_heroes(options):
-    """Rank hero options by hsreplay pick_rate; surface each hero power.
+    """Rank hero options by hsreplay pick_rate; each row carries the POWER TEXT
+    and the population statistic behind the score.
 
     A hero with no population data still shows its POWER TEXT. Dropping it left
     the pick panel with a blank column and nothing to reason about, which is the
@@ -143,20 +160,53 @@ def _rank_heroes(options):
     (Drest'agath, Kith'ix) have no hsreplay rate yet but are guaranteed in EVERY
     game until 2026-10-06, so the player meets them constantly. An unknown hero
     the DB has never seen keeps the empty row.
+
+    The fact string says what the number IS ("picked in 6% of games") rather
+    than printing the 0-10 score it feeds: a bare `2.5` under a hero's name is
+    an index nobody can read, and the statistic is the honest part of it.
     """
     db = _load_hero_db()
     ranked = []
     for name, cid in options:
         hero = db.get(name)
-        if hero and hero.get("pick_rate") is not None:
-            ranked.append((name, cid, hero["pick_rate"] / 10.0,
-                           (hero.get("hero_power") or "").strip()))
-        else:
-            ranked.append((name, cid, None,
-                           (hero.get("hero_power") or "").strip()
-                           if hero else ""))
+        power = (hero.get("hero_power") or "").strip() if hero else ""
+        rate = (hero or {}).get("pick_rate")
+        score = None if rate is None else rate / 10.0
+        facts = " · ".join(x for x in (power, _pick_facts(rate)) if x)
+        ranked.append((name, cid, score, facts))
     ranked.sort(key=lambda x: (-(x[2] or 0), x[0]))
     return ranked
+
+
+def _pick_facts(rate):
+    """"picked in 6% of games" — or nothing when the DB has no population."""
+    return "" if rate is None else f"picked in {rate:.0f}% of games"
+
+
+def _placement_facts(t):
+    """The trinket's own population numbers, as words: pick rate, average
+    placement, and how often it finished top 4.
+
+    `placement_distribution` is a whole distribution (placement -> percent),
+    which is the most informative thing the DB holds for a trinket and was
+    rendered nowhere — an average placement hides whether a trinket is a
+    consistent 4th or a coin-flip between 1st and 8th. Absent or partial
+    distributions simply drop the top-4 clause; nothing here is inferred.
+    """
+    facts = []
+    if t.get("pick_rate") is not None:
+        facts.append(f"picked in {t['pick_rate']:.0f}% of games")
+    if t.get("avg_placement") is not None:
+        facts.append(f"avg place {t['avg_placement']:.2f}")
+    dist = t.get("placement_distribution") or {}
+    top4 = None
+    try:
+        top4 = sum(float(dist[str(p)]) for p in (1, 2, 3, 4) if str(p) in dist)
+    except (TypeError, ValueError):
+        top4 = None
+    if top4 is not None and dist:
+        facts.append(f"top-4 in {top4:.0f}% of its games")
+    return " · ".join(facts)
 
 
 def _rank_trinkets(options, board, comp=None, hero=None):
@@ -197,15 +247,16 @@ def _rank_trinkets(options, board, comp=None, hero=None):
     ranked = []
     for name, cid in options:
         t = db.get(name)
-        why = ""
+        # The facts are the STATISTICS this ranks on, spelled out: pick rate,
+        # average placement and the top-4 share of its own distribution. The
+        # score below stays for the plan's sake (row 0 is the pick the review
+        # grades); it is no longer what the panel shows.
+        facts = _placement_facts(t) if t else ""
+        score = 0.0
         if t and t.get("pick_rate") is not None:
             score = t["pick_rate"] / 10.0
-            why = f"pick {t['pick_rate']:.0f}%"
             if t.get("avg_placement") is not None:
                 score += max(4.5 - t["avg_placement"], 0.0)
-                why += f", avg #{t['avg_placement']:.2f}"
-        else:
-            score = 0.0
         desc = (t.get("description") or "").lower() if t else ""
         # By trinket ID first (names drift across patches); the Compass
         # family shares one id across tribe variants, so also try by name.
@@ -240,8 +291,8 @@ def _rank_trinkets(options, board, comp=None, hero=None):
                     break
         if terms:
             score += min(sum(a for _l, a in terms), SYN_CAP)
-            why += " · " + " · ".join(l for l, _a in terms)
-        ranked.append((name, cid, score, why.strip(" ·")))
+            facts += " · " + " · ".join(l for l, _a in terms)
+        ranked.append((name, cid, score, facts.strip(" ·")))
     ranked.sort(key=lambda x: (-(x[2] or 0), x[0]))
     return ranked
 
@@ -255,13 +306,24 @@ def _trinket_id_by_name(t):
 def _rank_discover(options, board, comps, comp=None):
     """Rank minion discovers with the shop ranking (comp-targeted).
 
-    The per-option label says what the score actually keyed on. The old
-    blanket "comp fit" tagged EVERY option — so Lurking Leviathan (core of
-    Beasts - Leviathan) wore it while the overlay showed Beasts - Tasty
+    Every per-option fact says what the option IS relative to the displayed
+    comp — that is the question a discover raises, and the only one the
+    reference DBs can answer without pretending to know the player's plans.
+
+    **"best available" and "best off-comp" are GONE (2026-10-07).** They rode
+    on row 0 and said the words the pivot deleted, one layer below the wall:
+    `LIVE_VERDICT_KEYS` drops verdict KEYS, and a verdict inside a fact STRING
+    survived it. The honest label for an option the displayed comp does not
+    want is the one that says nothing about rank — and when there is no
+    displayed direction at all, nothing is claimed, because "best available"
+    was a claim about a comp nobody had chosen yet.
+
+    The old blanket "comp fit" tagged EVERY option — so Lurking Leviathan (core
+    of Beasts - Leviathan) wore it while the overlay showed Beasts - Tasty
     Lobstah committed, and so did an Elemental in a Beast game (2026-09-11).
-    Two causes fixed: the label never inspected anything, and the ranking
-    re-derived its own comp from the board instead of using the displayed
-    one (the 2026-09-04 one-target rule, missed for the pick panel).
+    Two causes fixed then: the label never inspected anything, and the ranking
+    re-derived its own comp from the board instead of using the displayed one
+    (the 2026-09-04 one-target rule, missed for the pick panel).
     """
     cids = [c for _n, c in options]
     ranked = shop_ranking(cids, comps or {}, board_minions=board, comp=comp)
@@ -270,18 +332,27 @@ def _rank_discover(options, board, comps, comp=None):
     core = set((comp or {}).get("core", []))
     addons = set((comp or {}).get("addons", []))
     tribe = normalize((comp or {}).get("tribe")) if comp else None
+    comp_name = (comp or {}).get("name")
+    # How many of the displayed comp's own core pieces the player already
+    # holds: the "does this match what I am building" number, counted off the
+    # board rather than asserted. Only meaningful with a displayed comp.
+    owned = len(core & board_ids)
     cards = None  # lazy: card id -> tribe, only when a tribe-fit check needs it
     out = []
     for i, (cid, score) in enumerate(ranked):
         base = cid[:-2] if cid.endswith("_G") else cid
         if base in core:
-            why = "core copy (triple fuel)" if base in board_ids else "comp core"
+            facts = (f"core of {comp_name} (you have {owned} of its "
+                     f"{len(core)})" if comp_name else "core of your comp")
+            if base in board_ids:
+                facts += " · a second copy triples"
         elif base in addons:
-            why = "comp addon"
+            facts = f"addon of {comp_name}" if comp_name else "comp addon"
         elif comp is None:
-            # No displayed direction — score alone is the reason; claiming a
-            # comp here is exactly the hollow label this replaces.
-            why = "best available" if i == 0 else ""
+            # No displayed direction — say nothing about fit. Claiming a comp
+            # here is exactly the hollow label this replaces, and ranking it
+            # "best" is the verdict the pivot deleted.
+            facts = ""
         else:
             if cards is None:
                 cards = meta.cards()
@@ -289,10 +360,11 @@ def _rank_discover(options, board, comps, comp=None):
             # (Demon/Quilboar fits a Demon comp) and Amalgams (fit every).
             card_tribe = (cards.get(base) or {}).get("tribe")
             if tribe and card_tribe and overlaps(card_tribe, tribe):
-                why = "tribe fit"   # right tribe, not a listed comp piece
+                facts = f"{card_tribe} — the tribe {comp_name} is built on" \
+                    if comp_name else "right tribe"
             else:
-                why = "best off-comp" if i == 0 else "off-comp"
-        out.append((names.get(cid, cid), cid, score, why))
+                facts = "not a piece of the comp you are on"
+        out.append((names.get(cid, cid), cid, score, facts))
     return out
 
 

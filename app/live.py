@@ -240,15 +240,14 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     decision_log.record(a, log_path=log_path, log_offset=log_offset,
                         game_no=game_no)
     print("\n" + "=" * 52)
-    if ranked[0][2] is None:
-        print(f"CHOOSE 1 ({kind}) — no data on these options:")
-        for n, _cid, _s, why in ranked:
-            print(f"       {n}" + (f"  [{why}]" if why else ""))
-    else:
-        print(f"CHOOSE 1 ({kind}) — the options and what each scores:")
-        for n, _cid, s, why in ranked:
-            bits = ([f"{s:.1f}"] if s is not None else []) + ([why] if why else [])
-            print(f"     {n}" + (f"  [{'; '.join(bits)}]" if bits else ""))
+    # The console copy of the pick panel: the facts each option carries, in the
+    # order the game offered them (rows arrive score-ordered — that order is
+    # the plan's record, not a recommendation to read off the screen).
+    rows = sorted(ranked, key=lambda r: r[4] if len(r) > 4 else 0)
+    print(f"CHOOSE 1 ({kind}) — the options, and what is known about each:")
+    for row in rows:
+        n, _cid, _s, facts = row[0], row[1], row[2], row[3]
+        print(f"     {n}" + (f"  [{facts}]" if facts else ""))
     print("=" * 52 + "\n", flush=True)
 
 

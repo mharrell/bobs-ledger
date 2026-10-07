@@ -143,8 +143,9 @@ def describe(analysis):
     if choice and choice.get("ranked"):
         ln.append("")
         ln.append(f"PICK ({choice['kind']}):")
-        for n, c, s, why in choice["ranked"]:
-            mark = " <-- " if (n, c, s, why) == choice["ranked"][0] else "  "
+        for n, c, s, why, _order in choice["ranked"]:
+            mark = " <-- " if (n, c, s, why) == tuple(choice["ranked"][0][:4]) \
+                else "  "
             ln.append(f"  {mark}{n}" + (f"  [{s:.1f} {why}]" if s is not None and why else ""))
 
     # Target comp — the shopping list (cards that belong to the comp, and
