@@ -78,7 +78,10 @@ EXCLUDE_DIRS = {".git", ".claude", "decision_logs", "corpus_out",
                 # .share_consent.json, the copies of everything sent live in
                 # session_reports/, and the maintainer's fetched reports land
                 # in sessions_in/. None of it belongs in a download.
-                "session_reports", "sessions_in"}
+                "session_reports", "sessions_in",
+                # The Settle Up tab's store: one JSON per game the player
+                # chose to keep. Per-user data, same class as decision_logs.
+                "saved_replays"}
 
 #: Paths that never ship, matched as prefixes from the repo root. Basename
 #: matching can't express these — "tests" would drop the test suite too.
