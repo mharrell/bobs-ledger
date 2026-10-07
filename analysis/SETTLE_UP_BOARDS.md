@@ -243,3 +243,58 @@ the LIVE page. The timeline is a verdict-shaped artefact — it says what the
 player should have done — and it belongs in the review, reachable only after the
 game it describes is over. `test_live_view.py` is the control that keeps it
 there.
+
+---
+
+## Phase E — save the replay, and the tab (2026-10-07)
+
+**The ask** (maintainer): an option to SAVE a replay when a game ends, two
+tabs at the top of the page — **Another Round** (the live overlay, unchanged)
+and **Settle Up** (a browser: pick a saved game from a dropdown, see it turn
+by turn, board state first).
+
+**What was already true, and what was missing.** Every piece of the display
+existed; nothing outlived the process. The review was one in-memory HTML
+blob for the latest game, and the timeline's boards rendered as text only
+because the standalone page has no art route. Three additions close it:
+
+- **`app/replay_store.py`** — save/list/load over `app/saved_replays/`, one
+  JSON per game. Readable ids (`2026-10-06_185502-Chenvaala-2`,
+  collision-suffixed), atomic writes, corruption-tolerant listing,
+  path-safe load. The stored rep keeps card IDS — it is data, not
+  rendering; display names are joined at SERVE time
+  (`coach_ui._name_timeline_boards`), so the file stays canonical and a
+  renamed card fixes old saves. Per-user data, `decision_logs` class:
+  gitignored (bare basename — the `sync.py --new` reason) and in
+  `publish_release.EXCLUDE_DIRS`. The source log is a POINTER (`log` +
+  `game`), not a copy; the rep is self-sufficient for display, and the
+  archive follow-up (megabytes per game) is deliberately not here.
+- **The endpoints** — `POST /review/save` (the end-of-game card's **Save
+  replay** button; 409 with the reason when nothing has finished),
+  `GET /review/list`, `GET /review/game?id=` (id charset = the store's
+  filename charset). `set_review` now carries the rep alongside the HTML.
+  `/review` itself is untouched.
+- **The tabs** — a two-tab toggle at the top of the overlay page. Another
+  Round is the existing live view byte-for-byte underneath; Settle Up
+  fetches only from `/review/*` and renders one card per TURN: went in /
+  they had / kept as **card tiles** (the live page's own `tile()` markup
+  and `/img` art — the thing the standalone page cannot do), gold, board
+  stats + growth, spend, comp target, sell questions, notes, and that
+  turn's phase rows (verdict, what you did, next-fight HP). Tab choice
+  survives reload; switching never clears live state; the poll runs
+  regardless.
+
+**The wall moved half a step, on purpose, and was re-pinned.** PIVOT.md's
+contract is that verdicts never reach the player while a decision can be
+acted on. The tab does not breach it — everything it shows describes a
+game that is OVER — but it does put the review one tab away from the live
+page, which `test_live_view.py` never imagined. The control now runs from
+both sides: `test_live_view.py` still pins the live payload, and
+`test_settle_tab.py::TestTheWall` pins that a review rep sitting in
+coach_ui state never leaks into `/analysis` (and that the rep survives a
+new game's clear exactly as the HTML always has, 2026-10-04).
+
+**A settled decision extended, not reverted.** The standalone page stays
+exactly as built — its reason (a keepsake with no process behind it) is
+intact, and README still says so. The tab is the browsing layer over the
+store on top of it.

@@ -693,6 +693,7 @@ _HTML = r"""<!doctype html>
   .brow .blbl { color:var(--dim); text-transform:uppercase; font-size:11px;
                 padding-top:2px; }
   .brow .them { color:var(--text-2); }
+  .brow-tiles { display:flex; flex-wrap:wrap; gap:6px; }
   .grw { color:var(--good); }
   .turn .note, .turn .q { font-size:12px; padding-top:4px; }
   .turn .note { color:var(--dim); }
@@ -1734,6 +1735,33 @@ function renderSettleGame(rep) {
   if (rest.length) box.appendChild(settleTurnCard(
     {turn: '?', gold: '—', stats: {}, spend: {}, commitment: {}, notes: []}, rest));
 }
+// One board row of a turn card: card tiles when the stored board is
+// structured (the server joins display names at serve time), the text the
+// standalone page uses when it is not. Art rides /img like everywhere else,
+// so tiles hover to the full card render for free.
+function boardTiles(list) {
+  const wrap = document.createElement('span');
+  wrap.className = 'brow-tiles';
+  for (const m of list || []) {
+    wrap.appendChild(tile(m.card, m.name || m.card,
+                          (m.atk ?? '?') + '/' + (m.health ?? '?'),
+                          {golden: m.golden}));
+  }
+  return wrap;
+}
+function boardRow(lbl, list, text, cls) {
+  const d = document.createElement('div');
+  d.className = 'brow';
+  d.innerHTML = '<span class="blbl">' + lbl + '</span>';
+  if (list && list.length) d.appendChild(boardTiles(list));
+  else {
+    const s = document.createElement('span');
+    if (cls) s.className = cls;
+    s.textContent = text || '—';
+    d.appendChild(s);
+  }
+  return d;
+}
 function settleTurnCard(r, phases) {
   const s = r.stats || {}, sp = r.spend || {}, c = r.commitment || {};
   const card = document.createElement('div');
@@ -1757,9 +1785,11 @@ function settleTurnCard(r, phases) {
     return d;
   };
   const went = r.combat_ours_text || r.buy_end_text || '(no board read)';
-  card.appendChild(row('went in', went));
-  card.appendChild(row('they had', r.combat_theirs_text, 'them'));
-  card.appendChild(row('kept', r.battle_end_text));
+  card.appendChild(boardRow('went in',
+    (r.combat_start || {}).ours, r.combat_ours_text || went));
+  card.appendChild(boardRow('they had',
+    (r.combat_start || {}).theirs, r.combat_theirs_text, 'them'));
+  card.appendChild(boardRow('kept', r.battle_end, r.battle_end_text));
   for (const q of r.sell_questions || []) {
     const d = document.createElement('div');
     d.className = q.rebuild ? 'note' : 'q';
@@ -2109,12 +2139,36 @@ def _review_list_response():
     return _json_response(200, {"ok": True, "games": replay_store.list()})
 
 
+def _name_timeline_boards(rep):
+    """A copy of the rep with a display name on every timeline minion.
+
+    The stored rep keeps card IDS (it is data, not rendering); the tab draws
+    card tiles, which want names. Joined at SERVE time rather than stored,
+    so the file stays canonical and a renamed card fixes old saves. The
+    name DB lives behind _load_bg_names, the same one the live page's
+    server side uses.
+    """
+    try:
+        names = _load_bg_names()
+    except Exception:  # noqa: BLE001 - unnamed ids beat a dead endpoint
+        return rep
+    out = json.loads(json.dumps(rep))   # a deep copy, cheaply
+    for row in (out.get("timeline") or {}).get("turns") or []:
+        for board in (row.get("buy_end"), row.get("battle_end"),
+                      (row.get("combat_start") or {}).get("ours"),
+                      (row.get("combat_start") or {}).get("theirs")):
+            for m in board or []:
+                m["name"] = names.get(m.get("card"), m.get("card"))
+    return out
+
+
 def _review_game_response(rid):
     """(code, headers, body) for GET /review/game?id=... — one stored review,
     the whole rep, for the tab to render."""
     stored = replay_store.load(rid or "")
     if stored is None:
         return _json_response(404, {"error": f"no saved replay {rid!r}"})
+    stored["rep"] = _name_timeline_boards(stored.get("rep") or {})
     return _json_response(200, dict(stored, ok=True))
 
 

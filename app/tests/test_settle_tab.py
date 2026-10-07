@@ -16,6 +16,11 @@ import coach_ui  # noqa: E402
 import replay_store  # noqa: E402
 
 
+def _board(card="BG_X_001"):
+    return [{"card": card, "atk": 3, "health": 3, "golden": False,
+             "keywords": []}]
+
+
 def _rep(hero="Chenvaala", placement=2, created="2026-10-06T18:55:02"):
     return {
         "schema": 1, "created": created, "session": "Hearthstone_x",
@@ -26,6 +31,8 @@ def _rep(hero="Chenvaala", placement=2, created="2026-10-06T18:55:02"):
         "timeline": {"turns": [{"turn": 1, "gold": 3, "stats": {"buy_end": 9,
                     "growth": 9}, "spend": {"total": 3},
                     "commitment": {"target": "Murlocs"},
+                    "buy_end": _board(), "battle_end": _board(),
+                    "combat_start": {"ours": _board(), "theirs": _board()},
                     "combat_ours_text": "X 3/3", "combat_theirs_text": "Y 2/2",
                     "buy_end_text": "X 3/3", "battle_end_text": "X 3/3",
                     "sell_questions": [], "notes": []}]},
@@ -104,7 +111,34 @@ class TestReviewSave(_StoreRoot):
         self.assertNotEqual(first, second)
 
 
-class TestTheWall(_StoreRoot):
+class TestNamedBoards(_StoreRoot):
+    """The tab draws card tiles, which want display names; the stored rep
+    keeps ids on purpose. The join happens at serve time."""
+
+    def test_served_boards_carry_names(self):
+        out = replay_store.save(_rep())
+        with mock.patch.object(coach_ui, "_load_bg_names",
+                               return_value={"BG_X_001": "Fire Baller"}):
+            code, _h, body = coach_ui._review_game_response(out["id"])
+        row = json.loads(body)["rep"]["timeline"]["turns"][0]
+        for board in (row["buy_end"], row["battle_end"],
+                      row["combat_start"]["ours"],
+                      row["combat_start"]["theirs"]):
+            self.assertEqual([m["name"] for m in board],
+                             ["Fire Baller"] * len(board))
+
+    def test_the_stored_file_stays_canonical(self):
+        out = replay_store.save(_rep())
+        with mock.patch.object(coach_ui, "_load_bg_names",
+                               return_value={"BG_X_001": "Fire Baller"}):
+            coach_ui._review_game_response(out["id"])
+        on_disk = replay_store.load(out["id"])
+        for m in on_disk["rep"]["timeline"]["turns"][0]["buy_end"]:
+            self.assertNotIn("name", m)
+
+
+if __name__ == "__main__":
+    unittest.main()
     """The review rep lives in coach_ui state. It must behave like the HTML
     already does: invisible to the live payload, present only to /review/*."""
 
