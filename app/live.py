@@ -176,7 +176,7 @@ def _settle_up_in_background(log_path, game_no):
             label = (f"Settle up — {rep.get('hero') or 'your game'}"
                      + (f", finished {rep['placement']}"
                         if rep.get("placement") else ""))
-            coach_ui.set_review(settle_up.render_html(rep), label)
+            coach_ui.set_review(settle_up.render_html(rep), label, rep=rep)
         except Exception:  # noqa: BLE001
             pass
 

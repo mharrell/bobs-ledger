@@ -46,6 +46,7 @@ from value import (_load_bg_names, _load_card_db, _load_spell_db,
 import pool
 import meta
 import config
+import replay_store
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -658,6 +659,53 @@ _HTML = r"""<!doctype html>
      this first alarmed on), so it is stated plainly rather than warningly: the
      alarm colour is reserved for the coach having stopped answering at all. */
   #freshness.info { display:block; color:var(--dim); font-weight:400; }
+  /* Tabs (2026-10-06): Another Round is the live overlay this page has
+     always been; Settle Up is the saved-game browser. A tab is a plain
+     toggle — the live poll keeps running either way, and switching never
+     clears live state. */
+  #tabs { display:flex; gap:4px; margin:2px 0 8px; }
+  #tabs .tab { background:var(--panel); color:var(--dim);
+               border:1px solid var(--border); border-radius:var(--radius);
+               padding:5px 14px; font:600 13px "Segoe UI", system-ui;
+               cursor:pointer; }
+  #tabs .tab:hover { color:var(--text-2); }
+  #tabs .tab.on { color:var(--text); background:var(--panel2);
+                  border-color:rgba(255,255,255,.22); }
+  #app.off { display:none; }
+  #settle { display:none; }
+  #settle.on { display:block; }
+  .s-head { display:flex; align-items:center; gap:10px; margin:0 0 10px; }
+  .s-head select { background:var(--panel2); color:var(--text);
+                   border:1px solid var(--border); border-radius:var(--radius);
+                   padding:6px 8px; font:14px "Segoe UI", system-ui;
+                   min-width:360px; }
+  .s-empty { color:var(--dim); padding:16px 0; }
+  .turn { background:var(--panel); border:1px solid var(--border);
+          border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
+  .turn .thead { display:flex; gap:14px; align-items:baseline;
+                 border-bottom:1px solid var(--gridline);
+                 padding-bottom:6px; margin-bottom:8px; }
+  .turn .tturn { font-weight:700; text-transform:uppercase; font-size:12px; }
+  .turn .tmeta { color:var(--dim); font-size:12px; }
+  .turn .comp { margin-left:auto; color:var(--gold); font-size:12px; }
+  .brow { display:grid; grid-template-columns:86px 1fr; gap:10px;
+          padding:2px 0; font-size:13px; }
+  .brow .blbl { color:var(--dim); text-transform:uppercase; font-size:11px;
+                padding-top:2px; }
+  .brow .them { color:var(--text-2); }
+  .grw { color:var(--good); }
+  .turn .note, .turn .q { font-size:12px; padding-top:4px; }
+  .turn .note { color:var(--dim); }
+  .turn .q { color:var(--warn); }
+  .turn .phase { border-top:1px dashed var(--gridline); margin-top:8px;
+                 padding-top:8px; font-size:13px; color:var(--text-2); }
+  .turn .phase .pplan { color:var(--text); }
+  .turn .phase .v { font-weight:600; }
+  .turn .phase .v-taken { color:var(--good); }
+  .turn .phase .v-ignored { color:var(--bad); }
+  .turn .phase .v-none, .turn .phase .v-ungraded, .turn .phase .v-pass {
+    color:var(--dim); font-weight:400; }
+  .turn .phase .pout { color:var(--dim); font-size:12px; }
 </style>
 </head>
 <body>
@@ -665,10 +713,20 @@ _HTML = r"""<!doctype html>
 <div id="statebar">Waiting for the coach…</div>
 <div id="freshness"></div>
 <button id="clearbtn" title="Blank the overlay — a new game clears it automatically">Clear</button>
+<nav id="tabs">
+<button class="tab on" data-tab="live">Another Round</button>
+<button class="tab" data-tab="settle">Settle Up</button>
+</nav>
 <div id="app">
 <section id="col-decide"></section>
 <section id="col-ref"></section>
 </div>
+<section id="settle">
+<div class="s-head">
+<select id="settle-select"><option value="">Loading saved replays…</option></select>
+</div>
+<div id="settle-game"><div class="s-empty">Pick a saved game to see it turn by turn.</div></div>
+</section>
 </div>
 <script>
 let _lastPayload = null;
@@ -1018,6 +1076,25 @@ function renderWelcome(a) {
     link.target = '_blank';
     link.rel = 'noopener';
     row.appendChild(link);
+    // Save the replay (2026-10-06 tab work): persists this game's review so
+    // the Settle Up tab can bring it back. A click is one POST; the button
+    // reports its own outcome in place rather than navigating.
+    const save = el('button', 'w-share-btn', 'Save replay');
+    save.onclick = async () => {
+      save.disabled = true;
+      try {
+        const r = await fetch('/review/save', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: '{}',
+        });
+        const j = await r.json().catch(() => ({}));
+        save.textContent = r.ok ? 'Saved ✓' : (j.error || 'Nothing to save');
+      } catch (e) {
+        save.textContent = 'Save failed';
+        save.disabled = false;
+      }
+    };
+    row.appendChild(save);
     card.appendChild(row);
   }
   decide.appendChild(card);
@@ -1565,6 +1642,175 @@ document.getElementById('clearbtn').onclick = async () => {
   _etag = null;   // force the next poll to take the welcome payload
   poll();
 };
+// ---- Tabs (2026-10-06) -------------------------------------------------
+// Another Round is the live overlay above; Settle Up browses SAVED games.
+// The review data never rides /analysis (test_live_view pins that) — the
+// tab fetches /review/list and /review/game, both served from the store,
+// both covering only games that are over.
+function showTab(name) {
+  const live = name !== 'settle';
+  document.getElementById('app').className = live ? '' : 'off';
+  document.getElementById('settle').className = live ? '' : 'on';
+  document.querySelectorAll('#tabs .tab').forEach(b =>
+    b.className = 'tab' + (b.dataset.tab === name ? ' on' : ''));
+  try { localStorage.setItem('bl-tab', name); } catch (e) { /* private mode */ }
+  if (!live) loadSettleList();
+}
+document.querySelectorAll('#tabs .tab').forEach(b =>
+  b.onclick = () => showTab(b.dataset.tab));
+function gameLabel(row) {
+  const who = row.hero || 'Run';
+  const did = row.placement != null ? ' — ' + row.placement
+            + (row.placement === 1 ? 'st' : row.placement === 2 ? 'nd'
+             : row.placement === 3 ? 'rd' : 'th') : '';
+  const when = (row.created || '').replace('T', ' ');
+  return `${who}${did} · ${row.turns ?? '?'} turns · ${when}`;
+}
+let _settleListLoaded = false;
+async function loadSettleList() {
+  const sel = document.getElementById('settle-select');
+  let games = [];
+  try {
+    const r = await fetch('/review/list');
+    games = (await r.json()).games || [];
+  } catch (e) { /* leave the dropdown saying it could not load */ }
+  if (!games.length) {
+    sel.innerHTML = '<option value="">No saved replays yet</option>';
+    document.getElementById('settle-game').innerHTML =
+      '<div class="s-empty">Nothing saved yet. Finish a game and press '
+      + '<b>Save replay</b> on the end-of-game card — it then shows up here, '
+      + 'turn by turn.</div>';
+    return;
+  }
+  const cur = sel.value;
+  sel.innerHTML = '';
+  for (const g of games) {
+    const o = document.createElement('option');
+    o.value = g.id; o.textContent = gameLabel(g);
+    sel.appendChild(o);
+  }
+  sel.value = games.some(g => g.id === cur) ? cur : games[0].id;
+  if (!_settleListLoaded || sel.value !== cur) {
+    _settleListLoaded = true;
+    loadSettleGame(sel.value);
+  }
+}
+async function loadSettleGame(id) {
+  const box = document.getElementById('settle-game');
+  if (!id) return;
+  box.innerHTML = '<div class="s-empty">Loading…</div>';
+  let j;
+  try {
+    const r = await fetch('/review/game?id=' + encodeURIComponent(id));
+    j = await r.json();
+  } catch (e) {
+    box.innerHTML = '<div class="s-empty">Could not load that game.</div>';
+    return;
+  }
+  if (!j.ok) { box.innerHTML = '<div class="s-empty">' + (j.error || 'Not found.') + '</div>'; return; }
+  renderSettleGame(j.rep || j);
+}
+function renderSettleGame(rep) {
+  const box = document.getElementById('settle-game');
+  box.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'turn';
+  const t = rep.totals || {};
+  head.innerHTML = '<div class="thead"><span class="tturn">'
+    + (rep.hero || 'Saved game') + '</span><span class="tmeta">'
+    + (rep.placement != null ? 'finished ' + rep.placement : '')
+    + ' · ' + (t.taken ?? 0) + ' plans taken, ' + (t.ignored ?? 0)
+    + ' ignored · ' + (rep.created || '') + '</span></div>'
+    + (rep.caveat ? '<div class="note">' + rep.caveat + '</div>' : '');
+  box.appendChild(head);
+  const phases = rep.phases || [];
+  const turns = (rep.timeline || {}).turns || [];
+  const seen = new Set();
+  for (const r of turns) {
+    box.appendChild(settleTurnCard(r, phases.filter(p => p.turn === r.turn)));
+    if (r.turn != null) seen.add(r.turn);
+  }
+  const rest = phases.filter(p => !seen.has(p.turn));
+  if (rest.length) box.appendChild(settleTurnCard(
+    {turn: '?', gold: '—', stats: {}, spend: {}, commitment: {}, notes: []}, rest));
+}
+function settleTurnCard(r, phases) {
+  const s = r.stats || {}, sp = r.spend || {}, c = r.commitment || {};
+  const card = document.createElement('div');
+  card.className = 'turn';
+  const head = document.createElement('div');
+  head.className = 'thead';
+  head.innerHTML = '<span class="tturn">Turn ' + (r.turn ?? '?') + '</span>'
+    + '<span class="tmeta">' + (r.gold ?? '—') + 'g · board '
+    + (s.buy_end ?? '—') + ' stats'
+    + (s.growth != null ? ' <span class="grw">' + (s.growth > 0 ? '+' : '')
+       + s.growth + '</span>' : '')
+    + ' · spent ' + (sp.total ?? '—') + 'g</span>'
+    + (c.target ? '<span class="comp">' + c.target + '</span>' : '');
+  card.appendChild(head);
+  const row = (lbl, text, cls) => {
+    const d = document.createElement('div');
+    d.className = 'brow';
+    d.innerHTML = '<span class="blbl">' + lbl + '</span><span'
+      + (cls ? ' class="' + cls + '"' : '') + '></span>';
+    d.lastChild.textContent = text || '—';
+    return d;
+  };
+  const went = r.combat_ours_text || r.buy_end_text || '(no board read)';
+  card.appendChild(row('went in', went));
+  card.appendChild(row('they had', r.combat_theirs_text, 'them'));
+  card.appendChild(row('kept', r.battle_end_text));
+  for (const q of r.sell_questions || []) {
+    const d = document.createElement('div');
+    d.className = q.rebuild ? 'note' : 'q';
+    d.textContent = q.rebuild
+      ? ('~ rebuilt the board: sold ' + q.sold_count + ' ('
+         + (q.sold_name || 'cards') + ' and others) — a repositioning, '
+         + 'not a one-for-one choice')
+      : ('? sold ' + (q.sold_name || 'a card') + ' (' + (q.role || '?')
+         + ') while keeping ' + (q.kept_filler_names || []).join(', ')
+         + ' — worth a look, not a verdict');
+    card.appendChild(d);
+  }
+  for (const n of r.notes || []) {
+    const d = document.createElement('div');
+    d.className = 'note';
+    d.textContent = n;
+    card.appendChild(d);
+  }
+  for (const p of phases) {
+    const d = document.createElement('div');
+    d.className = 'phase';
+    const v = document.createElement('span');
+    v.className = 'v v-' + (p.kind || 'none');
+    v.textContent = p.verdict ? ('[' + p.verdict + '] ') : '';
+    const plan = document.createElement('span');
+    plan.className = 'pplan';
+    plan.textContent = p.plan || '';
+    d.appendChild(v); d.appendChild(plan);
+    if (p.acted) {
+      const acted = document.createElement('div');
+      acted.className = 'pout';
+      acted.textContent = 'you: ' + p.acted;
+      d.appendChild(acted);
+    }
+    if (p.outcome != null || p.outcome_note) {
+      const out = document.createElement('div');
+      out.className = 'pout';
+      out.textContent = p.outcome != null
+        ? ('next fight: ' + (p.outcome > 0 ? '+' : '') + p.outcome + ' HP')
+        : (p.outcome_note || '');
+      d.appendChild(out);
+    }
+    card.appendChild(d);
+  }
+  return card;
+}
+// Restore the last tab, defaulting to the live overlay.
+let _tab = 'live';
+try { _tab = localStorage.getItem('bl-tab') || 'live'; } catch (e) {}
+showTab(_tab);
+document.getElementById('settle-select').onchange = e => loadSettleGame(e.target.value);
 </script>
 </body>
 </html>
@@ -1592,6 +1838,10 @@ class _State:
         # and the monitor's tick has to keep answering the log (2026-10-06).
         self.review = None
         self.review_label = None
+        # The same review as its plain-dict rep — what POST /review/save
+        # persists into replay_store. The HTML is for the page; the rep is
+        # for the store (the tab re-renders it live, with card art).
+        self.review_rep = None
 
 
 #: The deliberate empty state (fresh boot, a new game's first tick, or a
@@ -1806,7 +2056,7 @@ def show_game_over(analysis=None):
         _state.etag = hashlib.sha1(_state.payload).hexdigest()
 
 
-def set_review(html_text, label=None):
+def set_review(html_text, label=None, rep=None):
     """Hand the finished game's review to the overlay, for /review to serve.
 
     The pivot's other half (PIVOT.md §4 Phase 2): the model's plan is not in the
@@ -1815,18 +2065,27 @@ def set_review(html_text, label=None):
     because building it replays the game.
 
     A review that fails to build leaves `review` as it was, so /review answers
-    "still putting it together" rather than a broken page.
+    "still putting it together" rather than a broken page. The plain-dict
+    `rep` rides along for POST /review/save (the Settle Up tab's store);
+    the HTML alone cannot be saved, because rendering is one-way.
     """
     body = (html_text or "").encode("utf-8")
     with _state.lock:
         _state.review = body or None
         _state.review_label = label
+        _state.review_rep = rep if body else None
 
 
 def review_meta():
     """(is it ready, its label) — for tests and for the pending page."""
     with _state.lock:
         return _state.review is not None, _state.review_label
+
+
+def current_review_rep():
+    """The finished game's review dict, or None (nothing built yet this run)."""
+    with _state.lock:
+        return _state.review_rep
 
 
 def _review_response():
@@ -1838,6 +2097,40 @@ def _review_response():
     if body is None:
         return 200, headers, _review_pending_page().encode("utf-8")
     return 200, headers, body
+
+
+def _json_response(code, obj):
+    return code, {"Cache-Control": "no-store"}, json.dumps(obj).encode("utf-8")
+
+
+def _review_list_response():
+    """(code, headers, body) for GET /review/list — the Settle Up tab's
+    dropdown. Reads the store, not memory: saved games survive restarts."""
+    return _json_response(200, {"ok": True, "games": replay_store.list()})
+
+
+def _review_game_response(rid):
+    """(code, headers, body) for GET /review/game?id=... — one stored review,
+    the whole rep, for the tab to render."""
+    stored = replay_store.load(rid or "")
+    if stored is None:
+        return _json_response(404, {"error": f"no saved replay {rid!r}"})
+    return _json_response(200, dict(stored, ok=True))
+
+
+def _review_save_response():
+    """(code, headers, body) for POST /review/save — the end-of-game card's
+    Save button. Persists the review that was built when the game ended.
+
+    409 is the honest "nothing to save": no game has finished this run, or
+    the build failed (the pending page already says which)."""
+    rep = current_review_rep()
+    if rep is None:
+        return _json_response(
+            409, {"error": "no finished game to save yet — the review "
+                           "builds when a game ends"})
+    out = replay_store.save(rep)
+    return _json_response(200, dict(out, ok=True))
 
 
 def _review_pending_page():
@@ -2510,6 +2803,21 @@ class _Handler(BaseHTTPRequestHandler):
             code, headers, body = _review_response()
             self._send(code, "text/html; charset=utf-8", body, headers=headers)
             return
+        if self.path.rstrip("/") == "/review/list":
+            # The Settle Up tab's dropdown: every saved game. Separate
+            # endpoint from /review on purpose — the tab renders its own
+            # view from the rep, and the standalone page stays exactly that.
+            code, headers, body = _review_list_response()
+            self._send(code, "application/json", body, headers=headers)
+            return
+        m = re.match(r"^/review/game\?id=([A-Za-z0-9_+-]+)$", self.path)
+        if m:
+            # One stored review's full rep, for the tab to render. The id
+            # charset is replay_store's own filename charset, so ?id= can
+            # not wander.
+            code, headers, body = _review_game_response(m.group(1))
+            self._send(code, "application/json", body, headers=headers)
+            return
         if self.path.rstrip("/") == "/artmiss":
             # Served BEFORE the /img regex (the pattern would otherwise not
             # match this path, but the ordering keeps the routes obvious).
@@ -2638,6 +2946,13 @@ class _Handler(BaseHTTPRequestHandler):
             # a deliberate 5-tap ban set).
             clear_analysis(keep_bans=True)
             self._send(200, "application/json", b'{"ok": true}')
+            return
+        if self.path.rstrip("/") == "/review/save":
+            # The end-of-game card's Save button: persist this game's review
+            # into replay_store. The one verdict-shaped write the page can
+            # trigger, and only after the game it describes is over.
+            code, headers, body = _review_save_response()
+            self._send(code, "application/json", body, headers=headers)
             return
         self._send(404, "text/plain", b"no such endpoint")
 
