@@ -15,6 +15,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)          # location-independent: no cwd or -t needed
 
 import live_coach
+import turn_review
 from live_coach import LiveCoach
 from tests.test_shop_parsing import opt_block
 
@@ -579,6 +580,54 @@ class TestOpponentScout(unittest.TestCase):
         # the remnant (3 stats) never enters the lobby; the 12-stat fight wins
         self.assertEqual([r["stats"] for r in c._lobby_stats], [8, 12])
         self.assertEqual(c._opp_boards.get(6, {}).get("stats"), 12)
+
+
+class TestTheSnapshotProjection(unittest.TestCase):
+    """Slots 6 and 7 of a snapshot — the entity id and the board position.
+
+    Added 2026-10-07 with the leftover-summon fix (turn_review._opening_board):
+    the review cannot tell a fight's summoned copy from a minion that is really
+    on the board without identity and slot. This pins the widening at the
+    PRODUCER, because a filter that silently receives None for both would drop
+    nothing and look like it was working.
+    """
+
+    HERO = ("Entity=[entityName=H id=9 zone=PLAY zonePos=1 "
+            "cardId=BG30_HERO_100 player=3]")
+    MINE = ("Entity=[entityName=M id=77 zone=PLAY zonePos=3 "
+            "cardId=BG25_008 player=3]")
+
+    def test_a_played_minion_carries_its_id_and_slot(self):
+        c = LiveCoach()
+        c.friendly = 3
+        c.hero_card = "BG30_HERO_100"
+        c.account = "TestAccount"
+        c.playable = {}
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")   # turn 1
+        c.gs.cardtype[77] = "MINION"
+        c.feed(f"{GS}TAG_CHANGE {self.MINE} tag=ZONE value=HAND")
+        c.feed(f"{GS}TAG_CHANGE {self.MINE} tag=ATK value=4")
+        c.feed(f"{GS}TAG_CHANGE {self.MINE} tag=HEALTH value=2")
+        c.feed(f"{GS}TAG_CHANGE {self.MINE} tag=ZONE_POSITION value=3")
+        c.feed(f"{GS}TAG_CHANGE {self.MINE} tag=ZONE value=PLAY")     # played
+        snaps = c._snap_by_turn.get(1) or []
+        self.assertTrue(snaps, "a HAND->PLAY play snapshots the board")
+        row = snaps[-1]["minions"][0]
+        self.assertEqual(len(row), 8, "player, card, atk, health, golden, "
+                                      "keywords, eid, pos")
+        self.assertEqual(row[6], 77)
+        self.assertEqual(row[7], 3)
+        self.assertEqual(row[:2], (3, "BG25_008"))
+
+    def test_an_older_snapshot_shape_still_reads(self):
+        """A rep saved before the widening holds 6-tuples; nothing may treat
+        the missing slots as a zero id in slot 7."""
+        board = turn_review._snap_board([(3, "A", 1, 1, False, ["TAUNT"])],
+                                        3, "ours")
+        self.assertEqual(len(board), 1)
+        self.assertNotIn("eid", board[0])
+        self.assertNotIn("pos", board[0])
+        self.assertEqual(board[0]["keywords"], ["TAUNT"])
 
 
 class TestBoardFallback(unittest.TestCase):

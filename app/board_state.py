@@ -436,6 +436,16 @@ class GameState:
         to REMOVEDFROMGAME and reset to base at game end) keeps its buffed
         stats. The friendly board is read from the re-created entities in PLAY
         at game end instead.
+
+        **Each minion carries its ENTITY ID here, and only here** (2026-10-07).
+        `_minion` deliberately does not: the live board, the pool and the
+        released payloads have no use for an internal id. A snapshot does — a
+        fight's summoned copies linger in PLAY into the shop phase, and two of
+        them can claim the same board SLOT as a minion that is really there
+        (`turn_review._opening_board`), which is only visible with identity and
+        position side by side. Measured on the 2026-10-07 game: `e15278` and
+        `e15281`, both Eternal Knights summoned by the fight, sat at positions
+        3 and 4 while the real board held positions 3 and 4 itself.
         """
         board = []
         for eid, cid in self.card.items():
@@ -446,7 +456,7 @@ class GameState:
                 continue
             if self.zone.get(eid) != "PLAY":
                 continue
-            board.append(self._minion(eid, cid))
+            board.append(dict(self._minion(eid, cid), eid=eid))
         self.snapshots.append(board)
 
     def final_board(self, friendly_player):

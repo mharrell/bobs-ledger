@@ -200,6 +200,12 @@ game shows a fight. **Result** says who won — or says that the turn's fights r
 together and the winner cannot be read, which is honest rather than a guess —
 what each side kept, and what the fight cost you in effective HP.
 
+A fight's summoned copies linger in the log past the end of the fight, so the
+board you opened with is shown without them: a board holds seven minions and no
+two can share a slot, and those are the rules the review uses to tell a leftover
+from a minion that is really there. A turn where that happened says so in a line
+under the board. The alternative was a nine-minion board you never had.
+
 <img src="docs/turn-shop.png" alt="One turn open on Shop: the board it opened with, the board it closed the shopping on, what the turn did, and the model's line with what you did and what the following fight cost" width="780">
 <img src="docs/turn-battle.png" alt="The same turn on Battle: your opponent's board on top and yours below it, from the fight's opening burst" width="780">
 <img src="docs/turn-result.png" alt="The same turn on Result: who won the fight, what each side kept, and the effective HP it cost" width="780">

@@ -326,6 +326,110 @@ class TestTheTimelineInvariants(unittest.TestCase):
         self.assertEqual(row["combat_start"]["theirs"], [])
 
 
+class TestTheOpeningBoard(unittest.TestCase):
+    """The board the shop opened with, minus the previous fight's leftovers.
+
+    Reported 2026-10-07: *"Sometimes, in battles, extra minions are summoned for
+    various reasons that go away once the shop phase starts. These minions are
+    showing up in the 'Opened With' section. We should be getting just the
+    current ones. A max of 7."* Reproduced on `Hearthstone_2026_10_07_07_58_33`
+    (Tavish Stormpike, Undead, 1st) — turn 15's opening snapshot holds NINE of
+    our minions, the four real golden Eternal Knights at 271/116 plus two copies
+    the Eternal Summoner's deathrattle left in PLAY. The fixtures below are that
+    snapshot, verbatim, down to the entity ids and board positions.
+    """
+
+    #: (player, card, atk, health, golden, keywords, eid, pos)
+    OURS_ID = 2
+
+    @staticmethod
+    def _m(card, atk, hp, eid, pos, golden=False):
+        return (2, card, atk, hp, golden, (), eid, pos)
+
+    def _real_board(self):
+        return [self._m("BG25_008", 271, 116, 14681, 1, True),
+                self._m("BG25_008", 271, 116, 14682, 2, True),
+                self._m("BG25_008", 271, 116, 14683, 3, True),
+                self._m("BG25_008", 271, 116, 14684, 4, True),
+                self._m("BG25_009", 54, 8, 14685, 5),
+                self._m("BG36_515", 45, 8, 14688, 6),
+                self._m("BG32_324", 41, 7, 14690, 7)]
+
+    def test_the_fights_leftovers_are_not_on_the_opening_board(self):
+        snap = {"phase": "buy", "minions": self._real_board() + [
+            self._m("BG25_008", 131, 46, 15278, 3),
+            self._m("BG25_008", 223, 92, 15281, 4, True)]}
+        board, removed = tr._opening_board(snap, self.OURS_ID)
+        self.assertEqual(removed, 2)
+        self.assertEqual([m["card"] for m in board],
+                         ["BG25_008"] * 4 + ["BG25_009", "BG36_515", "BG32_324"])
+        self.assertEqual([m["atk"] for m in board[:4]], [271] * 4,
+                         "the 131/46 and 223/92 copies are the ones that go")
+
+    def test_the_control_the_same_snapshot_without_the_collision(self):
+        """Rehearsal: with the leftovers removed from the FIXTURE, nothing is
+        dropped. Without this, the test above would pass for a filter that
+        drops two minions for any reason at all."""
+        board, removed = tr._opening_board(
+            {"phase": "buy", "minions": self._real_board()}, self.OURS_ID)
+        self.assertEqual(removed, 0)
+        self.assertEqual(len(board), 7)
+
+    def test_a_board_over_the_cap_is_cut_to_seven(self):
+        # No slot collision (8..14 are not board slots a real minion holds) and
+        # a fight that left summons on free slots: the game's own cap applies.
+        snap = {"phase": "buy", "minions": self._real_board() + [
+            self._m("BG25_008", 9, 9, 19001, 8),
+            self._m("BG25_008", 9, 9, 19002, 9)]}
+        board, removed = tr._opening_board(snap, self.OURS_ID)
+        self.assertEqual((len(board), removed), (7, 2))
+        self.assertNotIn(19001, [m.get("eid") for m in board],
+                         "the cap keeps the lowest entity ids — the fight's "
+                         "copies are allocated after the board's")
+
+    def test_a_replay_without_ids_is_left_alone(self):
+        """A rep saved before 2026-10-07 has no entity id and no position: the
+        filter has nothing to reason with and must not guess."""
+        snap = {"phase": "buy", "minions": [
+            (2, "A", 1, 1, False, []), (2, "B", 2, 2, False, [])]}
+        board, removed = tr._opening_board(snap, self.OURS_ID)
+        self.assertEqual(removed, 0)
+        self.assertEqual([m["card"] for m in board], ["A", "B"])
+
+    def test_no_snapshot_is_not_a_board_of_nothing(self):
+        self.assertEqual(tr._opening_board(None, self.OURS_ID), ([], 0))
+
+    def test_turn_rows_report_what_they_removed(self):
+        # The row has to CARRY the removal, or the renderer cannot say it and
+        # the board reads as a silent edit. The shape is the real game's: a
+        # contaminated opening frame, then a settled one. (buy_end is the
+        # SETTLED one and is left alone — measured over 88 buy-ends in 7 games,
+        # the leftovers never reach the last snapshot of a buy phase.)
+        snaps = {14: [{"phase": "buy", "minions": self._real_board()}],
+                 15: [{"phase": "buy", "minions": self._real_board() + [
+                     self._m("BG25_008", 131, 46, 15278, 3),
+                     self._m("BG25_008", 223, 92, 15281, 4, True)]},
+                     {"phase": "buy", "minions": self._real_board()}]}
+        rows = tr._turn_rows(snaps, {}, self.OURS_ID)
+        self.assertEqual(rows[0]["battle_end_removed"], 2,
+                         "turn 14's survivors ARE turn 15's opening board")
+        self.assertEqual(len(rows[0]["battle_end"]), 7)
+        self.assertEqual(rows[1]["buy_start_removed"], 2)
+        self.assertEqual(len(rows[1]["buy_start"]), 7)
+        self.assertEqual(len(rows[1]["buy_end"]), 7)
+        raw = tr._snap_board(snaps[15][0]["minions"], self.OURS_ID, "ours")
+        self.assertEqual(len(raw), 9, "the fixture really is the 9-minion "
+                                      "snapshot the log wrote")
+
+    def test_an_ordinary_turn_reports_nothing_removed(self):
+        snaps = {6: [{"phase": "buy", "minions": [
+            (2, "A", 3, 4, False, (), 11, 1), (2, "B", 2, 2, False, (), 12, 2)]}]}
+        row = tr._turn_rows(snaps, {}, self.OURS_ID)[0]
+        self.assertEqual((row["buy_start_removed"],
+                          row["battle_end_removed"]), (0, 0))
+        self.assertEqual(len(row["buy_start"]), 2)
+
+
 class TestTwoFightsInOneTurn(unittest.TestCase):
     """The 2026-10-07 final (Tavish, 1st): the turn staged the round's fight
     vs a 107-stat board and then the game's final duel vs a 1510-stat board.

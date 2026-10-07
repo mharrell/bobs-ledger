@@ -1991,6 +1991,18 @@ function settleTurnCard(r, phases) {
     ? row('Opened with', 'New game — nothing came before')
     : boardRow('Opened with', r.buy_start,
                '(no shop snapshot — a skipped turn?)'));
+  // The fight's summoned leftovers are removed from this board before it is
+  // drawn (turn_review._opening_board), and the removal is SAID rather than
+  // silently shortening the row: "the minions you opened with" is a fact the
+  // player can check against what they saw.
+  if (r.buy_start_removed) {
+    const l = document.createElement('div');
+    l.className = 'note';
+    l.textContent = r.buy_start_removed + ' of these were leftover summoned '
+      + 'copies from the previous fight, still in play in the log — removed, '
+      + 'because a board holds 7';
+    bodies.shop.appendChild(l);
+  }
   bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text));
   const evLine = document.createElement('div');
   evLine.className = 'brow';
@@ -2027,6 +2039,16 @@ function settleTurnCard(r, phases) {
   bodies.aftermath.appendChild(boardRow('They survived with',
     w === 'them' ? r.theirs_survivors : [],
     w === 'them' ? '' : (w === 'tie' ? '— none — a tie' : '— none')));
+  // Same removal as the Shop view's opening board — this row IS that board, one
+  // turn later — so it is disclosed in the same breath (2026-10-07).
+  if (r.battle_end_removed) {
+    const l = document.createElement('div');
+    l.className = 'note';
+    l.textContent = r.battle_end_removed + ' of these were leftover summoned '
+      + 'copies from the fight, still in play in the log — removed, because a '
+      + 'board holds 7';
+    bodies.aftermath.appendChild(l);
+  }
   const dmg = document.createElement('div');
   dmg.className = 'brow';
   dmg.innerHTML = '<span class="blbl">Damage taken</span><span></span>';
