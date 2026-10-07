@@ -444,25 +444,47 @@ class TestShopBattleAftermath(unittest.TestCase):
                          "both rows read the same burst — the moment after "
                          "procs, before the first death")
 
-    def test_their_survivors_come_from_the_next_turns_opening(self):
+    def test_when_we_win_their_side_has_no_survivors(self):
+        # Combat ends when a board dies. The next shop's snapshots catch the
+        # combat copies MID-TEARDOWN — dead minions still staged — and once
+        # produced an aftermath where both sides "survived".
         snaps = {5: [{"phase": "combat", "minions": [
                         (OURS, "A", 2, 2, False, []),
-                        (THEIRS, "GONE", 9, 9, False, [])]},
+                        (THEIRS, "DIES", 9, 9, False, [])]},
                      {"phase": "combat", "minions": [
-                        (OURS, "A", 2, 2, False, [])]}],
-                 6: [{"phase": "buy", "minions": [
-                     (OURS, "ME", 2, 2, False, []),
-                     (THEIRS, "THEIR_SURVIVOR", 5, 5, False, [])]}]}
+                        (OURS, "A", 2, 2, False, [])]}]}
         row = tr._turn_rows(snaps, {}, OURS)[0]
-        self.assertEqual([m["card"] for m in row["theirs_survivors"]],
-                         ["THEIR_SURVIVOR"])
+        self.assertEqual(row["winner"], "us")
+        self.assertEqual(row["theirs_survivors"], [])
 
-    def test_their_survivors_after_the_last_fight_are_a_note(self):
-        snaps = self._snaps(9, ("combat", [(OURS, "LAST", 3, 3, False, [])]))
-        row = tr._turn_rows(snaps, {}, OURS, final_board=[])
-        self.assertEqual(row[-1]["theirs_survivors"], [])
-        self.assertTrue(any("opponent's survivors" in n
-                            for n in row[-1]["notes"]))
+    def test_when_they_win_their_last_staged_board_is_shown(self):
+        snaps = {5: [{"phase": "combat", "minions": [
+                        (OURS, "DIES", 2, 2, False, []),
+                        (THEIRS, "T1", 5, 5, False, [])]},
+                     {"phase": "combat", "minions": [
+                        (THEIRS, "T2", 6, 6, False, [])]}]}
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual(row["winner"], "them")
+        self.assertEqual([m["card"] for m in row["theirs_survivors"]],
+                         ["T2"], "their last staged board — combat-time "
+                         "stats, from the fight, not the teardown")
+
+    def test_a_double_ko_is_a_tie_with_two_empty_lists(self):
+        snaps = self._snaps(
+            5,
+            ("combat", [(OURS, "A", 2, 2, False, []),
+                        (THEIRS, "T", 3, 3, False, [])]),
+            ("combat", []),   # both boards died together
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual(row["winner"], "tie")
+        self.assertEqual(row["theirs_survivors"], [])
+        self.assertEqual(row["battle_end"], [])
+
+    def test_no_result_when_the_fight_was_never_attributed(self):
+        snaps = self._snaps(5, ("combat", [(None, "GHOST", 1, 1, False, [])]))
+        row = tr._turn_rows(snaps, {}, None)[0]
+        self.assertIsNone(row["winner"])
 
     def test_damage_taken_is_the_eff_hp_delta_to_the_next_turn(self):
         info = {4: {"analysis": {"health": 20, "armor": 5, "gold": 8,
