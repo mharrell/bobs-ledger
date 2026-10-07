@@ -676,6 +676,11 @@ _HTML = r"""<!doctype html>
                    border:1px solid var(--border); border-radius:var(--radius);
                    padding:6px 8px; font:14px "Segoe UI", system-ui;
                    min-width:360px; }
+  .s-head button { background:var(--panel); color:var(--dim);
+                   border:1px solid var(--border); border-radius:var(--radius);
+                   padding:6px 12px; font:600 12px "Segoe UI", system-ui;
+                   cursor:pointer; }
+  .s-head button:hover { color:var(--text-2); }
   .s-empty { color:var(--dim); padding:16px 0; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
@@ -729,6 +734,7 @@ _HTML = r"""<!doctype html>
 <section id="settle">
 <div class="s-head">
 <select id="settle-select"><option value="">Loading saved replays…</option></select>
+<button id="settle-folder" title="Open the folder the saved replays live in">Open folder</button>
 </div>
 <div id="settle-game"><div class="s-empty">Pick a saved game to see it turn by turn.</div></div>
 </section>
@@ -1852,6 +1858,24 @@ let _tab = 'live';
 try { _tab = localStorage.getItem('bl-tab') || 'live'; } catch (e) {}
 showTab(_tab);
 document.getElementById('settle-select').onchange = e => loadSettleGame(e.target.value);
+// The saved replays are plain JSON files; this just points Explorer at them.
+document.getElementById('settle-folder').onclick = async () => {
+  const b = document.getElementById('settle-folder');
+  try {
+    const r = await fetch('/review/open-folder', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      b.textContent = j.error || 'Could not open';
+      setTimeout(() => { b.textContent = 'Open folder'; }, 2500);
+    }
+  } catch (e) {
+    b.textContent = 'Could not open';
+    setTimeout(() => { b.textContent = 'Open folder'; }, 2500);
+  }
+};
 </script>
 </body>
 </html>
@@ -2195,6 +2219,17 @@ def _review_save_response():
                            "builds when a game ends"})
     out = replay_store.save(rep)
     return _json_response(200, dict(out, ok=True))
+
+
+def _review_open_folder_response():
+    """(code, headers, body) for POST /review/open-folder — the Settle Up
+    tab's Open folder button. The browser cannot open a local directory;
+    this asks the machine to (Explorer on Windows). 500 with the reason
+    when the OS refuses, so the button can say so in place."""
+    err = replay_store.open_dir()
+    if err:
+        return _json_response(500, {"error": err})
+    return _json_response(200, {"ok": True})
 
 
 def _review_pending_page():
@@ -3016,6 +3051,12 @@ class _Handler(BaseHTTPRequestHandler):
             # into replay_store. The one verdict-shaped write the page can
             # trigger, and only after the game it describes is over.
             code, headers, body = _review_save_response()
+            self._send(code, "application/json", body, headers=headers)
+            return
+        if self.path.rstrip("/") == "/review/open-folder":
+            # The Settle Up tab's Open folder button: the replays are plain
+            # JSON files and a player may want them as such.
+            code, headers, body = _review_open_folder_response()
             self._send(code, "application/json", body, headers=headers)
             return
         self._send(404, "text/plain", b"no such endpoint")
