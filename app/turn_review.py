@@ -365,14 +365,26 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                                      friendly, "ours")
         theirs_at_combat = _snap_board(combat.get("minions") if combat else [],
                                        friendly, "theirs")
-        # Battle PEAK = the burst of the last fight with the greatest combined
-        # stat total — the moment after beginning-of-combat effects have
-        # landed and before deaths thin the boards. The staging burst (the
-        # `combat` one) reads LOW: start-of-combat procs fire between the
-        # staging and the first swing (measured 2026-10-06: 31 stats staged,
-        # 51 a burst later). It is a stated approximation: one huge mid-fight
-        # swing can out-read the true post-proc moment.
-        peak = max(fights[-1], key=_burst_stats) if fights else None
+        # Battle PEAK = the fight's burst after beginning-of-combat effects
+        # have landed and before the first death: the staging burst reads LOW
+        # (start-of-combat procs fire between the staging and the first
+        # swing — measured 2026-10-06: 31 stats staged, 51 a burst later),
+        # and everything after the first minion-count drop is the fight
+        # thinning. So: candidates are the bursts up to the first count
+        # drop, and the peak is the strongest of those. Plain max-combined
+        # lands on a late ours-snowball burst with the opponent's board
+        # already dead — measured on the 2026-10-07 final (4730 vs 448: the
+        # duel's aftermath, not its beginning).
+        peak = None
+        if fights:
+            group = fights[-1]
+            counts = [len(s.get("minions") or []) for s in group]
+            upto = len(group)
+            for bi, bc in enumerate(counts):
+                if bc < counts[0]:
+                    upto = bi
+                    break
+            peak = max(group[:upto] or group[:1], key=_burst_stats)
         ours_at_peak = _snap_board(peak.get("minions") if peak else [],
                                    friendly, "ours")
         theirs_at_peak = _snap_board(peak.get("minions") if peak else [],

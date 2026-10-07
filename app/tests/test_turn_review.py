@@ -424,6 +424,26 @@ class TestShopBattleAftermath(unittest.TestCase):
         # the staging row is still there, honestly low
         self.assertEqual(row["stats"]["combat_ours"], 19)
 
+    def test_a_late_ours_snowball_is_not_the_battle_peak(self):
+        # The 2026-10-07 final, abstractly: our side snowballs AFTER the
+        # opponent's board is dead. Plain max-combined picked that aftermath
+        # burst (4730 vs 448) and showed the duel's ending as its beginning.
+        snaps = self._snaps(
+            15,
+            ("combat", [(OURS, "O_STAGED", 100, 100, False, []),
+                        (THEIRS, "T_STAGED", 60, 60, False, [])]),
+            ("combat", [(OURS, "O_PROCS", 110, 110, False, []),
+                        (THEIRS, "T_PROCS", 70, 70, False, [])]),
+            ("combat", [(OURS, "O_SNOWBALL", 500, 500, False, [])]),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["combat_peak"]["ours"]],
+                         ["O_PROCS"])
+        self.assertEqual([m["card"] for m in row["combat_peak"]["theirs"]],
+                         ["T_PROCS"],
+                         "both rows read the same burst — the moment after "
+                         "procs, before the first death")
+
     def test_their_survivors_come_from_the_next_turns_opening(self):
         snaps = {5: [{"phase": "combat", "minions": [
                         (OURS, "A", 2, 2, False, []),
