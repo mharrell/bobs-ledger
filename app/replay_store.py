@@ -20,10 +20,13 @@ Usage:
     replay_store.save(rep)             -> {"id": ..., "path": ...}
     replay_store.list()                -> [{id, hero, placement, turns, ...}]
     replay_store.load(rid)             -> the stored dict, or None
+    replay_store.open_dir()            -> None, or an error string
 """
 import json
 import os
 import re
+import subprocess
+import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 DIR_NAME = "saved_replays"
@@ -129,3 +132,21 @@ def list(root=None):
         except (OSError, ValueError):
             continue
     return out
+
+
+def open_dir(root=None):
+    """Open the store in the OS file browser. Best effort — returns an error
+    string on failure rather than raising into the server. The dir is
+    created first, so the button works on a fresh install with no saves."""
+    d = store_dir(root)
+    try:
+        os.makedirs(d, exist_ok=True)
+        if os.name == "nt":
+            os.startfile(d)  # noqa: S606 - Explorer, by explicit button
+        elif sys.platform == "darwin":
+            subprocess.run(["open", d], check=False)
+        else:
+            subprocess.run(["xdg-open", d], check=False)
+        return None
+    except Exception as exc:  # noqa: BLE001 - the button says why, in place
+        return f"{type(exc).__name__}: {exc}"

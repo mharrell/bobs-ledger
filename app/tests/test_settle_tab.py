@@ -111,6 +111,27 @@ class TestReviewSave(_StoreRoot):
         self.assertNotEqual(first, second)
 
 
+class TestOpenFolder(_StoreRoot):
+    """Open folder: the browser cannot open a local directory, so the
+    button asks the machine to. The handler must not open Explorer during
+    a test — open_dir is the seam."""
+
+    def test_ok_when_the_os_opens(self):
+        with mock.patch.object(replay_store, "open_dir",
+                               return_value=None) as opener:
+            code, _h, body = coach_ui._review_open_folder_response()
+        self.assertEqual(code, 200)
+        self.assertTrue(json.loads(body)["ok"])
+        opener.assert_called_once()
+
+    def test_failure_is_a_500_with_the_reason(self):
+        with mock.patch.object(replay_store, "open_dir",
+                               return_value="OSError: no file browser"):
+            code, _h, body = coach_ui._review_open_folder_response()
+        self.assertEqual(code, 500)
+        self.assertIn("no file browser", json.loads(body)["error"])
+
+
 class TestNamedBoards(_StoreRoot):
     """The tab draws card tiles, which want display names; the stored rep
     keeps ids on purpose. The join happens at serve time."""
