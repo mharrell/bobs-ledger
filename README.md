@@ -95,6 +95,47 @@ second game window, so put it on another monitor or leave it behind the game.
 Every card carries the same facts: its tier, its text on hover, and what it is
 worth. Nothing on the page names a move.
 
+**When the game asks you to choose, the panel shows what is known about each
+option** — a hero pick, a trinket pick, a Discover — in the order the game
+offered them, and never in an order that means "take this one":
+
+- **A hero** — its power, spelled out, and how often the population picks it.
+- **A trinket** — how often it is picked, its average placement, and how often
+  it finishes top 4, which is the part an average hides: a consistent 4th and a
+  coin-flip between 1st and 8th average the same and are not the same trinket.
+  Under that, what the trinket actually does for the board and comp you have.
+- **A Discovered card** — whether it is a piece of the comp you are on and how
+  much of that comp you already hold ("core of Beasts - Tasty Lobstah, you have
+  1 of its 2"), or the fact that it is not one.
+
+Population numbers come from the curated meta DB (scraped, bundled, and read
+offline). Nothing there is a recommendation, and no option is highlighted as
+the one to take.
+
+## Upcoming features
+
+Not a promise list with dates — it is the order this project is working in, and
+anything on it can change or be dropped.
+
+- **Your own record, beside the population's.** The pick panel shows how the
+  population plays a hero or trinket; next is your own history next to it ("you
+  have played this hero 4 times, average place 3.2"). That data is already on
+  your machine, in your own decision logs — this is a reason to read it, not a
+  reason to send it anywhere.
+- **Hand a game back.** A consented way to send a saved replay in, so the advice
+  can be measured against real games instead of the maintainer's own. It would
+  show you exactly what it carries before anything leaves the machine, and it
+  would be off unless you turn it on — the same rule as the session summary
+  above.
+- **One replay pass instead of two.** Building a review currently replays the
+  game twice, about ten seconds for a fifteen-turn game. One pass would halve
+  the wait when you save.
+- **A fight result on every turn.** When a fight straddles the turn boundary the
+  review cannot always name a winner; it says so rather than guessing, and
+  fixing that is worth doing.
+- **A picture of the live page.** The screenshots in `docs/` show the review.
+  The live overlay is the one surface with no shot of it yet.
+
 ## Settle Up (the review)
 
 When a game ends, the card on screen offers **Save replay**. Saving keeps

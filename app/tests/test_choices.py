@@ -187,8 +187,10 @@ class TestCuratedTrinkets(unittest.TestCase):
                                ("Tusked Camper", "BG33_886")],
                               board, comps, comp=comps["beasts"])
         self.assertEqual(ranked[0][0], "Tusked Camper")
-        # Already on the board: an extra copy is triple fuel, not "core".
-        self.assertEqual(ranked[0][3], "core copy (triple fuel)")
+        # Already on the board, so the fact says what a second copy does; the
+        # comp's own core count is off the board, not asserted (2026-10-07).
+        self.assertIn("core of Beasts", ranked[0][3])
+        self.assertIn("a second copy triples", ranked[0][3])
 
     def test_discover_labels_key_on_the_displayed_comp(self):
         """The 2026-09-11 report: Lurking Leviathan (core of Beasts -
@@ -215,27 +217,104 @@ class TestCuratedTrinkets(unittest.TestCase):
             board, comps, comp=target)
         by_name = {r[0]: r for r in ranked}
         # Leviathan's raw growth (6.0) legitimately leads the ranking — but
-        # its label may no longer CLAIM comp membership: it is the other
-        # comp's core, the displayed comp's tribe is all it shares.
-        self.assertEqual(by_name["Lurking Leviathan"][3], "tribe fit")
-        # The displayed comp's own core piece is labeled as such.
-        self.assertEqual(by_name["Headhunter Gryphon"][3], "comp core")
-        self.assertEqual(by_name["Felfire Conjurer"][3], "off-comp")
-        # ...and no option anywhere still wears the blanket lie.
-        for _n, _c, _s, why in ranked:
-            self.assertNotEqual(why, "comp fit")
+        # its fact may no longer CLAIM comp membership: it is the other comp's
+        # core, and the tribe it shares is all it has in common.
+        self.assertIn("the tribe Beasts - Tasty Lobstah is built on",
+                      by_name["Lurking Leviathan"][3])
+        # The displayed comp's own core piece says so, and says how much of
+        # that comp's core the player already has.
+        self.assertIn("core of Beasts - Tasty Lobstah",
+                      by_name["Headhunter Gryphon"][3])
+        self.assertIn("you have 1 of its 2",
+                      by_name["Headhunter Gryphon"][3])
+        self.assertEqual(by_name["Felfire Conjurer"][3],
+                         "not a piece of the comp you are on")
+        # ...and no option names a best or wears the blanket lie.
+        for _n, _c, _s, facts, _o in ranked:
+            self.assertNotIn("best", facts.lower())
+            self.assertNotEqual(facts, "comp fit")
 
     def test_discover_without_a_direction_makes_no_comp_claim(self):
-        """No displayed target -> no comp wording at all; the top option is
-        'best available', never 'comp fit' (the live.py early-pick path has
-        no board/comps yet)."""
+        """No displayed target -> no comp wording AND no rank word.
+
+        The top option used to read "best available" — the verdict the pivot
+        deleted, surviving one layer below the wall because it rode inside a
+        fact STRING rather than a verdict KEY (2026-10-07). With nothing
+        displayed to compare against, the honest fact set is empty."""
         ranked = rank_choices("discover",
                               [("Lurking Leviathan", "BG35_602"),
                                ("Felfire Conjurer", "BG32_821")],
                               [], {})
-        self.assertEqual(ranked[0][3], "best available")
-        for name, _cid, _s, why in ranked[1:]:
-            self.assertNotIn("comp", why)
+        for name, _cid, _s, facts, _o in ranked:
+            self.assertEqual(facts, "", f"{name} claims something with no "
+                                        f"displayed comp to claim it against")
+        self.assertEqual([r[4] for r in ranked], [0, 1],
+                         "rows carry the option's place in the game's list")
+
+
+class TestTheFactsNameNoRank(unittest.TestCase):
+    """The wall is key-level, so a VERDICT INSIDE A STRING walked through it.
+
+    `LIVE_VERDICT_KEYS` drops verdict KEYS from the live payload — that is what
+    makes the pivot hold — and the pick panel's words were therefore never
+    checked. `_rank_discover` labelled row 0 `"best available"` for six days
+    after the pivot (2026-10-06 → 2026-10-07) and this test is what was missing:
+    it would have failed on the day the pivot landed.
+
+    Every fact string the three rankers produce is a statistic or a description
+    of the card — nothing may rank the options, in a payload whose ordering is
+    already a model opinion (row 0 is what `value._top_move_text` records as the
+    plan's pick).
+    """
+
+    #: Words that rank or instruct. Deliberately checked against the DBs first:
+    #: a hero power or trinket description containing one of these would make
+    #: this control fire on reference text rather than on our own wording
+    #: (measured 2026-10-07: zero of 117 hero powers contain any of them).
+    WORDS = ("best", "top pick", "recommend", "should", "you need", "go for",
+             "pick this")
+
+    def _facts(self, kind, options, **kw):
+        return [row[3] for row in rank_choices(kind, options, **kw)]
+
+    def test_no_ranker_ranks_in_words(self):
+        comp = {"name": "Beasts", "tribe": "Beast", "core": ["BG33_886"],
+                "addons": []}
+        cases = {
+            "hero": self._facts("hero", [("Reno Jackson", "TB_BaconShop_HERO_01"),
+                                         ("Chenvaala", "TB_BaconShop_HERO_02")]),
+            "trinket": self._facts("trinket",
+                                   [("Baller Portrait", "BG30_MagicItem_301"),
+                                    ("Totally New Trinket", "XX_1")]),
+            "discover": self._facts("discover",
+                                    [("Tusked Camper", "BG33_886"),
+                                     ("Metallic Hunter", "BG33_449")],
+                                    board=[{"card": "BG33_886", "tribe": "BEAST"}],
+                                    comps={}, comp=comp),
+        }
+        for kind, facts in cases.items():
+            for text in facts:
+                low = text.lower()
+                for word in self.WORDS:
+                    self.assertNotIn(word, low,
+                                     f"a {kind} fact ranks the options: {text!r}")
+
+    def test_every_row_carries_its_place_in_the_game_order(self):
+        """The page renders in the GAME's order, so each row has to say where
+        it sat in the offered list — and a locked hero's removal must not
+        renumber the rows that are left."""
+        ranked = rank_choices("hero", [("Reno Jackson", "TB_BaconShop_HERO_01"),
+                                       ("Chenvaala", "TB_BaconShop_HERO_02")])
+        self.assertEqual(sorted(r[4] for r in ranked), [0, 1])
+
+    def test_all_kinds_return_the_same_row_shape(self):
+        """Four facts + the order slot, whatever the kind — the page destructures
+        it positionally, and `_CHOICE.ranked` in the report spec is DeepScalars."""
+        for kind in ("hero", "trinket", "discover", "unknown"):
+            rows = rank_choices(kind, [("A", "BG33_886"), ("B", "BG31_330")],
+                                [], {}, None)
+            for row in rows:
+                self.assertEqual(len(row), 5, f"{kind} row shape drifted: {row}")
 
 
 class TestLiveWiring(unittest.TestCase):

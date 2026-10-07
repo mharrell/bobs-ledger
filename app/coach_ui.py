@@ -1312,21 +1312,30 @@ function render(a) {
     instr.appendChild(el('div', 'none',
       'reading the new shop… (this read is from your last action)'));
   }
-  // A PENDING PICK — the options and what each one is worth. The "PICK X"
+  // A PENDING PICK — the options, and what is known about each. The "PICK X"
   // line and the "if locked, pick Y" fallback are gone (2026-10-06, PIVOT.md):
   // the hero pick is the most consequential decision of the game, and naming
-  // one was the plainest instruction the app produced. Each option's own score
-  // and note stay — that is a fact about the card, from the same reference
-  // DBs the rest of the page reads — so the panel lists them and the choice is
-  // the player's.
+  // one was the plainest instruction the app produced. Each option's facts
+  // stay — they come from the reference DBs the rest of the page reads — and
+  // the choice is the player's.
+  //
+  // **IN THE GAME'S OWN ORDER, and the facts are statistics rather than a
+  // score (2026-10-07).** The server returns these rows score-ordered (row 0
+  // is the pick the review grades), so the order it arrives in is a MODEL
+  // OPINION, and rendering it would hand the player a ranking while the
+  // wording pretended otherwise. `order` is the option's position in the list
+  // the game showed, which is the order this panel uses — the same rule the
+  // tavern row has followed since 2026-10-06. The old sub-line printed the
+  // blended 0-10 score, an index nobody can read; the facts beside it now name
+  // the population statistics it was built from (pick rate, average placement,
+  // top-4 share) and what the option is relative to the comp on screen.
   if (a.choice && a.choice.ranked && a.choice.ranked.length) {
-    const scored = a.choice.ranked.some(r => r[2] != null);
-    instr.appendChild(el('div', 'none', scored
-      ? 'Your pick — the options and what each scores:'
-      : 'Your pick — no data on these options:'));
+    const rows = a.choice.ranked.slice().sort((x, y) => (x[4] ?? 0) - (y[4] ?? 0));
+    instr.appendChild(el('div', 'none',
+      'Your pick — the options, and what is known about each:'));
     const alts = el('div', 'tiles');
-    a.choice.ranked.forEach(([n, c, s, w]) => {
-      alts.appendChild(tile(c, n, w != null ? w : (s != null ? s.toFixed(1) : null)));
+    rows.forEach(([n, c, s, w]) => {
+      alts.appendChild(tile(c, n, w != null && w !== '' ? w : null));
     });
     instr.appendChild(alts);
     // What each offered trinket actually does for this build (2026-10-02).
@@ -1334,7 +1343,7 @@ function render(a) {
     // they answer the one question the pick panel raises and the stats
     // cannot: what do I do with it once I take it.
     const pickGuides = a.choice.guides || {};
-    a.choice.ranked.forEach(([n]) => {
+    rows.forEach(([n]) => {
       if (!pickGuides[n]) return;
       instr.appendChild(el('div', 'cline', n + ' — ' + pickGuides[n]));
     });

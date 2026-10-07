@@ -363,6 +363,66 @@ measured on a real 15-turn rep, 0 board ids end in `_G` while 91 minions carry
    back in a download (see Layout). The KV + GitHub copies carry both
    (`releases/latest` is `409a47e`).
 
+## Where the 2026-10-07 afternoon session left off (the pick panel, and what the corpus holds now)
+
+**1. The live pick panel was still shipping a verdict, and the wall could not
+see it.** `choices._rank_discover` labelled ROW 0 `"best available"` (and
+`"best off-comp"` below a displayed comp) for a day after the pivot — the
+verdict the pivot deleted, alive one layer UNDER the wall: `LIVE_VERDICT_KEYS`
+drops verdict **keys**, and a verdict inside a fact **string** passed straight
+through. `test_live_view` could not see it by construction. The control is now
+`test_choices.TestTheFactsNameNoRank`, which runs the three real rankers and
+fails on any fact containing a rank word; rehearsed by patching the old label
+back (it fires, naming the fact). The panel header ("what each scores") and
+`live._advise_pick`'s console copy went the same way.
+
+**2. The options carry STATISTICS now, and the page renders GAME ORDER.**
+
+* Heroes: the power text plus `picked in N% of games`. The blended 0-10 score
+  used to be printed under the name, which is an index nobody can read.
+* Trinkets: pick rate, `avg place`, and `top-4 in N% of its games` computed
+  from `placement_distribution` — a whole distribution the DB has carried all
+  along and nothing rendered. An average hides the difference between a
+  consistent 4th and a coin-flip between 1st and 8th.
+* Discovers: `core of <comp> (you have N of its M)` / `addon of <comp>` /
+  `<tribe> - the tribe <comp> is built on` / `not a piece of the comp you are
+  on`. With no displayed comp, NOTHING is claimed.
+* **`choice["ranked"][0]` IS the plan's pick** (`value._top_move_text` reads
+  row 0, and row 1 as the locked-hero fallback), so the ranker MUST keep
+  returning score-ordered rows. The page sorts by a new 5th slot — the option's
+  position in the list the game offered — so the panel shows game order without
+  touching what the review grades. A "cleanup" that returns rows in game order
+  would silently change which card the review says the model wanted.
+
+**3. The corpus, measured again (2026-10-07): 30 reports, 30 games, 5,107
+advisories** — against 10-04's "six reports are FOUR games", so there is real
+data at last, and 24 of the 30 arrived in the last two days. By coach version:
+`1ab34c4` (the 2026-10-05 build) **18**, `0189193` 4, and one each for
+`94a07de`, `91be599`, `2196a27` and five older shas. Seven came in TODAY; six of
+those landed between 11:05 and 12:39 on `1ab34c4`, which is one player's session
+on a build three releases old. **Nothing has arrived from `c885b2e` or
+`409a47e` yet**, so no measurement covers the newest code. Read it with
+`npx wrangler kv key list --namespace-id abd7803c581b4470a2834e92ae0006a2
+--remote` — `HEARTH_TELEMETRY_KEY` is NOT set on this machine and reading is
+keyed by design, so wrangler is the operator's own path (telemetry/README.md).
+**A report is advisories, not a replay**: nothing in the corpus carries a
+Power.log, so what arrives can be re-read but never re-analyzed.
+
+OPEN here:
+
+1. **Nothing offers a player the path that carries a LOG.** `package_corpus.py` +
+   `upload_corpus.py` build a redacted bundle *with* the Power.log and decision
+   log (1-1.6 MB) and both tools ship, but no button in the app asks for one —
+   so the only game data that arrives cannot be re-derived, only trusted. That
+   is the gap behind "we need more replays" (maintainer, 2026-10-07), and it is
+   a consent-and-whitelist change, not a button: `sanitize_log` + `privacy_scan`
+   + the `session_report` posture all apply.
+2. **The player's own record in the pick panel** — deferred by the maintainer,
+   and now the first item of the README's new "Upcoming features" section.
+   `replay_stats.aggregate` (Power.logs) and `settle_up._session_totals`
+   (placements) already answer parts of it; nothing aggregates "how often was
+   THIS CARD bought or chosen", which is the stat that would be new.
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a
@@ -918,3 +978,17 @@ prefers a venv, so both use the same one.
 - Real logs carry real people's handles. Local `decision_logs/` and
   `Power.log`s hold everything by design and never leave the machine except
   through the sanitized corpus path.
+- **The live wall is KEY-level, so a verdict inside a STRING walks through it.**
+  `LIVE_VERDICT_KEYS` drops verdict keys from the payload; `test_live_view`
+  asserts those keys are absent. Neither can see wording. `choices._rank_discover`
+  shipped a literal `"best available"` for a day after the pivot because of
+  exactly that gap. The string-level control is
+  `test_choices.TestTheFactsNameNoRank` — if you add a label, a tag or a note
+  that reaches the live page, check it against that test, not against the key
+  list.
+- **`choice["ranked"][0]` IS the plan's pick.** `value._top_move_text` reads row
+  0 (row 1 is the locked-hero fallback), so the rankers must keep returning
+  score-ordered rows even though the overlay renders the options in the GAME's
+  order — the page sorts by the row's 5th slot, the option's position in the
+  offered list. "Tidying" the ranker to return game order would silently change
+  which card the review says the model wanted, and every graded number after it.
