@@ -332,7 +332,7 @@ class TestTheOpeningBoard(unittest.TestCase):
     Reported 2026-10-07: *"Sometimes, in battles, extra minions are summoned for
     various reasons that go away once the shop phase starts. These minions are
     showing up in the 'Opened With' section. We should be getting just the
-    current ones. A max of 7."* Reproduced on `Hearthstone_2026_10_07_07_58_33`
+    current ones. A max of 7."* Reproduced on the newest game of that day
     (Tavish Stormpike, Undead, 1st) — turn 15's opening snapshot holds NINE of
     our minions, the four real golden Eternal Knights at 271/116 plus two copies
     the Eternal Summoner's deathrattle left in PLAY. The fixtures below are that
