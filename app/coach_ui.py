@@ -674,7 +674,9 @@ _HTML = r"""<!doctype html>
   #app.off { display:none; }
   #settle { display:none; }
   #settle.on { display:block; }
-  .s-head { display:flex; align-items:center; gap:10px; margin:0 0 10px; }
+  .s-head { display:flex; align-items:center; gap:10px; margin:0 0 10px;
+            position:sticky; top:0; background:var(--bg); z-index:10;
+            padding:6px 0; }
   .s-head select { background:var(--panel2); color:var(--text);
                    border:1px solid var(--border); border-radius:var(--radius);
                    padding:6px 8px; font:14px "Segoe UI", system-ui;
@@ -682,9 +684,17 @@ _HTML = r"""<!doctype html>
   .s-empty { color:var(--dim); padding:16px 0; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
+  .turn.s-sticky { position:sticky; top:42px; z-index:9;
+                   box-shadow:var(--shadow); }
+  .turn.collapsed > *:not(.thead) { display:none; }
   .turn .thead { display:flex; gap:14px; align-items:baseline;
                  border-bottom:1px solid var(--gridline);
                  padding-bottom:6px; margin-bottom:8px; }
+  .turn .thead.clickable { cursor:pointer; user-select:none; margin-bottom:0; }
+  .turn:not(.collapsed) .thead.clickable { border-bottom:1px solid var(--gridline);
+                                           margin-bottom:8px; }
+  .turn.collapsed .thead.clickable { border-bottom:none; padding-bottom:6px; }
+  .turn .caret { color:var(--dim); font-size:11px; }
   .turn .tturn { font-weight:700; text-transform:uppercase; font-size:12px; }
   .turn .tmeta { color:var(--dim); font-size:12px; }
   .turn .comp { margin-left:auto; color:var(--gold); font-size:12px; }
@@ -1089,7 +1099,15 @@ function renderWelcome(a) {
           body: '{}',
         });
         const j = await r.json().catch(() => ({}));
-        save.textContent = r.ok ? 'Saved ✓' : (j.error || 'Nothing to save');
+        if (r.ok) { save.textContent = 'Saved ✓'; return; }
+        // 409 is the normal race: the review builds off-thread (it replays
+        // the game TWICE, ~10 s) and the card appears the moment the game
+        // ends. A premature click must be retryable, not a dead button —
+        // that is exactly how the first saved-replay attempt failed in the
+        // field (2026-10-07: "it failed to save my replay").
+        save.disabled = false;
+        save.textContent = r.status === 409 ? 'Still building — try again'
+                                            : (j.error || 'Save failed');
       } catch (e) {
         save.textContent = 'Save failed';
         save.disabled = false;
@@ -1715,7 +1733,7 @@ function renderSettleGame(rep) {
   const box = document.getElementById('settle-game');
   box.innerHTML = '';
   const head = document.createElement('div');
-  head.className = 'turn';
+  head.className = 'turn s-sticky';   // stays put while the turns scroll
   const t = rep.totals || {};
   head.innerHTML = '<div class="thead"><span class="tturn">'
     + (rep.hero || 'Saved game') + '</span><span class="tmeta">'
@@ -1767,14 +1785,21 @@ function settleTurnCard(r, phases) {
   const card = document.createElement('div');
   card.className = 'turn';
   const head = document.createElement('div');
-  head.className = 'thead';
-  head.innerHTML = '<span class="tturn">Turn ' + (r.turn ?? '?') + '</span>'
+  head.className = 'thead clickable';
+  head.innerHTML = '<span class="caret">▾</span>'
+    + '<span class="tturn">Turn ' + (r.turn ?? '?') + '</span>'
     + '<span class="tmeta">' + (r.gold ?? '—') + 'g · board '
     + (s.buy_end ?? '—') + ' stats'
     + (s.growth != null ? ' <span class="grw">' + (s.growth > 0 ? '+' : '')
        + s.growth + '</span>' : '')
     + ' · spent ' + (sp.total ?? '—') + 'g</span>'
     + (c.target ? '<span class="comp">' + c.target + '</span>' : '');
+  // Click the title bar to fold the card down to just that bar (2026-10-07):
+  // a 15-turn game is a lot of scrolling, and the headline row is the index.
+  head.onclick = () => {
+    const closed = card.classList.toggle('collapsed');
+    head.querySelector('.caret').textContent = closed ? '▸' : '▾';
+  };
   card.appendChild(head);
   const row = (lbl, text, cls) => {
     const d = document.createElement('div');

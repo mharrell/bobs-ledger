@@ -326,5 +326,58 @@ class TestTheTimelineInvariants(unittest.TestCase):
         self.assertEqual(row["combat_start"]["theirs"], [])
 
 
+class TestTwoFightsInOneTurn(unittest.TestCase):
+    """The 2026-10-07 final (Tavish, 1st): the turn staged the round's fight
+    vs a 107-stat board and then the game's final duel vs a 1510-stat board.
+    A renderer that takes the first combat burst shows the wrong game."""
+
+    @staticmethod
+    def _snaps(turn, *entries):
+        return {turn: [{"phase": ph, "minions": list(ms)} for ph, ms in entries]}
+
+    def test_two_fights_show_the_last(self):
+        snaps = self._snaps(
+            15,
+            ("buy", [(OURS, "SHOPKEEP", 3, 3, False, [])]),
+            ("combat", [(OURS, "ROUND_OURS", 2, 2, False, []),
+                        (THEIRS, "ROUND_THEIRS", 8, 10, False, [])]),
+            ("combat", []),   # the round fight's teardown
+            ("combat", [(OURS, "DUEL_OURS", 282, 119, False, []),
+                        (THEIRS, "DUEL_THEIRS", 341, 344, False, [])]),
+            ("combat", []),   # the duel's teardown
+            ("combat", []),   # trailing zeros are the same teardown
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["combat_start"]["theirs"]],
+                         ["DUEL_THEIRS"])
+        self.assertEqual([m["card"] for m in row["combat_start"]["ours"]],
+                         ["DUEL_OURS"])
+
+    def test_multiple_fights_are_named_in_the_notes(self):
+        snaps = self._snaps(
+            15,
+            ("combat", [(THEIRS, "T1", 3, 3, False, [])]),
+            ("combat", []),
+            ("combat", [(THEIRS, "T2", 4, 4, False, [])]),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertTrue(any("2 fights" in n for n in row["notes"]))
+
+    def test_mid_fight_restage_without_a_teardown_is_one_fight(self):
+        # Deaths and buffs re-stage continuously inside one fight (the measured
+        # turn 4 had four bursts); only the drain-to-zero separates fights.
+        snaps = self._snaps(
+            5,
+            ("combat", [(OURS, "A", 2, 2, False, []),
+                        (THEIRS, "T1", 3, 3, False, [])]),
+            ("combat", [(OURS, "A", 4, 4, False, []),
+                        (THEIRS, "T1", 3, 3, False, []),
+                        (THEIRS, "T2", 4, 4, False, [])]),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["combat_start"]["theirs"]],
+                         ["T1"])
+
+
 if __name__ == "__main__":
     unittest.main()
