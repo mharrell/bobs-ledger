@@ -157,6 +157,29 @@ class TestNamedBoards(_StoreRoot):
         for m in on_disk["rep"]["timeline"]["turns"][0]["buy_end"]:
             self.assertNotIn("name", m)
 
+    def test_a_golden_is_named_through_its_base_and_keeps_its_flag(self):
+        """The join NAMES cards; goldens are the snapshot's own business.
+
+        `board_state._minion` strips the `_G` suffix and keeps the flag beside
+        the base id, so a timeline board carries `{"card": "BG_X_001",
+        "golden": true}` — measured on a real 15-turn rep: 0 board ids end in
+        `_G`, 91 minions carry golden. The join must therefore add a name and
+        touch nothing else, and `value.display_name` is the one place the
+        golden spelling lives (lowercase, the string the plan text parses).
+        """
+        rep = _rep()
+        rep["timeline"]["turns"][0]["buy_end"] = [
+            {"card": "BG_X_001_G", "atk": 6, "health": 9, "golden": True,
+             "keywords": []}]
+        out = replay_store.save(rep)
+        with mock.patch.object(coach_ui, "_load_bg_names",
+                               return_value={"BG_X_001": "Fire Baller"}):
+            _code, _h, body = coach_ui._review_game_response(out["id"])
+        m = json.loads(body)["rep"]["timeline"]["turns"][0]["buy_end"][0]
+        self.assertEqual(m["name"], "Fire Baller (golden)")
+        self.assertTrue(m["golden"], "the join must not be what says golden")
+        self.assertEqual(m["atk"], 6)
+
 
 class TestTheWall(_StoreRoot):
     """The review rep lives in coach_ui state. It must behave like the HTML
