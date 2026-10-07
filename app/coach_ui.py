@@ -2281,7 +2281,7 @@ def clear_analysis(keep_bans=False):
             _state.manual_bans = None
 
 
-def show_game_over(analysis=None):
+def show_game_over(analysis=None, placement=None):
     """Replace the finished game's panel with the end-of-game card.
 
     Called the moment the log says the game ended. The panel must go — the plan
@@ -2290,9 +2290,16 @@ def show_game_over(analysis=None):
     (2026-10-04). `analysis` is whatever was last pushed, or None when the coach
     never advised; only its summary values are read, so nothing of the plan
     survives.
+
+    `placement` comes from `LiveCoach.final_placement()` and is preferred over
+    the analysis's `current_place`, which is a different reading: the last
+    advisory is taken BEFORE the final fight resolves and before the game writes
+    its last place, so the card could report a standing the game later revised
+    (measured 2026-10-07: 4 against a true 3 on the 2026-10-06 13:00 game).
     """
     analysis = analysis or {}
-    game_over = {"placement": analysis.get("current_place"),
+    game_over = {"placement": placement if placement is not None
+                 else analysis.get("current_place"),
                  "turn": analysis.get("turn")
                          or (analysis.get("scenario") or {}).get("turns"),
                  "health": analysis.get("health"),

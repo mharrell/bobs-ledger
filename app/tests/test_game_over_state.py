@@ -42,6 +42,45 @@ class TestTheTwoStates(unittest.TestCase):
         self.assertIn("steps", card)
         self.assertIn("hint", card)
 
+    def _after_game_over(self, analysis=None, placement=None):
+        """Run the real entry point and read the card it published.
+
+        `show_game_over` writes global state (it IS the live transition), so the
+        previous payload goes back afterwards — a test that left the coach in a
+        game-over state would be felt by every test that runs after it.
+        """
+        before = (coach_ui._state.payload, coach_ui._state.etag,
+                  coach_ui._state.analysis)
+        self.addCleanup(self._restore, before)
+        coach_ui.show_game_over(analysis, placement=placement)
+        return json.loads(coach_ui._state.payload)
+
+    @staticmethod
+    def _restore(before):
+        payload, etag, analysis = before
+        coach_ui._state.payload, coach_ui._state.etag = payload, etag
+        coach_ui._state.analysis = analysis
+
+    def test_the_games_own_placement_beats_the_last_advisorys_standing(self):
+        """`show_game_over` is handed the placement the coach resolved from the
+        log's own tag, and it must win over the analysis's `current_place`.
+
+        Measured 2026-10-07: the analysis is the LAST ADVISORY, taken before the
+        final fight resolves, so on the 2026-10-06 13:00 game it carried 4 while
+        the game reports 3. The card read "4th" for a 3rd-place finish, and the
+        shared report would have carried the same wrong number.
+        """
+        card = self._after_game_over({"current_place": 4, "turn": 14},
+                                     placement=3)
+        self.assertEqual(card["game_over"]["placement"], 3)
+        self.assertIn("3rd", card["tagline"])
+        self.assertNotIn("4th", card["tagline"])
+
+    def test_without_a_log_placement_the_standing_is_still_used(self):
+        """The exit backstop has no coach to ask, so the fallback has to work."""
+        card = self._after_game_over({"current_place": 4, "turn": 14})
+        self.assertEqual(card["game_over"]["placement"], 4)
+
     def test_a_game_over_card_names_the_game_and_stays_a_card(self):
         card = _payload(game_over={"placement": 3, "turn": 15})
         self.assertTrue(card["welcome"], "the page draws cards from this flag")

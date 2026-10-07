@@ -44,8 +44,15 @@ _TRIGGER_KEYS = ("cast_spell", "play_elemental", "play_mech", "play_naga",
 _GAME_START = re.compile(r"GameState\.DebugPrintPower.*CREATE_GAME")
 # Current standing: PLAYER_LEADERBOARD_PLACE on a hero entity (last write
 # wins — the live leaderboard, not the game-end value).
+#
+# The ENTITY id is captured as well, and only `final_placement()` uses it: the
+# log re-creates the friendly hero near the end (for the final leaderboard)
+# with a fresh, higher entity id and a STALE placement, which is the trap
+# extract_game guards with "keep the lowest entity id per card". `id=` cannot
+# mistake itself for the `cardId=` beside it: the log spells that with a capital
+# I and Python's re is case-sensitive (checked against a real line, 2026-10-07).
 _PLACE = re.compile(
-    r"TAG_CHANGE Entity=\[.*?cardId=(\S+)[^\]]*?player=(\d+)\] "
+    r"TAG_CHANGE Entity=\[.*?id=(\d+)[^\]]*?cardId=(\S+)[^\]]*?player=(\d+)\] "
     r"tag=PLAYER_LEADERBOARD_PLACE value=(\d+)")
 _SEED = re.compile(r"GAME_SEED value=(\d+)")
 # A spell cast = a PLAY block on a non-minion card. Captures entityName so shop
@@ -429,6 +436,13 @@ _GAME_DEFAULTS = {
     "_pair_cand": None,      # pairing announced during the open buy phase
     "_place_writes": list,   # (cardId, player, place) buffered standing writes
     "current_place": None,   # our live leaderboard standing (last write)
+    # The FINAL placement, which is NOT the same reading: `current_place` is the
+    # last write ANY entity made, and the game re-creates the friendly hero near
+    # the end with a stale place (extract_game guards this with "keep the lowest
+    # entity id per card"). Measured 2026-10-07 on the 10-06 13:00 game: the last
+    # advisory's current_place said 4 while the game reports 3.
+    "_place_lowest_eid": dict,   # (cardId, player) -> lowest entity id seen
+    "_place_final": dict,        # (cardId, player) -> that entity's last place
     "_pairing": dict,        # turn -> opponent id announced for its fight
     "_snap_by_turn": dict,   # turn -> [(player, stat_total), ...] snapshots
     "_resolved": set,        # turns already committed to the lobby stats
@@ -704,8 +718,19 @@ class LiveCoach:
         # before analyze), so the resolve runs in analyze() over the buffer.
         m = _PLACE.search(line)
         if m:
-            self._place_writes.append(
-                (m.group(1), m.group(2), int(m.group(3))))
+            eid, card, who, place = int(m.group(1)), m.group(2), m.group(3), \
+                int(m.group(4))
+            self._place_writes.append((card, who, place))
+            # The FINAL placement, kept apart from the live standing: extract_game
+            # keeps the LOWEST entity id per hero card (the re-created hero's
+            # placement is stale), and only that entity's last write is the answer
+            # the game itself will report. See final_placement().
+            key = (card, who)
+            low = self._place_lowest_eid.get(key)
+            if low is None or eid < low:
+                self._place_lowest_eid[key] = eid
+            if self._place_lowest_eid.get(key) == eid:
+                self._place_final[key] = place
         # Armor flow (Q0): stamp every friendly-hero ARMOR/HEALTH write with
         # the turn it arrived in, keeping first/last per turn — combat
         # damage = first minus last (the buy-phase state vs post-combat).
@@ -1172,6 +1197,30 @@ class LiveCoach:
             tuple(sorted(m.get("card") or ""
                          for m in self.gs.hand(self.friendly))),
         )
+
+    def final_placement(self):
+        """Our FINAL placement, or None while the log has not said it.
+
+        Not `current_place`. That one is the live leaderboard — the last write
+        ANY hero entity made — and at the moment the coach last advised it can
+        be a standing the game later revised. Measured 2026-10-07 over three
+        real games: on 2026-10-06 13:00 the last advisory carried
+        `current_place` 4 while the game's own PLACE tag for the friendly hero
+        reads **3** (the writes churn 3 -> 4 -> 3), and on a win the last
+        advisory is taken before the final fight resolves.
+
+        The rule is extract_game's: the game re-creates the friendly hero for
+        the final leaderboard with a fresh, HIGHER entity id and a stale
+        placement, so the answer is the LAST write from the LOWEST entity id for
+        our hero card. Reading the last write without that rule is how the stale
+        one gets in. This is what the end-of-game card shows and what the shared
+        report carries, so it has to be the game's own number rather than the
+        coach's last guess.
+        """
+        card = self.hero_card
+        if not card or self.friendly is None:
+            return None
+        return self._place_final.get((card, str(self.friendly)))
 
     def analyze(self):
         """Fast per-buy-phase analysis from the current incremental state."""

@@ -110,6 +110,10 @@ SPEC = {
     "gold": SCALAR,
     "tier": SCALAR,
     "health": SCALAR,
+    # Derived at build time, never copied from the analysis: the effective HP
+    # the NEXT advisory of the same game reports, minus this one's — i.e. what
+    # the fight between them cost. None when unknown (see _hp_change).
+    "hp_change": SCALAR,
     "analysis": {
         # state and danger
         "armor": SCALAR,
@@ -195,6 +199,11 @@ MANIFEST_SPEC = {
     "created": SCALAR, "report_id": SCALAR, "coach_version": SCALAR,
     "coach_versions": [SCALAR],
     "advisories": SCALAR, "games": SCALAR, "opponent_names_dropped": SCALAR,
+    # The game's own final placement (2026-10-07) — the outcome the corpus
+    # needs in order to compare advice against how games actually went. Named
+    # here on purpose: this spec is the whitelist, and a field it does not name
+    # is one nobody decided to send.
+    "placement": SCALAR,
 }
 REPORT_SPEC = {"schema": SCALAR, "manifest": MANIFEST_SPEC,
                "advisories": [SPEC]}
@@ -386,7 +395,36 @@ def _one(record):
     return row
 
 
-def build(records, now=None, session_key=None, game=None):
+def _eff_hp(row):
+    """Effective HP as the ROW has it: health plus armor, or None.
+
+    `health` is the record's own top-level field (the report carries it there,
+    and the analysis's duplicate is dropped as an unaccounted source key);
+    `armor` lives in the analysis, because that is where the coach records it.
+    """
+    health = row.get("health")
+    if health is None:
+        return None
+    return health + ((row.get("analysis") or {}).get("armor") or 0)
+
+
+def _hp_change(rows, i):
+    """Effective HP the NEXT advisory of the SAME game reports, minus this one.
+
+    None when there is no next row, when the next row belongs to another game
+    (the report can span games for a session), or when either side has no
+    health — an unknown outcome must not be recorded as 0.
+    """
+    if i + 1 >= len(rows):
+        return None
+    here, nxt = rows[i], rows[i + 1]
+    if here.get("game") != nxt.get("game"):
+        return None
+    a, b = _eff_hp(here), _eff_hp(nxt)
+    return None if a is None or b is None else b - a
+
+
+def build(records, now=None, session_key=None, game=None, placement=None):
     """The report dict for one session's advisories — or for one game's.
 
     `game` filters to a single game, using the `game` field the decision
@@ -405,6 +443,23 @@ def build(records, now=None, session_key=None, game=None):
     if game is not None:
         records = [r for r in records if r.get("game") == game]
     rows = [_one(r) for r in records]
+    # The OUTCOME, which is what makes the corpus able to say whether advice
+    # went well rather than only what it said (2026-10-07). Both are numbers
+    # about the game, so neither changes what may leave the machine:
+    #
+    #   * `manifest.placement` — the game's own final placement, passed in by
+    #     the coach that watched it end (`LiveCoach.final_placement()`), NOT
+    #     read back off the last advisory: that advisory is taken before the
+    #     final fight resolves and its standing can be one the game revised
+    #     (measured: 4 against a true 3). Unknown -> None, never a guess.
+    #   * `hp_change` per row — the effective HP (health + armor) the NEXT
+    #     advisory in the same game reports, minus this one's. That is the fight
+    #     between them, which is the same quantity the review grades a plan
+    #     against. The last row of a game has none, and neither has a game the
+    #     player quit: the absence is the honest signal, and a 0 would read as
+    #     "it cost nothing".
+    for i, row in enumerate(rows):
+        row["hp_change"] = _hp_change(rows, i)
     # Which build produced this advice? The FIRST record's version was the old
     # answer, and it is a lie for any game coached across an update: the report
     # rebuilt at 11:57:39 on 2026-10-04 claims 5b7e83c while 114 of its 128
@@ -424,6 +479,9 @@ def build(records, now=None, session_key=None, game=None):
             "coach_versions": versions,
             "advisories": len(rows),
             "games": len({r.get("game") for r in rows}),
+            # The game's own outcome, when the caller that watched it end knew
+            # it (see build). Numbers only.
+            "placement": placement,
             # Counted from the SOURCE, not the output: the point of the
             # number is how many handles were left behind.
             "opponent_names_dropped": sum(
