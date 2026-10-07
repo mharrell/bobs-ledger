@@ -538,26 +538,33 @@ class TestReviewRoute(unittest.TestCase):
         self.assertIn(b"Settle Up", body)
 
 
-class TestTheGameOverCardLinksToTheReview(unittest.TestCase):
-    def test_the_link_rides_the_end_of_game_card(self):
+class TestTheGameOverCardOffersSave(unittest.TestCase):
+    """The old 'Settle up' link went when the Settle Up tab landed
+    (2026-10-07): the plan is read in the tab now, over saved games, and
+    the end-of-game card offers SAVE instead of a link off the page."""
+
+    def test_the_end_of_game_card_is_what_the_save_button_keys_on(self):
         import json as _json
         payload = _json.loads(
             coach_ui.welcome_payload(game_over={"placement": 2, "turn": 16})
             .decode("utf-8"))
-        self.assertEqual(payload["review_url"], "/review")
-        self.assertIn("Settle up", payload["review_label"])
+        self.assertIn("game_over", payload)
+        self.assertNotIn("review_url", payload,
+                         "the standalone page lost its button; the card "
+                         "does not link off-page any more")
 
-    def test_a_fresh_install_is_not_offered_a_review(self):
-        # The first-run card is not a game-over card; offering a review of a
-        # game that was never played would be the "dead coach looks finished"
-        # confusion in reverse.
+    def test_a_fresh_install_is_not_offered_a_save(self):
+        # The first-run card is not a game-over card; offering to save a
+        # game that was never played would be the "dead coach looks
+        # finished" confusion in reverse.
         import json as _json
         payload = _json.loads(coach_ui.welcome_payload().decode("utf-8"))
-        self.assertNotIn("review_url", payload)
+        self.assertNotIn("game_over", payload)
 
-    def test_the_page_can_draw_the_link(self):
-        self.assertIn("a.review_url", coach_ui._HTML)
-        self.assertIn("review_label", coach_ui._HTML)
+    def test_the_page_draws_the_save_button_against_the_game_over_marker(self):
+        self.assertIn("review/save", coach_ui._HTML)
+        self.assertIn("a.game_over", coach_ui._HTML)
+        self.assertNotIn("review_url", coach_ui._HTML)
 
 
 if __name__ == "__main__":

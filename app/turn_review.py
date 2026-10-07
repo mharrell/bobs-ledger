@@ -284,24 +284,37 @@ def _sell_questions(sold_ids, end_board, analysis, card_db):
     }]
 
 
-def _fights(fight):
+def _fights(fight, friendly):
     """A turn's combat snapshots, grouped into fights. PURE.
 
-    A fight is a run of non-empty snapshots ending at the teardown — the
-    burst where everything drained to zero (trap 3.5). One turn can hold
-    MORE than one fight: the 2026-10-07 final (Tavish, 1st) staged the
-    round's fight vs a 107-stat board and then the game's final duel vs a
-    1510-stat board, same turn. The decisive fight is the LAST one, and a
-    renderer that takes the first burst shows the wrong game.
+    The separator is the OPPONENT's board restaging after it drained: a
+    fight runs from the opponent's first staged burst until their side is
+    gone again (our survivors can stay on screen through the drain — the
+    2026-10-07 final kept ours between the two fights). A new group starts
+    only when their board comes BACK. One turn can hold more than one
+    fight: that final staged the round's fight vs a 107-stat board and
+    then the game's final duel vs a 1510-stat board in the SAME turn, and
+    a renderer that takes the first burst shows the wrong game. Ours-only
+    bursts (their staging lagged ours, or the log ended mid-stage) belong
+    to the current group, never start one.
     """
     groups, cur = [], []
+    theirs_seen = False   # the current group has staged an opponent
+    theirs_gone = False   # ... and their side drained again afterwards
     for s in fight:
-        if not s.get("minions"):
-            if cur:
-                groups.append(cur)
-                cur = []
-            continue
+        ms = s.get("minions") or []
+        theirs = friendly is not None and any(
+            len(m) > 0 and m[0] is not None and m[0] != friendly for m in ms)
+        if theirs and theirs_gone:
+            groups.append(cur)
+            cur = []
+            theirs_seen = False
+            theirs_gone = False
         cur.append(s)
+        if theirs:
+            theirs_seen = True
+        elif theirs_seen:
+            theirs_gone = True
     if cur:
         groups.append(cur)
     return groups
@@ -334,7 +347,7 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
         # begins, and it is the one that stages both boards. When the turn
         # holds two fights (round fight, then the final duel), the decisive
         # one is the last — see _fights.
-        fights = _fights(fight)
+        fights = _fights(fight, friendly)
         combat = fights[-1][0] if fights else None
         ours_at_combat = _snap_board(combat.get("minions") if combat else [],
                                      friendly, "ours")

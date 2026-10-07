@@ -97,24 +97,25 @@ worth. Nothing on the page names a move.
 
 ## Settle Up (the review)
 
-When a game ends, the card on screen offers **Settle up** — and a **Save
-replay** button beside it. Saving keeps that game in the overlay's **Settle
-Up** tab (the second tab at the top of the page, next to **Another Round**):
-pick any saved game from the dropdown and the same turn-by-turn view opens
-with real card tiles. Saving is per game and yours alone — nothing saved
-leaves your machine, and it never ships in a release. The review page the
-**Settle up** link opens is unchanged: a standalone file you can keep, and
-`settle_up.py --session / --history` still work for games still in the log.
+When a game ends, the card on screen offers **Save replay**. Saving keeps
+that game in the overlay's **Settle Up** tab (the second tab at the top of
+the page, next to **Another Round**): pick any saved game from the dropdown
+and the turn-by-turn view opens with real card tiles. Saving is per game and
+yours alone — nothing saved leaves your machine, and it never ships in a
+release. For games you didn't save, `settle_up.py` still reviews anything
+still in the log:
+
+    python app\settle_up.py --latest --html my-review.html
 
 **The part the game never shows you: the board, three times a turn.** For every
-turn the review prints what you went in with, what your opponent brought, and
-what you kept — plus what the turn cost.
+turn the review shows what you brought into the fight, what your opponent
+brought, and what survived — plus what the turn cost.
 
     t5  7g  board 15 stats (+12)  spent 7g
-       you went in with: Locked-up Mutineer 6/3, Crackling Cyclone 2/1 x2,
+       you brought     : Locked-up Mutineer 6/3, Crackling Cyclone 2/1 x2,
                          Wolf Pup 3/6, Fire Baller 4/3
        they brought    : Dune Dweller 3/3, Fetid Corroder 3/3
-       you kept        : Wolf Pup 3/6, Locked-up Mutineer 6/3, Fire Baller 4/3,
+       survived        : Wolf Pup 3/6, Locked-up Mutineer 6/3, Fire Baller 4/3,
                          Crackling Cyclone 2/1 x2
 
 The numbers on that line are the turn's own: gold at the end of the buy phase,
@@ -145,11 +146,9 @@ when the count leans on turns that opened with a spell, because a turn that
 casts several spells can satisfy "cast the one it named" by accident. Read any
 of it as a reason to look at a turn, never as a score.
 
-The review opens in its own browser tab from the end-of-game card. To keep one,
-or to review any game still in the log, run this in the window you started the
-coach from:
-
-    python app\settle_up.py --latest --html my-review.html
+The review also exists as a standalone page — the command above writes one
+with `--html`, and `/review` on the running coach serves the game that just
+ended.
 
 **A whole session, or your last few.** `--session` reviews every game in the
 newest log and puts them in one table — placements, boards, spend, and how often
