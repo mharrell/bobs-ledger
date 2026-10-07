@@ -230,11 +230,13 @@ Both messages are pure functions so they cannot drift back into blaming logging:
 whether the resolved root actually has a `Logs/` folder — and neither prints a
 path from this machine, because the overlay ends up in screenshots.
 
-## Where the 2026-10-07 night session left off (Settle Up becomes a tab, main bb80a41)
+## Where the 2026-10-07 night session left off (Settle Up becomes a tab, main c885b2e, RELEASED)
 
 The pivot's Phase 2 shipped a review **page** (2026-10-06). This session turned it
 into something a player can keep and browse, and re-pinned the wall it crosses.
-15 commits, 10-06 23:53 → 10-07 10:23; suite **1693 green (11 skipped)**.
+12 commits, 10-06 23:53 → 10-07 10:23; a review pass the next hour added 3 more
+(the two repairs in item 4/5, the golden consolidation in item 6, and this
+record). Suite **1694 green (11 skipped)**.
 
 **1. Saved reviews outlive the process.** `app/replay_store.py`: one JSON per
 game under `app/saved_replays/` — readable ids
@@ -319,10 +321,20 @@ measured on a real 15-turn rep, 0 board ids end in `_G` while 91 minions carry
 5. **`docs/` has no screenshots.** The four pre-pivot ones went on 10-06 and the
    replacements are not taken; any new shot must show the Settle Up TAB now, which
    is the layout a player actually sees.
-6. **NOTHING FROM THIS SESSION IS PUBLISHED.** The newest release tag is
-   `91be599` (the signed cutover); no player has the tab, the replay store, or the
-   turn cards. Publishing is `python app/publish_release.py --note "…"` with the
-   offline key, which is unchanged and still the only path.
+6. **PUBLISHED AND VERIFIED FROM THE PLAYER'S SIDE (2026-10-07): release
+   `c885b2e`.** All three gates passed; the live manifest verifies against the
+   pinned `PUBKEY_B64` (`4d8fc45534ba558d`) and its `zip_bytes`/`zip_sha256`
+   match the downloaded zip (1137713 bytes, 240 entries, the two stamps at the
+   root, no maintainer or local paths inside); the pin INSIDE the published zip
+   matches this checkout; the SHIPPED updater run from inside that zip — from a
+   state reading `91be599` — offers the update and exits 1, which is only
+   reachable through a successful verification; and that same shipped code
+   REFUSES a manifest whose `note` was rewritten, printing the key fingerprint
+   and downloading nothing. This publish hit neither documented gotcha: no
+   `Authentication error [code: 10000]`, and `latest.json` served the new
+   manifest on the first read. The KV + GitHub copies both carry it
+   (`releases/latest` tag `c885b2e`), so the tab, the replay store and the turn
+   cards are in players' hands on their next start.
 
 ## Where the 2026-10-07 session left off (release channel hardened)
 
