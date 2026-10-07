@@ -541,6 +541,36 @@ tightened on the way through: the intro and the Settle Up section both said
 "Result says who won" flatly, and a turn whose fights ran together says the
 result is unreadable instead — the honesty is disclosed, not just the feature.
 
+**10. PUBLISHED AND VERIFIED FROM THE PLAYER'S SIDE (2026-10-07): release
+`745dcd5`** — the turn card that holds its size, the end-of-game card's real
+placement, and the README's two-tabs section, on top of the three releases
+recorded above.
+
+* **Both documented publish gotchas reproduced in this one release, and the docs
+  were right about both.** The first attempt died on the zip PUT with
+  `Authentication error [code: 10000]` — re-running it published cleanly, and the
+  channel kept serving `ac00962` (verified, not assumed: the manifest was read
+  after the failure). Then the verification read `latest.json` and got the OLD
+  manifest on attempt 1 and the new one on attempt 2, which is the eventual
+  consistency the same README warns about — so "did it work?" took a retry, not a
+  re-publish.
+* Verified: the manifest verifies against the pinned `PUBKEY_B64`, its
+  `zip_bytes`/`zip_sha256` match the download (1439785 bytes, 246 entries), the
+  pin inside the zip matches this checkout, and the root holds exactly the
+  launcher, the README, the licence, `docs/` and the two stamps. The shipped code
+  was read for the two fixes (`.tviews` + `visibility` in `coach_ui`; `def
+  final_placement` with the lowest-entity rule in `live_coach`, called from
+  `live.py` and handed to both the card and the share; `placement` + `hp_change`
+  in `session_report`) and the README inside the zip carries the new section.
+* The SHIPPED updater, from an install reading `ac00962`, offers the update and
+  exits 1; the same shipped code refuses a tampered manifest and names the key
+  fingerprint.
+* **A third check of mine was wrong before the code was**: the content probe
+  looked for the placement wiring in `coach_ui.py` when the call site is in
+  `live.py`, and reported the release broken. Worth remembering as a pattern —
+  today's three false alarms (`best available` in a docstring, `%s` in a test
+  harness, and this) were all the CHECK, not the artifact.
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a
