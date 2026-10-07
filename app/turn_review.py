@@ -284,6 +284,29 @@ def _sell_questions(sold_ids, end_board, analysis, card_db):
     }]
 
 
+def _fights(fight):
+    """A turn's combat snapshots, grouped into fights. PURE.
+
+    A fight is a run of non-empty snapshots ending at the teardown — the
+    burst where everything drained to zero (trap 3.5). One turn can hold
+    MORE than one fight: the 2026-10-07 final (Tavish, 1st) staged the
+    round's fight vs a 107-stat board and then the game's final duel vs a
+    1510-stat board, same turn. The decisive fight is the LAST one, and a
+    renderer that takes the first burst shows the wrong game.
+    """
+    groups, cur = [], []
+    for s in fight:
+        if not s.get("minions"):
+            if cur:
+                groups.append(cur)
+                cur = []
+            continue
+        cur.append(s)
+    if cur:
+        groups.append(cur)
+    return groups
+
+
 def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
     """Assemble the per-turn rows from snapshots. PURE — no coach, no log.
 
@@ -305,10 +328,14 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
         # using it would show the wrong opponent on every single turn.
         buy_end = _snap_board((buy[-1].get("minions") if buy else []),
                               friendly, "ours")
-        # Combat START = the first combat snapshot of the burst. Several bursts
-        # can share a turn (turn 4 has four); the first is where the fight
-        # begins, and it is the one that stages both boards.
-        combat = fight[0] if fight else None
+        # Combat START = the first snapshot of the turn's LAST fight. Several
+        # bursts share a turn (turn 4 has four — deaths and buffs re-stage
+        # continuously); the first burst of a FIGHT is where that fight
+        # begins, and it is the one that stages both boards. When the turn
+        # holds two fights (round fight, then the final duel), the decisive
+        # one is the last — see _fights.
+        fights = _fights(fight)
+        combat = fights[-1][0] if fights else None
         ours_at_combat = _snap_board(combat.get("minions") if combat else [],
                                      friendly, "ours")
         theirs_at_combat = _snap_board(combat.get("minions") if combat else [],
@@ -351,6 +378,10 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                 notes.append(
                     f"{lag} minion(s) were played after the last buy-phase "
                     f"snapshot — the combat board is the full picture")
+            if len(fights) > 1:
+                notes.append(
+                    f"{len(fights)} fights were staged this turn — showing "
+                    f"the last (the round's fight, then the final duel)")
             if not combat:
                 notes.append("no combat staged for this turn")
             if not buy_end:

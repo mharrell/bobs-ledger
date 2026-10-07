@@ -134,6 +134,11 @@ SPEC = {
         "top_move_steps": [{"text": SCALAR, "kind": SCALAR, "card": SCALAR,
                             "action": SCALAR, "tag": SCALAR,
                             "reason": SCALAR}],
+        # WHICH CARD each hand step of the plan is about — the grading join
+        # the review uses (value._top_move_text writes it while the id is
+        # still in hand; labels are the keys). Shipped 747d4a8 without this
+        # entry, and the verifier refused every report until it was named.
+        "hand_step_cards": DEEP_SCALARS,
         "choice": _CHOICE,
         # comp targeting / progress
         "target_comp": SCALAR,
