@@ -1785,11 +1785,11 @@ function settleTurnCard(r, phases) {
     return d;
   };
   const went = r.combat_ours_text || r.buy_end_text || '(no board read)';
-  card.appendChild(boardRow('went in',
+  card.appendChild(boardRow('You brought',
     (r.combat_start || {}).ours, r.combat_ours_text || went));
-  card.appendChild(boardRow('they had',
+  card.appendChild(boardRow('Opponent brought',
     (r.combat_start || {}).theirs, r.combat_theirs_text, 'them'));
-  card.appendChild(boardRow('kept', r.battle_end, r.battle_end_text));
+  card.appendChild(boardRow('Survived', r.battle_end, r.battle_end_text));
   for (const q of r.sell_questions || []) {
     const d = document.createElement('div');
     d.className = q.rebuild ? 'note' : 'q';

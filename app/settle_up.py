@@ -426,10 +426,10 @@ def render_text(rep):
                        f"{' (' + format(s['growth'], '+d') + ')' if s['growth'] is not None else ''}"
                        f"  spent {sp['total']}g"
                        + (f"  comp {r['commitment']['target']}" if r["commitment"]["target"] else ""))
-            out.append(f"   you went in with: {r['combat_ours_text'] or r['buy_end_text'] or '(no board read)'}")
+            out.append(f"   you brought     : {r['combat_ours_text'] or r['buy_end_text'] or '(no board read)'}")
             if r["combat_theirs_text"]:
                 out.append(f"   they brought    : {r['combat_theirs_text']}")
-            out.append(f"   you kept        : {r['battle_end_text'] or '(not readable)'}")
+            out.append(f"   survived        : {r['battle_end_text'] or '(not readable)'}")
             for q in r.get("sell_questions") or []:
                 if q.get("rebuild"):
                     out.append(f"   ~ rebuilt the board: sold {q['sold_count']} "
@@ -530,17 +530,18 @@ def _timeline_html(rep):
             f'    <div class=thead><span class=tturn>Turn {r["turn"]}</span>'
             f'<span class=tmeta>{r["gold"]}g &middot; board {s["buy_end"]} stats '
             f'{growth} &middot; spent {sp["total"]}g</span>{comp}</div>\n'
-            f'    <div class=brow><span class=blbl>went in</span>'
+            f'    <div class=brow><span class=blbl>You brought</span>'
             f'<span>{e(went_in)}</span></div>\n'
-            f'    <div class=brow><span class=blbl>they had</span>'
+            f'    <div class=brow><span class=blbl>Opponent brought</span>'
             f'<span class=them>{e(r["combat_theirs_text"]) or "&mdash;"}</span></div>\n'
-            f'    <div class=brow><span class=blbl>kept</span>'
+            f'    <div class=brow><span class=blbl>Survived</span>'
             f'<span>{e(r["battle_end_text"]) or "&mdash;"}</span></div>\n'
             f'    {"".join(flags)}\n'
             f'  </section>')
     return ('<h2 class=sect>TURN BY TURN</h2>'
-            '<div class=sub>What you went in with, what they brought, and what '
-            'you kept &mdash; the board at three points in every turn.</div>'
+            '<div class=sub>What you brought into each fight, what the '
+            'opponent brought, and what survived &mdash; the board at three '
+            'points in every turn.</div>'
             + "\n".join(blocks))
 
 
