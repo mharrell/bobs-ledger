@@ -364,7 +364,10 @@ class TestTwoFightsInOneTurn(unittest.TestCase):
             ("combat", [(THEIRS, "T2", 4, 4, False, [])]),
         )
         row = tr._turn_rows(snaps, {}, OURS)[0]
-        self.assertEqual(row["notes"], [])
+        self.assertEqual([m["card"] for m in row["combat_start"]["theirs"]],
+                         ["T2"])
+        self.assertFalse([n for n in row["notes"] if "fights were staged" in n],
+                         "which fight a turn staged is plumbing, not a note")
 
     def test_mid_fight_restage_without_a_teardown_is_one_fight(self):
         # Deaths and buffs re-stage continuously inside one fight (the measured
