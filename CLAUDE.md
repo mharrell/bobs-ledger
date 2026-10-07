@@ -274,9 +274,14 @@ without one), and `stage_release` refuses more than `MAX_ENTRIES` entries or
 `PUBKEY_B64` pins the key with fingerprint `4d8fc45534ba558d`. The private half
 is `%USERPROFILE%\.bobs-ledger-release.key` on this machine — 32 raw bytes, ACL'd
 to the user, its name guarded in `.gitignore`, `EXCLUDE_FILES` and `PROTECTED` —
-and `HEARTH_SIGNING_KEY` points at it. **It has not been backed up off this
-machine yet, and that is the one outstanding action**: losing it costs every
-player one manual reinstall, because there is no bypass flag.
+and `HEARTH_SIGNING_KEY` points at it. **It is backed up off this machine
+(2026-10-07)**, which was the last outstanding action from this session: losing
+the only copy costs every player one manual reinstall, because there is no bypass
+flag. Verify any copy by re-deriving the public half — `python app\release_sig.py
+--pubkey <the copy>` must print `4d8fc45534ba558d`, and anything else is not the
+key. Note for whoever reads this next: the "not backed up yet" line was true for
+about an hour, and this repo's own rule is that a stale sentence about the state
+of things is the same failure as a stale sentence about the code.
 
 Release `91be599` is signed, published to KV and to the GitHub release, and was
 verified from the PLAYER's side rather than from the publish log: the live
