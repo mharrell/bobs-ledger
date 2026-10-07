@@ -643,11 +643,6 @@ _HTML = r"""<!doctype html>
                       padding:8px 10px; margin:8px 0 2px; font-size:12px;
                       line-height:1.45; white-space:pre-wrap;
                       font-family:ui-monospace,Consolas,monospace; }
-  #clearbtn { position:fixed; top:8px; right:10px; z-index:50;
-              background:transparent; border:1px solid var(--dim);
-              color:var(--dim); border-radius:6px; padding:2px 10px;
-              font-size:11px; cursor:pointer; }
-  #clearbtn:hover { color:var(--text-2); }
   /* Stale-advice marker. The overlay only re-renders when the server pushes,
      so a wedged live.py (or a dead one) left the last advice on screen
      looking exactly like live advice — the worst failure for a coach, since
@@ -723,7 +718,6 @@ _HTML = r"""<!doctype html>
 <div id="wrap">
 <div id="statebar">Waiting for the coach…</div>
 <div id="freshness"></div>
-<button id="clearbtn" title="Blank the overlay — a new game clears it automatically">Clear</button>
 <nav id="tabs">
 <button class="tab on" data-tab="live">Another Round</button>
 <button class="tab" data-tab="settle">Settle Up</button>
@@ -1080,16 +1074,13 @@ function renderWelcome(a) {
   // that it appears only once the game it describes is over. A plain link
   // rather than a fetch: the report is a standalone page, and opening it in
   // its own tab is what lets a player keep it.
-  if (a.review_url) {
-    const row = el('div', 'w-share');
-    const link = el('a', 'w-share-btn', a.review_label || 'Settle up');
-    link.href = a.review_url;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    row.appendChild(link);
+  if (a.game_over) {
     // Save the replay (2026-10-06 tab work): persists this game's review so
     // the Settle Up tab can bring it back. A click is one POST; the button
-    // reports its own outcome in place rather than navigating.
+    // reports its own outcome in place rather than navigating. The old
+    // "Settle up" link went when the tab landed (2026-10-07) — the plan is
+    // read in the tab now, over saved games.
+    const row = el('div', 'w-share');
     const save = el('button', 'w-share-btn', 'Save replay');
     save.onclick = async () => {
       save.disabled = true;
@@ -1652,15 +1643,10 @@ function postBans(list) {
 // answers a header-only 304, so the faster tick is nearly free.
 setInterval(poll, 300);
 poll();
-// The manual escape hatch: blank the overlay now. The server keeps the
-// manual bans on this path; a new game's CREATE_GAME wipes them instead.
-document.getElementById('clearbtn').onclick = async () => {
-  await fetch('/clear', {method: 'POST',
-                         headers: {'Content-Type': 'application/json'},
-                         body: '{}'});
-  _etag = null;   // force the next poll to take the welcome payload
-  poll();
-};
+// The manual escape hatch (the Clear button) went with the tab work
+// (2026-10-07): a new game clears automatically, and the card the button
+// blanked is the same one Save now lives on. POST /clear stays for tests
+// and tooling; the page just has no button for it.
 // ---- Tabs (2026-10-06) -------------------------------------------------
 // Another Round is the live overlay above; Settle Up browses SAVED games.
 // The review data never rides /analysis (test_live_view pins that) — the
@@ -2054,12 +2040,11 @@ def welcome_payload(game_over=None):
         payload["status"] = ("The coach is still running, watching for your "
                              "next game — the board read starts again the "
                              "moment your next shop opens.")
-        # The link to the review. Shown on the END-OF-GAME card only: it is the
-        # one moment the plan may be seen, and making it a link (rather than
-        # rendering the plan here) is what keeps the plan off this page
-        # entirely (PIVOT.md).
-        payload["review_url"] = "/review"
-        payload["review_label"] = "Settle up — what the model would have played"
+        # The plan itself is still never on this page (PIVOT.md): the card
+        # offers SAVE, and the plan is read in the Settle Up tab, over saved
+        # games. (The /review standalone page remains reachable by URL for
+        # the just-finished game; it lost its button when the tab landed —
+        # 2026-10-07, "we just don't need it anymore".)
     else:
         payload["hint"] = _welcome_hint()
         # The block live.py's console message has always claimed this card
