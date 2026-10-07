@@ -320,6 +320,13 @@ def _fights(fight, friendly):
     return groups
 
 
+def _burst_stats(snap):
+    """Combined atk+health of every minion in one raw snapshot, both sides —
+    the measure the Battle peak picks (post-procs, pre-deaths)."""
+    return sum((m[2] or 0) + (m[3] or 0) for m in (snap.get("minions") or [])
+               if len(m) >= 4)
+
+
 def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
     """Assemble the per-turn rows from snapshots. PURE — no coach, no log.
 
@@ -341,6 +348,11 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
         # using it would show the wrong opponent on every single turn.
         buy_end = _snap_board((buy[-1].get("minions") if buy else []),
                               friendly, "ours")
+        # Buy START = the first buy snapshot, OUR side only: what survived the
+        # previous fight and opened the shop. (Its `theirs` side is the stale
+        # teardown — trap 3.4 — so this board is deliberately one-sided.)
+        buy_start = _snap_board((buy[0].get("minions") if buy else []),
+                                friendly, "ours")
         # Combat START = the first snapshot of the turn's LAST fight. Several
         # bursts share a turn (turn 4 has four — deaths and buffs re-stage
         # continuously); the first burst of a FIGHT is where that fight
@@ -353,17 +365,35 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                                      friendly, "ours")
         theirs_at_combat = _snap_board(combat.get("minions") if combat else [],
                                        friendly, "theirs")
+        # Battle PEAK = the burst of the last fight with the greatest combined
+        # stat total — the moment after beginning-of-combat effects have
+        # landed and before deaths thin the boards. The staging burst (the
+        # `combat` one) reads LOW: start-of-combat procs fire between the
+        # staging and the first swing (measured 2026-10-06: 31 stats staged,
+        # 51 a burst later). It is a stated approximation: one huge mid-fight
+        # swing can out-read the true post-proc moment.
+        peak = max(fights[-1], key=_burst_stats) if fights else None
+        ours_at_peak = _snap_board(peak.get("minions") if peak else [],
+                                   friendly, "ours")
+        theirs_at_peak = _snap_board(peak.get("minions") if peak else [],
+                                     friendly, "theirs")
 
         # Battle END = the next turn's opening board: the survivors, with combat
-        # buffs reverted to what persisted.
+        # buffs reverted to what persisted. The next turn's first buy snapshot
+        # ALSO carries the opponent's survivors on its `theirs` side — wrong as
+        # "the opponent you fought" (trap 3.4) and right as aftermath.
         nxt = snaps.get(turns[i + 1]) if i + 1 < len(turns) else None
         nxt_buy = [s for s in (nxt or []) if s.get("phase") == "buy"]
         if nxt_buy:
             battle_end = _snap_board(nxt_buy[0].get("minions"), friendly, "ours")
+            theirs_survivors = _snap_board(nxt_buy[0].get("minions"), friendly,
+                                           "theirs")
         elif i + 1 == len(turns):
             battle_end = list(final_board or [])
+            theirs_survivors = []   # the game's last fight: not recoverable
         else:
             battle_end = []
+            theirs_survivors = []
 
         entry = info.get(t) or {}
         a = entry.get("analysis") or {}
@@ -402,13 +432,29 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                              "turn whose plays were all combat summons)")
             if i + 1 == len(turns) and not battle_end:
                 notes.append("final board not recoverable")
+            if i + 1 == len(turns) and fight:
+                notes.append("the opponent's survivors are not recoverable "
+                             "after the game's last fight")
+        # Damage taken across THIS turn's fight, from the effective HP the
+        # coach recorded at this turn and the next (armor is just extra
+        # health). None where either side is missing — the last turn, or a
+        # turn the coach never advised on.
+        eff = None if a.get("health") is None \
+            else (a.get("health") or 0) + (a.get("armor") or 0)
+        nxt_entry = (info.get(turns[i + 1]) or {}).get("analysis") or {} \
+            if i + 1 < len(turns) else {}
+        nxt_eff = None if nxt_entry.get("health") is None \
+            else (nxt_entry.get("health") or 0) + (nxt_entry.get("armor") or 0)
         rows.append({
             "turn": t,
             "gold": a.get("gold"),
             "tier": a.get("tier"),
+            "buy_start": buy_start,
             "buy_end": buy_end,
             "combat_start": {"ours": ours_at_combat, "theirs": theirs_at_combat},
+            "combat_peak": {"ours": ours_at_peak, "theirs": theirs_at_peak},
             "battle_end": battle_end,
+            "theirs_survivors": theirs_survivors,
             "stats": {
                 "buy_end": bstats,
                 "growth": None if prev_stats is None else bstats - prev_stats,
@@ -417,6 +463,19 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
             },
             "spend": _spend(actual, a.get("level_cost"), _buy_prices(a)),
             "took": _took(actual),
+            # The Shop section's events, straight off the action parse: what
+            # was played, whether the tavern levelled, whether the hero
+            # power was pressed, and which picks were trinkets (their ids
+            # all carry MagicItem — hero picks and discovers do not).
+            "shop_events": {
+                "played": len(actual.get("plays") or []),
+                "tier_up": (actual.get("upgrades") or 0) > 0,
+                "hero_power": (actual.get("hero_power") or 0) > 0,
+                "trinkets": [c for c in (actual.get("choices") or [])
+                             if "MagicItem" in str(c)],
+            },
+            "damage_taken": None if (eff is None or nxt_eff is None)
+                            else eff - nxt_eff,
             "commitment": _commitment(a),
             # Sell-side questions, from the roles of what left vs what stayed.
             # Empty when there is no card DB or nothing sold, never guessed at.
@@ -436,8 +495,10 @@ def timeline(log_path, game_index=1):
     Returns {"turns": [...], "hero": ..., "placement": ..., "friendly": ...},
     where each turn is:
 
-        {turn, gold, buy_end, combat_start: {ours, theirs}, battle_end,
+        {turn, gold, buy_start, buy_end, combat_start: {ours, theirs},
+         combat_peak: {ours, theirs}, battle_end, theirs_survivors,
          stats: {buy_end, growth, theirs, combat_ours}, spend, took,
+         shop_events: {played, tier_up, hero_power, trinkets}, damage_taken,
          commitment, sell_questions, lag, notes}
 
     `notes` carries what the reconstruction is NOT, per turn, so a renderer
