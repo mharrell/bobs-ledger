@@ -230,6 +230,100 @@ Both messages are pure functions so they cannot drift back into blaming logging:
 whether the resolved root actually has a `Logs/` folder — and neither prints a
 path from this machine, because the overlay ends up in screenshots.
 
+## Where the 2026-10-07 night session left off (Settle Up becomes a tab, main bb80a41)
+
+The pivot's Phase 2 shipped a review **page** (2026-10-06). This session turned it
+into something a player can keep and browse, and re-pinned the wall it crosses.
+15 commits, 10-06 23:53 → 10-07 10:23; suite **1693 green (11 skipped)**.
+
+**1. Saved reviews outlive the process.** `app/replay_store.py`: one JSON per
+game under `app/saved_replays/` — readable ids
+(`2026-10-06_185502-Chenvaala-2`, collision-suffixed), atomic writes,
+corruption-tolerant listing, path-safe load. The stored rep keeps card IDS;
+display names are joined at SERVE time (`coach_ui._name_timeline_boards`), so the
+file stays canonical and a renamed card fixes old saves. Per-user data, the
+`decision_logs` class: gitignored by BASENAME (the `sync.py --new` reason) and in
+`publish_release.EXCLUDE_DIRS`. The source log rides as a POINTER (`log` +
+`game`), never a copy.
+
+**2. The tab.** A two-tab toggle at the top of the overlay page — **Another
+Round** (the live view, byte-for-byte underneath) and **Settle Up** (a browser
+over saved games, fetched ONLY from `/review/*`). Endpoints: `POST
+/review/save` (the end-of-game card's only button now — the "Settle up" link and
+the page's Clear button are gone, 2026-10-07), `GET /review/list`, `GET
+/review/game?id=`, `POST /review/open-folder`. The id charset is the store's
+filename charset.
+
+**3. The turn cards, and the two rules that were paid for with a wrong answer.**
+Each turn is three views — **Shop**, **Battle** (default), **Result**. The battle
+board is the strongest burst **before the first death**: the staging burst reads
+low (31 stats staged vs 51 a burst later, measured 10-06) and plain max-combined
+landed on the duel's aftermath (4730 vs 448). A turn's decisive fight is the
+**last** staging group (`_fights`), because the 10-07 final staged the round's
+fight and the game's final duel in the SAME turn — first-burst selection showed
+the wrong game. A RESULT comes from the fight itself: combat ends when one board
+dies, so the side that drained first lost, and the winner is reported with their
+last staged board rather than from the next shop's mid-teardown snapshots (those
+once produced an aftermath with both sides "surviving").
+
+**4. One control was DEAD for six commits, which matters more than the bug it
+should have caught (found and fixed 2026-10-07).** `19fbcb5` — whose message is
+literally "docs + the wall re-pinned" — replaced `class TestTheWall(_StoreRoot):`
+with `class TestNamedBoards(_StoreRoot):` and left the old body indented under a
+fresh `if __name__ == "__main__": unittest.main()`. Python accepts that, unittest
+registers nothing, and `Ran 1691 tests … OK` said all was well while PIVOT.md §6.4
+and `analysis/SETTLE_UP_BOARDS.md` both cited those two tests as the wall's
+enforcement. Restored — and they PASS, so the invariant held while its control was
+dead. Two lessons: a green suite is evidence only about the tests that EXIST (a
+class statement lost in an edit is invisible to discovery), and a doc citing a
+control is not a control.
+
+**5. The same pass fixed a NameError that made the tab unable to open a game.**
+`_name_timeline_boards` called `value.display_name` while coach_ui did `from
+value import (…)` and never imported the module — `GET /review/game` answered 500
+for every saved game, which is the tab's only way in. Three tests errored.
+
+**6. Golden naming is ONE function now.** `value.display_name(names, cid)` is the
+single place a golden is spelled out, lowercase `"(golden)"` — that is the string
+the live plan text has always carried and `split_step` parses it back
+(`test_value` anchors "Buy River Skipper (golden)"), so a second capitalization
+would be a second convention. The uncommitted 10-07 draft added a second helper
+spelling it "(Golden)"; `_shop_name` is gone and its eight call sites use the one
+function. **And a timeline board never carries a `_G` id at all**:
+`board_state._minion` strips the suffix and keeps the flag beside the base id —
+measured on a real 15-turn rep, 0 board ids end in `_G` while 91 minions carry
+`golden` — so the serve-time join NAMES and touches nothing else.
+
+**OPEN, in the order worth doing them:**
+
+1. **A fight straddling the turn boundary can leave the Result unreadable.**
+   Measured on the newest game (`Hearthstone_2026_10_07_07_58_33`, Tavish
+   Stormpike, 1st): `winner` is None on T6 and T9, both of which held a real
+   fight — the LAST staging group in the bucket never drains inside the turn, and
+   their board keeps draining (7→6→6→5→4→4→4) into the NEXT turn's buy snapshots.
+   The Result view then prints "(fight result not readable)" and, in the same
+   panel, "They survived with — none": the `w === null` branch falls through to
+   the `— none` text. `_fights`' separator (their board coming BACK) is the
+   suspect, and this is the same family as the wrong-fight selection `ac0b031`
+   fixed. T2 and T11 are a different case and are fine: no coach analysis, so
+   `gold` is None and the card header reads "—g".
+2. **A review costs TWO replays per game** (~10 s for 15 turns):
+   `outcome_audit.audit_game` for the phase rows and `turn_review.timeline` for
+   the boards. An injected coach would make it one.
+3. **`player_actions` may double-count a single sell** — unchanged from 10-06:
+   turn 7 of that game reports three entries for two cards, and the count feeds
+   `fight_table` and the audits, so it needs its own look, not a dedupe in the
+   consumer.
+4. **A swap-led plan is still ungraded** — grading one needs the sell AND the
+   play that replaced it as a pair, which the row does not carry.
+5. **`docs/` has no screenshots.** The four pre-pivot ones went on 10-06 and the
+   replacements are not taken; any new shot must show the Settle Up TAB now, which
+   is the layout a player actually sees.
+6. **NOTHING FROM THIS SESSION IS PUBLISHED.** The newest release tag is
+   `91be599` (the signed cutover); no player has the tab, the replay store, or the
+   turn cards. Publishing is `python app/publish_release.py --note "…"` with the
+   offline key, which is unchanged and still the only path.
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a
