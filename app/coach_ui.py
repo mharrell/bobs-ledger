@@ -713,6 +713,13 @@ _HTML = r"""<!doctype html>
   .turn.collapsed .thead.clickable { border-bottom:none; padding-bottom:6px; }
   .turn .caret { color:var(--dim); font-size:11px; }
   .tbtns { display:flex; gap:4px; margin:8px 0; }
+  /* The three views of a turn share ONE grid cell, so the box is as tall as the
+     TALLEST of them and a card never changes size when the player switches
+     (2026-10-07). The inactive views are hidden with `visibility` by the JS, not
+     `display`: taking them out of the layout would collapse the box back to the
+     visible view and the jumping would come straight back. */
+  .tviews { display:grid; }
+  .tviews .tbody { grid-area:1 / 1; }
   .tbtn { background:transparent; color:var(--dim);
           border:1px solid var(--border); border-radius:var(--radius);
           padding:2px 10px; font:600 11px "Segoe UI", system-ui;
@@ -1908,6 +1915,18 @@ function settleTurnCard(r, phases) {
   // player's own decisions are read from, and the one that carries the phase
   // rows and the turn's events. Old saves carry none of the new fields; every
   // row falls back to the text the standalone page still renders.
+  //
+  // **All three share ONE box, and the inactive ones are invisible rather than
+  // removed** (2026-10-07). They used to be three siblings whose display was
+  // toggled, so a card was exactly as tall as the view on screen: switching
+  // Shop -> Battle -> Result resized the card, which moved the buttons and
+  // every turn below it, and the player lost their place in a 15-turn game.
+  // `visibility` keeps the hidden views in the LAYOUT (display:none would take
+  // them out and collapse the box back to the visible one) while making them
+  // unclickable and untabbable, so the card is always as tall as its tallest
+  // view and switching moves nothing.
+  const views = document.createElement('div');
+  views.className = 'tviews';
   const btns = document.createElement('div');
   btns.className = 'tbtns';
   const bodies = {};
@@ -1917,18 +1936,19 @@ function settleTurnCard(r, phases) {
     const b = el('button', 'tbtn' + (key === 'shop' ? ' on' : ''), label);
     const body = document.createElement('div');
     body.className = 'tbody';
-    body.style.display = key === 'shop' ? '' : 'none';
+    body.style.visibility = key === 'shop' ? '' : 'hidden';
     b.onclick = () => {
       for (const [k] of sections) {
-        bodies[k].style.display = k === key ? '' : 'none';
+        bodies[k].style.visibility = k === key ? '' : 'hidden';
       }
       btns.querySelectorAll('.tbtn').forEach(x => x.className = 'tbtn');
       b.className = 'tbtn on';
     };
     btns.appendChild(b);
     bodies[key] = body;
-    card.appendChild(body);
+    views.appendChild(body);
   }
+  card.appendChild(views);
   card.appendChild(btns);
   const row = (lbl, text, cls) => {
     const d = document.createElement('div');

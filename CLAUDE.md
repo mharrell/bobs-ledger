@@ -497,6 +497,34 @@ from it plus the two rules that still bind. Now 47,980 bytes. **The rule for nex
 time: a session section moves to `analysis/` when the next one lands.** This file
 is loaded WHOLE by every session, and a record nobody can read is not a record.
 
+**8. The turn card holds its size now, and LAYOUT is measurable (2026-10-07).**
+Reported by the maintainer: *"when you switch between the phase views, the card
+changes size and makes it hard to track where you're at now."* It did, for a
+structural reason — the three view bodies were SIBLINGS of the buttons and
+switching set the inactive ones to `display:none`, so a card was exactly as tall
+as the view on screen and every turn below it moved.
+
+* The fix is two lines of structure: the bodies share one grid cell (`.tviews`,
+  `grid-area:1 / 1`) and the inactive ones are hidden with **`visibility`**, not
+  `display` — they keep their layout space, so the card is always as tall as its
+  TALLEST view. Measured in a real browser: `136 / 136 / 136` after, against
+  `136 / 68 / 91` for the old structure.
+* **`app/tests/test_overlay_layout.py` measures this in headless Chrome (or
+  Edge)**, over a page built from the PAGE'S OWN `<style>`, reading `offsetHeight`
+  back through `--dump-dom`. That is a new capability worth knowing about: the JS
+  tests run under `node`, which lays nothing out, so any future "the page looks
+  wrong" report had no control. It needs a browser, so it SKIPS and says so where
+  there is none, like the node tests skip without node.
+* **The rehearsal is inside the test and it earned its place**: the first version
+  of the harness left `%s` in the bodies instead of substituting the rows, so all
+  three views rendered EMPTY and every height came out 42 — the "same height"
+  assertion passed for the wrong reason. The second case (the old structure must
+  measure UNEQUAL) is what caught it. A layout check that cannot fail is worse
+  than none, because equal heights are what a broken page reports too.
+* Still human: whether the result LOOKS right. The measurement pins the height
+  only, and the whitespace a shorter view leaves inside the shared box is a
+  judgement about the layout, not a number.
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a
