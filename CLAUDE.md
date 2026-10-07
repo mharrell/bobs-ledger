@@ -423,6 +423,23 @@ OPEN here:
    (placements) already answer parts of it; nothing aggregates "how often was
    THIS CARD bought or chosen", which is the stat that would be new.
 
+**4. "Stop sharing" is a quiet corner control now, and the README was pointing
+at a button that does not exist.** The consent answer used to be changeable only
+on the welcome/end-of-game card — on screen at a game's start or end, never
+during the game it describes — so `coach_ui.share_state()` is now one builder
+feeding BOTH payloads, `render_json` attaches it to every live payload, and a
+small dimmed button at the right end of the tab row (`#share-toggle`,
+`renderShareToggle`) shows the state and flips it. It is hidden while the
+question is unanswered: the card asks, and two controls asking at once is how a
+consent question becomes a shrug. `share_state()` is a PAGE payload added in
+`render_json`, so it never reaches `decision_log` and therefore never reaches
+`session_report.SPEC` (a test asserts the analysis stays clean). Writing this
+turned up a real stale sentence in the one place being wrong matters: README's
+consent section told players to "press **Clear** at the top-right of the
+overlay", and the Clear button went with the tab work on 10-07 — no test could
+see it, because no test reads that paragraph. Rewritten to describe the corner
+control.
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a

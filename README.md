@@ -230,11 +230,14 @@ you say yes.
 If you say yes, a summary is your decisions and how the game went: turn, gold,
 tavern tier, health, what was advised, and what happened next. Not your name, not
 the chat, not your file paths, and not your log file. A copy of everything sent
-is kept in `session_reports/` in the app folder, so you can read it yourself. To
-change your mind, press **Clear** at the top-right of the overlay: the card comes
-back, with a switch you can turn either way. (Once you have answered, it shows
-that switch rather than the question — the question is only asked when you have
-not answered yet.)
+is kept in `session_reports/` in the app folder, so you can read it yourself.
+
+To change your mind, use the sharing control at the **top right of the page** — a
+small greyed-out line beside the tabs. It is there for as long as sharing is on,
+including in the middle of a game, and it flips either way. The question itself is
+only asked once, when you have not answered yet. (It used to be reachable only on
+the end-of-game card, and this paragraph used to point at a **Clear** button that
+no longer exists — corrected 2026-10-07.)
 
 Why I ask: the model's plan has not been measured against results yet, and those
 summaries are how it gets measured.
