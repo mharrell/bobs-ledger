@@ -158,8 +158,7 @@ class TestNamedBoards(_StoreRoot):
             self.assertNotIn("name", m)
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestTheWall(_StoreRoot):
     """The review rep lives in coach_ui state. It must behave like the HTML
     already does: invisible to the live payload, present only to /review/*."""
 

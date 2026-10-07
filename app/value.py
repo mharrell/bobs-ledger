@@ -4096,6 +4096,24 @@ def _load_bg_names():
     return names
 
 
+def display_name(names, cid):
+    """Display name for a card id, falling through the `_G` golden variant.
+
+    Golden minions log under their OWN id — `BG36_100_G`, not `BG36_100` —
+    and the name DBs only carry the base. `BG36_100_G` is Eternal Knight's
+    golden, so it displays as "Eternal Knight (Golden)" (the maintainer's
+    convention, 2026-10-07). Unknown ids come back as themselves.
+    """
+    cid = str(cid or "")
+    if cid in names:
+        return names[cid]
+    if cid.endswith("_G"):
+        base = names.get(cid[:-2])
+        if base:
+            return f"{base} (Golden)"
+    return cid
+
+
 def _has_card(board_minions, source, names):
     """True if any board minion is the named card (by name substring)."""
     return any(source.lower() in (names.get(m["card"]) or "").lower()
