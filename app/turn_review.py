@@ -48,6 +48,10 @@ def _snap_board(minions, friendly, side):
     Snapshots are 6-tuples — (player, card, atk, health, golden, keywords) — since
     the projection widening; older/shorter tuples are tolerated rather than
     dropped, because a missing keyword list is not a reason to lose a minion.
+    Slots 6 and 7 (`eid`, `pos`) were added 2026-10-07 and are carried through
+    when present, because `_opening_board` needs identity and slot to tell the
+    board from the fight's leftovers — a saved replay written before that day
+    simply has neither, and the filter then only applies the board cap.
 
     **An unresolved friendly player returns NOTHING for either side, on
     purpose.** With `friendly is None`, `player is None` compares equal, so every
@@ -68,10 +72,82 @@ def _snap_board(minions, friendly, side):
             continue
         if side == "theirs" and (ours or player is None):
             continue
-        out.append({"card": m[1], "atk": m[2], "health": m[3],
-                    "golden": bool(m[4]) if len(m) > 4 else False,
-                    "keywords": list(m[5]) if len(m) > 5 and m[5] else []})
+        row = {"card": m[1], "atk": m[2], "health": m[3],
+               "golden": bool(m[4]) if len(m) > 4 else False,
+               "keywords": list(m[5]) if len(m) > 5 and m[5] else []}
+        if len(m) > 6 and m[6] is not None:
+            row["eid"] = m[6]
+        if len(m) > 7 and m[7] is not None:
+            row["pos"] = m[7]
+        out.append(row)
     return out
+
+
+BOARD_CAP = 7
+
+
+def _opening_board(snap, friendly):
+    """(board, removed) — OUR side of a shop-opening snapshot, cleaned.
+
+    **A fight's leftovers outlive the fight in the log, and they land on the
+    first buy snapshot of the next turn.** Measured 2026-10-07 on
+    `Hearthstone_2026_10_07_07_58_33` (Tavish Stormpike, Undead, 1st): the
+    Eternal Summoner's deathrattle summons Eternal Knights that the log keeps in
+    PLAY as the shop opens, so the "Opened with" board read NINE minions —
+    four golden Eternal Knights at 271/116 plus a non-golden `131/46` and a
+    `223/92` copy — where the real board was seven, and they took eight
+    snapshots to drain. Turn 12 opened with eight, turn 13 with nine, and turn
+    14's RESULT inherited nine from turn 15's opening snapshot.
+
+    Two things are therefore true of a real board and false of that mess, and
+    they are what this filter uses:
+
+    * **A board holds at most seven minions** (`BOARD_CAP`). This is the game's
+      own rule, so a snapshot showing more is contaminated by definition.
+    * **Two minions cannot share a board SLOT.** The log's leftovers keep the
+      position they died at, so they COLLIDE with a minion that is really there
+      — the 2026-10-07 leftovers sat at positions 3 and 4 while the real board
+      held 3 and 4 itself. On every collision measured (7 of them, across 6
+      games), the real minion is the one whose entity id is LOWER: the fight's
+      summons are allocated while the fight runs, the board's entities before
+      it. That ordering is the tie-break here, and it is what the control in
+      `test_turn_review.TestTheOpeningBoard` rehearses.
+
+    Returns the board in the log's own order (identity kept for the caller's
+    notes) plus how many minions were dropped, so a renderer can say so instead
+    of quietly showing a shorter board. An empty `snap` — turn 1 has no buy
+    snapshot — returns `([], 0)`: nothing to clean, not a board of nothing.
+    """
+    if not snap or friendly is None:
+        return [], 0
+    board = _snap_board(snap.get("minions"), friendly, "ours")
+
+    # Identity-first: the lowest entity id wins a contested slot, and the same
+    # order breaks the cap. A missing id (a replay saved before 2026-10-07)
+    # sorts last, so it never wins a slot on evidence that is not there.
+    def _key(i):
+        eid = board[i].get("eid")
+        return (eid is None, eid or 0)
+
+    order = sorted(range(len(board)), key=_key)
+    occupied, keep = set(), []
+    for i in order:
+        pos = board[i].get("pos")
+        if pos in (None, 0):
+            # No slot on record (an old replay, or an entity the log never
+            # placed): it cannot contest one, so it is kept rather than guessed
+            # at. The cap below still applies.
+            keep.append(i)
+            continue
+        if pos in occupied:
+            continue
+        occupied.add(pos)
+        keep.append(i)
+    # The board cap, applied in the same identity-first order.
+    keep_set = set(keep[:BOARD_CAP])
+    kept = [m for i, m in enumerate(board) if i in keep_set]
+    return kept, len(board) - len(kept)
+
 
 
 def stats(board):
@@ -353,9 +429,11 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                               friendly, "ours")
         # Buy START = the first buy snapshot, OUR side only: what survived the
         # previous fight and opened the shop. (Its `theirs` side is the stale
-        # teardown — trap 3.4 — so this board is deliberately one-sided.)
-        buy_start = _snap_board((buy[0].get("minions") if buy else []),
-                                friendly, "ours")
+        # teardown — trap 3.4 — so this board is deliberately one-sided.) The
+        # fight's summoned leftovers are still in PLAY in that snapshot and
+        # have to come out of it — see _opening_board.
+        buy_start, buy_start_removed = _opening_board(buy[0] if buy else None,
+                                                     friendly)
         # Combat START = the first snapshot of the turn's LAST fight. Several
         # bursts share a turn (turn 4 has four — deaths and buffs re-stage
         # continuously); the first burst of a FIGHT is where that fight
@@ -394,15 +472,19 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                                      friendly, "theirs")
 
         # Battle END = the next turn's opening board: the survivors, with combat
-        # buffs reverted to what persisted.
+        # buffs reverted to what persisted. It is read through the SAME filter
+        # as buy_start, because it IS the next turn's buy_start: the fight's
+        # summoned leftovers are in PLAY there too, and turn 14 of the
+        # 2026-10-07 game reported nine survivors for a board of seven.
         nxt = snaps.get(turns[i + 1]) if i + 1 < len(turns) else None
         nxt_buy = [s for s in (nxt or []) if s.get("phase") == "buy"]
         if nxt_buy:
-            battle_end = _snap_board(nxt_buy[0].get("minions"), friendly, "ours")
+            battle_end, battle_end_removed = _opening_board(nxt_buy[0],
+                                                            friendly)
         elif i + 1 == len(turns):
-            battle_end = list(final_board or [])
+            battle_end, battle_end_removed = list(final_board or []), 0
         else:
-            battle_end = []
+            battle_end, battle_end_removed = [], 0
 
         # The RESULT, from the fight itself: combat ends when one side's board
         # dies, so the side whose staged board drains to empty first LOST. The
@@ -491,6 +573,13 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
             "tier": a.get("tier"),
             "buy_start": buy_start,
             "buy_end": buy_end,
+            # How many of the log's raw minions the opening/surviving board
+            # dropped as the fight's leftovers. Counts, not prose, so a
+            # renderer puts each one beside the board it is about; both are 0
+            # on an ordinary turn, and 0 on a replay saved before 2026-10-07
+            # (no entity ids, so only the board cap can apply).
+            "buy_start_removed": buy_start_removed,
+            "battle_end_removed": battle_end_removed,
             "combat_start": {"ours": ours_at_combat, "theirs": theirs_at_combat},
             "combat_peak": {"ours": ours_at_peak, "theirs": theirs_at_peak},
             "battle_end": battle_end,
@@ -540,7 +629,8 @@ def timeline(log_path, game_index=1):
          combat_peak: {ours, theirs}, battle_end, theirs_survivors,
          stats: {buy_end, growth, theirs, combat_ours}, spend, took,
          shop_events: {played, tier_up, hero_power, trinkets}, damage_taken,
-         commitment, sell_questions, lag, notes}
+         commitment, sell_questions, buy_start_removed, battle_end_removed,
+         lag, notes}
 
     `notes` carries what the reconstruction is NOT, per turn, so a renderer
     cannot accidentally present an inference as a fact. `sell_questions` is

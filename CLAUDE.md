@@ -571,6 +571,42 @@ recorded above.
   today's three false alarms (`best available` in a docstring, `%s` in a test
   harness, and this) were all the CHECK, not the artifact.
 
+**11. THE OPENING BOARD SHOWED A FIGHT'S SUMMONS (reported and fixed
+2026-10-07).** *"Sometimes, in battles, extra minions are summoned for various
+reasons that go away once the shop phase starts. These minions are showing up in
+the 'Opened With' section. We should be getting just the current ones. A max of
+7."* Exactly right, and it was worse than reported: turn 15 of the 07:58 game
+opened with NINE of our minions (four real golden Eternal Knights plus two the
+Eternal Summoner's deathrattle left in PLAY — trap 3.6 of
+`analysis/SETTLE_UP_BOARDS.md` has the numbers), turn 13 with nine, turn 12 with
+eight, and turn 14's **Result** row inherited nine from turn 15's opening
+snapshot. The filter is `turn_review._opening_board`, applied to `buy_start` and
+to `battle_end` (they are the same snapshot, one turn apart), and it uses the two
+things that are true of a real board and false of the leftovers: **at most seven
+minions** and **no two minions in one SLOT** — the leftovers keep the position
+they died at, and on all 7 measured collisions (6 games) the real minion is the
+one with the LOWER entity id. That needed identity, so
+`board_state._record_snapshot` now stamps `eid` (snapshots only — `_minion` is
+untouched, the live board has no use for an internal id) and the live projection
+carries `eid`/`pos` as slots 6 and 7. Every removal is reported in a line under
+the board it is about; a silently shorter board would be a different lie.
+
+Two things worth keeping: **`buy_end` is deliberately NOT filtered** — 88
+buy-ends across 7 games never carried a leftover, so filtering the series every
+growth number is read from would be pure risk. And **two plausible rules were
+rejected on the evidence**: "a board cannot grow during a fight" is FALSE on
+turns 2, 6 and 13 (the log's last buy snapshot predates a play the player really
+made), and "never seen in a buy snapshot before" drops the battlecry-summoned
+token that IS on the board. What the filter does not catch is measured and
+written down rather than implied: a leftover on a FREE slot survives (turn 9's
+`Cadaver Caretaker 4/3`), and one that surfaces mid-shop is never examined. Both
+keep the board at seven, which is the reported harm. Verified end to end, not by
+reading the source: the real game's review JSON now reads opened/ended/survived
+≤ 7 on all 15 turns with the removals named, and the page's own
+`settleTurnCard` was RUN in a headless browser against a row with the counts set,
+printing the two notes in the right views (the layout suite does not exercise
+that JS, so nothing else would have caught a syntax error).
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a

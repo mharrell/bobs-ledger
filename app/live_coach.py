@@ -749,7 +749,7 @@ class LiveCoach:
         # so the resolver can keep only real fight boards. Snapshots fire on
         # plays AND combat deaths, so a turn accumulates several.
         #
-        # Each minion is kept as a 6-tuple, NOT as (player, atk+health). The
+        # Each minion is kept as an 8-tuple, NOT as (player, atk+health). The
         # sum was the only thing the live forecast needed, but it discards the
         # card, the split, the golden flag and the KEYWORDS — and those are
         # what a fight actually turns on (a divine shield absorbs a hit, a
@@ -758,6 +758,14 @@ class LiveCoach:
         # training example being thrown away. board_state._record_snapshot
         # already freezes these per snapshot, so this is a projection
         # widening, not new parsing.
+        #
+        # Slots 6 and 7 — the entity id and the board position — were added
+        # 2026-10-07 for the same reason, one layer up: a fight's summoned
+        # copies stay in PLAY into the shop phase, and the review cannot tell
+        # them from the minions that are really on the board without identity
+        # and slot. See `turn_review._opening_board` and the wider note in
+        # board_state._record_snapshot. Readers that take the first six slots
+        # by index are unaffected.
         if len(self.gs.snapshots) > self._snap_seen:
             new = self.gs.snapshots[self._snap_seen:]
             self._snap_seen = len(self.gs.snapshots)
@@ -767,7 +775,8 @@ class LiveCoach:
                     "minions": [
                         (m.get("player"), m.get("card"), m.get("atk") or 0,
                          m.get("health") or 0, bool(m.get("golden")),
-                         tuple(sorted(m.get("keywords") or ())))
+                         tuple(sorted(m.get("keywords") or ())),
+                         m.get("eid"), m.get("pos"))
                         for m in snap],
                 })
         # Track when the friendly's tier changed, for the upgrade-price

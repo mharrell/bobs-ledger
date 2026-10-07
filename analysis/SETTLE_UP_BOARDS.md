@@ -145,6 +145,62 @@ would show the player the wrong opponent every single turn.
 "board value over time" series must ignore the drain-to-zero snapshots, or
 every turn ends in a cliff to nothing.
 
+**3.6 (measured 2026-10-07) A FIGHT'S SUMMONS OUTLIVE THE FIGHT IN THE LOG.**
+Reported by the maintainer: *"Sometimes, in battles, extra minions are summoned
+for various reasons that go away once the shop phase starts. These minions are
+showing up in the 'Opened With' section. We should be getting just the current
+ones. A max of 7."* Reproduced on `Hearthstone_2026_10_07_07_58_33` (Tavish
+Stormpike, Undead, 1st), and it is trap 3.4's mirror image — the same snapshot,
+the other side of it:
+
+* Turn 15's first buy snapshot holds **NINE** of our minions: four golden Eternal
+  Knights at 271/116, `Eternal Summoner 54/8`, `Snazzy Phantom 45/8`,
+  `Drustfallen Butcher 41/7` — and two more Eternal Knights, `e15278` 131/46 and
+  `e15281` 223/92, which the Eternal Summoner's deathrattle summoned during the
+  fight and the log never took out of PLAY. The real board is the seven; the
+  leftovers take **eight** snapshots to drain. Turn 12 opens with eight and turn
+  13 with nine, and turn 14's RESULT inherits nine from turn 15's opening
+  snapshot — so the "you survived with" row was wrong too.
+* Why a copy is WRONG and not merely early: Eternal Knight is an AURA ("+4/+2 for
+  each friendly Eternal Knight that died this game"), so the leftovers keep
+  gaining stats in the shop while the real copies sit still. The nine-minion
+  board also carries stat totals nobody ever had.
+* **The board's own rules are what catch it, and both are checkable.**
+  (a) A board holds **at most seven** minions, so a longer snapshot is
+  contaminated by definition. (b) Two minions cannot share a board SLOT — and
+  the leftovers keep the position they died at, so they COLLIDE: `e15278` sat at
+  position 3 and `e15281` at 4 while the real board held 3 and 4 itself.
+* **On every collision measured (7 across 6 games), the real minion is the one
+  with the LOWER entity id** — the fight's summons are allocated while the fight
+  runs, the board's entities before it. That is the tie-break in
+  `turn_review._opening_board`, and the reason it needs entity ids: they are
+  recorded in `board_state._record_snapshot` and carried as slots 6 and 7 of the
+  live projection (`live_coach`), which is why the widening happened.
+* Measured effect on the reported game: openings 9 → 7 (t15), 9 → 7 (t13),
+  8 → 6 (t12), 3 → 2 (t5) and survivor rows 9 → 7 (t14), 8 → 6 (t11); every
+  board is now ≤ 7 and every removal is reported to the player in a line under
+  the board it is about, never as a silent edit.
+* **What it does NOT catch, measured rather than assumed.** A leftover that
+  lands on a FREE slot is kept, because nothing contradicts it: turn 9 of the
+  same game opens with the six real minions plus a `Cadaver Caretaker 4/3` at
+  position 7 — a Deathly Striker's deathrattle ("Summon it from your hand for
+  this combat only") — and the board still reads seven. Nor does the filter
+  look at anything but the opening frame, so a stale copy that surfaces later
+  in the shop is untouched (turn 9 shows one at `buy[3]`, and turn 11's
+  `e9736` appears at `buy[1]` and is gone by the next turn). Both are count-safe
+  — the board never reads longer than seven — and neither is worth a second
+  heuristic that could drop a real minion. Two rules were tried and REJECTED on
+  the evidence: a "the board cannot grow during a fight" bound (with the
+  previous turn's last buy snapshot as the ceiling) is false on turns 2, 6 and
+  13, where the log's last buy snapshot predates a play the player really made
+  (the lag documented in §1); and "an entity that never appeared in a buy
+  snapshot of the previous turn is a leftover" drops the battlecry-summoned
+  token that IS on the board (turn 2's `BG25_001`).
+* **`buy_end` is deliberately NOT filtered**, and that is a measurement: over
+  **88 buy-ends in 7 games** the last snapshot of a buy phase never carried a
+  leftover, so filtering it would only add risk to the series every growth
+  number is read from.
+
 ---
 
 ## 4. Plan
