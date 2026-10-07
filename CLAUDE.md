@@ -607,6 +607,37 @@ reading the source: the real game's review JSON now reads opened/ended/survived
 printing the two notes in the right views (the layout suite does not exercise
 that JS, so nothing else would have caught a syntax error).
 
+**12. PUBLISHED AND VERIFIED FROM THE PLAYER'S SIDE (2026-10-07): release
+`b547905`** — the opening board without the fight's summons, on top of the four
+releases recorded above. It took two attempts, and the first one is the useful
+part:
+
+* **The privacy gate refused the release, and it was right.** Both new
+  docstrings quoted the log directory the measurement came from
+  (`app/turn_review.py`, `app/tests/test_turn_review.py`): `session_dir x1`. A
+  session directory name belongs in the maintainer notes — it stays in
+  `analysis/SETTLE_UP_BOARDS.md` and this file, neither of which ships — and
+  never in `app/`. That is the SECOND time a docstring or fixture was the thing
+  the gate caught, after the BattleTag of 2026-10-02. Nothing was uploaded: the
+  gates run before the PUT and the channel kept serving `745dcd5`.
+* Verified, from the manifest an install actually fetches rather than from the
+  publish log: the signature verifies against the pinned key
+  (`4d8fc45534ba558d`), `zip_bytes`/`zip_sha256` match the download exactly
+  (1,445,528 bytes, `e70a2dda1d26…`) through the SHIPPED bounded-download path,
+  the pin inside the zip matches this checkout, the root holds exactly the two
+  launchers, the README, the licence, `docs/`, `app/` and the two stamps (246
+  entries), and a grep of every shipped text file finds no session name — the
+  gate's catch is gone from the artifact, not just from the gate's report.
+* The SHIPPED updater, from an install reading `745dcd5`, offers the update and
+  exits 1; the same shipped code refuses a manifest whose `note` was rewritten,
+  naming the pinned fingerprint. **One thing worth knowing about that first
+  check**: a state file holding only `{"version": …}` reads as UNORDERABLE
+  (`decide` needs the `created` stamp a real `save_state` writes), so the probe
+  printed "unknown … use --force" and exited 0 at first, which looks like "no
+  update available" and is not. Simulating an install means simulating its state.
+* Neither documented gotcha appeared: no `Authentication error [code: 10000]`,
+  and `latest.json` served the new manifest on the first read.
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a
