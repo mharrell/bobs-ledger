@@ -695,6 +695,14 @@ _HTML = r"""<!doctype html>
                                            margin-bottom:8px; }
   .turn.collapsed .thead.clickable { border-bottom:none; padding-bottom:6px; }
   .turn .caret { color:var(--dim); font-size:11px; }
+  .tbtns { display:flex; gap:4px; margin:8px 0; }
+  .tbtn { background:transparent; color:var(--dim);
+          border:1px solid var(--border); border-radius:var(--radius);
+          padding:2px 10px; font:600 11px "Segoe UI", system-ui;
+          cursor:pointer; text-transform:uppercase; }
+  .tbtn:hover { color:var(--text-2); }
+  .tbtn.on { color:var(--text); background:var(--panel2);
+             border-color:rgba(255,255,255,.22); }
   .turn .tturn { font-weight:700; text-transform:uppercase; font-size:12px; }
   .turn .tmeta { color:var(--dim); font-size:12px; }
   .turn .comp { margin-left:auto; color:var(--gold); font-size:12px; }
@@ -1774,6 +1782,7 @@ function boardRow(lbl, list, text, cls) {
 }
 function settleTurnCard(r, phases) {
   const s = r.stats || {}, sp = r.spend || {}, c = r.commitment || {};
+  const ev = r.shop_events || {};
   const card = document.createElement('div');
   card.className = 'turn';
   const head = document.createElement('div');
@@ -1793,6 +1802,33 @@ function settleTurnCard(r, phases) {
     head.querySelector('.caret').textContent = closed ? '▸' : '▾';
   };
   card.appendChild(head);
+  // Three views of one turn (2026-10-07): the shop from open to close, the
+  // fight after beginning-of-combat effects, and what either side survived
+  // with. Battle is the default — the boards are the reason the section
+  // exists. Old saves carry none of the new fields; every row falls back
+  // to the text the standalone page still renders.
+  const btns = document.createElement('div');
+  btns.className = 'tbtns';
+  const bodies = {};
+  const sections = [['battle', 'Battle'], ['shop', 'Shop'],
+                    ['aftermath', 'Aftermath']];
+  for (const [key, label] of sections) {
+    const b = el('button', 'tbtn' + (key === 'battle' ? ' on' : ''), label);
+    const body = document.createElement('div');
+    body.className = 'tbody';
+    body.style.display = key === 'battle' ? '' : 'none';
+    b.onclick = () => {
+      for (const [k] of sections) {
+        bodies[k].style.display = k === key ? '' : 'none';
+      }
+      btns.querySelectorAll('.tbtn').forEach(x => x.className = 'tbtn');
+      b.className = 'tbtn on';
+    };
+    btns.appendChild(b);
+    bodies[key] = body;
+    card.appendChild(body);
+  }
+  card.appendChild(btns);
   const row = (lbl, text, cls) => {
     const d = document.createElement('div');
     d.className = 'brow';
@@ -1801,12 +1837,7 @@ function settleTurnCard(r, phases) {
     d.lastChild.textContent = text || '—';
     return d;
   };
-  const went = r.combat_ours_text || r.buy_end_text || '(no board read)';
-  card.appendChild(boardRow('You brought',
-    (r.combat_start || {}).ours, r.combat_ours_text || went));
-  card.appendChild(boardRow('Opponent brought',
-    (r.combat_start || {}).theirs, r.combat_theirs_text, 'them'));
-  card.appendChild(boardRow('Survived', r.battle_end, r.battle_end_text));
+  const sellFlags = document.createElement('div');
   for (const q of r.sell_questions || []) {
     const d = document.createElement('div');
     d.className = q.rebuild ? 'note' : 'q';
@@ -1817,14 +1848,9 @@ function settleTurnCard(r, phases) {
       : ('? sold ' + (q.sold_name || 'a card') + ' (' + (q.role || '?')
          + ') while keeping ' + (q.kept_filler_names || []).join(', ')
          + ' — worth a look, not a verdict');
-    card.appendChild(d);
+    sellFlags.appendChild(d);
   }
-  for (const n of r.notes || []) {
-    const d = document.createElement('div');
-    d.className = 'note';
-    d.textContent = n;
-    card.appendChild(d);
-  }
+  const phaseRows = document.createElement('div');
   for (const p of phases) {
     const d = document.createElement('div');
     d.className = 'phase';
@@ -1849,8 +1875,56 @@ function settleTurnCard(r, phases) {
         : (p.outcome_note || '');
       d.appendChild(out);
     }
-    card.appendChild(d);
+    phaseRows.appendChild(d);
   }
+  // BATTLE — the fight after beginning-of-combat effects, both sides from
+  // the same (peak) burst so the rows are honest relative to each other.
+  bodies.battle.appendChild(boardRow('You brought',
+    (r.combat_peak || {}).ours, r.combat_ours_text || '(no board read)'));
+  bodies.battle.appendChild(boardRow('Opponent brought',
+    (r.combat_peak || {}).theirs, r.combat_theirs_text, 'them'));
+  for (const n of r.notes || []) {
+    const d = document.createElement('div');
+    d.className = 'note';
+    d.textContent = n;
+    bodies.battle.appendChild(d);
+  }
+  // SHOP — open to close, with the turn's events.
+  bodies.shop.appendChild(boardRow('Opened with', r.buy_start,
+    '(no shop snapshot — a skipped turn?)'));
+  bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text));
+  const evLine = document.createElement('div');
+  evLine.className = 'brow';
+  const evBits = [];
+  if (ev.played != null) evBits.push('played ' + ev.played + ' card'
+                                     + (ev.played === 1 ? '' : 's'));
+  if (sp.total != null) evBits.push('spent ' + sp.total + 'g');
+  if (s.growth != null) evBits.push('value ' + (s.growth >= 0 ? '+' : '')
+                                    + s.growth);
+  if (ev.tier_up) evBits.push('LEVELED UP');
+  if (ev.hero_power) evBits.push('hero power');
+  if ((ev.trinkets || []).length) evBits.push('trinket: '
+                                              + ev.trinkets.join(', '));
+  evLine.innerHTML = '<span class="blbl">The turn</span><span></span>';
+  evLine.lastChild.textContent = evBits.join(' · ') || '—';
+  bodies.shop.appendChild(evLine);
+  bodies.shop.appendChild(sellFlags);
+  // AFTERMATH — what either side survived with, and what it cost.
+  bodies.aftermath.appendChild(boardRow('You survived with', r.battle_end,
+    r.battle_end_text));
+  bodies.aftermath.appendChild(boardRow('They survived with',
+    r.theirs_survivors,
+    r.theirs_survivors ? '' : '(not recoverable after the game\'s last fight)'));
+  const dmg = document.createElement('div');
+  dmg.className = 'brow';
+  dmg.innerHTML = '<span class="blbl">Damage taken</span><span></span>';
+  dmg.lastChild.textContent = r.damage_taken != null
+    ? (r.damage_taken > 0 ? r.damage_taken + ' HP'
+       : r.damage_taken === 0 ? 'none' : 'none — you GAINED '
+         + (-r.damage_taken) + ' effective HP')
+    : '(not measured on this turn)';
+  bodies.aftermath.appendChild(dmg);
+  bodies.aftermath.appendChild(phaseRows);
   return card;
 }
 // Restore the last tab, defaulting to the live overlay.
@@ -2189,8 +2263,11 @@ def _name_timeline_boards(rep):
     out = json.loads(json.dumps(rep))   # a deep copy, cheaply
     for row in (out.get("timeline") or {}).get("turns") or []:
         for board in (row.get("buy_end"), row.get("battle_end"),
+                      row.get("buy_start"), row.get("theirs_survivors"),
                       (row.get("combat_start") or {}).get("ours"),
-                      (row.get("combat_start") or {}).get("theirs")):
+                      (row.get("combat_start") or {}).get("theirs"),
+                      (row.get("combat_peak") or {}).get("ours"),
+                      (row.get("combat_peak") or {}).get("theirs")):
             for m in board or []:
                 m["name"] = names.get(m.get("card"), m.get("card"))
     return out

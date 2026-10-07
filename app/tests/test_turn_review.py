@@ -379,5 +379,101 @@ class TestTwoFightsInOneTurn(unittest.TestCase):
                          ["T1"])
 
 
+class TestShopBattleAftermath(unittest.TestCase):
+    """The three-view turn card's data: what the shop opened with, the fight
+    after beginning-of-combat effects, and what either side survived with."""
+
+    @staticmethod
+    def _snaps(turn, *entries):
+        return {turn: [{"phase": ph, "minions": list(ms)} for ph, ms in entries]}
+
+    def test_buy_start_is_the_first_buy_snapshot_ours_side(self):
+        snaps = self._snaps(
+            5,
+            ("buy", [(OURS, "SURVIVOR", 3, 3, False, []),
+                     (THEIRS, "STALE", 9, 9, False, [])]),   # teardown residue
+            ("buy", [(OURS, "SURVIVOR", 3, 3, False, []),
+                     (OURS, "BOUGHT", 4, 4, False, [])]),
+            ("combat", [(THEIRS, "T1", 3, 3, False, [])]),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["buy_start"]], ["SURVIVOR"],
+                         "the shop opened with the survivors, one-sided by "
+                         "design — the first buy snapshot's `theirs` is the "
+                         "previous fight's teardown (trap 3.4)")
+        self.assertEqual([m["card"] for m in row["buy_end"]],
+                         ["SURVIVOR", "BOUGHT"])
+
+    def test_battle_peak_is_the_post_proc_burst_not_the_staging(self):
+        # Measured shape (2026-10-06, turn 7): the staging burst reads LOW,
+        # start-of-combat effects land a burst later, deaths thin it after.
+        snaps = self._snaps(
+            7,
+            ("combat", [(OURS, "A", 13, 6, True, []),
+                        (THEIRS, "T1", 4, 4, False, [])]),          # staging
+            ("combat", [(OURS, "A", 15, 6, True, []),
+                        (THEIRS, "T1", 8, 8, False, [])]),          # procs
+            ("combat", [(OURS, "A", 15, 6, True, [])]),             # a death
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["combat_peak"]["ours"]], ["A"])
+        self.assertEqual([m["atk"] for m in row["combat_peak"]["ours"]], [15])
+        self.assertEqual([m["card"] for m in row["combat_peak"]["theirs"]],
+                         ["T1"])
+        self.assertEqual([m["atk"] for m in row["combat_peak"]["theirs"]], [8])
+        # the staging row is still there, honestly low
+        self.assertEqual(row["stats"]["combat_ours"], 19)
+
+    def test_their_survivors_come_from_the_next_turns_opening(self):
+        snaps = {5: [{"phase": "combat", "minions": [
+                        (OURS, "A", 2, 2, False, []),
+                        (THEIRS, "GONE", 9, 9, False, [])]},
+                     {"phase": "combat", "minions": [
+                        (OURS, "A", 2, 2, False, [])]}],
+                 6: [{"phase": "buy", "minions": [
+                     (OURS, "ME", 2, 2, False, []),
+                     (THEIRS, "THEIR_SURVIVOR", 5, 5, False, [])]}]}
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["theirs_survivors"]],
+                         ["THEIR_SURVIVOR"])
+
+    def test_their_survivors_after_the_last_fight_are_a_note(self):
+        snaps = self._snaps(9, ("combat", [(OURS, "LAST", 3, 3, False, [])]))
+        row = tr._turn_rows(snaps, {}, OURS, final_board=[])
+        self.assertEqual(row[-1]["theirs_survivors"], [])
+        self.assertTrue(any("opponent's survivors" in n
+                            for n in row[-1]["notes"]))
+
+    def test_damage_taken_is_the_eff_hp_delta_to_the_next_turn(self):
+        info = {4: {"analysis": {"health": 20, "armor": 5, "gold": 8,
+                                 "tier": 3}},
+                5: {"analysis": {"health": 12, "armor": 0, "gold": 9,
+                                 "tier": 3}}}
+        snaps = {4: [{"phase": "combat", "minions": [
+                        (THEIRS, "T", 3, 3, False, [])]}],
+                 5: [{"phase": "combat", "minions": [
+                        (THEIRS, "T", 3, 3, False, [])]}]}
+        rows = tr._turn_rows(snaps, info, OURS)
+        self.assertEqual(rows[0]["damage_taken"], 13,
+                         "20+5 eff -> 12+0 eff = 13 damage")
+        self.assertIsNone(rows[1]["damage_taken"],
+                          "the last turn has no next turn to measure")
+
+    def test_shop_events_come_off_the_action_parse(self):
+        info = {4: {"analysis": {"health": 20, "gold": 8, "tier": 3},
+                    "actual": {"plays": ["BG_x", "BG_y"], "upgrades": 1,
+                               "hero_power": 1,
+                               "choices": ["BG35_MagicItem_823t",
+                                           "BG25_008"]}}}
+        snaps = self._snaps(4, ("combat", [(THEIRS, "T", 3, 3, False, [])]))
+        ev = tr._turn_rows(snaps, info, OURS)[0]["shop_events"]
+        self.assertEqual(ev["played"], 2)
+        self.assertTrue(ev["tier_up"])
+        self.assertTrue(ev["hero_power"])
+        self.assertEqual(ev["trinkets"], ["BG35_MagicItem_823t"],
+                         "trinket picks carry MagicItem in the id; a hero "
+                         "pick or discover in the same turn must not")
+
+
 if __name__ == "__main__":
     unittest.main()
