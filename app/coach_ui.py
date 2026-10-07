@@ -1879,10 +1879,11 @@ function settleTurnCard(r, phases) {
   }
   // BATTLE — the fight after beginning-of-combat effects, both sides from
   // the same (peak) burst so the rows are honest relative to each other.
-  bodies.battle.appendChild(boardRow('You brought',
-    (r.combat_peak || {}).ours, r.combat_ours_text || '(no board read)'));
+  // Opponent on top, mirroring the in-game combat view (2026-10-07).
   bodies.battle.appendChild(boardRow('Opponent brought',
     (r.combat_peak || {}).theirs, r.combat_theirs_text, 'them'));
+  bodies.battle.appendChild(boardRow('You brought',
+    (r.combat_peak || {}).ours, r.combat_ours_text || '(no board read)'));
   for (const n of r.notes || []) {
     const d = document.createElement('div');
     d.className = 'note';

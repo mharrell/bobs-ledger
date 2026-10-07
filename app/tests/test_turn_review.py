@@ -353,7 +353,10 @@ class TestTwoFightsInOneTurn(unittest.TestCase):
         self.assertEqual([m["card"] for m in row["combat_start"]["ours"]],
                          ["DUEL_OURS"])
 
-    def test_multiple_fights_are_named_in_the_notes(self):
+    def test_multiple_fights_stay_quiet_about_the_choice(self):
+        # The last fight is shown and no note is raised: which fight a turn
+        # staged is reconstruction plumbing, not something a player asked for
+        # (2026-10-07: "I don't think we need this message").
         snaps = self._snaps(
             15,
             ("combat", [(THEIRS, "T1", 3, 3, False, [])]),
@@ -361,7 +364,7 @@ class TestTwoFightsInOneTurn(unittest.TestCase):
             ("combat", [(THEIRS, "T2", 4, 4, False, [])]),
         )
         row = tr._turn_rows(snaps, {}, OURS)[0]
-        self.assertTrue(any("2 fights" in n for n in row["notes"]))
+        self.assertEqual(row["notes"], [])
 
     def test_mid_fight_restage_without_a_teardown_is_one_fight(self):
         # Deaths and buffs re-stage continuously inside one fight (the measured
