@@ -1803,15 +1803,15 @@ function settleTurnCard(r, phases) {
   };
   card.appendChild(head);
   // Three views of one turn (2026-10-07): the shop from open to close, the
-  // fight after beginning-of-combat effects, and what either side survived
-  // with. Battle is the default — the boards are the reason the section
-  // exists. Old saves carry none of the new fields; every row falls back
-  // to the text the standalone page still renders.
+  // fight after beginning-of-combat effects, and the result — who survived
+  // and what it cost. Battle is the default — the boards are the reason the
+  // section exists. Old saves carry none of the new fields; every row falls
+  // back to the text the standalone page still renders.
   const btns = document.createElement('div');
   btns.className = 'tbtns';
   const bodies = {};
-  const sections = [['battle', 'Battle'], ['shop', 'Shop'],
-                    ['aftermath', 'Aftermath']];
+  const sections = [['shop', 'Shop'], ['battle', 'Battle'],
+                    ['aftermath', 'Result']];
   for (const [key, label] of sections) {
     const b = el('button', 'tbtn' + (key === 'battle' ? ' on' : ''), label);
     const body = document.createElement('div');
@@ -1889,9 +1889,11 @@ function settleTurnCard(r, phases) {
     d.textContent = n;
     bodies.battle.appendChild(d);
   }
-  // SHOP — open to close, with the turn's events.
-  bodies.shop.appendChild(boardRow('Opened with', r.buy_start,
-    '(no shop snapshot — a skipped turn?)'));
+  // SHOP — open to close, with the turn's events and the action list.
+  bodies.shop.appendChild(r.turn === 1
+    ? row('Opened with', 'New game — nothing came before')
+    : boardRow('Opened with', r.buy_start,
+               '(no shop snapshot — a skipped turn?)'));
   bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text));
   const evLine = document.createElement('div');
   evLine.className = 'brow';
@@ -1909,12 +1911,25 @@ function settleTurnCard(r, phases) {
   evLine.lastChild.textContent = evBits.join(' · ') || '—';
   bodies.shop.appendChild(evLine);
   bodies.shop.appendChild(sellFlags);
-  // AFTERMATH — what either side survived with, and what it cost.
-  bodies.aftermath.appendChild(boardRow('You survived with', r.battle_end,
-    r.battle_end_text));
+  bodies.shop.appendChild(phaseRows);
+  // RESULT — combat ends when one board dies, so the winner comes from the
+  // fight, and exactly one side holds survivors (both on a tie).
+  const w = r.winner;
+  const resLine = document.createElement('div');
+  resLine.className = 'brow';
+  resLine.innerHTML = '<span class="blbl">Result</span><span></span>';
+  resLine.lastChild.textContent =
+      w === 'us' ? 'You won the fight'
+    : w === 'them' ? 'You lost the fight'
+    : w === 'tie' ? 'A tie — both boards died'
+    : '(fight result not readable)';
+  bodies.aftermath.appendChild(resLine);
+  bodies.aftermath.appendChild(boardRow('You survived with',
+    w === 'them' ? [] : r.battle_end,
+    w === 'them' ? '— none' : r.battle_end_text));
   bodies.aftermath.appendChild(boardRow('They survived with',
-    r.theirs_survivors,
-    r.theirs_survivors ? '' : '(not recoverable after the game\'s last fight)'));
+    w === 'them' ? r.theirs_survivors : [],
+    w === 'them' ? '' : (w === 'tie' ? '— none — a tie' : '— none')));
   const dmg = document.createElement('div');
   dmg.className = 'brow';
   dmg.innerHTML = '<span class="blbl">Damage taken</span><span></span>';
@@ -1924,7 +1939,6 @@ function settleTurnCard(r, phases) {
          + (-r.damage_taken) + ' effective HP')
     : '(not measured on this turn)';
   bodies.aftermath.appendChild(dmg);
-  bodies.aftermath.appendChild(phaseRows);
   return card;
 }
 // Restore the last tab, defaulting to the live overlay.

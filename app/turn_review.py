@@ -18,8 +18,11 @@ Three states per turn, and exactly where each comes from (measured, not assumed
     actually persisted. Turn 5 of the 2026-10-06 game drains 5 → 4 → 3 → 2 → 1
     → 0 inside combat as deaths empty the board, so the tail of a combat burst
     is a teardown, not a final board; the survivors are visible at the top of
-    the next turn. The opponent's survivors are NOT recoverable this way and are
-    reported as absent rather than guessed at.
+    the next turn. The OPPONENT's survivors are the fight's own verdict: one
+    board dies first (combat ends when a board dies), so the side that
+    drained first lost, and the winner is reported with it — the next shop's
+    teardown snapshots show dead minions still staged and once produced an
+    aftermath with both sides "surviving".
 
 The drive loop is `outcome_audit.audit_game`'s, deliberately: it is the version
 that CALLS `analyze()` on a cadence. A replay that only feeds lines leaves
@@ -391,21 +394,53 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                                      friendly, "theirs")
 
         # Battle END = the next turn's opening board: the survivors, with combat
-        # buffs reverted to what persisted. The next turn's first buy snapshot
-        # ALSO carries the opponent's survivors on its `theirs` side — wrong as
-        # "the opponent you fought" (trap 3.4) and right as aftermath.
+        # buffs reverted to what persisted.
         nxt = snaps.get(turns[i + 1]) if i + 1 < len(turns) else None
         nxt_buy = [s for s in (nxt or []) if s.get("phase") == "buy"]
         if nxt_buy:
             battle_end = _snap_board(nxt_buy[0].get("minions"), friendly, "ours")
-            theirs_survivors = _snap_board(nxt_buy[0].get("minions"), friendly,
-                                           "theirs")
         elif i + 1 == len(turns):
             battle_end = list(final_board or [])
-            theirs_survivors = []   # the game's last fight: not recoverable
         else:
             battle_end = []
-            theirs_survivors = []
+
+        # The RESULT, from the fight itself: combat ends when one side's board
+        # dies, so the side whose staged board drains to empty first LOST. The
+        # next shop's snapshots cannot answer this — they catch the combat
+        # copies MID-TEARDOWN, dead minions still staged (measured 2026-10-07:
+        # aftermath lists showed both sides holding minions, some of them
+        # dead). When they lose, their last staged board is the closest thing
+        # to their survivors; it carries combat-time stats and says so by
+        # where it comes from.
+        winner, their_last = None, []
+        if fights and friendly is not None:
+            seen_theirs = seen_ours = False
+            prev_theirs_board = []
+            for s2 in fights[-1]:
+                ms2 = s2.get("minions") or []
+                tn = sum(1 for m in ms2 if len(m) > 0 and m[0] is not None
+                         and m[0] != friendly)
+                on = sum(1 for m in ms2 if len(m) > 0 and m[0] == friendly)
+                board_theirs = _snap_board(ms2, friendly, "theirs")
+                if tn:
+                    seen_theirs = True
+                    prev_theirs_board = board_theirs
+                if on:
+                    seen_ours = True
+                if seen_theirs and seen_ours and (not tn or not on):
+                    if not tn and on:
+                        winner = "us"          # their board died, ours stands
+                        their_last = prev_theirs_board
+                    elif not on and tn:
+                        winner = "them"        # ours died, their board stands
+                        their_last = board_theirs
+                    else:
+                        winner = "tie"         # both boards died together
+                        their_last = []
+                    break
+        # Exactly one side holds survivors after a fight — theirs only when
+        # THEY won (their last staged board, combat-time stats).
+        theirs_survivors = their_last if winner == "them" else []
 
         entry = info.get(t) or {}
         a = entry.get("analysis") or {}
@@ -444,9 +479,6 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                              "turn whose plays were all combat summons)")
             if i + 1 == len(turns) and not battle_end:
                 notes.append("final board not recoverable")
-            if i + 1 == len(turns) and fight:
-                notes.append("the opponent's survivors are not recoverable "
-                             "after the game's last fight")
         # Damage taken across THIS turn's fight, from the effective HP the
         # coach recorded at this turn and the next (armor is just extra
         # health). None where either side is missing — the last turn, or a
@@ -466,6 +498,7 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
             "combat_start": {"ours": ours_at_combat, "theirs": theirs_at_combat},
             "combat_peak": {"ours": ours_at_peak, "theirs": theirs_at_peak},
             "battle_end": battle_end,
+            "winner": winner,
             "theirs_survivors": theirs_survivors,
             "stats": {
                 "buy_end": bstats,
