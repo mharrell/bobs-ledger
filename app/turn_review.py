@@ -90,8 +90,8 @@ def _opening_board(snap, friendly):
     """(board, removed) — OUR side of a shop-opening snapshot, cleaned.
 
     **A fight's leftovers outlive the fight in the log, and they land on the
-    first buy snapshot of the next turn.** Measured 2026-10-07 on
-    `Hearthstone_2026_10_07_07_58_33` (Tavish Stormpike, Undead, 1st): the
+    first buy snapshot of the next turn.** Measured 2026-10-07 on the newest
+    game (Tavish Stormpike, Undead, 1st): the
     Eternal Summoner's deathrattle summons Eternal Knights that the log keeps in
     PLAY as the shop opens, so the "Opened with" board read NINE minions —
     four golden Eternal Knights at 271/116 plus a non-golden `131/46` and a
