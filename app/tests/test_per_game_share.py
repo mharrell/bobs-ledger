@@ -382,5 +382,65 @@ class TestTheVersionStamp(unittest.TestCase):
             session_report.verify(report, session_report.REPORT_SPEC), [])
 
 
+class TestTheOutcomeIsInTheReport(unittest.TestCase):
+    """The corpus has to be able to say whether advice went WELL, not only what
+    it said (2026-10-07). Two outcome fields, and the shape of each matters more
+    than the value:
+
+      * `manifest.placement` is the game's OWN final placement, handed in by the
+        coach that watched it end. It is deliberately NOT read back off the last
+        advisory: that advisory is taken before the final fight resolves, and
+        measured over three real games its standing was wrong once (4 where the
+        game says 3). An unknown placement stays None — a guess here is a wrong
+        number in every conclusion drawn from the corpus afterwards.
+      * `hp_change` is the effective HP the NEXT advisory of the SAME game
+        reports, minus this one's: what the fight between them cost. The last row
+        of a game has none, and so does a row whose successor belongs to another
+        game — never 0, which would read as "the fight cost nothing".
+    """
+
+    def test_the_manifest_carries_the_placement_it_was_given(self):
+        report = session_report.build([_advisory(1)], session_key="s#1",
+                                      game=1, placement=3)
+        self.assertEqual(report["manifest"]["placement"], 3)
+
+    def test_an_unknown_placement_is_none_not_a_guess(self):
+        report = session_report.build([_advisory(1)], session_key="s#1", game=1)
+        self.assertIsNone(report["manifest"]["placement"])
+
+    def test_hp_change_is_the_next_advisory_minus_this_one(self):
+        rows = [dict(_advisory(1), turn=1, health=30, analysis={"armor": 0}),
+                dict(_advisory(1), turn=2, health=24, analysis={"armor": 2})]
+        report = session_report.build(rows, session_key="s#1", game=1)
+        self.assertEqual(report["advisories"][0]["hp_change"], -4)
+        self.assertIsNone(report["advisories"][1]["hp_change"],
+                          "the last row of a game has no following fight")
+
+    def test_hp_change_is_not_invented_across_games(self):
+        rows = [dict(_advisory(1), turn=9, health=30, analysis={"armor": 0}),
+                dict(_advisory(2), turn=1, health=40, analysis={"armor": 0})]
+        report = session_report.build(rows, session_key="s")
+        self.assertIsNone(report["advisories"][0]["hp_change"],
+                          "a session report spans games; the gap between two of "
+                          "them is not a fight")
+
+    def test_missing_health_is_not_a_zero_cost(self):
+        rows = [dict(_advisory(1), turn=1, health=None, analysis={}),
+                dict(_advisory(1), turn=2, health=20, analysis={"armor": 0})]
+        report = session_report.build(rows, session_key="s#1", game=1)
+        self.assertIsNone(report["advisories"][0]["hp_change"])
+
+    def test_the_new_fields_pass_the_reports_own_verifier(self):
+        """SPEC and MANIFEST_SPEC are the whitelists: a field neither names is
+        dropped on the way out, and the two are checked separately."""
+        rows = [dict(_advisory(1), turn=1, health=30, analysis={"armor": 1}),
+                dict(_advisory(1), turn=2, health=20, analysis={"armor": 0})]
+        report = session_report.build(rows, session_key="s#1", game=1,
+                                      placement=1)
+        problems, findings = session_report.check(report)
+        self.assertEqual((problems, findings), ([], {}))
+        self.assertEqual(report["advisories"][0]["hp_change"], -11)
+
+
 if __name__ == "__main__":
     unittest.main()

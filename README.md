@@ -228,7 +228,8 @@ played under "nothing leaves your machine", and it is never sent, not even after
 you say yes.
 
 If you say yes, a summary is your decisions and how the game went: turn, gold,
-tavern tier, health, what was advised, and what happened next. Not your name, not
+tavern tier, health, what was advised, what happened next, **where you finished**
+and what each fight cost you in effective HP. Not your name, not
 the chat, not your file paths, and not your log file. A copy of everything sent
 is kept in `session_reports/` in the app folder, so you can read it yourself.
 

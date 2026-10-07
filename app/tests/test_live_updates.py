@@ -1301,5 +1301,62 @@ class TestPickDedup(unittest.TestCase):
         self.assertEqual(ui.call_count, 2)
 
 
+class TestFinalPlacement(unittest.TestCase):
+    """Our FINAL placement, which is not the live standing (2026-10-07).
+
+    `current_place` is the last write ANY hero entity made, and the coach's last
+    advisory is taken before the final fight resolves — measured over three real
+    games, it read 4 where the game's own tag says 3. The game also re-creates
+    the friendly hero for the final leaderboard with a fresh, HIGHER entity id
+    and a STALE placement, which is the trap extract_game guards with "keep the
+    lowest entity id per card". Both are pinned here, because a wrong placement
+    in the shared report is a wrong number in every conclusion drawn from it.
+    """
+
+    CARD = "BG31_HERO_801"
+
+    def _line(self, eid, place, card=None, player=2):
+        return ("D 06:28:22.6049640 PowerTaskList.DebugPrintPower() -     "
+                f"TAG_CHANGE Entity=[entityName=Someone id={eid} zone=PLAY "
+                f"zonePos=0 cardId={card or self.CARD} player={player}] "
+                f"tag=PLAYER_LEADERBOARD_PLACE value={place} \n")
+
+    def _coach(self, lines):
+        coach = LiveCoach()
+        coach.hero_card = self.CARD
+        coach.friendly = 2
+        for line in lines:
+            coach.feed(line)
+        return coach
+
+    def test_unknown_before_the_log_says_it(self):
+        self.assertIsNone(self._coach([]).final_placement())
+
+    def test_a_churned_standing_settles_on_the_last_write(self):
+        coach = self._coach([self._line(100, 3), self._line(100, 4),
+                             self._line(100, 3)])
+        self.assertEqual(coach.final_placement(), 3)
+
+    def test_the_recreated_hero_does_not_override_with_a_stale_place(self):
+        """The exact trap: the final-leaderboard copy of our hero carries a
+        higher entity id and an older placement. A plain last-write read
+        returns 5 here, which is the number the corpus would then carry."""
+        coach = self._coach([self._line(100, 3), self._line(100, 4),
+                             self._line(100, 3), self._line(300, 5)])
+        self.assertEqual(coach.final_placement(), 3)
+
+    def test_another_players_place_is_not_ours(self):
+        coach = self._coach([self._line(100, 3), self._line(200, 1, player=13),
+                             self._line(201, 2, card="BG22_HERO_000",
+                                        player=13)])
+        self.assertEqual(coach.final_placement(), 3)
+
+    def test_no_hero_card_yet_is_none(self):
+        coach = LiveCoach()
+        coach.friendly = 2
+        coach.feed(self._line(100, 3))
+        self.assertIsNone(coach.final_placement())
+
+
 if __name__ == "__main__":
     unittest.main()

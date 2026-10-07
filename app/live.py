@@ -510,7 +510,13 @@ def monitor(path, poll=1.0):
             # happened, from the placement the last analysis already carried.
             state = _game_state(coach)
             if state and state[1] and not (_LAST_GAME and _LAST_GAME[1]):
-                coach_ui.show_game_over(coach_ui.latest_analysis())
+                # The game's own placement, not the last analysis's standing:
+                # the advisory is taken before the final fight resolves, and the
+                # standing it carries can be one the game later revised
+                # (measured 2026-10-07). Same number the report gets below.
+                _final_place = coach.final_placement()
+                coach_ui.show_game_over(coach_ui.latest_analysis(),
+                                        placement=_final_place)
                 # ... and offer the review of THAT game. Off-thread: it
                 # replays the game, and this tick still has a log to answer.
                 _settle_up_in_background(path, state[0])
@@ -537,7 +543,7 @@ def monitor(path, poll=1.0):
                 _LAST_SHARE_ATTEMPT[0] = time.time()
                 _share_finished(path,
                                 [a for a in sys.argv[1:] if a.startswith("--")],
-                                _LAST_GAME)
+                                _LAST_GAME, coach.final_placement())
             time.sleep(poll)
     except KeyboardInterrupt:
         pass
@@ -593,7 +599,7 @@ def _in_progress_game(last_game):
     return None if ended else game_no
 
 
-def _share_game(log_path, game, opts=()):
+def _share_game(log_path, game, opts=(), placement=None):
     """Send ONE finished game's summary, if the player agreed to share.
 
     Per game rather than per session since 2026-10-04, after a measured case:
@@ -614,7 +620,7 @@ def _share_game(log_path, game, opts=()):
         return "already-sent"
     try:
         import share
-        outcome = share.share_session(log_path, game=game)
+        outcome = share.share_session(log_path, game=game, placement=placement)
         # Memoised unless the send can still succeed later: a transport failure
         # is worth another try, while "refused" (the verifier rejected the very
         # same content) would be refused again — and re-reading a 6 MB decision
@@ -627,9 +633,14 @@ def _share_game(log_path, game, opts=()):
         return "error"
 
 
-def _share_finished(log_path, opts=(), last_game=None):
+def _share_finished(log_path, opts=(), last_game=None, placement=None):
     """The end-of-session backstop: share every FINISHED game not sent yet.
 
+    `placement` is the just-finished game's own placement
+    (`LiveCoach.final_placement()`), and it is attached ONLY to that game: the
+    backstop can walk several unsent games at once, and an older game's
+    placement is not something this process still knows. `just_ended` is the
+    game it belongs to.
     Kept alongside the game-level share because that one only fires when the
     coach SEES a game end. A game that ended while the coach was not looking, or
     one whose end landed in the same tick as a session switch, would otherwise be
@@ -660,6 +671,9 @@ def _share_finished(log_path, opts=(), last_game=None):
     if last_game is None:
         last_game = _LAST_GAME
     skip = _in_progress_game(last_game)
+    # The game this process just watched end, so its placement goes to the right
+    # report when the backstop walks several.
+    just_ended = last_game[0] if last_game and last_game[1] else None
     if skip is not None:
         games = [g for g in games if g != skip]
     if not games:
@@ -673,7 +687,9 @@ def _share_finished(log_path, opts=(), last_game=None):
         except Exception as e:      # noqa: BLE001 - never break the coach
             print(f"  (could not share this session: {e})", flush=True)
             return "error"
-    outcomes = [_share_game(log_path, g, opts) for g in games]
+    outcomes = [_share_game(log_path, g, opts,
+                            placement=placement if g == just_ended else None)
+                for g in games]
     for outcome in outcomes:
         if outcome not in ("skipped", "already-sent", "already"):
             return outcome

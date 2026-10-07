@@ -187,7 +187,7 @@ def _consented(records):
             if isinstance(r.get("ts"), str) and r["ts"] >= decided]
 
 
-def share_session(log_path, url=None, quiet=False, game=None):
+def share_session(log_path, url=None, quiet=False, game=None, placement=None):
     """Distil, verify and send one session. Returns a short outcome word.
 
     Never raises and never blocks play: the coach's job is advice, and a
@@ -228,7 +228,8 @@ def share_session(log_path, url=None, quiet=False, game=None):
         # so a re-send has to be byte-identical, and each game is its own
         # report now (2026-10-04).
         session_key = f"{session_key}#{game}"
-    report = session_report.build(records, session_key=session_key, game=game)
+    report = session_report.build(records, session_key=session_key, game=game,
+                                  placement=placement)
     report_id = report["manifest"]["report_id"]
     if report_id in _sent_ids():
         return "already"
