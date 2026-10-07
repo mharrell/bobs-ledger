@@ -291,6 +291,60 @@ class TestReport(unittest.TestCase):
         self.assertNotIn("led with a cast", settle_up.render_text(rep))
 
 
+class TestTheRemovedSummonsIsDisclosed(unittest.TestCase):
+    """A survivor board that dropped the fight's leftovers says so.
+
+    `turn_review._opening_board` removes a fight's summoned copies from the
+    opening and surviving boards (reported and fixed 2026-10-07, trap 3.6 of
+    `analysis/SETTLE_UP_BOARDS.md`). The count rides on the row as
+    `battle_end_removed`, and both reports have to print it: a board that reads
+    shorter than the log wrote must never be a silent edit.
+    """
+
+    @staticmethod
+    def _rep(removed):
+        turn = {"turn": 15, "gold": 9, "stats": {"buy_end": 30, "growth": 0},
+                "spend": {"total": 9}, "sell_questions": [],
+                "commitment": {"target": None}, "notes": [],
+                "combat_start": {"ours": [], "theirs": []},
+                "combat_ours_text": "", "combat_theirs_text": "",
+                "buy_end": [], "buy_end_text": "Eternal Knight 282/119 (golden)",
+                "battle_end": [], "battle_end_text": "Eternal Knight 282/119 (golden)",
+                "battle_end_removed": removed}
+        return {"schema": settle_up.SCHEMA, "created": "2026-10-07T00:00:00",
+                "session": "test-session", "log": "Power.log", "game": 1,
+                "hero": "Tavish Stormpike", "placement": 1,
+                # One advised phase, because a report with none stops at
+                # "nothing to settle" and never reaches the boards at all.
+                "phases": [{"turn": 15, "tier": 6, "gold": 9, "eff_hp": 30,
+                            "plan": "1. Buy X", "lead": "buy", "kind": "taken",
+                            "verdict": "taken", "named": "X", "reasons": [],
+                            "acted": "bought it", "buys": ["it"],
+                            "outcome": -3, "outcome_note": None}],
+                "timeline": {"turns": [turn]}, "timeline_error": None,
+                "totals": settle_up._totals([{"kind": "taken", "outcome": -3}],
+                                            {}),
+                "caveat": settle_up.CAVEAT}
+
+    def test_the_text_report_says_how_many_were_removed(self):
+        text = settle_up.render_text(self._rep(2))
+        self.assertIn("survived", text)
+        self.assertIn("2 leftover summon(s)", text)
+        self.assertIn("a board holds 7", text)
+
+    def test_the_html_report_says_it_too(self):
+        html = settle_up.render_html(self._rep(2))
+        self.assertIn("2 leftover summon(s)", html)
+        self.assertIn("a board holds 7", html)
+
+    def test_the_control_an_untouched_board_prints_nothing(self):
+        # Rehearsal: the line must come from the COUNT, not from rendering a
+        # timeline at all — otherwise it would appear on every turn and read as
+        # noise the player learns to skip.
+        self.assertNotIn("leftover summon(s)", settle_up.render_text(self._rep(0)))
+        self.assertNotIn("leftover summon(s)", settle_up.render_html(self._rep(0)))
+
+
 class TestSessionAggregation(unittest.TestCase):
     """The session and history views: pure aggregation over full reports."""
 

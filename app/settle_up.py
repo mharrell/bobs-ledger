@@ -249,6 +249,19 @@ def _fmt_board(board, names):
         for m in board)
 
 
+def _removed_note(n):
+    """One line, in the report and in the page's words: a board that reads
+    shorter than the raw snapshot says why it does.
+
+    `turn_review._opening_board` drops the previous fight's leftover summons
+    from the opening and surviving boards (trap 3.6 of
+    `analysis/SETTLE_UP_BOARDS.md`); the count rides on the row so every
+    renderer can say it rather than silently showing a shorter board.
+    """
+    return (f"{n} leftover summon(s) from the fight were removed from the "
+            f"surviving board — a board holds 7")
+
+
 def _timeline(log_path, game_index, names):
     """The per-turn board timeline, formatted for the report.
 
@@ -430,6 +443,11 @@ def render_text(rep):
             if r["combat_theirs_text"]:
                 out.append(f"   they brought    : {r['combat_theirs_text']}")
             out.append(f"   survived        : {r['battle_end_text'] or '(not readable)'}")
+            # The survivor board drops the fight's leftover summons
+            # (turn_review._opening_board); a report that shows a shorter board
+            # than the log wrote has to say so, here as on the page.
+            if r.get("battle_end_removed"):
+                out.append(f"   note: {_removed_note(r['battle_end_removed'])}")
             for q in r.get("sell_questions") or []:
                 if q.get("rebuild"):
                     out.append(f"   ~ rebuilt the board: sold {q['sold_count']} "
@@ -524,6 +542,11 @@ def _timeline_html(rep):
                     f'&mdash; worth a look, not a verdict</div>')
         for n in r["notes"]:
             flags.append(f'<div class=note>{e(n)}</div>')
+        # The survivor board drops the fight's leftover summons
+        # (turn_review._opening_board); the report says so, as the page does.
+        if r.get("battle_end_removed"):
+            flags.append(f'<div class=note>'
+                         f'{e(_removed_note(r["battle_end_removed"]))}</div>')
         went_in = r["combat_ours_text"] or r["buy_end_text"] or "(no board read)"
         blocks.append(
             f'  <section class=turn>\n'
