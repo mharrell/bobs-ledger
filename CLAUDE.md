@@ -525,6 +525,22 @@ as the view on screen and every turn below it moved.
   only, and the whitespace a shorter view leaves inside the shared box is a
   judgement about the layout, not a number.
 
+**9. The README never introduced the TWO TABS (2026-10-07).** It described the
+live page without ever naming it, and mentioned "Settle Up" only in passing
+inside its own section — so a reader who opened the app met two tabs the README
+had never named. There is a `## The two tabs` section now, ahead of "What you'll
+see": what each one is for, that the tab you are on survives a reload, and that
+the live poll runs on BOTH tabs so looking at an old game costs nothing (checked
+in the source — `setInterval(poll, 300)` is unconditional — rather than assumed).
+
+The same pass settled a 10-04 open item: the README's in-page anchors were an
+unverified assumption about GitHub's slugger, and they are now verified
+EXTERNALLY by fetching the rendered repo page and looking for the ids GitHub
+emits (`user-content-<slug>`, all five present, `?` stripped). Two sentences were
+tightened on the way through: the intro and the Settle Up section both said
+"Result says who won" flatly, and a turn whose fights ran together says the
+result is unreadable instead — the honesty is disclosed, not just the feature.
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a
@@ -758,8 +774,13 @@ inside the budget a session loads. What is still LIVE from it:
 2. **9 tests are dead behind `HEARTH_REAL_SESSION_TESTS`** — nothing sets it.
 3. **`upload_corpus.py` and `fetch_sessions.py` ship to players**, and the corpus
    path is the only one that carries a log (see the afternoon session's item 1).
-4. **The README's `#is-this-allowed` anchor is an unverified assumption** — it
-   assumes the slugger strips the `?`. Cheap check: click it on the repo page.
+4. **~~The README's `#is-this-allowed` anchor is an unverified assumption~~** —
+   VERIFIED 2026-10-07 by fetching the RENDERED repo page and looking for the id
+   GitHub emits: `user-content-is-this-allowed` is there, and so are the four
+   other in-page anchors (`settle-up-the-review`, `the-one-question-it-asks-you`,
+   `turn-on-hearthstones-logging`, `if-somethings-wrong`). The `?` IS stripped.
+   The cheap version of this check is a `curl` of the repo page plus a grep for
+   `user-content-<slug>`, which needs no browser and no checkout.
 5. **Six guide files belong to pruned comps** (`demons-apm-shop-buff`,
    `elementals-stat-scaling`, `mechs-magnetics`, `murlocs-apm`,
    `nagas-groundbreaker`, `nagas-end-of-turn-spell-buff`) — kept on purpose.
