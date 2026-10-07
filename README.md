@@ -97,8 +97,14 @@ worth. Nothing on the page names a move.
 
 ## Settle Up (the review)
 
-When a game ends, the card on screen offers **Settle up**. That is where the
-model's plan lives, and it is the only place you see it.
+When a game ends, the card on screen offers **Settle up** — and a **Save
+replay** button beside it. Saving keeps that game in the overlay's **Settle
+Up** tab (the second tab at the top of the page, next to **Another Round**):
+pick any saved game from the dropdown and the same turn-by-turn view opens
+with real card tiles. Saving is per game and yours alone — nothing saved
+leaves your machine, and it never ships in a release. The review page the
+**Settle up** link opens is unchanged: a standalone file you can keep, and
+`settle_up.py --session / --history` still work for games still in the log.
 
 **The part the game never shows you: the board, three times a turn.** For every
 turn the review prints what you went in with, what your opponent brought, and

@@ -204,3 +204,14 @@ reopened by accident:**
    phase-by-phase view. The question assumed a single choice between two scored
    framings, and the thing that turned out to be worth leading with was the
    reconstruction the game itself cannot show.
+4. ~~The review is deliberately a standalone page, not part of the overlay
+   (§4 Phase 2's one deviation). Does the tab work (2026-10-07) undo that?~~
+   **No — it extends it.** The overlay page grew a Settle Up TAB, but the tab
+   is a browser over SAVED games served from `/review/*` endpoints and a
+   per-user store (`app/replay_store.py`, release-excluded); the standalone
+   page remains exactly what it was, for the same reason (a keepsake with no
+   process behind it). The contract is re-pinned, not rewritten: `/analysis`
+   still carries no verdict fields (`test_live_view.py`), and
+   `test_settle_tab.py::TestTheWall` pins the new surface to the same rule —
+   settle data reaches the page only through `/review/*`, and only for games
+   that are over.
