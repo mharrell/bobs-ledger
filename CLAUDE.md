@@ -440,6 +440,24 @@ overlay", and the Clear button went with the tab work on 10-07 — no test could
 see it, because no test reads that paragraph. Rewritten to describe the corner
 control.
 
+**5. PUBLISHED AND VERIFIED FROM THE PLAYER'S SIDE (2026-10-07): release
+`ac00962`** — the pick panel's statistics and the corner sharing control, on top
+of the two releases in the night-session section. All three gates passed and it is
+signed with the pinned key; the live manifest verifies against `PUBKEY_B64`, its
+`zip_bytes`/`zip_sha256` match the download (1430380 bytes, 245 entries), the pin
+inside the zip matches this checkout, and the root holds exactly the launcher, the
+README, the licence, `docs/` and the two stamps. Verified by RUNNING the shipped
+code rather than by grepping it: the rankers inside the published zip return the
+new facts (`picked in 60% of games`; `avg place 4.18 · top-4 in 56% of its games`;
+`core of Beasts (you have 1 of its 1) · a second copy triples`) with the `order`
+slot, and with no displayed comp they return **empty facts** — no claim, no rank.
+The two `"best …"` strings still in the shipped `choices.py` are the docstring
+that says they are gone, which is worth knowing before a future check reads a grep
+as a leak. The SHIPPED updater, from a state reading `409a47e` (where players are),
+offers the update and exits 1; the same shipped code refuses a tampered manifest
+and names the key fingerprint. Neither gotcha appeared; `latest.json` served the
+new manifest on the first read.
+
 ## Where the 2026-10-07 session left off (release channel hardened)
 
 Triggered by a security audit of the whole app after a Reddit thread called it a
