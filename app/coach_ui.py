@@ -43,6 +43,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from value import (_load_bg_names, _load_card_db, _load_spell_db,
                    DYING_HEALTH, SELL_FILLER_SCORE,
                    HAND_DEPLOY_KITS, hand_engine, sell_reason)
+# The module itself, for the serve-time name join in _name_timeline_boards —
+# the `from ... import` above brings the names it uses live, not the module.
+import value
 import pool
 import meta
 import config
@@ -718,7 +721,14 @@ _HTML = r"""<!doctype html>
   .turn .q { color:var(--warn); }
   .turn .phase { border-top:1px dashed var(--gridline); margin-top:8px;
                  padding-top:8px; font-size:13px; color:var(--text-2); }
-  .turn .phase .pplan { color:var(--text); }
+  .turn .phase .pacted { color:var(--text); font-weight:600; }
+  .turn .phase .pacted .pout { color:var(--dim); font-weight:400;
+                               font-size:12px; }
+  .turn .phase details.coach { margin-top:4px; }
+  .turn .phase details.coach summary { cursor:pointer; color:var(--dim);
+                                       font-size:12px; }
+  .turn .phase details.coach summary:hover { color:var(--text-2); }
+  .turn .phase .pplan { color:var(--text); margin-top:4px; }
   .turn .phase .v { font-weight:600; }
   .turn .phase .v-taken { color:var(--good); }
   .turn .phase .v-ignored { color:var(--bad); }
@@ -1749,9 +1759,24 @@ function renderSettleGame(rep) {
     box.appendChild(settleTurnCard(r, phases.filter(p => p.turn === r.turn)));
     if (r.turn != null) seen.add(r.turn);
   }
+  // Phases whose turn has no timeline card (measured: the FINAL DUEL is
+  // turn 16 of a 15-turn timeline — the game ends without a shop, so no
+  // snapshots exist for it) belong to the story's last card, not a
+  // mystery "Turn ?".
   const rest = phases.filter(p => !seen.has(p.turn));
-  if (rest.length) box.appendChild(settleTurnCard(
-    {turn: '?', gold: '—', stats: {}, spend: {}, commitment: {}, notes: []}, rest));
+  if (rest.length && turns.length) {
+    const lastCard = box.lastChild;
+    const extra = document.createElement('div');
+    extra.className = 'brow';
+    extra.innerHTML = '<span class="blbl">End of game</span>'
+      + '<span>the final duel\'s phases, below</span>';
+    lastCard.appendChild(extra);
+    for (const p of rest) lastCard.appendChild(phaseRow(p));
+  } else if (rest.length) {
+    box.appendChild(settleTurnCard(
+      {turn: '?', gold: '—', stats: {}, spend: {}, commitment: {}, notes: []},
+      rest));
+  }
 }
 // One board row of a turn card: card tiles when the stored board is
 // structured (the server joins display names at serve time), the text the
@@ -1778,6 +1803,36 @@ function boardRow(lbl, list, text, cls) {
     s.textContent = text || '—';
     d.appendChild(s);
   }
+  return d;
+}
+// One advised phase, the way a player reads it (2026-10-07): what THEY did
+// first, the cost of it next to that, and the model's line folded away
+// underneath — there to open, never shouting.
+function phaseRow(p) {
+  const d = document.createElement('div');
+  d.className = 'phase';
+  const acted = document.createElement('div');
+  acted.className = 'pacted';
+  acted.textContent = 'You: ' + (p.acted || '(no actions recorded)');
+  d.appendChild(acted);
+  if (p.outcome != null || p.outcome_note) {
+    const out = document.createElement('span');
+    out.className = 'pout';
+    out.textContent = p.outcome != null
+      ? (' — next fight: ' + (p.outcome > 0 ? '+' : '') + p.outcome + ' HP')
+      : ' — ' + (p.outcome_note || '');
+    acted.appendChild(out);
+  }
+  const det = document.createElement('details');
+  det.className = 'coach';
+  const sum = document.createElement('summary');
+  sum.textContent = p.verdict ? ('coaching — ' + p.verdict) : 'coaching';
+  const plan = document.createElement('div');
+  plan.className = 'pplan';
+  plan.textContent = p.plan || '(no plan recorded for this phase)';
+  det.appendChild(sum);
+  det.appendChild(plan);
+  d.appendChild(det);
   return d;
 }
 function settleTurnCard(r, phases) {
@@ -1851,32 +1906,7 @@ function settleTurnCard(r, phases) {
     sellFlags.appendChild(d);
   }
   const phaseRows = document.createElement('div');
-  for (const p of phases) {
-    const d = document.createElement('div');
-    d.className = 'phase';
-    const v = document.createElement('span');
-    v.className = 'v v-' + (p.kind || 'none');
-    v.textContent = p.verdict ? ('[' + p.verdict + '] ') : '';
-    const plan = document.createElement('span');
-    plan.className = 'pplan';
-    plan.textContent = p.plan || '';
-    d.appendChild(v); d.appendChild(plan);
-    if (p.acted) {
-      const acted = document.createElement('div');
-      acted.className = 'pout';
-      acted.textContent = 'you: ' + p.acted;
-      d.appendChild(acted);
-    }
-    if (p.outcome != null || p.outcome_note) {
-      const out = document.createElement('div');
-      out.className = 'pout';
-      out.textContent = p.outcome != null
-        ? ('next fight: ' + (p.outcome > 0 ? '+' : '') + p.outcome + ' HP')
-        : (p.outcome_note || '');
-      d.appendChild(out);
-    }
-    phaseRows.appendChild(d);
-  }
+  for (const p of phases) phaseRows.appendChild(phaseRow(p));
   // BATTLE — the fight after beginning-of-combat effects, both sides from
   // the same (peak) burst so the rows are honest relative to each other.
   // Opponent on top, mirroring the in-game combat view (2026-10-07).
@@ -2284,7 +2314,11 @@ def _name_timeline_boards(rep):
                       (row.get("combat_peak") or {}).get("ours"),
                       (row.get("combat_peak") or {}).get("theirs")):
             for m in board or []:
-                m["name"] = names.get(m.get("card"), m.get("card"))
+                m["name"] = value.display_name(names, m.get("card"))
+                # a `_G` id IS the golden version, whether or not the
+                # snapshot's golden tag caught it
+                if str(m.get("card") or "").endswith("_G"):
+                    m["golden"] = True
     return out
 
 
