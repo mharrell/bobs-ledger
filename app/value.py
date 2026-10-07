@@ -2269,15 +2269,6 @@ def _health_cost_spell(analysis, cid, spell_db):
     return ("costs Health instead of gold (Bazaar Sticker)", True)
 
 
-def _shop_name(cid, names):
-    """Display name for a shop card id — goldens resolve to the base card's
-    name (the names DB has base ids) and carry a "(golden)" tag."""
-    if cid.endswith("_G"):
-        base = cid[:-2]
-        return f"{names.get(base, base)} (golden)"
-    return names.get(cid, cid)
-
-
 def _fuel_line(analysis, card_db, spell_db, names, costs, spare):
     """'feed the engine' advice (Plan 2 Layer B) or None.
 
@@ -2313,7 +2304,7 @@ def _fuel_line(analysis, card_db, spell_db, names, costs, spare):
             if any(k in text for k in ("summon", "get a random",
                                        "get a different minion")):
                 cand = (1.0 / max(price, 1),
-                        f"cast {_shop_name(cid, names)} ({price}g)")
+                        f"cast {display_name(names, cid)} ({price}g)")
                 if best is None or cand[0] > best[0]:
                     best = cand
             continue
@@ -2322,7 +2313,7 @@ def _fuel_line(analysis, card_db, spell_db, names, costs, spare):
         if card and overlaps(normalize(card.get("race")
                                        or card.get("tribe")), tribe):
             cand = (1.0 / max(price, 1),
-                    f"buy {_shop_name(base, names)} ({price}g)")
+                    f"buy {display_name(names, base)} ({price}g)")
             if best is None or cand[0] > best[0]:
                 best = cand
     if best is None:
@@ -2741,8 +2732,8 @@ def _top_move_text(analysis):
                                    and costs.get(alt) is not None
                                    and budget >= costs.get(alt)), None)
                 if alt_minion is None and budget:
-                    wasted = (f"roll — casting {_shop_name(cid, names)} with no "
-                              f"gold left for a shop minion wastes it "
+                    wasted = (f"roll — casting {display_name(names, cid)} with "
+                              f"no gold left for a shop minion wastes it "
                               f"(the buff dies with the shop)")
                     parts.append(wasted)
                     analysis["buy_step_roll"] = wasted
@@ -2799,7 +2790,7 @@ def _top_move_text(analysis):
                         nm = ", ".join(r["name"]
                                        for r in (specific or feasible)[:2])
                         roll = (f"roll — hunting {nm} (best shop card "
-                                f"{_shop_name(cid, names)}, {cost}g, doesn't "
+                                f"{display_name(names, cid)}, {cost}g, doesn't "
                                 f"fit your {budget} gold left{when})")
                     elif fuel is not None:
                         roll = (f"roll — feed the engine: "
@@ -2878,7 +2869,7 @@ def _top_move_text(analysis):
                                     analysis.get("playable_comps") or {})]
                     nm = ", ".join(r["name"] for r in (specific or feasible)[:2])
                     parts.append(f"roll — hunting {nm} "
-                                 f"({_shop_name(cid, names)} is off-build)")
+                                 f"({display_name(names, cid)} is off-build)")
                     analysis["buy_step_roll"] = parts[-1]
                     analysis["buy_step_card"] = None
                     analysis["hunt_targets"] = [r["card"]
@@ -2919,14 +2910,14 @@ def _top_move_text(analysis):
                                  recipes=recipes)
             if health_why:
                 why = f"{why}; {health_why[0]}"
-            parts.append(f"Buy {_shop_name(cid, names)} ({why})")
+            parts.append(f"Buy {display_name(names, cid)} ({why})")
             # Name the engine once, right after the fuel buy (the 2026-09-15
             # Shudderwock game's miss: the coach ranked Tavern Tempest but
             # never said the hero power x trinket loop was the build).
             for rec in recipes:
                 if recipe_fuel_hit(card_db.get(cid), rec):
                     parts.append((rec.get("line") or "").format(
-                        card=_shop_name(cid, names)))
+                        card=display_name(names, cid)))
                     break
             if level_next and tier and analysis.get("level_cost") is not None:
                 level_cost = analysis.get("level_cost")
@@ -4097,12 +4088,23 @@ def _load_bg_names():
 
 
 def display_name(names, cid):
-    """Display name for a card id, falling through the `_G` golden variant.
+    """Display name for a card id — the ONE place a golden gets spelled out.
 
-    Golden minions log under their OWN id — `BG36_100_G`, not `BG36_100` —
-    and the name DBs only carry the base. `BG36_100_G` is Eternal Knight's
-    golden, so it displays as "Eternal Knight (Golden)" (the maintainer's
-    convention, 2026-10-07). Unknown ids come back as themselves.
+    Golden minions log under their OWN id — `BG36_100_G`, not `BG36_100` — and
+    the name DBs carry only the base, so a `_G` id resolves against its base
+    and carries a "(golden)" tag. `BG36_100_G` is `BG36_100`'s golden.
+
+    **Lowercase, and one spelling for every caller.** This is the string the
+    live plan text has always carried, and `split_step` parses that text back
+    to grade it (`test_value` anchors "Buy River Skipper (golden)"), so a
+    second capitalization on the Settle Up tab would be a second convention
+    for one fact — and a renderer that stopped being parseable. A 2026-10-07
+    draft added `display_name` beside `_shop_name` spelling it "(Golden)";
+    they are one function now.
+
+    Unknown ids come back as themselves rather than as nothing: a review that
+    silently omits a card is worse than one showing `BG36_318` (the rule
+    `review_kit`'s pre-flight applies).
     """
     cid = str(cid or "")
     if cid in names:
@@ -4110,7 +4112,7 @@ def display_name(names, cid):
     if cid.endswith("_G"):
         base = names.get(cid[:-2])
         if base:
-            return f"{base} (Golden)"
+            return f"{base} (golden)"
     return cid
 
 

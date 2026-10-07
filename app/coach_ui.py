@@ -2314,11 +2314,12 @@ def _name_timeline_boards(rep):
                       (row.get("combat_peak") or {}).get("ours"),
                       (row.get("combat_peak") or {}).get("theirs")):
             for m in board or []:
+                # Naming only: the golden flag is ALREADY on the minion, because
+                # board_state._minion strips the `_G` suffix off the card id and
+                # keeps the flag beside it. Measured on a 15-turn rep: 0 board
+                # ids end in `_G`, 91 minions carry golden. A draft also set
+                # `golden` here from a `_G` id — a case this path cannot produce.
                 m["name"] = value.display_name(names, m.get("card"))
-                # a `_G` id IS the golden version, whether or not the
-                # snapshot's golden tag caught it
-                if str(m.get("card") or "").endswith("_G"):
-                    m["golden"] = True
     return out
 
 

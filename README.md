@@ -112,11 +112,11 @@ turn the review shows what you brought into the fight, what your opponent
 brought, and what survived — plus what the turn cost.
 
     t5  7g  board 15 stats (+12)  spent 7g
-       you brought     : Locked-up Mutineer 6/3, Crackling Cyclone 2/1 x2,
-                         Wolf Pup 3/6, Fire Baller 4/3
+       you brought     : Locked-up Mutineer 6/3, Crackling Cyclone 2/1,
+                         Crackling Cyclone 2/1, Wolf Pup 3/6, Fire Baller 4/3
        they brought    : Dune Dweller 3/3, Fetid Corroder 3/3
        survived        : Wolf Pup 3/6, Locked-up Mutineer 6/3, Fire Baller 4/3,
-                         Crackling Cyclone 2/1 x2
+                         Crackling Cyclone 2/1, Crackling Cyclone 2/1
 
 The numbers on that line are the turn's own: gold at the end of the buy phase,
 your board's total attack + health and how much it changed, and what you spent
@@ -126,13 +126,22 @@ verdict, and a turn where you sold most of your board is labelled a rebuild
 instead, because that is what it is. Keep an eye out for `*` after a minion's
 stats: that one is golden.
 
-**Then the phase-by-phase view**, which is where the plan is:
+Each turn card opens on **Battle** — your board and your opponent's, theirs on
+top, the way the game shows a fight. **Shop** is the board you opened with and
+the board you closed the shopping on, plus what the turn did (cards played, gold
+spent, board value gained, a level-up, a hero power, a trinket), and the model's
+line for that phase. **Result** says who won, what each side kept, and what the
+fight cost you in effective HP.
 
-- **Model** — the plan it would have played, e.g. "1. LEVEL to tier 4 · 2. Buy
-  Bronze Warden".
-- **You** — what the log says you did: bought, rolled, levelled up, sold.
-- **The fight after it** — effective HP gained or lost across the next combat.
-  Negative means it hurt.
+**Then the phase-by-phase view, inside each turn's Shop view**, which is where
+the plan lives — your own line first, the model's folded behind it:
+
+- **You** — what the log says you did: bought, rolled, levelled up, sold. What
+  the fight after it cost you in effective HP sits on the same line; negative
+  means it hurt.
+- **coaching** (click to open) — the plan it would have played, e.g. "1. LEVEL
+  to tier 4 · 2. Buy Bronze Warden", headed by what it made of your line:
+  taken, not taken, or not graded.
 
 It also says how much of itself it *could not* judge. A plan that opens with a
 minion swap, or with a spell whose card it could not resolve, is reported as
