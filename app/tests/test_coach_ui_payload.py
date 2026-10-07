@@ -2,6 +2,7 @@
 thresholds come from value.py's constants (the JS no longer hard-codes its
 own copies), the dead buy_label is gone, and the fuel gate keys on the
 same threshold the sell split uses."""
+import json
 import os
 import sys
 import unittest
@@ -78,6 +79,42 @@ class TestFuelGate(unittest.TestCase):
 
     def test_undead_at_threshold_is_not_fuel(self):
         self.assertIsNone(self._run_fuel(SELL_FILLER_SCORE).get("fuel"))
+
+
+class TestSharingRidesEveryPayload(unittest.TestCase):
+    """The consent answer is reachable for the whole session, not just on the
+    welcome card (2026-10-07).
+
+    The "stop sharing" control used to live on the welcome/end-of-game card,
+    which is on screen only at a game's start or end — so during the game it
+    described, sharing could not be turned off from the page at all. It is a
+    quiet line in the top-right corner now, and the corner renders from EVERY
+    payload, so every payload has to carry the state.
+    """
+
+    def test_the_live_payload_carries_the_consent_state(self):
+        out = coach_ui.render_json(_base_analysis())
+        self.assertIn("share", out)
+        self.assertIn(out["share"]["status"], ("on", "off", "undecided"))
+        self.assertIn("toggle", out["share"], "the corner needs its label")
+        self.assertEqual(out["share"]["ask"],
+                         out["share"]["status"] == "undecided")
+
+    def test_the_welcome_card_and_the_live_page_agree(self):
+        """One builder: a player must never see the card say one thing and the
+        corner another. `welcome_payload` returns the serialized body, so this
+        reads it back the way the page does."""
+        live = coach_ui.render_json(_base_analysis())["share"]
+        welcome = json.loads(coach_ui.welcome_payload())["share"]
+        self.assertEqual(live, welcome)
+
+    def test_the_consent_key_is_not_an_analysis_field(self):
+        """It is added in render_json, so it never reaches decision_log and
+        never reaches session_report.SPEC — whose whitelist REFUSES any
+        analysis key it does not name (the 2026-10-07 hand_step_cards lesson)."""
+        a = _base_analysis()
+        coach_ui.render_json(a)
+        self.assertNotIn("share", a)
 
 
 if __name__ == "__main__":

@@ -669,6 +669,20 @@ _HTML = r"""<!doctype html>
   #tabs .tab:hover { color:var(--text-2); }
   #tabs .tab.on { color:var(--text); background:var(--panel2);
                   border-color:rgba(255,255,255,.22); }
+  /* The sharing control (2026-10-07): a quiet line at the right end of the tab
+     row, not a button on a card. It has to be reachable for as long as sharing
+     is ON — that is what keeps the answer reviewable and reversible — and the
+     card it used to live on is only on screen at a game's start or end, so it
+     was invisible for the whole game it was describing. Muted deliberately
+     (--dim, no border until hover): a control that decides whether data leaves
+     the machine should be easy to find and hard to hit by accident. */
+  #tabs #share-toggle { margin-left:auto; background:none;
+                        border:1px solid transparent; color:var(--dim);
+                        font:400 12px "Segoe UI", system-ui;
+                        padding:4px 8px; cursor:pointer; opacity:.55; }
+  #tabs #share-toggle:hover { opacity:1; color:var(--text-2);
+                              border-color:var(--border); }
+  #tabs #share-toggle[hidden] { display:none; }
   #app.off { display:none; }
   #settle { display:none; }
   #settle.on { display:block; }
@@ -744,6 +758,7 @@ _HTML = r"""<!doctype html>
 <nav id="tabs">
 <button class="tab on" data-tab="live">Another Round</button>
 <button class="tab" data-tab="settle">Settle Up</button>
+<button id="share-toggle" hidden></button>
 </nav>
 <div id="app">
 <section id="col-decide"></section>
@@ -1080,6 +1095,7 @@ function renderWelcome(a) {
   const decide = document.getElementById('col-decide');
   const ref = document.getElementById('col-ref');
   const statebar = document.getElementById('statebar');
+  renderShareToggle(a.share);
   decide.innerHTML = '';
   ref.innerHTML = '';
   statebar.textContent = '';
@@ -1092,7 +1108,10 @@ function renderWelcome(a) {
   card.appendChild(el('div', 'w-hint', a.hint || ''));
   if (a.steps) card.appendChild(el('pre', 'w-steps', a.steps));
   card.appendChild(el('div', 'w-priv', a.privacy || ''));
-  if (a.share) card.appendChild(shareRow(a.share));
+  // The question, only while it is a question. Once it has an answer the
+  // control lives in the corner (`renderShareToggle`), where it stays
+  // reachable for the whole session instead of only on this card.
+  if (a.share && a.share.ask) card.appendChild(shareRow(a.share));
   // The review (2026-10-06, PIVOT.md Phase 2). The plan is not on this page
   // any more — this is where a player goes to see it, and the whole point is
   // that it appears only once the game it describes is over. A plain link
@@ -1144,24 +1163,41 @@ function postShare(share) {
 }
 function shareRow(s) {
   const row = el('div', 'w-share');
-  if (s.ask) row.appendChild(el('span', 'w-share-q', s.question || ''));
+  if (!s || !s.ask) return row;   // decided: the corner control owns it now
+  row.appendChild(el('span', 'w-share-q', s.question || ''));
   const button = (label, choice) => {
     const b = el('button', 'w-share-btn', label);
     b.onclick = () => postShare(choice);
     return b;
   };
-  if (s.ask) {
-    row.appendChild(button(s.yes || 'Yes, share', true));
-    row.appendChild(button(s.no || 'No thanks', false));
-  } else {
-    row.appendChild(button(s.toggle || (s.status === 'on' ? 'Turn off'
-                                                         : 'Turn on'),
-                           s.status !== 'on'));
-  }
+  row.appendChild(button(s.yes || 'Yes, share', true));
+  row.appendChild(button(s.no || 'No thanks', false));
   return row;
+}
+// The corner sharing control (2026-10-07). Rendered from EVERY payload, not
+// just the welcome card, so "stop sharing" is one click away for the whole
+// session instead of only at a game's start or end. Hidden while the question
+// is unanswered: the card asks, and two controls asking at once is how a
+// consent question turns into a shrug.
+function renderShareToggle(s) {
+  const b = document.getElementById('share-toggle');
+  if (!b) return;
+  if (!s || s.ask) { b.hidden = true; return; }
+  const on = s.status === 'on';
+  b.hidden = false;
+  b.textContent = s.toggle || (on ? 'Stop sharing' : 'Turn sharing on');
+  b.title = on
+    ? 'Sharing one small summary per game: your decisions and the outcome, '
+      + 'with no names. Click to stop.'
+    : 'Nothing is being shared. Click to send a summary of each game from '
+      + 'now on.';
+  b.onclick = () => postShare(!on);
 }
 function render(a) {
   if (a.welcome) { renderWelcome(a); return; }
+  // Every live payload carries the sharing state too, so the corner control
+  // does not vanish the moment the first buy phase arrives (2026-10-07).
+  renderShareToggle(a.share);
   const app = document.getElementById('app');
   const statebar = document.getElementById('statebar');
   // A rebuild discards the hovered element without a mouseleave — drop the
@@ -2132,6 +2168,32 @@ def _welcome_hint():
             f"{logging_fix})")
 
 
+def share_state():
+    """The consent question and its answer, in one shape for both payloads.
+
+    The page's corner control renders from this, and it renders on EVERY
+    payload — not just the welcome card — because a control that can only be
+    reached at a game's start or end is not actually reversible mid-game
+    (2026-10-07). `toggle` is the control's label; the question's own buttons
+    come from `yes`/`no`.
+
+    **A PAGE payload, not an analysis field.** It is added in `render_json`
+    (and here), so it never reaches `decision_log` and therefore never reaches
+    `session_report.SPEC` — the whitelist with teeth refuses any analysis key
+    it does not name, and "how many reports this machine has sent" has no
+    business in the corpus.
+    """
+    status, sent = share_status()
+    return {"status": status,
+            "ask": status == "undecided",
+            "sent": sent,
+            "question": "Send a summary of each game to help improve "
+                        "the coach?",
+            "yes": "Yes, share summaries",
+            "no": "No thanks",
+            "toggle": "Stop sharing" if status == "on" else "Turn sharing on"}
+
+
 def welcome_payload(game_over=None):
     """The card the overlay shows when there is nothing to advise.
 
@@ -2172,15 +2234,7 @@ def welcome_payload(game_over=None):
         "status": "Waiting for your next buy phase — the board read appears here "
                   "the moment your shop opens.",
         "privacy": privacy,
-        "share": {"status": status,
-                  "ask": status == "undecided",
-                  "sent": sent,
-                  "question": "Send a summary of each game to help improve "
-                              "the coach?",
-                  "yes": "Yes, share summaries",
-                  "no": "No thanks",
-                  "toggle": ("Turn sharing off" if status == "on"
-                             else "Turn sharing on")},
+        "share": share_state(),
     }
     if game_over:
         payload["title"] = "Game over"
@@ -2572,6 +2626,9 @@ def render_json(analysis):
     # the overlay is only written on a successful analyze, and a frozen frame
     # used to look exactly like live advice.
     a["generated"] = time.time()
+    # The sharing state rides every live payload: the corner control has to be
+    # reachable for the whole session, not only on the welcome card (2026-10-07).
+    a["share"] = share_state()
     a["board"] = [dict(m, name=names.get(m["card"], m["card"])) for m in analysis["board"]]
     # Group duplicate board minions (Fauna Whisperer ×2 with different stats
     # used to show as two confusing rows); score = the instance you'd sell

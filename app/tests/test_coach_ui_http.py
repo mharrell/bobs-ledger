@@ -350,6 +350,23 @@ class TestConsentOnTheWelcomeCard(unittest.TestCase):
                        "/share"):
             self.assertIn(needle, coach_ui._HTML)
 
+    def test_the_answer_lives_in_the_corner_and_is_muted(self):
+        """"Stop sharing" is a quiet control at the right end of the tab row
+        (2026-10-07). Three things have to hold for that to be honest rather
+        than hidden: it EXISTS in the markup, it is pushed to the right and
+        dimmed, and the question it answers is still drawn on the card while
+        it is unanswered."""
+        page = coach_ui._HTML
+        self.assertIn('id="share-toggle"', page)
+        self.assertIn("#tabs #share-toggle", page)
+        self.assertIn("margin-left:auto", page)
+        self.assertIn("opacity:.55", page)
+        self.assertIn("function renderShareToggle", page)
+        # Rendered from both render paths: the welcome card and every live
+        # payload. A corner control that only appears at a game's start or end
+        # is the bug this replaced.
+        self.assertEqual(page.count("renderShareToggle(a.share)"), 2)
+
 
 class TestForeignCallers(unittest.TestCase):
     """Binding loopback keeps other MACHINES out; it does not keep other PAGES
