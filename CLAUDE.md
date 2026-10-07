@@ -23,8 +23,10 @@ code), and `test_readme_claims.py` is the control CLAUDE.md item 3 asked for.
 
 **The review EXISTS** (`app/settle_up.py` — the pivot's Phase 2, 2026-10-06): one
 row per advised buy phase, the model's line beside what the player actually did,
-and the effective HP the following fight cost. The end-of-game card links to it
-(`/review`), and `live._settle_up_in_background` builds it off-thread the moment
+and the effective HP the following fight cost. The end-of-game card offers
+**Save replay** (2026-10-07: the card's old "Settle up" link became the button
+that keeps the game for the tab; `/review` remains for the CLI and tooling), and
+`live._settle_up_in_background` builds it off-thread the moment
 a game ends — off-thread because it replays the game. **The cast-grading gap is
 CLOSED (2026-10-06)**: a plan that led with a cast used to read "not graded"
 (8 of 16 phases on the first real game) because `value.top_move` derived every
@@ -51,15 +53,28 @@ maintainer-only parts (`analysis/`, `telemetry/`, `CLAUDE.md`, `DESIGN.md`,
 ## Layout
 
 **The code lives in `app/`, not at the root.** The root keeps the launcher,
-`README.md` and `LICENSE`, so someone who unzips a release sees the
-thing to click and the documents — and nothing else. There is **no `docs/`
-directory any more**: its four screenshots showed the pre-pivot overlay (the
-"DO THIS NOW" panel that the 2026-10-06 pivot deleted) and shipped in the
-`94a07de` and `2ef006c` releases; they were removed rather than re-captioned, and
-the replacements have not been taken yet. Any new shot must show a layout that
-still exists — and if a README sentence describes the screenshots, it needs
-updating in the same change, because a stale sentence about a picture is the
-same failure as a stale sentence about the code. The zip mirrors the repo
+`README.md`, `LICENSE` and `docs/`, so someone who unzips a release sees the
+thing to click, the documents and the pictures — and nothing else. `docs/` holds
+the screenshots **the README shows**, re-shot 2026-10-07 against a layout that
+exists (`save-replay`, `settle-up`, `turn-shop`, `turn-battle`, `turn-result`).
+The set before it showed the pre-pivot overlay — the "DO THIS NOW" panel the
+2026-10-06 pivot deleted — and shipped in the `94a07de` and `2ef006c` releases
+before anyone noticed, which is why three rules now apply:
+
+* **A new shot must show a layout that still exists**, and a README sentence
+  describing a picture has to change in the same commit — a stale sentence about
+  a picture is the same failure as a stale sentence about the code.
+* **A screenshot is a claim nothing else checks.** `privacy_scan` reads
+  `TEXT_SUFFIXES`, so it cannot see inside a PNG, and no gate looks at the
+  pixels; the one field worth eyeballing before a shot ships is the overlay's
+  "Next opponent" line, which renders `analysis.opp_comp.name` — where a real
+  opponent's handle can ride.
+* `test_readme_claims.TestTheScreenshotsMatchTheReadme` pins both directions
+  (every image the README shows exists; every file in `docs/` is shown by the
+  README, so a shipped zip carries no orphan). It cannot check what a picture
+  SHOWS — that part is still human, which is the point of the two rules above.
+
+The zip mirrors the repo
 (it walks the working tree), with `VERSION` and `.update_state.json` written at
 the zip ROOT: that directory is what `update.py` resolves as the install root,
 one level above the code.
@@ -257,7 +272,9 @@ the page's Clear button are gone, 2026-10-07), `GET /review/list`, `GET
 filename charset.
 
 **3. The turn cards, and the two rules that were paid for with a wrong answer.**
-Each turn is three views — **Shop**, **Battle** (default), **Result**. The battle
+Each turn is three views — **Shop** (the default since 2026-10-07: it is where
+the player's own decisions and the phase rows are read), **Battle**, **Result**.
+The battle
 board is the strongest burst **before the first death**: the staging burst reads
 low (31 stats staged vs 51 a burst later, measured 10-06) and plain max-combined
 landed on the duel's aftermath (4730 vs 448). A turn's decisive fight is the
@@ -318,9 +335,15 @@ measured on a real 15-turn rep, 0 board ids end in `_G` while 91 minions carry
    consumer.
 4. **A swap-led plan is still ungraded** — grading one needs the sell AND the
    play that replaced it as a pair, which the row does not carry.
-5. **`docs/` has no screenshots.** The four pre-pivot ones went on 10-06 and the
-   replacements are not taken; any new shot must show the Settle Up TAB now, which
-   is the layout a player actually sees.
+5. **`docs/` has its pictures back (DONE 2026-10-07).** Five shots against the
+   current layout — `save-replay`, `settle-up`, `turn-shop`, `turn-battle`,
+   `turn-result` — all shown by the README, all pinned by
+   `test_readme_claims.TestTheScreenshotsMatchTheReadme`. Still missing: a shot of
+   the LIVE page (**Another Round**), which no release has carried since the
+   pivot, and `docs/` is the one shipped directory the privacy gate cannot read
+   at all — see Layout. The turn shots were taken with Battle as the default, so
+   the Shop one was reached by a click; re-shoot if the button order ever
+   changes.
 6. **PUBLISHED AND VERIFIED FROM THE PLAYER'S SIDE (2026-10-07): release
    `c885b2e`.** All three gates passed; the live manifest verifies against the
    pinned `PUBKEY_B64` (`4d8fc45534ba558d`) and its `zip_bytes`/`zip_sha256`
@@ -509,7 +532,7 @@ green at each commit and both publish gates passed at each release.
 | --- | --- |
 | `94a07de` | the pivot: the live overlay stops advising (`LIVE_VERDICT_KEYS`) |
 | `2ef006c` | Settle Up ships: the review, the turn-by-turn boards, session/history |
-| `3233929` | the four stale `docs/` screenshots removed (the directory is gone) |
+| `3233929` | the four stale `docs/` screenshots removed (the directory went with them; `docs/` came back with a current set on 10-07) |
 
 **1. The pivot (`PIVOT.md`).** The live page shows state, not verdicts; the
 model's plan is shown only after the game. One choke point
@@ -520,6 +543,8 @@ README-vs-code control that CLAUDE.md item 3 had been asking for since 10-05.
 **2. The review (`app/settle_up.py`).** Reachable three ways: the end-of-game
 card's link, the `/review` route, and the CLI (`--latest`, `--session`,
 `--history N`, `--json`, `--html`). Built on `outcome_audit.audit_game`.
+(The card's link became the **Save replay** button on 10-07 — see the night
+session above; the CLI and `/review` are unchanged.)
 
 **3. The turn timeline (`app/turn_review.py`).** The board at three points per
 turn — buy end, combat start (BOTH sides), battle end — from the combat staging
@@ -549,7 +574,8 @@ OPEN, and each is recorded where the next session will trip over it:
    injected coach would make it one.
 3. **A swap-led plan is still ungraded** — grading one needs the sell AND the
    play that replaced it as a pair, which the row does not carry.
-4. **`docs/` has no screenshots** (see Layout, above). Replacements not taken.
+4. **~~`docs/` has no screenshots~~** — DONE 2026-10-07; `docs/` came back with a
+   current set (see Layout).
 5. **The replay-reviewer idea is captured in `ROADMAP.md`**, including the
    maintainer's decision that "save" writes the Power.log slice — with the three
    guards that folder will need, none of which exists yet.

@@ -107,6 +107,9 @@ still in the log:
 
     python app\settle_up.py --latest --html my-review.html
 
+<img src="docs/save-replay.png" alt="The card that appears when a game ends, with the Save replay button that keeps it for the Settle Up tab" width="420">
+<img src="docs/settle-up.png" alt="The top of the Settle Up tab: the dropdown of saved games with Open folder beside it, and the saved game's header" width="700">
+
 **The part the game never shows you: the board, three times a turn.** For every
 turn the review shows what you brought into the fight, what your opponent
 brought, and what survived — plus what the turn cost.
@@ -126,12 +129,16 @@ verdict, and a turn where you sold most of your board is labelled a rebuild
 instead, because that is what it is. Keep an eye out for `*` after a minion's
 stats: that one is golden.
 
-Each turn card opens on **Battle** — your board and your opponent's, theirs on
-top, the way the game shows a fight. **Shop** is the board you opened with and
-the board you closed the shopping on, plus what the turn did (cards played, gold
-spent, board value gained, a level-up, a hero power, a trinket), and the model's
-line for that phase. **Result** says who won, what each side kept, and what the
+Each turn card opens on **Shop** — the board you opened with and the board you
+closed the shopping on, plus what the turn did (cards played, gold spent, board
+value gained, a level-up, a hero power, a trinket), and the model's line for that
+phase. **Battle** is your board and your opponent's, theirs on top, the way the
+game shows a fight. **Result** says who won, what each side kept, and what the
 fight cost you in effective HP.
+
+<img src="docs/turn-shop.png" alt="One turn open on Shop: the board it opened with, the board it closed the shopping on, what the turn did, and the model's line with what you did and what the following fight cost" width="780">
+<img src="docs/turn-battle.png" alt="The same turn on Battle: your opponent's board on top and yours below it, from the fight's opening burst" width="780">
+<img src="docs/turn-result.png" alt="The same turn on Result: who won the fight, what each side kept, and the effective HP it cost" width="780">
 
 **Then the phase-by-phase view, inside each turn's Shop view**, which is where
 the plan lives — your own line first, the model's folded behind it:
@@ -323,13 +330,13 @@ release check stands aside and you update with `git pull`.
 ### The layout
 
 The program lives in `app/`. The root keeps what a player should see — this
-README, `LICENSE`, the launcher — plus what never ships: `analysis/`
-(research notes, some of which name real opponents), `telemetry/` (the release
-channel itself), `CLAUDE.md`, `DESIGN.md`, `ROADMAP.md`.
+README, `LICENSE`, the launcher and `docs/` (the pictures above) — plus what
+never ships: `analysis/` (the maintainer's research notes), `telemetry/` (the
+release channel itself), `CLAUDE.md`, `DESIGN.md`, `ROADMAP.md`.
 
-There are no screenshots in the tree at the moment. The old ones showed the
-pre-pivot overlay and went out in the 2026-10-06 releases; the replacements will
-land with a layout that still exists.
+The screenshots are the layout as it is now: the Settle Up tab, one turn in each
+of its three views, and the end-of-game card with **Save replay**. Anything older
+than this set showed the pre-pivot overlay, which no longer exists.
 
 ### Tests
 
