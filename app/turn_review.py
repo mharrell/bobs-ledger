@@ -468,10 +468,6 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                 notes.append(
                     f"{lag} minion(s) were played after the last buy-phase "
                     f"snapshot — the combat board is the full picture")
-            if len(fights) > 1:
-                notes.append(
-                    f"{len(fights)} fights were staged this turn — showing "
-                    f"the last (the round's fight, then the final duel)")
             if not combat:
                 notes.append("no combat staged for this turn")
             if not buy_end:
