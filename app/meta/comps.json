@@ -751,5 +751,77 @@
     "source": "hsreplay.net comp pages (scrape_comps.py)",
     "tribe": "Dragon",
     "how_to_play": "Divine-shield engine: Hopebringer gives your board +3/+3 at the start of combat and improves permanently every time a friendly minion loses Divine Shield, so the whole plan is to pop shields. Heroic Broodmother gains one on each Rally and attacks immediately at the start of combat; Nadina the Red re-shields 3 Dragons when she dies; Bronze Warden's divine shield plus reborn is two losses in one body. Park the Dragons you care about beside Persistent Poet - it keeps their combat stats and bonus keywords for good. Crimson Hand Centurion is a cheap extra shield that also grows off Verdant Spheres."
+  },
+  "undead-eternal-knight": {
+    "name": "Undead - Eternal Knight",
+    "difficulty": "Hard",
+    "meta_tier": "B",
+    "core": [
+      "BG25_009",
+      "BG34_403",
+      "BG25_008"
+    ],
+    "addons": [
+      "BG36_515",
+      "BG28_309",
+      "BG36_511"
+    ],
+    "summary": "Summon many Eternal Knights",
+    "when_to_commit": "Early Eternal Knight + Eternal Summoner",
+    "common_enablers": "Early Eternal Knight",
+    "representative_card": "BG25_008",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Undead",
+    "how_to_play": "One body grown by repetition: Eternal Knight carries +4/+2 for every Eternal Knight that died all game, so landing it early (turn 4 at the latest) is the commit point. Eternal Summoner's deathrattle and Eternal Tycoon's Avenge (5) then keep summoning more Knights, and every one that dies feeds the Knight you are growing. Dead Bellringer is the scaling button — its Activate gives a different Undead Reborn and can then destroy that minion for +4/+4 — and with Snazzy Phantom on the board every Reborn also pays stats onto your right-most Undead, so reborn the Knight you are growing, never a throwaway. Mummifier is the same Reborn trick on a deathrattle body."
+  },
+  "dragons-spell-power": {
+    "name": "Dragons - Spell Power",
+    "difficulty": "Hard",
+    "meta_tier": "B",
+    "core": [
+      "BG36_241",
+      "BG29_813",
+      "BG36_245",
+      "BG36_242",
+      "BG36_243",
+      "BG_LOE_077"
+    ],
+    "addons": [
+      "BG36_849",
+      "BG36_240",
+      "BG32_821"
+    ],
+    "summary": "Use spell power to scale dragons",
+    "when_to_commit": "Spell power (Bronze Timewalker) + Crimson Vindicator",
+    "common_enablers": "Spell power (Bronze Timewalker)",
+    "representative_card": "BG36_241",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Dragon",
+    "how_to_play": "Spell-power Dragons: Bronze Timewalker's Rally gets a Chromadrake and Sky-hatch Runaway's Activate re-triggers any Rally, so the pair manufactures spell power every turn — and Brann Bronzebeard doubles the Chromadrakes' effects while he lives. Crimson Vindicator is the payoff (Divine Shield; its Rally casts Mighty Dragonbreath), procced over and over by Sky-hatch Runaway, with Runic Arcanist's start-of-combat Shiny Ring adding two more spell-power casts. Park the Dragons you care about beside Persistent Poet — adjacent Dragons permanently keep the stats and keywords they gain in combat, which is how the buffs outlive the fight. Heroic Broodmother and Felfire Conjurer round out the board."
+  },
+  "murlocs-volumizer": {
+    "name": "Murlocs - Volumizer",
+    "difficulty": "Hard",
+    "meta_tier": "B",
+    "core": [
+      "BG26_152",
+      "BG26_ICC_901",
+      "BG34_171",
+      "BG36_366"
+    ],
+    "addons": [
+      "BG36_851",
+      "BG36_701",
+      "BG34_170",
+      "BG36_367",
+      "BG_LOE_077"
+    ],
+    "summary": "Attach Magnetics to scale end of turn",
+    "when_to_commit": "Early Volumizer generation (Conveyor Construct) + Utility Drone",
+    "common_enablers": "Volumizer generation (Conveyor Construct)",
+    "representative_card": "BG36_366",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Murloc",
+    "how_to_play": "Volumizers are the Magnetic pieces this comp generates cheaply and stacks onto one hull, and Utility Drone is the payoff: +4/+5 to your board at end of turn for each Magnetization it carries. Resourceful Robot makes a Volumizer every turn and copies it; a reborn Conveyor Construct repeats its deathrattle; Auto Accelerator and Auto Reveille are the other generators, and Kelp Keeper re-triggers a Battlecry (Brann Bronzebeard doubles one too). Early Volumizers are economy — they fund the levels that hit Utility Drone — then Drakkari Enchanter makes every end-of-turn effect fire twice. Most of the hull is Mechs despite the name; the Murlocs (Kelp Keeper, Spark Snapper) are the support pieces."
   }
 }
