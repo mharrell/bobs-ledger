@@ -283,9 +283,14 @@ def _took(actual):
 
     Kept as ids rather than prose: `settle_up` already owns the one place that
     turns ids into words, and two formatters for the same thing would drift.
+    `plays` and `spell_ids` are carried in order too (2026-10-08): the replay
+    viewer's Summary rail renders them as named chips, and a count alone
+    cannot. Old saved reps simply lack the two keys and the rail degrades.
     """
     return {"bought": list(actual.get("buys") or []),
             "sold": list(actual.get("sells") or []),
+            "plays": list(actual.get("plays") or []),
+            "spell_ids": list(actual.get("spell_ids") or []),
             "triples": len(actual.get("triples") or []),
             "hero_power": actual.get("hero_power") or 0,
             "spells_cast": actual.get("spells") or 0}

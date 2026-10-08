@@ -627,5 +627,28 @@ class TestShopBattleAftermath(unittest.TestCase):
                          "pick or discover in the same turn must not")
 
 
+class TestTookCarriesTheRailLists(unittest.TestCase):
+    """The Summary rail (2026-10-08) renders plays and casts as named chips
+    in order — a count cannot. _took carries the two id lists through; old
+    saved reps simply lack the keys and the rail degrades."""
+
+    def test_plays_and_spell_ids_are_carried_in_order(self):
+        actual = {"buys": ["BG31_815"], "sells": ["BG33_886"],
+                  "plays": ["BG31_815", "BG33_886"],
+                  "spell_ids": ["BG28_966", "BG20_GEM"],
+                  "triples": ["BG33_886"], "spells": 2}
+        took = tr._took(actual)
+        self.assertEqual(took["bought"], ["BG31_815"])
+        self.assertEqual(took["sold"], ["BG33_886"])
+        self.assertEqual(took["plays"], ["BG31_815", "BG33_886"])
+        self.assertEqual(took["spell_ids"], ["BG28_966", "BG20_GEM"])
+        self.assertEqual(took["spells_cast"], 2)
+
+    def test_missing_keys_stay_empty(self):
+        took = tr._took({})
+        self.assertEqual(took["plays"], [])
+        self.assertEqual(took["spell_ids"], [])
+
+
 if __name__ == "__main__":
     unittest.main()

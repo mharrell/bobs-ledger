@@ -723,6 +723,7 @@ _HTML = r"""<!doctype html>
      --thp on --tcard is ~4.5:1 at 15px bold — revisit with real art. */
   .tavern { --tbg:#17110d; --tpanel:#231913; --tcard:#33261d; --tline:#5a4332;
             --ttext:#f1e6d2; --tmute:#b09c84; --tsel:#e0a43a;
+            --tonbuff:#10140f;   /* text on a --tbuff fill */
             --tonsel:#14110c;   /* text on a --tsel fill */
             --tatk:#f4c95d; --thp:#e8664f; --tbuff:#8fd06a;
             --twin:#7cc66b; --tloss:#e8664f; --ttie:#b09c84;
@@ -747,6 +748,35 @@ _HTML = r"""<!doctype html>
   .tavern .tbtn2.sel small { color:var(--tonsel); }
   .tavern .turn { background:var(--tpanel); border:1px solid var(--tline);
                   color:var(--ttext); }
+  /* Summary rail + tray + net tags (design §4.3/§4.4, build step 3). */
+  .twrap { display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+  .tavern .rail { flex:0 0 330px; background:var(--tpanel);
+                  border:1px solid var(--tline); border-radius:10px;
+                  padding:10px; }
+  .tavern .rail-h .rt { font-weight:700; font-size:13px; }
+  .tavern .rchips { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px; }
+  .tavern .chip { padding:3px 9px; border-radius:14px; background:var(--tcard);
+                  border:1px solid var(--tline); font-size:12px; }
+  .tavern .ig-h { color:var(--tmute); text-transform:uppercase; font-size:11px;
+                  letter-spacing:.12em; margin:10px 0 4px; cursor:pointer;
+                  user-select:none; }
+  .tavern .iitem { padding:5px 8px; border-radius:6px; background:var(--tcard);
+                   border:1px solid var(--tline);
+                   border-left:3px solid var(--ttie); font-size:12px;
+                   margin:3px 0; }
+  .tavern .iitem.kept { border-left-color:var(--twin); }
+  .tavern .iitem.sold { border-left-color:var(--tloss); }
+  .tavern .iitem.flipped { border-left-color:var(--ttie); }
+  .tavern .ishow { color:var(--tmute); background:none; border:none;
+                   cursor:pointer; font-size:11px; padding:2px 0;
+                   text-decoration:underline; }
+  .tavern .tile.ghost { width:76px; height:100px; opacity:.55;
+                        border-style:dashed; }
+  .tavern .tile .tag-new { margin-bottom:auto; font-size:10px; font-weight:700;
+                           padding:2px 5px; border-radius:4px;
+                           background:var(--tbuff); color:var(--tonbuff);
+                           align-self:flex-start; }
+  .tavern .tile .tdelta { color:var(--tbuff); font-size:11px; font-weight:700; }
   .s-empty { color:var(--dim); padding:16px 0; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
@@ -1951,6 +1981,53 @@ function renderSettleGame(rep) {
 // carries it. An unknown winner (the fight-unreadable family) and an unknown
 // HP line (the final turn has no next advisory to measure against) get their
 // own states rather than a guess.
+// --- Summary rail helpers (REPLAY_VIEWER_DESIGN.md §4.3/§4.4). Pure, so the
+// --- suite runs them under node; the DOM assembly reads them in tavernRail.
+// Run-length collapse: consecutive repeats become one entry with a count
+// ("Wolf Pup ×2", "Rolled ×9"). Items are {card, name} (named at serve
+// time) or plain id strings (reps saved before the rail).
+function runLength(seq) {
+  const out = [];
+  for (const x of seq || []) {
+    const key = typeof x === 'string' ? x : (x.name || x.card);
+    const id = typeof x === 'string' ? x : x.card;
+    const last = out[out.length - 1];
+    if (last && last.key === key && last.id === id) last.n += 1;
+    else out.push({key: key, label: key, n: 1, id: id});
+  }
+  return out;
+}
+// Which sold ids were bought THIS phase (design: "flipped"). Those never
+// touch the Opened or Ended boards, so the rail and the tray are the only
+// places they appear. Keys are card ids.
+function flipKinds(bought, sold) {
+  const boughtIds = new Set((bought || []).map(x => x.card || x));
+  const out = {};
+  for (const s of sold || []) {
+    const id = s.card || s;
+    out[id] = boughtIds.has(id) ? 'flipped' : 'sold';
+  }
+  return out;
+}
+// Net changes of the Ended board vs the Opened one, matched by ENTITY id —
+// a board's own entities persist through the shop; across turns they are
+// re-created with fresh ids, which is why this is per turn. Reps saved
+// before 2026-10-07 carry no eid and get no tags: a missing fact beats a
+// wrong one.
+function boardDelta(opened, ended) {
+  const base = {};
+  for (const m of opened || []) if (m && m.eid != null) base[m.eid] = m;
+  const out = {};
+  for (const m of ended || []) {
+    if (!m || m.eid == null) continue;
+    const was = base[m.eid];
+    out[m.eid] = was
+      ? {isNew: false, datk: (m.atk ?? 0) - (was.atk ?? 0),
+         dhealth: (m.health ?? 0) - (was.health ?? 0)}
+      : {isNew: true, datk: 0, dhealth: 0};
+  }
+  return out;
+}
 function stripMark(winner, dmg) {
   const ch = winner === 'us' ? '▲' : winner === 'them' ? '▼'
            : winner === 'tie' ? '=' : '?';
@@ -2002,36 +2079,154 @@ function renderTavernGame(rep) {
   }
   root.appendChild(strip);
   const row = turns.find(r => r.turn === _tavernTurn);
-  if (row) root.appendChild(settleTurnCard(row, phases.filter(
-    p => p.turn === row.turn)));
+  let card = null;
+  if (row) {
+    // Design §3: rail 330px left, the turn's card right. The card is THE
+    // settleTurnCard — same tabs, notes and honesty — with the tavern-only
+    // extras (passed-through tray, Ended net tags) gated on the flag.
+    const wrap = document.createElement('div');
+    wrap.className = 'twrap';
+    wrap.appendChild(tavernRail(row));
+    card = settleTurnCard(row, phases.filter(p => p.turn === row.turn),
+                          {tavern: true});
+    wrap.appendChild(card);
+    root.appendChild(wrap);
+  }
   // The final duel's phases (a fight with no shop of its own) ride the last
   // turn's card, exactly as the classic viewer attaches them.
   const seen = new Set(turns.map(r => r.turn));
   const rest = phases.filter(p => !seen.has(p.turn));
-  if (rest.length && row && row === turns[turns.length - 1]) {
-    for (const p of rest) root.lastChild.appendChild(phaseRow(p));
+  if (rest.length && card && row === turns[turns.length - 1]) {
+    for (const p of rest) card.appendChild(phaseRow(p));
   }
   box.appendChild(root);
+}
+// The Summary rail (design §4.3): what the turn cost and did, grouped and
+// collapsed — Economy (rolls, level-up) folded, Buys and Sells open, Plays
+// folded. Consecutive repeats collapse ("Rolled ×9"); groups longer than 8
+// cap with a show-all; the worth-a-look flags live under the chips. Items
+// carry a colored left edge: kept = green, sold = red, flipped = neutral.
+function tavernRail(r) {
+  const took = r.took || {}, sp = r.spend || {}, ev = r.shop_events || {};
+  const buys = took.bought || [], sells = took.sold || [];
+  const plays = took.plays || [], casts = took.spell_ids || [];
+  const nRolls = sp.rolls ?? 0, levelled = !!ev.tier_up;
+  const kinds = flipKinds(buys, sells);
+  const nAct = buys.length + sells.length + plays.length + casts.length
+    + nRolls + (levelled ? 1 : 0);
+  const rail = document.createElement('div');
+  rail.className = 'rail';
+  const h = document.createElement('div');
+  h.className = 'rail-h';
+  h.innerHTML = '<span class="rt">Turn ' + (r.turn ?? '?') + ' · ' + nAct
+    + ' action' + (nAct === 1 ? '' : 's') + '</span>';
+  rail.appendChild(h);
+  const chips = document.createElement('div');
+  chips.className = 'rchips';
+  const chip = t => chips.appendChild(el('span', 'chip', t));
+  if (buys.length) chip('+' + buys.length + ' bought');
+  if (sells.length) chip('−' + sells.length + ' sold');
+  if (nRolls) chip(nRolls + ' rolls');
+  if (levelled) chip('1 level-up');
+  if (casts.length) chip(casts.length + ' casts');
+  if (!chips.children.length) chip('nothing recorded this turn');
+  rail.appendChild(chips);
+  // One collapsible group. `items` are already the named entries; kindOf
+  // names the left-edge color. Longer than the cap: first 8, then a
+  // show-all that re-renders the group expanded (per group, not global).
+  const group = (title, entries, kindOf, open) => {
+    const gh = document.createElement('div');
+    gh.className = 'ig-h';
+    gh.textContent = (open ? '▾ ' : '▸ ') + title;
+    const body = document.createElement('div');
+    body.style.display = open ? '' : 'none';
+    const runs = runLength(entries);
+    const CAP = 8;
+    const shown = document.createElement('div');
+    const draw = n => {
+      shown.innerHTML = '';
+      for (const run of runs.slice(0, n)) {
+        const d = document.createElement('div');
+        d.className = 'iitem ' + (kindOf(run) || 'kept');
+        d.textContent = run.label + (run.n > 1 ? ' ×' + run.n : '');
+        shown.appendChild(d);
+      }
+      if (runs.length > n) {
+        const more = document.createElement('button');
+        more.className = 'ishow';
+        more.textContent = 'show all ' + runs.length;
+        more.onclick = () => draw(runs.length);
+        shown.appendChild(more);
+      }
+    };
+    draw(Math.min(runs.length, CAP));
+    gh.onclick = () => {
+      const closed = body.style.display === 'none';
+      body.style.display = closed ? '' : 'none';
+      gh.textContent = (closed ? '▾ ' : '▸ ') + title;
+    };
+    rail.appendChild(gh);
+    rail.appendChild(body);
+    body.appendChild(shown);
+  };
+  const kindFor = run => {
+    const k = kinds[run.id];
+    return k === 'flipped' ? 'flipped' : k === 'sold' ? 'sold' : 'kept';
+  };
+  // Economy items are pre-rendered labels ({name}), which runLength passes
+  // through as-is.
+  const eco = [];
+  if (nRolls) eco.push({name: 'Rolled ×' + nRolls});
+  if (levelled) eco.push({name: 'Level up'});
+  group('Economy', eco, () => 'kept', false);
+  group('Buys', buys, kindFor, true);
+  group('Sells', sells, run => (kinds[run.id] === 'flipped'
+                                ? 'flipped' : 'sold'), true);
+  group('Plays', plays.concat(casts), () => 'kept', false);
+  // The worth-a-look flags, under the chips as the design keeps them.
+  for (const q of r.sell_questions || []) {
+    const d = document.createElement('div');
+    d.className = q.rebuild ? 'note' : 'q';
+    d.textContent = q.rebuild
+      ? ('~ rebuilt the board: sold ' + q.sold_count + ' — a repositioning, '
+         + 'not a one-for-one choice')
+      : ('? sold ' + (q.sold_name || 'a card') + ' (' + (q.role || '?')
+         + ') while keeping ' + (q.kept_filler_names || []).join(', '));
+    rail.appendChild(d);
+  }
+  return rail;
 }
 // One board row of a turn card: card tiles when the stored board is
 // structured (the server joins display names at serve time), the text the
 // standalone page uses when it is not. Art rides /img like everywhere else,
 // so tiles hover to the full card render for free.
-function boardTiles(list) {
+function boardTiles(list, tags) {
   const wrap = document.createElement('span');
   wrap.className = 'brow-tiles';
   for (const m of list || []) {
-    wrap.appendChild(tile(m.card, m.name || m.card,
-                          (m.atk ?? '?') + '/' + (m.health ?? '?'),
-                          {golden: m.golden}));
+    const t = tile(m.card, m.name || m.card,
+                   (m.atk ?? '?') + '/' + (m.health ?? '?'),
+                   {golden: m.golden});
+    // Net-change tags (Tavern, design §4.4): NEW for a minion that is on the
+    // Ended board but was not on the Opened one; otherwise the stat delta.
+    // Keyed by entity id and only present when the rep carries eids — an
+    // old save simply shows no tags.
+    const tag = tags && m.eid != null ? tags[m.eid] : null;
+    if (tag && tag.isNew) t.appendChild(el('span', 'tag-new', 'NEW'));
+    else if (tag && (tag.datk || tag.dhealth)) {
+      t.appendChild(el('span', 'tdelta',
+        (tag.datk ? (tag.datk > 0 ? '+' : '') + tag.datk : '')
+        + (tag.dhealth ? (tag.dhealth > 0 ? '+' : '') + tag.dhealth : '')));
+    }
+    wrap.appendChild(t);
   }
   return wrap;
 }
-function boardRow(lbl, list, text, cls) {
+function boardRow(lbl, list, text, cls, tags) {
   const d = document.createElement('div');
   d.className = 'brow';
   d.innerHTML = '<span class="blbl">' + lbl + '</span>';
-  if (list && list.length) d.appendChild(boardTiles(list));
+  if (list && list.length) d.appendChild(boardTiles(list, tags));
   else {
     const s = document.createElement('span');
     if (cls) s.className = cls;
@@ -2070,7 +2265,11 @@ function phaseRow(p) {
   d.appendChild(det);
   return d;
 }
-function settleTurnCard(r, phases) {
+function settleTurnCard(r, phases, opts) {
+  // opts.tavern (2026-10-08) turns on the Tavern-only extras — the
+  // passed-through tray and the Ended board's net-change tags — without
+  // touching a single pixel of the classic rendering (the viewer flag's
+  // whole contract). Everything below reads `opts && opts.tavern` once.
   const s = r.stats || {}, sp = r.spend || {}, c = r.commitment || {};
   const ev = r.shop_events || {};
   const card = document.createElement('div');
@@ -2186,7 +2385,35 @@ function settleTurnCard(r, phases) {
       + 'because a board holds 7';
     bodies.shop.appendChild(l);
   }
-  bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text));
+  bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text,
+    null, opts && opts.tavern
+      ? boardDelta(r.buy_start, r.buy_end) : null));
+  if (opts && opts.tavern) {
+    // Passed through (design §4.4): minions bought AND sold this phase —
+    // they never touch either board, so this tray is the only place their
+    // card art appears. Ghost styling, hidden when there are none.
+    const kinds = flipKinds((r.took || {}).bought, (r.took || {}).sold);
+    const pool = ((r.took || {}).bought || []).concat((r.took || {}).sold || []);
+    const flipped = Object.keys(kinds).filter(k => kinds[k] === 'flipped')
+      .map(id => {
+        const src = pool.find(x => (x.card || x) === id);
+        return typeof src === 'string' ? {card: src, name: src} : src;
+      });
+    if (flipped.length) {
+      const tray = document.createElement('div');
+      tray.className = 'brow';
+      tray.innerHTML = '<span class="blbl">Passed through</span>';
+      const wrap = document.createElement('span');
+      wrap.className = 'brow-tiles';
+      for (const m of flipped) {
+        wrap.appendChild(tile(m.card, m.name || m.card,
+                              (m.atk ?? '?') + '/' + (m.health ?? '?'),
+                              {cls: 'ghost'}));
+      }
+      tray.appendChild(wrap);
+      bodies.shop.appendChild(tray);
+    }
+  }
   const evLine = document.createElement('div');
   evLine.className = 'brow';
   const evBits = [];
@@ -2671,6 +2898,19 @@ def _name_timeline_boards(rep):
                 # ids end in `_G`, 91 minions carry golden. A draft also set
                 # `golden` here from a `_G` id — a case this path cannot produce.
                 m["name"] = value.display_name(names, m.get("card"))
+        # The Summary rail's action lists (2026-10-08): ids in the stored rep,
+        # named the same way at serve time. Plain-string lists (every rep
+        # saved before the rail existed) become the same {card, name} shape
+        # here, so the renderer sees one shape regardless of save age.
+        took = row.get("took") or {}
+        for key in ("bought", "sold", "plays", "spell_ids"):
+            lst = took.get(key)
+            if isinstance(lst, list):
+                took[key] = [
+                    item if isinstance(item, dict) else
+                    {"card": item, "name": value.display_name(names, item)}
+                    for item in lst
+                ]
     return out
 
 
