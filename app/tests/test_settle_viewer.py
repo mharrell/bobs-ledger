@@ -143,10 +143,12 @@ class TestTheRailHelpers(unittest.TestCase):
             self.skipTest("node is not installed, so the page's script cannot "
                           "be executed")
         sources = [_function(n) for n in
-                   ("runLength", "flipKinds", "boardDelta")]
-        self.assertIsNotNone(sources[0], "runLength is missing")
-        self.assertIsNotNone(sources[1], "flipKinds is missing")
-        self.assertIsNotNone(sources[2], "boardDelta is missing")
+                   ("runLength", "flipKinds", "boardDelta", "outcomeText",
+                    "hpLine", "minionsLeft")]
+        for name, src in zip(("runLength", "flipKinds", "boardDelta",
+                              "outcomeText", "hpLine", "minionsLeft"),
+                             sources):
+            self.assertIsNotNone(src, name + " is missing")
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         driver = os.path.join(self.tmp.name, "drive.js")
@@ -164,6 +166,13 @@ class TestTheRailHelpers(unittest.TestCase):
                     "[{eid: 1, atk: 3, health: 3}, {eid: 2, atk: 2, health: 2}], "
                     "[{eid: 1, atk: 5, health: 3}, {eid: 9, atk: 4, health: 4}]));\n"
                     "out.push(boardDelta([], [{eid: 3, atk: 1, health: 1}]));\n"
+                    "out.push(outcomeText('us') + '|' + outcomeText('them') + '|"
+                    + "' + outcomeText('tie') + '|' + outcomeText(undefined));\n"
+                    "out.push(hpLine(25, 20) + '|' + hpLine(25, null) + '|"
+                    + "' + hpLine(null, null));\n"
+                    "out.push(String(minionsLeft('us', [1, 2, 3], [])) + '|"
+                    + "' + String(minionsLeft('them', [], [1])) + '|"
+                    + "' + String(minionsLeft('tie', [1], [2])));\n"
                     "console.log(JSON.stringify(out));\n")
         # Bytes in, UTF-8 decoded here: text=True reads node's pipe as cp1252
         # and mojibakes the non-ASCII labels (measured 2026-10-08).
@@ -191,6 +200,14 @@ class TestTheRailHelpers(unittest.TestCase):
         self.assertEqual(d["1"], {"isNew": False, "datk": 2, "dhealth": 0})
         self.assertEqual(d["9"], {"isNew": True, "datk": 0, "dhealth": 0})
         self.assertEqual(self.out[6]["3"]["isNew"], True)
+
+    def test_outcome_hp_and_minion_lines(self):
+        self.assertEqual(
+            self.out[7],
+            "You won the fight|You lost the fight|A tie — both boards died"
+            "|Outcome not readable")
+        self.assertEqual(self.out[8], "HP 25 → 20|HP 25 → ?|")
+        self.assertEqual(self.out[9], "3|1|null")
 
 
 class TestTheStripMarker(unittest.TestCase):

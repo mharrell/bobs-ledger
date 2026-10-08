@@ -650,5 +650,27 @@ class TestTookCarriesTheRailLists(unittest.TestCase):
         self.assertEqual(took["spell_ids"], [])
 
 
+class TestRowCarriesEffectiveHp(unittest.TestCase):
+    """The Battle face-off's HP line needs the effective HP itself, not only
+    the delta the row already saved (2026-10-08)."""
+
+    def test_row_holds_eff(self):
+        rows = tr._turn_rows(
+            {1: [{"phase": "combat", "minions": [(5, "A", 1, 1, False, [])]}],
+             2: [{"phase": "combat", "minions": [(5, "A", 1, 1, False, [])]}]},
+            {1: {"analysis": {"health": 20, "armor": 5, "gold": 3}},
+             2: {"analysis": {"health": 15, "armor": 5, "gold": 4}}},
+            5)
+        self.assertEqual(rows[0]["eff"], 25)
+        self.assertEqual(rows[0]["damage_taken"], 5)
+        self.assertEqual(rows[1]["eff"], 20)
+
+    def test_eff_is_none_where_the_coach_never_advised(self):
+        rows = tr._turn_rows(
+            {1: [{"phase": "combat", "minions": [(5, "A", 1, 1, False, [])]}]},
+            {}, 5)
+        self.assertIsNone(rows[0]["eff"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -777,6 +777,33 @@ _HTML = r"""<!doctype html>
                            background:var(--tbuff); color:var(--tonbuff);
                            align-self:flex-start; }
   .tavern .tile .tdelta { color:var(--tbuff); font-size:11px; font-weight:700; }
+  /* Battle face-off (design §4.5, build step 4). Your side warm, theirs
+     cool; the result panel rides at right and drops under on narrow
+     screens. */
+  .faceoff-wrap { display:grid; grid-template-columns:1fr 210px; gap:10px; }
+  .faceoff { display:flex; flex-direction:column; gap:8px; }
+  .fside { border:1px solid var(--tline); border-radius:10px; padding:8px; }
+  .fside.cool { background:rgba(70,100,140,.12); }
+  .fside.warm { background:rgba(160,110,50,.14); }
+  .fbadge { display:flex; gap:8px; align-items:baseline; font-weight:700;
+            font-size:12px; margin-bottom:6px; }
+  .fbadge .fm { color:var(--tmute); font-weight:400; font-size:11px; }
+  .fboards { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .fnone { color:var(--tmute); text-align:center; font-size:12px;
+           padding:6px; }
+  .vs { text-align:center; color:var(--tmute); font-weight:700;
+        letter-spacing:.3em; font-size:12px; }
+  .fresult { background:var(--tpanel); border:1px solid var(--tline);
+             border-radius:10px; padding:8px 10px; font-size:12px;
+             align-self:start; }
+  .fresult .fout { font-weight:700; margin-bottom:6px; }
+  .fresult .fout.won { color:var(--twin); }
+  .fresult .fout.lost { color:var(--tloss); }
+  .fresult .fout.tie, .fresult .fout.unk { color:var(--tmute); }
+  .fresult .fk { color:var(--tmute); display:block; font-size:10px;
+                 text-transform:uppercase; letter-spacing:.12em; }
+  .fresult .fv { display:block; margin-bottom:6px; }
+  @media (max-width: 900px) { .faceoff-wrap { grid-template-columns:1fr; } }
   .s-empty { color:var(--dim); padding:16px 0; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
@@ -2028,6 +2055,27 @@ function boardDelta(opened, ended) {
   }
   return out;
 }
+// --- Battle face-off helpers (design §4.5). Pure, node-tested.
+function outcomeText(winner) {
+  return winner === 'us' ? 'You won the fight'
+    : winner === 'them' ? 'You lost the fight'
+    : winner === 'tie' ? 'A tie — both boards died'
+    : 'Outcome not readable';
+}
+// The hero's HP line for the badge: effective HP at this turn's buy end and
+// at the next one (which is what the fight cost). Old reps and a final turn
+// have no next reading — an explicit ? beats a guess.
+function hpLine(eff, nextEff) {
+  if (eff == null && nextEff == null) return '';
+  return 'HP ' + (eff ?? '?') + ' → ' + (nextEff ?? '?');
+}
+// Minions left on the WINNING side (the losing board died; a tie or an
+// unreadable fight leaves no honest single number).
+function minionsLeft(winner, battleEnd, theirsSurvivors) {
+  if (winner === 'us') return (battleEnd || []).length;
+  if (winner === 'them') return (theirsSurvivors || []).length;
+  return null;
+}
 function stripMark(winner, dmg) {
   const ch = winner === 'us' ? '▲' : winner === 'them' ? '▼'
            : winner === 'tie' ? '=' : '?';
@@ -2083,12 +2131,16 @@ function renderTavernGame(rep) {
   if (row) {
     // Design §3: rail 330px left, the turn's card right. The card is THE
     // settleTurnCard — same tabs, notes and honesty — with the tavern-only
-    // extras (passed-through tray, Ended net tags) gated on the flag.
+    // extras (rail, passed-through tray, Ended net tags, Battle face-off)
+    // gated on the flag. The face-off's HP line needs the NEXT turn's
+    // effective-HP reading, which only the caller has.
+    const idx = turns.indexOf(row);
+    const nextEff = idx >= 0 && turns[idx + 1] ? turns[idx + 1].eff : null;
     const wrap = document.createElement('div');
     wrap.className = 'twrap';
     wrap.appendChild(tavernRail(row));
     card = settleTurnCard(row, phases.filter(p => p.turn === row.turn),
-                          {tavern: true});
+                          {tavern: true, hero: rep.hero, nextEff: nextEff});
     wrap.appendChild(card);
     root.appendChild(wrap);
   }
@@ -2235,6 +2287,29 @@ function boardRow(lbl, list, text, cls, tags) {
   }
   return d;
 }
+// One side of the Battle face-off (design §4.5): a hero badge line and the
+// board centered under it, tinted warm (yours) or cool (theirs).
+function faceSide(label, meta, list, text, tint) {
+  const d = document.createElement('div');
+  d.className = 'fside ' + tint;
+  const b = document.createElement('div');
+  b.className = 'fbadge';
+  b.innerHTML = '<span>' + label + '</span>'
+    + (meta ? '<span class="fm">' + meta + '</span>' : '');
+  d.appendChild(b);
+  if (list && list.length) {
+    const row = document.createElement('div');
+    row.className = 'fboards';
+    for (const m of list) {
+      row.appendChild(tile(m.card, m.name || m.card,
+        (m.atk ?? '?') + '/' + (m.health ?? '?'), {golden: m.golden}));
+    }
+    d.appendChild(row);
+  } else {
+    d.appendChild(el('div', 'fnone', text || '—'));
+  }
+  return d;
+}
 // One advised phase, the way a player reads it (2026-10-07): what THEY did
 // first, the cost of it next to that, and the model's line folded away
 // underneath — there to open, never shouting.
@@ -2358,10 +2433,48 @@ function settleTurnCard(r, phases, opts) {
   // BATTLE — the fight after beginning-of-combat effects, both sides from
   // the same (peak) burst so the rows are honest relative to each other.
   // Opponent on top, mirroring the in-game combat view (2026-10-07).
-  bodies.battle.appendChild(boardRow('Opponent brought',
-    (r.combat_peak || {}).theirs, r.combat_theirs_text, 'them'));
-  bodies.battle.appendChild(boardRow('You brought',
-    (r.combat_peak || {}).ours, r.combat_ours_text || '(no board read)'));
+  if (opts && opts.tavern) {
+    // Design §4.5: the face-off — their board top, VS, yours below (your
+    // side tinted warm, theirs cool), the result panel at right. The boards
+    // are the same peak burst the classic rows use; the panel is the same
+    // outcome wording the Result view carries.
+    const wrap = document.createElement('div');
+    wrap.className = 'faceoff-wrap';
+    const fo = document.createElement('div');
+    fo.className = 'faceoff';
+    fo.appendChild(faceSide('Opponent', '', (r.combat_peak || {}).theirs,
+                            r.combat_theirs_text || '—', 'cool'));
+    fo.appendChild(el('div', 'vs', 'VS'));
+    fo.appendChild(faceSide(opts.hero || 'You',
+                            hpLine(r.eff, opts.nextEff),
+                            (r.combat_peak || {}).ours,
+                            r.combat_ours_text || '(no board read)', 'warm'));
+    wrap.appendChild(fo);
+    const left = minionsLeft(r.winner, r.battle_end, r.theirs_survivors);
+    const panel = document.createElement('div');
+    panel.className = 'fresult';
+    panel.appendChild(el('div', 'fout ' +
+      (r.winner === 'us' ? 'won' : r.winner === 'them' ? 'lost'
+       : r.winner === 'tie' ? 'tie' : 'unk'), outcomeText(r.winner)));
+    const line = (k, v) => {
+      const d = document.createElement('div');
+      d.innerHTML = '<span class="fk">' + k + '</span>';
+      d.appendChild(el('span', 'fv', v));
+      return d;
+    };
+    panel.appendChild(line('Minions left',
+      left == null ? '—' : String(left)));
+    panel.appendChild(line('HP taken', r.damage_taken == null ? '—'
+      : r.damage_taken > 0 ? String(r.damage_taken)
+      : r.damage_taken === 0 ? '0' : '−' + (-r.damage_taken) + ' (gained)'));
+    wrap.appendChild(panel);
+    bodies.battle.appendChild(wrap);
+  } else {
+    bodies.battle.appendChild(boardRow('Opponent brought',
+      (r.combat_peak || {}).theirs, r.combat_theirs_text, 'them'));
+    bodies.battle.appendChild(boardRow('You brought',
+      (r.combat_peak || {}).ours, r.combat_ours_text || '(no board read)'));
+  }
   for (const n of r.notes || []) {
     const d = document.createElement('div');
     d.className = 'note';
