@@ -293,6 +293,9 @@ class _LiveActions:
         self.friendly = None
         self.turn = 0
         self.in_buying = False
+        # A MAIN_ACTION was seen and is waiting for the shop offers that make
+        # it a real buy phase (see open_buy_phase).
+        self.pending_buy = False
         self.spells = 0
         self.discovers = 0
         self.plays = []  # (player, card) this turn
@@ -313,12 +316,18 @@ class _LiveActions:
             if "PowerTaskList" in line:
                 m = None
             if m and m.group(1) == "MAIN_ACTION" and not self.in_buying:
-                # The first MAIN_ACTION of a game is a real buy phase.
-                self._end_turn()
-                self.turn += 1
-                self.in_buying = True
+                # NOT opened here: Battlegrounds also runs COMBAT inside its
+                # own MAIN_ACTION..MAIN_END pair (measured 2026-10-07: a pair
+                # 56 ms apart holding 6947 lines of ATTACK/DEATHS blocks and
+                # never a shop offer). The turn opens when the shop table
+                # actually fills — open_buy_phase(); a pair that closes
+                # unpromoted was a fight, and costs no turn number.
+                self.pending_buy = True
             elif m and m.group(1) == "MAIN_END":
-                self.in_buying = False
+                if self.pending_buy:
+                    self.pending_buy = False  # a combat's step pair, not a shop
+                else:
+                    self.in_buying = False
             return
 
         m = _SPELL.search(line)
@@ -355,6 +364,22 @@ class _LiveActions:
             # (the 2026-09-04 beasts game stayed comp-agnostic until t11).
             elif z == "HAND" and old != "HAND":
                 self.buys.append((p, cid))
+
+    def open_buy_phase(self):
+        """The shop offers arrived: the pending MAIN_ACTION was a real buy
+        phase, and the turn number opens now.
+
+        Called from the shop-table commit (LiveCoach._zone_commit), which is
+        the first moment the log has PROVEN a shop exists. A combat's step
+        pair never gets here — its MAIN_END cancels the pending state
+        instead — so fights stop stealing turn numbers and their snapshots
+        stop landing in a phantom bucket stamped phase="buy".
+        """
+        if self.pending_buy and not self.in_buying:
+            self._end_turn()
+            self.turn += 1
+            self.in_buying = True
+        self.pending_buy = False
 
     def _end_turn(self):
         self.turn_spells.append(self.spells)
@@ -514,17 +539,32 @@ class LiveCoach:
             self._reset()
         # Phase tracking (GameState lines only — the PowerTaskList copies
         # arrive after and would flip the phase late): the window between
-        # MAIN_END and the next MAIN_ACTION is combat. Snapshots captured
+        # MAIN_END and the next real buy phase is combat. Snapshots captured
         # there are the real fight boards; buy-phase snapshots are shop plays
         # and the previous fight's teardown remnants, which must never be
         # committed as "the board we fought".
+        #
+        # A MAIN_ACTION does NOT open the buy phase by itself: combat also
+        # runs inside its own MAIN_ACTION..MAIN_END pair (measured 2026-10-07:
+        # a pair 56 ms apart holding 6947 lines of ATTACK/DEATHS blocks and
+        # never a shop offer — before this, every such pair stole a turn
+        # number and its fight's drain snapshots were stamped "buy" into a
+        # phantom bucket the replay viewer rendered as a shop turn with no
+        # gold and no board). The phase flips when the shop table actually
+        # fills (_zone_commit); a pair that closes unpromoted was a fight.
         if "GameState." in line:
             if "tag=STEP value=MAIN_END" in line:
-                # The BUY-phase MAIN_END (the second one closes combat): the
-                # pairing in force is the fight that follows. The tag only
-                # logs on CHANGE — a same-player rematch never re-announces —
-                # so the announced value persists until the next one.
-                if self._phase == "buy":
+                # actions.pending_buy still True here means the step pair
+                # closed without a shop ever appearing: combat, not a buy
+                # phase — no pairing write, and actions.feed (below) cancels
+                # the pending state. It is read BEFORE actions.feed processes
+                # this same line, so a shop that promoted earlier reads False.
+                if not self.actions.pending_buy and self._phase == "buy":
+                    # The BUY-phase MAIN_END (the second one closes combat):
+                    # the pairing in force is the fight that follows. The tag
+                    # only logs on CHANGE — a same-player rematch never
+                    # re-announces — so the announced value persists until
+                    # the next one.
                     self._pairing[self.actions.turn] = self._pair_cand
                     # The staged-burst scout opens the combat window at the
                     # buy-phase close, with our exact holdings at the moment
@@ -538,7 +578,6 @@ class LiveCoach:
                             pool.own_holdings(b, self.gs.hand(self.friendly)))
                 self._phase = "combat"
             elif "tag=STEP value=MAIN_ACTION" in line:
-                self._phase = "buy"
                 self._scout.close_round()
         # Seat-level opponent tracker (phase 2): staged combat bursts, keyed
         # by the BACON seat tags it parses itself.
@@ -1109,6 +1148,17 @@ class LiveCoach:
         self.shop_cards = [(self._zone_shop_p.get(eid), cid)
                            for eid, cid in self._zone_shop.items()]
         self.shop_eids = {cid: eid for eid, cid in self._zone_shop.items()}
+        # The shop table exists: a pending MAIN_ACTION was a real buy phase.
+        # This is the promotion point — the first moment the log has PROVEN
+        # a shop (combat's step pairs never fill the table; see feed()).
+        # Keyed on actions.pending_buy, not a coach-level flag: the actions
+        # tracker sees a STEP line only at the END of feed(), so the
+        # same-line flush of the PREVIOUS phase's still-buffered options
+        # block (the MAIN_ACTION wipe commits it before clearing) cannot
+        # promote against the old shop's offers.
+        if self.actions.pending_buy and self.shop_cards:
+            self._phase = "buy"
+            self.actions.open_buy_phase()
         # Shop sightings (hunt evidence for value._hunt_check): a NEW offer
         # eid is a shop generation showing this card. Recorded here, at feed
         # time — the replay harness builds a fresh coach per phase, so

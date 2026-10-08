@@ -31,6 +31,21 @@ def _coach_with_offers(*offers):
     return c
 
 
+def _open_shop(c, n=1, offers=(("River Skipper", "BG33_140", 15),)):
+    """Prove that the phase just opened by a MAIN_ACTION is a buy phase.
+
+    Since 2026-10-07 a MAIN_ACTION alone does NOT open a turn: combat runs
+    inside its own MAIN_ACTION..MAIN_END pair too, and only the shop table
+    filling proves a shop (live_coach._zone_commit). A fixture that wants
+    its buy phase to exist feeds the shop block and polls it — the poll
+    flushes, the commit promotes, the turn opens.
+    """
+    c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+    for line in opt_block(n, list(offers)):
+        c.feed(line)
+    c.tavern_offers()
+
+
 class TestStateFingerprint(unittest.TestCase):
     def test_none_before_hero_parsed(self):
         self.assertIsNone(LiveCoach().state_fingerprint())
@@ -469,7 +484,7 @@ class TestOpponentScout(unittest.TestCase):
     def test_combat_board_mapped_to_announced_opponent(self):
         c = self._coach()
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 1
+        _open_shop(c)                                             # turn 1
         # every buy phase re-announces the pairing (account + hero entities)
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
         c.gs.cardtype[50] = "MINION"
@@ -478,7 +493,7 @@ class TestOpponentScout(unittest.TestCase):
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=HEALTH value=5")
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")  # played
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        _open_shop(c, n=2)                                        # turn 2
         a = c.analyze()
         self.assertEqual(c._opp_boards.get(4, {}).get("stats"), 8)
         self.assertEqual(a["last_opp_stats"], 8)
@@ -490,9 +505,9 @@ class TestOpponentScout(unittest.TestCase):
     def test_unfought_next_opponent_falls_back(self):
         c = self._coach()
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        _open_shop(c)
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=6")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        _open_shop(c, n=2)
         a = c.analyze()
         self.assertEqual(c.next_opponent, 6)
         self.assertIsNone(a["opp_stats"])  # player 6 never fought
@@ -506,7 +521,7 @@ class TestOpponentScout(unittest.TestCase):
         counts as part of the board we faced."""
         c = self._coach()
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        _open_shop(c)
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
         c.gs.cardtype[50] = "MINION"
@@ -515,7 +530,7 @@ class TestOpponentScout(unittest.TestCase):
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=PLAY")
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=REMOVEDFROMGAME")
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        _open_shop(c, n=2)
         a = c.analyze()
         self.assertEqual(a["last_opp_stats"], 8)
 
@@ -526,7 +541,7 @@ class TestOpponentScout(unittest.TestCase):
         and skipped every real fight)."""
         c = self._coach()
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        _open_shop(c)
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
         c.gs.cardtype[50] = "MINION"
         c.feed(f"{GS}TAG_CHANGE {self.OPP} tag=ZONE value=HAND")
@@ -536,7 +551,7 @@ class TestOpponentScout(unittest.TestCase):
         c.analyze()  # turn 1's buy phase: nothing resolved yet
         self.assertNotIn(1, c._resolved)
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        _open_shop(c, n=2)  # turn 2
         c.analyze()
         self.assertIn(1, c._resolved)
         self.assertEqual(c._opp_boards.get(4, {}).get("stats"), 8)
@@ -552,7 +567,7 @@ class TestOpponentScout(unittest.TestCase):
         opp1 = "Entity=[entityName=A id=50 zone=PLAY zonePos=1 cardId=BG33_886 player=11]"
         opp2 = "Entity=[entityName=B id=51 zone=PLAY zonePos=2 cardId=BG33_886 player=11]"
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 1
+        _open_shop(c)                                             # turn 1
         c.feed(f"{GS}TAG_CHANGE {self.HERO} tag=NEXT_OPPONENT_PLAYER_ID value=4")
         # fight 1: opponent plays a 3/5
         c.feed(f"{GS}TAG_CHANGE {opp1} tag=ZONE value=HAND")
@@ -560,7 +575,7 @@ class TestOpponentScout(unittest.TestCase):
         c.feed(f"{GS}TAG_CHANGE {opp1} tag=HEALTH value=5")
         c.feed(f"{GS}TAG_CHANGE {opp1} tag=ZONE value=PLAY")
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 2
+        _open_shop(c, n=2)                                        # turn 2
         a = c.analyze()
         self.assertEqual(a["last_opp_stats"], 8)
         # turn-2 buy phase: fight 1's remnant (half dead) is torn down...
@@ -575,7 +590,7 @@ class TestOpponentScout(unittest.TestCase):
         c.feed(f"{GS}TAG_CHANGE {opp2} tag=ATK value=6")
         c.feed(f"{GS}TAG_CHANGE {opp2} tag=HEALTH value=6")
         c.feed(f"{GS}TAG_CHANGE {opp2} tag=ZONE value=PLAY")
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # turn 3
+        _open_shop(c, n=3)  # turn 3
         a = c.analyze()
         # the remnant (3 stats) never enters the lobby; the 12-stat fight wins
         self.assertEqual([r["stats"] for r in c._lobby_stats], [8, 12])
@@ -603,7 +618,7 @@ class TestTheSnapshotProjection(unittest.TestCase):
         c.hero_card = "BG30_HERO_100"
         c.account = "TestAccount"
         c.playable = {}
-        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")   # turn 1
+        _open_shop(c)   # turn 1: a MAIN_ACTION alone opens nothing any more
         c.gs.cardtype[77] = "MINION"
         c.feed(f"{GS}TAG_CHANGE {self.MINE} tag=ZONE value=HAND")
         c.feed(f"{GS}TAG_CHANGE {self.MINE} tag=ATK value=4")
@@ -814,8 +829,13 @@ class TestBuyEvidence(unittest.TestCase):
         c.feed(f"{GS}TAG_CHANGE Entity=[entityName=Minion id=80 zone=HAND "
                f"zonePos=1 cardId=BG33_140 player=7] tag=ZONE_POSITION value=1")
         self.assertIn((7, "BG33_140"), c.actions.buys)
+        # Close the phase and open the next: the rotation moves the buys into
+        # turn_buys[-1]. The MAIN_ACTION alone opens nothing any more — the
+        # shop-commit call (open_buy_phase) is what does.
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        c.actions.open_buy_phase()
+        self.assertEqual(c.actions.turn, 1)
         self.assertIn((7, "BG33_140"), c.actions.turn_buys[-1])
         self.assertEqual(c.actions.buys, [])  # cleared for the new turn
 
