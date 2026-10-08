@@ -617,6 +617,11 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
             },
             "damage_taken": None if (eff is None or nxt_eff is None)
                             else eff - nxt_eff,
+            # The effective HP itself (health + armor at this turn's buy
+            # end), so the Battle face-off can show "32 -> 19" instead of
+            # only the delta. None on a turn the coach never advised on;
+            # old saved reps simply lack the key.
+            "eff": eff,
             "commitment": _commitment(a),
             # Sell-side questions, from the roles of what left vs what stayed.
             # Empty when there is no card DB or nothing sold, never guessed at.
