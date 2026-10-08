@@ -73,12 +73,19 @@ SELL = re.compile(
 SPELL_PLAY = re.compile(_GS + r"BlockType=PLAY Entity=\[entityName=[^]]+ cardId=(\w+)")
 
 
-def parse_actions(chunk, friendly, friendly_hero_card=None):
+def parse_actions(chunk, friendly, friendly_hero_card=None,
+                  collect_events=False):
     """Return a list of per-turn action dicts for the friendly player.
 
     `friendly_hero_card` is the friendly hero's card id (e.g. "BG22_HERO_000");
     the hero power is the same id with a "p" suffix (e.g. "BG22_HERO_000p_Alt"),
     so a BlockType=PLAY on that card counts as a hero-power use.
+
+    `collect_events` (2026-10-08, the replay viewer's Step-through) adds an
+    ordered `events` list per turn: {"k": roll|level|buy|sell|play|cast,
+    "card": id or None, "at": index in `chunk`} as the actions were
+    encountered. The per-group lists are unordered across groups; the
+    step-through needs the interleaving, and this is the one parser.
     """
     turns = []          # list of {turn, buys, sells, triples, refreshes, ...}
     cur_turn = None
@@ -95,16 +102,23 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
     ) if friendly_hero_card else None
 
     def new_turn(n):
-        return {"turn": n, "buys": [], "sells": [], "triples": [], "refreshes": 0,
-                "freezes": 0, "upgrades": 0, "hero_power": 0,
-                "plays": [], "rearranges": 0, "dark_gifts": 0, "choices": [],
-                # `spells` stays the COUNT (existing callers read it as one);
-                # `spell_ids` names them, which is what lets the review grade a
-                # plan that leads with "Cast X" (2026-10-06). A count cannot
-                # answer "did they cast the one it named".
-                "spells": 0, "spell_ids": []}
+        d = {"turn": n, "buys": [], "sells": [], "triples": [], "refreshes": 0,
+             "freezes": 0, "upgrades": 0, "hero_power": 0,
+             "plays": [], "rearranges": 0, "dark_gifts": 0, "choices": [],
+             # `spells` stays the COUNT (existing callers read it as one);
+             # `spell_ids` names them, which is what lets the review grade a
+             # plan that leads with "Cast X" (2026-10-06). A count cannot
+             # answer "did they cast the one it named".
+             "spells": 0, "spell_ids": []}
+        if collect_events:
+            d["events"] = []
+        return d
 
-    for line in chunk:
+    def event(kind, cid=None, at=None):
+        if collect_events and cur_turn is not None:
+            turns[-1]["events"].append({"k": kind, "card": cid, "at": at})
+
+    for at, line in enumerate(chunk):
         m = STEP_RE.search(line)
         if m:
             # Both GameState and PowerTaskList log tag=STEP lines; the PTL copy
@@ -129,6 +143,7 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
         m = REFRESH.search(line)
         if m and cur_turn is not None:
             turns[-1]["refreshes"] += 1
+            event("roll", None, at)
             continue
 
         m = FREEZE.search(line)
@@ -139,6 +154,7 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
         m = UPGRADE.search(line)
         if m and cur_turn is not None:
             turns[-1]["upgrades"] += 1
+            event("level", None, at)
             continue
 
         if hero_re:
@@ -166,12 +182,14 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
         m = BUY.search(line)
         if m and cur_turn is not None:
             turns[-1]["buys"].append(m.group(2))  # card id bought
+            event("buy", m.group(2), at)
             continue
 
         m = SELL.search(line)
         if m and cur_turn is not None:
             sold_entities.add(int(m.group(2)))
             turns[-1]["sells"].append(m.group(3))  # card id sold
+            event("sell", m.group(3), at)
             continue
 
         m = SPELL_PLAY.search(line)
@@ -182,6 +200,7 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             if cid not in _load_bg_minion_ids() and not cid.startswith("TB_BaconShop_DragBuy"):
                 turns[-1]["spells"] += 1
                 turns[-1]["spell_ids"].append(cid)
+                event("cast", cid, at)
                 continue
 
         m = ENTITY.search(line)
@@ -192,6 +211,16 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             )
             if not MINION_ONLY.match(cid):
                 continue
+            # The bracket's zone is the state BEFORE this write (the play
+            # block's own lines all carry zone=HAND). The write itself —
+            # tag=ZONE value=X — is the truth when present, and the play/sell
+            # conditions must read it at the write line, not a sibling's
+            # bracket several lines later (measured 2026-10-08: the play's
+            # bracket never flips, so the play fired on a follow-up write
+            # ~100 lines late and blurred the step-through's board bounds).
+            mz = re.search(r"tag=ZONE value=(\w+)", line)
+            if mz:
+                z = mz.group(1)
             old_zone = zone.get(eid)
             old_player = player.get(eid)
             zone[eid] = z
@@ -199,10 +228,16 @@ def parse_actions(chunk, friendly, friendly_hero_card=None):
             if cur_turn is None:
                 continue
 
-            # PLAY: friendly minion played from hand onto the board.
-            if p == friendly and z == "PLAY" and old_zone == "HAND":
+            # PLAY: friendly minion played from hand onto the board. The
+            # played-set guard keeps later re-writes of the same entity's
+            # zone (combat cleanup, re-creation) from re-firing the play —
+            # an entity is played once per game (a re-bought minion is a
+            # fresh entity).
+            if (p == friendly and z == "PLAY" and old_zone == "HAND"
+                    and eid not in played):
                 played.add(eid)
                 turns[-1]["plays"].append(cid)
+                event("play", cid, at)
             # SELL: a played minion leaves the board during the shop phase. Only
             # counts minions the player actually played (in `played`) so effect
             # removals (e.g. Lock & Load removing a tavern minion) aren't sold.
