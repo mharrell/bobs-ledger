@@ -11,6 +11,7 @@ sys.path.insert(0, HERE)          # location-independent: no cwd or -t needed
 from live_coach import LiveCoach, _LiveActions
 from player_actions import parse_actions
 from tests.test_shop_parsing import opt_block
+from tests.test_zone_shop import _created
 
 GS = "D 21:17:13.7844972 GameState.DebugPrintPower() - "
 PTL = "D 21:18:00.0000000 PowerTaskList.DebugPrintPower() - "
@@ -187,6 +188,50 @@ class TestCombatStepPair(unittest.TestCase):
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")  # the fight
         c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
         self.assertEqual(c._pairing, {1: 4}, "the pair's MAIN_END writes none")
+
+    def test_offers_before_step_line_promote_at_the_step(self):
+        """Measured 2026-10-08: the game writes the new phase's offers BEFORE
+        the MAIN_ACTION line (that game: HAS_DRAG_TO_BUY commits at lines
+        7063-7366, the step at 7368). The wipe used to discard the proven
+        table and a no-action shop never re-printed it — the promotion hung
+        on an options re-print 1400 lines into the shop, and until it came,
+        every shop-window snapshot stamped the old turn and phase."""
+        c = self._coach()
+        self._shop(c, 1)
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        # The next phase's offers, written before its step line.
+        for line in _created(200, "BG33_140", "River Skipper"):
+            c.feed(line)
+        c.feed(f"{GS}TAG_CHANGE Entity=200 tag=HAS_DRAG_TO_BUY value=1")
+        self.assertTrue(c.shop_cards, "the pre-step offers fill the table")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        self.assertEqual(c.actions.turn, 2,
+                         "the pre-step offers prove the phase at the step")
+        self.assertEqual(c._phase, "buy")
+
+    def test_stale_offers_at_step_do_not_promote(self):
+        """Offers that filled BEFORE the previous MAIN_END (a lagging
+        teardown of the old generation) are not the new phase's proof."""
+        c = self._coach()
+        self._shop(c, 1)
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        self.assertTrue(c.shop_cards, "no teardown in this fixture: still full")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        self.assertEqual(c.actions.turn, 1,
+                         "pre-END offers must not promote the next phase")
+
+    def test_empty_table_at_step_waits_for_offers(self):
+        """No pre-step offers: the MAIN_ACTION stays pending and the normal
+        fill path promotes, exactly as before this fix."""
+        c = self._coach()
+        self._shop(c, 1)
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_END")
+        c.feed(f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        self.assertEqual(c.actions.turn, 1)
+        self.assertTrue(c.actions.pending_buy)
+        self._shop(c, 2)
+        self.assertEqual(c.actions.turn, 2)
+        self.assertEqual(c._phase, "buy")
 
 
 if __name__ == "__main__":

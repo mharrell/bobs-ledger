@@ -113,6 +113,11 @@ class GameState:
         self._controller_lock = {}  # eid -> the player it was moved away from
         self._game_ended = False  # set on PLAYSTATE=WON/LOST; stops snapshots
         self._post_game = set()   # entity ids created after game end (re-created)
+        # Cards that left a real tracked HAND via ZONE_POSITION=0 (the guard
+        # below re-zones them SETASIDE). A real play follows as SETASIDE->PLAY
+        # and must still snapshot; combat summons enter from SETASIDE without
+        # ever passing through the hand and must not.
+        self._left_hand = set()
 
     def _set_gold(self, name):
         """Available gold = this turn's purse minus what's already spent.
@@ -281,10 +286,28 @@ class GameState:
             # the "final board" can be read back before the end-of-game cleanup.
             # Only HAND->PLAY (shop-phase plays) is snapshotted — combat summons
             # (SETASIDE/GRAVEYARD->PLAY) are transient and would pollute the
-            # board with deathrattle copies that die the same turn.
+            # board with deathrattle copies that die the same turn. The
+            # SETASIDE->PLAY arm below is the exception: a card the ZONE_
+            # POSITION=0 guard re-zoned out of a real tracked hand IS a play —
+            # the play cascade writes POSITION=0 (still zone=HAND) before
+            # ZONE=PLAY (measured 2026-10-08: Dune Dweller, the buy's
+            # ZONE_POSITION=0 -> ZONE=HAND shaping), and without it the play's
+            # snapshot was silently eaten whenever the play was the shop's last
+            # board event (the replay viewer's "ENDED WITH —" on turn 1).
             if value == "PLAY" and old == "HAND" and not self._game_ended:
                 if MINION_ONLY.match(self.card.get(eid, "")):
                     self._record_snapshot()
+            elif (value == "PLAY" and old == "SETASIDE"
+                  and eid in self._left_hand
+                  and not self._game_ended
+                  and MINION_ONLY.match(self.card.get(eid, ""))
+                  and self.cardtype.get(eid) in (None, "MINION")):
+                # The cardtype gate keeps the HERO out: it transits the pick
+                # UI's tracked HAND the same way (POSITION=0 -> PLAY) and its
+                # play-in fired an empty turn-0 snapshot the timeline then
+                # rendered as a phantom "TURN 0" card.
+                self._left_hand.discard(eid)
+                self._record_snapshot()
             # A minion LEAVING PLAY also snapshots: combat deaths are the
             # first reliable point where BOTH boards are fully set (the
             # opponent's combat minions often enter from SETASIDE, which
@@ -308,8 +331,13 @@ class GameState:
             # cascade finishes. Real hand cards never sit at position 0
             # (verified: multi-turn position shuffles stay >= 1), and PLAY
             # entities legitimately hold zonePos 0 (Bob, heroes) — HAND only.
+            # A real play transits here too on its way to PLAY, so the exit
+            # is remembered (_left_hand) rather than lost: the guard must
+            # clear the tracked hand without erasing the fact that this
+            # entity was a real card we held.
             if (int(value) == 0 and self.zone.get(eid) == "HAND"):
                 self.zone[eid] = "SETASIDE"
+                self._left_hand.add(eid)
         elif tag in ("CONTROLLER", "PLAYER"):
             # FULL_ENTITY blocks assign ownership via CONTROLLER (a
             # TAG_CHANGE carries it in the Entity=[...player=N] header) —

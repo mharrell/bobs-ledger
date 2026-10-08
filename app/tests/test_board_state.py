@@ -432,5 +432,75 @@ class TestHandPositionZeroExit(unittest.TestCase):
         self.assertEqual(gs.hand(1)[0]["pos"], 1)
 
 
+class TestPlaySnapshotAfterPositionZero(unittest.TestCase):
+    """A real play writes ZONE_POSITION=0 (while the card is still tracked
+    zone=HAND) BEFORE ZONE=PLAY — measured 2026-10-08, the Xavius game's
+    turn-1 Dune Dweller. The position-0 ghost-guard re-zoned the card
+    SETASIDE, so the play read as SETASIDE->PLAY — the exact shape the
+    snapshot rules ignore — and left NO buy-phase snapshot whenever the
+    play was the shop's last board event. The replay viewer then showed
+    "ENDED WITH —" over a card the player had bought and played."""
+
+    @staticmethod
+    def _shop_to_hand_lines(eid, cid, name="Dune Dweller"):
+        """Create in the tavern, then the buy: tavern PLAY -> our HAND."""
+        return [
+            f"{GS}    FULL_ENTITY - Creating ID={eid} CardID={cid}",
+            f"{GS}        tag=CONTROLLER value=15",
+            f"{GS}        tag=ZONE value=PLAY",
+            f"{GS}        tag=CARDTYPE value=MINION",
+            f"{GS}    TAG_CHANGE Entity=[entityName={name} id={eid} "
+            f"zone=PLAY zonePos=3 cardId={cid} player=15] "
+            f"tag=CONTROLLER value=7",
+            f"{GS}    TAG_CHANGE Entity=[entityName={name} id={eid} "
+            f"zone=PLAY zonePos=3 cardId={cid} player=15] tag=ZONE value=HAND",
+        ]
+
+    def test_play_after_position_zero_snapshots(self):
+        gs = GameState()
+        for line in self._shop_to_hand_lines(371, "BG31_815"):
+            gs.feed(line)
+        n_after_buy = len(gs.snapshots)
+        # The play, in the log's own write order.
+        gs.feed(f"{GS}    TAG_CHANGE Entity=[entityName=Dune Dweller id=371 "
+                f"zone=HAND zonePos=1 cardId=BG31_815 player=7] "
+                f"tag=ZONE_POSITION value=0")
+        gs.feed(f"{GS}    TAG_CHANGE Entity=[entityName=Dune Dweller id=371 "
+                f"zone=HAND zonePos=1 cardId=BG31_815 player=7] "
+                f"tag=ZONE value=PLAY")
+        self.assertEqual(len(gs.snapshots), n_after_buy + 1,
+                         "the play must snapshot despite the position-0 guard")
+        self.assertIn("BG31_815", [m["card"] for m in gs.snapshots[-1]])
+        self.assertEqual(gs.hand(7), [], "the played card left the hand")
+
+    def test_combat_summon_setaside_play_still_skips(self):
+        """SETASIDE->PLAY without a hand passthrough is a combat summon —
+        the transient the snapshot rules deliberately ignore."""
+        gs = GameState()
+        for line in [f"{GS}    FULL_ENTITY - Creating ID=400 CardID=BG25_008",
+                     f"{GS}        tag=CONTROLLER value=7",
+                     f"{GS}        tag=ZONE value=SETASIDE",
+                     f"{GS}        tag=CARDTYPE value=MINION"]:
+            gs.feed(line)
+        n = len(gs.snapshots)
+        gs.feed(f"{GS}    TAG_CHANGE Entity=400 tag=ZONE value=PLAY")
+        self.assertEqual(len(gs.snapshots), n,
+                         "a combat summon must not snapshot")
+
+    def test_ghost_exit_without_play_stays_snapshot_free(self):
+        """The 2026-09-14 ghost rule, unchanged: POSITION=0 with no ZONE
+        write clears the tracked hand and snapshots nothing."""
+        gs = GameState()
+        for line in TestBareEntityTagChanges._hand_card_lines(1764,
+                                                              "BG35_951"):
+            gs.feed(line)
+        n = len(gs.snapshots)
+        gs.feed(f"{GS}    TAG_CHANGE Entity=[entityName=Might of Stormwind "
+                f"id=1764 zone=HAND zonePos=1 cardId=BG35_951 player=1] "
+                f"tag=ZONE_POSITION value=0")
+        self.assertEqual(gs.hand(1), [])
+        self.assertEqual(len(gs.snapshots), n)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -477,6 +477,7 @@ _GAME_DEFAULTS = {
     "_shop_seen": dict,      # shop minion cid -> turn last offered (hunt evidence)
     "_shop_seen_eids": set,  # offer entity ids already recorded in _shop_seen
     "_phase": "buy",         # buy phase vs combat window (GameState STEP)
+    "_shop_filled": False,   # offers committed since the last MAIN_END
     "_bans_ready": False,
     "tribes_detecting": False,  # 5/5 ban set not confirmed yet (window state)
     "tribes_seen": 0,        # pure tribes the pool reveal has shown so far
@@ -577,7 +578,23 @@ class LiveCoach:
                             self.actions.turn,
                             pool.own_holdings(b, self.gs.hand(self.friendly)))
                 self._phase = "combat"
+                # Fills before this line belonged to the phase that just
+                # closed; only fills after it can prove the NEXT one.
+                self._shop_filled = False
             elif "tag=STEP value=MAIN_ACTION" in line:
+                if self.shop_cards and self._shop_filled:
+                    # The game writes the new phase's offers BEFORE the step
+                    # line (measured 2026-10-08: turn-2's HAS_DRAG_TO_BUY
+                    # commits at lines 7063-7366, the MAIN_ACTION at 7368).
+                    # A table that is already full is THIS phase's proof —
+                    # promote now, because the wipe below clears it and a
+                    # shop the player never acts in may never re-print it
+                    # (that game's re-print came 1400 lines into the shop;
+                    # until it, every shop-window snapshot stamped the old
+                    # turn and phase).
+                    self.actions.pending_buy = True
+                    self._phase = "buy"
+                    self.actions.open_buy_phase()
                 self._scout.close_round()
         # Seat-level opponent tracker (phase 2): staged combat bursts, keyed
         # by the BACON seat tags it parses itself.
@@ -1159,6 +1176,7 @@ class LiveCoach:
         if self.actions.pending_buy and self.shop_cards:
             self._phase = "buy"
             self.actions.open_buy_phase()
+        self._shop_filled = bool(self.shop_cards)
         # Shop sightings (hunt evidence for value._hunt_check): a NEW offer
         # eid is a shop generation showing this card. Recorded here, at feed
         # time — the replay harness builds a fresh coach per phase, so
