@@ -3541,6 +3541,16 @@
   "type": "Greater"
  },
  {
+  "id": "BG36_MagicItem_831",
+  "name": "Felsteel Cleaver",
+  "description": "After you cast a spell on a Tavern minion, a random friendly minion consumes it to gain its stats.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG36_MagicItem_850",
   "name": "Cookie's Stirring Rod",
   "description": "After you play 5 Murlocs, get two random Tavern spells. (5 left!)",
