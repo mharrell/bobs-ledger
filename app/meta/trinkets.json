@@ -47,6 +47,16 @@
   "type": "Greater"
  },
  {
+  "id": "BG30_MagicItem_406",
+  "name": "Butcher's Sickle",
+  "description": "Get a Butchering. At the start of each turn, get another.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Commit Attack Scaling Undead with spell power.",
+  "type": "Greater"
+ },
+ {
   "id": "BG30_MagicItem_410",
   "name": "Quilligraphy Set",
   "description": "Avenge (3): Your Blood Gems give an extra +1 Health this game.",
@@ -64,6 +74,25 @@
   },
   "guide": "Best picked with [[Prickly Piper]] already, and use [[Glowgullet Warlord]] as your avenge unit. Commit Quils.",
   "cost": 1
+ },
+ {
+  "id": "BG30_MagicItem_410t2",
+  "name": "Quilligraphy Set",
+  "description": "Avenge (4): Your Blood Gems give an extra +1/+1 this game.",
+  "pick_rate": 18.3,
+  "avg_placement": 4.89,
+  "placement_distribution": {
+   "1": 8.45,
+   "2": 10.93,
+   "3": 10.35,
+   "4": 12.25,
+   "5": 13.93,
+   "6": 14.7,
+   "7": 14.88,
+   "8": 14.52
+  },
+  "guide": "Commit to a quil comp, have gem generation",
+  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_411",
@@ -128,6 +157,25 @@
    "8": 10.77
   },
   "guide": "Generally decent option to pick."
+ },
+ {
+  "id": "BG30_MagicItem_420t",
+  "name": "Book of Medivh",
+  "description": "Discover 2 Tavern spells. At the start of each turn, Discover 2 more.",
+  "pick_rate": 18.8,
+  "avg_placement": 4.36,
+  "placement_distribution": {
+   "1": 14.82,
+   "2": 12.77,
+   "3": 11.95,
+   "4": 12.24,
+   "5": 12.63,
+   "6": 12.5,
+   "7": 12.3,
+   "8": 10.77
+  },
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_422",
@@ -885,25 +933,6 @@
   "guide": "Only pick with [[Flighty Scout||120677]]. Scale it using the trinket for the rest of the game."
  },
  {
-  "id": "BG30_MagicItem_914t",
-  "name": "Nerglish Phrasebook",
-  "description": "After you play a minion, give the left-most minion in your hand +6/+6.",
-  "pick_rate": 26.6,
-  "avg_placement": 3.91,
-  "placement_distribution": {
-   "1": 9.59,
-   "2": 18.55,
-   "3": 18.96,
-   "4": 16.87,
-   "5": 13.55,
-   "6": 10.35,
-   "7": 7.06,
-   "8": 5.06
-  },
-  "guide": null,
-  "type": "Greater"
- },
- {
   "id": "BG30_MagicItem_917",
   "name": "Rusty Trident",
   "description": "Start of Combat: Give your Naga \"Deathrattle: Get a random Spellcraft spell.\"",
@@ -1061,6 +1090,45 @@
    "8": 9.13
   },
   "guide": "Pick with gem generation already, maybe through [[Bristlemane Scrapsmith]]"
+ },
+ {
+  "id": "BG30_MagicItem_988t",
+  "name": "Great Boar Sticker",
+  "description": "Get 5 Blood Gems. Your Blood Gems give an extra +3/+3.",
+  "pick_rate": 13.5,
+  "avg_placement": 4.67,
+  "placement_distribution": {
+   "1": 8.64,
+   "2": 9.33,
+   "3": 12.67,
+   "4": 15.41,
+   "5": 16.0,
+   "6": 14.87,
+   "7": 13.94,
+   "8": 9.13
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_989",
+  "name": "Artisanal Urn",
+  "description": "Your Undead have +20 Attack.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Pick with an Attack Scaling Undead setup, insanely powerful for your next 1-2 fights.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG30_MagicItem_989t",
+  "name": "Artisanal Urn",
+  "description": "Your Undead have +20 Attack.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Pick with an Attack Scaling Undead setup, insanely powerful for your next 1-2 fights.",
+  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_993",
@@ -1365,6 +1433,25 @@
   "guide": null
  },
  {
+  "id": "BG32_MagicItem_361t",
+  "name": "Portable Factory",
+  "description": "Discover a Tier 5 minion with a type. At the start of each turn, get another copy of it.",
+  "pick_rate": 14.2,
+  "avg_placement": 4.4,
+  "placement_distribution": {
+   "1": 14.86,
+   "2": 13.24,
+   "3": 12.3,
+   "4": 11.5,
+   "5": 11.2,
+   "6": 11.76,
+   "7": 12.13,
+   "8": 13.0
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG32_MagicItem_362",
   "name": "Innkeeper's Hearth",
   "description": "Discover two Tier 6 minions. Set their stats to 30/30.",
@@ -1498,6 +1585,25 @@
   "guide": "Pick with gem scaling ([[Gem Rat||116434]]). Best played with [[Balinda Stonehearth||130298]] later."
  },
  {
+  "id": "BG32_MagicItem_808t",
+  "name": "Bloodbound Earrings",
+  "description": "After you cast 5 spells, this plays two Blood Gems on all your minions. (5 left!)",
+  "pick_rate": 31.4,
+  "avg_placement": 4.28,
+  "placement_distribution": {
+   "1": 12.41,
+   "2": 13.98,
+   "3": 14.09,
+   "4": 13.35,
+   "5": 13.8,
+   "6": 12.53,
+   "7": 11.35,
+   "8": 8.49
+  },
+  "guide": "Best played with [[Balinda Stonehearth||130298]] and already scaled gems.",
+  "type": "Greater"
+ },
+ {
   "id": "BG32_MagicItem_817",
   "name": "Rendle Sticker",
   "description": "Steal the highest-Tier card from the Tavern. At the end of each turn, repeat this.",
@@ -1606,6 +1712,25 @@
    "8": 8.26
   },
   "guide": "Use either [[Turquoise Skitterer||119255]] or [[Ravaging Scorpid||132949]] to scale beetles, then use [[Banana Slamma||98824]] to double their attack"
+ },
+ {
+  "id": "BG32_MagicItem_860t",
+  "name": "Beetle Band",
+  "description": "Avenge (7): Summon two 2/2 Beetles. Give them Taunt.",
+  "pick_rate": 17.6,
+  "avg_placement": 4.18,
+  "placement_distribution": {
+   "1": 14.73,
+   "2": 14.14,
+   "3": 13.24,
+   "4": 12.73,
+   "5": 13.48,
+   "6": 12.56,
+   "7": 10.86,
+   "8": 8.26
+  },
+  "guide": "Use either [[Turquoise Skitterer||119255]] or [[Ravaging Scorpid||132949]] to scale beetles, then use [[Banana Slamma||98824]] to multiply attack on them.",
+  "type": "Greater"
  },
  {
   "id": "BG32_MagicItem_888",
@@ -1947,6 +2072,26 @@
   "type": "Greater"
  },
  {
+  "id": "BG35_MagicItem_701pe",
+  "name": "Fang Anklet Player Enchant [DNT]",
+  "description": "Your Beasts have increased stats for the rest of this combat.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": null
+ },
+ {
+  "id": "BG35_MagicItem_710",
+  "name": "Miniature Ship",
+  "description": "After you cast a Tavern spell, give your Pirates +3/+3.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": "Must use [[Proud Privateer||122520]] + Bounty generation.",
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_711",
   "name": "Protective Ring",
   "description": "Start of Combat: Give 4 random friendly Pirates Divine Shield.",
@@ -1974,6 +2119,25 @@
   "avg_placement": null,
   "placement_distribution": null,
   "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_733",
+  "name": "Jailer Sticker",
+  "description": "Spellcraft: Destroy a friendly Undead to get 2 random Undead.",
+  "pick_rate": 29.4,
+  "avg_placement": 4.35,
+  "placement_distribution": {
+   "1": 11.47,
+   "2": 13.65,
+   "3": 13.94,
+   "4": 13.81,
+   "5": 13.54,
+   "6": 12.99,
+   "7": 10.89,
+   "8": 9.71
+  },
+  "guide": "Destroy stuff like [[Mummifier||108992]] and [[Cadaver Caretaker||113158]].",
   "type": "Greater"
  },
  {
@@ -2129,6 +2293,25 @@
   "guide": null
  },
  {
+  "id": "BG35_MagicItem_816t",
+  "name": "Orb of the Unknown",
+  "description": "Get a random Greater Trinket and 4 Gold.",
+  "pick_rate": 16.5,
+  "avg_placement": 4.41,
+  "placement_distribution": {
+   "1": 14.94,
+   "2": 12.21,
+   "3": 11.69,
+   "4": 12.26,
+   "5": 12.0,
+   "6": 12.65,
+   "7": 12.49,
+   "8": 11.76
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_817",
   "name": "Lens Case",
   "description": "Get a Duplicating Lens. At the start of every 2 turns, repeat this. (2 turns left!)",
@@ -2212,6 +2395,25 @@
   "guide": null
  },
  {
+  "id": "BG35_MagicItem_823t",
+  "name": "Timeworn Candelabra",
+  "description": "Discover a 2-Cost minion from the Major Timewarp.",
+  "pick_rate": 33.3,
+  "avg_placement": 4.63,
+  "placement_distribution": {
+   "1": 12.11,
+   "2": 11.07,
+   "3": 11.22,
+   "4": 12.37,
+   "5": 12.98,
+   "6": 13.68,
+   "7": 13.75,
+   "8": 12.82
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG35_MagicItem_840",
   "name": "Chromatic Tear",
   "description": "Get a random Chromadrake. At the start of each turn, repeat this.",
@@ -2267,25 +2469,6 @@
   },
   "guide": "Commit Shop Buff Eles.",
   "cost": 0
- },
- {
-  "id": "BG35_MagicItem_850t",
-  "name": "Pocket Cyclone",
-  "description": "Cast Easterly Winds four times. At the start of each turn, cast it twice more.",
-  "pick_rate": 23.3,
-  "avg_placement": 4.24,
-  "placement_distribution": {
-   "1": 9.55,
-   "2": 13.7,
-   "3": 16.34,
-   "4": 16.37,
-   "5": 14.9,
-   "6": 12.45,
-   "7": 10.38,
-   "8": 6.32
-  },
-  "guide": null,
-  "type": "Greater"
  },
  {
   "id": "BG35_MagicItem_851",
@@ -2382,25 +2565,6 @@
   "cost": 3
  },
  {
-  "id": "BG35_MagicItem_872t",
-  "name": "Ophidian Staff",
-  "description": "Give a Beast +2/+2 and Reborn.",
-  "pick_rate": 21.1,
-  "avg_placement": 4.53,
-  "placement_distribution": {
-   "1": 9.42,
-   "2": 11.77,
-   "3": 13.84,
-   "4": 14.06,
-   "5": 14.6,
-   "6": 13.87,
-   "7": 13.13,
-   "8": 9.3
-  },
-  "guide": null,
-  "type": null
- },
- {
   "id": "BG35_MagicItem_872te",
   "name": "Ophidian",
   "description": "+0/+0 and Reborn.",
@@ -2493,6 +2657,25 @@
    "8": 12.45
   },
   "guide": "Only pick on tavern 4 so you're going to get its value immediately."
+ },
+ {
+  "id": "BG35_MagicItem_931t",
+  "name": "Transcribing Typewriter",
+  "description": "Get an extra copy of the next 4 minions you buy. (4 left!)",
+  "pick_rate": 21.4,
+  "avg_placement": 4.55,
+  "placement_distribution": {
+   "1": 12.83,
+   "2": 11.89,
+   "3": 11.61,
+   "4": 12.06,
+   "5": 12.74,
+   "6": 12.98,
+   "7": 13.44,
+   "8": 12.45
+  },
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG36_MagicItem_200",
@@ -2618,6 +2801,25 @@
   "cost": 4
  },
  {
+  "id": "BG36_MagicItem_208t",
+  "name": "Floating Candle Set",
+  "description": "Trigger a friendly minion's Deathrattle.",
+  "pick_rate": 23.1,
+  "avg_placement": 4.45,
+  "placement_distribution": {
+   "1": 14.56,
+   "2": 11.64,
+   "3": 11.73,
+   "4": 12.0,
+   "5": 12.43,
+   "6": 13.31,
+   "7": 13.1,
+   "8": 11.23
+  },
+  "guide": null,
+  "type": null
+ },
+ {
   "id": "BG36_MagicItem_211",
   "name": "Lovely Locket",
   "description": "After you cast a spell on a friendly minion, this casts it on another friendly minion.",
@@ -2659,6 +2861,45 @@
   "id": "BG36_MagicItem_215",
   "name": "Dragon's Eye",
   "description": "Your Dragons' Battlecries trigger an extra time.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_216",
+  "name": "Eternal Portrait",
+  "description": "Get a Golden Eternal Knight. After a friendly Undead dies, your Eternal Knights have +4/+2 this game.",
+  "pick_rate": 24.9,
+  "avg_placement": 3.66,
+  "placement_distribution": {
+   "1": 12.02,
+   "2": 20.06,
+   "3": 19.37,
+   "4": 17.5,
+   "5": 12.36,
+   "6": 9.67,
+   "7": 5.92,
+   "8": 3.1
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_216pe",
+  "name": "Greater Eternal Portrait Player Ench [DNT]",
+  "description": "Counts the number of Eternal Knights that died. [DNT]",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": null
+ },
+ {
+  "id": "BG36_MagicItem_217",
+  "name": "Funeral Wreath",
+  "description": "After a friendly minion is Reborn, get a plain copy of it. (3 times per combat.)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -2738,6 +2979,25 @@
   "guide": "+4/2 a turn is decent on turn 6, +6/3 is amazing. Use tempo to comfortably level to 5."
  },
  {
+  "id": "BG36_MagicItem_302t",
+  "name": "Gold Mallet",
+  "description": "At the end of your turn, give your minions +4/+2. (Improved by Golden minions you've played this game!)",
+  "pick_rate": 48.5,
+  "avg_placement": 3.59,
+  "placement_distribution": {
+   "1": 16.65,
+   "2": 16.42,
+   "3": 18.56,
+   "4": 17.24,
+   "5": 12.52,
+   "6": 10.29,
+   "7": 5.72,
+   "8": 2.6
+  },
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG36_MagicItem_303",
   "name": "Glass of Perspective",
   "description": "Get a random Choose One card. At the start of each turn, get another.",
@@ -2753,7 +3013,7 @@
    "7": 13.74,
    "8": 12.96
   },
-  "guide": null
+  "guide": "Good pick for cheap, and enabler for choose one quilboars"
  },
  {
   "id": "BG36_MagicItem_305",
@@ -2942,16 +3202,6 @@
   "type": "Lesser"
  },
  {
-  "id": "BG36_MagicItem_404t",
-  "name": "Corrupted Baton",
-  "description": "After you cast a Tavern spell, give your Deity +10/+10.",
-  "pick_rate": null,
-  "avg_placement": null,
-  "placement_distribution": null,
-  "guide": null,
-  "type": "Greater"
- },
- {
   "id": "BG36_MagicItem_406",
   "name": "Shath'Yar Shrine",
   "description": "After you discard a spell, get a random Aberration.",
@@ -2982,6 +3232,16 @@
   "type": "Lesser"
  },
  {
+  "id": "BG36_MagicItem_409",
+  "name": "Ruby Tusk",
+  "description": "After you play 10 Blood Gems from hand, replace this with a random Greater Quilboar Trinket. (10 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Lesser"
+ },
+ {
   "id": "BG36_MagicItem_411",
   "name": "Reinvigorating Light",
   "description": "Discover a second Hero Power. Gain 3 Gold.",
@@ -2998,7 +3258,7 @@
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
-  "guide": null,
+  "guide": "Pair with [[Drakkari Enchanter||101314]]",
   "type": "Lesser"
  },
  {
@@ -3065,6 +3325,16 @@
   "id": "BG36_MagicItem_430",
   "name": "Sludge Portrait",
   "description": "Get a Sludge Corrosion. After you discard a card, get a Sludge Corrosion.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_450",
+  "name": "Snarky Portrait",
+  "description": "Get 2 Snarky Sharks. Whenever a Fishbait dies, give your Beasts +4/+4 and improve this.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,

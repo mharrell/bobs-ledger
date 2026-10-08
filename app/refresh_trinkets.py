@@ -222,9 +222,15 @@ def main():
           f" | seen anywhere: {len(seen)}")
 
     # name -> log ids (a name can hold several ids: Colorful Compass
-    # tribe variants 426/426t share text and stats).
+    # tribe variants 426/426t share text and stats). SEEN ids have to be in
+    # this universe too: a token trinket (Floating Candle Set's …208t) is
+    # never OFFERED and hsreplay never guided it, but the log sees it and the
+    # coverage check demands its row — without it here, an annotation keyed
+    # by the token id re-keyed away to the pickable parent on every refresh
+    # and the curation gate re-flagged the token forever (measured
+    # 2026-10-07: three refreshes, the same NEED CURATION row each time).
     name_to_ids = {}
-    for cid in set(offered) | set(guides):
+    for cid in set(offered) | set(guides) | set(seen):
         card = cards.get(cid)
         if card:
             name_to_ids.setdefault(card[0], set()).add(cid)

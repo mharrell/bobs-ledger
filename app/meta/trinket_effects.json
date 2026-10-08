@@ -113,6 +113,15 @@
   },
   "note": "Avenge(5): 2/2 taunt Beetle (Beetle Band)"
  },
+ "BG32_MagicItem_860t": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Beast"
+   ]
+  },
+  "note": "Avenge(5): 2/2 taunt Beetle (Beetle Band)"
+ },
  "BG30_MagicItem_713": {
   "base_value": 5,
   "synergy": {
@@ -126,6 +135,19 @@
   "note": "8 friendly deaths -> random Undead (Bleeding Heart)"
  },
  "BG32_MagicItem_808": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Quilboar"
+   ],
+   "keywords": [
+    "spell",
+    "blood_gem"
+   ]
+  },
+  "note": "4 spells -> Blood Gems on all minions (Bloodbound Earrings)"
+ },
+ "BG32_MagicItem_808t": {
   "base_value": 10,
   "synergy": {
    "tribes": [
@@ -191,6 +213,15 @@
   "note": "2 gold but no T1/T2 shop offers (Bob-blehead) — read for a higher-tier curve"
  },
  "BG30_MagicItem_420": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Discover a Tavern spell, +1 per turn (Book of Medivh)"
+ },
+ "BG30_MagicItem_420t": {
   "base_value": 14,
   "synergy": {
    "keywords": [
@@ -381,6 +412,15 @@
   },
   "note": "Eternal Knight + combat Taunt/Reborn on your Eternal Knights (Eternal Portrait)"
  },
+ "BG36_MagicItem_216": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Undead"
+   ]
+  },
+  "note": "Eternal Knight + combat Taunt/Reborn on your Eternal Knights (Eternal Portrait)"
+ },
  "BG32_MagicItem_858": {
   "base_value": 12,
   "synergy": {
@@ -409,6 +449,16 @@
   "note": "Flighty Scout; spells buff Scouts in hand+warband (Flighty Portrait)"
  },
  "BG36_MagicItem_208": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "deathrattle",
+    "spellcraft"
+   ]
+  },
+  "note": "Spellcraft: trigger a friendly Deathrattle (Floating Candle Set)"
+ },
+ "BG36_MagicItem_208t": {
   "base_value": 8,
   "synergy": {
    "keywords": [
@@ -473,6 +523,15 @@
   },
   "note": "end of turn: board +1/+1, improves with goldens played (Gold Mallet)"
  },
+ "BG36_MagicItem_302t": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "golden"
+   ]
+  },
+  "note": "end of turn: board +1/+1, improves with goldens played (Gold Mallet)"
+ },
  "BG32_MagicItem_951": {
   "base_value": 12,
   "synergy": {
@@ -492,6 +551,18 @@
   "note": "Goldenizer every 3 turns (Goldenizer Supply)"
  },
  "BG30_MagicItem_988": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Quilboar"
+   ],
+   "keywords": [
+    "blood_gem"
+   ]
+  },
+  "note": "3 Blood Gems + gems give extra +2/+1 (Great Boar Sticker)"
+ },
+ "BG30_MagicItem_988t": {
   "base_value": 12,
   "synergy": {
    "tribes": [
@@ -578,6 +649,18 @@
   "note": "Refresh offers an extra higher-tier minion (Innkeeper's Stein)"
  },
  "BG35_MagicItem_306": {
+  "base_value": 6,
+  "synergy": {
+   "tribes": [
+    "Undead"
+   ],
+   "keywords": [
+    "spellcraft"
+   ]
+  },
+  "note": "Spellcraft: destroy an Undead -> random Undead (Jailer Sticker)"
+ },
+ "BG35_MagicItem_733": {
   "base_value": 6,
   "synergy": {
    "tribes": [
@@ -721,15 +804,6 @@
   },
   "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
  },
- "BG30_MagicItem_914t": {
-  "base_value": 10,
-  "synergy": {
-   "keywords": [
-    "hand"
-   ]
-  },
-  "note": "per minion played: left-most hand minion +3/+3 (Nerglish Phrasebook)"
- },
  "BG30_MagicItem_544": {
   "base_value": 12,
   "synergy": {
@@ -769,6 +843,15 @@
   },
   "note": "get a random Lesser Trinket (Orb of the Unknown)"
  },
+ "BG35_MagicItem_816t": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "trinket"
+   ]
+  },
+  "note": "get a random Lesser Trinket (Orb of the Unknown)"
+ },
  "BG32_MagicItem_271": {
   "base_value": 8,
   "synergy": {
@@ -800,16 +883,16 @@
   },
   "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
  },
- "BG35_MagicItem_850t": {
+ "BG32_MagicItem_361": {
   "base_value": 14,
   "synergy": {
    "keywords": [
-    "spell"
+    "economy"
    ]
   },
-  "note": "cast Easterly Winds, repeats every turn (Pocket Cyclone)"
+  "note": "Discover a typed T4 minion, another copy each turn (Portable Factory)"
  },
- "BG32_MagicItem_361": {
+ "BG32_MagicItem_361t": {
   "base_value": 14,
   "synergy": {
    "keywords": [
@@ -828,6 +911,18 @@
   "note": "craft a custom Undead, every 2 turns (Putricide Sticker)"
  },
  "BG30_MagicItem_410": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Quilboar"
+   ],
+   "keywords": [
+    "blood_gem"
+   ]
+  },
+  "note": "Avenge(3): Blood Gems give extra +1 Health (Quilligraphy Set)"
+ },
+ "BG30_MagicItem_410t2": {
   "base_value": 8,
   "synergy": {
    "tribes": [
@@ -1056,6 +1151,15 @@
   },
   "note": "discover a 2-cost Minor Timewarp minion (Timeworn Candelabra)"
  },
+ "BG35_MagicItem_823t": {
+  "base_value": 6,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "discover a 2-cost Minor Timewarp minion (Timeworn Candelabra)"
+ },
  "BG30_MagicItem_416": {
   "base_value": 10,
   "synergy": {
@@ -1071,6 +1175,15 @@
   "note": "combat: double the stats of your two lowest-Attack minions (Training Certificate)"
  },
  "BG35_MagicItem_931": {
+  "base_value": 10,
+  "synergy": {
+   "keywords": [
+    "economy"
+   ]
+  },
+  "note": "extra copy of the next 2 minions you buy (Transcribing Typewriter)"
+ },
+ "BG35_MagicItem_931t": {
   "base_value": 10,
   "synergy": {
    "keywords": [
@@ -1723,15 +1836,6 @@
   },
   "note": "After you cast a Tavern spell, give your Deity +4/+4 (Corrupted Baton, LESSER; the Greater BG36_MagicItem_404t is +10/+10 and the two shared a read until 2026-09-23). Same shape as the Greater read — spell-fuelled DEITY POOL, not board stats, paid out only when the Deity awakens — scaled to the printed numbers (4 vs 10)."
  },
- "BG36_MagicItem_404t": {
-  "base_value": 4,
-  "synergy": {
-   "keywords": [
-    "spell"
-   ]
-  },
-  "note": "After you cast a Tavern spell, give your Deity +4/+4 (Corrupted Baton, LESSER; the Greater BG36_MagicItem_404t is +10/+10 and the two shared a read until 2026-09-23). Same shape as the Greater read — spell-fuelled DEITY POOL, not board stats, paid out only when the Deity awakens — scaled to the printed numbers (4 vs 10)."
- },
  "BG36_MagicItem_416": {
   "base_value": 6,
   "synergy": {
@@ -2112,14 +2216,97 @@
   "note": "Start of Combat: give your Rally minions Divine Shield (Lightfeather Sticker). The shields land before the first attack, and it scales with how many Rally minions the board runs; no tribe, because Rally spans them.",
   "review": "priced from the card text 2026-10-04 - narrower than Protective Ring's 4 Pirates, so it sits below it."
  },
- "BG35_MagicItem_872t": {
-  "base_value": 0,
-  "synergy": {},
-  "note": "Spellcraft token created by Ophidian Staff (BG35_MagicItem_872): the +2/+2 and Reborn implement it hands a Beast, client type SPELL rather than a trinket. Never offered as a pick - this read exists for the log-coverage gate; all of the value is priced on the Staff itself."
- },
  "BG36_MagicItem_417te": {
   "base_value": 0,
   "synergy": {},
   "note": "The enchantment Makeshift Master's Spellcraft leaves on the chosen minion (BG36_MagicItem_417, Greater; client type ENCHANTMENT): 'after this gains stats this turn, also give the stats to your Deity'. Never offered as a pick - this read exists for the log-coverage gate; the value is priced on Makeshift Master itself."
+ },
+ "BG30_MagicItem_406": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "a free Butchering now and at the start of every turn (Butcher's Sickle)",
+  "review": "priced from the card text 2026-10-07 - recurring spell generator; Butchering itself is priced by the spell DB, not here."
+ },
+ "BG35_MagicItem_701pe": {
+  "base_value": 0,
+  "synergy": {},
+  "note": "internal player enchant from Fang Anklet (Beast combat stats) - never offered; carried so the coverage check stays green",
+  "review": "priced from the card text 2026-10-07 - internal entity, not a pick; priced 0."
+ },
+ "BG35_MagicItem_710": {
+  "base_value": 10,
+  "synergy": {
+   "tribes": [
+    "Pirate"
+   ],
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "every tavern spell gives your Pirates +3/+3 (Miniature Ship)",
+  "review": "priced from the card text 2026-10-07 - scales with spells cast per turn and Pirate count; first pass 10."
+ },
+ "BG36_MagicItem_216pe": {
+  "base_value": 0,
+  "synergy": {},
+  "note": "internal counter enchant behind Eternal Portrait - never offered; carried so the coverage check stays green",
+  "review": "priced from the card text 2026-10-07 - internal entity, not a pick; priced 0."
+ },
+ "BG36_MagicItem_217": {
+  "base_value": 8,
+  "synergy": {
+   "keywords": [
+    "reborn"
+   ]
+  },
+  "note": "each friendly Reborn yields a plain copy, 3x per combat (Funeral Wreath)",
+  "review": "priced from the card text 2026-10-07 - copy quality follows the reborn minion; 8 assumes a mid board."
+ },
+ "BG36_MagicItem_409": {
+  "base_value": 4,
+  "synergy": {
+   "tribes": [
+    "Quilboar"
+   ],
+   "keywords": [
+    "blood_gem"
+   ]
+  },
+  "note": "10 Blood Gems played from hand upgrade it to a random Greater Quilboar trinket (Ruby Tusk)",
+  "review": "priced from the card text 2026-10-07 - transitional Lesser; value is the upgrade, not the body."
+ },
+ "BG36_MagicItem_450": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Beast"
+   ]
+  },
+  "note": "two Snarky Sharks; each Fishbait death grows your Beasts and improves this (Snarky Portrait)",
+  "review": "priced from the card text 2026-10-07 - growth engine gated on Fishbait deaths; 8 is the floor with the sharks."
+ },
+ "BG30_MagicItem_989": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Undead"
+   ]
+  },
+  "note": "your Undead carry +20 Attack (Artisanal Urn)",
+  "review": "priced from the card text 2026-10-07 - attack only, no health; 12 assumes a mid Undead board."
+ },
+ "BG30_MagicItem_989t": {
+  "base_value": 12,
+  "synergy": {
+   "tribes": [
+    "Undead"
+   ]
+  },
+  "note": "your Undead carry +20 Attack (Artisanal Urn)",
+  "review": "priced from the card text 2026-10-07 - token form of the same trinket; same read."
  }
 }
