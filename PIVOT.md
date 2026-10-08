@@ -24,9 +24,9 @@ that are wrong. The plan is shaped by the corrections, not by the claim:
    game writes to the player's own disk. Verified by grep on 2026-10-06, before
    this document was written: `SendInput|SetCursorPos|mouse_event|keybd_event|
    pyautogui|OpenProcess|ReadProcessMemory|WriteProcessMemory|
-   CreateRemoteThread` is **zero matches** across `app/`. (`CLAUDE.md` item 3
-   wants that property test-locked — the code side *and* the README claim that
-   depends on it. Still open.)
+   CreateRemoteThread` is **zero matches** across `app/`. (Item 3 of the working
+   notes wants that property test-locked — the code side *and* the README claim
+   that depends on it. Still open.)
 2. **"Decision-making is highly likely a ToS violation" is not a Blizzard
    sentence.** No Blizzard document draws that line. The clause actually in play
    (EULA 1.C) prohibits software that "facilitates the gameplay" and grants "an
@@ -102,7 +102,7 @@ stops being an oracle.
 **Phase 0 — pin the posture (first, small).** Write the contract into `DESIGN.md`:
 what ships live (state), what ships after the fact (verdict), and the property
 that must never regress (no process/memory/input access). Add the two controls
-`CLAUDE.md` item 3 asks for: a test asserting README's no-process/no-input claims
+the working notes' item 3 asks for: a test asserting README's no-process/no-input claims
 *and* that those API names stay absent from `app/`, and a **live-payload contract
 test** asserting the coach's live output carries no verdict fields — that is what
 stops this pivot from silently reverting.
@@ -196,7 +196,7 @@ reopened by accident:**
    A rename would also cost ~26 files including both launcher filenames, the
    workers.dev subdomain every installed copy's updater points at, and shortcuts
    already on players' machines. The bar-tab language went into the review's own
-   name instead: **Settle up**. (See CLAUDE.md.)
+   name instead: **Settle up**. (See the working notes.)
 3. ~~Whether the review's first screen leads with the model's line or with the
    player's own decisions, scored.~~ **Answered by building it:** the first
    screen is neither — it is the TURN BY TURN board section (what you went in

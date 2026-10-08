@@ -7,11 +7,10 @@ venv/
 # IDE
 .idea/
 
-# Claude Code worktrees (isolated checkouts)
-.claude/worktrees/
-
-# Stop-hook ack latches (per-session, wt_stop_check.sh)
-.claude/wt-status/
+# Per-install local state — the local tooling's own directory, the working
+# notes, and a local key bootstrap — is ignored via .git/info/exclude, which
+# is deliberately not a tracked file: per-install paths are named where they
+# are used, the same reason .hs_home.json below has no directory prefix.
 
 # NOTE: python-hslog/ is TRACKED. It used to be gitignored, which meant a
 # clone lacked the parser while the release zip had it — the spin-out into
@@ -47,6 +46,10 @@ decision_logs/
 # untracked before this line existed (2026-10-03).
 .share_consent.json
 session_reports/
+
+# The end-of-game card's "save every replay" answer (2026-10-07) — per-player
+# state in the same class as the sharing answer above it.
+.save_all_replays.json
 
 # Where THIS machine was told Hearthstone lives, written by `config.py --set`
 # when the game is not in the usual place (2026-10-06). Machine-specific, so it
@@ -126,9 +129,6 @@ VERSION
 telemetry/.wrangler/
 .dev.vars
 *.env
-
-# Local API-key bootstrap helper (never ships, never commits)
-claude_code_zai_env.sh
 
 # Scratch dirs used while verifying a release build
 .tmp_*/

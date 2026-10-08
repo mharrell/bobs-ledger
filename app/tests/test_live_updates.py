@@ -161,7 +161,7 @@ class TestLevelCost(unittest.TestCase):
 
     def test_price_drops_per_turn_at_tier(self):
         """The upgrade starts at (target+3) gold and drops 1 per round
-        waited (CLAUDE.md indexing; the audit's F4 — the old docstring
+        waited (the project notes' indexing; the audit's F4 — the old docstring
         wrote the same rule as 'tier+5 minus turns', a confusingly
         different index). 1→2 costs 5; a second turn at tier 1: 4."""
         c = self._coach(1)

@@ -15,7 +15,7 @@ Aggregates: adherence per advice class (buy / level-lead / hunt-roll /
 pass), and followed-vs-ignored outcome means. THIS IS OBSERVATIONAL:
 following advice is correlated with easy spots, so followed-bad and
 ignored-good are SUSPECT RULES to review, never proof coaching hurts
-or helps (sham-control rule, CLAUDE.md).
+or helps (sham-control rule, the project notes).
 
 Usage:
   python outcome_audit.py [Power.log ...]   # default: all session logs

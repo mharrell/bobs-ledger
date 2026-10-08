@@ -10,7 +10,7 @@ Both bugs were silent in the only case anyone had exercised:
   file died with `fatal: pathspec 'PIVOT.md' did not match any files`.
 * The merge step ran `git checkout main`, which git refuses from a linked
   worktree ("'main' is already used by worktree at ..."). So the combination
-  CLAUDE.md mandates — work in a worktree, end with `python app/sync.py` —
+  The project rules mandate — work in a worktree, end with `python app/sync.py` —
   committed, then stopped before merging.
 
 Neither can be exercised end to end without building throwaway repos, which

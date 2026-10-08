@@ -169,9 +169,9 @@ the relevant subset per decision. Self-owned; no dependence on HSReplay's API
 via manual paste).
 
 ### Model & cache strategy — two distinct things
-**1. The Claude Code session (the tool building the coach) runs on
+**1. The session tool that builds the coach runs on
 `deepseek-v4-flash`** (1M context) with prefix-cache discipline. That's the
-harness config in `~/.claude/settings.json` — it powers *this* agent, not the
+tool's own user-level config — it powers the *tool*, not the
 coach's runtime. Cache discipline: byte-stable FIXED_BLOCK + per-decision
 VARIABLE tail; verify via `prompt_cache_hit_tokens` vs `prompt_cache_miss_tokens`.
 
@@ -568,7 +568,7 @@ original, and never touches anything else on disk. The README's promise was
 rewritten to say exactly that rather than leave the old one standing.
 
 `publish_release.py` builds the zip (code + `meta/` + user docs; never
-`analysis/`, `telemetry/`, `CLAUDE.md`, the caches, local data, or any
+`analysis/`, `telemetry/`, the working notes, the caches, local data, or any
 `.lnk`), stamps `VERSION` and `.update_state.json`, and PUTs it plus a
 manifest to the collector's KV namespace. Users are pointed at ONE place:
 `GET /release/latest.zip` (a 302 to the current zip, no GitHub account

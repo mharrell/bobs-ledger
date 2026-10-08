@@ -1,6 +1,6 @@
 """Extract final board minions per player from a Power.log game range.
 
-Pure stdlib. Canonical semantics (.claude/skills/hearth-board-extract):
+Pure stdlib. Canonical semantics (the board-extract notes):
 track each entity's card id, controller, and LAST-KNOWN zone; report minions
 still in zone=PLAY at the end of the range, one row per entity (duplicates
 preserved — a board can hold two of a card), filtering
