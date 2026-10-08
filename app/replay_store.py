@@ -21,7 +21,10 @@ Usage:
     replay_store.list()                -> [{id, hero, placement, turns, ...}]
     replay_store.load(rid)             -> the stored dict, or None
     replay_store.open_dir()            -> None, or an error string
+    replay_store.auto_save_enabled()   -> the "save every replay" answer
+    replay_store.set_auto_save(bool)   -> persist that answer
 """
+import datetime
 import json
 import os
 import re
@@ -30,6 +33,14 @@ import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 DIR_NAME = "saved_replays"
+
+#: The end-of-game card's "save every replay" answer, next to the code the
+#: same way the share consent answer is (.share_consent.json): one small
+#: local file, written only by the card's checkbox (2026-10-07). Per-player
+#: state, so it is guarded in the usual three places — .gitignore,
+#: publish_release.EXCLUDE_FILES, update.PROTECTED: a release must neither
+#: carry it nor overwrite it, and an update must not silently re-ask.
+AUTO_PATH = os.path.join(_HERE, ".save_all_replays.json")
 
 #: Characters that survive a filename on Windows and read well in a dropdown.
 _SAFE = re.compile(r"[^A-Za-z0-9_+-]+")
@@ -96,6 +107,32 @@ def save(rep, root=None):
         fh.write(body)
     os.replace(tmp, path)
     return {"id": rid, "path": path}
+
+
+def auto_save_enabled():
+    """The stored answer to "save every replay?", defaulting to NO.
+
+    A missing or unreadable file is OFF, not an error — the checkbox must
+    never be the thing that breaks a game's end. Tests patch AUTO_PATH the
+    way the share tests patch share.CONSENT_PATH.
+    """
+    try:
+        with open(AUTO_PATH, encoding="utf-8") as f:
+            return bool((json.load(f) or {}).get("save_all"))
+    except (OSError, ValueError):
+        return False
+
+
+def set_auto_save(enabled):
+    """Persist the answer. Atomic (tmp + rename), like save()."""
+    body = json.dumps(
+        {"schema": 1, "save_all": bool(enabled),
+         "answered": datetime.datetime.now().isoformat(timespec="seconds")},
+    ).encode("utf-8")
+    tmp = AUTO_PATH + ".tmp"
+    with open(tmp, "wb") as fh:
+        fh.write(body)
+    os.replace(tmp, AUTO_PATH)
 
 
 def load(rid, root=None):

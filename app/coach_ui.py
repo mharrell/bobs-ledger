@@ -1131,30 +1131,64 @@ function renderWelcome(a) {
     // "Settle up" link went when the tab landed (2026-10-07) — the plan is
     // read in the tab now, over saved games.
     const row = el('div', 'w-share');
-    const save = el('button', 'w-share-btn', 'Save replay');
-    save.onclick = async () => {
-      save.disabled = true;
+    const auto = a.auto_save || {};
+    // The checkbox (2026-10-07): when it is on, the replay is written while
+    // the review builds — no click — so the button would only make a second
+    // copy. The answer lives on disk behind /review/auto-save, and the poll
+    // redraws this card, so what it shows cannot lag the click.
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = 'save-all-replays';
+    cb.checked = !!auto.enabled;
+    const lbl = document.createElement('label');
+    lbl.htmlFor = cb.id;
+    lbl.className = 'w-share-q';
+    lbl.textContent = auto.label || 'Save every replay automatically';
+    cb.onchange = async () => {
+      cb.disabled = true;
       try {
-        const r = await fetch('/review/save', {
+        const r = await fetch('/review/auto-save', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: '{}',
+          body: JSON.stringify({enabled: cb.checked}),
         });
-        const j = await r.json().catch(() => ({}));
-        if (r.ok) { save.textContent = 'Saved ✓'; return; }
-        // 409 is the normal race: the review builds off-thread (it replays
-        // the game TWICE, ~10 s) and the card appears the moment the game
-        // ends. A premature click must be retryable, not a dead button —
-        // that is exactly how the first saved-replay attempt failed in the
-        // field (2026-10-07: "it failed to save my replay").
-        save.disabled = false;
-        save.textContent = r.status === 409 ? 'Still building — try again'
-                                            : (j.error || 'Save failed');
+        if (!r.ok) cb.checked = !cb.checked;   // the file is the truth
       } catch (e) {
-        save.textContent = 'Save failed';
-        save.disabled = false;
+        cb.checked = !cb.checked;
       }
+      cb.disabled = false;
+      poll();
     };
-    row.appendChild(save);
+    if (auto.enabled) {
+      row.appendChild(el('span', 'w-share-q',
+                         'Saved to the Settle Up tab automatically ✓'));
+    } else {
+      const save = el('button', 'w-share-btn', 'Save replay');
+      save.onclick = async () => {
+        save.disabled = true;
+        try {
+          const r = await fetch('/review/save', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: '{}',
+          });
+          const j = await r.json().catch(() => ({}));
+          if (r.ok) { save.textContent = 'Saved ✓'; return; }
+          // 409 is the normal race: the review builds off-thread (it replays
+          // the game TWICE, ~10 s) and the card appears the moment the game
+          // ends. A premature click must be retryable, not a dead button —
+          // that is exactly how the first saved-replay attempt failed in the
+          // field (2026-10-07: "it failed to save my replay").
+          save.disabled = false;
+          save.textContent = r.status === 409 ? 'Still building — try again'
+                                              : (j.error || 'Save failed');
+        } catch (e) {
+          save.textContent = 'Save failed';
+          save.disabled = false;
+        }
+      };
+      row.appendChild(save);
+    }
+    row.appendChild(cb);
+    row.appendChild(lbl);
     card.appendChild(row);
   }
   decide.appendChild(card);
@@ -2236,6 +2270,21 @@ def share_state():
             "toggle": "Stop sharing" if status == "on" else "Turn sharing on"}
 
 
+def auto_save_state():
+    """The save-every-replay answer, for the end-of-game card's checkbox.
+
+    A PAGE payload exactly like `share_state`: attached in `welcome_payload`
+    and nowhere in the analysis, so it cannot reach `decision_log` and
+    therefore cannot reach `session_report.SPEC`. The checkbox changes what
+    happens WITHOUT a click — when the answer is yes, live.py writes the
+    replay while the review builds (`auto_save_current_review`) — so the
+    card renders the answer and yields the Save button to "Saved
+    automatically" while it stands.
+    """
+    return {"enabled": replay_store.auto_save_enabled(),
+            "label": "Save every replay automatically"}
+
+
 def welcome_payload(game_over=None):
     """The card the overlay shows when there is nothing to advise.
 
@@ -2277,6 +2326,7 @@ def welcome_payload(game_over=None):
                   "the moment your shop opens.",
         "privacy": privacy,
         "share": share_state(),
+        "auto_save": auto_save_state(),
     }
     if game_over:
         payload["title"] = "Game over"
@@ -2459,6 +2509,36 @@ def _review_save_response():
                            "builds when a game ends"})
     out = replay_store.save(rep)
     return _json_response(200, dict(out, ok=True))
+
+
+def auto_save_current_review():
+    """Write the finished game's replay when the checkbox's answer is yes.
+
+    This is the checkbox's whole promise (2026-10-07): the player turns it on
+    once, and every finished game lands in the store as its review builds —
+    live.py calls this from the SAME background build that produces the
+    review, so no click and no second replay of the game. Returns the saved
+    id, or None when the answer is no or nothing has finished. A failed write
+    returns None rather than raising: the review the player is about to read
+    matters more than the copy of it.
+    """
+    if not replay_store.auto_save_enabled():
+        return None
+    rep = current_review_rep()
+    if rep is None:
+        return None
+    try:
+        return replay_store.save(rep)["id"]
+    except OSError:
+        return None
+
+
+def _review_auto_save_response(enabled):
+    """(code, headers, body) for POST /review/auto-save — the card's
+    checkbox. The route parses the body; this persists the answer and is
+    pure in its argument, like _review_save_response is in the state."""
+    replay_store.set_auto_save(enabled)
+    return _json_response(200, {"ok": True, "enabled": bool(enabled)})
 
 
 def _review_open_folder_response():
@@ -3294,6 +3374,24 @@ class _Handler(BaseHTTPRequestHandler):
             # into replay_store. The one verdict-shaped write the page can
             # trigger, and only after the game it describes is over.
             code, headers, body = _review_save_response()
+            self._send(code, "application/json", body, headers=headers)
+            return
+        if self.path.rstrip("/") == "/review/auto-save":
+            # The end-of-game card's checkbox (2026-10-07): persist the
+            # save-every-replay answer. From then on the replay is written
+            # as the review builds, with no click — which is why the answer
+            # lives on disk and not in the page.
+            n = int(self.headers.get("Content-Length") or 0)
+            try:
+                payload = json.loads(self.rfile.read(n) or b"{}")
+            except ValueError:
+                self._send(400, "application/json", b'{"error":"bad json"}')
+                return
+            if not isinstance(payload.get("enabled"), bool):
+                self._send(400, "application/json",
+                           b'{"error":"enabled must be true or false"}')
+                return
+            code, headers, body = _review_auto_save_response(payload["enabled"])
             self._send(code, "application/json", body, headers=headers)
             return
         if self.path.rstrip("/") == "/review/open-folder":

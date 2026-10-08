@@ -7,7 +7,7 @@ release is NEWER — and its Ed25519 signature verifies against the key pinned i
 `release_sig.py` — after a y/N prompt, download the release zip, verify its
 sha256 against the manifest, and extract it over the install directory.
 Your local data (decision_logs/, corpus_out/, .review_cache/ and the
-dev-side .claude/.git) is never touched. live.py restarts itself when an
+dev-side tooling directories such as .git) is never touched. live.py restarts itself when an
 update applies, so a checked-and-accepted update is one prompt.
 
 The signature is not optional and has no bypass flag (2026-10-07). A sha256
@@ -90,8 +90,10 @@ PROTECTED = {"decision_logs", "corpus_out", ".review_cache", ".git",
              # The player's sharing answer and the local copies of what was
              # shared: an update must never overwrite either, and a consent
              # question silently re-asked after an update would be its own
-             # kind of wrong.
+             # kind of wrong. The save-every-replay answer (2026-10-07) is
+             # the same class: a player who opted in must stay opted in.
              ".share_consent.json", "session_reports",
+             ".save_all_replays.json",
              # Where THIS install was told Hearthstone lives (2026-10-06).
              # config.py --set writes it, config.py reads it at import, and no
              # release carries it — but a player whose game sits on another

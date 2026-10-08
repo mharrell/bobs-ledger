@@ -163,10 +163,12 @@ anything on it can change or be dropped.
 When a game ends, the card on screen offers **Save replay**. Saving keeps
 that game in the overlay's **Settle Up** tab (the second tab at the top of
 the page, next to **Another Round**): pick any saved game from the dropdown
-and the turn-by-turn view opens with real card tiles. Saving is per game and
-yours alone — nothing saved leaves your machine, and it never ships in a
-release. For games you didn't save, `settle_up.py` still reviews anything
-still in the log:
+and the turn-by-turn view opens with real card tiles. The card also carries
+a **Save every replay automatically** checkbox — leave it ticked and each
+finished game is kept as its review builds, no click per game. Saving is per
+game and yours alone — nothing saved leaves your machine, and it never ships
+in a release. For games you didn't save, `settle_up.py` still reviews
+anything still in the log:
 
     python app\settle_up.py --latest --html my-review.html
 
@@ -405,8 +407,8 @@ release check stands aside and you update with `git pull`.
 
 The program lives in `app/`. The root keeps what a player should see — this
 README, `LICENSE`, the launcher and `docs/` (the pictures above) — plus what
-never ships: `analysis/` (the maintainer's research notes), `telemetry/` (the
-release channel itself), `CLAUDE.md`, `DESIGN.md`, `ROADMAP.md`.
+never ships: `analysis/` (the maintainer's research notes) and `telemetry/`
+(the release channel itself).
 
 The screenshots are the layout as it is now: the Settle Up tab, one turn in each
 of its three views, and the end-of-game card with **Save replay**. Anything older
@@ -475,7 +477,6 @@ it, an installed copy could never be offered a newer release.
 ### Where the detail lives
 
 - `DESIGN.md` — architecture, and the reasoning behind it.
-- `CLAUDE.md` — working rules, and the game's log quirks that keep biting.
 - `ROADMAP.md` — phase status.
 - `analysis/` — the research the design came out of (not shipped).
 - `telemetry/README.md` — the collector: its routes, retention and deploy notes.
