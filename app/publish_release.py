@@ -7,7 +7,8 @@ One command per release (maintainer only — it uses your `wrangler` auth):
     python publish_release.py --note "..." --dry-run    # gate only, no upload
 
 Writes a zip of the project (code + meta + user docs; NO local data —
-decision_logs/, corpus_out/, .review_cache/, .git/.claude/, the regenerable
+decision_logs/, corpus_out/, .review_cache/, .git/ and the local tooling
+state, the regenerable
 caches and the internal research notes are excluded), a VERSION file
 stamped with the git sha, an .update_state.json so a freshly unzipped
 install can itself be offered the NEXT release, and a manifest {version,
@@ -106,6 +107,10 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  ".cards_full.json", ".observed_tribes.json",
                  ".patch_state.json", ".patch_config.json",
                  ".share_consent.json",
+                 # The end-of-game card's "save every replay" answer
+                 # (2026-10-07): per-player, in the class of the sharing
+                 # answer it sits beside.
+                 ".save_all_replays.json",
                  # Where THIS install was told the game lives (2026-10-06).
                  # Machine-specific, written by config.py --set, and read at
                  # import by every tool: shipping it would hand a player the

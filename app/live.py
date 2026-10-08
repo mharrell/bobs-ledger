@@ -177,6 +177,11 @@ def _settle_up_in_background(log_path, game_no):
                      + (f", finished {rep['placement']}"
                         if rep.get("placement") else ""))
             coach_ui.set_review(settle_up.render_html(rep), label, rep=rep)
+            # The end-of-game card's checkbox (2026-10-07): when the player
+            # answered yes, this same build writes the replay — no click, no
+            # second replay of the game. Inside the try: a failed save must
+            # not unshow the review, and must never raise into the coach.
+            coach_ui.auto_save_current_review()
         except Exception:  # noqa: BLE001
             pass
 
