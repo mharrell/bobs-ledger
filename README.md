@@ -104,6 +104,9 @@ leaving Another Round to look at an old game costs you nothing.
 
 The overlay opens as a page in your browser and updates as you play — not a
 second game window, so put it on another monitor or leave it behind the game.
+The page's bottom-right corner names the release it was served by
+(`release: …`), in the same quiet gray as the tab row's sharing control, so a
+screenshot can say which version it came from.
 
 - **Left — where the game stands.** How strong your board is against the next
   opponent and against the lobby, how close this hero is to dying and to what,

@@ -683,6 +683,15 @@ _HTML = r"""<!doctype html>
   #tabs #share-toggle:hover { opacity:1; color:var(--text-2);
                               border-color:var(--border); }
   #tabs #share-toggle[hidden] { display:none; }
+  /* The release stamp (2026-10-07): which release this overlay was served
+     by, bottom-right and nearly invisible. A screenshot or a field report
+     can then name the release without anyone digging for it — the question
+     every bug report starts with. Quieter than the share toggle on
+     purpose: it is information, not a control, so it takes no clicks. */
+  #release-tag { position:fixed; right:10px; bottom:6px; color:var(--dim);
+                 font:400 11px "Segoe UI", system-ui; opacity:.45;
+                 pointer-events:none; z-index:100; }
+  #release-tag[hidden] { display:none; }
   #app.off { display:none; }
   #settle { display:none; }
   #settle.on { display:block; }
@@ -778,6 +787,7 @@ _HTML = r"""<!doctype html>
 </div>
 <div id="settle-game"><div class="s-empty">Pick a saved game to see it turn by turn.</div></div>
 </section>
+<div id="release-tag" hidden></div>
 </div>
 <script>
 let _lastPayload = null;
@@ -1103,6 +1113,7 @@ function renderWelcome(a) {
   const ref = document.getElementById('col-ref');
   const statebar = document.getElementById('statebar');
   renderShareToggle(a.share);
+  renderRelease(a.release);
   decide.innerHTML = '';
   ref.innerHTML = '';
   statebar.textContent = '';
@@ -1234,11 +1245,27 @@ function renderShareToggle(s) {
       + 'now on.';
   b.onclick = () => postShare(!on);
 }
+// The release stamp (2026-10-07): "release: <version>" bottom-right, from
+// every payload — live, welcome and game-over alike, so a screenshot always
+// names the release. Pure in the version, like freshnessLine(), so the
+// suite can run it under node; renderRelease is the DOM glue.
+function releaseTag(v) {
+  if (!v) return {hidden: true, text: ''};
+  return {hidden: false, text: 'release: ' + v};
+}
+function renderRelease(v) {
+  const tag = document.getElementById('release-tag');
+  if (!tag) return;
+  const t = releaseTag(v);
+  tag.hidden = t.hidden;
+  tag.textContent = t.text;
+}
 function render(a) {
   if (a.welcome) { renderWelcome(a); return; }
   // Every live payload carries the sharing state too, so the corner control
   // does not vanish the moment the first buy phase arrives (2026-10-07).
   renderShareToggle(a.share);
+  renderRelease(a.release);
   const app = document.getElementById('app');
   const statebar = document.getElementById('statebar');
   // A rebuild discards the hovered element without a mouseleave — drop the
@@ -2285,6 +2312,30 @@ def auto_save_state():
             "label": "Save every replay automatically"}
 
 
+_release_cache = None
+
+
+def _release_stamp():
+    """Which release this overlay was served by, for the corner stamp.
+
+    `update.local_version()` is the one answer — the VERSION file on an
+    install, the git sha in a checkout — memoized because render_json runs
+    on every advice push and the answer cannot change under a running
+    process (live.py restarts on update, so neither can the memo outlive
+    the code that took it). A PAGE field exactly like `share`: attached in
+    `render_json` and `welcome_payload`, never in the analysis, so it
+    cannot reach `decision_log` or the report whitelist.
+    """
+    global _release_cache
+    if _release_cache is None:
+        try:
+            import update
+            _release_cache = update.local_version() or ""
+        except Exception:  # noqa: BLE001 - a missing stamp beats a dead page
+            _release_cache = ""
+    return _release_cache
+
+
 def welcome_payload(game_over=None):
     """The card the overlay shows when there is nothing to advise.
 
@@ -2327,6 +2378,7 @@ def welcome_payload(game_over=None):
         "privacy": privacy,
         "share": share_state(),
         "auto_save": auto_save_state(),
+        "release": _release_stamp(),
     }
     if game_over:
         payload["title"] = "Game over"
@@ -2758,6 +2810,9 @@ def render_json(analysis):
     # The sharing state rides every live payload: the corner control has to be
     # reachable for the whole session, not only on the welcome card (2026-10-07).
     a["share"] = share_state()
+    # The release stamp rides with it (2026-10-07), for the same reason: a
+    # screenshot should name the release without anyone digging for it.
+    a["release"] = _release_stamp()
     a["board"] = [dict(m, name=names.get(m["card"], m["card"])) for m in analysis["board"]]
     # Group duplicate board minions (Fauna Whisperer ×2 with different stats
     # used to show as two confusing rows); score = the instance you'd sell
