@@ -30,27 +30,41 @@ def _root_block(css):
     return css[start:end]
 
 
+def _tavern_token_blocks(css):
+    """The Tavern palette's token rules (REPLAY_VIEWER_DESIGN.md §6, scoped
+    on purpose so the classic viewer keeps its own tokens): rules whose
+    SELECTOR is exactly `.tavern` — not the `.tavern .turn` rules that
+    consume the tokens."""
+    out = []
+    for m in re.finditer(r"(?:^|[}\n])([^{}\n]*\.tavern)\s*\{([^{}]*)\}", css):
+        if m.group(1).strip().endswith(".tavern"):
+            out.append(m.group(2))
+    return out
+
+
 HEX_RE = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 
 
 class TestTokenDiscipline(unittest.TestCase):
     def test_hex_literals_live_only_in_root(self):
         css = _css()
-        root = _root_block(css)
-        outside = css.replace(root, "")
+        outside = css.replace(_root_block(css), "")
+        for block in _tavern_token_blocks(css):
+            outside = outside.replace(block, "")
         strays = sorted(set(HEX_RE.findall(outside)))
         self.assertEqual(
             strays, [],
-            "raw colors outside the :root token block (use a var): "
+            "raw colors outside the token blocks (use a var): "
             + ", ".join(strays))
 
     def test_gold_is_defined(self):
         """The 2026-09-24 audit found var(--gold) referenced 10x and defined
         nowhere — ten silent style failures. Any var the CSS references must
-        exist in :root."""
+        exist in :root or a scoped palette block."""
         css = _css()
-        root = _root_block(css)
-        defined = set(re.findall(r"(--[a-z0-9-]+)\s*:", root))
+        defined = set(re.findall(r"(--[a-z0-9-]+)\s*:", _root_block(css)))
+        for block in _tavern_token_blocks(css):
+            defined |= set(re.findall(r"(--[a-z0-9-]+)\s*:", block))
         referenced = set(re.findall(r"var\((--[a-z0-9-]+)", css))
         missing = sorted(referenced - defined)
         self.assertEqual(missing, [],

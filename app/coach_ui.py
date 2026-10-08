@@ -707,6 +707,46 @@ _HTML = r"""<!doctype html>
                    padding:6px 12px; font:600 12px "Segoe UI", system-ui;
                    cursor:pointer; }
   .s-head button:hover { color:var(--text-2); }
+  /* The viewer flag (2026-10-08): Classic is the shipped renderer, Tavern is
+     the REPLAY_VIEWER_DESIGN.md build-in-progress. A styling toggle, not a
+     rewrite switch — the classic path is byte-for-byte the old renderer. */
+  .vseg { display:inline-flex; gap:0; }
+  .vseg button { border-radius:0; }
+  .vseg button:first-child { border-radius:var(--radius) 0 0 var(--radius); }
+  .vseg button:last-child { border-radius:0 var(--radius) var(--radius) 0;
+                            border-left:none; }
+  .vseg button.on { color:var(--text); background:var(--panel2);
+                    border-color:rgba(255,255,255,.22); }
+  /* The Tavern palette (REPLAY_VIEWER_DESIGN.md §6), SCOPED to .tavern so the
+     classic viewer and the live overlay keep their own tokens untouched.
+     Gold is attack only; --tsel is the selection accent. Contrast per §7:
+     --thp on --tcard is ~4.5:1 at 15px bold — revisit with real art. */
+  .tavern { --tbg:#17110d; --tpanel:#231913; --tcard:#33261d; --tline:#5a4332;
+            --ttext:#f1e6d2; --tmute:#b09c84; --tsel:#e0a43a;
+            --tonsel:#14110c;   /* text on a --tsel fill */
+            --tatk:#f4c95d; --thp:#e8664f; --tbuff:#8fd06a;
+            --twin:#7cc66b; --tloss:#e8664f; --ttie:#b09c84;
+            background:var(--tbg); color:var(--ttext); border-radius:var(--radius);
+            padding:10px 12px; }
+  .tavern .ts-head { font:600 13px "Segoe UI", system-ui; margin-bottom:8px; }
+  .tavern .ts-head .tm { color:var(--tmute); font-weight:400; font-size:12px; }
+  .tavern .ts-caveat { color:var(--tmute); font-size:12px; margin:4px 0 10px; }
+  .tstrip { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px; }
+  .tavern .tbtn2 { min-width:44px; height:48px; padding:0 10px;
+                   border-radius:8px; border:1px solid var(--tline);
+                   border-bottom:3px solid var(--tline); background:var(--tpanel);
+                   color:var(--ttext); cursor:pointer; line-height:1.2;
+                   font:600 13px "Segoe UI", system-ui; text-align:center; }
+  .tavern .tbtn2 small { display:block; font-size:10px; font-weight:400;
+                         color:var(--tmute); }
+  .tavern .tbtn2.win { border-bottom-color:var(--twin); }
+  .tavern .tbtn2.loss { border-bottom-color:var(--tloss); }
+  .tavern .tbtn2.tie { border-bottom-color:var(--ttie); }
+  .tavern .tbtn2.sel { background:var(--tsel); color:var(--tonsel);
+                       border-color:var(--tsel); font-weight:700; }
+  .tavern .tbtn2.sel small { color:var(--tonsel); }
+  .tavern .turn { background:var(--tpanel); border:1px solid var(--tline);
+                  color:var(--ttext); }
   .s-empty { color:var(--dim); padding:16px 0; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
@@ -783,6 +823,11 @@ _HTML = r"""<!doctype html>
 <section id="settle">
 <div class="s-head">
 <select id="settle-select"><option value="">Loading saved replays…</option></select>
+<span id="settle-viewer" title="Settle Up viewer style — Tavern is the new
+single-turn design (REPLAY_VIEWER_DESIGN.md), still being built">
+<button data-v="classic" class="on">Classic</button>
+<button data-v="tavern">Tavern</button>
+</span>
 <button id="settle-folder" title="Open the folder the saved replays live in">Open folder</button>
 </div>
 <div id="settle-game"><div class="s-empty">Pick a saved game to see it turn by turn.</div></div>
@@ -1852,7 +1897,17 @@ async function loadSettleGame(id) {
   if (!j.ok) { box.innerHTML = '<div class="s-empty">' + (j.error || 'Not found.') + '</div>'; return; }
   renderSettleGame(j.rep || j);
 }
+// The viewer flag (2026-10-08): 'classic' is the shipped renderer, untouched;
+// 'tavern' is the REPLAY_VIEWER_DESIGN.md build (single turn + strip + warm
+// palette), grown behind this branch. The choice persists per browser.
+let _viewer = 'classic';
+let _settleRep = null;
+let _tavernTurn = null;
+try { _viewer = localStorage.getItem('bl-settle-viewer') || 'classic'; }
+catch (e) { /* private mode */ }
 function renderSettleGame(rep) {
+  _settleRep = rep;   // remembered so the toggle can re-render without a refetch
+  if (_viewer === 'tavern') return renderTavernGame(rep);
   const box = document.getElementById('settle-game');
   box.innerHTML = '';
   const head = document.createElement('div');
@@ -1890,6 +1945,73 @@ function renderSettleGame(rep) {
       {turn: '?', gold: '—', stats: {}, spend: {}, commitment: {}, notes: []},
       rest));
   }
+}
+// One strip button's result marker (REPLAY_VIEWER_DESIGN.md §4.1), pure so
+// the suite can run it under node. The result is never color-only: the glyph
+// carries it. An unknown winner (the fight-unreadable family) and an unknown
+// HP line (the final turn has no next advisory to measure against) get their
+// own states rather than a guess.
+function stripMark(winner, dmg) {
+  const ch = winner === 'us' ? '▲' : winner === 'them' ? '▼'
+           : winner === 'tie' ? '=' : '?';
+  const cls = winner === 'us' ? 'win' : winner === 'them' ? 'loss'
+            : winner === 'tie' ? 'tie' : '';
+  const hp = dmg == null ? '' : ' ' + (dmg > 0 ? '−' + dmg
+                                       : dmg < 0 ? '+' + (-dmg) : '±0');
+  return {ch: ch + hp, cls: cls};
+}
+// The Tavern viewer (REPLAY_VIEWER_DESIGN.md, build-order steps 1-2): the
+// warm palette, a turn strip with the result markers, ONE turn on screen at
+// a time. The turn itself is the classic card — same tabs, same notes, same
+// honesty — dropped into the palette-scoped root; the Summary rail and
+// Step-through from the design land here later.
+function renderTavernGame(rep) {
+  const box = document.getElementById('settle-game');
+  box.innerHTML = '';
+  const root = document.createElement('div');
+  root.className = 'tavern';
+  const t = rep.totals || {};
+  const head = document.createElement('div');
+  head.className = 'ts-head';
+  head.innerHTML = '<span>' + (rep.hero || 'Saved game') + '</span>'
+    + '<span class="tm"> '
+    + (rep.placement != null ? '· finished ' + rep.placement + ' ' : '')
+    + '· ' + (rep.created || '') + '</span>';
+  root.appendChild(head);
+  if (rep.caveat) {
+    const cav = document.createElement('div');
+    cav.className = 'ts-caveat';
+    cav.textContent = rep.caveat;
+    root.appendChild(cav);
+  }
+  const turns = (rep.timeline || {}).turns || [];
+  const phases = rep.phases || [];
+  if (!turns.some(r => r.turn === _tavernTurn)) {
+    _tavernTurn = turns.length ? turns[0].turn : null;
+  }
+  const strip = document.createElement('div');
+  strip.className = 'tstrip';
+  for (const r of turns) {
+    const b = document.createElement('button');
+    b.className = 'tbtn2' + (r.turn === _tavernTurn ? ' sel' : '');
+    const m = stripMark(r.winner, r.damage_taken);
+    if (m.cls) b.classList.add(m.cls);
+    b.innerHTML = (r.turn ?? '?') + '<small>' + m.ch + '</small>';
+    b.onclick = () => { _tavernTurn = r.turn; renderSettleGame(rep); };
+    strip.appendChild(b);
+  }
+  root.appendChild(strip);
+  const row = turns.find(r => r.turn === _tavernTurn);
+  if (row) root.appendChild(settleTurnCard(row, phases.filter(
+    p => p.turn === row.turn)));
+  // The final duel's phases (a fight with no shop of its own) ride the last
+  // turn's card, exactly as the classic viewer attaches them.
+  const seen = new Set(turns.map(r => r.turn));
+  const rest = phases.filter(p => !seen.has(p.turn));
+  if (rest.length && row && row === turns[turns.length - 1]) {
+    for (const p of rest) root.lastChild.appendChild(phaseRow(p));
+  }
+  box.appendChild(root);
 }
 // One board row of a turn card: card tiles when the stored board is
 // structured (the server joins display names at serve time), the text the
@@ -2126,6 +2248,20 @@ let _tab = 'live';
 try { _tab = localStorage.getItem('bl-tab') || 'live'; } catch (e) {}
 showTab(_tab);
 document.getElementById('settle-select').onchange = e => loadSettleGame(e.target.value);
+// The Settle Up viewer flag (2026-10-08). Classic stays the default: the new
+// design is being built behind the Tavern branch and is not done yet.
+function setSettleViewer(v) {
+  _viewer = v === 'tavern' ? 'tavern' : 'classic';
+  try { localStorage.setItem('bl-settle-viewer', _viewer); }
+  catch (e) { /* private mode */ }
+  document.querySelectorAll('#settle-viewer button').forEach(
+    b => { b.className = b.dataset.v === _viewer ? 'on' : ''; });
+  if (_settleRep) renderSettleGame(_settleRep);
+}
+document.querySelectorAll('#settle-viewer button').forEach(b => {
+  b.onclick = () => setSettleViewer(b.dataset.v);
+  b.className = b.dataset.v === _viewer ? 'on' : '';
+});
 // The saved replays are plain JSON files; this just points Explorer at them.
 document.getElementById('settle-folder').onclick = async () => {
   const b = document.getElementById('settle-folder');
