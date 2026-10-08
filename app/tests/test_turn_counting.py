@@ -62,6 +62,44 @@ class TestParseActions(unittest.TestCase):
         self.assertEqual([t["turn"] for t in turns], [1])
         self.assertEqual(turns[0]["buys"], ["BG33_886"])
 
+    def test_collect_events_orders_the_interleaving(self):
+        """The Step-through needs the actions AS THEY HAPPENED — the per-group
+        lists cannot say whether the roll came before the buy. collect_events
+        adds the ordered stream with each action's line index."""
+        lines = [
+            GS + STEP.format("MAIN_ACTION"),                     # 0
+            GS + 'BLOCK_START BlockType=PLAY Entity=[entityName=Refresh '  # 1
+            'id=1 zone=PLAY zonePos=0 cardId=TB_BaconShop_8p_Reroll_Button '
+            'player=1] Target=',
+            GS + BUY,                                            # 2  (buy)
+            GS + 'TAG_CHANGE Entity=[entityName=Tusked Camper id=289 zone=PLAY '  # 3
+            'zonePos=3 cardId=BG33_886 player=9] tag=CONTROLLER value=1',
+            GS + 'TAG_CHANGE Entity=[entityName=Tusked Camper id=289 zone=PLAY '  # 4
+            'zonePos=3 cardId=BG33_886 player=1] tag=ZONE value=HAND',
+            GS + 'TAG_CHANGE Entity=[entityName=Tusked Camper id=289 zone=HAND '  # 5
+            'zonePos=1 cardId=BG33_886 player=1] tag=ZONE value=PLAY',
+            # Real logs follow the play with sibling writes whose brackets
+            # carry the NEW zone — the zone tracker is bracket-driven and
+            # the play fires on the first of them.
+            GS + 'TAG_CHANGE Entity=[entityName=Tusked Camper id=289 zone=PLAY '  # 6
+            'zonePos=1 cardId=BG33_886 player=1] tag=ATK value=3',
+            GS + 'BLOCK_START BlockType=PLAY Entity=[entityName=Blood Gem '      # 7
+            'id=7 zone=HAND zonePos=2 cardId=BG20_GEM player=1]',
+            GS + STEP.format("MAIN_END"),                        # 8
+        ]
+        acts = parse_actions(lines, friendly=1, collect_events=True)
+        events = acts[0]["events"]
+        self.assertEqual([e["k"] for e in events],
+                         ["roll", "buy", "play", "cast"])
+        # The play fires at its own ZONE write (line 5) — the write-line
+        # detection — not on the follow-up bracket convergence (line 6).
+        self.assertEqual([e["at"] for e in events], [1, 2, 5, 7])
+        self.assertEqual(events[1]["card"], "BG33_886")
+        self.assertIsNone(events[0]["card"])
+        # Off by default: the rail's callers see no events key at all.
+        plain = parse_actions(lines, friendly=1)
+        self.assertNotIn("events", plain[0])
+
 
 class TestLiveActions(unittest.TestCase):
     def test_ptl_steps_ignored_and_first_turn_counted(self):

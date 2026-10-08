@@ -727,6 +727,10 @@ _HTML = r"""<!doctype html>
             --tonsel:#14110c;   /* text on a --tsel fill */
             --tatk:#f4c95d; --thp:#e8664f; --tbuff:#8fd06a;
             --twin:#7cc66b; --tloss:#e8664f; --ttie:#b09c84;
+            --tk-roll:#3a2d22; --tk-buy:#35592f; --tk-sell:#7a3328;
+            --tk-level:#7a6320; --tk-play:#2c4f7a; --tk-cast:#54397a;
+            --tk-roll-t:#b09c84; --tk-buy-t:#e4f5da; --tk-sell-t:#ffe1db;
+            --tk-level-t:#fff1c4; --tk-play-t:#dce9fb; --tk-cast-t:#eadcfb;
             background:var(--tbg); color:var(--ttext); border-radius:var(--radius);
             padding:10px 12px; }
   .tavern .ts-head { font:600 13px "Segoe UI", system-ui; margin-bottom:8px; }
@@ -804,6 +808,54 @@ _HTML = r"""<!doctype html>
                  text-transform:uppercase; letter-spacing:.12em; }
   .fresult .fv { display:block; margin-bottom:6px; }
   @media (max-width: 900px) { .faceoff-wrap { grid-template-columns:1fr; } }
+  /* Step-through (design §4.6, build step 5): the mode toggle, the nav, the
+     lettered track and the large board. Kind colors from §6; letters carry
+     the kind so color is never the only signal. */
+  .tavern .tmode { display:flex; justify-content:flex-end; gap:0;
+                   margin:0 0 8px; }
+  .tavern .tmode button { background:var(--tpanel); color:var(--tmute);
+                          border:1px solid var(--tline); padding:4px 12px;
+                          font:600 12px "Segoe UI", system-ui; cursor:pointer; }
+  .tavern .tmode button:first-child { border-radius:8px 0 0 8px; }
+  .tavern .tmode button:last-child { border-radius:0 8px 8px 0;
+                                     border-left:none; }
+  .tavern .tmode button.on { background:var(--tsel); color:var(--tonsel);
+                             border-color:var(--tsel); }
+  .tavern .tmode button:disabled { opacity:.45; cursor:default; }
+  .tavern .tstep { width:100%; }
+  .tavern .stepnav { display:flex; gap:8px; align-items:center;
+                     margin:0 0 8px; flex-wrap:wrap; }
+  .tavern .snav { background:var(--tpanel); color:var(--ttext);
+                  border:1px solid var(--tline); border-radius:8px;
+                  min-width:44px; min-height:44px; cursor:pointer;
+                  font:600 13px "Segoe UI", system-ui; }
+  .tavern .snav:disabled { opacity:.4; cursor:default; }
+  .tavern .splay { color:var(--tsel); }
+  .tavern .stepcap { color:var(--tmute); font-size:13px; }
+  .tavern .steptrack { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 4px; }
+  .tavern .stick { width:38px; height:44px; border-radius:6px;
+                   border:1px solid var(--tline); color:var(--tmute);
+                   background:var(--tcard); cursor:pointer;
+                   font:700 14px "Segoe UI", system-ui; }
+  .tavern .stick.k-roll { background:var(--tk-roll); }
+  .tavern .stick.k-buy { background:var(--tk-buy); color:var(--tk-buy-t); }
+  .tavern .stick.k-sell { background:var(--tk-sell); color:var(--tk-sell-t); }
+  .tavern .stick.k-level { background:var(--tk-level);
+                           color:var(--tk-level-t); }
+  .tavern .stick.k-play { background:var(--tk-play); color:var(--tk-play-t); }
+  .tavern .stick.k-cast { background:var(--tk-cast); color:var(--tk-cast-t); }
+  .tavern .stick.sel { outline:2px solid var(--tsel); outline-offset:1px; }
+  .tavern .slegend { color:var(--tmute); font-size:11px; margin:0 0 10px; }
+  .tavern .stepboard { display:flex; flex-wrap:wrap; gap:8px; padding:10px;
+                       background:var(--tpanel); border:1px solid var(--tline);
+                       border-radius:10px; min-height:192px; }
+  .tavern .stepboard .tile { width:130px; height:172px; }
+  .tavern .stepboard .tile .tsub { font-size:15px; font-weight:700; }
+  .tavern .tile.affected { outline:2px solid var(--tsel); outline-offset:1px; }
+  .tavern .tile .tag-sold { margin-bottom:auto; font-size:10px;
+                            font-weight:700; padding:2px 5px;
+                            border-radius:4px; background:var(--tloss);
+                            color:var(--tonsel); align-self:flex-start; }
   .s-empty { color:var(--dim); padding:16px 0; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
@@ -1960,6 +2012,15 @@ async function loadSettleGame(id) {
 let _viewer = 'classic';
 let _settleRep = null;
 let _tavernTurn = null;
+// Within Tavern: Summary (rail + card) or Step through (design §4.6). The
+// choice persists; a rep without steps forces Summary and the toggle says
+// why. _tavernStep/_tavernPlayTimer are the step-through's position and
+// autoplay handle.
+let _tavernMode = 'summary';
+let _tavernStep = 0;
+let _tavernPlayTimer = null;
+try { _tavernMode = localStorage.getItem('bl-settle-mode') || 'summary'; }
+catch (e) { /* private mode */ }
 try { _viewer = localStorage.getItem('bl-settle-viewer') || 'classic'; }
 catch (e) { /* private mode */ }
 function renderSettleGame(rep) {
@@ -2062,6 +2123,35 @@ function outcomeText(winner) {
     : winner === 'tie' ? 'A tie — both boards died'
     : 'Outcome not readable';
 }
+// --- Step-through helpers (design §4.6). Pure, node-tested.
+function stepWords(st) {
+  const name = st.cardName || st.card || '';
+  return {roll: 'Rolled the tavern', level: 'Leveled up',
+          buy: 'Bought ' + name, sell: 'Sold ' + name,
+          play: 'Played ' + name, cast: 'Cast ' + name}[st.k] || '(action)';
+}
+function stepLetter(k) {
+  return {roll: 'R', level: 'L', buy: 'B', sell: 'S',
+          play: 'P', cast: 'C'}[k] || '•';
+}
+function stepKindClass(k) {
+  return {roll: 'k-roll', level: 'k-level', buy: 'k-buy',
+          sell: 'k-sell', play: 'k-play', cast: 'k-cast'}[k] || '';
+}
+// The card the current action affected: the eid on this board that was not
+// on the previous one (a buy or play). A sell highlights nothing here — its
+// card is an absence, rendered separately.
+function stepDiff(prev, cur) {
+  const before = new Set((prev || []).map(m => m.eid));
+  let highlight = null;
+  for (const m of cur || []) {
+    if (m.eid != null && !before.has(m.eid)) {
+      highlight = m.eid;
+      break;
+    }
+  }
+  return {highlight: highlight};
+}
 // The hero's HP line for the badge: effective HP at this turn's buy end and
 // at the next one (which is what the fight cost). Old reps and a final turn
 // have no next reading — an explicit ? beats a guess.
@@ -2103,14 +2193,38 @@ function renderTavernGame(rep) {
     + (rep.placement != null ? '· finished ' + rep.placement + ' ' : '')
     + '· ' + (rep.created || '') + '</span>';
   root.appendChild(head);
+  const turns = (rep.timeline || {}).turns || [];
+  const phases = rep.phases || [];
+  const hasSteps = turns.some(r => (r.steps || []).length);
+  const effMode = _tavernMode === 'step' && hasSteps ? 'step' : 'summary';
+  // Design §3 header: [Summary | Step through]. Step needs per-action data
+  // (rep schema 2); older saves keep the toggle but disabled, saying why.
+  const mode = document.createElement('div');
+  mode.className = 'tmode';
+  for (const [v, label] of [['summary', 'Summary'], ['step', 'Step through']]) {
+    const b = document.createElement('button');
+    b.className = 'tmb' + (effMode === v ? ' on' : '');
+    b.textContent = label;
+    if (v === 'step' && !hasSteps) {
+      b.disabled = true;
+      b.title = 'This saved game predates step-through — newer saves carry '
+                + 'the per-action boards';
+    }
+    b.onclick = () => {
+      stopTavernPlay();
+      _tavernMode = v;
+      try { localStorage.setItem('bl-settle-mode', v); } catch (e) {}
+      renderSettleGame(rep);
+    };
+    mode.appendChild(b);
+  }
+  root.appendChild(mode);
   if (rep.caveat) {
     const cav = document.createElement('div');
     cav.className = 'ts-caveat';
     cav.textContent = rep.caveat;
     root.appendChild(cav);
   }
-  const turns = (rep.timeline || {}).turns || [];
-  const phases = rep.phases || [];
   if (!turns.some(r => r.turn === _tavernTurn)) {
     _tavernTurn = turns.length ? turns[0].turn : null;
   }
@@ -2122,13 +2236,20 @@ function renderTavernGame(rep) {
     const m = stripMark(r.winner, r.damage_taken);
     if (m.cls) b.classList.add(m.cls);
     b.innerHTML = (r.turn ?? '?') + '<small>' + m.ch + '</small>';
-    b.onclick = () => { _tavernTurn = r.turn; renderSettleGame(rep); };
+    b.onclick = () => {
+      stopTavernPlay();
+      _tavernStep = 0;
+      _tavernTurn = r.turn;
+      renderSettleGame(rep);
+    };
     strip.appendChild(b);
   }
   root.appendChild(strip);
   const row = turns.find(r => r.turn === _tavernTurn);
   let card = null;
-  if (row) {
+  if (row && effMode === 'step') {
+    root.appendChild(renderTavernSteps(row));
+  } else if (row) {
     // Design §3: rail 330px left, the turn's card right. The card is THE
     // settleTurnCard — same tabs, notes and honesty — with the tavern-only
     // extras (rail, passed-through tray, Ended net tags, Battle face-off)
@@ -2247,6 +2368,108 @@ function tavernRail(r) {
     rail.appendChild(d);
   }
   return rail;
+}
+// The Step-through (design §4.6, build step 5): scrubber over the turn's
+// actions, each with the board as it stood right after it. The sold card
+// shows dimmed with a SOLD tag — it is the one action whose result is an
+// absence on the board. Play steps on a timer; the design's reduced-motion
+// note is satisfied by there being no transition to disable.
+function stopTavernPlay() {
+  if (_tavernPlayTimer) {
+    clearInterval(_tavernPlayTimer);
+    _tavernPlayTimer = null;
+  }
+}
+function tavernStepNav(delta) {
+  stopTavernPlay();
+  _tavernStep = Math.max(0, _tavernStep + delta);
+  renderSettleGame(_settleRep);
+}
+function tavernTogglePlay() {
+  if (_tavernPlayTimer) {
+    stopTavernPlay();
+  } else {
+    _tavernPlayTimer = setInterval(() => {
+      const r = ((_settleRep || {}).timeline || {}).turns
+        .find(x => x.turn === _tavernTurn);
+      const steps = (r || {}).steps || [];
+      if (_tavernStep >= steps.length - 1) {
+        stopTavernPlay();
+      } else {
+        _tavernStep += 1;
+      }
+      renderSettleGame(_settleRep);
+    }, 900);
+  }
+  renderSettleGame(_settleRep);
+}
+function renderTavernSteps(row) {
+  const steps = row.steps || [];
+  if (_tavernStep > steps.length - 1) {
+    _tavernStep = Math.max(0, steps.length - 1);
+  }
+  const st = steps[_tavernStep];
+  const col = document.createElement('div');
+  col.className = 'tstep';
+  const nav = document.createElement('div');
+  nav.className = 'stepnav';
+  const mk = (label, fn, dis) => {
+    const b = el('button', 'snav', label);
+    b.disabled = !!dis;
+    b.onclick = fn;
+    return b;
+  };
+  nav.appendChild(mk('◀ Prev', () => tavernStepNav(-1), _tavernStep <= 0));
+  const play = mk(_tavernPlayTimer ? '❚❚ Pause' : '▶ Play',
+                  tavernTogglePlay, !steps.length);
+  play.className = 'snav splay';
+  nav.appendChild(play);
+  nav.appendChild(mk('Next ▶', () => tavernStepNav(1),
+                     _tavernStep >= steps.length - 1));
+  const cap = el('span', 'stepcap');
+  cap.textContent = steps.length
+    ? ('Your board after step ' + (_tavernStep + 1) + ' of ' + steps.length
+       + ' — ' + stepWords(st))
+    : 'No step data for this turn';
+  nav.appendChild(cap);
+  col.appendChild(nav);
+  const track = document.createElement('div');
+  track.className = 'steptrack';
+  steps.forEach((s, i) => {
+    const t = el('button', 'stick ' + stepKindClass(s.k)
+                 + (i === _tavernStep ? ' sel' : ''));
+    t.textContent = stepLetter(s.k);
+    t.title = stepWords(s);
+    t.onclick = () => {
+      stopTavernPlay();
+      _tavernStep = i;
+      renderSettleGame(_settleRep);
+    };
+    track.appendChild(t);
+  });
+  col.appendChild(track);
+  col.appendChild(el('div', 'slegend',
+    'R roll · B buy · S sell · L level up · P play · C cast'));
+  const boardWrap = document.createElement('div');
+  boardWrap.className = 'stepboard';
+  const diff = stepDiff(_tavernStep > 0 ? steps[_tavernStep - 1].board : [],
+                        st ? st.board : []);
+  for (const m of (st ? st.board : [])) {
+    const t = tile(m.card, m.name || m.card,
+      (m.atk ?? '?') + '/' + (m.health ?? '?'), {golden: m.golden});
+    if (diff.highlight != null && m.eid === diff.highlight) {
+      t.classList.add('affected');
+    }
+    boardWrap.appendChild(t);
+  }
+  if (st && st.k === 'sell') {
+    // The sold card is an absence on the board — shown dimmed with SOLD.
+    const t = tile(st.card, st.cardName || st.card, '', {cls: 'ghost sold-now'});
+    t.appendChild(el('span', 'tag-sold', 'SOLD'));
+    boardWrap.appendChild(t);
+  }
+  col.appendChild(boardWrap);
+  return col;
 }
 // One board row of a turn card: card tiles when the stored board is
 // structured (the server joins display names at serve time), the text the
@@ -2601,6 +2824,48 @@ function setSettleViewer(v) {
 document.querySelectorAll('#settle-viewer button').forEach(b => {
   b.onclick = () => setSettleViewer(b.dataset.v);
   b.className = b.dataset.v === _viewer ? 'on' : '';
+});
+// Keyboard (design §5), Tavern viewer only — Classic is untouched. Left and
+// Right walk turns (Summary) or steps (Step-through); Shift+Left/Right walks
+// turns while stepping; Space plays/pauses; Home and End jump to the ends.
+// Ignored while typing, and only on the Settle Up tab.
+document.addEventListener('keydown', e => {
+  if (_viewer !== 'tavern'
+      || document.getElementById('settle').className !== 'on') {
+    return;
+  }
+  const tag = (e.target.tagName || '').toUpperCase();
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  const turns = ((_settleRep || {}).timeline || {}).turns || [];
+  if (!turns.length) return;
+  const idx = turns.findIndex(r => r.turn === _tavernTurn);
+  const stepping = _tavernMode === 'step';
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const d = e.key === 'ArrowRight' ? 1 : -1;
+    e.preventDefault();
+    if (stepping && !e.shiftKey) {
+      stopTavernPlay();
+      _tavernStep = Math.max(0, _tavernStep + d);
+      renderSettleGame(_settleRep);
+    } else {
+      const ni = Math.min(turns.length - 1, Math.max(0, idx + d));
+      if (ni !== idx) {
+        stopTavernPlay();
+        _tavernStep = 0;
+        _tavernTurn = turns[ni].turn;
+        renderSettleGame(_settleRep);
+      }
+    }
+  } else if (e.key === ' ' && stepping) {
+    e.preventDefault();
+    tavernTogglePlay();
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    stopTavernPlay();
+    _tavernTurn = turns[e.key === 'Home' ? 0 : turns.length - 1].turn;
+    _tavernStep = e.key === 'End' ? 1e9 : 0;
+    renderSettleGame(_settleRep);
+  }
 });
 // The saved replays are plain JSON files; this just points Explorer at them.
 document.getElementById('settle-folder').onclick = async () => {
@@ -3024,6 +3289,12 @@ def _name_timeline_boards(rep):
                     {"card": item, "name": value.display_name(names, item)}
                     for item in lst
                 ]
+        # The Step-through's per-action boards name like every other board,
+        # and each step's own action card gets a cardName for the caption.
+        for st in row.get("steps") or []:
+            st["cardName"] = value.display_name(names, st.get("card"))
+            for m in st.get("board") or []:
+                m["name"] = value.display_name(names, m.get("card"))
     return out
 
 

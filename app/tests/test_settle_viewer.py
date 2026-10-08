@@ -144,10 +144,12 @@ class TestTheRailHelpers(unittest.TestCase):
                           "be executed")
         sources = [_function(n) for n in
                    ("runLength", "flipKinds", "boardDelta", "outcomeText",
-                    "hpLine", "minionsLeft")]
+                    "hpLine", "minionsLeft", "stepWords", "stepLetter",
+                    "stepKindClass", "stepDiff")]
         for name, src in zip(("runLength", "flipKinds", "boardDelta",
-                              "outcomeText", "hpLine", "minionsLeft"),
-                             sources):
+                              "outcomeText", "hpLine", "minionsLeft",
+                              "stepWords", "stepLetter", "stepKindClass",
+                              "stepDiff"), sources):
             self.assertIsNotNone(src, name + " is missing")
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -173,6 +175,19 @@ class TestTheRailHelpers(unittest.TestCase):
                     "out.push(String(minionsLeft('us', [1, 2, 3], [])) + '|"
                     + "' + String(minionsLeft('them', [], [1])) + '|"
                     + "' + String(minionsLeft('tie', [1], [2])));\n"
+                    "out.push(stepWords({k: 'buy', cardName: 'Wolf Pup'}) + '|"
+                    + "' + stepWords({k: 'roll'}) + '|"
+                    + "' + stepWords({k: 'sell', card: 'BG31_816'}));\n"
+                    "out.push(stepLetter('buy') + stepLetter('roll') + "
+                    "stepLetter('level') + stepLetter('sell') + "
+                    "stepLetter('play') + stepLetter('cast') + "
+                    "stepLetter('mystery'));\n"
+                    "out.push(stepKindClass('buy') + '|' + "
+                    "stepKindClass('mystery'));\n"
+                    "out.push(JSON.stringify(stepDiff("
+                    "[{eid: 1}], [{eid: 1}, {eid: 2}])));\n"
+                    "out.push(JSON.stringify(stepDiff([{eid: 1}], "
+                    "[{eid: 1}])));\n"
                     "console.log(JSON.stringify(out));\n")
         # Bytes in, UTF-8 decoded here: text=True reads node's pipe as cp1252
         # and mojibakes the non-ASCII labels (measured 2026-10-08).
@@ -208,6 +223,14 @@ class TestTheRailHelpers(unittest.TestCase):
             "|Outcome not readable")
         self.assertEqual(self.out[8], "HP 25 → 20|HP 25 → ?|")
         self.assertEqual(self.out[9], "3|1|null")
+
+    def test_step_captions_letters_and_diff(self):
+        self.assertEqual(self.out[10],
+                         "Bought Wolf Pup|Rolled the tavern|Sold BG31_816")
+        self.assertEqual(self.out[11], "BRLSPC•")
+        self.assertEqual(self.out[12], "k-buy|")
+        self.assertEqual(self.out[13], '{"highlight":2}')
+        self.assertEqual(self.out[14], '{"highlight":null}')
 
 
 class TestTheStripMarker(unittest.TestCase):

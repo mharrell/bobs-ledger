@@ -160,6 +160,38 @@ def stats(board):
     return sum((m.get("atk") or 0) + (m.get("health") or 0) for m in board or [])
 
 
+def _steps_for(actual, markers, snapshots, friendly, offset, upper):
+    """The ordered shop actions with the board as it stood right after each
+    (the Step-through's data, 2026-10-08).
+
+    `markers` is (chunk line index, snapshot count) at every line where the
+    running snapshot stream changed. The board for action k is the last
+    snapshot count STRICTLY BEFORE action k+1's write line (the slice end
+    for the last one): the next action's own zone change fires at that line
+    and its effect belongs to the next step, not this one. Filtered to the
+    friendly side (the shop's offers are in PLAY too, tavern-controlled)
+    and trimmed to what a card tile draws. A rep parsed without events
+    yields [].
+    """
+    events = (actual or {}).get("events") or []
+    steps = []
+    for i, ev in enumerate(events):
+        bound = offset + (events[i + 1]["at"] if i + 1 < len(events)
+                          else (upper - offset))
+        count = 0
+        for ml, mc in markers:
+            if ml < bound:
+                count = mc
+            else:
+                break
+        board = [{k: m.get(k) for k in
+                  ("card", "atk", "health", "golden", "eid")}
+                 for m in (snapshots[count - 1] if count else [])
+                 if m.get("player") == friendly]
+        steps.append({"k": ev["k"], "card": ev["card"], "board": board})
+    return steps
+
+
 def _drive(chunk):
     """One pass over a game: (coach, info_by_turn, header_friendly).
 
@@ -177,7 +209,10 @@ def _drive(chunk):
 
     Player actions are parsed here too, on the phase slice, exactly as
     `outcome_audit.audit_game` does — gold spend, sells and rolls all come from
-    them, and a second pass to collect them would double the replay.
+    them, and a second pass to collect them would double the replay. The same
+    pass collects the ordered action stream (`collect_events`) with the
+    snapshot-count markers, which is what lets `_steps_for` give every shop
+    action its board-without-a-third-replay.
     """
     from extract_game import extract_game, _friendly_player
     from player_actions import parse_actions
@@ -187,18 +222,27 @@ def _drive(chunk):
 
     coach = LiveCoach()
     info = {}
+    markers = []   # (chunk line index, gs.snapshots count after feeding it)
+    pending = {}   # turn -> (actual, lo, hi): steps built after ALL feeding
     j = 0
     n = len(chunk)
+
+    def feed(idx):
+        coach.feed(chunk[idx])
+        count = len(coach.gs.snapshots)
+        if not markers or markers[-1][1] != count:
+            markers.append((idx, count))
+
     for lo, hi in _phases(chunk):
         while j < lo and j < n:
-            coach.feed(chunk[j])
+            feed(j)
             j += 1
         prev_offers = None
         last_change = j
         a = None
         stop = hi if hi is not None else n
         while j < stop:
-            coach.feed(chunk[j])
+            feed(j)
             offers = tuple(coach.tavern_offers())
             if offers != prev_offers:
                 prev_offers = offers
@@ -215,9 +259,19 @@ def _drive(chunk):
             continue
         actual = {}
         if header_friendly is not None:
-            acts = parse_actions(chunk[lo:hi], friendly=header_friendly)
+            acts = parse_actions(chunk[lo:hi], friendly=header_friendly,
+                                 collect_events=True)
             actual = acts[0] if acts else {}
         info[turn] = {"analysis": a, "actual": actual}
+        if header_friendly is not None:
+            # The steps are built AFTER the whole chunk is fed: the settle
+            # fires mid-shop, and the rest of the phase — often including
+            # the very actions being stepped through — is still unfed.
+            pending[turn] = (actual, lo, hi)
+    for turn, (actual, lo, hi) in pending.items():
+        info[turn]["steps"] = _steps_for(actual, markers, coach.gs.snapshots,
+                                         header_friendly, lo,
+                                         hi if hi is not None else n)
     return coach, info, header_friendly
 
 
@@ -676,6 +730,11 @@ def timeline(log_path, game_index=1):
         final_board = _struct_board(coach.gs.final_board(friendly)[0])
 
     rows = _turn_rows(snaps, info, friendly, final_board, card_db=_load_card_db())
+    for row in rows:
+        # The Step-through's ordered actions with their boards (2026-10-08).
+        # Turns the coach never analyzed carry no entry and degrade to [] —
+        # the viewer says so rather than guessing.
+        row["steps"] = (info.get(row["turn"]) or {}).get("steps") or []
     turns = sorted(set(snaps) | set(info))
     first = (info.get(turns[0]) or {}).get("analysis") or {} if turns else {}
     return {"turns": rows,

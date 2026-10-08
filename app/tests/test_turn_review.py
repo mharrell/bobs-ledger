@@ -672,5 +672,50 @@ class TestRowCarriesEffectiveHp(unittest.TestCase):
         self.assertIsNone(rows[0]["eff"])
 
 
+class TestStepsFor(unittest.TestCase):
+    """The Step-through's bridge: an action's board is the last snapshot
+    count at or before its own line, filtered to the friendly side and
+    trimmed to what a card tile draws."""
+
+    @staticmethod
+    def _minion(eid, player):
+        return {"card": "BG31_815", "player": player, "atk": 3, "health": 3,
+                "golden": False, "eid": eid, "pos": 1, "tribe": "Elemental"}
+
+    def test_board_runs_to_the_next_actions_start(self):
+        """The buy's own zone write fires INSIDE its block, lines after the
+        block start the event records — so the board for action k runs to
+        where action k+1 begins (the slice end for the last one)."""
+        actual = {"events": [{"k": "buy", "card": "BG31_815", "at": 3},
+                             {"k": "sell", "card": "BG31_815", "at": 7}]}
+        # Opened with minion 9; the buy's effect lands at line 5 (10 joins);
+        # the sell's effect lands at line 9 (10 leaves). Markers: 1, 2, 3
+        # snapshots after lines 0, 5 and 9.
+        snaps = [[self._minion(9, 5)],
+                 [self._minion(9, 5), self._minion(10, 5)],
+                 [self._minion(9, 5)]]
+        steps = tr._steps_for(actual, [(0, 1), (5, 2), (9, 3)], snaps, 5,
+                              0, 12)
+        self.assertEqual([s["k"] for s in steps], ["buy", "sell"])
+        # buy: runs to the sell's start (line 7) -> both minions on board
+        self.assertEqual([m["eid"] for m in steps[0]["board"]], [9, 10])
+        # sell: runs to the slice end (12) -> the sold minion is gone
+        self.assertEqual([m["eid"] for m in steps[1]["board"]], [9])
+
+    def test_friendly_filter_and_field_trim(self):
+        snaps = [[self._minion(9, 5), self._minion(10, 13)]]
+        steps = tr._steps_for({"events": [{"k": "buy", "card": "BG31_815",
+                                           "at": 0}]},
+                              [(0, 1)], snaps, 5, 0, 4)
+        m = steps[0]["board"][0]
+        self.assertEqual(sorted(m.keys()),
+                         ["atk", "card", "eid", "golden", "health"])
+        self.assertEqual(len(steps[0]["board"]), 1,
+                         "the opponent's minion is filtered out")
+
+    def test_no_events_yields_no_steps(self):
+        self.assertEqual(tr._steps_for({}, [(0, 1)], [[]], 5, 0, 4), [])
+
+
 if __name__ == "__main__":
     unittest.main()
