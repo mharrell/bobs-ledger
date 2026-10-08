@@ -236,7 +236,7 @@ class LobbyScout:
         staged values, then combat wear, then a zeroed/reset pair at teardown.
         Reading later records a corpse (measured: a 7-minion board summing to
         one minion's stats), and reading the max records combat-only buffs,
-        which are explicitly NON-persistent (CLAUDE.md). The close of the
+        which are explicitly NON-persistent (the project notes). The close of the
         window is the last moment the board still reads as the board.
         """
         if self._open is not None:

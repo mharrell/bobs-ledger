@@ -13,7 +13,7 @@ companion file: `test_audit_inventory.md` (per-test index, all 583)
   hoops" (where incident patches accumulate, paradoxes hide).
 - **Phase 1b — invariant cross-reference.** Tests collapsed into rule
   domains; each domain's invariants checked pairwise and against the
-  canon (CLAUDE.md + memory player rules). Deep-read of every flagged
+  canon (the project notes + memory player rules). Deep-read of every flagged
   family's bodies; the rest triaged via docstrings.
 - **Phase 3 — goal alignment.** Every test must answer "what wrong
   advice does this prevent?"; every past live incident must map to a
@@ -100,7 +100,7 @@ comment at both sites naming the other (no behavior change).
 ### F4 — docstring drift, same rule (tidy only)
 
 `test_price_drops_per_turn_at_tier` says "tier+5 minus turns at the
-tier"; CLAUDE.md says "start at (target+3), drop 1 per round waited."
+tier"; the project notes say "start at (target+3), drop 1 per round waited."
 Same rule, different indexing (tier+5−k ≡ target+3−(k−1)); live button
 COST is authoritative anyway. Reword one of the two to the other's
 indexing.

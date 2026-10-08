@@ -12,7 +12,7 @@ second copy of the patterns — pointed at every blob reachable from every ref
 instead of at the files in a zip. What it sees is exactly what privacy_scan
 sees: BattleTags, player-name fields, bare opponent handles, account ids, local
 user paths and session directory names. What it cannot see is the category
-CLAUDE.md warns about (a handle under a JSON `"name"` key); `package_corpus`
+the project notes warn about (a handle under a JSON `"name"` key); `package_corpus`
 strips those by name, and no pattern scanner can.
 
 The other half is credentials, which this does not look for at all:

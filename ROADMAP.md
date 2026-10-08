@@ -113,8 +113,8 @@ not ship), and (with `--apply`) writes them into
       vision-capable model. `coach_llm.py` (a GLM 5.3 flash client,
       `DEFAULT_PROVIDER = "glm"`) exists
       but is NOT the intended advice engine at this time. (The deepseek-v4-flash
-      config in `~/.claude/settings.json` is for the Claude Code session, not the
-      coach.)
+      config in the session tool's user-level settings is for that tooling, not
+      the coach.)
 - [ ] Build the coach loop: parse board state (`board_state.py`) + family ban
       (`bans.py`) → filter comps → assemble the meta FIXED_BLOCK + board-state
       VARIABLE tail → call the chosen advice model → emit advice.
@@ -630,8 +630,8 @@ decision-log records alone (no personal data by design, but plan-side only).
   board-specific, explainable advice; use HSReplay stats (if any) as supplement.
 - Hybrid architecture: live board parse + structured meta + family-ban filter +
   optional stats + reasoning.
-- **Claude Code session model:** `deepseek-v4-flash` (1M context) with
-  prefix-cache discipline — the harness config for the tool building the coach,
+- **Session tooling model:** `deepseek-v4-flash` (1M context) with
+  prefix-cache discipline — the config for the tool building the coach,
   NOT the coach's advice model. See DESIGN.md "Model & cache strategy".
 - **Family ban:** exactly 5 tribes allowed / 5 banned per game; comps filtered by
   core-card tribes (`bans.py`).

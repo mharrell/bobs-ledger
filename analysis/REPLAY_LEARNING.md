@@ -334,7 +334,7 @@ Each of these silently corrupts the loop if skipped. **Items 2 and 9 are DONE**
      ATK/HEALTH are written several times per entity — staged values, then
      combat wear, then a zeroed/reset pair at teardown. Reading later records a
      corpse (measured: a "board" of 1253), and reading the max records
-     combat-only buffs, which are explicitly non-persistent (CLAUDE.md).
+     combat-only buffs, which are explicitly non-persistent (the project notes).
    * **The first attempt re-derived the board subset and was wrong.** A naive
      "staged entities minus our controller" filter admitted entities that were
      never on the board (14 entities, 1253 stats). The fix routes the stats

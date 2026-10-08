@@ -1,6 +1,6 @@
 """The README's claims about the CODE, checked in both directions.
 
-CLAUDE.md item 3 has carried this as an open item since 2026-10-05: the README's
+The project notes' item 3 has carried this as an open item since 2026-10-05: the README's
 "Is this allowed?" section tells a player what the coach does and does not do to
 their machine, and two of its sentences are load-bearing —
 
@@ -143,7 +143,7 @@ class TestTheScreenshotsMatchTheReadme(unittest.TestCase):
         rotted precisely because nothing tied the files to the text).
 
     What this CANNOT check is what a picture shows — a screenshot of a layout
-    that no longer exists passes both. That is what CLAUDE.md's rule about
+    that no longer exists passes both. That is what the project notes' rule about
     re-shooting is for, and why the images are re-taken in the same change as the
     layout that moved.
     """

@@ -129,7 +129,7 @@ def main():
             "tier": card.get("techLevel"),
             "id": cid,
             "name": card.get("name"),
-            # Minions cost a FLAT 3 gold at every tier (CLAUDE.md; player-
+            # Minions cost a FLAT 3 gold at every tier (the project rules; player-
             # confirmed 2026-09-06) — hearthstonejson's `cost` is the mana cost
             # and reports 0 for BG minions, which is why the 18 older
             # auto_added rows carry a 0 that _buy_prices must not trust.
