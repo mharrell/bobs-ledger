@@ -82,6 +82,117 @@ class TestTheFlag(unittest.TestCase):
                              "the Tavern palette leaked into :root")
 
 
+class TestTheRailData(unittest.TestCase):
+    """The Summary rail's inputs: the serve-time join names the action lists
+    (one shape regardless of save age), and the tavern-gated extras stay
+    behind the flag in the shared card renderer."""
+
+    def _rep(self, took_bought, took_sold):
+        return {"hero": "H", "totals": {}, "phases": [],
+                "timeline": {"turns": [
+                    {"turn": 1, "notes": [],
+                     "took": {"bought": took_bought, "sold": took_sold}}]}}
+
+    def test_the_join_names_the_rail_lists(self):
+        import unittest.mock as mock
+        rep = self._rep(["BG31_815"], ["BG33_886"])
+        with mock.patch.object(coach_ui.value, "display_name",
+                               lambda names, cid: {"BG31_815": "Dune Dweller"}
+                               .get(cid, cid)):
+            out = coach_ui._name_timeline_boards(rep)
+        took = out["timeline"]["turns"][0]["took"]
+        self.assertEqual(took["bought"],
+                         [{"card": "BG31_815", "name": "Dune Dweller"}])
+        self.assertEqual(took["sold"],
+                         [{"card": "BG33_886", "name": "BG33_886"}],
+                         "an id the name DB lacks degrades to the id")
+
+    def test_old_plain_string_lists_are_converted_too(self):
+        """Every rep saved before the rail carried plain id strings; the join
+        converts them so the renderer sees one shape regardless of age."""
+        import unittest.mock as mock
+        rep = self._rep(["BG31_815"], [])
+        with mock.patch.object(coach_ui.value, "display_name",
+                               lambda names, cid: {"BG31_815": "Dune Dweller"}
+                               .get(cid, cid)):
+            out = coach_ui._name_timeline_boards(rep)
+        self.assertEqual(out["timeline"]["turns"][0]["took"]["bought"],
+                         [{"card": "BG31_815", "name": "Dune Dweller"}])
+
+    def test_the_tray_and_tags_are_tavern_gated(self):
+        """The viewer flag's contract: the shared card renderer's extras —
+        the passed-through tray and the Ended net tags — sit behind
+        opts.tavern, and the classic path never sets it."""
+        src = _function("settleTurnCard")
+        self.assertIsNotNone(src)
+        self.assertIn("if (opts && opts.tavern)", src)
+        self.assertIn("Passed through", src)
+        self.assertIn("boardDelta(r.buy_start, r.buy_end)", src)
+        # The only opts the classic path passes is none at all.
+        self.assertNotIn("settleTurnCard(r, phases.filter(p => p.turn === r.turn),",
+                         _function("renderSettleGame"))
+
+
+class TestTheRailHelpers(unittest.TestCase):
+    """runLength / flipKinds / boardDelta, run under node (skipped without
+    it). The rail's grouping, flipped detection and Ended tags are pure
+    functions; the wording tests the glyphs, these test the grouping."""
+
+    def setUp(self):
+        if shutil.which("node") is None:
+            self.skipTest("node is not installed, so the page's script cannot "
+                          "be executed")
+        sources = [_function(n) for n in
+                   ("runLength", "flipKinds", "boardDelta")]
+        self.assertIsNotNone(sources[0], "runLength is missing")
+        self.assertIsNotNone(sources[1], "flipKinds is missing")
+        self.assertIsNotNone(sources[2], "boardDelta is missing")
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        driver = os.path.join(self.tmp.name, "drive.js")
+        with open(driver, "w", encoding="utf-8") as f:
+            f.write("\n".join(sources) + "\n"
+                    + "const out = [];\n"
+                    "out.push(runLength(['A', 'A', 'B']));\n"
+                    "out.push(runLength([{name: 'Rolled ×9'}]));\n"
+                    "out.push(runLength([]));\n"
+                    "out.push(flipKinds([{card: 'X', name: 'Wolf'}, "
+                    "{card: 'Y', name: 'Elk'}], "
+                    "[{card: 'X', name: 'Wolf'}, {card: 'Z', name: 'Owl'}]));\n"
+                    "out.push(flipKinds([], []));\n"
+                    "out.push(boardDelta("
+                    "[{eid: 1, atk: 3, health: 3}, {eid: 2, atk: 2, health: 2}], "
+                    "[{eid: 1, atk: 5, health: 3}, {eid: 9, atk: 4, health: 4}]));\n"
+                    "out.push(boardDelta([], [{eid: 3, atk: 1, health: 1}]));\n"
+                    "console.log(JSON.stringify(out));\n")
+        # Bytes in, UTF-8 decoded here: text=True reads node's pipe as cp1252
+        # and mojibakes the non-ASCII labels (measured 2026-10-08).
+        proc = subprocess.run(["node", driver], capture_output=True,
+                              timeout=30)
+        self.assertEqual(proc.returncode, 0,
+                         f"node could not run the helpers: "
+                         f"{proc.stderr.decode('utf-8', 'replace')[:300]}")
+        self.out = json.loads(proc.stdout.decode("utf-8"))
+
+    def test_runs_collapse_consecutive_repeats(self):
+        self.assertEqual([(r["label"], r["n"]) for r in self.out[0]],
+                         [("A", 2), ("B", 1)])
+        self.assertEqual(self.out[1][0]["label"], "Rolled ×9")
+        self.assertEqual(self.out[2], [])
+
+    def test_flipped_is_bought_and_sold_same_phase(self):
+        kinds = self.out[3]
+        self.assertEqual(kinds["X"], "flipped")
+        self.assertEqual(kinds["Z"], "sold")
+        self.assertEqual(self.out[4], {})
+
+    def test_delta_matches_by_entity_id(self):
+        d = self.out[5]
+        self.assertEqual(d["1"], {"isNew": False, "datk": 2, "dhealth": 0})
+        self.assertEqual(d["9"], {"isNew": True, "datk": 0, "dhealth": 0})
+        self.assertEqual(self.out[6]["3"]["isNew"], True)
+
+
 class TestTheStripMarker(unittest.TestCase):
     """stripMark is the strip's result line, run under node (skipped without
     it). Result is never color-only, so the glyph and the HP text are the
