@@ -413,8 +413,14 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
     without a real Power.log: which snapshot is the buy-end board, where the
     lag note comes from, what the growth series measures. A test that builds a
     row by hand and asserts the fields it just wrote is not a control.
+
+    The turn list is the union of the snapshot buckets and the analyzed
+    phases: a recruit phase the player did nothing in can be analyzed (its
+    shop offers settled) while almost no snapshot fired in it, and dropping
+    it would silently renumber every later turn against what the coach's
+    phase rows — graded on the same numbers — say.
     """
-    turns = sorted(snaps)
+    turns = sorted(set(snaps) | set(info))
     rows = []
     prev_stats = None
     for i, t in enumerate(turns):
@@ -660,7 +666,7 @@ def timeline(log_path, game_index=1):
         final_board = _struct_board(coach.gs.final_board(friendly)[0])
 
     rows = _turn_rows(snaps, info, friendly, final_board, card_db=_load_card_db())
-    turns = sorted(snaps)
+    turns = sorted(set(snaps) | set(info))
     first = (info.get(turns[0]) or {}).get("analysis") or {} if turns else {}
     return {"turns": rows,
             "hero": first.get("hero"),
