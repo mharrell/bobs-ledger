@@ -16,6 +16,12 @@ The rule now lives in one pure function, `freshnessLine()`, so it can be RUN
 instead of read: these tests extract it from the served page and execute it with
 node. Values come from the page's own constants, so changing the thresholds
 changes what is tested. If node is not installed the tests skip and say why.
+
+A third reading joined it on 2026-10-08: a REFUSED access key. The overlay's
+server now mints a key per run and answers 403 to anything without it, so a tab
+left open across a restart is refused forever — and a refused key is not advice
+that went quiet, which is why it outranks both of the other readings instead of
+being reported as an age.
 """
 import json
 import os
@@ -33,6 +39,9 @@ import coach_ui  # noqa: E402
 
 #: (age of the advice in seconds, seconds since the coach last answered)
 CASES = ((3, 0), (30, 0), (90, 0), (200, 0), (900, 0), (0, 10), (90, 10))
+#: The same shape, but the server REFUSED this tab's key (2026-10-08). Each run
+#: mints a new one, so a tab left open across a restart ends up here.
+REFUSED = ((0, 0), (3, 0), (90, 0), (90, 10))
 
 
 def _const(name):
@@ -66,14 +75,19 @@ class TestTheFreshnessRule(unittest.TestCase):
                     f"const LOST_AFTER = {_const('LOST_AFTER')};\n"
                     f"{source}\n"
                     f"const cases = {json.dumps(CASES)};\n"
-                    "console.log(JSON.stringify("
-                    "cases.map(c => freshnessLine(c[0], c[1]))));\n")
+                    f"const refused = {json.dumps(REFUSED)};\n"
+                    "console.log(JSON.stringify({\n"
+                    "  aged: cases.map(c => freshnessLine(c[0], c[1])),\n"
+                    "  refused: refused.map(c => freshnessLine(c[0], c[1], true)),\n"
+                    "}));\n")
         proc = subprocess.run(["node", driver], capture_output=True, text=True,
                               timeout=30)
         self.assertEqual(proc.returncode, 0,
                          f"node could not run the page's JS: {proc.stderr[:300]}")
-        self.lines = json.loads(proc.stdout)
+        out = json.loads(proc.stdout)
+        self.lines = out["aged"]
         self.by_case = dict(zip(CASES, self.lines))
+        self.refused = dict(zip(REFUSED, out["refused"]))
 
     def test_fresh_advice_says_nothing(self):
         line = self.by_case[(3, 0)]
@@ -98,8 +112,21 @@ class TestTheFreshnessRule(unittest.TestCase):
         line = self.by_case[(0, 10)]
         self.assertTrue(line["alarm"])
 
+    def test_a_refused_key_is_said_rather_than_shown_as_old_advice(self):
+        """The finding behind the 2026-10-08 access key, from the page's side.
+
+        A tab left open across a restart keeps polling and keeps being refused.
+        Left unsaid, that arrived as the ordinary "read from N ago" line, which
+        tells the player to wait for their next shop — the one action that
+        cannot fix it.
+        """
+        for case, line in self.refused.items():
+            with self.subTest(case=case):
+                self.assertTrue(line["alarm"])
+                self.assertIn("launcher", line["text"])
+
     def test_the_players_screen_never_names_an_internal_file(self):
-        for case, line in self.by_case.items():
+        for case, line in list(self.by_case.items()) + list(self.refused.items()):
             with self.subTest(case=case):
                 self.assertNotIn("live.py", line["text"])
                 self.assertNotIn("frozen", line["text"])

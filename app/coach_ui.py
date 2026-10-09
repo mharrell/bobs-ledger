@@ -31,9 +31,11 @@ Usage:
     python coach_ui.py [--port=N]     # run the server standalone (empty state)
 """
 import hashlib
+import hmac
 import json
 import os
 import re
+import secrets
 import threading
 import time
 import urllib.request
@@ -948,6 +950,17 @@ the game; the session log must still exist)">Rebuild</button>
 <div id="release-tag" hidden></div>
 </div>
 <script>
+//: Per-run access key (2026-10-08 audit): the server mints one at startup and
+//: answers nothing without it, so a local process cannot read the live board
+//: (or the opponent's name in it) or flip the share consent. The server puts
+//: the REAL key here as it serves the page; every fetch below rides it through
+//: auth(). Card art (/img, /card) is exempt: it is not data, and an <img src>
+//: cannot carry a header.
+const BL_TOKEN = "__BL_TOKEN__";
+function auth(u) {
+  return u + (u.includes("?") ? "&" : "?")
+    + "token=" + encodeURIComponent(BL_TOKEN);
+}
 let _lastPayload = null;
 let _etag = null;
 let _pollBusy = false;
@@ -965,12 +978,24 @@ let _generated = null;
 //: against the 8 this used to alarm on — so for most of the time a player had
 //: the overlay open, it told them a healthy coach was "frozen, not live".
 let _lastAnswer = 0;
+//: True when the last poll came back 403 (2026-10-08): the server does not
+//: accept this tab's access key. It is its own state rather than an age,
+//: because no amount of waiting fixes it — each run mints a new key, so this
+//: is what a tab left open across a restart meets.
+let _keyRefused = false;
 const STALE_AFTER = 8;   // when to say how old the advice is
 const LOST_AFTER = 6;    // seconds with NO answer at all before it is the coach
 //: The whole decision the freshness line makes, as a pure function so the suite
 //: can run it under node instead of trusting the wording by eye. `alarm` is true
 //: only when the coach stopped talking; old advice on its own never alarms.
-function freshnessLine(ageSec, silentSec) {
+//: A refused key outranks both readings: that is the server saying this tab is
+//: not allowed to read the advice, not the coach being quiet.
+function freshnessLine(ageSec, silentSec, keyRefused) {
+  if (keyRefused) {
+    return {alarm: true,
+            text: 'This overlay is from an earlier run — open it again from '
+                  + 'the launcher'};
+  }
   const ago = ageSec >= 120 ? Math.floor(ageSec / 60) + ' min'
              : ageSec >= 60 ? '1 min'
              : Math.max(0, Math.round(ageSec)) + 's';
@@ -989,12 +1014,17 @@ async function poll() {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 2500);
-    const r = await fetch('/analysis', {
+    const r = await fetch(auth('/analysis'), {
       signal: ctrl.signal,
       headers: _etag ? {'If-None-Match': _etag} : undefined,
     });
     clearTimeout(timer);
-    _lastAnswer = Date.now();
+    // A refused key is not an answer, and not advice that went quiet either
+    // (2026-10-08): the server is saying it will not serve this tab. Left
+    // unsaid, the freshness line reported it as old advice and told the player
+    // to wait for the next shop.
+    _keyRefused = (r.status === 403);
+    if (!_keyRefused) _lastAnswer = Date.now();
     if (r.status !== 304) {          // 304 = unchanged: header only, no body,
       const raw = await r.text();    // no JSON.parse, no DOM work
       _etag = r.headers.get('ETag');
@@ -1012,12 +1042,13 @@ function tickFreshness() {
   const node = document.getElementById('freshness');
   if (!node) return;
   const silent = (Date.now() - _lastAnswer) / 1000;
-  // Nothing to say at all: no advice yet AND the coach is answering.
-  if (_generated == null && silent <= LOST_AFTER) {
+  // Nothing to say at all: no advice yet AND the coach is answering. A refused
+  // key is always said, however fresh the frame it is sitting next to.
+  if (_generated == null && !_keyRefused && silent <= LOST_AFTER) {
     node.className = ''; node.textContent = ''; return;
   }
   const age = _generated == null ? 0 : Date.now() / 1000 - _generated;
-  const line = freshnessLine(age, silent);
+  const line = freshnessLine(age, silent, _keyRefused);
   node.className = line.alarm ? 'on' : (line.text ? 'info' : '');
   node.textContent = line.text;
 }
@@ -1098,7 +1129,7 @@ function box(title, body) {
 // still gets its tile. Keyed by the EXACT id requested — /img does not
 // strip the golden _G suffix.
 const MISSES = new Set();
-fetch('/artmiss').then(r => r.json()).then(j => {
+fetch(auth('/artmiss')).then(r => r.json()).then(j => {
   (j.misses || []).forEach(cid => MISSES.add(cid));
 }).catch(() => {});
 // Card art thumbnail (img_cache/ via /img/<id>.png, fetched on demand from
@@ -1194,7 +1225,7 @@ const _guideCache = new Map();
 function loadGuide(slug, slot) {
   const cached = _guideCache.get(slug);
   if (cached) { slot.appendChild(cached); return; }
-  fetch('/guide/' + slug).then(r => r.ok ? r.json() : null).then(j => {
+  fetch(auth('/guide/' + slug)).then(r => r.ok ? r.json() : null).then(j => {
     if (!j) return;
     const wrap = el('div', 'cguidefull');
     if (j.how_to_play) wrap.appendChild(el('div', 'cline', j.how_to_play));
@@ -1316,7 +1347,7 @@ function renderWelcome(a) {
     cb.onchange = async () => {
       cb.disabled = true;
       try {
-        const r = await fetch('/review/auto-save', {
+        const r = await fetch(auth('/review/auto-save'), {
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({enabled: cb.checked}),
         });
@@ -1335,7 +1366,7 @@ function renderWelcome(a) {
       save.onclick = async () => {
         save.disabled = true;
         try {
-          const r = await fetch('/review/save', {
+          const r = await fetch(auth('/review/save'), {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: '{}',
           });
@@ -1367,7 +1398,7 @@ function renderWelcome(a) {
 // sentence above it is now built from the answer. The poll that follows
 // redraws the card from the server's state, so the words can't lag the click.
 function postShare(share) {
-  fetch('/share', {method: 'POST',
+  fetch(auth('/share'), {method: 'POST',
                    headers: {'Content-Type': 'application/json'},
                    body: JSON.stringify({share: share})}).then(poll);
 }
@@ -1929,7 +1960,7 @@ function render(a) {
 // authoritative and self-heals any missed POST.
 let _banPick = new Set(), _banPickGame = null, _banPickAt = 0;
 function postBans(list) {
-  fetch('/bans', {method: 'POST',
+  fetch(auth('/bans'), {method: 'POST',
                   headers: {'Content-Type': 'application/json'},
                   body: JSON.stringify({banned: list})});
 }
@@ -1971,7 +2002,7 @@ async function loadSettleList() {
   const sel = document.getElementById('settle-select');
   let games = [];
   try {
-    const r = await fetch('/review/list');
+    const r = await fetch(auth('/review/list'));
     games = (await r.json()).games || [];
   } catch (e) { /* leave the dropdown saying it could not load */ }
   if (!games.length) {
@@ -2001,7 +2032,7 @@ async function loadSettleGame(id) {
   box.innerHTML = '<div class="s-empty">Loading…</div>';
   let j;
   try {
-    const r = await fetch('/review/game?id=' + encodeURIComponent(id));
+    const r = await fetch(auth('/review/game?id=' + encodeURIComponent(id)));
     j = await r.json();
   } catch (e) {
     box.innerHTML = '<div class="s-empty">Could not load that game.</div>';
@@ -2875,7 +2906,7 @@ document.addEventListener('keydown', e => {
 document.getElementById('settle-folder').onclick = async () => {
   const b = document.getElementById('settle-folder');
   try {
-    const r = await fetch('/review/open-folder', {
+    const r = await fetch(auth('/review/open-folder'), {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: '{}',
     });
@@ -2900,7 +2931,7 @@ document.getElementById('settle-rebuild').onclick = async () => {
   b.disabled = true;
   b.textContent = 'Rebuilding…';
   try {
-    const r = await fetch('/review/rebuild', {
+    const r = await fetch(auth('/review/rebuild'), {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({id: id}),
     });
@@ -4041,6 +4072,13 @@ def _analysis_response(if_none_match=None):
 #:     CORS headers are ever sent.
 _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
 
+#: The per-run access key (2026-10-08 audit). "" until start_server() makes
+#: one, and an empty key authorizes NOTHING — so a handler built by hand (the
+#: tests do that) refuses everything it is asked to check rather than falling
+#: open. Never a constant: a key written into the source is a key whoever
+#: reads the source already has.
+_TOKEN = ""
+
 
 def _host_only(value):
     """The hostname inside a Host header or an Origin: lowercased, no port.
@@ -4061,6 +4099,58 @@ def _host_only(value):
 
 
 class _Handler(BaseHTTPRequestHandler):
+    #: The request's non-key query parameters, filled by _authorized. A class
+    #: attribute so a handler that somehow reaches a route without having been
+    #: authorized reads an empty mapping rather than raising.
+    query_params = {}
+
+    def _authorized(self):
+        """False (after sending a 403) when the per-run access key is absent.
+
+        The 2026-10-08 audit's remaining finding: the Host/Origin guard is
+        browser-shaped — any LOCAL process can still read the live board and
+        the opponent's composition, or flip the share consent, because the
+        server is loopback and unauthenticated. Every request now carries
+        the key start_server generated: ?token= on the URL (the page's own
+        fetches ride auth(); the printed/opened URL embeds it) or an
+        X-BL-Token header. Card art under /img/ and /card/ is exempt — it is
+        not data, and the tooltips load it from a bare <img src> that cannot
+        carry a header.
+
+        The key is also taken OUT of the request here, and self.path is left
+        as the PATH ALONE with the remaining parameters in self.query_params.
+        That split is what keeps routing honest: every route below compares
+        self.path, so `/analysis?token=…` has to arrive as /analysis rather
+        than miss and fall through to the overlay page — a 200 carrying HTML
+        where the page's own poll expects JSON, which is an overlay that never
+        updates and never says why.
+        """
+        path, _, query = self.path.partition("?")
+        given, params = None, {}
+        for part in (query.split("&") if query else ()):
+            if not part:
+                continue
+            key, _, value = part.partition("=")
+            if key == "token":
+                if given is None:
+                    given = value
+            else:
+                params.setdefault(key, value)
+        self.path = path
+        self.query_params = params
+        if path.startswith("/img/") or path.startswith("/card/"):
+            return True
+        if given is None:
+            given = self.headers.get("X-BL-Token") or None
+        if not _TOKEN or not given or not hmac.compare_digest(
+                given.encode("utf-8", "replace"), _TOKEN.encode("utf-8")):
+            self._send(403, "text/plain",
+                       b"403 - this overlay needs its access key. Open it "
+                       b"from the launcher, or copy the address the coach "
+                       b"printed (it ends in ?token=...).")
+            return False
+        return True
+
     def _foreign_caller(self):
         """True when this request did not come from the overlay's own page.
 
@@ -4078,6 +4168,8 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self._foreign_caller():
+            return
+        if not self._authorized():
             return
         if self.path.rstrip("/") == "/analysis":
             code, headers, body = _analysis_response(
@@ -4099,12 +4191,16 @@ class _Handler(BaseHTTPRequestHandler):
             code, headers, body = _review_list_response()
             self._send(code, "application/json", body, headers=headers)
             return
-        m = re.match(r"^/review/game\?id=([A-Za-z0-9_+-]+)$", self.path)
-        if m:
-            # One stored review's full rep, for the tab to render. The id
-            # charset is replay_store's own filename charset, so ?id= can
-            # not wander.
-            code, headers, body = _review_game_response(m.group(1))
+        if self.path.rstrip("/") == "/review/game":
+            # One stored review's full rep, for the tab to render. The id is
+            # read from the query rather than matched out of self.path: the
+            # path is what routing uses, so the access key (?token=) and any
+            # future parameter stay out of the route table entirely — a
+            # `?token=` appended to this URL used to miss the regex and serve
+            # the overlay page instead. The id charset is replay_store's own
+            # filename charset, and it refuses a wandering id itself.
+            code, headers, body = _review_game_response(
+                self.query_params.get("id") or "")
             self._send(code, "application/json", body, headers=headers)
             return
         if self.path.rstrip("/") == "/artmiss":
@@ -4183,11 +4279,13 @@ class _Handler(BaseHTTPRequestHandler):
         # The page itself: no-cache so a Phase-2 CSS edit is picked up on
         # refresh (it previously had no validator at all, and Chrome's
         # heuristic caching served stale markup).
-        self._send(200, "text/html; charset=utf-8", _HTML.encode(),
+        self._send(200, "text/html; charset=utf-8", _page_html().encode(),
                    headers={"Cache-Control": "no-cache"})
 
     def do_POST(self):
         if self._foreign_caller():
+            return
+        if not self._authorized():
             return
         # Application/json is required, not merely expected: it is the line a
         # cross-origin page cannot cross without a preflight.
@@ -4295,6 +4393,18 @@ class _Handler(BaseHTTPRequestHandler):
         pass
 
 
+def _page_html():
+    """The overlay page, with this run's access key in its script.
+
+    The page's own fetches carry the key through auth(), so the markup that
+    reaches the browser must hold the REAL one. _HTML keeps the placeholder
+    on purpose: the substitution is what is testable, and a page that shipped
+    the literal `__BL_TOKEN__` would 403 on every poll with the overlay
+    looking alive.
+    """
+    return _HTML.replace("__BL_TOKEN__", server_token())
+
+
 def _port_in_use(port, host="127.0.0.1", timeout=0.4):
     """Is something already answering on this port?
 
@@ -4321,7 +4431,16 @@ def start_server(port=DEFAULT_PORT):
     A port that already answers is stepped over rather than hijacked, and
     said out loud: the alternative is an overlay that never updates while
     looking perfectly healthy.
+
+    Generates the per-run access token (2026-10-08 audit): the overlay's
+    loopback server carries the live board, the opponent's composition and
+    the consent and share state — exactly what a local process should not
+    be able to read or flip. Every request is checked against it
+    (_Handler._authorized) except card art; overlay_url() is the address
+    that carries it, and live.py both prints and opens that one.
     """
+    global _TOKEN
+    _TOKEN = secrets.token_urlsafe(16)
     if port and _port_in_use(port):
         alt = port + 1
         while alt < port + 10 and _port_in_use(alt):
@@ -4334,6 +4453,24 @@ def start_server(port=DEFAULT_PORT):
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server
+
+
+def server_token():
+    """This run's overlay access token, for the URL live.py prints/opens."""
+    return _TOKEN
+
+
+def overlay_url(server, path="/"):
+    """The overlay's own address, access key included.
+
+    live.py prints and opens THIS, and it is the only place the key reaches a
+    browser: the page a player lands on is the one that hands its script the
+    key. The key rides the query rather than a header because a page load
+    cannot set one — and nothing here needs escaping, since token_urlsafe's
+    alphabet is [A-Za-z0-9_-] and every path this is used with is plain.
+    """
+    return (f"http://127.0.0.1:{server.server_address[1]}{path}"
+            f"?token={server_token()}")
 
 
 def main():
@@ -4359,8 +4496,10 @@ def main():
         except ValueError:
             print(f"--port needs a number: {a} (try --help)")
             return 2
-    start_server(port)
-    print(f"Coach UI serving at http://127.0.0.1:{port}/  (Ctrl+C to stop)")
+    server = start_server(port)
+    # The server's OWN port, not the requested one: a busy 8747 is stepped
+    # over, and this line used to name the port the player could not use.
+    print(f"Coach UI serving at {overlay_url(server)}  (Ctrl+C to stop)")
     try:
         threading.Event().wait()
     except KeyboardInterrupt:
