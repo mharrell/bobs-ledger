@@ -272,6 +272,74 @@ class TestTheTimelineInvariants(unittest.TestCase):
         self.assertEqual(rows[-1]["battle_end"], [])
         self.assertIn("final board not recoverable", rows[-1]["notes"])
 
+    def test_a_fight_that_stages_one_side_first_still_reads_both(self):
+        """The 2026-10-09 report, turn 1 of the Forest Lord Cenarius game:
+        the fight group's first burst held only the opponent's minion — our
+        combat copy (the game re-creates entities for the duel) staged two
+        bursts later, with an empty gap between. The old read took the
+        GROUP'S first burst for BOTH sides, so the Battle face-off printed
+        "(no board read)" against a board the same group's winner logic had
+        just scored "you won, 1 minion left"."""
+        snaps = {1: [
+            {"phase": "combat",
+             "minions": [(THEIRS, "CYCLONE", 2, 1, False, [])]},
+            {"phase": "combat", "minions": []},
+            {"phase": "combat",
+             "minions": [(OURS, "DUNE", 3, 3, False, [])]},
+        ]}
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual(row["winner"], "us",
+                         "the winner walk already read the whole group")
+        self.assertEqual([m["card"] for m in row["combat_start"]["ours"]],
+                         ["DUNE"], "our start board went missing")
+        self.assertEqual([m["card"] for m in row["combat_start"]["theirs"]],
+                         ["CYCLONE"])
+        self.assertEqual([m["card"] for m in row["combat_peak"]["ours"]],
+                         ["DUNE"], "our peak board went missing")
+        self.assertEqual([m["card"] for m in row["combat_peak"]["theirs"]],
+                         ["CYCLONE"])
+
+    def test_an_empty_burst_is_a_gap_not_the_first_death(self):
+        """Counts [1, 0, 2]: the old "first count drop" boundary ended the
+        peak's candidates at the EMPTY burst, so anything staged after the
+        gap never reached the peak. A gap is a staging hole, not a death —
+        only a drop from a STAGED burst thins the fight."""
+        snaps = {2: [
+            {"phase": "combat",
+             "minions": [(OURS, "A", 2, 2, False, [])]},
+            {"phase": "combat", "minions": []},
+            {"phase": "combat",
+             "minions": [(OURS, "A", 6, 6, False, []),
+                         (THEIRS, "B", 3, 3, False, [])]},
+        ]}
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["atk"] for m in row["combat_peak"]["ours"]], [6],
+                         "the post-gap staging never reached the peak")
+        self.assertEqual([m["card"] for m in row["combat_peak"]["theirs"]],
+                         ["B"])
+
+    def test_a_late_staged_side_still_owes_its_peak_board(self):
+        """A side whose ONLY staging landed after the count drop never
+        appears in the peak's candidates; the late read beats an empty one —
+        the empty side was the original bug's face, from the other
+        direction. A side the candidates DO hold is untouched: the pre-death
+        boundary still governs it."""
+        snaps = {3: [
+            {"phase": "combat",
+             "minions": [(OURS, "A", 5, 5, False, []),
+                         (OURS, "B", 3, 3, False, [])]},
+            {"phase": "combat",
+             "minions": [(OURS, "A", 3, 3, False, [])]},
+            {"phase": "combat",
+             "minions": [(OURS, "A", 2, 2, False, []),
+                         (THEIRS, "C", 9, 9, False, [])]},
+        ]}
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["combat_peak"]["theirs"]],
+                         ["C"], "the post-drop side lost its board entirely")
+        self.assertEqual(sorted(m["card"] for m in row["combat_peak"]["ours"]),
+                         ["A", "B"], "ours keeps its pre-death peak")
+
     def test_the_lag_note_fires_when_plays_followed_the_last_snapshot(self):
         # Measured on turn 4 of the 2026-10-06 game: last buy snapshot 1 minion,
         # combat staging 3. The old claim ("the last buy snapshot IS the end of
