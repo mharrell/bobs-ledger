@@ -368,6 +368,80 @@ def _rank_discover(options, board, comps, comp=None):
     return out
 
 
+def _num(out, key, value):
+    """A float when the DB has one, nothing when it does not or it is junk."""
+    if value is None:
+        return
+    try:
+        out[key] = float(value)
+    except (TypeError, ValueError):
+        pass
+
+
+def option_stats(kind, options):
+    """Structured statistics per offered option, keyed by card id.
+
+    `LIVE_VIEW_DESIGN.md` §4.3/§5 (2026-10-09). The classic pick panel draws
+    these options from fact STRINGS, and the trinket ones mix a population
+    statistic with phrasing the design bans outright ("fits your board"). The
+    Tavern pick screen shows numbers instead — a headline figure, "±x vs the
+    offered average", the placement distribution as bars — and it must not get
+    them by parsing those sentences back apart.
+
+    Only the keys the underlying DB actually has, because a row appears only
+    when its data exists (§5). `kind` is the choice kind the log reported
+    ("hero" / "trinket" / "discover"); a kind with no statistics contributes
+    an empty mapping rather than a zero.
+    """
+    out = {}
+    if kind == "hero":
+        db = _load_hero_db()
+        for name, cid in options:
+            rec = db.get(name) or {}
+            st = {}
+            _num(st, "pick_rate", rec.get("pick_rate"))
+            if st:
+                out[cid] = st
+    elif kind == "trinket":
+        db = _load_trinket_db()
+        for name, cid in options:
+            rec = db.get(name) or {}
+            st = {}
+            _num(st, "pick_rate", rec.get("pick_rate"))
+            _num(st, "avg_placement", rec.get("avg_placement"))
+            dist = rec.get("placement_distribution") or {}
+            bars = {}
+            for p in range(1, 9):
+                v = dist.get(str(p), dist.get(p))
+                if v is None:
+                    continue
+                try:
+                    bars[str(p)] = round(float(v), 2)
+                except (TypeError, ValueError):
+                    continue
+            if bars:
+                st["dist"] = bars
+                # A top-4 share needs all four of 1..4; a partial distribution
+                # would silently under-report and read as a real number.
+                if all(str(p) in bars for p in (1, 2, 3, 4)):
+                    st["top4"] = round(sum(bars[str(p)]
+                                           for p in (1, 2, 3, 4)), 1)
+            if st:
+                out[cid] = st
+    elif kind == "discover":
+        cards = meta.cards()
+        for name, cid in options:
+            rec = cards.get(cid[:-2] if cid.endswith("_G") else cid) or {}
+            st = {}
+            if rec.get("tier") is not None:
+                st["tier"] = rec["tier"]
+            if rec.get("tribe"):
+                st["tribe"] = rec["tribe"]
+            if st:
+                out[cid] = st
+    return out
+
+
 def parse_choice_blocks(lines):
     """Batch helper: [(kind, source, options)] from a list of raw log lines.
 

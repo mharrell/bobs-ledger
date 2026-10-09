@@ -50,6 +50,7 @@ from value import (_load_bg_names, _load_card_db, _load_spell_db,
 import value
 import pool
 import meta
+import choices
 import config
 import replay_store
 import settle_up
@@ -990,8 +991,44 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-skel { width:var(--tcardw); aspect-ratio:88/120;
                           border-radius:10px; border:1px dashed var(--tline);
                           opacity:.5; }
-  .tavern.live .lv-stats { width:var(--tcardw); margin-top:4px; }
-  .tavern.live .lv-stats .lv-kv { font-size:11px; padding:3px 0; }
+  /* §4.3's pick screen: the controls row, the option columns (four at ~250px,
+     three at ~340px when there are three or fewer), the headline figure and
+     §5's distribution bars. */
+  .tavern.live .lv-pickctl { display:flex; flex-wrap:wrap; gap:6px;
+                             align-items:center; margin:0 0 8px; }
+  .tavern.live .lv-chip.on { border-color:var(--tsel); color:var(--ttext); }
+  .tavern.live .lv-chip.off { opacity:.45; cursor:default; }
+  .tavern.live .lv-opts { display:grid; gap:16px;
+                          grid-template-columns:repeat(4, minmax(0, 1fr)); }
+  .tavern.live .lv-opts.wide { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 900px) {
+    .tavern.live .lv-opts,
+    .tavern.live .lv-opts.wide { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  }
+  .tavern.live .lv-opt { display:flex; flex-direction:column;
+                         align-items:center; gap:4px; }
+  .tavern.live .lv-optname { font-weight:600; font-size:13px;
+                             text-align:center; }
+  .tavern.live .lv-head { display:flex; flex-direction:column;
+                          align-items:center; margin:4px 0; }
+  .tavern.live .lv-head b { font:600 26px "Segoe UI", system-ui; }
+  .tavern.live .lv-head small { font-size:11px; letter-spacing:.1em;
+                                text-transform:uppercase; color:var(--tmute); }
+  .tavern.live .lv-vs { color:var(--tmute); font-size:12px; font-style:normal; }
+  .tavern.live .lv-opt .lv-kv { width:100%; }
+  /* §5's distribution: eight bars, ONE neutral colour (no good/bad shading),
+     a dashed divider between 4 and 5, labels below. */
+  .tavern.live .lv-dist { display:flex; align-items:flex-end; gap:2px;
+                          height:46px; margin:4px 0 0; }
+  .tavern.live .lv-bar { display:flex; flex-direction:column;
+                         justify-content:flex-end; align-items:center;
+                         width:16px; height:100%; }
+  .tavern.live .lv-bar i { display:block; width:100%; background:var(--tmute);
+                           border-radius:2px 2px 0 0; }
+  .tavern.live .lv-bar.after4 { border-left:1px dashed var(--tline);
+                                padding-left:2px; }
+  .tavern.live .lv-bar em { font-size:10px; color:var(--tmute);
+                            font-style:normal; }
   .tavern.live .lv-guide { margin-top:8px; color:var(--tmute); font-size:12px; }
   .tavern.live .lv-over { text-align:center; }
   .tavern.live .lv-overbig { font:700 26px "Segoe UI", system-ui;
@@ -1873,31 +1910,118 @@ function lvHand(a) {
   body.appendChild(wrap);
   return body;
 }
-//: §4.3's canonical pick screen, in the canonical shape: the options in the
-//: order the GAME offered them (row[4] is that position), each with the facts
-//: known about it. No ranking, no default sort — "As offered" is the only order
-//: this renders, and the source line says where the numbers come from.
+//: §4.3's two opt-in controls, session state. "As offered" is the default and
+//: the screen never ranks unless the player asks for an order — the server's
+//: rows arrive score-ordered, so rendering them as they come would hand the
+//: player the model's ranking while the wording pretended otherwise.
+let _livePickOrder = 'offered';
+let _livePickHidden = new Set();
+const LIVE_ORDER_LABELS = {pick_rate: 'picked %', avg_placement: 'avg place'};
+
+//: The rows an option can show, in the design's order, each emitted only when
+//: its data exists (§5). The key doubles as the Stats-shown toggle.
+function lvStatRows(st) {
+  const rows = [];
+  if (st.pick_rate != null) {
+    rows.push(['pick_rate', 'Picked in', st.pick_rate.toFixed(0) + '% of games']);
+  }
+  if (st.avg_placement != null) {
+    rows.push(['avg_placement', 'Avg place', st.avg_placement.toFixed(2)]);
+  }
+  if (st.top4 != null) rows.push(['top4', 'Top 4', st.top4.toFixed(0) + '%']);
+  if (st.tier != null) rows.push(['tier', 'Tier', 'T' + st.tier]);
+  if (st.tribe) rows.push(['tribe', 'Tribe', st.tribe]);
+  return rows;
+}
+const LIVE_STAT_LABELS = {pick_rate: 'picked %', avg_placement: 'avg place',
+                          top4: 'top 4', tier: 'tier', tribe: 'tribe'};
+
+//: §5's distribution: eight bars, placements 1 to 8, one neutral colour (no
+//: good/bad shading), a dashed divider between 4 and 5, labels below.
+function lvBars(dist) {
+  const wrap = el('span', 'lv-dist');
+  for (let p = 1; p <= 8; p++) {
+    const v = dist[String(p)];
+    const bar = el('span', 'lv-bar' + (p > 4 ? ' after4' : ''));
+    const fill = el('i');
+    fill.style.height = v == null ? '0' : Math.max(2, Math.min(100, v)) + '%';
+    bar.appendChild(fill);
+    bar.appendChild(el('em', null, String(p)));
+    bar.title = 'Placement ' + p + ': ' + (v == null ? '—' : v + '%');
+    wrap.appendChild(bar);
+  }
+  return wrap;
+}
+
+//: §4.3's canonical pick screen. Options in the order the GAME offered them
+//: unless the player picks another order; each with its headline figure, its
+//: distance from the offered average, the distribution, and its stat rows.
+//: Nothing here reads the classic panel's fact STRING — the numbers come from
+//: `choice.option_stats`, which is also why the phrasing the design bans
+//: ("fits your board") cannot reach this screen.
 function lvPick(a) {
-  const rows = a.choice.ranked.slice()
-    .sort((x, y) => (x[4] ?? 0) - (y[4] ?? 0));
+  const ch = a.choice;
+  const stats = ch.option_stats || {};
+  const rows = ch.ranked.slice();
+  if (_livePickOrder === 'pick_rate' || _livePickOrder === 'avg_placement') {
+    const key = _livePickOrder;
+    const val = r => (stats[r[1]] || {})[key];
+    rows.sort((x, y) => {
+      const vx = val(x), vy = val(y);
+      if (vx == null && vy == null) return (x[4] ?? 0) - (y[4] ?? 0);
+      if (vx == null) return 1;                 // a missing value sorts last
+      if (vy == null) return -1;
+      return key === 'pick_rate' ? vy - vx : vx - vy;
+    });
+  } else {
+    rows.sort((x, y) => (x[4] ?? 0) - (y[4] ?? 0));
+  }
   const body = el('div');
+  const redraw = () => renderLiveTavern(a);
+  body.appendChild(lvPickControls(ch, stats, redraw));
+  const rates = rows.map(r => (stats[r[1]] || {}).pick_rate)
+                    .filter(v => v != null);
+  const avg = rates.length
+    ? rates.reduce((s, v) => s + v, 0) / rates.length : null;
   body.appendChild(el('p', 'lv-note',
-    'Shown in the order offered · statistics from the local meta DB · '
-    + 'observational, not causal.'));
-  const wrap = el('div', 'lv-row');
-  rows.forEach(([name, cid, _score, why]) => {
-    const card = lvCard(cid, name, null);
-    if (why) {
-      const stats = el('div', 'lv-stats');
-      String(why).split(' · ').forEach(bit => {
-        stats.appendChild(el('div', 'lv-kv', bit));
-      });
-      card.appendChild(stats);
+    'Source: the shipped meta DB · observational, not causal. '
+    + (avg == null ? 'Shown in the order offered.'
+                   : 'Offered average: ' + avg.toFixed(1) + '% picked.')));
+  const wide = rows.length <= 3;
+  const wrap = el('div', 'lv-opts' + (wide ? ' wide' : ''));
+  rows.forEach(([name, cid]) => {
+    const st = stats[cid] || {};
+    const col = el('div', 'lv-opt');
+    col.appendChild(tile(cid, name, null, {}));
+    col.appendChild(el('div', 'lv-optname', name));
+    if (st.pick_rate != null) {
+      const head = el('div', 'lv-head');
+      head.appendChild(el('b', null, st.pick_rate.toFixed(0) + '%'));
+      head.appendChild(el('small', null, 'picked in'));
+      if (avg != null) {
+        const d = st.pick_rate - avg;
+        head.appendChild(el('i', 'lv-vs',
+          (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' vs offered avg'));
+      }
+      col.appendChild(head);
     }
-    wrap.appendChild(card);
+    if (st.dist) col.appendChild(lvBars(st.dist));
+    const shown = lvStatRows(st).filter(([k]) => !_livePickHidden.has(k));
+    shown.slice(0, 5).forEach(([_k, label, value]) => {
+      col.appendChild(lvKV(label, value));
+    });
+    if (shown.length > 5) {
+      col.appendChild(el('div', 'lv-note',
+                         '+ ' + (shown.length - 5) + ' more stats'));
+    }
+    if (!lvStatRows(st).length) {
+      col.appendChild(el('div', 'lv-note',
+                         'No data for this card on this patch yet.'));
+    }
+    wrap.appendChild(col);
   });
   body.appendChild(wrap);
-  const guides = a.choice.guides || {};
+  const guides = ch.guides || {};
   const named = rows.filter(r => guides[r[0]]);
   if (named.length) {
     const det = document.createElement('details');
@@ -1908,6 +2032,52 @@ function lvPick(a) {
     body.appendChild(det);
   }
   return lvPanel('Choose one', body);
+}
+//: The type tabs (auto-selected: only the choice on screen has data), the
+//: Stats-shown toggles, and the Order control.
+function lvPickControls(ch, stats, redraw) {
+  const bar = el('div', 'lv-pickctl');
+  [['hero', 'Hero'], ['trinket', 'Trinket'], ['discover', 'Discover']]
+    .forEach(([k, label]) => {
+      const active = ch.kind === k;
+      const c = el('span', 'lv-chip' + (active ? ' on' : ' off'), label);
+      if (!active) {
+        c.title = 'Only the pick on screen has data — the other types are not '
+                + 'in this payload.';
+      }
+      bar.appendChild(c);
+    });
+  const keys = [];
+  Object.keys(stats).forEach(cid => {
+    lvStatRows(stats[cid]).forEach(([k]) => {
+      if (!keys.includes(k)) keys.push(k);
+    });
+  });
+  if (keys.length) {
+    bar.appendChild(el('span', 'lv-lbl', 'Stats shown'));
+    keys.forEach(k => {
+      const on = !_livePickHidden.has(k);
+      const c = el('span', 'lv-chip' + (on ? ' on' : ''), LIVE_STAT_LABELS[k]);
+      c.onclick = () => {
+        if (on) _livePickHidden.add(k);
+        else _livePickHidden.delete(k);
+        redraw();
+      };
+      bar.appendChild(c);
+    });
+  }
+  const orders = [['offered', 'As offered']];
+  if (keys.includes('pick_rate')) orders.push(['pick_rate', 'By picked %']);
+  if (keys.includes('avg_placement')) {
+    orders.push(['avg_placement', 'By avg place']);
+  }
+  bar.appendChild(el('span', 'lv-lbl', 'Order'));
+  orders.forEach(([v, label]) => {
+    const c = el('span', 'lv-chip' + (_livePickOrder === v ? ' on' : ''), label);
+    c.onclick = () => { _livePickOrder = v; redraw(); };
+    bar.appendChild(c);
+  });
+  return bar;
 }
 //: §6.5, kept minimal for now: the placement and the round are the large text,
 //: and the Settle Up tab is one click away.
@@ -4560,6 +4730,19 @@ def render_json(analysis):
                    if row and row[0] in _by_name}
         if _guides:
             a["choice"] = dict(_choice, guides=_guides)
+    # The options' statistics as NUMBERS, for the Tavern pick screen
+    # (LIVE_VIEW_DESIGN.md §4.3/§5, 2026-10-09): a headline figure, "±x vs the
+    # offered average", the placement distribution as bars. The classic panel
+    # keeps its fact strings; the Tavern one renders these, which is also what
+    # keeps the phrasing the design bans ("fits your board") off that screen —
+    # it lives in the strings, not in the numbers. Attached to whatever
+    # `a["choice"]` already is, so the trinket guides above survive.
+    _rows = (_choice.get("ranked") or [])
+    if _rows:
+        _stats = choices.option_stats(_choice.get("kind"),
+                                     [(r[0], r[1]) for r in _rows if r and len(r) > 1])
+        if _stats:
+            a["choice"] = dict(a.get("choice") or _choice, option_stats=_stats)
     # Scout strip (gates 3+4): our stat total vs the next opponent's
     # last-known board (exact — we fought them), else the lobby median /
     # corpus baseline (~ estimate).
