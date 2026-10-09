@@ -679,13 +679,25 @@ _HTML = r"""<!doctype html>
      was invisible for the whole game it was describing. Muted deliberately
      (--dim, no border until hover): a control that decides whether data leaves
      the machine should be easy to find and hard to hit by accident. */
-  #tabs #share-toggle { margin-left:auto; background:none;
+  #tabs #share-toggle { margin-left:8px; background:none;
                         border:1px solid transparent; color:var(--dim);
                         font:400 12px "Segoe UI", system-ui;
                         padding:4px 8px; cursor:pointer; opacity:.55; }
   #tabs #share-toggle:hover { opacity:1; color:var(--text-2);
                               border-color:var(--border); }
   #tabs #share-toggle[hidden] { display:none; }
+  /* The Live viewer flag (2026-10-09): Classic is the shipped renderer, Tavern
+     is the LIVE_VIEW_DESIGN.md build. Same shape as the Settle Up flag — a
+     styling toggle, not a rewrite switch, and the classic path below is
+     untouched. `margin-left:auto` pushes the pair to the right end; the share
+     control keeps the very corner. */
+  #tabs #live-viewer { margin-left:auto; }
+  #tabs #live-viewer[hidden] { display:none; }
+  /* The Tavern Live view's own container, and the two classic panes it hides
+     (2026-10-09). Hiding rather than replacing is what keeps the way back to
+     Classic working. */
+  #app #live-tavern { flex:1 1 100%; min-width:0; }
+  #app.tavern-on > #col-decide, #app.tavern-on > #col-ref { display:none; }
   /* The release stamp (2026-10-07): which release this overlay was served
      by, bottom-right and nearly invisible. A screenshot or a field report
      can then name the release without anyone digging for it — the question
@@ -914,6 +926,80 @@ _HTML = r"""<!doctype html>
                             border-radius:4px; background:var(--tloss);
                             color:var(--tonsel); align-self:flex-start; }
   .s-empty { color:var(--dim); padding:16px 0; }
+  /* --- Live, Tavern layout (LIVE_VIEW_DESIGN.md §4.2/§5/§7, 2026-10-09) -----
+     Scoped to `.tavern.live` so these cannot leak into the Settle Up Tavern
+     rules above, nor those into these: the two views share the TOKENS and the
+     card component, nothing else. Facts only — no verdict, rank or imperative. */
+  .tavern.live { padding:12px 14px; }
+  .lv-status { display:flex; align-items:flex-end; gap:22px; flex-wrap:wrap;
+               margin:0 0 12px; }
+  .tavern.live .lv-hero { font:700 18px "Segoe UI", system-ui; }
+  .tavern.live .lv-st { display:flex; flex-direction:column; }
+  .tavern.live .lv-st small { font-size:11px; letter-spacing:.1em;
+                              text-transform:uppercase; color:var(--tmute); }
+  .tavern.live .lv-st b { font:600 26px "Segoe UI", system-ui; }
+  /* Gold is the currency colour, which is --atk's other job (§4.2/§7). */
+  .tavern.live .lv-st.gold b { color:var(--tatk); }
+  .tavern.live .lv-main { display:grid; grid-template-columns:minmax(0,1fr) 340px;
+                          gap:14px; align-items:start; }
+  @media (max-width: 900px) {
+    .tavern.live .lv-main { grid-template-columns:1fr; }
+  }
+  .tavern.live .lv-pn { background:var(--tpanel); border:1px solid var(--tline);
+                        border-radius:12px; padding:12px 14px;
+                        margin:0 0 12px; }
+  .tavern.live .lv-pn > h3 { margin:0 0 8px; font-size:12px; letter-spacing:.12em;
+                             text-transform:uppercase; color:var(--tmute); }
+  .tavern.live .lv-row { display:flex; flex-wrap:wrap; gap:12px; }
+  .tavern.live .lv-card { display:flex; flex-direction:column;
+                          align-items:center; }
+  .tavern.live .lv-cap { display:block; width:var(--tcardw); margin-top:5px;
+                         font-size:11px; color:var(--tmute);
+                         text-align:center; }
+  .tavern.live .lv-kv { display:flex; justify-content:space-between; gap:10px;
+                        padding:7px 0; border-bottom:1px solid var(--tline);
+                        font-size:13px; }
+  .tavern.live .lv-kv span { color:var(--tmute); }
+  .tavern.live .lv-kv b { font-weight:600; }
+  .tavern.live .lv-kv b.miss { color:var(--tmute); font-weight:400; }
+  .tavern.live .lv-tier { color:var(--tmute); font-style:normal;
+                          font-size:11px; margin-left:6px; }
+  .tavern.live .lv-lbl { color:var(--tmute); font-size:12px; margin:0 0 6px; }
+  .tavern.live .lv-note { color:var(--tmute); font-size:11px; margin:8px 0 0; }
+  .tavern.live .lv-empty { color:var(--tmute); font-size:12px; padding:4px 0; }
+  .tavern.live .lv-tabs { display:flex; gap:0; margin:0 0 10px; }
+  .tavern.live .lv-tabs button { background:var(--tpanel); color:var(--tmute);
+                                 border:1px solid var(--tline); padding:6px 12px;
+                                 font:600 12px "Segoe UI", system-ui;
+                                 cursor:pointer; }
+  .tavern.live .lv-tabs button:first-child { border-radius:8px 0 0 8px; }
+  .tavern.live .lv-tabs button:last-child { border-radius:0 8px 8px 0;
+                                            border-left:none; }
+  .tavern.live .lv-tabs button.on { background:var(--tsel); color:var(--tonsel);
+                                    border-color:var(--tsel); }
+  .tavern.live .lv-tribes { display:flex; flex-wrap:wrap; gap:6px;
+                            align-items:center; margin:0 0 12px; }
+  .tavern.live .lv-chip { padding:5px 11px; border-radius:14px;
+                          background:var(--tcard); border:1px solid var(--tline);
+                          font-size:12px; cursor:pointer; }
+  /* Out of play is NOT a ban the player could undo (§4.2): struck through, and
+     not clickable, so it can never read as one of the five. */
+  .tavern.live .lv-chip.out { border-color:var(--tloss); color:var(--tmute);
+                              text-decoration:line-through; cursor:default; }
+  .tavern.live .lv-chip.picked { border-color:var(--tsel); }
+  .tavern.live .lv-skel { width:var(--tcardw); aspect-ratio:88/120;
+                          border-radius:10px; border:1px dashed var(--tline);
+                          opacity:.5; }
+  .tavern.live .lv-stats { width:var(--tcardw); margin-top:4px; }
+  .tavern.live .lv-stats .lv-kv { font-size:11px; padding:3px 0; }
+  .tavern.live .lv-guide { margin-top:8px; color:var(--tmute); font-size:12px; }
+  .tavern.live .lv-over { text-align:center; }
+  .tavern.live .lv-overbig { font:700 26px "Segoe UI", system-ui;
+                             margin-bottom:6px; }
+  .tavern.live .lv-gobtn { background:var(--tpanel); color:var(--ttext);
+                           border:1px solid var(--tline); border-radius:8px;
+                           padding:8px 14px; font:600 13px "Segoe UI", system-ui;
+                           cursor:pointer; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
   .turn.s-sticky { position:sticky; top:42px; z-index:9;
@@ -980,11 +1066,22 @@ _HTML = r"""<!doctype html>
 <nav id="tabs">
 <button class="tab on" data-tab="live">Another Round</button>
 <button class="tab" data-tab="settle">Settle Up</button>
+<span id="live-viewer" class="vseg" title="Live page style — Tavern is the
+reference layout (LIVE_VIEW_DESIGN.md): the same facts, no verdicts">
+<button data-v="classic" class="on">Classic</button>
+<button data-v="tavern">Tavern</button>
+</span>
 <button id="share-toggle" hidden></button>
 </nav>
 <div id="app">
 <section id="col-decide"></section>
 <section id="col-ref"></section>
+<!-- The Tavern Live view's own container (2026-10-09). It is separate from the
+     two classic panes on purpose: the Tavern renderer clears ITS container, so
+     switching back to Classic finds #col-decide and #col-ref still there. A
+     shared container meant the first toggle to Tavern destroyed the classic
+     panes and the way back threw - measured in a browser, not guessed. -->
+<div id="live-tavern" hidden></div>
 </div>
 <section id="settle">
 <div class="s-head">
@@ -1022,6 +1119,9 @@ function auth(u) {
     + "token=" + encodeURIComponent(BL_TOKEN);
 }
 let _lastPayload = null;
+//: The last payload the page RENDERED, so the viewer toggle can redraw from it
+//: instead of waiting up to 300ms for the next poll (2026-10-09).
+let _lastParsed = null;
 let _etag = null;
 let _pollBusy = false;
 //: Epoch seconds of the advice currently on screen, and how old it may get
@@ -1509,7 +1609,379 @@ function renderRelease(v) {
   tag.hidden = t.hidden;
   tag.textContent = t.text;
 }
+// --- Live, Tavern layout (LIVE_VIEW_DESIGN.md, 2026-10-09) ------------------
+// The same payload the classic page draws, laid out as REFERENCE MATERIAL:
+// facts, counts and statistics — never a verdict, a ranking or an imperative
+// (§1), and never a guessed number (§6.4). Every row appears only when its data
+// exists (§5), and a value that was not read is a dash.
+//
+// It is scoped to `.tavern.live`, so the Settle Up Tavern rules and these
+// cannot leak into each other: the two views share the TOKENS, not the
+// components. The classic renderer below is untouched — that is what the
+// toggle's Classic side means, exactly as it does for the review.
+let _liveViewer = 'classic';
+try { _liveViewer = localStorage.getItem('bl-live-viewer') || 'classic'; }
+catch (e) { /* private mode */ }
+//: Which rail tab is open. Session-only: the design persists the pick screen's
+//: own order/stats choices (§4.3), not this.
+let _liveTab = 'facts';
+const LIVE_TABS = [['facts', 'Facts'], ['comps', 'Comps'], ['lobby', 'Lobby']];
+
+function lvOrdinal(p) {
+  const suf = ([11, 12, 13].includes(p % 100)) ? 'th'
+    : ({1: 'st', 2: 'nd', 3: 'rd'}[p % 10] || 'th');
+  return p + suf;
+}
+//: Unread is a dash in --mute, never a guess, and never the classic page's "?"
+//: (§6.4 — a "?" next to a number reads as part of the number).
+function lvVal(v) { return v == null || v === '' ? '—' : String(v); }
+
+function lvPanel(title, body) {
+  const p = el('div', 'lv-pn');
+  p.appendChild(el('h3', null, title));
+  p.appendChild(body);
+  return p;
+}
+//: One label/value row (§5): label in --mute, value in --text.
+function lvKV(label, value) {
+  const d = el('div', 'lv-kv');
+  d.appendChild(el('span', null, label));
+  d.appendChild(el('b', value == null || value === '—' ? 'miss' : null,
+                   lvVal(value)));
+  return d;
+}
+//: A card with its one-line caption UNDERNEATH (§4.2), rather than the tile's
+//: name over the art: the caption is the data line, and it needs the width.
+function lvCard(cid, name, cap) {
+  const wrap = el('div', 'lv-card');
+  wrap.appendChild(tile(cid, name, null, {}));
+  wrap.appendChild(el('span', 'lv-cap', cap));
+  return wrap;
+}
+function lvEmptyRow(text) { return el('div', 'lv-empty', text); }
+
+//: §4.2 status bar: the hero, then six numbers. Gold takes the currency colour;
+//: everything else is --text, and nothing here is a judgement.
+function lvStatus(a) {
+  const bar = el('div', 'lv-status');
+  bar.appendChild(el('span', 'lv-hero', lvVal(a.hero)));
+  const st = (label, value, cls) => {
+    const d = el('span', 'lv-st' + (cls ? ' ' + cls : ''));
+    d.appendChild(el('small', null, label));
+    d.appendChild(el('b', null, lvVal(value)));
+    return d;
+  };
+  bar.appendChild(st('Gold', a.gold, 'gold'));
+  bar.appendChild(st('Tier', a.tier));
+  bar.appendChild(st('HP', a.health == null ? null
+                     : a.health + (a.armor ? '+' + a.armor : '')));
+  bar.appendChild(st('Turn', (a.scenario || {}).turns));
+  bar.appendChild(st('Place', a.current_place ? lvOrdinal(a.current_place)
+                                              : null));
+  return bar;
+}
+//: §4.2's ONE tribe row. Out-of-play tribes are struck through and never read
+//: as a ban the player could undo; tapping any chip corrects the set, which is
+//: what makes every comp filter downstream exact.
+function lvTribes(a) {
+  const row = el('div', 'lv-tribes');
+  row.appendChild(el('span', 'lv-lbl', a.bans_manual
+    ? 'Lobby tribes · tap to correct'
+    : 'Lobby tribes · ' + (a.tribes_seen || 0) + '/5 confirmed'));
+  const oop = new Set(a.out_of_pool || []);
+  const picked = new Set(a.bans_manual ? (a.banned || []) : []);
+  (a.tribe_roster || []).forEach(t => {
+    const chip = el('span', 'lv-chip' + (picked.has(t) ? ' picked' : ''), t);
+    chip.onclick = () => {
+      if (picked.has(t)) picked.delete(t);
+      else picked.add(t);
+      postBans([...picked]);
+      chip.classList.toggle('picked');
+    };
+    row.appendChild(chip);
+  });
+  // Out of play, LAST and struck through. The payload's roster already leaves
+  // these out, so iterating the roster alone silently dropped the distinction
+  // the design asks for — a rotated tribe has to be visible as its own state,
+  // never as a ban the player could undo (2026-10-09, measured in a browser).
+  oop.forEach(t => {
+    const chip = el('span', 'lv-chip out', t);
+    chip.title = 'Out of play: rotated by a patch, so no lobby can offer it. '
+               + 'Not a ban.';
+    row.appendChild(chip);
+  });
+  return row;
+}
+//: §4.2 Facts tab. The numbers, and only the numbers: the classic strip's
+//: "FRAGILE — … a 14-hit ends it" and its "favored/behind" forecast are
+//: verdicts, and they are replaced here by the same values as rows.
+function lvFacts(a) {
+  const p = el('div', 'lv-pn');
+  p.appendChild(el('h3', null, 'Facts'));
+  const fr = a.fragility || {};
+  if (fr.eff_health != null) p.appendChild(lvKV('Effective HP', fr.eff_health));
+  if (fr.last_hit != null) p.appendChild(lvKV('Took last fight', fr.last_hit));
+  if (fr.recent3 != null) {
+    p.appendChild(lvKV('Last 3 fights', '−' + fr.recent3));
+  }
+  if (fr.eff_health != null) {
+    p.appendChild(lvKV('Lethal at', fr.eff_health + ' damage'));
+  }
+  if (fr.cap != null) p.appendChild(lvKV('Damage cap', fr.cap));
+  // Board stats, you vs last seen (§1): "51 vs ~59 (seen 1 round ago)", never
+  // "favored" or "strong". An exact read is the opponent we fought; the lobby
+  // figure is an estimate and keeps its '~'.
+  const bs = a.board_stats;
+  let vs = null;
+  if (bs != null && a.opp_stats != null) {
+    vs = bs + ' vs ' + a.opp_stats
+       + (a.opp_age ? ' (seen ' + a.opp_age + ' round'
+          + (a.opp_age === 1 ? '' : 's') + ' ago)' : '');
+  } else if (bs != null && a.opp_lobby != null) {
+    vs = bs + ' vs ~' + a.opp_lobby + ' (lobby)';
+  } else if (bs != null) {
+    vs = String(bs);
+  }
+  p.appendChild(lvKV('Board stats', vs));
+  if (a.level_cost != null) {
+    p.appendChild(lvKV('Level up', a.tier != null && a.tier < 6
+      ? 'tier ' + a.tier + ' → ' + (a.tier + 1) + ' for ' + a.level_cost + 'g'
+      : a.level_cost + 'g'));
+  }
+  p.appendChild(el('p', 'lv-note',
+    'Reference only. Numbers are observational, not causal.'));
+  return p;
+}
+//: §4.4 Browse, compact: one row per comp — name, its source tier, and how much
+//: of the core is in hand. No re-sorting and no judgement: the payload's order
+//: is the source's tier order.
+function lvComps(a) {
+  const p = el('div', 'lv-pn');
+  p.appendChild(el('h3', null, 'Comps'));
+  const comps = a.comps || [];
+  if (!comps.length) {
+    p.appendChild(lvEmptyRow('No comps read yet — they appear once the bans '
+                             + 'resolve.'));
+    return p;
+  }
+  comps.forEach(c => {
+    const core = c.core || [];
+    const owned = core.filter(x => x && x.owned).length;
+    const row = el('div', 'lv-kv');
+    const left = el('span');
+    left.appendChild(el('b', null, c.name || c.slug));
+    if (c.meta_tier) left.appendChild(el('i', 'lv-tier', c.meta_tier + ' tier'));
+    else if (c.provisional) left.appendChild(el('i', 'lv-tier', 'provisional'));
+    if (c.tribe_confirmed === false) {
+      left.appendChild(el('i', 'lv-tier', 'tribe unconfirmed'));
+    }
+    row.appendChild(left);
+    row.appendChild(el('b', null, owned + ' of ' + core.length + ' core owned'));
+    p.appendChild(row);
+  });
+  p.appendChild(el('p', 'lv-note',
+    'Core cards owned: board or hand. The tier is the source\'s label, not '
+    + 'this app\'s.'));
+  return p;
+}
+//: §4.2 Lobby tab: what the seats we have SEEN are committed to, and the last
+//: board the next opponent staged. "of N seen seats" — an unseen seat is
+//: unknown, not empty.
+function lvLobby(a) {
+  const p = el('div', 'lv-pn');
+  p.appendChild(el('h3', null, 'Lobby'));
+  const rows = a.tribe_pressure || [];
+  if (rows.length) {
+    rows.forEach(r => {
+      p.appendChild(lvKV(r.tribe, r.seats + ' of ' + r.of
+                               + ' seen seats (2+ copies)'));
+    });
+  } else {
+    p.appendChild(lvEmptyRow('No seats sighted yet.'));
+  }
+  const oc = a.opp_comp;
+  if (oc && oc.cards && oc.cards.length) {
+    const wrap = el('div', 'lv-row');
+    oc.cards.forEach(c => {
+      wrap.appendChild(lvCard(c.card, c.name || c.card,
+                              (c.n > 1 ? '×' + c.n : '') + (c.golden ? ' ★' : '')));
+    });
+    p.appendChild(el('div', 'lv-lbl lv-opp', 'Next opponent · '
+      + (oc.hero_name || oc.hero || 'unknown hero')
+      + (oc.name ? ' · ' + oc.name : '')
+      + ' · as of round ' + oc.turn));
+    p.appendChild(wrap);
+  }
+  if ((a.opp_trinkets || []).length) {
+    p.appendChild(lvKV('Their trinkets', a.opp_trinkets.join(', ')));
+  }
+  return p;
+}
+//: The tavern row (§4.2): game order, price and pool left. The tier is not in
+//: this payload, so that part of the caption is omitted rather than guessed.
+function lvShop(a) {
+  const body = el('div');
+  const rows = a.shop_rank || [];
+  if (!rows.length) {
+    // §6.1: the shop has not parsed yet — four skeletons and a sentence,
+    // instead of the classic page's "offer not parsed yet".
+    const sk = el('div', 'lv-row');
+    for (let i = 0; i < 4; i++) sk.appendChild(el('div', 'lv-skel'));
+    body.appendChild(sk);
+    body.appendChild(el('p', 'lv-note',
+      'Reading the shop. This updates when your next shop opens.'));
+    return body;
+  }
+  const wrap = el('div', 'lv-row');
+  rows.forEach(s => {
+    const bits = [];
+    if (s.price != null) bits.push(s.price + 'g');
+    if (s.pool) bits.push(s.pool);
+    wrap.appendChild(lvCard(s.card, s.name,
+                            bits.join(' · ') || '—'));
+  });
+  body.appendChild(wrap);
+  return body;
+}
+//: §4.2 board row: the caption is the comp role the value pass already names
+//: ("comp core", "off-comp filler"), which is a fact about membership.
+function lvBoard(a) {
+  const body = el('div');
+  const rows = a.sell_rank || [];
+  if (!rows.length) {
+    body.appendChild(lvEmptyRow('Nothing on the board.'));
+    return body;
+  }
+  const wrap = el('div', 'lv-row');
+  rows.forEach(s => {
+    wrap.appendChild(lvCard(s.card, s.name,
+                            s.why || (s.score != null
+                                      ? String(Math.round(s.score)) : '—')));
+  });
+  body.appendChild(wrap);
+  return body;
+}
+function lvHand(a) {
+  const body = el('div');
+  const rows = a.hand || [];
+  if (!rows.length) {
+    body.appendChild(lvEmptyRow('Hand empty.'));
+    return body;
+  }
+  const wrap = el('div', 'lv-row');
+  rows.forEach(s => wrap.appendChild(lvCard(s.card, s.name, 'hand')));
+  body.appendChild(wrap);
+  return body;
+}
+//: §4.3's canonical pick screen, in the canonical shape: the options in the
+//: order the GAME offered them (row[4] is that position), each with the facts
+//: known about it. No ranking, no default sort — "As offered" is the only order
+//: this renders, and the source line says where the numbers come from.
+function lvPick(a) {
+  const rows = a.choice.ranked.slice()
+    .sort((x, y) => (x[4] ?? 0) - (y[4] ?? 0));
+  const body = el('div');
+  body.appendChild(el('p', 'lv-note',
+    'Shown in the order offered · statistics from the local meta DB · '
+    + 'observational, not causal.'));
+  const wrap = el('div', 'lv-row');
+  rows.forEach(([name, cid, _score, why]) => {
+    const card = lvCard(cid, name, null);
+    if (why) {
+      const stats = el('div', 'lv-stats');
+      String(why).split(' · ').forEach(bit => {
+        stats.appendChild(el('div', 'lv-kv', bit));
+      });
+      card.appendChild(stats);
+    }
+    wrap.appendChild(card);
+  });
+  body.appendChild(wrap);
+  const guides = a.choice.guides || {};
+  const named = rows.filter(r => guides[r[0]]);
+  if (named.length) {
+    const det = document.createElement('details');
+    det.className = 'lv-guide';
+    det.appendChild(el('summary', null, 'Guide text'));
+    named.forEach(r => det.appendChild(el('div', 'lv-kv',
+                                           r[0] + ' — ' + guides[r[0]])));
+    body.appendChild(det);
+  }
+  return lvPanel('Choose one', body);
+}
+//: §6.5, kept minimal for now: the placement and the round are the large text,
+//: and the Settle Up tab is one click away.
+function lvGameOver(a) {
+  const go = a.game_over || {};
+  const p = el('div', 'lv-pn lv-over');
+  p.appendChild(el('div', 'lv-overbig',
+    (go.placement ? lvOrdinal(go.placement) : '—')
+    + (go.turn ? ' · Round ' + go.turn : '')));
+  p.appendChild(el('p', 'lv-note',
+    'Game over. The coach is still running and watching for the next game.'));
+  const b = el('button', 'lv-gobtn', 'Open in Settle Up');
+  b.onclick = () => showTab('settle');
+  p.appendChild(b);
+  return p;
+}
+
+function renderLiveTavern(a) {
+  const app = document.getElementById('app');
+  const box = document.getElementById('live-tavern');
+  // The classic panes are HIDDEN, not destroyed: `#live-tavern` is the tavern
+  // view's own container, so the classic renderer's sections survive a toggle
+  // and coming back to Classic works (2026-10-09 — the first version cleared
+  // `#app` and the way back threw).
+  app.classList.add('tavern-on');
+  box.hidden = false;
+  box.innerHTML = '';
+  // The tavern status bar carries these facts now, so the classic strip is
+  // cleared rather than left showing a second, differently-worded copy.
+  document.getElementById('statebar').innerHTML = '';
+  const root = el('div', 'tavern live');
+  if (a.game_over) root.appendChild(lvGameOver(a));
+  root.appendChild(lvStatus(a));
+  root.appendChild(lvTribes(a));
+  const main = el('div', 'lv-main');
+  const left = el('div', 'lv-col');
+  if (a.choice && a.choice.ranked && a.choice.ranked.length) {
+    // The pick screen replaces the shop view while a choice is on screen
+    // (§4.1) — and it is the whole left column, because choosing is what the
+    // player is doing.
+    left.appendChild(lvPick(a));
+  } else {
+    left.appendChild(lvPanel('Tavern', lvShop(a)));
+    left.appendChild(lvPanel('Your board', lvBoard(a)));
+    left.appendChild(lvPanel('Your hand', lvHand(a)));
+  }
+  main.appendChild(left);
+  const rail = el('div', 'lv-rail');
+  const tabs = el('div', 'lv-tabs');
+  LIVE_TABS.forEach(([key, label]) => {
+    const b = el('button', _liveTab === key ? 'on' : null, label);
+    b.onclick = () => { _liveTab = key; renderLiveTavern(a); };
+    tabs.appendChild(b);
+  });
+  rail.appendChild(tabs);
+  rail.appendChild(_liveTab === 'comps' ? lvComps(a)
+                   : _liveTab === 'lobby' ? lvLobby(a) : lvFacts(a));
+  main.appendChild(rail);
+  root.appendChild(main);
+  box.appendChild(root);
+}
+function setLiveViewer(v) {
+  _liveViewer = v === 'tavern' ? 'tavern' : 'classic';
+  try { localStorage.setItem('bl-live-viewer', _liveViewer); }
+  catch (e) { /* private mode */ }
+  document.querySelectorAll('#live-viewer button').forEach(
+    b => { b.className = b.dataset.v === _liveViewer ? 'on' : ''; });
+  // Re-render from the payload already on screen: the poll would do it within
+  // 300ms, but a toggle that waits reads as a control that did nothing.
+  if (_lastParsed) render(_lastParsed);
+}
+
 function render(a) {
+  _lastParsed = a;   // the viewer toggle re-renders from this, not a refetch
   if (a.welcome) { renderWelcome(a); return; }
   // Every live payload carries the sharing state too, so the corner control
   // does not vanish the moment the first buy phase arrives (2026-10-07).
@@ -1560,6 +2032,20 @@ function render(a) {
       new Image().src = '/card/' + cid + '.png';
     }
   });
+
+  // Tavern Live (2026-10-09, LIVE_VIEW_DESIGN.md): the same payload in the
+  // reference layout. It branches HERE — after the shared setup above (the ban
+  // picker's sync, CARDS, the art pre-warm) and before the classic strip is
+  // built — so both viewers get that setup and exactly one draws the page.
+  if (_liveViewer === 'tavern') { renderLiveTavern(a); return; }
+  // Classic: the two panes are the page again. This only clears the tavern
+  // container and the class its renderer set — with neither present the classic
+  // page is exactly what it always was.
+  (function () {
+    const lt = document.getElementById('live-tavern');
+    if (lt) { lt.hidden = true; lt.innerHTML = ''; }
+    document.getElementById('app').classList.remove('tavern-on');
+  })();
 
   // STATE STRIP — stat tiles (label over value), then the chip row.
   // Hero name leads as the trust anchor; the numbers use tabular figures so
@@ -2951,6 +3437,13 @@ document.querySelectorAll('#settle-viewer button').forEach(b => {
   b.onclick = () => setSettleViewer(b.dataset.v);
   b.className = b.dataset.v === _viewer ? 'on' : '';
 });
+// The Live viewer flag (2026-10-09, LIVE_VIEW_DESIGN.md). Classic is the
+// shipped renderer and stays the default; the choice persists per browser under
+// its own key, exactly like the Settle Up flag above.
+document.querySelectorAll('#live-viewer button').forEach(b => {
+  b.onclick = () => setLiveViewer(b.dataset.v);
+  b.className = b.dataset.v === _liveViewer ? 'on' : '';
+});
 // The Summary | Step through toggle in the Settle Up header (2026-10-09). It
 // sits next to the game dropdown, so it is markup rather than something the
 // renderer builds; the renderer only says which mode is on and whether Step
@@ -4080,6 +4573,16 @@ def render_json(analysis):
     a["scout"] = (f"you {bs} stats · "
                   f"{'~' if approx else ''}{int(their)} theirs"
                   if bs is not None and their else None)
+    # The NUMBERS behind that strip, for the Tavern Live view's facts table
+    # (LIVE_VIEW_DESIGN.md §1/§4.2, 2026-10-09). `scout` and `forecast` are
+    # verdict-bearing STRINGS ("favored", "strong", "behind") and the new view
+    # shows numbers only, so it needs the numbers rather than a parse of the
+    # words — deriving facts back out of a rendered string is the same mistake
+    # `_top_move_text` had to undo for the plan's step cards.
+    a["board_stats"] = bs
+    a["opp_stats"] = None if approx else their
+    a["opp_lobby"] = int(their) if (approx and their) else None
+    a["opp_age"] = analysis.get("opp_age")
     # The next-fight verdict (stat ratio + our keyword edges) rides the
     # scout strip so "will the next fight kill me" is on screen.
     a["forecast"] = analysis.get("forecast")
