@@ -137,9 +137,9 @@ Population numbers come from the curated meta DB — population statistics scrap
 from hsreplay.net, bundled with the app, and read offline. Nothing there is a
 recommendation, and no option is highlighted as the one to take.
 
-**Two ways to read the live game: Classic and Tavern.** The tab row carries a
-**Classic | Tavern** switch, and **Classic** is what is described above — the
-default, and the only thing you see until you change it. **Tavern** is the same
+**Two ways to read the live game: Classic and Tavern.** A **Classic | Tavern**
+switch sits at the top of the Another Round page, and **Classic** is what is
+described above — the default, and the only thing you see until you change it. **Tavern** is the same
 information in the tavern's own dark palette, laid out as a screen per job: a
 status bar naming the hero with gold, tier, health, turn and place; one row of
 lobby tribes you can tap to correct; and a **Shop | Comps | Lobby** tab row with
