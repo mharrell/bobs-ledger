@@ -3476,10 +3476,13 @@ function hpLine(eff, nextEff) {
   return 'HP ' + (eff ?? '?') + ' → ' + (nextEff ?? '?');
 }
 // Minions left on the WINNING side (the losing board died; a tie or an
-// unreadable fight leaves no honest single number).
+// unreadable fight leaves no honest single number). A WIN whose survivor
+// board was never read — the last turn of a game whose log ends before the
+// next shop stages — is ALSO unreadable: "0" on a won fight reads as
+// "won with nothing", which is a lie the data never told (2026-10-09).
 function minionsLeft(winner, battleEnd, theirsSurvivors) {
-  if (winner === 'us') return (battleEnd || []).length;
-  if (winner === 'them') return (theirsSurvivors || []).length;
+  if (winner === 'us') return (battleEnd || []).length || null;
+  if (winner === 'them') return (theirsSurvivors || []).length || null;
   return null;
 }
 function stripMark(winner, dmg) {

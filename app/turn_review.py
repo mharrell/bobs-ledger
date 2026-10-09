@@ -465,6 +465,44 @@ def _burst_stats(snap):
                if len(m) >= 4)
 
 
+def _side_first(group, friendly, side):
+    """The first board a side staged within one fight group. PURE.
+
+    A fight does not stage both boards in one burst: the 2026-10-09 game
+    (Forest Lord Cenarius) staged the opponent's minion a burst before our
+    combat copy appeared, so "the group's first burst" — the old read —
+    answered for one side only and the Battle face-off printed "(no board
+    read)" for a board the same group's winner logic had just scored. Each
+    side's start is its own first appearance inside the group.
+    """
+    for s in group:
+        board = _snap_board(s.get("minions") or [], friendly, side)
+        if board:
+            return board
+    return []
+
+
+def _side_stats(snap, friendly, side):
+    """One side's combined atk+health in one snapshot — the per-side measure
+    the peak picks, the same shape `_burst_stats` uses for both."""
+    return sum((m["atk"] or 0) + (m["health"] or 0)
+               for m in _snap_board(snap.get("minions") or [], friendly, side))
+
+
+def _side_best(bursts, friendly, side):
+    """The strongest board a side staged among `bursts`. PURE. `[]` when the
+    side never appears — the caller decides what an unseen side owes."""
+    best, board = None, []
+    for s in bursts:
+        b = _snap_board(s.get("minions") or [], friendly, side)
+        if not b:
+            continue
+        v = _side_stats(s, friendly, side)
+        if best is None or v > best:
+            best, board = v, b
+    return board
+
+
 def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
     """Assemble the per-turn rows from snapshots. PURE — no coach, no log.
 
@@ -506,11 +544,15 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
         # holds two fights (round fight, then the final duel), the decisive
         # one is the last — see _fights.
         fights = _fights(fight, friendly)
-        combat = fights[-1][0] if fights else None
-        ours_at_combat = _snap_board(combat.get("minions") if combat else [],
-                                     friendly, "ours")
-        theirs_at_combat = _snap_board(combat.get("minions") if combat else [],
-                                       friendly, "theirs")
+        # Combat START = each side's own first staging inside the turn's LAST
+        # fight — the first BURST is not enough, because a fight does not
+        # stage both boards at once (see _side_first: the 2026-10-09 game's
+        # opening burst held only the opponent's minion, and the old read
+        # rendered "(no board read)" against a board the winner logic had
+        # just scored).
+        group = fights[-1] if fights else []
+        ours_at_combat = _side_first(group, friendly, "ours")
+        theirs_at_combat = _side_first(group, friendly, "theirs")
         # Battle PEAK = the fight's burst after beginning-of-combat effects
         # have landed and before the first death: the staging burst reads LOW
         # (start-of-combat procs fire between the staging and the first
@@ -521,20 +563,33 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
         # lands on a late ours-snowball burst with the opponent's board
         # already dead — measured on the 2026-10-07 final (4730 vs 448: the
         # duel's aftermath, not its beginning).
-        peak = None
+        #
+        # Two refinements from the same 2026-10-09 game: an EMPTY burst is a
+        # staging gap, not a death, so it cannot be the "first drop" that
+        # ends the candidates; and the peak is picked PER SIDE, because the
+        # sides do not stage together — picking one burst for both handed
+        # each side the other's absence.
+        peak_ours = peak_theirs = []
         if fights:
-            group = fights[-1]
             counts = [len(s.get("minions") or []) for s in group]
+            staged = [i for i, c in enumerate(counts) if c]
             upto = len(group)
-            for bi, bc in enumerate(counts):
-                if bc < counts[0]:
-                    upto = bi
-                    break
-            peak = max(group[:upto] or group[:1], key=_burst_stats)
-        ours_at_peak = _snap_board(peak.get("minions") if peak else [],
-                                   friendly, "ours")
-        theirs_at_peak = _snap_board(peak.get("minions") if peak else [],
-                                     friendly, "theirs")
+            if staged:
+                base = counts[staged[0]]
+                for bi in staged:
+                    if counts[bi] < base:
+                        upto = bi
+                        break
+            cands = group[:upto] or group[:1]
+            # A side whose only staging landed after the drop still owes its
+            # board — the late read beats an empty one, and the row says
+            # where every board came from by being the fight's own bursts.
+            peak_ours = (_side_best(cands, friendly, "ours")
+                         or _side_best(group, friendly, "ours"))
+            peak_theirs = (_side_best(cands, friendly, "theirs")
+                           or _side_best(group, friendly, "theirs"))
+        ours_at_peak = peak_ours
+        theirs_at_peak = peak_theirs
 
         # Battle END = the next turn's opening board: the survivors, with combat
         # buffs reverted to what persisted. It is read through the SAME filter
@@ -615,7 +670,7 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                 notes.append(
                     f"{lag} minion(s) were played after the last buy-phase "
                     f"snapshot — the combat board is the full picture")
-            if not combat:
+            if not fights:
                 notes.append("no combat staged for this turn")
             if not buy_end:
                 notes.append("no buy-phase board snapshot (a skipped turn, or a "
