@@ -243,6 +243,10 @@ _DRIVER = r"""
     o.decidekids = document.getElementById('col-decide').children.length;
     o.label = txt(one('.lv-lbl'));
     o.opplabel = txt(one('.lv-opp'));
+    o.tabh = (function () {
+      const b = one('.lv-tabs button');
+      return b ? Math.round(b.getBoundingClientRect().height) : 0;
+    })();
     o.classic = document.getElementById('col-decide').children.length;
     // §4.4: the comp rows, their tier columns, the mini-card slots with the
     // size actually laid out, the controls, and the Detail/Compare shapes.
@@ -306,7 +310,7 @@ _DRIVER = r"""
                            'taverncards', 'pickbars', 'compslots', 'slotsmiss',
                            'slotshand', 'guideopen', 'panelw', 'saverows',
                            'checkboxin', 'tavernon', 'decidehidden',
-                           'decidekids']
+                           'decidekids', 'tabh']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
@@ -495,6 +499,8 @@ class TestTheTavernLiveInABrowser(_Rendered):
                          "Tavern|Your board|Your hand|Facts")
         self.assertEqual(self.got["comps.panels"], "Comps|Facts")
         self.assertEqual(self.got["lobby.panels"], "Lobby|Facts")
+        # §8: 44px minimum targets, measured rather than declared.
+        self.assertGreaterEqual(self.got["t.tabh"], 44)
 
     def test_the_facts_are_the_numbers_behind_the_classic_verdicts(self):
         kv = self.got["t.kv"]

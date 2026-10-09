@@ -297,6 +297,21 @@ class TestTheCompScreensAtSource(unittest.TestCase):
         self.assertIn("rail.appendChild(lvFacts(a));", src)
         self.assertNotIn("_liveTab === 'facts'", src)
 
+    def test_the_focus_ring_and_the_target_sizes_are_declared(self):
+        """§8: "Visible focus ring (2px `--sel`, with offset) on all controls;
+        44px minimum click targets for buttons and tabs." The ring is scoped to
+        `.tavern`, so it reaches both Tavern viewers and leaves the classic pages
+        with the browser's own."""
+        html = coach_ui._HTML
+        self.assertIn(".tavern :focus-visible { outline:2px solid var(--tsel); "
+                      "outline-offset:2px; }", html)
+        for sel in (".tavern.live .lv-tabs button", ".tavern.live .lv-more",
+                    ".tavern.live .lv-back", ".tavern.live .lv-gobtn"):
+            block = re.search(re.escape(sel) + r"\s*\{([^}]*)\}", html)
+            self.assertIsNotNone(block, f"{sel} lost its rule")
+            self.assertIn("min-height:44px", block.group(1),
+                          f"{sel} is under the design's 44px minimum target")
+
     def test_every_screen_switch_is_a_click_away_from_the_list(self):
         src = _function("renderLiveTavern")
         for branch in ("_liveTab === 'comps'", "_liveTab === 'lobby'",
