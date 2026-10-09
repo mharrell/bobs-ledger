@@ -104,7 +104,8 @@ class TestTheEndpoint(_Patched):
         data = body if raw else json.dumps(body).encode()
         req = urllib.request.Request(
             url, data=data, method="POST",
-            headers={"Content-Type": "application/json"})
+            headers={"Content-Type": "application/json",
+                     "X-BL-Token": coach_ui.server_token()})
         try:
             with urllib.request.urlopen(req, timeout=10) as r:
                 return r.status, json.loads(r.read())

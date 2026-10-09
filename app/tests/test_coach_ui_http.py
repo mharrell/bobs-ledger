@@ -210,7 +210,8 @@ class TestServerPortConflict(unittest.TestCase):
                 self.assertNotEqual(srv.server_address[1], busy,
                                     "bound the port another socket holds")
                 # and it really serves, which the hijacked bind did not
-                url = f"http://127.0.0.1:{srv.server_address[1]}/artmiss"
+                url = (f"http://127.0.0.1:{srv.server_address[1]}/artmiss"
+                       f"?token={coach_ui.server_token()}")
                 with urllib.request.urlopen(url, timeout=10) as r:
                     self.assertEqual(r.status, 200)
                     self.assertIn(b"misses", r.read())
@@ -288,7 +289,8 @@ class TestConsentOnTheWelcomeCard(unittest.TestCase):
             data = body if raw else _json.dumps(body).encode()
             req = urllib.request.Request(
                 url, data=data, method="POST",
-                headers={"Content-Type": "application/json"})
+                headers={"Content-Type": "application/json",
+                         "X-BL-Token": coach_ui.server_token()})
             try:
                 with urllib.request.urlopen(req, timeout=10) as r:
                     return r.status, r.read()
@@ -422,6 +424,11 @@ class TestForeignCallers(unittest.TestCase):
             h = dict(headers or {})
             if host:
                 h["Host"] = host
+            # This run's access key, so these cases measure the ORIGIN/HOST
+            # guard rather than tripping over the key guard first (see
+            # test_overlay_auth for that one): a caller holding the key is
+            # still refused when its Origin says it is somebody else's page.
+            h.setdefault("X-BL-Token", coach_ui.server_token())
             req = urllib.request.Request(f"http://127.0.0.1:{port}{path}",
                                          data=body, method=method, headers=h)
             try:

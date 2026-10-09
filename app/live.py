@@ -792,7 +792,10 @@ def main():
     if ui_on:
         try:
             server = coach_ui.start_server()
-            url = f"http://127.0.0.1:{server.server_address[1]}/"
+            # Built by coach_ui, not here: the overlay answers NOTHING without
+            # this run's access key, and the key rides this URL. Rebuilding
+            # the address locally is how it would go missing.
+            url = coach_ui.overlay_url(server)
             # Printed AFTER the update check, deliberately: the launcher used
             # to announce "the overlay opens in your browser" before this line
             # ran anything, so the one thing a first run needs to know - that
@@ -802,7 +805,8 @@ def main():
             if "--open" in opts:
                 # The click-launcher's path. It must open the port we
                 # ACTUALLY bound — a busy 8747 steps to 8748, so the launcher
-                # cannot guess the URL. Off-thread so a slow browser launch
+                # cannot guess the URL, and neither can it guess the key.
+                # Off-thread so a slow browser launch
                 # never delays the first analysis.
                 import threading
                 import webbrowser

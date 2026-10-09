@@ -84,9 +84,14 @@ class TestTheFlag(unittest.TestCase):
     def test_the_rebuild_button_and_its_endpoint_are_wired(self):
         """Old saves upgrade in place: the header button POSTs the selected
         id to /review/rebuild, which re-derives the rep from the log the
-        store's pointer names."""
+        store's pointer names.
+
+        The fetch rides auth() because it has to (2026-10-08): every request
+        the overlay's own page makes carries the run's access key, and this
+        endpoint answers 403 without it.
+        """
         self.assertIn('id="settle-rebuild"', coach_ui._HTML)
-        self.assertIn("fetch('/review/rebuild'", coach_ui._HTML)
+        self.assertIn("fetch(auth('/review/rebuild')", coach_ui._HTML)
         self.assertIn("await loadSettleGame(id)", coach_ui._HTML,
                       "a rebuilt game re-renders immediately")
         # The server side: the response builder exists and the handler

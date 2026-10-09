@@ -397,7 +397,9 @@ tavern-owned) — shop_ranking just silently dropped them.
       headline (with intentions), target comp (pivot to / committing to), state
       strip, level/roll, per-turn triggers, board (golden marks), sell ranking,
       tavern buy ranking ("Buy this"), comps, banned tribes.
-      Run `python app\live.py` → open `http://127.0.0.1:8747/`.
+      Run `python app\live.py` → open the address it prints (the bare
+      `http://127.0.0.1:8747/` is refused since 2026-10-08: the URL carries a
+      per-run access key, and the page cannot fetch without it).
 - [x] **Mid-turn updates** (2026-09-01): the monitor used to advise exactly once
       per buy phase and go stale for the rest of the turn. `LiveCoach.
       state_fingerprint()` (gold, tier, board, tavern offers) + a fingerprint
