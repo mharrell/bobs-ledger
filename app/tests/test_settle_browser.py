@@ -51,6 +51,7 @@ import coach_ui  # noqa: E402
 WIN, LOSS = "\u25b2", "\u25bc"
 FOLDED, OPENED = "\u25b8", "\u25be"
 MIDDOT, MINUS = "\u00b7", "\u2212"
+DASH = "\u2014"
 
 
 def _minion(cid, name, atk, hp, eid, golden=False):
@@ -93,8 +94,12 @@ def _rep():
                  "plays": [{"card": "BG31_815", "name": "Dune Dweller"}],
                  "spell_ids": [{"card": "BG31_700", "name": "Tavern Spell"},
                                {"card": "BG31_701", "name": "Second Spell"}]},
-        "sell_questions": [{"sold_name": "Decoy Conjurer", "role": "filler",
-                            "kept_filler_names": ["Buy 1", "Buy 2"]}],
+        "sell_questions": [
+            # A rebuild note, which the Tavern viewer must show ONCE (the rail
+            # carries it; the card's own copy is classic-only as of 2026-10-09).
+            {"rebuild": True, "sold_count": 2, "sold_name": "Filler"},
+            {"sold_name": "Decoy Conjurer", "role": "filler",
+             "kept_filler_names": ["Buy 1", "Buy 2"]}],
         "combat_peak": {
             "ours": [_minion("BG31_815", "Dune Dweller", 5, 5, 9)],
             "theirs": [_minion("BG31_700", "Their Guy", 2, 2, 40)]},
@@ -103,6 +108,12 @@ def _rep():
         "theirs_survivors": [],
         "steps": [
             {"k": "buy", "card": "BG31_815",
+             "board": [_minion("BG31_815", "Dune Dweller", 3, 3, 9),
+                       _minion("BG31_820", "Kooky Chemist", 2, 2, 11)]},
+            # A LEVEL-UP targets no card: this is the step that used to outline
+            # card 1, because it had no previous board to compare against and
+            # every tile therefore looked new (2026-10-09).
+            {"k": "level", "card": None,
              "board": [_minion("BG31_815", "Dune Dweller", 3, 3, 9),
                        _minion("BG31_820", "Kooky Chemist", 2, 2, 11)]},
             {"k": "sell", "card": "BG31_90F",
@@ -120,14 +131,19 @@ def _rep():
         "took": {"bought": [{"card": "BG31_831", "name": "Annoy-o-Module"}],
                  "sold": [], "plays": [], "spell_ids": []},
     }
+    # No winner AND no damage reading: the strip owes a dash here, and the old
+    # code put a "?" where the turn's own number is read (2026-10-09).
+    turn3 = {"turn": 3, "gold": 2, "winner": None, "damage_taken": None,
+             "buy_start": [], "buy_end": [], "buy_end_text": "",
+             "stats": {}, "spend": {}, "shop_events": {}, "took": {}}
     return {
         "schema": 2, "hero": "Chenvaala", "placement": 3,
-        "created": "2026-10-08T20:00:00", "turns": 2,
+        "created": "2026-10-08T20:00:00", "turns": 3,
         "totals": {"taken": 1, "ignored": 0},
         "phases": [{"turn": 1, "acted": "bought Dune Dweller",
                     "outcome": -4, "verdict": "taken",
                     "plan": "1. Buy Dune Dweller"}],
-        "timeline": {"turns": [turn1, turn2]},
+        "timeline": {"turns": [turn1, turn2, turn3]},
     }
 
 
@@ -206,22 +222,64 @@ _DRIVER = r"""
     o.tile = size(one('.brow .tile'));
     o.thumb = size(one('.brow .thumb'));
     o.tabs = [...q('.tbtns .tbtn')].map(b => b.textContent).join('|');
-    o.mode = [...q('.tmode .tmb')]
+    // The Summary | Step through toggle lives in the SETTLE HEADER now, next to
+    // the game dropdown (2026-10-09), so it is read from the document, not from
+    // the board area.
+    o.mode = [...document.querySelectorAll('#settle-mode button')]
       .map(b => b.textContent + (b.disabled ? ':off' : '')).join('|');
+    o.modehidden = document.getElementById('settle-mode').hidden ? 1 : 0;
     o.track = q('.steptrack .stick').length;
     o.letters = [...q('.steptrack .stick')].map(b => b.textContent).join('');
     o.titles = [...q('.steptrack .stick')].map(b => b.title).join('|');
     o.cap = txt(one('.stepcap'));
+    o.capsize = one('.stepcap')
+      ? Math.round(parseFloat(getComputedStyle(one('.stepcap')).fontSize)) : 0;
     o.legend = txt(one('.slegend'));
+    o.legendaftertrack = !!one('.steptrack') && !!one('.steptrack + .slegend');
     o.nav = [...q('.stepnav .snav')].map(b => b.textContent).join('|');
+    o.capin = one('.stepcap') && one('.stepcap').closest('.stepnav') ? 1 : 0;
     o.sold = q('.stepboard .tag-sold').length;
+    o.affected = q('.tile.affected').length;
     o.stepminions = q('.stepboard .tile:not(.ghost)').length;
     o.stepghosts = q('.stepboard .tile.ghost').length;
     o.steptiles = q('.stepboard .tile').length;
     o.steptile = size(one('.stepboard .tile'));
+    o.stepthumb = size(one('.stepboard .thumb'));
     o.stepghost = size(one('.stepboard .tile.ghost'));
     o.caveat = txt(one('.ts-caveat'));
     o.head = txt(one('.ts-head'));
+    // Layout facts (item 1 and item 8): the rail must sit LEFT of the boards,
+    // and a board label must sit ABOVE its own row. Both are measured, because
+    // both are stated as positions and a source assertion cannot see a wrap.
+    const rail = one('.rail'), card = one('.twrap > .turn');
+    if (rail && card) {
+      const rb = rail.getBoundingClientRect(), cb = card.getBoundingClientRect();
+      o.layout = (rb.right <= cb.left + 2 && Math.abs(rb.top - cb.top) < 4)
+        ? 'side' : 'stacked';
+      o.railw = Math.round(rb.width);
+    } else {
+      o.layout = 'none';
+      o.railw = 0;
+    }
+    const stackedRow = [...q('.brow.stacked')]
+      .find(r => r.querySelector('.brow-tiles'));
+    if (stackedRow) {
+      const lbl = stackedRow.querySelector('.blbl');
+      const tiles = stackedRow.querySelector('.brow-tiles');
+      o.labelabove = lbl.getBoundingClientRect().bottom
+                     <= tiles.getBoundingClientRect().top + 1 ? 1 : 0;
+    } else {
+      o.labelabove = 0;
+    }
+    o.stackrows = q('.brow.stacked').length;
+    // Item 4: the turn's own line is gone from Tavern (the rail's chips carry
+    // its numbers) and the rebuild note appears ONCE — the rail's.
+    o.theturn = [...q('.blbl')]
+      .filter(l => l.textContent === 'The turn').length;
+    o.rebuildnotes = [...box.querySelectorAll('.note, .q')]
+      .filter(d => d.textContent.indexOf('rebuilt the board') >= 0).length;
+    o.deltaatk = [...q('.tdatk')].map(d => d.textContent).join('|');
+    o.deltahp = [...q('.tdhp')].map(d => d.textContent).join('|');
     // Counts come back as ints, sizes and words as text. The '#' marks the
     // numeric ones so `browser.fields()` can cast them: without it every count
     // arrives as a string and `assertEqual(got[key], 2)` fails on '2' != 2 —
@@ -229,11 +287,18 @@ _DRIVER = r"""
     // that were all correct values.
     const NUMERIC = new Set(['strip', 'cards', 'rail', 'newtags', 'tray',
                              'traytiles', 'faceoff', 'fsides', 'track', 'sold',
-                             'stepminions', 'stepghosts', 'steptiles']);
-    for (const k of Object.keys(o))
-      rec(name + '.' + k, NUMERIC.has(k) ? '#' + Number(o[k]) : o[k]);
+                             'stepminions', 'stepghosts', 'steptiles',
+                             'affected', 'labelabove', 'stackrows', 'theturn',
+                             'rebuildnotes', 'modehidden', 'capin', 'railw',
+                             'capsize']);
+    for (const k of Object.keys(o)) {
+      const v = o[k];
+      rec(name + '.' + k, NUMERIC.has(k) ? '#' + Number(v)
+          : (v === true ? 'yes' : v === false ? 'no' : v));
+    }
   }
   function shot(s) {
+    if (s.viewer) _viewer = s.viewer;
     if (s.mode) _tavernMode = s.mode;
     _tavernTurn = (s.turn === undefined ? null : s.turn);
     _tavernStep = s.step || 0;
@@ -271,11 +336,12 @@ def _page(shots):
     return coach_ui._page_html().replace("</body>", driver + "</body>")
 
 
-def _shot(name, rep, mode=None, turn=None, step=0):
-    return {"name": name, "rep": rep, "mode": mode, "turn": turn, "step": step}
+def _shot(name, rep, mode=None, turn=None, step=0, viewer=None):
+    return {"name": name, "rep": rep, "mode": mode, "turn": turn, "step": step,
+            "viewer": viewer}
 
 
-def _render(shots):
+def _render(shots, size=browser.WIDE):
     """Run the shots and return the facts.
 
     A browser this session cannot start SKIPS (see browser.py: a sandboxed run
@@ -291,7 +357,7 @@ def _render(shots):
         raise unittest.SkipTest("no Chromium browser on this machine, so the "
                                 "page cannot be laid out")
     try:
-        got = browser.fields(_page(shots))
+        got = browser.fields(_page(shots), size=size)
     except browser.BrowserUnavailable as e:
         raise unittest.SkipTest(str(e))
     for shot in shots:
@@ -314,6 +380,9 @@ class _Rendered(unittest.TestCase):
     """
 
     _outcome = None
+    #: The window the shots are rendered at — the page has a 900px breakpoint,
+    #: so a layout claim has to say which side of it it means (2026-10-09).
+    SIZE = browser.WIDE
 
     @classmethod
     def shots(cls):
@@ -323,7 +392,7 @@ class _Rendered(unittest.TestCase):
         cls = type(self)
         if cls._outcome is None:
             try:
-                cls._outcome = _render(cls.shots())
+                cls._outcome = _render(cls.shots(), cls.SIZE)
             except Exception as e:      # noqa: BLE001 - replayed right below
                 cls._outcome = e
         if isinstance(cls._outcome, BaseException):
@@ -337,21 +406,40 @@ class TestTheTavernSummaryInABrowser(_Rendered):
     @classmethod
     def shots(cls):
         return [_shot("t1", _named(), mode="summary"),
-                _shot("t3", _named_single(), mode="summary")]
+                _shot("t3", _named_single(), mode="summary"),
+                # Classic, for the two things Tavern must not have changed: the
+                # mode toggle is Tavern-only, and the classic renderer keeps its
+                # own "The turn" line.
+                _shot("cl", _named(), viewer="classic")]
 
     def test_one_turn_at_a_time_with_a_strip_button_for_the_rest(self):
-        self.assertEqual(self.got["t1.strip"], 2, "one strip button per turn")
+        self.assertEqual(self.got["t1.strip"], 3, "one strip button per turn")
         self.assertEqual(self.got["t1.cards"], 1,
                          "design §1 shows ONE turn at a time, not a scroll")
         self.assertTrue(self.got["t1.sel"].startswith("1"),
                         f"selected strip button reads {self.got['t1.sel']!r}")
 
-    def test_the_strip_marks_the_result_and_the_hp_it_cost(self):
-        """§4.1: a glyph AND a bottom border, never color alone."""
-        self.assertEqual(self.got["t1.markcls"], "win|loss")
+    def test_the_strip_marks_what_the_fight_cost(self):
+        """§4.1: a glyph AND a bottom border, never color alone — and the glyph
+        reports the COST (2026-10-09, player call): HP dropped is the loss
+        marker, and a turn with no reading is a dash, never a "?" wedged into
+        the turn number."""
+        self.assertEqual(self.got["t1.markcls"], "win|loss|-")
         self.assertIn(WIN, self.got["t1.stripmk"])
         self.assertIn(LOSS, self.got["t1.stripmk"])
         self.assertIn("12", self.got["t1.stripmk"], "the HP lost rides line 2")
+        self.assertIn(DASH, self.got["t1.stripmk"],
+                      "the turn with no reading owes a dash")
+        self.assertNotIn("?", self.got["t1.stripmk"])
+
+    def test_the_rail_sits_left_of_the_boards(self):
+        """Item 1 (2026-10-09): rail left, ~330px, boards fill the rest. It used
+        to wrap ABOVE them — a source assertion cannot see a wrap, so this is
+        measured from the two boxes' rectangles."""
+        self.assertEqual(self.got["t1.layout"], "side",
+                         "the rail wrapped above the boards again")
+        self.assertGreaterEqual(self.got["t1.railw"], 320)
+        self.assertLessEqual(self.got["t1.railw"], 340)
 
     def test_the_rail_counts_the_turn_and_keeps_the_designs_group_defaults(self):
         self.assertEqual(self.got["t1.rail"], 1)
@@ -365,6 +453,18 @@ class TestTheTavernSummaryInABrowser(_Rendered):
                          "|".join([FOLDED + " Economy", OPENED + " Buys",
                                    OPENED + " Sells", FOLDED + " Plays"]))
         self.assertEqual(self.got["t1.groupstate"], "closed|open|open|closed")
+
+    def test_the_turns_own_line_is_gone_and_its_numbers_are_chips(self):
+        """Item 4 (2026-10-09): the card's "The turn" line is classic-only, and
+        what it said reaches the player as chips — the same facts printed twice
+        in two vocabularies was the duplication the rail exists to remove."""
+        self.assertEqual(self.got["t1.theturn"], 0,
+                         "the classic 'The turn' line is back in Tavern")
+        for chip in ("2 cards played", "14g spent", "value +5"):
+            self.assertIn(chip, self.got["t1.chips"],
+                          "the line's numbers did not move into the chips")
+        self.assertEqual(self.got["cl.theturn"], 3,
+                         "Classic keeps its own line — one per turn card")
 
     def test_a_count_of_one_is_worded_as_one(self):
         """The chips are player-facing (§4.3), and a turn really does hold one
@@ -394,9 +494,29 @@ class TestTheTavernSummaryInABrowser(_Rendered):
 
     def test_the_ended_board_carries_net_changes_only(self):
         """§4.4: NEW for a minion that was not opened with, a stat delta for one
-        that was — matched by entity id, and nothing per-action."""
+        that was — matched by entity id, and nothing per-action. The delta is
+        attack and health SEPARATELY (item 5, 2026-10-09): "+0/+3", coloured by
+        stat, not one green number that reads as two."""
         self.assertEqual(self.got["t1.newtags"], 1)
-        self.assertEqual(self.got["t1.deltas"], "+2+2")
+        self.assertEqual(self.got["t1.deltaatk"], "+2")
+        self.assertEqual(self.got["t1.deltahp"], "+2")
+        self.assertNotIn("+2+2", self.got["t1.deltas"],
+                         "the two stats are joined by a separator and coloured "
+                         "separately now, not concatenated")
+
+    def test_the_rebuild_note_appears_once(self):
+        """Item 4 (2026-10-09): the "rebuilt the board" note was rendered twice —
+        once by the rail and once by the card. The rail keeps it."""
+        self.assertEqual(self.got["t1.rebuildnotes"], 1,
+                         "the rebuild note is duplicated (or gone)")
+
+    def test_the_board_labels_sit_above_their_rows(self):
+        """Item 8 (2026-10-09): OPENED WITH / ENDED WITH label their board from
+        above instead of taking a column beside it."""
+        self.assertEqual(self.got["t1.labelabove"], 1,
+                         "a board label is beside its row, not above it")
+        self.assertGreaterEqual(self.got["t1.stackrows"], 3,
+                                "opened, ended and the tray are stacked rows")
 
     def test_flipped_minions_show_in_the_passed_through_tray(self):
         self.assertEqual(self.got["t1.tray"], 1)
@@ -411,21 +531,35 @@ class TestTheTavernSummaryInABrowser(_Rendered):
     def test_the_tabs_and_the_mode_toggle_are_where_the_design_puts_them(self):
         self.assertEqual(self.got["t1.tabs"], "Shop|Battle|Result")
         self.assertEqual(self.got["t1.mode"], "Summary|Step through")
+        self.assertEqual(self.got["t1.modehidden"], 0,
+                         "the mode toggle is not showing for the Tavern viewer")
 
-    def test_the_summary_card_size_is_read_out_loud(self):
-        """§4.2 asks for 88x120 in Summary mode and 130x172 in Step-through.
+    def test_the_mode_toggle_is_tavern_only(self):
+        """Item 8 moved it into the Settle Up header next to the game dropdown;
+        the classic renderer has no mode, so it must not carry the control."""
+        self.assertEqual(self.got["cl.modehidden"], 1,
+                         "the Summary | Step through toggle shows in Classic")
+        self.assertEqual(self.got["cl.rail"], 0, "classic has no rail")
 
-        Step-through is asserted below, because it is implemented. Summary is
-        only READ here: today it renders the existing 104px tile with its 56px
-        thumb, and a test that pinned that gap would fight the fix. The measured
-        numbers are in the assertion messages so the shortfall cannot hide.
-        """
+    def test_the_art_fills_the_card_frame(self):
+        """Item 2 (2026-10-09): the art fills the frame, and the frame scales
+        with the window — minimum the design's §4.2 sizes (88 Summary, 130 Step
+        through, asserted in the step case below).
+
+        Before this, a Tavern tile was the live overlay's fixed box with a 56px
+        thumbnail inside: a step-through card was a 130x172 outline around a small
+        picture, which is the "oversized empty frame" this fixes."""
         self.assertNotEqual(self.got["t1.tile"], "none",
                             "no card tile rendered in the summary board")
-        self.assertNotEqual(self.got["t1.tile"], "130x172",
-                            "summary cards are the small tiles; only the "
-                            "step-through board takes the large size")
-        self.assertNotEqual(self.got["t1.thumb"], "none", "no card art thumb")
+        self.assertEqual(self.got["t1.thumb"], self.got["t1.tile"],
+                         "the art does not fill the card frame")
+        width = int(self.got["t1.tile"].split("x")[0])
+        self.assertGreaterEqual(width, 88,
+                                f"summary cards are under the design's 88px "
+                                f"minimum: {self.got['t1.tile']}")
+        self.assertGreater(width, 88,
+                           "the card did not grow with a wider window — the "
+                           "width is clamped, not scaling")
 
 
 class TestTheStepThroughInABrowser(_Rendered):
@@ -434,16 +568,36 @@ class TestTheStepThroughInABrowser(_Rendered):
     @classmethod
     def shots(cls):
         rep = _named()
-        return [
-            _shot("s0", rep, mode="step", turn=1, step=0),
-            _shot("s1", rep, mode="step", turn=1, step=1),
-            _shot("s2", rep, mode="step", turn=1, step=2),
-        ]
+        # The fixture's four steps are buy, level, sell, cast — one of each kind
+        # the highlight rule cares about.
+        return [_shot("s%d" % i, rep, mode="step", turn=1, step=i)
+                for i in range(4)]
 
     def test_the_track_has_one_lettered_tick_per_action(self):
-        self.assertEqual(self.got["s0.track"], 3)
-        self.assertEqual(self.got["s0.letters"], "BSC")
+        self.assertEqual(self.got["s0.track"], 4)
+        self.assertEqual(self.got["s0.letters"], "BLSC")
         self.assertIn("R roll", self.got["s0.legend"])
+
+    def test_the_legend_sits_directly_under_the_track(self):
+        """Item 7 (2026-10-09): the letters are explained where they are read."""
+        self.assertEqual(self.got["s0.legendaftertrack"], "yes",
+                         "something sits between the track and its legend")
+
+    def test_every_tick_carries_its_action_as_a_tooltip(self):
+        titles = "|" + self.got["s0.titles"] + "|"
+        self.assertIn("|Step 2: Leveled up|", titles,
+                      f"the level-up tick's tooltip is missing: {titles}")
+        self.assertIn("|Step 1: Bought Dune Dweller|", titles)
+
+    def test_the_caption_is_large_and_labels_the_board(self):
+        """Item 7 (2026-10-09): the action in plain words, at reading size, above
+        the board it labels. It used to be 13px muted text in the control row."""
+        self.assertTrue(self.got["s0.cap"].startswith(
+            "Your board after step 1 of 4"), f"caption: {self.got['s0.cap']!r}")
+        self.assertEqual(self.got["s0.capin"], 0,
+                         "the caption is back inside the control row")
+        self.assertGreaterEqual(self.got["s0.capsize"], 15,
+                                "the caption is not the large line any more")
 
     def test_the_caption_names_the_card_not_its_id(self):
         """The join and the renderer have to meet for this to be true.
@@ -452,49 +606,91 @@ class TestTheStepThroughInABrowser(_Rendered):
         `_name_timeline_boards` renders "Bought BG31_815" at the player. This is
         the assertion that tells those two worlds apart.
         """
-        self.assertEqual(self.got["s0.titles"].split("|")[0], "Bought Dune Dweller")
+        self.assertIn("Bought Dune Dweller", self.got["s0.titles"])
         self.assertNotIn("BG31_815", self.got["s0.titles"],
                          "a raw card id reached the player's screen")
-        self.assertTrue(self.got["s0.cap"].startswith(
-            "Your board after step 1 of 3"), f"caption: {self.got['s0.cap']!r}")
-        self.assertTrue(self.got["s2.cap"].startswith(
-            "Your board after step 3 of 3"))
+        self.assertIn("Bought Dune Dweller", self.got["s0.cap"])
 
     def test_the_board_is_the_one_after_that_action(self):
-        """The feature's whole point: step 1 has two minions on board, step 2 has
-        sold one away, and the board follows the action.
+        """The feature's whole point: the board follows the action, and an action
+        that changes no card (the level-up) leaves it alone.
 
         `stepminions` counts cards and `stepghosts` the sold card's placeholder
         separately — a total that lumped them together would call a sell step
         "two minions"."""
         self.assertEqual(self.got["s0.stepminions"], 2)
-        self.assertEqual(self.got["s1.stepminions"], 1)
+        self.assertEqual(self.got["s1.stepminions"], 2)
         self.assertEqual(self.got["s2.stepminions"], 1)
+        self.assertEqual(self.got["s3.stepminions"], 1)
+
+    def test_only_an_action_that_targets_a_card_highlights_one(self):
+        """Item 3 (2026-10-09): a buy outlines the card it put on the board, and
+        the level-up, the sell and the cast outline nothing. The old rule
+        outlined card 1 for "Leveled up" — step 1 has no previous board to
+        compare against, so every tile looked new."""
+        self.assertEqual(self.got["s0.affected"], 1,
+                         "the buy must highlight the card it added")
+        self.assertEqual(self.got["s1.affected"], 0,
+                         "a level-up targets no card")
+        self.assertEqual(self.got["s2.affected"], 0,
+                         "a sell's card is the ghost, not a highlight")
+        self.assertEqual(self.got["s3.affected"], 0,
+                         "a cast targets no board card")
 
     def test_a_sold_card_is_shown_dimmed_and_tagged(self):
         self.assertEqual(self.got["s0.sold"], 0)
         self.assertEqual(self.got["s0.stepghosts"], 0)
-        self.assertEqual(self.got["s1.sold"], 1,
+        self.assertEqual(self.got["s2.sold"], 1,
                          "the sell step must show the absence it created")
-        self.assertEqual(self.got["s1.stepghosts"], 1)
+        self.assertEqual(self.got["s2.stepghosts"], 1)
 
     def test_large_cards_and_prev_play_next(self):
-        """§4.2/§4.6: 130x172 in step mode, 76x100 for the sold ghost.
-
-        The ghost's size is the reason this measurement is worth making: the
-        board rule and the ghost rule are equally specific, so the LATER one
-        won and a sold card drew at a full 130x172 — sized like the minions
-        around it, which reads as still being on the board. Both rules are
-        individually correct; only a browser can see the collision.
-        """
-        self.assertEqual(self.got["s1.steptile"], "130x172")
-        self.assertEqual(self.got["s1.stepghost"], "76x100")
+        """Item 2 (2026-10-09): step cards are at least the design's 130px wide
+        with the art filling them, and the sold ghost stays smaller than a card —
+        the bug that made a sold card look like it was still on the board."""
+        width = int(self.got["s2.steptile"].split("x")[0])
+        self.assertGreaterEqual(width, 130,
+                                f"step cards are under 130px: "
+                                f"{self.got['s2.steptile']}")
+        self.assertEqual(self.got["s2.stepthumb"], self.got["s2.steptile"],
+                         "the art does not fill the step card")
+        ghost = int(self.got["s2.stepghost"].split("x")[0])
+        self.assertLess(ghost, width,
+                        "the sold ghost is as big as a real card")
         self.assertEqual(self.got["s0.nav"],
                          "\u25c0 Prev|\u25b6 Play|Next \u25b6")
 
     def test_the_rail_is_dropped_so_the_boards_can_grow(self):
         self.assertEqual(self.got["s0.rail"], 0,
                          "design §3: in Step-through mode the rail is dropped")
+
+
+class TestTheNarrowViewport(_Rendered):
+    """The same view at 800px wide: the design's §5 narrow-width rule.
+
+    This case exists because of how the rail bug hid: headless Chromium defaults
+    to 800x600, so a "is the rail beside the boards?" check was really asking
+    "is 800px narrow?" — and it is. Both widths are asserted now, which is the
+    only way to say what the rule IS.
+    """
+
+    SIZE = browser.NARROW
+
+    @classmethod
+    def shots(cls):
+        return [_shot("n", _named(), mode="summary")]
+
+    def test_the_rail_goes_above_the_boards_when_there_is_no_room(self):
+        self.assertEqual(self.got["n.layout"], "stacked",
+                         "at 800px the 330px rail must go above the boards")
+
+    def test_the_cards_are_at_their_minimum_width_here(self):
+        """Item 2's "scales with window": 88px is the floor, and the wide case
+        asserts the card is bigger than that — one number here, one there, and
+        together they say the width tracks the window."""
+        self.assertEqual(self.got["n.tile"].split("x")[0], "88",
+                         f"at 800px the summary card should sit on its 88px "
+                         f"floor: {self.got['n.tile']}")
 
 
 class TestTheHarnessItself(unittest.TestCase):
