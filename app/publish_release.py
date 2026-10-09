@@ -154,7 +154,11 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  # what the product is allowed to say, which is the last thing a
                  # player's download should carry.
                  ".gitattributes", ".gitignore", "DESIGN.md", "ROADMAP.md",
-                 "PIVOT.md"}
+                 "PIVOT.md",
+                 # The working fix lists (2026-10-09): the same class as the
+                 # maintainer docs above — the notes a session works from,
+                 # kept out of the player's folder the same way.
+                 "SETTLE_UP_FIXES.md"}
 
 #: Always written fresh by this script, so a stale local copy must not win
 #: the zip's duplicate-entry race (VERSION is excluded for the same reason).
