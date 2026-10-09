@@ -364,10 +364,11 @@ class TestConsentOnTheWelcomeCard(unittest.TestCase):
         self.assertIn("margin-left:auto", page)
         self.assertIn("opacity:.55", page)
         self.assertIn("function renderShareToggle", page)
-        # Rendered from both render paths: the welcome card and every live
-        # payload. A corner control that only appears at a game's start or end
-        # is the bug this replaced.
-        self.assertEqual(page.count("renderShareToggle(a.share)"), 2)
+        # Rendered from every render path: the welcome card, every live payload,
+        # and the Tavern game-over card — which is its own entry point and
+        # returns before the other two. A corner control that only appears at a
+        # game's start or end is the bug this replaced.
+        self.assertEqual(page.count("renderShareToggle(a.share)"), 3)
 
 
 class TestForeignCallers(unittest.TestCase):
