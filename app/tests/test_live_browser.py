@@ -3,9 +3,9 @@
 `LIVE_VIEW_DESIGN.md` §1 is the rule that shapes the whole redesign: the Live
 page is reference material, so it shows facts, counts and statistics — never a
 verdict, a ranking or an imperative. That rule is about WORDS ON THE SCREEN, and
-`CLAUDE.md` records what happens when it is enforced one layer off: the live
-wall drops verdict *keys* from the payload, so a verdict inside a fact *string*
-walked straight through for a day (`choices._rank_discover` shipping
+the working notes record what happens when it is enforced one layer off: the
+live wall drops verdict *keys* from the payload, so a verdict inside a fact
+*string* walked straight through for a day (`choices._rank_discover` shipping
 "best available"). A source assertion cannot see it either.
 
 So this file renders the real page with the real payload and reads the text back,
@@ -72,6 +72,100 @@ def _payload(**over):
     return coach_ui.render_json(_analysis(**over))
 
 
+#: A fixed corpus record for the comps fixture. `render_json` reads the REAL
+#: `meta/corpus_stats.json` — this project's own played games — and its values
+#: change every time a game is played, so the fixture that pins §4.4's numbers
+#: replaces the reader instead of borrowing today's numbers. The real file's own
+#: shape is pinned in `test_live_tavern`.
+_CORPUS = {"comps": {
+    "Elementals": {"games": 12, "wins": 2, "top4": 8, "avg_place": 3.83,
+                   "places": [1, 1, 2, 2, 3, 3, 4, 4, 5, 6, 7, 8]},
+    "Beasts": {"games": 4, "wins": 1, "top4": 2, "avg_place": 4.0,
+               "places": [1, 3, 5, 7]},
+    "Aardvark": {"games": 20, "wins": 0, "top4": 20, "avg_place": 2.0,
+                 "places": [2] * 20},
+}}
+
+
+def _comps_analysis(**over):
+    """A lobby's comps, as `game_comps` carries them (ban window: every comp).
+
+    Chosen to exercise §4.4's rules in one payload: a Mixed comp (no tribe), a
+    comp of an OUT-OF-PLAY tribe (Naga), more tier-A comps than the cap allows,
+    a core card that is on the board, one in hand and one nobody owns, and a
+    corpus record that makes the default order and the opt-in sorts differ.
+    """
+    comps = {
+        "elementals": {"name": "Elementals", "meta_tier": "S",
+                       "tribe": "ELEMENTAL", "difficulty": "Easy",
+                       "core": ["BG31_815", "BG31_820", "BG31_831"],
+                       "addons": ["BG31_999"]},
+        "menagerie": {"name": "Menagerie", "meta_tier": "S", "tribe": None,
+                      "difficulty": "Medium",
+                      "core": ["BG31_815", "BG31_998"], "addons": []},
+        "aardvark": {"name": "Aardvark", "meta_tier": "A", "tribe": "MECH",
+                     "core": ["BG31_997"], "addons": []},
+        "beasts": {"name": "Beasts", "meta_tier": "A", "tribe": "BEAST",
+                   "difficulty": "Hard",
+                   "core": ["BG31_815", "BG31_820"], "addons": []},
+        "nagas": {"name": "Nagas", "meta_tier": "A", "tribe": "NAGA",
+                  "core": ["BG31_815"], "addons": []},
+    }
+    for i in range(1, 6):
+        comps["filler%d" % i] = {"name": "Filler %d" % i, "meta_tier": "A",
+                                 "tribe": "MECH", "core": ["BG31_99%d" % i],
+                                 "addons": []}
+    a = _analysis(**over)
+    if "game_comps" not in over:
+        a["game_comps"] = comps
+    return a
+
+
+def _comps_payload(**over):
+    """The comps payload, with the corpus reader replaced by `_CORPUS`."""
+    import meta
+    saved = meta.corpus_stats
+    meta.corpus_stats = lambda: _CORPUS
+    try:
+        return coach_ui.render_json(_comps_analysis(**over))
+    finally:
+        meta.corpus_stats = saved
+
+
+def _game_over_payload(enabled=False, game_over=None):
+    """The end-of-game card's payload — the REAL `welcome_payload`.
+
+    `welcome_payload` returns the serialized body (it is what the handler
+    writes), so it is decoded here. `auto_save_enabled()` is replaced rather
+    than read: it is a file on the machine, so the card's shape would otherwise
+    depend on whoever is running the suite.
+    """
+    import json
+    import replay_store
+    saved = replay_store.auto_save_enabled
+    replay_store.auto_save_enabled = lambda: enabled
+    try:
+        body = coach_ui.welcome_payload(
+            game_over=game_over if game_over is not None
+            else {"placement": 3, "turn": 12})
+    finally:
+        replay_store.auto_save_enabled = saved
+    return json.loads(body)
+
+
+def _welcome_payload():
+    """A FIRST-RUN welcome: no game over, so the classic card, in either viewer."""
+    import json
+    import replay_store
+    saved = replay_store.auto_save_enabled
+    replay_store.auto_save_enabled = lambda: False
+    try:
+        body = coach_ui.welcome_payload()
+    finally:
+        replay_store.auto_save_enabled = saved
+    return json.loads(body)
+
+
 #: The driver: set the viewer, run the REAL render(), report what is on screen.
 #: It is defensive the same way the Settle Up driver is — a renderer that throws
 #: has to SAY so, or a passing case proves nothing.
@@ -82,11 +176,11 @@ _DRIVER = r"""
   const recs = [];
   const rec = (k, v) => recs.push(k + '=' + String(v));
   const SHOTS = __SHOTS__;
+  const txt = el => el ? el.textContent : '';
   function facts(name) {
     const root = document.querySelector('.tavern.live');
     const q = s => root ? root.querySelectorAll(s) : [];
     const one = s => root ? root.querySelector(s) : null;
-    const txt = el => el ? el.textContent : '';
     const o = {};
     o.tavern = root ? 1 : 0;
     o.hero = txt(one('.lv-hero'));
@@ -126,33 +220,138 @@ _DRIVER = r"""
     o.pickctl = [...q('.lv-pickctl .lv-chip')]
       .map(c => c.textContent + (c.classList.contains('on') ? ':on' : ':off'))
       .join('|');
-    o.picknote = txt(one('.lv-opts') ? one('.lv-pickctl').parentNode
-                                     .querySelector('.lv-note') : null);
+    // The source line under the pick controls. Guarded: the comps Compare block
+    // reuses `.lv-opts` for its columns and has no `.lv-pickctl` at all, so an
+    // unguarded read threw on that screen and took the whole shot with it.
+    const pickctl = one('.lv-pickctl');
+    o.picknote = pickctl ? txt(pickctl.parentNode.querySelector('.lv-note')) : '';
     o.gobtn = txt(one('.lv-gobtn'));
+    o.overbig = txt(one('.lv-overbig'));
+    // §6.5's merged save row: ONE row, and the checkbox has to be inside it —
+    // the classic card's two rows are exactly what the design asks to merge.
+    o.saverows = q('.lv-saverow').length;
+    o.saverowtext = txt(one('.lv-saverow'));
+    o.saved = txt(one('.lv-saved'));
+    o.checkboxin = (function () {
+      const row = one('.lv-saverow'), cb = document.getElementById('lv-save-all');
+      return row && cb && cb.parentNode === row ? 1 : 0;
+    })();
+    o.tavernon = document.getElementById('app')
+      .classList.contains('tavern-on') ? 1 : 0;
+    o.decidehidden = getComputedStyle(
+      document.getElementById('col-decide')).display === 'none' ? 1 : 0;
+    o.decidekids = document.getElementById('col-decide').children.length;
     o.label = txt(one('.lv-lbl'));
     o.opplabel = txt(one('.lv-opp'));
     o.classic = document.getElementById('col-decide').children.length;
+    // §4.4: the comp rows, their tier columns, the mini-card slots with the
+    // size actually laid out, the controls, and the Detail/Compare shapes.
+    o.comprows = [...q('.lv-crow')].map(r => {
+      const n = r.querySelector('.lv-copen'), own = r.querySelector('.lv-owned'),
+            ap = r.querySelector('.lv-ap');
+      return txt(n) + '|' + txt(own) + '|' + txt(ap)
+           + (r.classList.contains('low') ? '|low' : '');
+    }).join(' ; ');
+    o.comptiers = [...q('.lv-ctier > h4')].map(h => h.textContent).join('|');
+    o.compslots = q('.lv-slot').length;
+    o.slotsmiss = q('.lv-slot.miss').length;
+    o.slotshand = q('.lv-slot.hand').length;
+    o.ctl = [...q('.lv-ctl .lv-chip')]
+      .map(c => c.textContent + (c.classList.contains('on') ? ':on' : ''))
+      .join('|');
+    o.more = [...q('.lv-more')].map(b => b.textContent).join('|');
+    o.lowsamp = [...q('.lv-chip.lowsamp')].map(c => c.textContent).join('|');
+    o.detail = txt(one('.lv-cdname'));
+    o.detailchips = [...q('.lv-cdhead .lv-chip')].map(c => c.textContent).join('|');
+    o.cmpcols = [...q('.lv-cmpcol .lv-optname')].map(n => n.textContent).join('|');
+    o.stathead = [...q('.lv-cstat .lv-head b')].map(b => b.textContent).join('|');
+    o.statrows = [...q('.lv-cstat .lv-kv')].map(d => txt(d.children[0]) + '='
+      + txt(d.children[d.children.length - 1])).join('|');
+    // Per compare column: the stat rows in their own order, then the headline.
+    o.cmpstats = [...q('.lv-cmpcol')].map(col =>
+      [...col.querySelectorAll('.lv-cstat .lv-kv')]
+        .map(d => txt(d.children[0])).join('>')
+      + '#' + txt(col.querySelector('.lv-cstat .lv-head b'))).join(' ~ ');
+    o.guideopen = q('.lv-guide').length ? (one('.lv-guide').open ? 1 : 0) : -1;
+    o.guidesum = txt(one('.lv-guide summary'));
+    // The layout the design specifies in px, measured rather than assumed: a
+    // rule can exist and still lose to a more specific one (the sold-ghost bug).
+    const box = s => {
+      const n = one(s);
+      if (!n) return '';
+      const r = n.getBoundingClientRect();
+      return Math.round(r.width) + 'x' + Math.round(r.height);
+    };
+    o.slotpx = box('.lv-slot');
+    o.cmpslotpx = box('.lv-cmpcol .lv-slot');
+    // The CARD, not the wrapper that also holds its caption: §5 sizes the art
+    // frame at 88x120, and the caption line is not part of it.
+    o.corepx = box('.lv-core .tile');
+    o.flexpx = box('.lv-flexcards .tile');
+    // Where each tier column actually sits, so "two columns" is measured rather
+    // than inferred from a rule that might be losing to another one.
+    o.colat = [...q('.lv-ctier')].map(c => {
+      const r = c.getBoundingClientRect();
+      return Math.round(r.left) + ',' + Math.round(r.top);
+    }).join('|');
+    o.panelw = (function () {
+      const n = one('.lv-pn');
+      return n ? Math.round(n.getBoundingClientRect().width) : 0;
+    })();
     // EVERY word the view puts on screen, for the §1 scan. The panel headers
     // and the status labels are in here too — a verdict can hide in a label.
     o.alltext = root ? root.textContent.replace(/\s+/g, ' ').trim() : '';
     for (const k of Object.keys(o))
       rec(name + '.' + k, ['tavern', 'cards', 'skel', 'pick', 'classic',
-                           'taverncards', 'pickbars']
+                           'taverncards', 'pickbars', 'compslots', 'slotsmiss',
+                           'slotshand', 'guideopen', 'panelw', 'saverows',
+                           'checkboxin', 'tavernon', 'decidehidden',
+                           'decidekids']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
-  function shot(s) {
-    _liveViewer = s.viewer || 'tavern';
-    _liveTab = s.tab || 'facts';
-    render(s.rep);
-    if (s.click) {
-      // A control is only tested by using it: `click` finds the chip by its
-      // label and clicks it for real, then the facts are read from what the
-      // redraw produced.
-      const chip = [...document.querySelectorAll('.lv-pickctl .lv-chip')]
-        .find(c => c.textContent === s.click);
-      if (!chip) throw new Error('no control labelled ' + s.click);
-      chip.click();
+  function clickCtl(sel, label, row) {
+    // A control is only tested by using it: find it by its label and click it
+    // for real, then read the facts back from what the redraw produced. `row`
+    // scopes the search to one comp row, because the Browse rows all carry a
+    // chip with the same label and the first match would always be the same one.
+    let scope = document;
+    if (row) {
+      scope = [...document.querySelectorAll('.lv-crow')]
+        .find(x => txt(x.querySelector('.lv-copen')) === row);
+      if (!scope) throw new Error('no comp row named ' + row);
     }
+    const node = [...scope.querySelectorAll(sel)]
+      .find(c => c.textContent === label);
+    if (!node) throw new Error('no control labelled ' + label + ' in ' + sel);
+    node.click();
+  }
+  function shot(s) {
+    // Each shot states its own preconditions. The page keeps this view state
+    // between renders (a redraw rebuilds the DOM, not the module), so without
+    // this a shot that filtered, sorted or opened a Detail hands that state to
+    // the next one — measured 2026-10-09: the "more" shot inherited the tribe
+    // filter and so had nothing to expand, and the shot after "detail" was
+    // still inside Detail.
+    _liveComp = null;
+    _liveCompSort = 'tier';
+    _liveCompFilter = new Set();
+    _liveCompMore = new Set();
+    _liveCompare = new Set();
+    _livePickOrder = 'offered';
+    _livePickHidden = new Set();
+    _liveViewer = s.viewer || 'tavern';
+    // `pre` is the screen the player was looking at before this payload arrived
+    // (a live payload, then the end-of-game one) — the only way to test that the
+    // new card replaces it rather than leaving it behind.
+    if (s.pre) {
+      _liveTab = s.pretab || 'shop';
+      render(s.pre);
+      (s.preclicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
+    }
+    _liveTab = s.tab || 'shop';
+    render(s.rep);
+    if (s.click) clickCtl('.lv-pickctl .lv-chip', s.click);
+    (s.clicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
     facts(s.name);
   }
   if (typeof render !== 'function' || typeof renderLiveTavern !== 'function') {
@@ -178,9 +377,21 @@ def _page(shots):
     return coach_ui._page_html().replace("</body>", driver + "</body>")
 
 
-def _shot(name, rep, viewer="tavern", tab="facts", click=None):
+def _shot(name, rep, viewer="tavern", tab="shop", click=None, clicks=None,
+          pre=None, pretab=None, preclicks=None):
     return {"name": name, "rep": rep, "viewer": viewer, "tab": tab,
-            "click": click}
+            "click": click, "clicks": clicks or [], "pre": pre,
+            "pretab": pretab, "preclicks": preclicks or []}
+
+
+#: Clicking a Browse row's control by the COMP it belongs to: every row carries
+#: a chip with the same label, so "the compare chip" has to name its row.
+def _open(name):
+    return [".lv-copen", name, name]
+
+
+def _compare(name):
+    return [".lv-chip", "compare", name]
 
 
 #: A choice whose facts carry the phrasing the design BANS, and whose
@@ -248,8 +459,8 @@ class TestTheTavernLiveInABrowser(_Rendered):
     @classmethod
     def shots(cls):
         return [_shot("t", _payload()),
-                _shot("comps", _payload(), tab="comps"),
-                _shot("nocomps", _payload(game_comps={}, tribe_pressure=[]),
+                _shot("comps", _comps_payload(), tab="comps"),
+                _shot("nocomps", _comps_payload(game_comps={}, tribe_pressure=[]),
                       tab="comps"),
                 _shot("lobby", _payload(), tab="lobby"),
                 _shot("notread", _payload(fragility=None, level_cost=None,
@@ -274,11 +485,16 @@ class TestTheTavernLiveInABrowser(_Rendered):
                          "the player could undo")
         self.assertIn("tap to correct", self.got["t.label"])
 
-    def test_the_rail_has_three_tabs_and_opens_on_facts(self):
-        self.assertEqual(self.got["t.tabs"], "Facts|Comps|Lobby")
-        self.assertEqual(self.got["t.tabon"], "Facts")
+    def test_the_tab_row_selects_the_screen_and_opens_on_shop(self):
+        """§4.1's second tab row: `Shop | Comps | Lobby`. The facts table is not
+        one of them — it is the rail beside every screen (§4.2 lists it there),
+        so it is never hidden and never says anything twice."""
+        self.assertEqual(self.got["t.tabs"], "Shop|Comps|Lobby")
+        self.assertEqual(self.got["t.tabon"], "Shop")
         self.assertEqual(self.got["t.panels"],
                          "Tavern|Your board|Your hand|Facts")
+        self.assertEqual(self.got["comps.panels"], "Comps|Facts")
+        self.assertEqual(self.got["lobby.panels"], "Lobby|Facts")
 
     def test_the_facts_are_the_numbers_behind_the_classic_verdicts(self):
         kv = self.got["t.kv"]
@@ -315,13 +531,15 @@ class TestTheTavernLiveInABrowser(_Rendered):
                       "the board caption is the comp role, which is a fact "
                       "about membership")
 
-    def test_the_comps_tab_counts_core_cards_owned(self):
-        kv = self.got["comps.kv"]
-        self.assertIn("Elementals", kv)
-        self.assertIn("2 of 2 core owned", kv,
-                      "ownership is a count against the core, not a verdict")
-        self.assertIn("S tier", kv)
-        self.assertIn("not this app's", self.got["comps.notes"])
+    def test_the_comps_screen_counts_core_cards_owned(self):
+        """§4.4's row: the name, the slots, `N of M owned`, the average
+        placement. "Elementals" owns all three of its core cards because the
+        third is IN HAND — the payload's classic `owned` flag is board-only."""
+        row = self.got["comps.comprows"]
+        self.assertIn("Elementals|3 of 3 owned|3.83", row)
+        self.assertGreaterEqual(self.got["comps.slotshand"], 1,
+                                "a hand core card is owned, and says so")
+        self.assertIn("own game corpus", self.got["comps.notes"])
 
     def test_an_empty_comps_tab_says_why_rather_than_showing_nothing(self):
         self.assertIn("No comps read yet", self.got["nocomps.empty"])
@@ -365,13 +583,24 @@ class TestTheViewCarriesNoVerdict(_Rendered):
     def shots(cls):
         return [_shot("t", _payload()),
                 _shot("lobby", _payload(), tab="lobby"),
-                _shot("comps", _payload(), tab="comps"),
+                _shot("comps", _comps_payload(), tab="comps"),
+                # §4.4's Detail and Compare are screens too, and the guide block
+                # is prose from the meta DB: if a verdict can reach this view,
+                # these are the two places it would.
+                _shot("detail", _comps_payload(), tab="comps",
+                      clicks=[_open("Elementals")]),
+                _shot("compare", _comps_payload(), tab="comps",
+                      clicks=[_compare("Elementals"), _compare("Beasts"),
+                              _compare("Menagerie")]),
                 # The pick screen too: it is the screen whose classic facts
                 # carry the banned phrasing, so it is the one worth scanning.
-                _shot("pick", _choice_payload())]
+                _shot("pick", _choice_payload()),
+                # §6.5's card carries the app's own sentences — the coach line
+                # and the sharing summary — so it is scanned too.
+                _shot("over", _game_over_payload())]
 
     def test_no_verdict_vocabulary_reaches_the_screen(self):
-        for name in ("t", "lobby", "comps", "pick"):
+        for name in ("t", "lobby", "comps", "detail", "compare", "pick", "over"):
             text = self.got[name + ".alltext"].lower()
             self.assertTrue(text, f"{name} rendered nothing to scan")
             for word in self.VERDICTS:
@@ -444,6 +673,287 @@ class TestTheViewCarriesNoVerdict(_Rendered):
                       got["bare.alltext"])
         self.assertEqual(got["bare.pickrows"], "")
         self.assertEqual(got["bare.pickbars"], 0)
+
+
+class TestTheCompsScreens(_Rendered):
+    """§4.4 Browse, Detail and Compare, drawn and measured in the browser.
+
+    What a source assertion cannot see is here: which tier columns exist, how
+    many rows each holds before the cap, that the mini-card slots are the
+    design's 34x46 (not the tile's 104px box), that the core row's cards are
+    88x120 and the flex row's 76x100, and that a control actually re-orders or
+    filters the list when it is clicked.
+    """
+
+    @classmethod
+    def shots(cls):
+        base = _comps_payload()
+        return [_shot("browse", base, tab="comps"),
+                _shot("filter", base, tab="comps",
+                      clicks=[[".lv-ctl .lv-chip", "BEAST"]]),
+                _shot("overlap", base, tab="comps",
+                      clicks=[[".lv-ctl .lv-chip", "Overlap"]]),
+                _shot("more", base, tab="comps", clicks=[[".lv-more", "+ 2 more"]]),
+                _shot("detail", base, tab="comps",
+                      clicks=[_open("Elementals")]),
+                _shot("back", base, tab="comps",
+                      clicks=[_open("Elementals"), [".lv-back", "◀ Comps"]]),
+                _shot("compare", base, tab="comps",
+                      clicks=[_compare("Elementals"), _compare("Beasts"),
+                              _compare("Menagerie")]),
+                _shot("four", base, tab="comps",
+                      clicks=[_compare("Elementals"), _compare("Aardvark"),
+                              _compare("Beasts"), _compare("Menagerie"),
+                              _compare("Filler 1")])]
+
+    def test_browse_is_one_column_per_source_tier_with_a_cap(self):
+        got = self.got
+        self.assertEqual(got["browse.comptiers"], "S tier · 2|A tier · 7")
+        # The S column: both comps, the payload's tier-then-name order.
+        self.assertTrue(got["browse.comprows"].startswith(
+            "Elementals|3 of 3 owned|3.83 ; Menagerie|1 of 2 owned|—"),
+            got["browse.comprows"])
+        # The A column holds the design's five rows and says what it left out.
+        self.assertEqual(got["browse.more"], "+ 2 more")
+        self.assertEqual(got["browse.more"].count("+ "), 1)
+        # The cap is per column, so the S column is not capped away too.
+        self.assertIn("Elementals", got["browse.comprows"])
+
+    def test_the_more_control_opens_the_rest_of_the_column(self):
+        got = self.got
+        self.assertIn("Filler 5", got["more.comprows"])
+        self.assertEqual(got["more.more"], "",
+                         "nothing left to expand once it is open")
+
+    def test_the_lobby_tribe_filter_narrows_the_list(self):
+        """§4.2: "The Comps list filters by this row." One chip per tribe that
+        is actually in play — a chip that could only empty the list is noise."""
+        got = self.got
+        self.assertIn("ELEMENTAL", got["browse.ctl"])
+        self.assertIn("Mixed", got["browse.ctl"],
+                      "a comp with no single tribe is its own chip")
+        self.assertNotIn("NAGA", got["browse.ctl"],
+                         "an out-of-play tribe has no comps to filter to")
+        self.assertIn("Source tier:on", got["browse.ctl"])
+        self.assertEqual(got["filter.comprows"], "Beasts|2 of 2 owned|4.00|low")
+        self.assertIn("BEAST:on", got["filter.ctl"])
+        self.assertIn("All tribes", got["filter.ctl"],
+                      "the filter has to be clearable without a reload")
+
+    def test_the_sort_control_reorders_within_a_tier(self):
+        """The default is the source's own tier order; sorting by overlap or by
+        average placement is opt-in, the same rule the pick screen follows."""
+        self.assertTrue(self.got["browse.comprows"].split(" ; ")[2]
+                        .startswith("Aardvark|0 of 1 owned"),
+                        "default order is the source's, name after tier")
+        self.assertTrue(self.got["overlap.comprows"].split(" ; ")[2]
+                        .startswith("Beasts|2 of 2 owned"),
+                        "by overlap, the comp whose core you hold most of leads")
+        # Both orders keep the two S comps in the S column: sorting never
+        # rearranges the columns, which are the source's labels.
+        for name in ("browse", "overlap"):
+            self.assertTrue(self.got[name + ".comptiers"].startswith("S tier"))
+
+    def test_the_average_placement_sort_puts_the_best_average_first(self):
+        """Opt-in, and stated as the player's choice — the screens never rank on
+        their own. Aardvark averages 2.00, Beasts 4.00, and the comps nobody has
+        played sort last rather than at zero."""
+        got = _render([_shot("avg", _comps_payload(), tab="comps",
+                             clicks=[[".lv-ctl .lv-chip", "Avg placement"]])])
+        rows = got["avg.comprows"].split(" ; ")[2:]
+        self.assertTrue(rows[0].startswith("Aardvark|0 of 1 owned|2.00"), rows[0])
+        self.assertTrue(rows[1].startswith("Beasts|2 of 2 owned|4.00"), rows[1])
+        self.assertTrue(rows[2].endswith("|—"), rows[2])
+
+    def test_the_out_of_play_comp_is_hidden_and_that_is_stated(self):
+        """§4.4: "Comps for out-of-play tribes are hidden." Naga is rotated this
+        patch, so the Nagas comp cannot be built at all — and the screen says one
+        is missing rather than silently shortening the list."""
+        got = self.got
+        self.assertNotIn("Nagas", got["browse.comprows"])
+        self.assertIn("1 comp hidden: their tribe is out of play this patch.",
+                      got["browse.notes"])
+
+    def test_the_core_slots_are_the_designs_34_by_46(self):
+        """§5 sizes the Browse slot at 34x46 and the Compare slot at 52x70. A
+        tile is 88-124px wide, so a slot that inherits the card rule would be
+        more than twice the specified size."""
+        self.assertEqual(self.got["browse.slotpx"], "34x46")
+        self.assertEqual(self.got["compare.cmpslotpx"], "52x70")
+        # Owned, in-hand and missing are three states, and the missing one is
+        # dashed rather than a smaller solid box.
+        self.assertGreaterEqual(self.got["browse.compslots"], 10)
+        self.assertGreaterEqual(self.got["browse.slotsmiss"], 1)
+
+    def test_detail_draws_the_core_row_and_the_flex_row_at_their_sizes(self):
+        got = self.got
+        self.assertEqual(got["detail.detail"], "Elementals")
+        self.assertEqual(got["detail.detailchips"], "S tier|ELEMENTAL|Easy")
+        self.assertEqual(got["detail.corepx"], "88x120")
+        self.assertEqual(got["detail.flexpx"], "76x100")
+        # §8: nothing is communicated by colour alone — every core card carries
+        # its own state as a caption.
+        self.assertIn("on board", got["detail.caps"])
+        self.assertIn("in hand", got["detail.caps"])
+        self.assertIn("not owned", got["detail.caps"])
+
+    def test_detail_shows_the_statistics_and_a_collapsed_guide(self):
+        """§4.4 Detail: "headline stat, distribution, stat rows, and
+        `Guide text ▸` collapsed by default." """
+        got = self.got
+        self.assertEqual(got["detail.stathead"], "3.83")
+        self.assertIn("Games=12", got["detail.statrows"])
+        self.assertIn("Top 4=67%", got["detail.statrows"])
+        self.assertIn("1st place=17%", got["detail.statrows"])
+        self.assertEqual(got["detail.guideopen"], 0, "the guide starts collapsed")
+        self.assertEqual(got["detail.guidesum"], "Guide text")
+        # §5: every stat block carries a source line — the dataset, and the
+        # "observational, not causal" note. The patch is the one field the
+        # corpus cannot state, and the block says so instead of guessing (§6.3).
+        self.assertIn("observational, not causal", got["detail.notes"])
+        self.assertIn("no per-game patch recorded", got["detail.notes"])
+
+    def test_the_back_link_returns_to_browse(self):
+        got = self.got
+        self.assertEqual(got["back.detail"], "")
+        self.assertEqual(got["back.comptiers"], "S tier · 2|A tier · 7")
+
+    def test_compare_shows_the_same_statistics_in_the_same_order(self):
+        """§4.4: "Up to three comps ... Same stats, same order, no ranking." The
+        columns are in the order the player picked them."""
+        got = self.got
+        self.assertEqual(got["compare.cmpcols"],
+                         "Elementals|Beasts|Menagerie")
+        cols = got["compare.cmpstats"].split(" ~ ")
+        self.assertEqual(len(cols), 3)
+        labels = [c.split("#")[0] for c in cols]
+        self.assertEqual(labels[0], labels[1],
+                         "the same stat rows, in the same order, per column")
+        self.assertEqual(cols[0].split("#")[1], "3.83")
+        self.assertEqual(cols[1].split("#")[1], "4.00")
+        self.assertEqual(cols[2].split("#")[1], "",
+                         "a comp with no corpus record has no headline number")
+
+    def test_compare_holds_three_and_says_so_at_the_fourth(self):
+        got = self.got
+        self.assertEqual(got["four.cmpcols"], "Elementals|Aardvark|Beasts",
+                         "the fourth comp is refused, not silently swapped in")
+
+    def test_the_tier_columns_sit_side_by_side_and_wrap_when_narrow(self):
+        """§4.4: "Two columns: S tier left, A tier right (add more tiers by
+        wrapping)." Measured at both ends, because a width claim that does not
+        say which width it means is the Settle Up rail bug all over again."""
+        got = self.got
+        at = got["browse.colat"].split("|")
+        self.assertGreaterEqual(len(at), 2, "no tier columns rendered")
+        self.assertEqual(at[0].split(",")[1], at[1].split(",")[1],
+                         "the S and A columns are not level — they wrapped")
+        self.assertNotEqual(at[0].split(",")[0], at[1].split(",")[0])
+        self.assertGreater(got["browse.panelw"], 600,
+                           "the comps screens need the main column: a 340px rail "
+                           "cannot hold two tier columns")
+        # Below the 900px breakpoint the RAIL moves under the boards (§4.2), so
+        # the columns still fit at a narrow window — they wrap only when the
+        # column itself cannot hold two of them, which is what "by wrapping"
+        # means. Anything the player runs is wider than this.
+        narrow = _render([_shot("n", _comps_payload(), tab="comps")],
+                         size=(520, 800))
+        nat = narrow["n.colat"].split("|")
+        self.assertEqual(nat[0].split(",")[0], nat[1].split(",")[0],
+                         "two tier columns in a 520px window: they should stack")
+        self.assertNotEqual(nat[0].split(",")[1], nat[1].split(",")[1])
+
+    def test_a_low_sample_comp_is_flagged_by_games_count(self):
+        """§5: "Low sample marker ... Define the threshold by games count, not a
+        fixed percent." Beasts has 4 games, Elementals 12, and only one of them
+        is flagged — with a chip, not only with the dimming."""
+        got = self.got
+        self.assertIn("Beasts|2 of 2 owned|4.00|low", got["browse.comprows"])
+        self.assertNotIn("Elementals|3 of 3 owned|3.83|low",
+                         got["browse.comprows"])
+        self.assertEqual(got["browse.lowsamp"], "low sample")
+
+
+class TestTheGameOverCard(_Rendered):
+    """§6.5, and the reachability bug behind it.
+
+    The end-of-game card arrives on a `welcome: true` payload with no board, and
+    `render` returned at the welcome branch BEFORE the viewer was consulted — so
+    the Tavern game-over card could not be reached in a real session at all, while
+    a direct `renderLiveTavern` call in a test made it look alive. These shots go
+    through `render`, so the route is part of what is measured.
+    """
+
+    @classmethod
+    def shots(cls):
+        return [_shot("over", _game_over_payload()),
+                _shot("auto", _game_over_payload(enabled=True)),
+                _shot("classic", _game_over_payload(), viewer="classic"),
+                # A tavern render, then the game-over payload: the card, not the
+                # last shop screen still standing behind it.
+                _shot("after", _game_over_payload(), pre=_comps_payload(),
+                      pretab="comps", preclicks=[_open("Elementals")]),
+                _shot("firstrun", _welcome_payload(), viewer="tavern")]
+
+    def test_the_card_is_the_placement_and_the_round(self):
+        got = self.got
+        self.assertEqual(got["over.tavern"], 1)
+        self.assertEqual(got["over.overbig"], "3rd · Round 12")
+        self.assertEqual(got["over.gobtn"], "Open in Settle Up")
+
+    def test_the_auto_save_answer_and_its_control_share_one_row(self):
+        """§6.5: "Merge `Saved to the Settle Up tab automatically ✓` and the
+        `Save every replay automatically` checkbox into one row." """
+        got = self.got
+        self.assertEqual(got["auto.saverows"], 1)
+        self.assertEqual(got["auto.checkboxin"], 1,
+                         "the checkbox is not inside the save row")
+        self.assertIn("Save every replay automatically", got["auto.saverowtext"])
+        self.assertEqual(got["auto.saved"],
+                         "Saved to the Settle Up tab automatically ✓")
+        # With the answer OFF the row offers the click instead, and still one row.
+        self.assertEqual(got["over.saverows"], 1)
+        self.assertIn("Save replay", got["over.saverowtext"])
+        self.assertEqual(got["over.saved"], "")
+
+    def test_the_card_keeps_the_coach_line_and_the_sharing_summary(self):
+        """§6.5: "Keep the line that the coach is still running ... Keep the
+        sharing summary as small secondary text." The summary's WORDING depends
+        on this machine's sharing answer, so it is compared with the payload's
+        own sentence rather than with a phrase from one branch."""
+        rep = _game_over_payload()
+        got = _render([_shot("over", rep)])
+        self.assertIn("still running", got["over.notes"])
+        self.assertIn(rep["privacy"], got["over.notes"],
+                      "the sharing summary is not on the card")
+
+    def test_the_render_route_reaches_the_tavern_card(self):
+        """The bug this class exists for."""
+        got = self.got
+        self.assertEqual(got["after.tavern"], 1)
+        self.assertEqual(got["after.overbig"], "3rd · Round 12")
+        self.assertEqual(got["after.tavernon"], 1)
+        self.assertEqual(got["after.decidehidden"], 1,
+                         "the classic pane is not hidden behind the card")
+
+    def test_classic_still_shows_the_classic_game_over_card(self):
+        got = self.got
+        self.assertEqual(got["classic.tavern"], 0,
+                         "the tavern layout survived a Classic render")
+        self.assertGreaterEqual(got["classic.decidekids"], 1,
+                                "the classic game-over card did not draw")
+
+    def test_a_first_run_card_is_classic_and_clears_the_tavern_layout(self):
+        """The other half of the same bug: a first-run welcome has no Tavern
+        design, so it draws the classic card — but the Tavern container kept its
+        last frame and `tavern-on` kept the panes hidden, so the card appeared
+        behind a stale Tavern screen."""
+        got = self.got
+        self.assertEqual(got["firstrun.tavern"], 0)
+        self.assertEqual(got["firstrun.tavernon"], 0)
+        self.assertEqual(got["firstrun.decidehidden"], 0)
+        self.assertGreater(got["firstrun.classic"], 0,
+                           "the classic welcome card is not on screen")
 
 
 class TestTheHarnessItself(unittest.TestCase):

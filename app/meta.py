@@ -79,6 +79,22 @@ def cards():
     return _raw("cards.json") or {}
 
 
+def corpus_stats():
+    """This project's OWN corpus records, per comp / engine / hero / card.
+
+    Written by `replay_stats.py --save` from the games played here, so it is the
+    one stats table in `meta/` with a GAMES COUNT — which is what a low-sample
+    flag needs (LIVE_VIEW_DESIGN.md §5: "Define the threshold by games count, not
+    a fixed percent"). The scraped tables (heroes, trinkets) publish a pick rate
+    and no sample size, so no flag is derived from them.
+
+    Shape: {"comps": {name: {...}}, "engines": {...}, "heroes": {...},
+    "cards": {...}}. A missing file is {} — every consumer drops the row it
+    cannot fill rather than showing a zero.
+    """
+    return _raw("corpus_stats.json") or {}
+
+
 def trinkets():
     return _items("trinkets.json")
 

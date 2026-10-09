@@ -63,15 +63,16 @@ class TestTheBranch(unittest.TestCase):
     """The tavern path is a branch, not a rewrite: Classic keeps its shape."""
 
     def test_the_tavern_branch_sits_after_the_shared_setup(self):
+        """The LIVE payload's branch, which is its own route: the game-over card
+        is branched earlier, on the welcome payload, because that payload has no
+        board for the setup below to work on."""
         src = _function("render")
-        self.assertIn("if (_liveViewer === 'tavern') { renderLiveTavern(a); return; }",
-                      src)
+        branch = "if (_liveViewer === 'tavern') { renderLiveTavern(a); return; }"
+        self.assertIn(branch, src)
         # After the ban picker's sync and the art pre-warm (both views need
         # them) and before the classic strip is built (only one draws).
-        self.assertLess(src.index("_warmed.add(cid)"),
-                        src.index("_liveViewer === 'tavern'"))
-        self.assertLess(src.index("_liveViewer === 'tavern'"),
-                        src.index("STATE STRIP"))
+        self.assertLess(src.index("_warmed.add(cid)"), src.index(branch))
+        self.assertLess(src.index(branch), src.index("STATE STRIP"))
 
     def test_the_classic_renderer_is_untouched(self):
         src = _function("render")
@@ -87,11 +88,12 @@ class TestTheBranch(unittest.TestCase):
         self.assertIn("el('div', 'tavern live')", src,
                       "the tavern view has to be scoped to .tavern.live, or the "
                       "Settle Up Tavern rules and these leak into each other")
-        for part in ("lvStatus", "lvTribes", "lvShop", "lvBoard", "lvHand"):
+        for part in ("lvStatus", "lvTribes", "lvShop", "lvBoard", "lvHand",
+                     "lvCompsScreen", "lvLobby", "lvFacts"):
             self.assertIn(part, src)
 
-    def test_the_rail_has_the_three_tabs_the_design_names(self):
-        self.assertIn("const LIVE_TABS = [['facts', 'Facts'], "
+    def test_the_tab_row_is_the_screens_not_the_rail(self):
+        self.assertIn("const LIVE_TABS = [['shop', 'Shop'], "
                       "['comps', 'Comps'], ['lobby', 'Lobby']];", coach_ui._HTML)
 
 
@@ -103,9 +105,12 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
     TAVERN functions only.
     """
 
-    TAVERN = ("lvStatus", "lvTribes", "lvFacts", "lvComps", "lvLobby", "lvShop",
-              "lvBoard", "lvHand", "lvPick", "lvGameOver", "renderLiveTavern",
-              "lvCard", "lvKV", "lvPanel", "lvEmptyRow", "lvVal")
+    TAVERN = ("lvStatus", "lvTribes", "lvFacts", "lvCompsBrowse", "lvCompDetail",
+              "lvCompCompare", "lvCompsScreen", "lvCompRow", "lvCompStats",
+              "lvCompSortRows", "lvSlot", "lvSlotCap", "lvSlots", "lvOwned",
+              "lvLobby", "lvShop", "lvBoard", "lvHand", "lvPick", "lvGameOver",
+              "lvTabs", "renderLiveTavern", "lvCard", "lvKV", "lvPanel",
+              "lvEmptyRow", "lvVal")
 
     def _tavern_source(self):
         return "\n".join(filter(None, (_function(n) for n in self.TAVERN)))
@@ -118,9 +123,16 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
         on its own documentation is a check nobody keeps. Comments are stripped
         first for the same reason, and because an apostrophe inside one ("the
         classic page's ...") pairs with a later quote and swallows live code.
+
+        The literal pattern SKIPS ESCAPED QUOTES. Without that, a string holding
+        an apostrophe (`'this project\\'s own corpus'`) closes the match early,
+        the pairing shifts by one, and live source code lands inside what the
+        scan thinks is a string — measured 2026-10-09, when the new comps copy
+        made this check report a `?` that exists only inside a ternary.
         """
         src = re.sub(r"//[^\n]*", "", self._tavern_source())
-        return " ".join(re.findall(r"'([^']*)'", src))
+        found = re.findall(r"'((?:[^'\\\n]|\\.)*)'", src)
+        return " ".join(f.replace("\\'", "'") for f in found)
 
     def test_the_verdict_words_the_design_names_are_absent(self):
         text = self._tavern_strings()
@@ -163,11 +175,199 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
                       "the options must sort by the game's own offer order")
         self.assertIn("Shown in the order offered", src)
 
-    def test_the_tier_note_does_not_call_anything_a_ranking(self):
-        """The comps tab states where the tier comes from, in words a scan for
-        rank language can stay honest about."""
-        src = _function("lvComps")
+    def test_the_comps_screens_never_call_anything_a_ranking(self):
+        """The comps screens state where a tier comes from and that the sort is
+        the player's, in words a scan for rank language can stay honest about.
+        Comments are stripped: the source explains the rule and would otherwise
+        fail its own check."""
+        src = re.sub(r"//[^\n]*", "", "\n".join(
+            _function(n) or "" for n in ("lvCompsBrowse", "lvCompCompare",
+                                         "lvCompSortRows", "lvCompStats")))
         self.assertNotIn("rank", src.lower())
+        self.assertNotIn("best", src.lower())
+
+
+class TestTheCompStatistics(unittest.TestCase):
+    """§4.4/§5's comp numbers, which are the only stats in `meta/` this project
+    generated itself (`meta/corpus_stats.json`, written by `replay_stats.py
+    --save`) — and therefore the only ones with a games count to hang §5's
+    low-sample rule on. The rendered side is in `test_live_browser`."""
+
+    def test_a_record_becomes_the_components_the_design_names(self):
+        st = coach_ui._comp_stats({"games": 4, "wins": 1, "top4": 2,
+                                   "avg_place": 4.0, "places": [1, 3, 5, 7]})
+        self.assertEqual(st["games"], 4)
+        self.assertEqual(st["avg_place"], 4.0)
+        self.assertEqual(st["dist"], {"1": 25.0, "2": 0.0, "3": 25.0,
+                                      "4": 0.0, "5": 25.0, "6": 0.0,
+                                      "7": 25.0, "8": 0.0})
+        self.assertEqual(st["top4_pct"], 50)
+        self.assertEqual(st["first_pct"], 25)
+        self.assertTrue(st["low_sample"], "4 games is under the threshold")
+
+    def test_a_comp_nobody_has_played_yields_nothing(self):
+        """§5: a row appears only when the data exists. A comp the corpus has
+        never seen must not arrive as a zero — it arrives as None."""
+        for empty in (None, {}, {"games": 0}, {"games": None}):
+            self.assertIsNone(coach_ui._comp_stats(empty))
+
+    def test_the_low_sample_threshold_is_a_games_count(self):
+        """§11 asks what the minimum games count is; the answer is a named
+        constant, so the flag and the figure cannot drift apart."""
+        self.assertEqual(coach_ui.COMP_LOW_SAMPLE_GAMES, 10)
+        edge = coach_ui._comp_stats(
+            {"games": coach_ui.COMP_LOW_SAMPLE_GAMES, "places": [2] * 10})
+        self.assertFalse(edge["low_sample"])
+        under = coach_ui._comp_stats(
+            {"games": coach_ui.COMP_LOW_SAMPLE_GAMES - 1,
+             "places": [2] * (coach_ui.COMP_LOW_SAMPLE_GAMES - 1)})
+        self.assertTrue(under["low_sample"])
+
+    def test_the_real_corpus_file_has_the_shape_this_reads(self):
+        """The fixture in `test_live_browser` replaces the reader, so this is
+        the control on the real file: if `replay_stats.py` ever writes a
+        different shape, the comps screens would silently show dashes forever."""
+        import meta
+        data = meta.corpus_stats()
+        self.assertIsInstance(data, dict)
+        comps = data.get("comps") or {}
+        self.assertIsInstance(comps, dict, "corpus_stats.comps is not a mapping")
+        for name, rec in comps.items():
+            st = coach_ui._comp_stats(rec)
+            self.assertIsNotNone(st, f"{name} has a record this cannot read")
+            self.assertGreater(st["games"], 0)
+            self.assertEqual(len(st["dist"]), 8)
+            self.assertIsInstance(st.get("avg_place"), float)
+
+
+class TestTheCompScreensAtSource(unittest.TestCase):
+    """§4.4's rules that a browser cannot state on its own: where the numbers
+    come from, and which of the design's sizes are actually declared."""
+
+    def test_the_payload_row_carries_the_tribe_and_the_hand_flag(self):
+        """§4.4's Browse filters by tribe and counts a core card owned when it
+        is on the board OR IN HAND. The payload's `owned` is the classic
+        panel's board-only rule, so the second flag has to exist."""
+        src = open(os.path.join(HERE, "coach_ui.py"), encoding="utf-8").read()
+        self.assertIn('"tribe": comp.get("tribe"),', src)
+        self.assertIn('"in_hand": cid in hand_ids,', src)
+        self.assertIn('hand_ids = {s["card"] for s in (analysis.get("hand") or [])',
+                      src)
+
+    def test_the_mini_card_slot_sizes_are_the_designs(self):
+        """§5: 34x46 in Browse, 52x70 in Compare, and a CARD at 88x120 / 76x100
+        in Detail. A tile is 88-124px wide, so a slot that inherited the card
+        rule would be more than twice the specified size — which is exactly the
+        failure mode the design's own §5 table exists to prevent."""
+        html = coach_ui._HTML
+        self.assertIn("width:34px; height:46px", html)
+        self.assertIn(".lv-cmpcol .lv-slot { width:52px; height:70px; }", html)
+        self.assertIn(".lv-core { --tcardw:88px; }", html)
+        self.assertIn(".lv-flexcards { --tcardw:76px;", html)
+        self.assertIn("aspect-ratio:76/100;", html)
+
+    def test_the_browse_cap_and_the_compare_limit_are_named_constants(self):
+        self.assertIn("const LIVE_COMP_ROWS = 5;", coach_ui._HTML)
+        self.assertIn("const LIVE_COMPARE_MAX = 3;", coach_ui._HTML)
+        src = _function("lvCompsBrowse")
+        self.assertIn("LIVE_COMP_ROWS", src)
+        src = _function("lvCompRow")
+        self.assertIn("LIVE_COMPARE_MAX", src)
+
+    def test_the_guide_is_collapsed_until_it_is_asked_for(self):
+        """§4.4 Detail: "`Guide text ▸` collapsed by default", and the fetch
+        waits for the expand rather than riding every redraw."""
+        src = _function("lvCompDetail")
+        self.assertIn("document.createElement('details')", src)
+        self.assertIn("det.ontoggle", src)
+        self.assertNotIn("det.open = true", src)
+        self.assertIn("lvLoadGuide", src)
+        # Its own node, not the classic panel's: that one is built from the
+        # classic classes and is cached page-wide.
+        self.assertIn("_lvGuideCache", coach_ui._HTML)
+
+    def test_the_facts_table_is_the_rail_and_not_a_tab(self):
+        """§4.1's tab row is `Shop | Comps | Lobby`; §4.2 puts the facts table in
+        the rail. Keeping it there means it is never hidden — and it can only
+        say anything once."""
+        self.assertIn("const LIVE_TABS = [['shop', 'Shop'], "
+                      "['comps', 'Comps'], ['lobby', 'Lobby']];", coach_ui._HTML)
+        self.assertIn("let _liveTab = 'shop';", coach_ui._HTML)
+        src = _function("renderLiveTavern")
+        self.assertIn("rail.appendChild(lvFacts(a));", src)
+        self.assertNotIn("_liveTab === 'facts'", src)
+
+    def test_every_screen_switch_is_a_click_away_from_the_list(self):
+        src = _function("renderLiveTavern")
+        for branch in ("_liveTab === 'comps'", "_liveTab === 'lobby'",
+                       "a.choice && a.choice.ranked"):
+            self.assertIn(branch, src, f"the tab branch {branch} is missing")
+        self.assertIn("_liveComp = null;", src,
+                      "switching tabs has to drop the open comp detail")
+
+
+class TestTheGameOverCard(unittest.TestCase):
+    """§6.5, and the route that had to exist for it.
+
+    The end-of-game payload is `welcome: true` with NO board, and `render`
+    returned at the welcome branch before consulting the viewer — so the Tavern
+    game-over card was unreachable in a real session while a direct render in a
+    test made it look alive. The rendered card is measured in `test_live_browser`;
+    this pins the route and the merge.
+    """
+
+    def test_the_welcome_branch_consults_the_viewer(self):
+        src = _function("render")
+        self.assertIn("if (_liveViewer === 'tavern' && a.game_over)", src)
+        self.assertLess(src.index("renderTavernGameOver(a)"),
+                        src.index("renderWelcome(a)"),
+                        "the game-over payload has to be routed before the "
+                        "classic welcome card claims it")
+        self.assertIn("lvClearTavern();", src,
+                      "a first-run card must clear the Tavern layout, or it "
+                      "draws behind a stale Tavern screen")
+
+    def test_the_card_owns_its_own_entry_point(self):
+        src = _function("renderTavernGameOver")
+        self.assertIsNotNone(src)
+        self.assertIn("app.classList.add('tavern-on')", src)
+        self.assertIn("'Open in Settle Up'", src)
+        self.assertIn("showTab('settle')", src)
+        # The page chrome, which the early return in `render` skips.
+        self.assertIn("renderShareToggle(a.share)", src)
+        self.assertIn("renderRelease(a.release)", src)
+        # And it is NOT drawn by the live renderer, which never sees this
+        # payload shape.
+        self.assertNotIn("lvGameOver",
+                         _function("renderLiveTavern") or "")
+
+    def test_the_save_row_holds_the_control_and_its_answer(self):
+        src = re.sub(r"//[^\n]*", "", _function("lvSaveRow"))
+        self.assertIn("row.appendChild(cb);", src)
+        self.assertIn("row.appendChild(lbl);", src)
+        self.assertIn("row.appendChild(el('span', 'lv-saved',", src)
+        self.assertIn("row.appendChild(save);", src)
+
+    def test_each_post_lives_in_exactly_one_place(self):
+        """The classic card and the Tavern card offer the same two actions, so
+        the endpoints and the 409 race have to be shared rather than copied —
+        two copies is how one of them loses the retry."""
+        for call in ("fetch(auth('/review/save')", "fetch(auth('/review/auto-save')"):
+            self.assertEqual(coach_ui._HTML.count(call), 1,
+                             f"{call} is posted from more than one place")
+        self.assertIn("postSaveReplay(save);", _function("lvSaveRow"))
+        self.assertIn("postAutoSave(cb,", _function("lvSaveRow"))
+        classic = _function("renderWelcome")
+        self.assertIn("postSaveReplay(save);", classic)
+        self.assertIn("postAutoSave(cb,", classic)
+
+    def test_the_tavern_layout_is_cleared_from_one_place(self):
+        """`lvClearTavern` is the single reset: the classic path and the
+        first-run card both need it, and a viewer that is not drawing must not
+        leave its last frame on screen."""
+        self.assertEqual(coach_ui._HTML.count("lvClearTavern"), 3,
+                         "defined once, called from the classic path and from "
+                         "the welcome branch")
 
 
 class TestTheOptionsStatistics(unittest.TestCase):

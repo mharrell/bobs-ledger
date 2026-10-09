@@ -1030,13 +1030,88 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-bar em { font-size:10px; color:var(--tmute);
                             font-style:normal; }
   .tavern.live .lv-guide { margin-top:8px; color:var(--tmute); font-size:12px; }
+  /* §4.4's comp screens: the controls row, one column per source tier, the
+     Browse row, §5's core slots (34x46 in Browse, 52x70 in Compare), the Detail
+     split with its 88x120 core row and 76x100 flex row, and the compare
+     columns. */
+  .tavern.live .lv-ctl { display:flex; flex-wrap:wrap; gap:6px;
+                         align-items:center; margin:0 0 10px; }
+  .tavern.live .lv-cols { display:flex; flex-wrap:wrap; gap:16px;
+                          align-items:flex-start; }
+  .tavern.live .lv-ctier { flex:1 1 300px; min-width:260px; }
+  .tavern.live .lv-ctier > h4 { margin:0 0 6px; font-size:11px;
+                                letter-spacing:.12em; text-transform:uppercase;
+                                color:var(--tmute); }
+  .tavern.live .lv-crow { display:flex; flex-wrap:wrap; gap:8px;
+                          align-items:center; padding:6px 0;
+                          border-bottom:1px solid var(--tline); font-size:12px; }
+  .tavern.live .lv-cname { flex:1 1 150px; min-width:0; display:flex;
+                           flex-wrap:wrap; gap:6px; align-items:baseline; }
+  .tavern.live .lv-copen { cursor:pointer; text-decoration:underline; }
+  .tavern.live .lv-crow.low .lv-cname, .tavern.live .lv-crow.low .lv-slots,
+  .tavern.live .lv-crow.low .lv-owned, .tavern.live .lv-crow.low .lv-ap {
+    opacity:.55; }
+  .tavern.live .lv-owned { color:var(--ttext); font-weight:600; }
+  .tavern.live .lv-ap { margin-left:auto; font-weight:600; }
+  .tavern.live .lv-ap.miss { color:var(--tmute); font-weight:400; }
+  .tavern.live .lv-chip.lowsamp { cursor:default; color:var(--tmute);
+                                  font-size:11px; padding:2px 8px; }
+  .tavern.live .lv-slots { display:flex; flex-wrap:wrap; gap:3px; }
+  .tavern.live .lv-slot { display:inline-block; width:34px; height:46px;
+                          border-radius:5px; background:var(--tcard);
+                          border:2px solid var(--tbuff); box-sizing:border-box; }
+  .tavern.live .lv-slot.miss { border:1px dashed var(--tline); opacity:.5; }
+  .tavern.live .lv-slot.banned { border:2px solid var(--tloss); opacity:.5; }
+  .tavern.live .lv-more { background:var(--tpanel); color:var(--ttext);
+                          border:1px solid var(--tline); border-radius:8px;
+                          padding:5px 10px; margin-top:6px;
+                          font:600 12px "Segoe UI", system-ui; cursor:pointer; }
+  .tavern.live .lv-back { background:var(--tpanel); color:var(--ttext);
+                          border:1px solid var(--tline); border-radius:8px;
+                          min-height:44px; padding:0 12px;
+                          font:600 12px "Segoe UI", system-ui; cursor:pointer; }
+  .tavern.live .lv-cdhead { display:flex; flex-wrap:wrap; gap:8px;
+                            align-items:center; margin:0 0 10px; }
+  .tavern.live .lv-cdname { font:700 16px "Segoe UI", system-ui; }
+  .tavern.live .lv-cdetail { display:grid;
+                             grid-template-columns:minmax(0,1fr) 260px;
+                             gap:14px; align-items:flex-start; }
+  @media (max-width: 900px) {
+    .tavern.live .lv-cdetail { grid-template-columns:1fr; }
+  }
+  .tavern.live .lv-core { --tcardw:88px; }
+  .tavern.live .lv-flexcards { --tcardw:76px; margin-top:10px; }
+  /* §5 gives the flex row its own ratio (76x100) rather than the card's 88x120,
+     so it cannot come from --tcardw alone. */
+  .tavern.live .lv-flexcards .tile { aspect-ratio:76/100; }
+  .tavern.live .lv-cstat { background:var(--tcard); border:1px solid var(--tline);
+                           border-radius:8px; padding:8px 10px; }
+  .tavern.live .lv-cmpblock { margin-top:12px; }
+  .tavern.live .lv-cmpcol { align-items:center; }
+  .tavern.live .lv-cmpcol .lv-slot { width:52px; height:70px; }
+  .tavern.live .lv-cmpchips { display:flex; flex-wrap:wrap; gap:6px;
+                              justify-content:center; }
+  .tavern.live .lv-gslot { margin-top:6px; }
+  .tavern.live .lv-gtext { margin:0 0 6px; }
+  .tavern.live .lv-gmd { white-space:pre-wrap; font:inherit; margin:0; }
   .tavern.live .lv-over { text-align:center; }
   .tavern.live .lv-overbig { font:700 26px "Segoe UI", system-ui;
                              margin-bottom:6px; }
   .tavern.live .lv-gobtn { background:var(--tpanel); color:var(--ttext);
                            border:1px solid var(--tline); border-radius:8px;
+                           min-height:44px;
                            padding:8px 14px; font:600 13px "Segoe UI", system-ui;
                            cursor:pointer; }
+  /* §6.5's merged row: the checkbox, its label and what the answer DOES, on one
+     line. It wraps rather than shrinking, and the 44px target is on the control
+     itself (§8), not on the row. */
+  .tavern.live .lv-saverow { display:flex; flex-wrap:wrap; gap:10px;
+                             align-items:center; justify-content:center;
+                             margin:12px 0 4px; font-size:13px; }
+  .tavern.live .lv-saverow input { width:20px; height:20px; accent-color:var(--tsel); }
+  .tavern.live .lv-saverow label { cursor:pointer; }
+  .tavern.live .lv-saved { color:var(--tbuff); }
+  .tavern.live .lv-fine { max-width:620px; margin:8px auto 0; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
   .turn.s-sticky { position:sticky; top:42px; z-index:9;
@@ -1494,6 +1569,54 @@ function compRow(c) {
 // — the chips labelled instructions, and the live page does not render any
 // (2026-10-06, PIVOT.md). value._STEP_KINDS still exists: it is how the plan's
 // steps are typed for the review and the corpus.)
+// The two end-of-game POSTs, ONE place each (2026-10-09): the classic card and
+// the Tavern game-over card both offer them, and the 409 branch below is the
+// normal race rather than an error — the review replays the game twice
+// off-thread (~10 s) while the card appears the moment the game ends, so a
+// premature click has to stay retryable ("it failed to save my replay",
+// 2026-10-07). Two copies of that rule is how one of them loses it.
+async function postAutoSave(cb, revert) {
+  cb.disabled = true;
+  try {
+    const r = await fetch(auth('/review/auto-save'), {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({enabled: cb.checked}),
+    });
+    if (!r.ok) revert();                 // the file on disk is the truth
+  } catch (e) {
+    revert();
+  }
+  cb.disabled = false;
+  poll();
+}
+async function postSaveReplay(btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch(auth('/review/save'), {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) { btn.textContent = 'Saved ✓'; return; }
+    btn.disabled = false;
+    btn.textContent = r.status === 409 ? 'Still building — try again'
+                                       : (j.error || 'Save failed');
+  } catch (e) {
+    btn.textContent = 'Save failed';
+    btn.disabled = false;
+  }
+}
+//: Take the Tavern layout off screen. It has its own container, so this only
+//: clears that container and the class its renderer set — with neither present
+//: the classic page is exactly what it always was. A viewer that is no longer
+//: drawing must not leave its last frame behind: the first-run card is CLASSIC
+//: even in Tavern mode (§6.5 has the game-over card, and there is no design for
+//: a first run), and it used to draw behind a stale Tavern screen.
+function lvClearTavern() {
+  const lt = document.getElementById('live-tavern');
+  if (lt) { lt.hidden = true; lt.innerHTML = ''; }
+  document.getElementById('app').classList.remove('tavern-on');
+}
 function renderWelcome(a) {
   const decide = document.getElementById('col-decide');
   const ref = document.getElementById('col-ref');
@@ -1541,47 +1664,13 @@ function renderWelcome(a) {
     lbl.htmlFor = cb.id;
     lbl.className = 'w-share-q';
     lbl.textContent = auto.label || 'Save every replay automatically';
-    cb.onchange = async () => {
-      cb.disabled = true;
-      try {
-        const r = await fetch(auth('/review/auto-save'), {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({enabled: cb.checked}),
-        });
-        if (!r.ok) cb.checked = !cb.checked;   // the file is the truth
-      } catch (e) {
-        cb.checked = !cb.checked;
-      }
-      cb.disabled = false;
-      poll();
-    };
+    cb.onchange = () => postAutoSave(cb, () => { cb.checked = !cb.checked; });
     if (auto.enabled) {
       row.appendChild(el('span', 'w-share-q',
                          'Saved to the Settle Up tab automatically ✓'));
     } else {
       const save = el('button', 'w-share-btn', 'Save replay');
-      save.onclick = async () => {
-        save.disabled = true;
-        try {
-          const r = await fetch(auth('/review/save'), {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: '{}',
-          });
-          const j = await r.json().catch(() => ({}));
-          if (r.ok) { save.textContent = 'Saved ✓'; return; }
-          // 409 is the normal race: the review builds off-thread (it replays
-          // the game TWICE, ~10 s) and the card appears the moment the game
-          // ends. A premature click must be retryable, not a dead button —
-          // that is exactly how the first saved-replay attempt failed in the
-          // field (2026-10-07: "it failed to save my replay").
-          save.disabled = false;
-          save.textContent = r.status === 409 ? 'Still building — try again'
-                                              : (j.error || 'Save failed');
-        } catch (e) {
-          save.textContent = 'Save failed';
-          save.disabled = false;
-        }
-      };
+      save.onclick = () => postSaveReplay(save);
       row.appendChild(save);
     }
     row.appendChild(cb);
@@ -1661,8 +1750,12 @@ try { _liveViewer = localStorage.getItem('bl-live-viewer') || 'classic'; }
 catch (e) { /* private mode */ }
 //: Which rail tab is open. Session-only: the design persists the pick screen's
 //: own order/stats choices (§4.3), not this.
-let _liveTab = 'facts';
-const LIVE_TABS = [['facts', 'Facts'], ['comps', 'Comps'], ['lobby', 'Lobby']];
+//: §4.1's second tab row — `Shop | Comps | Lobby` — is the SCREEN selector, so
+//: the facts table is not one of its tabs: it lives in the rail beside every
+//: screen (§4.2 puts the facts table in the rail, and reference material is
+//: worth more visible than hidden). Session-only, like the comp view state.
+let _liveTab = 'shop';
+const LIVE_TABS = [['shop', 'Shop'], ['comps', 'Comps'], ['lobby', 'Lobby']];
 
 function lvOrdinal(p) {
   const suf = ([11, 12, 13].includes(p % 100)) ? 'th'
@@ -1789,38 +1882,366 @@ function lvFacts(a) {
     'Reference only. Numbers are observational, not causal.'));
   return p;
 }
-//: §4.4 Browse, compact: one row per comp — name, its source tier, and how much
-//: of the core is in hand. No re-sorting and no judgement: the payload's order
-//: is the source's tier order.
-function lvComps(a) {
+//: §4.4's comp screens, and the state they read. Everything here is a VIEW
+//: choice (which comp is open, how the list is ordered, which tribes are shown),
+//: never a choice about the game, so none of it is persisted and none of it
+//: touches the analysis.
+let _liveComp = null;              // slug while Detail is open, else Browse
+let _liveCompSort = 'tier';        // tier | overlap | avg_place (default tier)
+let _liveCompFilter = new Set();   // tribe labels; empty = every tribe in play
+let _liveCompMore = new Set();     // tier groups whose rows past the cap show
+let _liveCompare = new Set();      // up to three slugs, in the order picked
+const LIVE_COMP_ROWS = 5;          // §4.4: "about five visible rows"
+const LIVE_COMPARE_MAX = 3;        // §4.4: "Up to three comps"
+
+//: A comp's `tribe` and the lobby's set are the same canonical vocabulary
+//: ("Murloc", "Mech"). A compound ("Demon/Quilboar") matches on any shared part
+//: — the rule `tribes.matches` applies on the server — and "All" (the
+//: Amalgam-class marker) is in every tribe. A comp with no tribe is Mixed.
+function lvTribeHit(tribe, want) {
+  const parts = t => String(t || '').split('/').map(s => s.trim().toLowerCase());
+  if (!tribe) return false;
+  if (String(tribe).toLowerCase() === 'all') return true;
+  return parts(tribe).some(p => parts(want).includes(p));
+}
+function lvCompTribe(c) { return c.tribe || 'Mixed'; }
+
+//: §5's core slot: 34x46 in Browse, 52x70 in Compare (one CSS rule each), 5px
+//: radius; owned = a 2px --buff border on --tcard, missing = 1px dashed --line
+//: at 50% opacity. The state rides the tooltip as well as the colour — §8:
+//: nothing is communicated by colour alone — and Detail spells it out in a
+//: caption under the card.
+function lvSlot(x) {
+  const state = x.banned ? 'banned'
+              : x.owned ? 'board' : x.in_hand ? 'hand' : 'miss';
+  const s = el('span', 'lv-slot ' + state);
+  s.title = (x.name || x.card) + ' — '
+          + (state === 'banned' ? 'banned this game'
+             : state === 'board' ? 'on board'
+             : state === 'hand' ? 'in hand' : 'not owned');
+  return s;
+}
+function lvSlotCap(x) {
+  return x.banned ? 'banned this game'
+       : x.owned ? 'on board' : x.in_hand ? 'in hand' : 'not owned';
+}
+function lvSlots(cards) {
+  const wrap = el('span', 'lv-slots');
+  (cards || []).forEach(x => wrap.appendChild(lvSlot(x)));
+  if (!wrap.children.length) wrap.appendChild(el('span', 'lv-empty', 'no core list'));
+  return wrap;
+}
+//: §4.4 counts a core card owned when it is on the board OR IN HAND. The
+//: payload's `owned` flag is the classic panel's board-only rule, so the Tavern
+//: count reads both — the design's own wording, and the board is not the only
+//: place a comp piece can be.
+function lvOwned(cards) {
+  return (cards || []).filter(x => x && (x.owned || x.in_hand)).length;
+}
+
+//: §4.4 Browse, one row:
+//: `[Comp name + tribe] [core-card slots] [N of M owned] [avg placement]`.
+//: The average placement comes from this project's own corpus and is a dash when
+//: the corpus has never seen the comp — absent beats invented.
+function lvCompRow(a, c) {
+  const core = c.core || [];
+  const st = c.stats || null;
+  const row = el('div', 'lv-crow');
+  if (st && st.low_sample) row.classList.add('low');
+  const name = el('span', 'lv-cname');
+  const open = el('b', 'lv-copen', c.name || c.slug);
+  open.title = 'Open the comp';
+  open.onclick = () => { _liveComp = c.slug; renderLiveTavern(a); };
+  name.appendChild(open);
+  name.appendChild(el('i', 'lv-tier', c.meta_tier ? c.meta_tier + ' tier'
+                          : (c.provisional ? 'provisional' : 'no published tier')));
+  name.appendChild(el('i', 'lv-tier', lvCompTribe(c)));
+  if (c.tribe_confirmed === false) {
+    name.appendChild(el('i', 'lv-tier', 'tribe unconfirmed'));
+  }
+  if (st && st.low_sample) {
+    name.appendChild(el('span', 'lv-chip lowsamp', 'low sample'));
+  }
+  row.appendChild(name);
+  row.appendChild(lvSlots(core));
+  row.appendChild(el('b', 'lv-owned',
+                     lvOwned(core) + ' of ' + core.length + ' owned'));
+  row.appendChild(el('b', 'lv-ap' + (st && st.avg_place != null ? '' : ' miss'),
+                     st && st.avg_place != null ? st.avg_place.toFixed(2) : '—'));
+  const picked = _liveCompare.has(c.slug);
+  const cmp = el('span', 'lv-chip' + (picked ? ' on' : ''),
+                 picked ? 'comparing' : 'compare');
+  cmp.onclick = () => {
+    if (_liveCompare.has(c.slug)) _liveCompare.delete(c.slug);
+    else if (_liveCompare.size < LIVE_COMPARE_MAX) _liveCompare.add(c.slug);
+    renderLiveTavern(a);
+  };
+  if (!picked && _liveCompare.size >= LIVE_COMPARE_MAX) {
+    cmp.title = 'Compare holds up to ' + LIVE_COMPARE_MAX + ' comps — drop one '
+              + 'to add another.';
+  }
+  row.appendChild(cmp);
+  return row;
+}
+
+//: The player's own ordering, applied INSIDE each tier group. "Source tier" is
+//: the payload's order (the source's label, then the name), which is the
+//: default; sorting by overlap or by average placement is opt-in, exactly like
+//: the pick screen's Order control. A comp the corpus has never seen sorts last
+//: rather than at zero.
+function lvCompSortRows(rows) {
+  const byName = (x, y) => (x.name || '').localeCompare(y.name || '');
+  if (_liveCompSort === 'overlap') {
+    rows.sort((x, y) => lvOwned(y.core) - lvOwned(x.core) || byName(x, y));
+  } else if (_liveCompSort === 'avg_place') {
+    const ap = c => (c.stats || {}).avg_place;
+    rows.sort((x, y) => {
+      const vx = ap(x), vy = ap(y);
+      if (vx == null && vy == null) return byName(x, y);
+      if (vx == null) return 1;
+      if (vy == null) return -1;
+      return vx - vy;
+    });
+  }
+  return rows;
+}
+
+//: §4.4 Browse: the lobby-tribe filter, the sort control, one column per source
+//: tier (S left, A right, more tiers by wrapping), about five rows each with a
+//: `+ N more`, and Compare underneath once two comps are picked.
+function lvCompsBrowse(a) {
   const p = el('div', 'lv-pn');
   p.appendChild(el('h3', null, 'Comps'));
-  const comps = a.comps || [];
-  if (!comps.length) {
+  const all = a.comps || [];
+  if (!all.length) {
     p.appendChild(lvEmptyRow('No comps read yet — they appear once the bans '
                              + 'resolve.'));
     return p;
   }
-  comps.forEach(c => {
-    const core = c.core || [];
-    const owned = core.filter(x => x && x.owned).length;
-    const row = el('div', 'lv-kv');
-    const left = el('span');
-    left.appendChild(el('b', null, c.name || c.slug));
-    if (c.meta_tier) left.appendChild(el('i', 'lv-tier', c.meta_tier + ' tier'));
-    else if (c.provisional) left.appendChild(el('i', 'lv-tier', 'provisional'));
-    if (c.tribe_confirmed === false) {
-      left.appendChild(el('i', 'lv-tier', 'tribe unconfirmed'));
-    }
-    row.appendChild(left);
-    row.appendChild(el('b', null, owned + ' of ' + core.length + ' core owned'));
-    p.appendChild(row);
+  // §4.4: comps for out-of-play tribes are hidden — they cannot be built at all
+  // this patch, so a filter that revealed one would be offering a comp nobody
+  // can play. Counted, because "some are hidden" is a fact worth stating.
+  const oop = a.out_of_pool || [];
+  const inplay = all.filter(c => !(c.tribe && oop.some(t => lvTribeHit(c.tribe, t))));
+  const hidden = all.length - inplay.length;
+  const labels = [];
+  inplay.forEach(c => {
+    const t = lvCompTribe(c);
+    if (!labels.includes(t)) labels.push(t);
   });
+  const ctl = el('div', 'lv-ctl');
+  ctl.appendChild(el('span', 'lv-lbl', 'Lobby tribes'));
+  labels.forEach(t => {
+    const on = _liveCompFilter.has(t);
+    const chip = el('span', 'lv-chip' + (on ? ' on' : ''), t);
+    chip.onclick = () => {
+      if (on) _liveCompFilter.delete(t); else _liveCompFilter.add(t);
+      renderLiveTavern(a);
+    };
+    ctl.appendChild(chip);
+  });
+  if (_liveCompFilter.size) {
+    const clear = el('span', 'lv-chip', 'All tribes');
+    clear.onclick = () => { _liveCompFilter.clear(); renderLiveTavern(a); };
+    ctl.appendChild(clear);
+  }
+  ctl.appendChild(el('span', 'lv-lbl', 'Sort'));
+  [['tier', 'Source tier'], ['overlap', 'Overlap'],
+   ['avg_place', 'Avg placement']].forEach(([v, label]) => {
+    const chip = el('span', 'lv-chip' + (_liveCompSort === v ? ' on' : ''), label);
+    chip.onclick = () => { _liveCompSort = v; renderLiveTavern(a); };
+    ctl.appendChild(chip);
+  });
+  p.appendChild(ctl);
+  const rows = inplay.filter(c => !_liveCompFilter.size
+                                  || _liveCompFilter.has(lvCompTribe(c)));
+  const groups = [];
+  rows.forEach(c => {
+    const key = c.meta_tier || (c.provisional ? 'provisional' : '—');
+    let g = groups.find(x => x.key === key);
+    if (!g) {
+      g = {key: key, label: c.meta_tier ? c.meta_tier + ' tier'
+                     : (c.provisional ? 'Provisional' : 'No published tier'),
+           rows: []};
+      groups.push(g);
+    }
+    g.rows.push(c);
+  });
+  const cols = el('div', 'lv-cols');
+  groups.forEach(g => {
+    const sorted = lvCompSortRows(g.rows.slice());
+    const col = el('div', 'lv-ctier');
+    col.appendChild(el('h4', null, g.label + ' · ' + sorted.length));
+    const show = _liveCompMore.has(g.key) ? sorted : sorted.slice(0, LIVE_COMP_ROWS);
+    show.forEach(c => col.appendChild(lvCompRow(a, c)));
+    if (sorted.length > show.length) {
+      const more = el('button', 'lv-more',
+                      '+ ' + (sorted.length - show.length) + ' more');
+      more.onclick = () => { _liveCompMore.add(g.key); renderLiveTavern(a); };
+      col.appendChild(more);
+    }
+    cols.appendChild(col);
+  });
+  p.appendChild(cols);
   p.appendChild(el('p', 'lv-note',
-    'Core cards owned: board or hand. The tier is the source\'s label, not '
-    + 'this app\'s.'));
+    'A solid slot is a core card on your board or in hand; a dashed one is not '
+    + 'owned. Average placement is this project\'s own game corpus — '
+    + 'observational, not causal.'
+    + (hidden ? ' ' + hidden + ' comp' + (hidden === 1 ? '' : 's')
+                + ' hidden: their tribe is out of play this patch.' : '')));
+  const picked = [..._liveCompare].map(s => inplay.find(c => c.slug === s))
+                                 .filter(Boolean);
+  if (picked.length >= 2) p.appendChild(lvCompCompare(picked));
   return p;
 }
+
+//: §5's headline stat + distribution + rows for one comp. The headline is the
+//: average placement (the one number this project's corpus can put beside a
+//: comp), the bars are the 1-to-8 placement shares, and the rows are counts.
+function lvCompStats(c) {
+  const wrap = el('div', 'lv-cstat');
+  const st = c.stats;
+  if (!st) {
+    // §6.2's shape, for comps: say what is missing rather than showing a zero.
+    wrap.appendChild(el('p', 'lv-note',
+                        'No corpus record for this comp yet.'));
+    return wrap;
+  }
+  if (st.avg_place != null) {
+    const head = el('div', 'lv-head');
+    head.appendChild(el('b', null, st.avg_place.toFixed(2)));
+    head.appendChild(el('small', null, 'avg place'));
+    wrap.appendChild(head);
+  }
+  wrap.appendChild(el('div', 'lv-vs',
+    st.games + ' game' + (st.games === 1 ? '' : 's')
+    + ' in this project\'s own corpus'));
+  // §5: every stat block carries a source line. The dataset and the sample size
+  // are above; the PATCH is what this data cannot state — the corpus records no
+  // per-game patch, so §6.3's marker has nothing to read and the absence is said
+  // out loud rather than papered over with the current patch.
+  wrap.appendChild(el('p', 'lv-note',
+    'Own corpus · no per-game patch recorded, so none is claimed · '
+    + 'observational, not causal.'));
+  if (st.dist) wrap.appendChild(lvBars(st.dist));
+  const rows = [['Games', String(st.games)]];
+  if (st.top4_pct != null) rows.push(['Top 4', st.top4_pct + '%']);
+  if (st.first_pct != null) rows.push(['1st place', st.first_pct + '%']);
+  rows.slice(0, 5).forEach(([k, v]) => wrap.appendChild(lvKV(k, v)));
+  if (rows.length > 5) {
+    wrap.appendChild(el('div', 'lv-note',
+                        '+ ' + (rows.length - 5) + ' more stats'));
+  }
+  if (st.low_sample) {
+    wrap.appendChild(el('span', 'lv-chip lowsamp', 'low sample'));
+  }
+  return wrap;
+}
+
+//: The comp guide, fetched on first expand and cached per slug. It is NOT the
+//: classic panel's `loadGuide` node: that one is built from the classic classes,
+//: and a node cached across the whole page would carry the wrong palette into
+//: this panel (the same reason the two viewers keep their own tiles).
+const _lvGuideCache = new Map();
+function lvLoadGuide(slug, slot) {
+  const cached = _lvGuideCache.get(slug);
+  if (cached) { slot.appendChild(cached); return; }
+  fetch(auth('/guide/' + slug)).then(r => r.ok ? r.json() : null).then(j => {
+    if (!j) return;
+    const wrap = el('div', 'lv-gdoc');
+    if (j.how_to_play) wrap.appendChild(el('p', 'lv-gtext', j.how_to_play));
+    if (!j.how_to_play && !j.markdown) {
+      wrap.appendChild(el('p', 'lv-note',
+                          'No written guide for this comp yet.'));
+    }
+    if (j.markdown) wrap.appendChild(el('pre', 'lv-gmd', j.markdown));
+    _lvGuideCache.set(slug, wrap);
+    slot.appendChild(wrap);
+  }).catch(() => { /* offline: the panel still names what it is */ });
+}
+
+//: §4.4 Detail: the header chips, the core row at 88x120 with a caption per
+//: card, the flex row at 76x100, the statistics beside them, and the guide
+//: collapsed by default.
+function lvCompDetail(a, c) {
+  const p = el('div', 'lv-pn');
+  p.appendChild(el('h3', null, 'Comps'));
+  const head = el('div', 'lv-cdhead');
+  const back = el('button', 'lv-back', '◀ Comps');
+  back.onclick = () => { _liveComp = null; renderLiveTavern(a); };
+  head.appendChild(back);
+  head.appendChild(el('span', 'lv-cdname', c.name || c.slug));
+  head.appendChild(el('span', 'lv-chip', c.meta_tier ? c.meta_tier + ' tier'
+                                   : (c.provisional ? 'provisional'
+                                      : 'no published tier')));
+  head.appendChild(el('span', 'lv-chip', lvCompTribe(c)));
+  if (c.difficulty) head.appendChild(el('span', 'lv-chip', c.difficulty));
+  p.appendChild(head);
+  const body = el('div', 'lv-cdetail');
+  const cards = el('div', 'lv-cdcards');
+  [['Core', 'core'], ['Flex cards', 'addons']].forEach(([label, key]) => {
+    const cards_ = c[key] || [];
+    if (!cards_.length) return;
+    const box = el('div', key === 'core' ? 'lv-core' : 'lv-flexcards');
+    box.appendChild(el('div', 'lv-lbl', label));
+    const row = el('div', 'lv-row');
+    cards_.forEach(x => row.appendChild(
+      lvCard(x.card, x.name, lvSlotCap(x))));
+    box.appendChild(row);
+    cards.appendChild(box);
+  });
+  body.appendChild(cards);
+  body.appendChild(lvCompStats(c));
+  p.appendChild(body);
+  const det = document.createElement('details');
+  det.className = 'lv-guide';
+  det.appendChild(el('summary', null, 'Guide text'));
+  const slot = el('div', 'lv-gslot');
+  det.appendChild(slot);
+  det.ontoggle = () => {
+    if (det.open && !slot.children.length) lvLoadGuide(c.slug, slot);
+  };
+  p.appendChild(det);
+  return p;
+}
+
+//: §5's Compare: up to three comps in the pick screen's own column layout, each
+//: with the same statistics in the same order. The columns are in the order the
+//: player picked them, so nothing here is ordered by which comp is better.
+function lvCompCompare(picked) {
+  const p = el('div', 'lv-pn lv-cmpblock');
+  p.appendChild(el('h3', null, 'Compare'));
+  const wrap = el('div', 'lv-opts wide');
+  picked.forEach(c => {
+    const core = c.core || [];
+    const col = el('div', 'lv-opt lv-cmpcol');
+    col.appendChild(el('div', 'lv-optname', c.name || c.slug));
+    const chips = el('div', 'lv-cmpchips');
+    chips.appendChild(el('span', 'lv-chip', c.meta_tier ? c.meta_tier + ' tier'
+                                       : (c.provisional ? 'provisional'
+                                          : 'no published tier')));
+    chips.appendChild(el('span', 'lv-chip', lvCompTribe(c)));
+    col.appendChild(chips);
+    col.appendChild(lvSlots(core));
+    col.appendChild(el('b', 'lv-owned',
+                       lvOwned(core) + ' of ' + core.length + ' owned'));
+    col.appendChild(lvCompStats(c));
+    wrap.appendChild(col);
+  });
+  p.appendChild(wrap);
+  p.appendChild(el('p', 'lv-note',
+    'The same statistics, in the same order, one column per comp. The order is '
+    + 'the order you picked them in.'));
+  return p;
+}
+
+//: The Comps tab (§4.4): Browse, or the one comp whose Detail is open.
+function lvCompsScreen(a) {
+  const open = _liveComp
+    ? (a.comps || []).find(c => c.slug === _liveComp) : null;
+  return open ? lvCompDetail(a, open) : lvCompsBrowse(a);
+}
+
 //: §4.2 Lobby tab: what the seats we have SEEN are committed to, and the last
 //: board the next opponent staged. "of N seen seats" — an unseen seat is
 //: unknown, not empty.
@@ -2079,20 +2500,71 @@ function lvPickControls(ch, stats, redraw) {
   });
   return bar;
 }
-//: §6.5, kept minimal for now: the placement and the round are the large text,
-//: and the Settle Up tab is one click away.
-function lvGameOver(a) {
-  const go = a.game_over || {};
+//: §6.5: "Merge `Saved to the Settle Up tab automatically ✓` and the `Save
+//: every replay automatically` checkbox into ONE row." The classic card asks the
+//: question and reports the answer in two separate rows; here the checkbox and
+//: what it does sit together, and the Save button appears only while the answer
+//: is off (offering a click that would write a second copy is not a fact, it is
+//: a way to make a mess).
+function lvSaveRow(a) {
+  const row = el('div', 'lv-saverow');
+  const auto = a.auto_save || {};
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.id = 'lv-save-all';
+  cb.checked = !!auto.enabled;
+  const lbl = document.createElement('label');
+  lbl.htmlFor = cb.id;
+  lbl.textContent = auto.label || 'Save every replay automatically';
+  cb.onchange = () => postAutoSave(cb, () => { cb.checked = !cb.checked; });
+  row.appendChild(cb);
+  row.appendChild(lbl);
+  if (auto.enabled) {
+    row.appendChild(el('span', 'lv-saved',
+                       'Saved to the Settle Up tab automatically ✓'));
+  } else {
+    const save = el('button', 'lv-gobtn', 'Save replay');
+    save.onclick = () => postSaveReplay(save);
+    row.appendChild(save);
+  }
+  return row;
+}
+//: §6.5's game-over card, in the Tavern layout. It needs its OWN entry point:
+//: the end-of-game payload is `welcome: true` with no board, and `render`
+//: returned at the welcome branch before the viewer was ever consulted — so
+//: `lvGameOver` inside `renderLiveTavern` was unreachable in a real session,
+//: and only this suite's direct render made it look alive (2026-10-09).
+function renderTavernGameOver(a) {
+  const app = document.getElementById('app');
+  const box = document.getElementById('live-tavern');
+  // The page chrome is the same in both viewers, and `render` returns before it
+  // reaches this branch: without these two the corner sharing control and the
+  // release stamp would keep whatever the last live payload left there.
+  renderShareToggle(a.share);
+  renderRelease(a.release);
+  app.classList.add('tavern-on');
+  box.hidden = false;
+  box.innerHTML = '';
+  // The classic strip is the other viewer's; this card has its own numbers, and
+  // leaving a stale one behind the card is how two disagreeing copies appear.
+  document.getElementById('statebar').innerHTML = '';
+  const root = el('div', 'tavern live');
   const p = el('div', 'lv-pn lv-over');
+  const go = a.game_over || {};
   p.appendChild(el('div', 'lv-overbig',
     (go.placement ? lvOrdinal(go.placement) : '—')
     + (go.turn ? ' · Round ' + go.turn : '')));
-  p.appendChild(el('p', 'lv-note',
-    'Game over. The coach is still running and watching for the next game.'));
-  const b = el('button', 'lv-gobtn', 'Open in Settle Up');
-  b.onclick = () => showTab('settle');
-  p.appendChild(b);
-  return p;
+  const open = el('button', 'lv-gobtn', 'Open in Settle Up');
+  open.onclick = () => showTab('settle');
+  p.appendChild(open);
+  p.appendChild(lvSaveRow(a));
+  if (a.status) p.appendChild(el('p', 'lv-note', a.status));
+  // "Keep the sharing summary as small secondary text" (§6.5) — the same
+  // sentence the classic card shows, at 11px, because it is a standing fact
+  // rather than something this card is asking for.
+  if (a.privacy) p.appendChild(el('p', 'lv-note lv-fine', a.privacy));
+  root.appendChild(p);
+  box.appendChild(root);
 }
 
 function renderLiveTavern(a) {
@@ -2109,12 +2581,36 @@ function renderLiveTavern(a) {
   // cleared rather than left showing a second, differently-worded copy.
   document.getElementById('statebar').innerHTML = '';
   const root = el('div', 'tavern live');
-  if (a.game_over) root.appendChild(lvGameOver(a));
+  // No game-over band here: that card arrives on its own payload (`welcome:
+  // true`), which `render` sends to `renderTavernGameOver` instead of to this
+  // renderer — a live payload with a board never carries one.
   root.appendChild(lvStatus(a));
   root.appendChild(lvTribes(a));
+  // §4.1's tab row, above the two columns: it selects the screen, and the facts
+  // rail is beside every screen rather than one of the tabs.
+  const tabs = el('div', 'lv-tabs');
+  LIVE_TABS.forEach(([key, label]) => {
+    const b = el('button', _liveTab === key ? 'on' : null, label);
+    b.onclick = () => {
+      _liveTab = key;
+      // Leaving the tab drops the open Detail: a comp screen you come back to
+      // is the list, which is also what the Comp tab being clicked again means.
+      _liveComp = null;
+      renderLiveTavern(a);
+    };
+    tabs.appendChild(b);
+  });
+  root.appendChild(tabs);
   const main = el('div', 'lv-main');
   const left = el('div', 'lv-col');
-  if (a.choice && a.choice.ranked && a.choice.ranked.length) {
+  if (_liveTab === 'comps') {
+    // §4.4 lives in the MAIN column: its two tier columns, mini-card slots and
+    // compare columns need the width, and a 340px rail is the compact form the
+    // design's §4.2 keeps for the Facts table.
+    left.appendChild(lvCompsScreen(a));
+  } else if (_liveTab === 'lobby') {
+    left.appendChild(lvLobby(a));
+  } else if (a.choice && a.choice.ranked && a.choice.ranked.length) {
     // The pick screen replaces the shop view while a choice is on screen
     // (§4.1) — and it is the whole left column, because choosing is what the
     // player is doing.
@@ -2126,15 +2622,7 @@ function renderLiveTavern(a) {
   }
   main.appendChild(left);
   const rail = el('div', 'lv-rail');
-  const tabs = el('div', 'lv-tabs');
-  LIVE_TABS.forEach(([key, label]) => {
-    const b = el('button', _liveTab === key ? 'on' : null, label);
-    b.onclick = () => { _liveTab = key; renderLiveTavern(a); };
-    tabs.appendChild(b);
-  });
-  rail.appendChild(tabs);
-  rail.appendChild(_liveTab === 'comps' ? lvComps(a)
-                   : _liveTab === 'lobby' ? lvLobby(a) : lvFacts(a));
+  rail.appendChild(lvFacts(a));
   main.appendChild(rail);
   root.appendChild(main);
   box.appendChild(root);
@@ -2152,7 +2640,20 @@ function setLiveViewer(v) {
 
 function render(a) {
   _lastParsed = a;   // the viewer toggle re-renders from this, not a refetch
-  if (a.welcome) { renderWelcome(a); return; }
+  if (a.welcome) {
+    // §6.5's game-over card is the ONE welcome payload the Tavern viewer draws;
+    // a first run has no Tavern design, so it keeps the classic card — and the
+    // Tavern layout is cleared first, or that card would appear behind a stale
+    // Tavern screen (the container kept its last frame and `tavern-on` still
+    // hid the panes).
+    if (_liveViewer === 'tavern' && a.game_over) {
+      renderTavernGameOver(a);
+      return;
+    }
+    lvClearTavern();
+    renderWelcome(a);
+    return;
+  }
   // Every live payload carries the sharing state too, so the corner control
   // does not vanish the moment the first buy phase arrives (2026-10-07).
   renderShareToggle(a.share);
@@ -2211,11 +2712,7 @@ function render(a) {
   // Classic: the two panes are the page again. This only clears the tavern
   // container and the class its renderer set — with neither present the classic
   // page is exactly what it always was.
-  (function () {
-    const lt = document.getElementById('live-tavern');
-    if (lt) { lt.hidden = true; lt.innerHTML = ''; }
-    document.getElementById('app').classList.remove('tavern-on');
-  })();
+  lvClearTavern();
 
   // STATE STRIP — stat tiles (label over value), then the chip row.
   // Hero name leads as the trust anchor; the numbers use tabular figures so
@@ -4417,6 +4914,51 @@ def _comps_by_slug():
             if isinstance(c, dict)}
 
 
+#: A comp with fewer games than this in our own corpus is flagged `low sample`
+#: rather than hidden (LIVE_VIEW_DESIGN.md §5/§11). It is a GAMES count because
+#: that is what the corpus records — a threshold invented from a percentage would
+#: be a number nobody measured, and the scraped tables carry no sample size at
+#: all, so their low-sample marker stays unwritten (the §11 question, recorded
+#: rather than guessed).
+COMP_LOW_SAMPLE_GAMES = 10
+
+
+def _comp_stats(rec):
+    """One comp's corpus record -> §5's components, or None when there is none.
+
+    From `meta/corpus_stats.json` — this project's OWN games, written by
+    `replay_stats.py --save` — which is also why it is the one stats table the
+    licensing question in §9 does not touch. Emits the average placement, the
+    1-to-8 placement distribution as shares of the games played, and the top-4 /
+    first-place shares; a comp the corpus has never seen returns None so the
+    view can say so instead of drawing a zero (§5: a row appears only when the
+    data exists).
+    """
+    rec = rec or {}
+    try:
+        games = int(rec.get("games") or 0)
+    except (TypeError, ValueError):
+        return None
+    if games <= 0:
+        return None
+    places = [p for p in (rec.get("places") or []) if isinstance(p, int)]
+    st = {
+        "games": games,
+        "low_sample": games < COMP_LOW_SAMPLE_GAMES,
+        # Shares, not counts: the bars are an 8-slice picture of the same games
+        # the `games` figure names, and a placement nothing finished in is a
+        # real zero here (it is a share of a known sample).
+        "dist": {str(p): round(100.0 * places.count(p) / games, 1)
+                 for p in range(1, 9)},
+    }
+    if rec.get("avg_place") is not None:
+        st["avg_place"] = round(float(rec["avg_place"]), 2)
+    if places:
+        st["top4_pct"] = round(100.0 * sum(1 for p in places if p <= 4) / games)
+        st["first_pct"] = round(100.0 * places.count(1) / games)
+    return st
+
+
 def render_json(analysis):
     """Enrich coach.analyze output with card names for frontend display.
 
@@ -4665,6 +5207,14 @@ def render_json(analysis):
         comp_items = [(c.get("name"), c) for c in (pc or [])
                       if isinstance(c, dict)]
     board_ids = {m["card"] for m in analysis["board"]}
+    # Hand minions are owned too, and the Tavern comp screens count them
+    # (LIVE_VIEW_DESIGN.md §4.4: "owned (board or hand)"). `owned` keeps the
+    # classic panel's board-only rule — the board is what fights — and the
+    # second flag rides along so the tavern view can tell board from hand
+    # without changing what the shipped panel shows.
+    hand_ids = {s["card"] for s in (analysis.get("hand") or [])
+                if isinstance(s, dict) and s.get("card")}
+    corpus_comps = (meta.corpus_stats().get("comps") or {})
     tier_rank = {"S": 0, "A": 1, "B": 2}
     comp_rows = []
     for slug, comp in comp_items:
@@ -4674,13 +5224,21 @@ def render_json(analysis):
 
         def rows(ids_, _blocked=blocked):
             return [{"card": cid, "name": names.get(cid, cid),
-                     "owned": cid in board_ids, "banned": cid in _blocked}
+                     "owned": cid in board_ids,
+                     "in_hand": cid in hand_ids,
+                     "banned": cid in _blocked}
                     for cid in (ids_ or [])]
 
         comp_rows.append({
             "slug": slug,
             "name": comp["name"],
             "meta_tier": comp.get("meta_tier"),
+            # The comp's tribe, for the Browse filter and the "Mixed" label
+            # (§4.4). None is not missing data: `menagerie` has no single tribe
+            # and the design renders exactly that case as `Mixed`.
+            "tribe": comp.get("tribe"),
+            # Its own corpus statistics, or None when the corpus never saw it.
+            "stats": _comp_stats(corpus_comps.get(comp["name"])),
             # A comp with no published tier is NOT "Unranked" — that reads as
             # a real comp whose tier is merely unknown. Aberrations - Deity
             # Feed was promoted from our own mined corpus, so it has no
