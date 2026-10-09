@@ -241,6 +241,31 @@ The review also exists as a standalone page — the command above writes one
 with `--html`, and `/review` on the running coach serves the game that just
 ended.
 
+**Two ways to read a saved game: Classic and Tavern.** The header of the Settle
+Up tab carries a **Classic | Tavern** switch. **Classic** is what is described
+above, and it stays the default. **Tavern** reads the same game one turn at a
+time: a strip of turn buttons along the top, each marked with the result and the
+HP the fight cost, the turn itself large in the middle, and a rail down the side
+summarising what the turn cost and did — buys, sells, rolls and casts, with
+repeats collapsed and a count of each. A card you bought and sold back in the
+same phase never appears on either board, so it is shown as *passed through*
+instead of vanishing, and the turn's net effect on your board is marked on the
+minions themselves. Its **Battle** tab is the two boards facing each other the
+way the game shows a fight.
+
+Tavern also carries a **Summary | Step through** switch. Step through replays
+the turn one action at a time — a tick per action, lettered by kind and coloured
+by it, with the board as it stood after that action, and the card you sold shown
+dimmed and tagged rather than simply missing. Left and Right walk turns, or
+steps while stepping; Shift with them walks turns while stepping; Space plays and
+pauses; Home and End jump to the ends. Both choices — viewer and mode — are
+remembered for next time.
+
+Step through needs a replay saved with its per-action boards, which arrived with
+this version: an older saved game opens it disabled and says so. **Rebuild** in
+the Settle Up header re-derives any saved game from its own log, which is also
+how an older save gets the per-action boards.
+
 **A whole session, or your last few.** `--session` reviews every game in the
 newest log and puts them in one table — placements, boards, spend, and how often
 you took the plan. `--history 3` does the same across your three newest logs.
