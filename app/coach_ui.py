@@ -40,6 +40,7 @@ import threading
 import time
 import urllib.request
 from functools import lru_cache
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from value import (_load_bg_names, _load_card_db, _load_spell_db,
@@ -2409,7 +2410,8 @@ function lvPick(a) {
   const avg = rates.length
     ? rates.reduce((s, v) => s + v, 0) / rates.length : null;
   body.appendChild(el('p', 'lv-note',
-    'Source: the shipped meta DB · observational, not causal. '
+    'Source: population statistics scraped from hsreplay.net, read from the '
+    + 'shipped meta DB · observational, not causal. '
     + (avg == null ? 'Shown in the order offered.'
                    : 'Offered average: ' + avg.toFixed(1) + '% picked.')));
   const wide = rows.length <= 3;
@@ -5449,6 +5451,25 @@ _LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
 #: reads the source already has.
 _TOKEN = ""
 
+#: The cookie a key-carrying request sets, so a BARE address keeps working in
+#: the browser that has been let in once (2026-10-09, the maintainer's call:
+#: "requiring the token in the url ... is very inconvenient", and a bookmark
+#: of `http://127.0.0.1:8747/` is how a second monitor gets the overlay).
+#: The KEY STAYS THE KEY: nothing is weakened, this only saves the player from
+#: pasting a value the launcher already knows. What keeps it from re-opening
+#: the audit finding is the rest of the guard, which is what actually defends
+#: against another origin: SameSite=Strict (a page on another site cannot make
+#: the browser send it at all), HttpOnly (this page's script has no use for it
+#: — its key is substituted into the markup), and _foreign_caller's
+#: Host/Origin/JSON checks, which refuse a cross-site caller even when a cookie
+#: rides along.
+_TOKEN_COOKIE = "bl_token"
+
+#: How long the browser keeps that cookie. A week is arbitrary but generous;
+#: the value stops working the moment the coach restarts, so the only thing
+#: being decided here is how often a stale one has to be replaced.
+_TOKEN_COOKIE_DAYS = 7
+
 
 def _host_only(value):
     """The hostname inside a Host header or an Origin: lowercased, no port.
@@ -5473,6 +5494,10 @@ class _Handler(BaseHTTPRequestHandler):
     #: attribute so a handler that somehow reaches a route without having been
     #: authorized reads an empty mapping rather than raising.
     query_params = {}
+    #: True once a request has proved the key by carrying it in the address, so
+    #: the response hands the browser a cookie for the bare address. Set by
+    #: _authorized, read by _send.
+    _grant_key_cookie = False
 
     def _authorized(self):
         """False (after sending a 403) when the per-run access key is absent.
@@ -5510,8 +5535,12 @@ class _Handler(BaseHTTPRequestHandler):
         self.query_params = params
         if path.startswith("/img/") or path.startswith("/card/"):
             return True
+        from_url = given is not None
         if given is None:
             given = self.headers.get("X-BL-Token") or None
+        cookie_key = self._cookie_key()
+        if given is None:
+            given = cookie_key
         if not _TOKEN or not given or not hmac.compare_digest(
                 given.encode("utf-8", "replace"), _TOKEN.encode("utf-8")):
             self._send(403, "text/plain",
@@ -5519,7 +5548,32 @@ class _Handler(BaseHTTPRequestHandler):
                        b"from the launcher, or copy the address the coach "
                        b"printed (it ends in ?token=...).")
             return False
+        # The address proved the key and this browser did not already have it:
+        # leave it in a cookie, so the next BARE load of this address is
+        # authorized too. Not on every request — the page's own fetches all
+        # carry ?token=, and re-announcing an identical cookie three times a
+        # second is noise with nothing behind it.
+        if from_url and cookie_key != _TOKEN:
+            self._grant_key_cookie = True
         return True
+
+    def _cookie_key(self):
+        """This run's key out of the request's cookies, or None.
+
+        Parsed with http.cookies rather than by splitting the header: a
+        cookie's value may be quoted or percent-ish, and a hand-rolled split
+        is how `bl_token="abc"` becomes a value that never matches.
+        """
+        raw = self.headers.get("Cookie")
+        if not raw:
+            return None
+        try:
+            jar = SimpleCookie()
+            jar.load(raw)
+        except CookieError:
+            return None
+        morsel = jar.get(_TOKEN_COOKIE)
+        return morsel.value if morsel else None
 
     def _foreign_caller(self):
         """True when this request did not come from the overlay's own page.
@@ -5755,6 +5809,18 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         for k, v in (headers or {}).items():
             self.send_header(k, v)
+        if self._grant_key_cookie and _TOKEN:
+            # Persistent, because the whole point is a bookmark on a second
+            # monitor: a session cookie dies with the browser and brings the
+            # complaint straight back. The key itself is per RUN, so a cookie
+            # older than this run is refused exactly like a stale URL is —
+            # opening the launcher's address is what refreshes it. No `Secure`:
+            # the overlay is plain http on loopback, and a Secure cookie would
+            # simply never be stored.
+            self.send_header(
+                "Set-Cookie",
+                f"{_TOKEN_COOKIE}={_TOKEN}; Path=/; HttpOnly; SameSite=Strict; "
+                f"Max-Age={_TOKEN_COOKIE_DAYS * 86400}")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)

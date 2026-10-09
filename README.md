@@ -133,9 +133,42 @@ offered them, and never in an order that means "take this one":
   much of that comp you already hold ("core of Beasts - Tasty Lobstah, you have
   1 of its 2"), or the fact that it is not one.
 
-Population numbers come from the curated meta DB (scraped, bundled, and read
-offline). Nothing there is a recommendation, and no option is highlighted as
-the one to take.
+Population numbers come from the curated meta DB — population statistics scraped
+from hsreplay.net, bundled with the app, and read offline. Nothing there is a
+recommendation, and no option is highlighted as the one to take.
+
+**Two ways to read the live game: Classic and Tavern.** The tab row carries a
+**Classic | Tavern** switch, and **Classic** is what is described above — the
+default, and the only thing you see until you change it. **Tavern** is the same
+information in the tavern's own dark palette, laid out as a screen per job: a
+status bar naming the hero with gold, tier, health, turn and place; one row of
+lobby tribes you can tap to correct; and a **Shop | Comps | Lobby** tab row with
+the **Facts** table always beside it.
+
+- **Shop** — the tavern's offers, your board and your hand as rows of cards with
+  a one-line caption under each, and a rail of the **Facts**: effective health,
+  what the last fight cost, what the last three cost, the per-combat damage cap,
+  your board's stats against the last board seen, and what levelling up costs.
+  Those are the same facts the classic layout carries, stated as numbers instead
+  of as a read on the game — nothing on the Tavern screen tells you what to do.
+- **Comps** — the comps this lobby allows, in a column per source tier, each with
+  its core cards as small slots that say whether you own them (on board or in
+  hand), how much of the core you hold, and the average placement your own played
+  games have produced for it, marked **low sample** when that count is small.
+  Filter by tribe, sort by tier, overlap or average placement, open a comp for its
+  core and flex cards and its written guide, and tick up to three to compare them
+  side by side. Comps whose tribe is not in play this patch are hidden, and the
+  count of them is shown.
+- **Lobby** — who among the seats you have seen is contesting which tribe, and the
+  last board the next opponent staged, with their trinkets.
+
+When the game asks you to choose, the Tavern pick screen gives each option its
+headline figure, the placement distribution as eight bars, and controls for which
+rows you see and in what order they are listed — starting with the order the game
+offered them. The end-of-game card is centred, with the placement and round large,
+an **Open in Settle Up** button, and the save-every-replay answer on one line.
+
+Which viewer you use is remembered for next time.
 
 ## Upcoming features
 
@@ -383,6 +416,13 @@ Some facts, kept apart from that judgement:
   one for good.
 - **The page stops changing.** The overlay says how long ago the last read was
   written, so you can tell a stale read from a live one.
+- **It says the page needs its access key.** The overlay listens only on your own
+  machine, and the address the launcher opens carries a key minted fresh for that
+  run — so a plain `http://127.0.0.1:8747/` you bookmarked yourself is refused
+  until the launcher has opened the overlay once. From then on that browser
+  remembers the key and the plain address works. Restarting the coach mints a new
+  one, so a bookmark made yesterday says so rather than showing you old advice;
+  opening it from the launcher once fixes that too.
 - **It says the folder cannot be written to.** Move the `Bob's Ledger` folder to
   Documents or the Desktop and start it again.
 
