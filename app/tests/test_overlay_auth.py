@@ -352,6 +352,131 @@ class TestTheKeyThatWorks(_ServerCase):
                          "do_GET and do_POST must both ask")
 
 
+class TestTheCookieTheAddressSets(_ServerCase):
+    """The bookmark (2026-10-09).
+
+    The maintainer's complaint about the per-run key was the ADDRESS, not the
+    key: `http://127.0.0.1:8747/` on a second monitor, or a bookmark of it, was
+    refused every time until the `?token=…` address was pasted again. So the
+    address that carries the key leaves it in a cookie, and the bare address
+    then works in that browser.
+
+    **The key is still the key.** Nothing here authorizes a request that did not
+    present it: a bare address with no cookie, or with a cookie from an earlier
+    run, is refused exactly as before — the audit's finding stays closed. What
+    keeps a cookie from re-opening it is the rest of the guard: SameSite=Strict
+    (another site cannot make the browser send it at all), HttpOnly (this page's
+    script has no use for it — its key is substituted into the markup), and
+    _foreign_caller's Host/Origin checks.
+    """
+
+    def _one(self, path, headers=None, cookie=None):
+        """(status, headers, body) of one request, against a live server.
+
+        `{token}` in the path is replaced with THIS server's key, and `self.key`
+        is left holding it — the key is minted by `start_server`, so a test
+        cannot know it before the server exists. `cookie="run"` sends the key in
+        a cookie the way the browser would after landing on the key-carrying
+        address; any other value is sent as a cookie verbatim (a stale one).
+        """
+        srv = coach_ui.start_server(0)
+        try:
+            port = srv.server_address[1]
+            self.key = coach_ui.server_token()
+            h = dict(headers or {})
+            if cookie == "run":
+                h["Cookie"] = f"bl_token={self.key}"
+            elif cookie:
+                h["Cookie"] = f"bl_token={cookie}"
+            url = f"http://127.0.0.1:{port}" + path.replace("{token}", self.key)
+            req = urllib.request.Request(url, headers=h)
+            try:
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    return r.status, dict(r.headers), r.read()
+            except urllib.error.HTTPError as e:
+                return e.code, dict(e.headers), e.read()
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+    def test_the_address_with_the_key_leaves_a_cookie(self):
+        status, headers, body = self._one("/?token={token}")
+        self.assertEqual(status, 200)
+        self.assertIn(b"<!doctype html", body.lower())
+        cookie = headers.get("Set-Cookie", "")
+        self.assertTrue(cookie, "the key-carrying address set no cookie")
+        self.assertIn(f"bl_token={self.key}", cookie)
+        self.assertIn("HttpOnly", cookie,
+                      "the page script has no use for the key, so keep it out "
+                      "of reach of one")
+        self.assertIn("SameSite=Strict", cookie,
+                      "Strict is what stops another site's page from making "
+                      "the browser send this cookie")
+        self.assertIn("Path=/", cookie)
+        self.assertIn("Max-Age=", cookie,
+                      "a session cookie dies with the browser, which is the "
+                      "complaint this exists to fix (it is a second monitor)")
+
+    def test_the_bare_address_works_with_that_cookie(self):
+        """The request a bookmark makes: no key in the URL, the cookie does
+        the work — and the board it answers with is the REAL board, not a
+        refusal that happens to be a 200."""
+        status, _headers, body = self._one("/analysis", cookie="run")
+        self.assertEqual(status, 200)
+        self.assertNotIn(b"access key", body)
+
+    def test_a_cookie_from_an_earlier_run_is_refused(self):
+        """The key is per RUN, so the cookie is not a permanent pass: a stale
+        one is refused exactly like a stale address is."""
+        import secrets
+        stale = secrets.token_urlsafe(16)
+        status, headers, _body = self._one("/analysis", cookie=stale)
+        self.assertEqual(status, 403)
+        self.assertNotEqual(stale, self.key)
+        self.assertNotIn("Set-Cookie", headers,
+                         "a refusal handed out a key")
+
+    def test_the_bare_address_without_a_cookie_is_still_refused(self):
+        """The finding itself, re-measured now that a cookie exists."""
+        status, headers, body = self._one("/analysis")
+        self.assertEqual(status, 403)
+        self.assertIn(b"access key", body)
+        self.assertNotIn("Set-Cookie", headers)
+
+    def test_a_junk_cookie_header_is_refused_rather_than_crashing(self):
+        """A Cookie header is attacker-controlled text: quoted junk, a
+        non-ASCII byte, or a second cookie with the same name must not raise
+        inside the handler (a 500 with a traceback in the coach's window)."""
+        for junk in ('"unterminated', "h\u00e9llo", "x; bl_token="):
+            status, _headers, _body = self._one("/analysis", cookie=junk)
+            self.assertEqual(status, 403, f"{junk!r} was accepted")
+
+    def test_the_page_still_carries_its_own_key(self):
+        """The cookie is a convenience for the browser, never the page's
+        source of truth: a bare load is served the same page with the real key
+        substituted, so its polls keep working either way."""
+        status, _headers, body = self._one("/", cookie="run")
+        self.assertEqual(status, 200)
+        self.assertIn(self.key.encode(), body)
+        self.assertNotIn(b"__BL_TOKEN__", body)
+
+    def test_the_cookie_is_only_re_announced_when_it_is_missing_or_stale(self):
+        """The page's polls all carry ?token= and the browser sends the cookie
+        with them, so a Set-Cookie on every poll would be three identical
+        headers a second with nothing behind it. Announced when the browser
+        does not have it yet (or has a stale one), silent once it matches."""
+        status, headers, _body = self._one("/analysis?token={token}",
+                                           cookie="run")
+        self.assertEqual(status, 200)
+        self.assertNotIn("Set-Cookie", headers,
+                         "the browser already had this run's key")
+        status, headers, _body = self._one(
+            "/analysis?token={token}", cookie="stale-from-a-previous-run")
+        self.assertEqual(status, 200)
+        self.assertIn("Set-Cookie", headers,
+                      "a stale cookie has to be replaced by the real key")
+
+
 class TestArtStaysOpen(unittest.TestCase):
     """Card art is not data, and an <img src> cannot carry a header.
 
