@@ -1,5 +1,8 @@
-# Runtime: the live coach needs only this one package.
-requests>=2.28
+# Runtime: the live coach needs only this one package. Capped at the next
+# major (2026-10-08 audit): everything used is plain get/post with headers
+# and timeouts, so a future requests 3.x must be a decision, not a surprise
+# that silently breaks a shipped coach.
+requests>=2.28,<3
 
 # Dev-only extras live in requirements-dev.txt (transcript scraping, card
 # art extraction) — never needed to run the coach.
