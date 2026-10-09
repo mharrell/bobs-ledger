@@ -524,7 +524,22 @@ class TestRebuild(unittest.TestCase):
     """Re-derive a saved replay from its own source log (2026-10-08). The
     store's session/log/game pointer is the whole mechanism; Hearthstone
     rotating its session dirs is the expected failure, returned as a reason
-    and never raised into the tab."""
+    and never raised into the tab.
+
+    The session name is the registered placeholder
+    (`privacy_scan.SYNTHETIC_SESSIONS`), not the session this was written
+    against: this file SHIPS, and the first version of it carried the real
+    directory name in three places, so the privacy gate refused the 2026-10-08
+    release ("app/tests/test_settle_up.py: session_dir x1"). That is the THIRD
+    time a real session name has been committed in a shipped fixture.
+
+    Worth knowing about that "x1": one of the three was written as two
+    adjacent string literals to fit the line, so the concatenated value never
+    appears contiguously in the file and `privacy_scan` — which reads TEXT —
+    could not see it. Two of the three were real, one was visible, and the
+    gate's count said one. Keep a fixture name on ONE line, or the scan's
+    number is not the whole picture.
+    """
 
     def setUp(self):
         import replay_store
@@ -533,7 +548,7 @@ class TestRebuild(unittest.TestCase):
         self.addCleanup(self.root.cleanup)
         self.rid = replay_store.save(
             {"created": "2026-10-07T20:53:01",
-             "session": "Hearthstone_2026_10_07_20_06_28",
+             "session": "Hearthstone_2026_01_01",
              "log": "Power.log", "game": 2, "hero": "H", "placement": 1,
              "phases": [], "totals": {}, "timeline": {"turns": []},
              "timeline_error": None, "caveat": "x"},
@@ -569,7 +584,7 @@ class TestRebuild(unittest.TestCase):
         from unittest import mock
         import config
         fresh = {"created": "2026-10-08T12:00:00",
-                 "session": "Hearthstone_2026_10_07_20_06_28",
+                 "session": "Hearthstone_2026_01_01",
                  "log": "Power.log", "game": 2, "hero": "H2", "placement": 1,
                  "phases": [{"turn": 1}], "totals": {"phases": 1},
                  "timeline": {"turns": [{"turn": 1, "steps": [{"k": "buy"}]}]},
@@ -577,15 +592,15 @@ class TestRebuild(unittest.TestCase):
         with mock.patch.object(config, "HS_LOG_GLOBS",
                                ("C:/x/Logs/Hearthstone_*/Power.log",)), \
              mock.patch.object(globmod, "glob",
-                               return_value=["C:/x/Logs/Hearthstone_2026_10_"
-                                             "07_20_06_28/Power.log"]), \
+                               return_value=["C:/x/Logs/Hearthstone_2026_01_01/"
+                                             "Power.log"]), \
              mock.patch.object(settle_up, "build",
                                return_value=fresh) as b:
             rep, err = settle_up.rebuild(self.rid, root=self.root.name)
         self.assertIsNone(err)
         self.assertEqual(rep, fresh)
         b.assert_called_once_with(
-            "C:/x/Logs/Hearthstone_2026_10_07_20_06_28/Power.log", 2)
+            "C:/x/Logs/Hearthstone_2026_01_01/Power.log", 2)
         stored = self.replay_store.load(self.rid, root=self.root.name)
         self.assertEqual(stored["rep"]["hero"], "H2",
                          "the rebuild lands under the SAME id")
