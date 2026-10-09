@@ -133,7 +133,7 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  # allowlist in it is about this repo's test vectors.
                  ".gitleaks.toml",
                  ".dev.vars", "claude_code_zai_env.sh", "VERSION",
-                 "CLAUDE.md", "REPLAY_VIEWER_DESIGN.md",
+                 "CLAUDE.md", "REPLAY_VIEWER_DESIGN.md", "LIVE_VIEW_DESIGN.md",
                  "catch_up_main.ps1", "wt_status.ps1",
                  "register_patch_check.ps1", "sync.py", "publish_release.py",
                  # The LLM tooling. The coach advises from a local value
