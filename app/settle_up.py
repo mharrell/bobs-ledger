@@ -91,6 +91,7 @@ import sys
 from config import HS_LOG_GLOB
 from extract_game import split_game_chunks
 import outcome_audit
+import replay_store
 from value import _load_bg_names
 
 #: Bumped when the report's shape changes, so an HTML file or a JSON dump can
@@ -339,12 +340,18 @@ def build(log_path, game_index=1):
 
     head = rows[0] if rows else {}
     timeline, timeline_error = _timeline(log_path, game_index, names)
+    log_name = os.path.basename(log_path)
     return {
         "schema": SCHEMA,
         "created": datetime.datetime.now().isoformat(timespec="seconds"),
         "session": session,
-        "log": os.path.basename(log_path),
+        "log": log_name,
         "game": game_index,
+        # The game's stable identity (replay_store.game_gid): what makes a
+        # reprocessed game save over itself instead of beside itself. `created`
+        # above is the wall clock of THIS build, and must never be the thing a
+        # filename or a dedupe key is made of.
+        "gid": replay_store.game_gid(session, log_name, game_index),
         "hero": head.get("hero"),
         "placement": head.get("placement"),
         "phases": phases,

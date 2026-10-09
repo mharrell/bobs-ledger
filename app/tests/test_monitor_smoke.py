@@ -28,6 +28,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -37,6 +38,7 @@ sys.path.insert(0, HERE)          # location-independent: no cwd or -t needed
 import coach_ui        # noqa: E402
 import decision_log    # noqa: E402
 import live            # noqa: E402
+import replay_store    # noqa: E402
 import session_report  # noqa: E402
 import share           # noqa: E402
 from tests.test_shop_parsing import opt_block  # noqa: E402
@@ -281,6 +283,67 @@ class MonitorSmokeTest(unittest.TestCase):
                          "an ended game should be shared exactly once")
         self.assertEqual(live._LAST_GAME, (1, True),
                          "the exit backstop's view of the game is wrong")
+
+    def test_a_restart_saves_and_shares_the_finished_game_once(self):
+        """The 2026-10-09 report, end to end: opening the app again must not
+        re-create the last game's replay, and the card must show the placement
+        and the round it previously read as `—`.
+
+        Run 1 watches the game end and (auto-save on) writes its replay. Run 2
+        is the restart: a fresh coach catches up on the SAME leftover log, so
+        the finished game is re-detected with no analysis in memory. It must
+        save nothing, share nothing, and still put `3rd`-shaped numbers — here
+        the fixture's own — on the card.
+        """
+        store = os.path.join(self.tmp.name, "saved_replays")
+        saved_dir = replay_store.store_dir
+        replay_store.store_dir = (lambda root=None: store)
+        self.addCleanup(setattr, replay_store, "store_dir", saved_dir)
+        saved_auto = replay_store.AUTO_PATH
+        replay_store.AUTO_PATH = os.path.join(self.tmp.name,
+                                              ".save_all_replays.json")
+        self.addCleanup(setattr, replay_store, "AUTO_PATH", saved_auto)
+        replay_store.set_auto_save(True)
+
+        def _store_files():
+            return sorted(os.listdir(store)) if os.path.isdir(store) else []
+
+        log = self._session(_SESSION_DIR)
+        self._patch(live, "find_active_log", lambda: log)
+
+        # ---- run 1: the game ends while the coach watches.
+        self._drive(log)
+        for _ in range(100):                    # the build runs off-thread
+            if _store_files():
+                break
+            time.sleep(0.05)
+        self.assertEqual(len(_store_files()), 1, "run 1 saves exactly one")
+        self.assertEqual(len(self.posted), 1, "run 1 shares exactly once")
+        after_run_1 = _store_files()
+
+        # ---- run 2: the restart. Fresh process state, same leftover log.
+        live._LAST_GAME = None
+        live._LAST_SHARE_ATTEMPT[0] = 0.0
+        live._shared_games.clear()
+        self._drive(log, growth=())
+        for _ in range(100):                    # allow any (wrong) late save
+            if len(_store_files()) > 1:
+                break
+            time.sleep(0.05)
+        self.assertEqual(_store_files(), after_run_1,
+                         "the restart wrote a second file for the same game")
+        self.assertEqual(len(self.posted), 1,
+                         "the restart shared the game a second time")
+        served = json.loads(coach_ui._analysis_response()[2])
+        self.assertEqual(served.get("title"), "Game over")
+        self.assertEqual(served.get("game_over"),
+                         {"placement": 1, "turn": 1},
+                         "the restart card names the placement and the round "
+                         "instead of a dash (the round is the action tracker's "
+                         "read of THIS fixture: its first options block sits "
+                         "unflushed until the second MAIN_ACTION, the shape "
+                         "the phantom-turn rule reads as a fight)")
+        self.assertNothingSwallowed()
 
     def test_a_game_still_being_played_is_never_shared(self):
         """The backstop's measured bug: a mid-game session must send nothing.

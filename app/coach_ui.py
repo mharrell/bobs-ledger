@@ -691,10 +691,11 @@ _HTML = r"""<!doctype html>
   /* The Live viewer flag (2026-10-09): Classic is the shipped renderer, Tavern
      is the LIVE_VIEW_DESIGN.md build. Same shape as the Settle Up flag — a
      styling toggle, not a rewrite switch, and the classic path below is
-     untouched. `margin-left:auto` pushes the pair to the right end; the share
-     control keeps the very corner. */
-  #tabs #live-viewer { margin-left:auto; }
-  #tabs #live-viewer[hidden] { display:none; }
+     untouched. It used to live in the top nav; it heads the LIVE page now
+     (one toggle per page — see the markup note). */
+  #live-viewer-row { grid-column:1 / -1; display:flex;
+                     justify-content:flex-end; margin:0 0 6px; }
+  #live-viewer-row[hidden] { display:none; }
   /* The Tavern Live view's own container, and the two classic panes it hides
      (2026-10-09). Hiding rather than replacing is what keeps the way back to
      Classic working. */
@@ -819,43 +820,48 @@ _HTML = r"""<!doctype html>
   .tavern .ishow { color:var(--tmute); background:none; border:none;
                    cursor:pointer; font-size:11px; padding:2px 0;
                    text-decoration:underline; }
-  /* Cards (2026-10-09, player call): the ART FILLS the frame and the frame
-     scales with the window. Until now a Tavern tile was the live overlay's
-     fixed 104px box with a 56px thumbnail inside, so a step-through card drew
-     a 130x172 outline around a small picture — the "oversized empty frame".
-     Sizes come from --tcardw (the step board swaps in --tstepw), and the name,
-     stats and deltas ride a dark strip over the art, which is the design's
-     §4.2 ("real card art fills the card; name and stats overlay the bottom"). */
-  .tavern .tile { width:var(--tcardw); aspect-ratio:88/120; position:relative;
-                  overflow:hidden; padding:0; gap:0;
-                  justify-content:flex-end; border-radius:10px; }
-  .tavern .tile .thumb { position:absolute; inset:0; width:100%; height:100%;
-                         object-fit:cover; border-radius:0; }
+  /* Cards, ONE component everywhere (2026-10-09, player call). The tile is a
+     portrait: the art fills the frame and scales with the window
+     (--tcardw; the step board swaps in --tstepw), and the name, stats and
+     delta sit BELOW the art — in flow, the same order on every card, so no
+     overlay can float over a name or clip a tag. The first version of this
+     block put the name and stats on a dark strip OVER the art, and the three
+     symptoms the fix list names were all that strip: a newly bought card's
+     name printed on top of the frame, an overlay floating over Soul
+     Rewinder's art, and a NEW tag hidden behind an overlay. The stat line is
+     attack gold, health red (§6/§7); a delta is the buff green as one
+     "+0/+3". */
+  .tavern .tile { width:var(--tcardw); position:relative; padding:0; gap:1px;
+                  align-items:stretch; text-align:left; background:none;
+                  border:none; }
+  .tavern .tile .thumb { width:100%; height:auto; aspect-ratio:88/116;
+                         object-fit:cover; border-radius:8px; }
+  .tavern .tile .thumb.ph { aspect-ratio:88/116; }
   /* The overlay's hover zoom is a 56px-tile trick (scale 4.5 on a 256px
      render). Over art that already fills the card it would be clipped by the
      frame, so it is off here — the hover CARD is the tooltip. */
   .tavern .tile img.thumb.canzoom:hover { transform:none; }
-  .tavern .tile .tname, .tavern .tile .tsub,
-  .tavern .tile .tdelta { position:relative; z-index:1; width:100%;
-                          box-sizing:border-box; padding:2px 5px;
-                          background:rgba(0,0,0,.66); }
-  .tavern .tile .tname { white-space:nowrap; overflow:hidden;
+  .tavern .tile .tname { width:100%; font-size:11px; line-height:1.25;
+                         margin-top:2px; white-space:nowrap; overflow:hidden;
                          text-overflow:ellipsis; }
-  .tavern .tile .tsub { padding-top:0; }
-  .tavern .tile .tag-new { margin-bottom:auto; font-size:10px; font-weight:700;
-                           padding:2px 5px; border-radius:4px;
-                           background:var(--tbuff); color:var(--tonbuff);
-                           align-self:flex-start; }
-  /* Net change (2026-10-09, player call): attack and health separately, each
-     signed — "+0/+3" — in the colours the rest of the card uses. It used to be
-     one green number ("+2+2"), which is two numbers that read as one. */
-  .tavern .tile .tdelta { font-size:12px; font-weight:700; padding:1px 5px 3px; }
-  .tavern .tile .tdatk { color:var(--tatk); }
-  .tavern .tile .tdhp { color:var(--thp); }
+  .tavern .tile .tsub { font-size:13px; font-weight:700; line-height:1.2; }
+  .tavern .tile .tsub .stat-atk { color:var(--tatk); }
+  .tavern .tile .tsub .stat-hp { color:var(--thp); }
+  .tavern .tile .tsub .stat-sep { color:var(--tmute); font-weight:400; }
+  /* NEW and SOLD ride a fixed corner OVER the art — never in the text flow
+     below it, where they would shove the name around, and never behind an
+     overlay (the clipping this replaces). */
+  .tavern .tile .tag-new, .tavern .tile .tag-sold {
+    position:absolute; top:4px; left:4px; z-index:2; font-size:10px;
+    font-weight:700; padding:2px 5px; border-radius:4px; }
+  .tavern .tile .tag-new { background:var(--tbuff); color:var(--tonbuff); }
+  .tavern .tile .tag-sold { background:var(--tloss); color:var(--tonsel); }
+  /* Net change: one buff-green "+0/+3" (2026-10-09, player call) — the buff
+     is the fact, and per-stat gold/red is the base stats' job. */
+  .tavern .tile .tdelta { font-size:12px; font-weight:700; color:var(--tbuff); }
   .tavern .tile .tsep { color:var(--tmute); }
-  .tavern .tile.ghost { width:calc(var(--tcardw) * 0.864);
-                        aspect-ratio:76/100; opacity:.55;
-                        border-style:dashed; }
+  .tavern .tile.ghost { width:calc(var(--tcardw) * 0.864); opacity:.55; }
+  .tavern .tile.ghost .thumb { border:1px dashed var(--tline); }
   /* Labels ABOVE their rows (2026-10-09, player call): a board is a full-width
      row of cards, and a label sitting beside it only stole width from them. */
   .tavern .brow.stacked { display:block; }
@@ -919,18 +925,28 @@ _HTML = r"""<!doctype html>
                            color:var(--tk-level-t); }
   .tavern .stick.k-play { background:var(--tk-play); color:var(--tk-play-t); }
   .tavern .stick.k-cast { background:var(--tk-cast); color:var(--tk-cast-t); }
-  .tavern .stick.sel { outline:2px solid var(--tsel); outline-offset:1px; }  .tavern .slegend { color:var(--tmute); font-size:11px; margin:0 0 10px; }
+  .tavern .stick.sel { outline:2px solid var(--tsel); outline-offset:1px; }
+  /* The legend: directly under the track (it labels the letters the track
+     prints), and at readable size and contrast — 11px muted failed both
+     (2026-10-09, player call). */
+  .tavern .slegend { color:var(--ttext); font-size:13px; margin:2px 0 10px; }
   .tavern .stepboard { display:flex; flex-wrap:wrap; gap:8px; padding:10px;
                        background:var(--tpanel); border:1px solid var(--tline);
                        border-radius:10px; min-height:192px;
                        --tcardw:var(--tstepw); }
   .tavern .stepboard .tile .tsub { font-size:15px; font-weight:700; }
   .tavern .tile.affected { outline:2px solid var(--tsel); outline-offset:1px; }
-  .tavern .tile .tag-sold { margin-bottom:auto; font-size:10px;
-                            font-weight:700; padding:2px 5px;
-                            border-radius:4px; background:var(--tloss);
-                            color:var(--tonsel); align-self:flex-start; }
   .s-empty { color:var(--dim); padding:16px 0; }
+  /* The model's plan in the rail (2026-10-09, player call): folded, neutral,
+     and away from the verdict vocabulary — the rail names it "Plan" and lets
+     the text speak. */
+  .tavern details.rplan { margin:10px 0 0; }
+  .tavern details.rplan summary { cursor:pointer; color:var(--tmute);
+                                  font-size:12px; text-transform:uppercase;
+                                  letter-spacing:.12em; }
+  .tavern details.rplan summary:hover { color:var(--ttext); }
+  .tavern details.rplan .rplan-body { color:var(--ttext); font-size:12px;
+                                      margin-top:5px; line-height:1.45; }
   /* --- Live, Tavern layout (LIVE_VIEW_DESIGN.md §4.2/§5/§7, 2026-10-09) -----
      Scoped to `.tavern.live` so these cannot leak into the Settle Up Tavern
      rules above, nor those into these: the two views share the TOKENS and the
@@ -1086,9 +1102,11 @@ _HTML = r"""<!doctype html>
   }
   .tavern.live .lv-core { --tcardw:88px; }
   .tavern.live .lv-flexcards { --tcardw:76px; margin-top:10px; }
-  /* §5 gives the flex row its own ratio (76x100) rather than the card's 88x120,
-     so it cannot come from --tcardw alone. */
-  .tavern.live .lv-flexcards .tile { aspect-ratio:76/100; }
+  /* §5 gives the flex row its own ratio (76x100) rather than the card's
+     88x116, so it cannot come from --tcardw alone. The ratio rides the ART
+     now (2026-10-09): the tile is a column (art, then name in flow), so an
+     aspect on the tile itself would fight the text below. */
+  .tavern.live .lv-flexcards .tile .thumb { aspect-ratio:76/100; }
   .tavern.live .lv-cstat { background:var(--tcard); border:1px solid var(--tline);
                            border-radius:8px; padding:8px 10px; }
   .tavern.live .lv-cmpblock { margin-top:12px; }
@@ -1130,14 +1148,15 @@ _HTML = r"""<!doctype html>
                                            margin-bottom:8px; }
   .turn.collapsed .thead.clickable { border-bottom:none; padding-bottom:6px; }
   .turn .caret { color:var(--dim); font-size:11px; }
-  .tbtns { display:flex; gap:4px; margin:8px 0; }
-  /* The three views of a turn share ONE grid cell, so the box is as tall as the
-     TALLEST of them and a card never changes size when the player switches
-     (2026-10-07). The inactive views are hidden with `visibility` by the JS, not
-     `display`: taking them out of the layout would collapse the box back to the
-     visible view and the jumping would come straight back. */
-  .tviews { display:grid; }
-  .tviews .tbody { grid-area:1 / 1; }
+  .tbtns { display:flex; gap:4px; margin:0 0 8px; }
+  /* The three views of a turn: the TAB ROW sits above them, and the panel is
+     as tall as the view on screen (2026-10-09, player call). The 2026-10-07
+     shape stacked all three invisibly in one grid cell so a card never
+     changed size — which read as ~400px of dead space under a short Shop
+     view with the controls stranded at the bottom. With the tabs on top the
+     reflow on switch is legible, so the hidden views come out of the layout
+     with `display:none` (set by the JS). */
+  .tviews { min-width:0; }
   .tbtn { background:transparent; color:var(--dim);
           border:1px solid var(--border); border-radius:var(--radius);
           padding:2px 10px; font:600 11px "Segoe UI", system-ui;
@@ -1183,14 +1202,22 @@ _HTML = r"""<!doctype html>
 <nav id="tabs">
 <button class="tab on" data-tab="live">Another Round</button>
 <button class="tab" data-tab="settle">Settle Up</button>
+<button id="share-toggle" hidden></button>
+</nav>
+<div id="app">
+<!-- ONE Classic | Tavern toggle per page (2026-10-09, player call). The live
+     one used to sit in the TOP NAV, where it looked global and rode along to
+     the Settle Up tab beside that tab's own toggle — two controls, one of
+     them unthemed there (the nav's `#tabs button` rules outranked the
+     segment styling). It lives at the top of the LIVE page now, the same
+     place the Settle Up toggle sits in its header. -->
+<div id="live-viewer-row">
 <span id="live-viewer" class="vseg" title="Live page style — Tavern is the
 reference layout (LIVE_VIEW_DESIGN.md): the same facts, no verdicts">
 <button data-v="classic" class="on">Classic</button>
 <button data-v="tavern">Tavern</button>
 </span>
-<button id="share-toggle" hidden></button>
-</nav>
-<div id="app">
+</div>
 <section id="col-decide"></section>
 <section id="col-ref"></section>
 <!-- The Tavern Live view's own container (2026-10-09). It is separate from the
@@ -1440,7 +1467,8 @@ function thumb(cid, name) {
   return img;
 }
 // A horizontal game-like card tile: thumb on top, name below, sub-line
-// (price / score / count) under that.
+// (price / score / count) under that. `sub` may be a string or a ready-made
+// element (the Tavern's two-color stat line), which is appended as-is.
 function tile(cid, name, sub, opts) {
   opts = opts || {};
   const t = el('div', 'tile' + (opts.cls ? ' ' + opts.cls : ''));
@@ -1450,8 +1478,25 @@ function tile(cid, name, sub, opts) {
   const nm = el('div', 'tname', badgeName(cid, name));
   if (opts.n > 1) nm.appendChild(el('span', 'xcount', '  ×' + opts.n));
   t.appendChild(nm);
-  if (sub) t.appendChild(el('div', 'tsub', sub));
+  if (sub) {
+    const s = el('div', 'tsub');
+    if (sub.nodeType) s.appendChild(sub);
+    else s.textContent = sub;
+    t.appendChild(s);
+  }
   return t;
+}
+// The stat line under a Tavern card: attack gold, health red (design §6/§7),
+// as one "4/4" the eye splits. BOTH unknown (a passed-through minion carries
+// no stats at all) means no line — "?/?" is a question the page cannot
+// answer, not a stat (2026-10-09, player call).
+function statSub(m) {
+  if (!m || (m.atk == null && m.health == null)) return null;
+  const s = document.createElement('span');
+  s.appendChild(el('span', 'stat-atk', String(m.atk ?? '?')));
+  s.appendChild(el('span', 'stat-sep', '/'));
+  s.appendChild(el('span', 'stat-hp', String(m.health ?? '?')));
+  return s;
 }
 // Comps panel: one playable comp as a clickable row. Clicking expands its
 // required cards (core, then addons) — owned faded, banned-this-game struck
@@ -3326,17 +3371,25 @@ function renderSettleGame(rep) {
 // own states rather than a guess.
 // --- Summary rail helpers (REPLAY_VIEWER_DESIGN.md §4.3/§4.4). Pure, so the
 // --- suite runs them under node; the DOM assembly reads them in tavernRail.
-// Run-length collapse: consecutive repeats become one entry with a count
-// ("Wolf Pup ×2", "Rolled ×9"). Items are {card, name} (named at serve
-// time) or plain id strings (reps saved before the rail).
+// Run-length collapse, over the WHOLE group (2026-10-09, player call): the
+// same card bought twice in a turn — at steps 2 and 9, say — is one row
+// ("En-Djinn Blazer ×2"), in first-seen order. The old rule merged adjacent
+// repeats only, so a non-adjacent repeat read as two different cards. Items
+// are {card, name} (named at serve time) or plain id strings (reps saved
+// before the rail).
 function runLength(seq) {
   const out = [];
+  const byKey = new Map();
   for (const x of seq || []) {
     const key = typeof x === 'string' ? x : (x.name || x.card);
     const id = typeof x === 'string' ? x : x.card;
-    const last = out[out.length - 1];
-    if (last && last.key === key && last.id === id) last.n += 1;
-    else out.push({key: key, label: key, n: 1, id: id});
+    let run = byKey.get(key);
+    if (!run) {
+      run = {key: key, label: key, n: 0, id: id};
+      byKey.set(key, run);
+      out.push(run);
+    }
+    run.n += 1;
   }
   return out;
 }
@@ -3381,6 +3434,15 @@ function outcomeText(winner) {
 // --- Step-through helpers (design §4.6). Pure, node-tested.
 function stepWords(st) {
   const name = st.cardName || st.card || '';
+  // A hero power arrives pre-labelled ("hero power" — the server has no
+  // id->power-name row to offer), and "Cast hero power" reads backwards:
+  // the power is USED, not cast from hand (2026-10-09, player call: never
+  // show a card id, and say what the action was).
+  if (name === 'hero power') {
+    return {cast: 'Used hero power', play: 'Used hero power',
+            sell: 'Sold hero power', buy: 'Bought hero power'}[st.k]
+      || 'Used hero power';
+  }
   return {roll: 'Rolled the tavern', level: 'Leveled up',
           buy: 'Bought ' + name, sell: 'Sold ' + name,
           play: 'Played ' + name, cast: 'Cast ' + name}[st.k] || '(action)';
@@ -3498,39 +3560,54 @@ function renderTavernGame(rep) {
     // extras (rail, passed-through tray, Ended net tags, Battle face-off)
     // gated on the flag. The face-off's HP line needs the NEXT turn's
     // effective-HP reading, which only the caller has.
+    //
+    // The model's plan rides the RAIL in this viewer (2026-10-09, player
+    // call), folded under a neutral label — the phase row's "coaching —
+    // not taken" summary read as advice, and its "You: bought… — next
+    // fight: −N HP" line duplicated the rail and the Result view. So the
+    // card gets NO phase rows here; every phase this turn (plus any
+    // final-duel phase with no shop of its own, which the classic viewer
+    // attaches to the last card) lands in the rail's Plan section, once.
     const idx = turns.indexOf(row);
     const nextEff = idx >= 0 && turns[idx + 1] ? turns[idx + 1].eff : null;
+    const seen = new Set(turns.map(r => r.turn));
+    const isLast = row === turns[turns.length - 1];
+    const railPhases = phases.filter(p => p.turn === row.turn
+        || (isLast && !seen.has(p.turn)));
     const wrap = document.createElement('div');
     wrap.className = 'twrap';
-    wrap.appendChild(tavernRail(row));
-    card = settleTurnCard(row, phases.filter(p => p.turn === row.turn),
-                          {tavern: true, hero: rep.hero, nextEff: nextEff});
+    wrap.appendChild(tavernRail(row, railPhases));
+    card = settleTurnCard(row, [], {tavern: true, hero: rep.hero,
+                                    nextEff: nextEff});
     wrap.appendChild(card);
     root.appendChild(wrap);
-  }
-  // The final duel's phases (a fight with no shop of its own) ride the last
-  // turn's card, exactly as the classic viewer attaches them.
-  const seen = new Set(turns.map(r => r.turn));
-  const rest = phases.filter(p => !seen.has(p.turn));
-  if (rest.length && card && row === turns[turns.length - 1]) {
-    for (const p of rest) card.appendChild(phaseRow(p));
   }
   box.appendChild(root);
 }
 // The Summary rail (design §4.3): what the turn cost and did, grouped and
-// collapsed — Economy (rolls, level-up) folded, Buys and Sells open, Plays
-// folded. Consecutive repeats collapse ("Rolled ×9"); groups longer than 8
-// cap with a show-all; the worth-a-look flags live under the chips. Items
-// carry a colored left edge: kept = green, sold = red, flipped = neutral.
-function tavernRail(r) {
+// collapsed. A group opens by default while it is SHORT — five rows or fewer
+// (2026-10-09, player call: the old fixed open/closed per group meant a
+// nine-buy turn opened a wall of rows and a two-row Economy stayed shut) —
+// and longer groups cap at 8 with a show-all. The model's plan rides here
+// too, folded under a neutral label (`phases`), because "coaching — not
+// taken" read as advice and the app is reference-only; the plan text itself
+// is a fact about the model, and the review is where it is allowed (PIVOT.md).
+function tavernRail(r, phases) {
   const took = r.took || {}, sp = r.spend || {}, ev = r.shop_events || {};
   const stats = r.stats || {};
+  const boardEnd = stats.buy_end;
   const buys = took.bought || [], sells = took.sold || [];
   const plays = took.plays || [], casts = took.spell_ids || [];
   const nRolls = sp.rolls ?? 0, levelled = !!ev.tier_up;
   const kinds = flipKinds(buys, sells);
   const nAct = buys.length + sells.length + plays.length + casts.length
     + nRolls + (levelled ? 1 : 0);
+  // No opening snapshot (the final turn family): the value chip would print
+  // a drop that never happened — the old reps carry `growth` measured against
+  // a board this turn never had (2026-10-09, player call). New saves carry
+  // None there (turn_review stops measuring without a baseline); this gate
+  // is what keeps the OLD saves honest without a rebuild.
+  const noSnapshot = r.turn !== 1 && !(r.buy_start || []).length;
   const rail = document.createElement('div');
   rail.className = 'rail';
   const h = document.createElement('div');
@@ -3546,18 +3623,21 @@ function tavernRail(r) {
   // §4.3 summary, so they have to read as English at 1 as well as at 9.
   // "+1 bought" / "−1 sold" already do — they are participles, not plurals.
   const count = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
+  // The turn's numbers are the CHIPS' job, and the only copy of them
+  // (2026-10-09, player call): the turn header's "8g · board 22 stats +8 ·
+  // spent 5g" repeated three of these — one copy, here.
+  if (r.gold != null) chip(r.gold + 'g at open');
+  if (!noSnapshot && boardEnd != null) chip('board ' + boardEnd);
   if (buys.length) chip('+' + buys.length + ' bought');
   if (sells.length) chip('−' + sells.length + ' sold');
   if (nRolls) chip(count(nRolls, 'roll'));
   if (levelled) chip('1 level-up');
   if (casts.length) chip(count(casts.length, 'cast'));
-  // What the card's own "The turn" line used to say (2026-10-09, player call):
-  // its numbers are chips now, so the turn's facts reach the player once. The
-  // line is gone from the Tavern Shop view — see settleTurnCard.
   if (ev.played != null) chip(count(ev.played, 'card') + ' played');
   if (sp.total != null) chip(sp.total + 'g spent');
-  if (stats.growth != null) chip('value ' + (stats.growth >= 0 ? '+' : '')
-                                + stats.growth);
+  if (!noSnapshot && stats.growth != null) {
+    chip('value ' + (stats.growth >= 0 ? '+' : '') + stats.growth);
+  }
   if (ev.hero_power) chip('hero power');
   for (const tr of (ev.trinkets || [])) chip('trinket: ' + tr);
   if (!chips.children.length) chip('nothing recorded this turn');
@@ -3565,13 +3645,17 @@ function tavernRail(r) {
   // One collapsible group. `items` are already the named entries; kindOf
   // names the left-edge color. Longer than the cap: first 8, then a
   // show-all that re-renders the group expanded (per group, not global).
-  const group = (title, entries, kindOf, open) => {
+  const group = (title, entries, kindOf) => {
+    const runs = runLength(entries);
+    if (!runs.length) return;          // an empty group is noise, not a header
+    // Open while short (≤5 rows), folded once longer — the number of rows,
+    // not the group's name, decides (2026-10-09, player call).
+    const open = runs.length <= 5;
     const gh = document.createElement('div');
     gh.className = 'ig-h';
     gh.textContent = (open ? '▾ ' : '▸ ') + title;
     const body = document.createElement('div');
     body.style.display = open ? '' : 'none';
-    const runs = runLength(entries);
     const CAP = 8;
     const shown = document.createElement('div');
     const draw = n => {
@@ -3609,11 +3693,11 @@ function tavernRail(r) {
   const eco = [];
   if (nRolls) eco.push({name: 'Rolled ×' + nRolls});
   if (levelled) eco.push({name: 'Level up'});
-  group('Economy', eco, () => 'kept', false);
-  group('Buys', buys, kindFor, true);
+  group('Economy', eco, () => 'kept');
+  group('Buys', buys, kindFor);
   group('Sells', sells, run => (kinds[run.id] === 'flipped'
-                                ? 'flipped' : 'sold'), true);
-  group('Plays', plays.concat(casts), () => 'kept', false);
+                                ? 'flipped' : 'sold'));
+  group('Plays', plays.concat(casts), () => 'kept');
   // The worth-a-look flags, under the chips as the design keeps them.
   for (const q of r.sell_questions || []) {
     const d = document.createElement('div');
@@ -3624,6 +3708,16 @@ function tavernRail(r) {
       : ('? sold ' + (q.sold_name || 'a card') + ' (' + (q.role || '?')
          + ') while keeping ' + (q.kept_filler_names || []).join(', '));
     rail.appendChild(d);
+  }
+  // The model's plan, folded, under a neutral label. One copy: the phase
+  // rows that used to carry it (and the verdict word) are classic-only now.
+  for (const p of phases || []) {
+    const det = document.createElement('details');
+    det.className = 'rplan';
+    det.appendChild(el('summary', null, 'Plan'));
+    det.appendChild(el('div', 'rplan-body',
+                       p.plan || '(no plan recorded for this phase)'));
+    rail.appendChild(det);
   }
   return rail;
 }
@@ -3724,8 +3818,7 @@ function renderTavernSteps(row) {
   const diff = stepDiff(st ? st.board : [], st ? st.k : null,
                         st ? st.card : null);
   for (const m of (st ? st.board : [])) {
-    const t = tile(m.card, m.name || m.card,
-      (m.atk ?? '?') + '/' + (m.health ?? '?'), {golden: m.golden});
+    const t = tile(m.card, m.name || m.card, statSub(m), {golden: m.golden});
     if (diff.highlight != null && m.eid === diff.highlight) {
       t.classList.add('affected');
     }
@@ -3744,13 +3837,15 @@ function renderTavernSteps(row) {
 // structured (the server joins display names at serve time), the text the
 // standalone page uses when it is not. Art rides /img like everywhere else,
 // so tiles hover to the full card render for free.
-function boardTiles(list, tags) {
+function boardTiles(list, tags, tav) {
   const wrap = document.createElement('span');
   wrap.className = 'brow-tiles';
   for (const m of list || []) {
-    const t = tile(m.card, m.name || m.card,
-                   (m.atk ?? '?') + '/' + (m.health ?? '?'),
-                   {golden: m.golden});
+    // Tavern tiles carry the two-color stat line (attack gold, health red);
+    // the classic tiles keep their plain "?/?-when-unknown" string — the
+    // viewer flag's contract leaves the shipped renderer alone.
+    const sub = tav ? statSub(m) : (m.atk ?? '?') + '/' + (m.health ?? '?');
+    const t = tile(m.card, m.name || m.card, sub, {golden: m.golden});
     // Net-change tags (Tavern, design §4.4): NEW for a minion that is on the
     // Ended board but was not on the Opened one; otherwise the stat delta.
     // Keyed by entity id and only present when the rep carries eids — an
@@ -3772,11 +3867,11 @@ function boardTiles(list, tags) {
   }
   return wrap;
 }
-function boardRow(lbl, list, text, cls, tags, stacked) {
+function boardRow(lbl, list, text, cls, tags, stacked, tav) {
   const d = document.createElement('div');
   d.className = 'brow' + (stacked ? ' stacked' : '');
   d.innerHTML = '<span class="blbl">' + lbl + '</span>';
-  if (list && list.length) d.appendChild(boardTiles(list, tags));
+  if (list && list.length) d.appendChild(boardTiles(list, tags, tav));
   else {
     const s = document.createElement('span');
     if (cls) s.className = cls;
@@ -3799,8 +3894,8 @@ function faceSide(label, meta, list, text, tint) {
     const row = document.createElement('div');
     row.className = 'fboards';
     for (const m of list) {
-      row.appendChild(tile(m.card, m.name || m.card,
-        (m.atk ?? '?') + '/' + (m.health ?? '?'), {golden: m.golden}));
+      row.appendChild(tile(m.card, m.name || m.card, statSub(m),
+                           {golden: m.golden}));
     }
     d.appendChild(row);
   } else {
@@ -3842,20 +3937,33 @@ function settleTurnCard(r, phases, opts) {
   // opts.tavern (2026-10-08) turns on the Tavern-only extras — the
   // passed-through tray and the Ended board's net-change tags — without
   // touching a single pixel of the classic rendering (the viewer flag's
-  // whole contract). Everything below reads `opts && opts.tavern` once.
+  // whole contract). Everything below reads `tav` once.
+  const tav = !!(opts && opts.tavern);
   const s = r.stats || {}, sp = r.spend || {}, c = r.commitment || {};
   const ev = r.shop_events || {};
+  // No opening snapshot (the final turn family — the last turn of a game
+  // whose log ends before the fight staged): nothing about this turn's
+  // boards or growth is computable, and the old save renders a fake
+  // "board 0 stats −1020" and a "value −1020" chip out of a missing
+  // baseline (2026-10-09, player call). New saves carry no such numbers
+  // (turn_review refuses to measure without one); this branch is what the
+  // OLD saves render instead of the guess.
+  const noSnapshot = r.turn !== 1 && !(r.buy_start || []).length;
   const card = document.createElement('div');
   card.className = 'turn';
   const head = document.createElement('div');
   head.className = 'thead clickable';
+  // The Tavern header is the turn and the comp target ONLY (2026-10-09,
+  // player call): its gold / board / growth / spent numbers are the rail's
+  // chips now, and a fact printed twice on one card is the duplication the
+  // rail exists to remove. The classic header keeps every number it had.
   head.innerHTML = '<span class="caret">▾</span>'
     + '<span class="tturn">Turn ' + (r.turn ?? '?') + '</span>'
-    + '<span class="tmeta">' + (r.gold ?? '—') + 'g · board '
-    + (s.buy_end ?? '—') + ' stats'
-    + (s.growth != null ? ' <span class="grw">' + (s.growth > 0 ? '+' : '')
-       + s.growth + '</span>' : '')
-    + ' · spent ' + (sp.total ?? '—') + 'g</span>'
+    + (tav ? '' : '<span class="tmeta">' + (r.gold ?? '—') + 'g · board '
+       + (s.buy_end ?? '—') + ' stats'
+       + (s.growth != null ? ' <span class="grw">' + (s.growth > 0 ? '+' : '')
+          + s.growth + '</span>' : '')
+       + ' · spent ' + (sp.total ?? '—') + 'g</span>')
     + (c.target ? '<span class="comp">' + c.target + '</span>' : '');
   // Click the title bar to fold the card down to just that bar (2026-10-07):
   // a 15-turn game is a lot of scrolling, and the headline row is the index.
@@ -3871,19 +3979,18 @@ function settleTurnCard(r, phases, opts) {
   // rows and the turn's events. Old saves carry none of the new fields; every
   // row falls back to the text the standalone page still renders.
   //
-  // **All three share ONE box, and the inactive ones are invisible rather than
-  // removed** (2026-10-07). They used to be three siblings whose display was
-  // toggled, so a card was exactly as tall as the view on screen: switching
-  // Shop -> Battle -> Result resized the card, which moved the buttons and
-  // every turn below it, and the player lost their place in a 15-turn game.
-  // `visibility` keeps the hidden views in the LAYOUT (display:none would take
-  // them out and collapse the box back to the visible one) while making them
-  // unclickable and untabbable, so the card is always as tall as its tallest
-  // view and switching moves nothing.
-  const views = document.createElement('div');
-  views.className = 'tviews';
+  // The TABS SIT ABOVE their views, and the card is as tall as the view on
+  // screen (2026-10-09, player call). The 2026-10-07 arrangement put the
+  // buttons UNDER a one-cell grid whose three bodies shared the tallest
+  // view's height invisibly — which read as ~400px of dead space under a
+  // short Shop view, with the controls at the bottom like a footnote.
+  // `display:none` takes each hidden view out of the layout, so the panel
+  // fits its content; switching tabs reflows what is below, which is the
+  // trade, and the tab row on top is what makes that legible.
   const btns = document.createElement('div');
   btns.className = 'tbtns';
+  const views = document.createElement('div');
+  views.className = 'tviews';
   const bodies = {};
   const sections = [['shop', 'Shop'], ['battle', 'Battle'],
                     ['aftermath', 'Result']];
@@ -3891,10 +3998,10 @@ function settleTurnCard(r, phases, opts) {
     const b = el('button', 'tbtn' + (key === 'shop' ? ' on' : ''), label);
     const body = document.createElement('div');
     body.className = 'tbody';
-    body.style.visibility = key === 'shop' ? '' : 'hidden';
+    body.style.display = key === 'shop' ? '' : 'none';
     b.onclick = () => {
       for (const [k] of sections) {
-        bodies[k].style.visibility = k === key ? '' : 'hidden';
+        bodies[k].style.display = k === key ? '' : 'none';
       }
       btns.querySelectorAll('.tbtn').forEach(x => x.className = 'tbtn');
       b.className = 'tbtn on';
@@ -3903,8 +4010,8 @@ function settleTurnCard(r, phases, opts) {
     bodies[key] = body;
     views.appendChild(body);
   }
-  card.appendChild(views);
   card.appendChild(btns);
+  card.appendChild(views);
   const row = (lbl, text, cls) => {
     const d = document.createElement('div');
     d.className = 'brow';
@@ -3982,12 +4089,14 @@ function settleTurnCard(r, phases, opts) {
   // SHOP — open to close, with the turn's events and the action list. The board
   // labels sit ABOVE their rows in Tavern (`tav`): a board is a full-width row
   // of cards, and a label beside it only took width from them (2026-10-09).
-  const tav = !!(opts && opts.tavern);
   bodies.shop.appendChild(r.turn === 1
     ? boardRow('Opened with', null, 'New game — nothing came before',
                null, null, tav)
-    : boardRow('Opened with', r.buy_start,
-               '(no shop snapshot — a skipped turn?)', null, null, tav));
+    : noSnapshot
+      ? boardRow('Opened with', null,
+                 'No opening board recorded for this turn.', null, null, tav)
+      : boardRow('Opened with', r.buy_start,
+                 '(no shop snapshot — a skipped turn?)', null, null, tav));
   // The fight's summoned leftovers are removed from this board before it is
   // drawn (turn_review._opening_board), and the removal is SAID rather than
   // silently shortening the row: "the minions you opened with" is a fact the
@@ -4000,8 +4109,15 @@ function settleTurnCard(r, phases, opts) {
       + 'because a board holds 7';
     bodies.shop.appendChild(l);
   }
-  bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text,
-    null, tav ? boardDelta(r.buy_start, r.buy_end) : null, tav));
+  // The Ended row is the OPENING board plus the turn's work — with no
+  // opening snapshot AND no ended board there is no honest row, and an
+  // empty one ("Ended with —") reads as "sold everything". Hidden, not
+  // zeroed (2026-10-09). A turn with no snapshot that still staged a shop
+  // keeps its Ended row: that board was read.
+  if (!noSnapshot || (r.buy_end || []).length) {
+    bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text,
+      null, tav ? boardDelta(r.buy_start, r.buy_end) : null, tav));
+  }
   if (tav) {
     // Passed through (design §4.4): minions bought AND sold this phase —
     // they never touch either board, so this tray is the only place their
@@ -4020,8 +4136,11 @@ function settleTurnCard(r, phases, opts) {
       const wrap = document.createElement('span');
       wrap.className = 'brow-tiles';
       for (const m of flipped) {
-        wrap.appendChild(tile(m.card, m.name || m.card,
-                              (m.atk ?? '?') + '/' + (m.health ?? '?'),
+        // A passed-through minion carries no stats in the took lists, so
+        // statSub answers null and the ghost draws its name alone — the
+        // "?/?" this tray used to print was a question, not a stat
+        // (2026-10-09, player call).
+        wrap.appendChild(tile(m.card, m.name || m.card, statSub(m),
                               {cls: 'ghost'}));
       }
       tray.appendChild(wrap);
@@ -4520,7 +4639,7 @@ def clear_analysis(keep_bans=False):
             _state.manual_bans = None
 
 
-def show_game_over(analysis=None, placement=None):
+def show_game_over(analysis=None, placement=None, turn=None):
     """Replace the finished game's panel with the end-of-game card.
 
     Called the moment the log says the game ended. The panel must go — the plan
@@ -4535,12 +4654,19 @@ def show_game_over(analysis=None, placement=None):
     advisory is taken BEFORE the final fight resolves and before the game writes
     its last place, so the card could report a standing the game later revised
     (measured 2026-10-07: 4 against a true 3 on the 2026-10-06 13:00 game).
+
+    `turn` is the round the game ended on, from the coach's own action count.
+    It exists as an argument because the RESTART path has an analysis of None —
+    the catch-up never advises — and the card still has to say "Round 12"
+    rather than fall back to a dash (2026-10-09).
     """
     analysis = analysis or {}
     game_over = {"placement": placement if placement is not None
                  else analysis.get("current_place"),
-                 "turn": analysis.get("turn")
-                         or (analysis.get("scenario") or {}).get("turns"),
+                 "turn": turn
+                 if turn is not None
+                 else (analysis.get("turn")
+                       or (analysis.get("scenario") or {}).get("turns")),
                  "health": analysis.get("health"),
                  "tier": analysis.get("tier")}
     with _state.lock:
@@ -4602,6 +4728,25 @@ def _review_list_response():
     return _json_response(200, {"ok": True, "games": replay_store.list()})
 
 
+def _action_label(names, cid):
+    """A display label for an ACTION's card, never a raw id.
+
+    Hero powers have no id->name row in any DB this ships: heroes.json
+    carries each power's TEXT keyed by hero name, not the power's id, so
+    `BG32_HERO_001p` used to reach the Step-through caption verbatim
+    ("Cast BG32_HERO_001p"). The fix list's rule is what happens instead —
+    name the kind ("hero power") when the name cannot be looked up, and
+    never show a card id. A hero-power-shaped id (`...HERO...p`, the game's
+    own convention) is the only shape this rewrites; everything else still
+    goes through `value.display_name`, whose own contract — unknown ids come
+    back as themselves — is what `_acted`'s raw-id fallback relies on.
+    """
+    cid = str(cid or "")
+    if "HERO" in cid.upper() and re.search(r"p\d?$", cid):
+        return "hero power"
+    return value.display_name(names, cid)
+
+
 def _name_timeline_boards(rep):
     """A copy of the rep with a display name on every timeline minion.
 
@@ -4640,13 +4785,13 @@ def _name_timeline_boards(rep):
             if isinstance(lst, list):
                 took[key] = [
                     item if isinstance(item, dict) else
-                    {"card": item, "name": value.display_name(names, item)}
+                    {"card": item, "name": _action_label(names, item)}
                     for item in lst
                 ]
         # The Step-through's per-action boards name like every other board,
         # and each step's own action card gets a cardName for the caption.
         for st in row.get("steps") or []:
-            st["cardName"] = value.display_name(names, st.get("card"))
+            st["cardName"] = _action_label(names, st.get("card"))
             for m in st.get("board") or []:
                 m["name"] = value.display_name(names, m.get("card"))
     return out

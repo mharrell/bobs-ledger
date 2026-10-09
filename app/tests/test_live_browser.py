@@ -792,11 +792,25 @@ class TestTheCompsScreens(_Rendered):
         self.assertGreaterEqual(self.got["browse.slotsmiss"], 1)
 
     def test_detail_draws_the_core_row_and_the_flex_row_at_their_sizes(self):
+        """The design's WIDTHS are the contract (88 core, 76 flex). The HEIGHT
+        stopped being a fixed number on 2026-10-09: one card component
+        everywhere means the name and caption sit BELOW the art in flow, so
+        the tile is the art's ratio plus its own text — taller than the art
+        alone, and no longer a box with a strip printed over it."""
         got = self.got
         self.assertEqual(got["detail.detail"], "Elementals")
         self.assertEqual(got["detail.detailchips"], "S tier|ELEMENTAL|Easy")
-        self.assertEqual(got["detail.corepx"], "88x120")
-        self.assertEqual(got["detail.flexpx"], "76x100")
+        core_w, core_h = got["detail.corepx"].split("x")
+        flex_w, flex_h = got["detail.flexpx"].split("x")
+        self.assertEqual(core_w, "88", f"core row: {got['detail.corepx']}")
+        self.assertEqual(flex_w, "76", f"flex row: {got['detail.flexpx']}")
+        # The art alone would be 88x116 and 76x100 (the design's ratios). The
+        # name row is what pushes the tile past it — if this ever reads equal,
+        # the name is back ON the art.
+        self.assertGreater(int(core_h), 116,
+                           f"core card is art-only: {got['detail.corepx']}")
+        self.assertGreater(int(flex_h), 100,
+                           f"flex card is art-only: {got['detail.flexpx']}")
         # §8: nothing is communicated by colour alone — every core card carries
         # its own state as a caption.
         self.assertIn("on board", got["detail.caps"])

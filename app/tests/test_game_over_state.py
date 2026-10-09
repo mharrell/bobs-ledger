@@ -42,7 +42,7 @@ class TestTheTwoStates(unittest.TestCase):
         self.assertIn("steps", card)
         self.assertIn("hint", card)
 
-    def _after_game_over(self, analysis=None, placement=None):
+    def _after_game_over(self, analysis=None, placement=None, turn=None):
         """Run the real entry point and read the card it published.
 
         `show_game_over` writes global state (it IS the live transition), so the
@@ -52,7 +52,7 @@ class TestTheTwoStates(unittest.TestCase):
         before = (coach_ui._state.payload, coach_ui._state.etag,
                   coach_ui._state.analysis)
         self.addCleanup(self._restore, before)
-        coach_ui.show_game_over(analysis, placement=placement)
+        coach_ui.show_game_over(analysis, placement=placement, turn=turn)
         return json.loads(coach_ui._state.payload)
 
     @staticmethod
@@ -80,6 +80,18 @@ class TestTheTwoStates(unittest.TestCase):
         """The exit backstop has no coach to ask, so the fallback has to work."""
         card = self._after_game_over({"current_place": 4, "turn": 14})
         self.assertEqual(card["game_over"]["placement"], 4)
+
+    def test_the_restart_names_the_round_it_never_advised_through(self):
+        """The RESTART shape (2026-10-09): the catch-up re-detected a finished
+        game with no analysis in memory, and the card read `—` where
+        `3rd · Round 12` belongs. The placement and the round now come to the
+        card from the coach directly — `final_placement()` and the action
+        tracker's turn count — not from an analysis that was never pushed."""
+        card = self._after_game_over(None, placement=3, turn=12)
+        self.assertEqual(card["game_over"]["placement"], 3)
+        self.assertEqual(card["game_over"]["turn"], 12)
+        self.assertIn("3rd", card["tagline"])
+        self.assertIn("Round 12", card["tagline"])
 
     def test_a_game_over_card_names_the_game_and_stays_a_card(self):
         card = _payload(game_over={"placement": 3, "turn": 15})

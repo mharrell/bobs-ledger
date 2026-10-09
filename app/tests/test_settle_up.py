@@ -519,6 +519,24 @@ class TestBuildWalksALog(unittest.TestCase):
         # The PowerTaskList duplicate must NOT be counted as a third game.
         self.assertIn("has 2 game(s)", str(cm.exception))
 
+    def test_the_report_carries_the_game_stable_id(self):
+        """The gid is what makes a reprocessed game save over itself instead
+        of beside itself (the 2026-10-09 restart bug — the old filename came
+        from `created`, which is the wall clock of the build). It is derived
+        from the pointer, so the same game twice names itself the same way
+        and a different game does not."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "Power.log")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write("\n".join(self._log(games=2)))
+            first = settle_up.build(path, 1)
+            again = settle_up.build(path, 1)
+            second = settle_up.build(path, 2)
+        self.assertTrue(first["gid"])
+        self.assertEqual(first["gid"], again["gid"])
+        self.assertNotEqual(first["gid"], second["gid"])
+
 
 class TestRebuild(unittest.TestCase):
     """Re-derive a saved replay from its own source log (2026-10-08). The

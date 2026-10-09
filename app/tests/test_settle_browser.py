@@ -280,6 +280,47 @@ _DRIVER = r"""
       .filter(d => d.textContent.indexOf('rebuilt the board') >= 0).length;
     o.deltaatk = [...q('.tdatk')].map(d => d.textContent).join('|');
     o.deltahp = [...q('.tdhp')].map(d => d.textContent).join('|');
+    // Item 6's colors, read off the ELEMENTS rather than the stylesheet: a
+    // rule that lost a specificity fight reads as "correct" in the source and
+    // wrong on screen (the .vseg lesson). Computed colors come back as rgb().
+    const col = (sel, prop) => {
+      const e = one(sel);
+      return e ? getComputedStyle(e)[prop] : 'none';
+    };
+    o.statatk = col('.tsub .stat-atk', 'color');
+    o.stathp = col('.tsub .stat-hp', 'color');
+    o.deltacolor = col('.tdelta', 'color');
+    // Item 5: the NEW tag rides a fixed corner OVER the art — measured as a
+    // rectangle, because "the corner" is a position and positions are what a
+    // source assertion cannot see.
+    o.newcorner = (() => {
+      const t = one('.tag-new');
+      const art = t && t.closest('.tile');
+      const img = art && art.querySelector('.thumb');
+      if (!t || !img) return 'none';
+      const tr = t.getBoundingClientRect(), ar = img.getBoundingClientRect();
+      return (tr.top >= ar.top - 2 && tr.top <= ar.bottom
+              && tr.left >= ar.left - 2 && tr.left <= ar.right)
+        ? 'onart' : 'off';
+    })();
+    // Item 2: a passed-through ghost carries no stats in the took lists, so
+    // it must draw NO stat line — "?/?" was a question, not a stat. Counted
+    // across every ghost tile with a sub.
+    o.ghostsub = [...q('.tile.ghost')].filter(t => t.querySelector('.tsub'))
+      .length;
+    // Item 6: the legend, larger and legible.
+    o.legendfs = one('.slegend')
+      ? Math.round(parseFloat(getComputedStyle(one('.slegend')).fontSize)) : 0;
+    o.legendcol = col('.slegend', 'color');
+    // The final-turn family: what the Opened row says, and whether an Ended
+    // row exists at all.
+    o.opened = (() => {
+      const r = [...q('.brow')].find(
+        x => (x.querySelector('.blbl') || {}).textContent === 'Opened with');
+      return r ? r.textContent : '(absent)';
+    })();
+    o.ended = [...q('.blbl')].filter(l => l.textContent === 'Ended with')
+      .length;
     // Counts come back as ints, sizes and words as text. The '#' marks the
     // numeric ones so `browser.fields()` can cast them: without it every count
     // arrives as a string and `assertEqual(got[key], 2)` fails on '2' != 2 —
@@ -290,7 +331,7 @@ _DRIVER = r"""
                              'stepminions', 'stepghosts', 'steptiles',
                              'affected', 'labelabove', 'stackrows', 'theturn',
                              'rebuildnotes', 'modehidden', 'capin', 'railw',
-                             'capsize']);
+                             'capsize', 'ghostsub', 'legendfs', 'ended']);
     for (const k of Object.keys(o)) {
       const v = o[k];
       rec(name + '.' + k, NUMERIC.has(k) ? '#' + Number(v)
@@ -407,6 +448,10 @@ class TestTheTavernSummaryInABrowser(_Rendered):
     def shots(cls):
         return [_shot("t1", _named(), mode="summary"),
                 _shot("t3", _named_single(), mode="summary"),
+                # The final-turn family (2026-10-09): no opening snapshot, no
+                # reading — the old build drew "board 0 stats −1020", a "value
+                # −1020" chip and "Ended with —" out of the missing baseline.
+                _shot("nofinal", _named(), mode="summary", turn=3),
                 # Classic, for the two things Tavern must not have changed: the
                 # mode toggle is Tavern-only, and the classic renderer keeps its
                 # own "The turn" line.
@@ -448,11 +493,19 @@ class TestTheTavernSummaryInABrowser(_Rendered):
         for chip in ("+11 bought", MINUS + "2 sold", "9 rolls", "1 level-up",
                      "2 casts"):
             self.assertIn(chip, self.got["t1.chips"])
-        # §4.3's defaults, read TWICE: the header glyph and the body it controls.
+        # The turn's numbers live in the chips and ONLY there (2026-10-09,
+        # player call): the header's "8g · board 22 stats +8 · spent 5g" was
+        # the same facts twice on one card.
+        self.assertIn("4g at open", self.got["t1.chips"])
+        self.assertIn("board 40", self.got["t1.chips"])
+        # §4.3's defaults, read TWICE: the header glyph and the body it
+        # controls. WHICH group opens is the row count now (2026-10-09, player
+        # call): short groups (≤5 rows) open, longer ones fold — Economy's two
+        # rows and the Plays trio open, the nine-buy Buys group folds.
         self.assertEqual(self.got["t1.groups"],
-                         "|".join([FOLDED + " Economy", OPENED + " Buys",
-                                   OPENED + " Sells", FOLDED + " Plays"]))
-        self.assertEqual(self.got["t1.groupstate"], "closed|open|open|closed")
+                         "|".join([OPENED + " Economy", FOLDED + " Buys",
+                                   OPENED + " Sells", OPENED + " Plays"]))
+        self.assertEqual(self.got["t1.groupstate"], "open|closed|open|open")
 
     def test_the_turns_own_line_is_gone_and_its_numbers_are_chips(self):
         """Item 4 (2026-10-09): the card's "The turn" line is classic-only, and
@@ -510,6 +563,52 @@ class TestTheTavernSummaryInABrowser(_Rendered):
         self.assertEqual(self.got["t1.rebuildnotes"], 1,
                          "the rebuild note is duplicated (or gone)")
 
+    def test_stats_are_two_colors_and_a_delta_is_buff_green(self):
+        """Item 6 (2026-10-09): attack gold, health red, and the net change ONE
+        buff-green "+0/+3" — the buff is the fact; per-stat colour is the base
+        stats' job. Read off the elements: a rule that loses a specificity
+        fight is correct in the stylesheet and absent on screen."""
+        self.assertEqual(self.got["t1.statatk"], "rgb(244, 201, 93)",
+                         "attack is not the gold token")
+        self.assertEqual(self.got["t1.stathp"], "rgb(232, 102, 79)",
+                         "health is not the red token")
+        self.assertEqual(self.got["t1.deltacolor"], "rgb(143, 208, 106)",
+                         "the delta is not the buff green")
+
+    def test_the_new_tag_rides_a_corner_of_the_art(self):
+        """Item 5 (2026-10-09): "Put NEW in a fixed corner above the art" —
+        measured as a rectangle, because the clipped-behind-an-overlay bug was
+        also a position, and no source assertion sees one."""
+        self.assertEqual(self.got["t1.newcorner"], "onart",
+                         "the NEW tag is not over the art")
+
+    def test_a_passed_through_card_shows_no_stat_line(self):
+        """Item 2 (2026-10-09): a passed-through minion has no stats in the
+        took lists, and "?/?" was the page asking a question it could not
+        answer. No line beats a false one."""
+        self.assertEqual(self.got["t1.ghostsub"], 0,
+                         "a ghost tile renders a stat line it has no data for")
+
+    def test_the_final_turn_with_no_snapshot_invents_nothing(self):
+        """Item 2 (2026-10-09): a turn whose shop never staged drew "board 0
+        stats −1020", a "value −1020" chip, "Ended with —" and a guess about
+        skipped turns — four fabrications from one missing baseline. It says
+        what happened instead, and keeps the one number that is real (the
+        gold it opened with)."""
+        g = self.got
+        self.assertIn("No opening board recorded for this turn",
+                      g["nofinal.opened"],
+                      f"the Opened row still guesses: {g['nofinal.opened']!r}")
+        self.assertNotIn("skipped turn", g["nofinal.opened"])
+        self.assertEqual(g["nofinal.ended"], 0,
+                         "an empty Ended row reads as sold everything")
+        chips = g["nofinal.chips"].split("|")
+        self.assertFalse([c for c in chips if c.startswith("value")],
+                         f"a value chip survived a missing baseline: {chips}")
+        self.assertNotIn("board 0", chips)
+        self.assertIn("2g at open", chips,
+                      "the gold the turn actually opened with is real data")
+
     def test_the_board_labels_sit_above_their_rows(self):
         """Item 8 (2026-10-09): OPENED WITH / ENDED WITH label their board from
         above instead of taking a column beside it."""
@@ -542,18 +641,25 @@ class TestTheTavernSummaryInABrowser(_Rendered):
         self.assertEqual(self.got["cl.rail"], 0, "classic has no rail")
 
     def test_the_art_fills_the_card_frame(self):
-        """Item 2 (2026-10-09): the art fills the frame, and the frame scales
-        with the window — minimum the design's §4.2 sizes (88 Summary, 130 Step
-        through, asserted in the step case below).
+        """Item 5 (2026-10-09): ONE card component — the art fills the card's
+        full WIDTH and the name and stats sit BELOW it, in flow, so no
+        overlay can float over a name or clip a tag. The 2026-10-09-morning
+        shape put them on a strip OVER the art, which is where the three
+        symptoms the fix list names came from.
 
-        Before this, a Tavern tile was the live overlay's fixed box with a 56px
-        thumbnail inside: a step-through card was a 130x172 outline around a small
-        picture, which is the "oversized empty frame" this fixes."""
+        Before any of it, a Tavern tile was the live overlay's fixed box with
+        a 56px thumbnail inside: a step-through card was a 130x172 outline
+        around a small picture — the "oversized empty frame"."""
         self.assertNotEqual(self.got["t1.tile"], "none",
                             "no card tile rendered in the summary board")
-        self.assertEqual(self.got["t1.thumb"], self.got["t1.tile"],
-                         "the art does not fill the card frame")
-        width = int(self.got["t1.tile"].split("x")[0])
+        tw, th = self.got["t1.tile"].split("x")
+        aw, ah = self.got["t1.thumb"].split("x")
+        self.assertEqual(aw, tw,
+                         "the art does not fill the card's width")
+        self.assertLess(int(ah), int(th),
+                        "the name and stats are not below the art — the card "
+                        "is exactly its art again")
+        width = int(tw)
         self.assertGreaterEqual(width, 88,
                                 f"summary cards are under the design's 88px "
                                 f"minimum: {self.got['t1.tile']}")
@@ -582,6 +688,16 @@ class TestTheStepThroughInABrowser(_Rendered):
         """Item 7 (2026-10-09): the letters are explained where they are read."""
         self.assertEqual(self.got["s0.legendaftertrack"], "yes",
                          "something sits between the track and its legend")
+
+    def test_the_legend_is_readable(self):
+        """Item 6 (2026-10-09): "make the legend larger, with enough contrast"
+        — 11px in the muted token failed both. Read off the element, like the
+        stat colours: the rule has to WIN, not merely exist."""
+        self.assertGreaterEqual(self.got["s0.legendfs"], 12,
+                                f"the legend is still small: "
+                                f"{self.got['s0.legendfs']}px")
+        self.assertEqual(self.got["s0.legendcol"], "rgb(241, 230, 210)",
+                         "the legend is back in the muted token")
 
     def test_every_tick_carries_its_action_as_a_tooltip(self):
         titles = "|" + self.got["s0.titles"] + "|"
@@ -645,15 +761,18 @@ class TestTheStepThroughInABrowser(_Rendered):
         self.assertEqual(self.got["s2.stepghosts"], 1)
 
     def test_large_cards_and_prev_play_next(self):
-        """Item 2 (2026-10-09): step cards are at least the design's 130px wide
-        with the art filling them, and the sold ghost stays smaller than a card —
-        the bug that made a sold card look like it was still on the board."""
-        width = int(self.got["s2.steptile"].split("x")[0])
+        """Item 2/5 (2026-10-09): step cards are at least the design's 130px
+        wide with the art filling that width, and the sold ghost stays
+        smaller than a card — the bug that made a sold card look like it was
+        still on the board."""
+        tw, _th = self.got["s2.steptile"].split("x")
+        aw, _ah = self.got["s2.stepthumb"].split("x")
+        width = int(tw)
         self.assertGreaterEqual(width, 130,
                                 f"step cards are under 130px: "
                                 f"{self.got['s2.steptile']}")
-        self.assertEqual(self.got["s2.stepthumb"], self.got["s2.steptile"],
-                         "the art does not fill the step card")
+        self.assertEqual(aw, tw,
+                         "the art does not fill the step card's width")
         ghost = int(self.got["s2.stepghost"].split("x")[0])
         self.assertLess(ghost, width,
                         "the sold ghost is as big as a real card")

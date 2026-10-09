@@ -652,7 +652,17 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
             "theirs_survivors": theirs_survivors,
             "stats": {
                 "buy_end": bstats,
-                "growth": None if prev_stats is None else bstats - prev_stats,
+                # Growth needs a reading at BOTH ends. A turn that staged no
+                # buy snapshot at all — a skipped turn, or a final turn whose
+                # shop never opened before the log ended — has no board to
+                # measure, and subtracting its empty list from last turn's
+                # board manufactured a fake collapse ("board 0 stats −1020,
+                # value −1020"; 2026-10-09 fix list). The discriminator is
+                # the SNAPSHOT LIST, not the board: a genuinely emptied board
+                # still fired snapshots (the sells), so its 0 is a reading
+                # and measures a real −N. An unreadable turn says so instead.
+                "growth": None if (prev_stats is None or not buy)
+                          else bstats - prev_stats,
                 "theirs": stats(theirs_at_combat),
                 "combat_ours": stats(ours_at_combat),
             },
@@ -684,7 +694,12 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
             "lag": max(0, lag),
             "notes": notes,
         })
-        if buy_end:
+        # The baseline the NEXT turn's growth measures against is this turn's
+        # own reading — including a real 0. The old guard (`if buy_end`) kept
+        # the LAST NON-EMPTY board as the baseline, so the turn after a
+        # sold-everything turn measured its growth against a board that no
+        # longer existed — the same fake number, one turn later.
+        if buy:
             prev_stats = bstats
     return rows
 

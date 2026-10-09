@@ -66,10 +66,14 @@ class TestTheFlag(unittest.TestCase):
 
     def test_tavern_reuses_the_real_card_renderer(self):
         """The Tavern branch must not fork the card logic: one turn on screen
-        is THE settleTurnCard, notes and honesty included."""
+        is THE settleTurnCard, notes and honesty included. It gets no phase
+        rows since 2026-10-09 — the model's plan rides the rail there (a
+        neutral "Plan", not "coaching — not taken") — but the card itself is
+        still the shared renderer."""
         src = _function("renderTavernGame")
         self.assertIsNotNone(src, "renderTavernGame is missing")
-        self.assertIn("settleTurnCard(row, phases.filter(", src)
+        self.assertIn("settleTurnCard(row, [],", src)
+        self.assertIn("tavernRail(row, railPhases)", src)
         self.assertIn("className = 'tavern'", src)
         self.assertIn("stripMark(r.winner, r.damage_taken)", src)
 
@@ -211,6 +215,17 @@ class TestTheRailHelpers(unittest.TestCase):
                     "[{eid: 1, card: 'A'}], 'level', null)));\n"
                     "out.push(JSON.stringify(stepDiff("
                     "[{eid: 1, card: 'A'}], 'sell', 'A')));\n"
+                    # Whole-group grouping (2026-10-09, player call): the same
+                    # card bought at steps 2 and 9 is ONE row, first-seen
+                    # order, whatever sits between the two buys. Then the
+                    # hero-power label (same date): the server names the kind,
+                    # and the step says what the action WAS — "Cast hero
+                    # power" reads backwards.
+                    "out.push(runLength(['A', 'B', 'A']));\n"
+                    "out.push(runLength(['A', 'A', 'B', 'A']));\n"
+                    "out.push(stepWords({k: 'cast', cardName: 'hero power'})"
+                    " + '|' + stepWords({k: 'play', cardName: 'hero power'})"
+                    " + '|' + stepWords({k: 'cast', cardName: 'Tavern Spell'}));\n"
                     "console.log(JSON.stringify(out));\n")
         # Bytes in, UTF-8 decoded here: text=True reads node's pipe as cp1252
         # and mojibakes the non-ASCII labels (measured 2026-10-08).
@@ -226,6 +241,27 @@ class TestTheRailHelpers(unittest.TestCase):
                          [("A", 2), ("B", 1)])
         self.assertEqual(self.out[1][0]["label"], "Rolled ×9")
         self.assertEqual(self.out[2], [])
+
+    def test_runs_group_by_name_across_the_whole_group(self):
+        """2026-10-09, player call: Buys listed En-Djinn Blazer twice and
+        several Sells twice, because only ADJACENT repeats merged. The same
+        card bought at steps 2 and 9 is one row — "×2" — in first-seen
+        order, whatever sits between the two buys."""
+        self.assertEqual([(r["label"], r["n"]) for r in self.out[16]],
+                         [("A", 2), ("B", 1)],
+                         "a non-adjacent repeat split into two rows")
+        self.assertEqual([(r["label"], r["n"]) for r in self.out[17]],
+                         [("A", 3), ("B", 1)],
+                         "a third non-adjacent repeat did not join its run")
+
+    def test_a_hero_power_step_says_what_happened_not_its_id(self):
+        """2026-10-09, player call: "Cast BG32_HERO_001p" reached the
+        Step-through. No DB this ships carries a hero-power id's name (the
+        power table is keyed by hero NAME with the power's text), so the
+        serve-time join names the kind and the step words say what the
+        action was."""
+        self.assertEqual(self.out[18],
+                         "Used hero power|Used hero power|Cast Tavern Spell")
 
     def test_flipped_is_bought_and_sold_same_phase(self):
         kinds = self.out[3]
@@ -327,6 +363,49 @@ class TestTheStripMarker(unittest.TestCase):
     def test_a_turn_number_never_carries_a_question_mark(self):
         for line in self.out:
             self.assertNotIn("?", line["ch"])
+
+
+class TestTheActionLabels(unittest.TestCase):
+    """The serve-time join names an ACTION's card, and a hero power — whose
+    name no shipped DB carries — comes out as the kind, never the raw id
+    (2026-10-09, player call: "Cast BG32_HERO_001p" reached the caption).
+
+    The fallback lives HERE and not in `value.display_name` on purpose: that
+    function's contract is "unknown ids come back as themselves", which is
+    what `_acted`'s raw-id rule relies on ("bought BG36_318" beats a buy
+    that vanishes). A caption has a better move available — name the kind —
+    and only the caption takes it."""
+
+    def _named(self, steps, spell_ids=None):
+        rep = {"hero": "H", "totals": {}, "phases": [],
+               "timeline": {"turns": [
+                   {"turn": 1, "notes": [], "steps": steps,
+                    "took": {"spell_ids": spell_ids or []}}]}}
+        return coach_ui._name_timeline_boards(rep)
+
+    def test_a_hero_power_step_never_shows_its_id(self):
+        out = self._named([{"k": "cast", "card": "BG32_HERO_001p"}])
+        st = out["timeline"]["turns"][0]["steps"][0]
+        self.assertEqual(st["cardName"], "hero power")
+
+    def test_the_rails_spell_list_gets_the_same_treatment(self):
+        out = self._named([], spell_ids=["BG32_HERO_001p"])
+        row = out["timeline"]["turns"][0]["took"]["spell_ids"][0]
+        self.assertEqual(row["name"], "hero power")
+
+    def test_an_unknown_minion_id_stays_raw(self):
+        """The hero-power rewrite is about the POWER shape only. A minion id
+        the DB cannot name still renders itself — the review's own rule
+        (test_settle_up's raw-id fallback), and a hero-power-looking rewrite
+        of it would be its own invention."""
+        out = self._named([{"k": "sell", "card": "BG99_999"}])
+        st = out["timeline"]["turns"][0]["steps"][0]
+        self.assertEqual(st["cardName"], "BG99_999")
+
+    def test_a_golden_power_shape_is_caught_too(self):
+        out = self._named([{"k": "cast", "card": "BG31_HERO_100p2"}])
+        st = out["timeline"]["turns"][0]["steps"][0]
+        self.assertEqual(st["cardName"], "hero power")
 
 
 if __name__ == "__main__":
