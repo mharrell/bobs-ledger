@@ -28,30 +28,15 @@ against `100/100/100` for the fix.
 """
 import os
 import re
-import shutil
-import subprocess
 import sys
-import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)          # location-independent: no cwd or -t needed
+sys.path.insert(0, os.path.join(HERE, "tests"))   # the shared test helpers
 
+import browser  # noqa: E402  (the shared headless-browser harness)
 import coach_ui  # noqa: E402
-
-#: Where a Chromium browser lives on this platform. Checked in order; the test
-#: skips and says why when none of them is there, the same way the node-based
-#: tests skip without node.
-BROWSERS = (
-    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-    os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
-    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-    "/usr/bin/google-chrome",
-    "/usr/bin/chromium",
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-)
 
 _ROWS = "".join('<div class="brow"><span>row %d</span></div>' % i
                 for i in range(1, 6))
@@ -72,44 +57,24 @@ _BODIES = """
 """ % (_ROWS, _TWO, _THREE)
 
 
-def _browser():
-    for path in BROWSERS:
-        if os.path.exists(path):
-            return path
-    return shutil.which("google-chrome") or shutil.which("chromium")
-
-
 def _page_style():
     """The page's own <style> block, so the test cannot pass on its own CSS."""
     m = re.search(r"<style>(.*?)</style>", coach_ui._HTML, re.S)
     return m.group(1) if m else ""
 
 
-def _measure(doc):
+def _measure(case, doc):
     """Render `doc` in a headless browser and return the numbers it wrote.
 
-    The page prints its own measurements into #out and `--dump-dom` reads them
-    back: a headless run gives no other channel, and the alternative — parsing a
-    screenshot — would need the pixels to be read, which nothing here can do.
+    The launch, the DOM read and the diagnosis live in `browser.py`, shared
+    with `test_settle_browser`; a browser this session cannot START is a skip
+    with the browser's own words in it, not a failure (2026-10-08 — see that
+    module for the measurement behind the distinction).
     """
-    browser = _browser()
-    with tempfile.TemporaryDirectory() as tmp:
-        page = os.path.join(tmp, "layout.html")
-        with open(page, "w", encoding="utf-8") as fh:
-            fh.write(doc)
-        proc = subprocess.run(
-            [browser, "--headless=new", "--disable-gpu", "--no-sandbox",
-             f"--user-data-dir={os.path.join(tmp, 'profile')}",
-             "--dump-dom", "file:///" + page.replace(os.sep, "/")],
-            capture_output=True, text=True, timeout=120)
-    m = re.search(r'id="out">([^<]*)<', proc.stdout or "")
-    if not m:
-        raise AssertionError(
-            f"the browser did not run the page: {(proc.stderr or '')[:300]}")
-    # ints, not the strings the page printed: a string comparison would make
-    # `assertGreater` raise and every equality check pass on the text.
-    return {part.split("=")[0]: int(part.split("=")[1])
-            for part in m.group(1).split()}
+    try:
+        return browser.numbers(doc)
+    except browser.BrowserUnavailable as e:
+        case.skipTest(str(e))
 
 
 def _harness(container, prop, hidden, visible, style):
@@ -140,18 +105,16 @@ def _harness(container, prop, hidden, visible, style):
 
 class TestTheTurnCardHoldsItsSize(unittest.TestCase):
     def setUp(self):
-        if _browser() is None:
-            self.skipTest("no Chromium browser on this machine, so a layout "
-                          "cannot be measured")
+        browser.require_browser(self)
         style = _page_style()
         self.assertIn(".tviews", style,
                       "the page no longer stacks the views — the card will "
                       "resize again when the player switches")
 
     def test_the_card_is_the_same_height_in_all_three_views(self):
-        heights = _measure(_harness('<div class="tviews">{s}</div>',
-                                    "style.visibility", "'hidden'", "''",
-                                    _page_style()))
+        heights = _measure(self, _harness('<div class="tviews">{s}</div>',
+                                          "style.visibility", "'hidden'", "''",
+                                          _page_style()))
         self.assertEqual(len(set(heights.values())), 1,
                          f"the card changes size on a view switch: {heights}")
         self.assertGreater(max(heights.values()), 0,
@@ -162,8 +125,8 @@ class TestTheTurnCardHoldsItsSize(unittest.TestCase):
         """The rehearsal. Same page, pre-fix markup (`display` toggling, no
         shared grid cell): the heights MUST come out unequal, or this suite
         cannot tell the fix from the bug it fixed."""
-        heights = _measure(_harness("{s}", "style.display", "'none'", "''",
-                                    _page_style()))
+        heights = _measure(self, _harness("{s}", "style.display", "'none'", "''",
+                                          _page_style()))
         self.assertGreater(len(set(heights.values())), 1,
                            f"the old structure measured equal heights ({heights})"
                            " — this control is blind")

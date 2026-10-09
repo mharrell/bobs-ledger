@@ -853,6 +853,13 @@ _HTML = r"""<!doctype html>
                        background:var(--tpanel); border:1px solid var(--tline);
                        border-radius:10px; min-height:192px; }
   .tavern .stepboard .tile { width:130px; height:172px; }
+  /* The sold ghost keeps the design's §4.2 size INSIDE the step board. The
+     board rule above is equally specific (three classes) and later in the
+     sheet, so it was winning and drawing a sold card at a full 130x172 with
+     55% opacity — a card the size of the ones around it reads as still being
+     there. Measured 2026-10-08 in a real browser, which is the only thing that
+     could see it: both rules are correct in isolation. */
+  .tavern .stepboard .tile.ghost { width:76px; height:100px; }
   .tavern .stepboard .tile .tsub { font-size:15px; font-weight:700; }
   .tavern .tile.affected { outline:2px solid var(--tsel); outline-offset:1px; }
   .tavern .tile .tag-sold { margin-bottom:auto; font-size:10px;
@@ -2332,11 +2339,16 @@ function tavernRail(r) {
   const chips = document.createElement('div');
   chips.className = 'rchips';
   const chip = t => chips.appendChild(el('span', 'chip', t));
+  // "1 casts" and "1 rolls" were reaching the player (measured 2026-10-08 by
+  // running the rail against a one-cast turn): these chips are the design's
+  // §4.3 summary, so they have to read as English at 1 as well as at 9.
+  // "+1 bought" / "−1 sold" already do — they are participles, not plurals.
+  const count = (n, word) => n + ' ' + word + (n === 1 ? '' : 's');
   if (buys.length) chip('+' + buys.length + ' bought');
   if (sells.length) chip('−' + sells.length + ' sold');
-  if (nRolls) chip(nRolls + ' rolls');
+  if (nRolls) chip(count(nRolls, 'roll'));
   if (levelled) chip('1 level-up');
-  if (casts.length) chip(casts.length + ' casts');
+  if (casts.length) chip(count(casts.length, 'cast'));
   if (!chips.children.length) chip('nothing recorded this turn');
   rail.appendChild(chips);
   // One collapsible group. `items` are already the named entries; kindOf
