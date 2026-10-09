@@ -763,6 +763,10 @@ _HTML = r"""<!doctype html>
             --tstepw:clamp(130px, 9.6vw, 190px);
             background:var(--tbg); color:var(--ttext); border-radius:var(--radius);
             padding:10px 12px; }
+  /* §8: "Visible focus ring (2px --sel, with offset) on all controls". Scoped to
+     .tavern, so it reaches both Tavern viewers and leaves the classic pages with
+     the browser's own ring. The 44px minimum targets are per control, below. */
+  .tavern :focus-visible { outline:2px solid var(--tsel); outline-offset:2px; }
   .tavern .ts-head { font:600 13px "Segoe UI", system-ui; margin-bottom:8px; }
   .tavern .ts-head .tm { color:var(--tmute); font-weight:400; font-size:12px; }
   .tavern .ts-caveat { color:var(--tmute); font-size:12px; margin:4px 0 10px; }
@@ -914,8 +918,7 @@ _HTML = r"""<!doctype html>
                            color:var(--tk-level-t); }
   .tavern .stick.k-play { background:var(--tk-play); color:var(--tk-play-t); }
   .tavern .stick.k-cast { background:var(--tk-cast); color:var(--tk-cast-t); }
-  .tavern .stick.sel { outline:2px solid var(--tsel); outline-offset:1px; }
-  .tavern .slegend { color:var(--tmute); font-size:11px; margin:0 0 10px; }
+  .tavern .stick.sel { outline:2px solid var(--tsel); outline-offset:1px; }  .tavern .slegend { color:var(--tmute); font-size:11px; margin:0 0 10px; }
   .tavern .stepboard { display:flex; flex-wrap:wrap; gap:8px; padding:10px;
                        background:var(--tpanel); border:1px solid var(--tline);
                        border-radius:10px; min-height:192px;
@@ -971,6 +974,7 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-tabs { display:flex; gap:0; margin:0 0 10px; }
   .tavern.live .lv-tabs button { background:var(--tpanel); color:var(--tmute);
                                  border:1px solid var(--tline); padding:6px 12px;
+                                 min-height:44px;
                                  font:600 12px "Segoe UI", system-ui;
                                  cursor:pointer; }
   .tavern.live .lv-tabs button:first-child { border-radius:8px 0 0 8px; }
@@ -1064,7 +1068,7 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-slot.banned { border:2px solid var(--tloss); opacity:.5; }
   .tavern.live .lv-more { background:var(--tpanel); color:var(--ttext);
                           border:1px solid var(--tline); border-radius:8px;
-                          padding:5px 10px; margin-top:6px;
+                          padding:5px 10px; margin-top:6px; min-height:44px;
                           font:600 12px "Segoe UI", system-ui; cursor:pointer; }
   .tavern.live .lv-back { background:var(--tpanel); color:var(--ttext);
                           border:1px solid var(--tline); border-radius:8px;
