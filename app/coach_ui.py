@@ -710,9 +710,14 @@ _HTML = r"""<!doctype html>
                    padding:6px 12px; font:600 12px "Segoe UI", system-ui;
                    cursor:pointer; }
   .s-head button:hover { color:var(--text-2); }
-  /* The viewer flag (2026-10-08): Classic is the shipped renderer, Tavern is
-     the REPLAY_VIEWER_DESIGN.md build-in-progress. A styling toggle, not a
-     rewrite switch — the classic path is byte-for-byte the old renderer. */
+  /* The two Settle Up segment controls (2026-10-08 viewer flag; 2026-10-09
+     mode): Classic | Tavern picks the renderer, Summary | Step through picks
+     the Tavern mode and sits next to the game dropdown. A styling toggle, not
+     a rewrite switch — the classic path is byte-for-byte the old renderer.
+     **The `.vseg` class is what styles the active button, and nothing carried
+     it until today**: the JS set `class="on"` on a span that had no class, so
+     the shipped Classic | Tavern toggle gave NO visible sign of which viewer
+     was active. Both spans carry it now. */
   .vseg { display:inline-flex; gap:0; }
   .vseg button { border-radius:0; }
   .vseg button:first-child { border-radius:var(--radius) 0 0 var(--radius); }
@@ -720,6 +725,9 @@ _HTML = r"""<!doctype html>
                             border-left:none; }
   .vseg button.on { color:var(--text); background:var(--panel2);
                     border-color:rgba(255,255,255,.22); }
+  .vseg button:disabled { opacity:.45; cursor:default; color:var(--dim); }
+  /* An id beats the UA's [hidden] rule, so hiding this has to be said. */
+  #settle-mode[hidden] { display:none; }
   /* The Tavern palette (REPLAY_VIEWER_DESIGN.md §6), SCOPED to .tavern so the
      classic viewer and the live overlay keep their own tokens untouched.
      Gold is attack only; --tsel is the selection accent. Contrast per §7:
@@ -734,6 +742,12 @@ _HTML = r"""<!doctype html>
             --tk-level:#7a6320; --tk-play:#2c4f7a; --tk-cast:#54397a;
             --tk-roll-t:#b09c84; --tk-buy-t:#e4f5da; --tk-sell-t:#ffe1db;
             --tk-level-t:#fff1c4; --tk-play-t:#dce9fb; --tk-cast-t:#eadcfb;
+            /* Card sizing (2026-10-09, player call): the art FILLS the frame
+               and the frame scales with the window, min the design's §4.2
+               (88x120 summary, 130x172 step-through). The step board swaps
+               --tcardw, so every rule below sizes off ONE variable. */
+            --tcardw:clamp(88px, 6.6vw, 124px);
+            --tstepw:clamp(130px, 9.6vw, 190px);
             background:var(--tbg); color:var(--ttext); border-radius:var(--radius);
             padding:10px 12px; }
   .tavern .ts-head { font:600 13px "Segoe UI", system-ui; margin-bottom:8px; }
@@ -755,11 +769,21 @@ _HTML = r"""<!doctype html>
   .tavern .tbtn2.sel small { color:var(--tonsel); }
   .tavern .turn { background:var(--tpanel); border:1px solid var(--tline);
                   color:var(--ttext); }
-  /* Summary rail + tray + net tags (design §4.3/§4.4, build step 3). */
-  .twrap { display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+  /* Summary rail + tray + net tags (design §4.3/§4.4, build step 3). The rail
+     sits LEFT and the boards take the rest (2026-10-09, player call) — it used
+     to wrap ABOVE them, because the card's intrinsic width is wide and
+     `flex-wrap:wrap` gave up rather than shrinking either side. */
+  .twrap { display:flex; gap:14px; align-items:flex-start; flex-wrap:nowrap; }
+  .tavern .twrap > .turn { flex:1 1 auto; min-width:0; }
   .tavern .rail { flex:0 0 330px; background:var(--tpanel);
                   border:1px solid var(--tline); border-radius:10px;
                   padding:10px; }
+  /* Under ~900px there is no room for a 330px column beside a board: the rail
+     goes back above it, which is the design's §5 narrow-width rule. */
+  @media (max-width: 900px) {
+    .twrap { flex-wrap:wrap; }
+    .tavern .rail { flex:1 1 100%; }
+  }
   .tavern .rail-h .rt { font-weight:700; font-size:13px; }
   .tavern .rchips { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px; }
   .tavern .chip { padding:3px 9px; border-radius:14px; background:var(--tcard);
@@ -777,13 +801,47 @@ _HTML = r"""<!doctype html>
   .tavern .ishow { color:var(--tmute); background:none; border:none;
                    cursor:pointer; font-size:11px; padding:2px 0;
                    text-decoration:underline; }
-  .tavern .tile.ghost { width:76px; height:100px; opacity:.55;
-                        border-style:dashed; }
+  /* Cards (2026-10-09, player call): the ART FILLS the frame and the frame
+     scales with the window. Until now a Tavern tile was the live overlay's
+     fixed 104px box with a 56px thumbnail inside, so a step-through card drew
+     a 130x172 outline around a small picture — the "oversized empty frame".
+     Sizes come from --tcardw (the step board swaps in --tstepw), and the name,
+     stats and deltas ride a dark strip over the art, which is the design's
+     §4.2 ("real card art fills the card; name and stats overlay the bottom"). */
+  .tavern .tile { width:var(--tcardw); aspect-ratio:88/120; position:relative;
+                  overflow:hidden; padding:0; gap:0;
+                  justify-content:flex-end; border-radius:10px; }
+  .tavern .tile .thumb { position:absolute; inset:0; width:100%; height:100%;
+                         object-fit:cover; border-radius:0; }
+  /* The overlay's hover zoom is a 56px-tile trick (scale 4.5 on a 256px
+     render). Over art that already fills the card it would be clipped by the
+     frame, so it is off here — the hover CARD is the tooltip. */
+  .tavern .tile img.thumb.canzoom:hover { transform:none; }
+  .tavern .tile .tname, .tavern .tile .tsub,
+  .tavern .tile .tdelta { position:relative; z-index:1; width:100%;
+                          box-sizing:border-box; padding:2px 5px;
+                          background:rgba(0,0,0,.66); }
+  .tavern .tile .tname { white-space:nowrap; overflow:hidden;
+                         text-overflow:ellipsis; }
+  .tavern .tile .tsub { padding-top:0; }
   .tavern .tile .tag-new { margin-bottom:auto; font-size:10px; font-weight:700;
                            padding:2px 5px; border-radius:4px;
                            background:var(--tbuff); color:var(--tonbuff);
                            align-self:flex-start; }
-  .tavern .tile .tdelta { color:var(--tbuff); font-size:11px; font-weight:700; }
+  /* Net change (2026-10-09, player call): attack and health separately, each
+     signed — "+0/+3" — in the colours the rest of the card uses. It used to be
+     one green number ("+2+2"), which is two numbers that read as one. */
+  .tavern .tile .tdelta { font-size:12px; font-weight:700; padding:1px 5px 3px; }
+  .tavern .tile .tdatk { color:var(--tatk); }
+  .tavern .tile .tdhp { color:var(--thp); }
+  .tavern .tile .tsep { color:var(--tmute); }
+  .tavern .tile.ghost { width:calc(var(--tcardw) * 0.864);
+                        aspect-ratio:76/100; opacity:.55;
+                        border-style:dashed; }
+  /* Labels ABOVE their rows (2026-10-09, player call): a board is a full-width
+     row of cards, and a label sitting beside it only stole width from them. */
+  .tavern .brow.stacked { display:block; }
+  .tavern .brow.stacked .blbl { display:block; margin:0 0 4px; }
   /* Battle face-off (design §4.5, build step 4). Your side warm, theirs
      cool; the result panel rides at right and drops under on narrow
      screens. */
@@ -811,20 +869,10 @@ _HTML = r"""<!doctype html>
                  text-transform:uppercase; letter-spacing:.12em; }
   .fresult .fv { display:block; margin-bottom:6px; }
   @media (max-width: 900px) { .faceoff-wrap { grid-template-columns:1fr; } }
-  /* Step-through (design §4.6, build step 5): the mode toggle, the nav, the
-     lettered track and the large board. Kind colors from §6; letters carry
-     the kind so color is never the only signal. */
-  .tavern .tmode { display:flex; justify-content:flex-end; gap:0;
-                   margin:0 0 8px; }
-  .tavern .tmode button { background:var(--tpanel); color:var(--tmute);
-                          border:1px solid var(--tline); padding:4px 12px;
-                          font:600 12px "Segoe UI", system-ui; cursor:pointer; }
-  .tavern .tmode button:first-child { border-radius:8px 0 0 8px; }
-  .tavern .tmode button:last-child { border-radius:0 8px 8px 0;
-                                     border-left:none; }
-  .tavern .tmode button.on { background:var(--tsel); color:var(--tonsel);
-                             border-color:var(--tsel); }
-  .tavern .tmode button:disabled { opacity:.45; cursor:default; }
+  /* Step-through (design §4.6, build step 5): the nav, the lettered track, the
+     large board. Kind colors from §6; letters carry the kind so color is never
+     the only signal. The mode toggle itself lives in the SETTLE HEADER next to
+     the game dropdown (2026-10-09, player call), not over the boards. */
   .tavern .tstep { width:100%; }
   .tavern .stepnav { display:flex; gap:8px; align-items:center;
                      margin:0 0 8px; flex-wrap:wrap; }
@@ -834,7 +882,13 @@ _HTML = r"""<!doctype html>
                   font:600 13px "Segoe UI", system-ui; }
   .tavern .snav:disabled { opacity:.4; cursor:default; }
   .tavern .splay { color:var(--tsel); }
-  .tavern .stepcap { color:var(--tmute); font-size:13px; }
+  /* The action, in plain words, at reading size — it labels the board under it
+     (2026-10-09, player call). It used to be 13px muted text squeezed into the
+     control row, which is the one line that says what you are looking at. */
+  .tavern .stepcap { color:var(--ttext); font:600 16px "Segoe UI", system-ui;
+                     margin:0 0 6px; }
+  .tavern .stepcap .scap-what { color:var(--tmute); font-weight:400;
+                                font-size:13px; }
   .tavern .steptrack { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 4px; }
   .tavern .stick { width:38px; height:44px; border-radius:6px;
                    border:1px solid var(--tline); color:var(--tmute);
@@ -851,15 +905,8 @@ _HTML = r"""<!doctype html>
   .tavern .slegend { color:var(--tmute); font-size:11px; margin:0 0 10px; }
   .tavern .stepboard { display:flex; flex-wrap:wrap; gap:8px; padding:10px;
                        background:var(--tpanel); border:1px solid var(--tline);
-                       border-radius:10px; min-height:192px; }
-  .tavern .stepboard .tile { width:130px; height:172px; }
-  /* The sold ghost keeps the design's §4.2 size INSIDE the step board. The
-     board rule above is equally specific (three classes) and later in the
-     sheet, so it was winning and drawing a sold card at a full 130x172 with
-     55% opacity — a card the size of the ones around it reads as still being
-     there. Measured 2026-10-08 in a real browser, which is the only thing that
-     could see it: both rules are correct in isolation. */
-  .tavern .stepboard .tile.ghost { width:76px; height:100px; }
+                       border-radius:10px; min-height:192px;
+                       --tcardw:var(--tstepw); }
   .tavern .stepboard .tile .tsub { font-size:15px; font-weight:700; }
   .tavern .tile.affected { outline:2px solid var(--tsel); outline-offset:1px; }
   .tavern .tile .tag-sold { margin-bottom:auto; font-size:10px;
@@ -942,8 +989,14 @@ _HTML = r"""<!doctype html>
 <section id="settle">
 <div class="s-head">
 <select id="settle-select"><option value="">Loading saved replays…</option></select>
-<span id="settle-viewer" title="Settle Up viewer style — Tavern is the new
-single-turn design (REPLAY_VIEWER_DESIGN.md), still being built">
+<span id="settle-mode" class="vseg" hidden
+      title="How to read this game: Summary is the turn plus its action rail;
+Step through replays the turn one action at a time">
+<button data-m="summary" class="on">Summary</button>
+<button data-m="step">Step through</button>
+</span>
+<span id="settle-viewer" class="vseg" title="Settle Up viewer style — Tavern is
+the single-turn design (REPLAY_VIEWER_DESIGN.md)">
 <button data-v="classic" class="on">Classic</button>
 <button data-v="tavern">Tavern</button>
 </span>
@@ -2068,6 +2121,7 @@ catch (e) { /* private mode */ }
 function renderSettleGame(rep) {
   _settleRep = rep;   // remembered so the toggle can re-render without a refetch
   if (_viewer === 'tavern') return renderTavernGame(rep);
+  hideSettleMode();   // the mode belongs to the Tavern viewer only
   const box = document.getElementById('settle-game');
   box.innerHTML = '';
   const head = document.createElement('div');
@@ -2180,19 +2234,18 @@ function stepKindClass(k) {
   return {roll: 'k-roll', level: 'k-level', buy: 'k-buy',
           sell: 'k-sell', play: 'k-play', cast: 'k-cast'}[k] || '';
 }
-// The card the current action affected: the eid on this board that was not
-// on the previous one (a buy or play). A sell highlights nothing here — its
-// card is an absence, rendered separately.
-function stepDiff(prev, cur) {
-  const before = new Set((prev || []).map(m => m.eid));
-  let highlight = null;
+// The card the current action targeted (2026-10-09, player call). Only a BUY
+// or a PLAY puts a card on the board, so only those can highlight one; a sell's
+// card is the ghost beside the board, and a roll or a level-up touches no card
+// at all. The old rule — "the first eid here that was not on the previous
+// board" — outlined card 1 for "Leveled up", because step 1 has no previous
+// board to compare against and every tile therefore looked new.
+function stepDiff(cur, kind, card) {
+  if (kind !== 'buy' && kind !== 'play') return {highlight: null};
   for (const m of cur || []) {
-    if (m.eid != null && !before.has(m.eid)) {
-      highlight = m.eid;
-      break;
-    }
+    if (m.eid != null && m.card === card) return {highlight: m.eid};
   }
-  return {highlight: highlight};
+  return {highlight: null};
 }
 // The hero's HP line for the badge: effective HP at this turn's buy end and
 // at the next one (which is what the fight cost). Old reps and a final turn
@@ -2209,13 +2262,18 @@ function minionsLeft(winner, battleEnd, theirsSurvivors) {
   return null;
 }
 function stripMark(winner, dmg) {
-  const ch = winner === 'us' ? '▲' : winner === 'them' ? '▼'
-           : winner === 'tie' ? '=' : '?';
-  const cls = winner === 'us' ? 'win' : winner === 'them' ? 'loss'
-            : winner === 'tie' ? 'tie' : '';
-  const hp = dmg == null ? '' : ' ' + (dmg > 0 ? '−' + dmg
-                                       : dmg < 0 ? '+' + (-dmg) : '±0');
-  return {ch: ch + hp, cls: cls};
+  // What the FIGHT COST, not who won (2026-10-09, player call): HP dropped is
+  // a loss marker, no drop cost nothing. The winner is the fallback when the
+  // cost is unreadable, and no reading at all is a dash — the old "?" was
+  // rendered inside the turn number ("1? −5"), which reads as the number.
+  if (dmg != null) {
+    const cost = dmg > 0 ? '−' + dmg : dmg < 0 ? '+' + (-dmg) : '0';
+    return {ch: (dmg > 0 ? '▼ ' : '▲ ') + cost, cls: dmg > 0 ? 'loss' : 'win'};
+  }
+  if (winner === 'us') return {ch: '▲', cls: 'win'};
+  if (winner === 'them') return {ch: '▼', cls: 'loss'};
+  if (winner === 'tie') return {ch: '=', cls: 'tie'};
+  return {ch: '—', cls: ''};
 }
 // The Tavern viewer (REPLAY_VIEWER_DESIGN.md, build-order steps 1-2): the
 // warm palette, a turn strip with the result markers, ONE turn on screen at
@@ -2239,28 +2297,12 @@ function renderTavernGame(rep) {
   const phases = rep.phases || [];
   const hasSteps = turns.some(r => (r.steps || []).length);
   const effMode = _tavernMode === 'step' && hasSteps ? 'step' : 'summary';
-  // Design §3 header: [Summary | Step through]. Step needs per-action data
-  // (rep schema 2); older saves keep the toggle but disabled, saying why.
-  const mode = document.createElement('div');
-  mode.className = 'tmode';
-  for (const [v, label] of [['summary', 'Summary'], ['step', 'Step through']]) {
-    const b = document.createElement('button');
-    b.className = 'tmb' + (effMode === v ? ' on' : '');
-    b.textContent = label;
-    if (v === 'step' && !hasSteps) {
-      b.disabled = true;
-      b.title = 'This saved game predates step-through — newer saves carry '
-                + 'the per-action boards';
-    }
-    b.onclick = () => {
-      stopTavernPlay();
-      _tavernMode = v;
-      try { localStorage.setItem('bl-settle-mode', v); } catch (e) {}
-      renderSettleGame(rep);
-    };
-    mode.appendChild(b);
-  }
-  root.appendChild(mode);
+  // The Summary | Step through toggle lives in the SETTLE HEADER next to the
+  // game dropdown (2026-10-09, player call), not over the boards: it is wired
+  // once at startup and refreshed here — which mode is on, and WHY Step through
+  // is unavailable rather than hiding it (an old save carries no per-action
+  // boards).
+  refreshSettleMode(effMode, hasSteps);
   if (rep.caveat) {
     const cav = document.createElement('div');
     cav.className = 'ts-caveat';
@@ -2323,6 +2365,7 @@ function renderTavernGame(rep) {
 // carry a colored left edge: kept = green, sold = red, flipped = neutral.
 function tavernRail(r) {
   const took = r.took || {}, sp = r.spend || {}, ev = r.shop_events || {};
+  const stats = r.stats || {};
   const buys = took.bought || [], sells = took.sold || [];
   const plays = took.plays || [], casts = took.spell_ids || [];
   const nRolls = sp.rolls ?? 0, levelled = !!ev.tier_up;
@@ -2349,6 +2392,15 @@ function tavernRail(r) {
   if (nRolls) chip(count(nRolls, 'roll'));
   if (levelled) chip('1 level-up');
   if (casts.length) chip(count(casts.length, 'cast'));
+  // What the card's own "The turn" line used to say (2026-10-09, player call):
+  // its numbers are chips now, so the turn's facts reach the player once. The
+  // line is gone from the Tavern Shop view — see settleTurnCard.
+  if (ev.played != null) chip(count(ev.played, 'card') + ' played');
+  if (sp.total != null) chip(sp.total + 'g spent');
+  if (stats.growth != null) chip('value ' + (stats.growth >= 0 ? '+' : '')
+                                + stats.growth);
+  if (ev.hero_power) chip('hero power');
+  for (const tr of (ev.trinkets || [])) chip('trinket: ' + tr);
   if (!chips.children.length) chip('nothing recorded this turn');
   rail.appendChild(chips);
   // One collapsible group. `items` are already the named entries; kindOf
@@ -2473,20 +2525,17 @@ function renderTavernSteps(row) {
   nav.appendChild(play);
   nav.appendChild(mk('Next ▶', () => tavernStepNav(1),
                      _tavernStep >= steps.length - 1));
-  const cap = el('span', 'stepcap');
-  cap.textContent = steps.length
-    ? ('Your board after step ' + (_tavernStep + 1) + ' of ' + steps.length
-       + ' — ' + stepWords(st))
-    : 'No step data for this turn';
-  nav.appendChild(cap);
   col.appendChild(nav);
+  // The track, then the legend DIRECTLY under it (2026-10-09, player call), so
+  // the letters are explained where they are read. Every tick carries its
+  // action as a hover tooltip.
   const track = document.createElement('div');
   track.className = 'steptrack';
   steps.forEach((s, i) => {
     const t = el('button', 'stick ' + stepKindClass(s.k)
                  + (i === _tavernStep ? ' sel' : ''));
     t.textContent = stepLetter(s.k);
-    t.title = stepWords(s);
+    t.title = 'Step ' + (i + 1) + ': ' + stepWords(s);
     t.onclick = () => {
       stopTavernPlay();
       _tavernStep = i;
@@ -2497,10 +2546,24 @@ function renderTavernSteps(row) {
   col.appendChild(track);
   col.appendChild(el('div', 'slegend',
     'R roll · B buy · S sell · L level up · P play · C cast'));
+  // The caption is the board's own label and the action in plain words, at
+  // reading size (2026-10-09, player call). It was 13px muted text inside the
+  // control row — the one line that says what you are looking at.
+  const cap = document.createElement('div');
+  cap.className = 'stepcap';
+  if (steps.length) {
+    cap.appendChild(el('span', 'scap-what',
+                       'Your board after step ' + (_tavernStep + 1) + ' of '
+                       + steps.length + ' — '));
+    cap.appendChild(el('span', null, stepWords(st)));
+  } else {
+    cap.textContent = 'No step data for this turn';
+  }
+  col.appendChild(cap);
   const boardWrap = document.createElement('div');
   boardWrap.className = 'stepboard';
-  const diff = stepDiff(_tavernStep > 0 ? steps[_tavernStep - 1].board : [],
-                        st ? st.board : []);
+  const diff = stepDiff(st ? st.board : [], st ? st.k : null,
+                        st ? st.card : null);
   for (const m of (st ? st.board : [])) {
     const t = tile(m.card, m.name || m.card,
       (m.atk ?? '?') + '/' + (m.health ?? '?'), {golden: m.golden});
@@ -2536,17 +2599,23 @@ function boardTiles(list, tags) {
     const tag = tags && m.eid != null ? tags[m.eid] : null;
     if (tag && tag.isNew) t.appendChild(el('span', 'tag-new', 'NEW'));
     else if (tag && (tag.datk || tag.dhealth)) {
-      t.appendChild(el('span', 'tdelta',
-        (tag.datk ? (tag.datk > 0 ? '+' : '') + tag.datk : '')
-        + (tag.dhealth ? (tag.dhealth > 0 ? '+' : '') + tag.dhealth : '')));
+      // Attack and health SEPARATELY, each signed — "+0/+3" (2026-10-09, player
+      // call). One green number for both ("+2+2") is two numbers that read as
+      // one, and it cannot say which stat moved.
+      const signed = n => { n = n || 0; return (n >= 0 ? '+' : '') + n; };
+      const d = el('span', 'tdelta');
+      d.appendChild(el('span', 'tdatk', signed(tag.datk)));
+      d.appendChild(el('span', 'tsep', '/'));
+      d.appendChild(el('span', 'tdhp', signed(tag.dhealth)));
+      t.appendChild(d);
     }
     wrap.appendChild(t);
   }
   return wrap;
 }
-function boardRow(lbl, list, text, cls, tags) {
+function boardRow(lbl, list, text, cls, tags, stacked) {
   const d = document.createElement('div');
-  d.className = 'brow';
+  d.className = 'brow' + (stacked ? ' stacked' : '');
   d.innerHTML = '<span class="blbl">' + lbl + '</span>';
   if (list && list.length) d.appendChild(boardTiles(list, tags));
   else {
@@ -2751,11 +2820,15 @@ function settleTurnCard(r, phases, opts) {
     d.textContent = n;
     bodies.battle.appendChild(d);
   }
-  // SHOP — open to close, with the turn's events and the action list.
+  // SHOP — open to close, with the turn's events and the action list. The board
+  // labels sit ABOVE their rows in Tavern (`tav`): a board is a full-width row
+  // of cards, and a label beside it only took width from them (2026-10-09).
+  const tav = !!(opts && opts.tavern);
   bodies.shop.appendChild(r.turn === 1
-    ? row('Opened with', 'New game — nothing came before')
+    ? boardRow('Opened with', null, 'New game — nothing came before',
+               null, null, tav)
     : boardRow('Opened with', r.buy_start,
-               '(no shop snapshot — a skipped turn?)'));
+               '(no shop snapshot — a skipped turn?)', null, null, tav));
   // The fight's summoned leftovers are removed from this board before it is
   // drawn (turn_review._opening_board), and the removal is SAID rather than
   // silently shortening the row: "the minions you opened with" is a fact the
@@ -2769,9 +2842,8 @@ function settleTurnCard(r, phases, opts) {
     bodies.shop.appendChild(l);
   }
   bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text,
-    null, opts && opts.tavern
-      ? boardDelta(r.buy_start, r.buy_end) : null));
-  if (opts && opts.tavern) {
+    null, tav ? boardDelta(r.buy_start, r.buy_end) : null, tav));
+  if (tav) {
     // Passed through (design §4.4): minions bought AND sold this phase —
     // they never touch either board, so this tray is the only place their
     // card art appears. Ghost styling, hidden when there are none.
@@ -2784,7 +2856,7 @@ function settleTurnCard(r, phases, opts) {
       });
     if (flipped.length) {
       const tray = document.createElement('div');
-      tray.className = 'brow';
+      tray.className = 'brow stacked';
       tray.innerHTML = '<span class="blbl">Passed through</span>';
       const wrap = document.createElement('span');
       wrap.className = 'brow-tiles';
@@ -2797,22 +2869,28 @@ function settleTurnCard(r, phases, opts) {
       bodies.shop.appendChild(tray);
     }
   }
-  const evLine = document.createElement('div');
-  evLine.className = 'brow';
-  const evBits = [];
-  if (ev.played != null) evBits.push('played ' + ev.played + ' card'
-                                     + (ev.played === 1 ? '' : 's'));
-  if (sp.total != null) evBits.push('spent ' + sp.total + 'g');
-  if (s.growth != null) evBits.push('value ' + (s.growth >= 0 ? '+' : '')
-                                    + s.growth);
-  if (ev.tier_up) evBits.push('LEVELED UP');
-  if (ev.hero_power) evBits.push('hero power');
-  if ((ev.trinkets || []).length) evBits.push('trinket: '
-                                              + ev.trinkets.join(', '));
-  evLine.innerHTML = '<span class="blbl">The turn</span><span></span>';
-  evLine.lastChild.textContent = evBits.join(' · ') || '—';
-  bodies.shop.appendChild(evLine);
-  bodies.shop.appendChild(sellFlags);
+  // THE TURN line and the worth-a-look flags are CLASSIC-only (2026-10-09,
+  // player call). In Tavern the rail already carries the flags, and the line's
+  // numbers live in the rail's chips — the same facts printed twice, in two
+  // vocabularies, is the duplication the rail exists to remove.
+  if (!tav) {
+    const evLine = document.createElement('div');
+    evLine.className = 'brow';
+    const evBits = [];
+    if (ev.played != null) evBits.push('played ' + ev.played + ' card'
+                                       + (ev.played === 1 ? '' : 's'));
+    if (sp.total != null) evBits.push('spent ' + sp.total + 'g');
+    if (s.growth != null) evBits.push('value ' + (s.growth >= 0 ? '+' : '')
+                                      + s.growth);
+    if (ev.tier_up) evBits.push('LEVELED UP');
+    if (ev.hero_power) evBits.push('hero power');
+    if ((ev.trinkets || []).length) evBits.push('trinket: '
+                                                + ev.trinkets.join(', '));
+    evLine.innerHTML = '<span class="blbl">The turn</span><span></span>';
+    evLine.lastChild.textContent = evBits.join(' · ') || '—';
+    bodies.shop.appendChild(evLine);
+    bodies.shop.appendChild(sellFlags);
+  }
   bodies.shop.appendChild(phaseRows);
   // RESULT — combat ends when one board dies, so the winner comes from the
   // fight, and exactly one side holds survivors (both on a tie).
@@ -2828,10 +2906,11 @@ function settleTurnCard(r, phases, opts) {
   bodies.aftermath.appendChild(resLine);
   bodies.aftermath.appendChild(boardRow('You survived with',
     w === 'them' ? [] : r.battle_end,
-    w === 'them' ? '— none' : r.battle_end_text));
+    w === 'them' ? '— none' : r.battle_end_text, null, null, tav));
   bodies.aftermath.appendChild(boardRow('They survived with',
     w === 'them' ? r.theirs_survivors : [],
-    w === 'them' ? '' : (w === 'tie' ? '— none — a tie' : '— none')));
+    w === 'them' ? '' : (w === 'tie' ? '— none — a tie' : '— none'),
+    null, null, tav));
   // Same removal as the Shop view's opening board — this row IS that board, one
   // turn later — so it is disclosed in the same breath (2026-10-07).
   if (r.battle_end_removed) {
@@ -2871,6 +2950,37 @@ function setSettleViewer(v) {
 document.querySelectorAll('#settle-viewer button').forEach(b => {
   b.onclick = () => setSettleViewer(b.dataset.v);
   b.className = b.dataset.v === _viewer ? 'on' : '';
+});
+// The Summary | Step through toggle in the Settle Up header (2026-10-09). It
+// sits next to the game dropdown, so it is markup rather than something the
+// renderer builds; the renderer only says which mode is on and whether Step
+// through is available. The choice persists under its own key.
+function refreshSettleMode(mode, hasSteps) {
+  const seg = document.getElementById('settle-mode');
+  if (!seg) return;
+  seg.hidden = false;
+  seg.querySelectorAll('button').forEach(b => {
+    b.className = b.dataset.m === mode ? 'on' : '';
+    b.disabled = b.dataset.m === 'step' && !hasSteps;
+    b.title = b.disabled
+      ? 'This saved game predates step-through — newer saves carry the '
+        + 'per-action boards (Rebuild re-derives one from its log)'
+      : '';
+  });
+}
+function hideSettleMode() {
+  const seg = document.getElementById('settle-mode');
+  if (seg) seg.hidden = true;
+}
+document.querySelectorAll('#settle-mode button').forEach(b => {
+  b.onclick = () => {
+    if (b.disabled) return;
+    stopTavernPlay();
+    _tavernMode = b.dataset.m === 'step' ? 'step' : 'summary';
+    try { localStorage.setItem('bl-settle-mode', _tavernMode); }
+    catch (e) { /* private mode */ }
+    if (_settleRep) renderSettleGame(_settleRep);
+  };
 });
 // Keyboard (design §5), Tavern viewer only — Classic is untouched. Left and
 // Right walk turns (Summary) or steps (Step-through); Shift+Left/Right walks

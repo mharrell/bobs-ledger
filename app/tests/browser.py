@@ -52,6 +52,12 @@ BROWSERS = (
 #: The launcher's flags. `--no-sandbox` because a test has no business asking
 #: for one, and a fixed user-data-dir so two runs cannot share a profile.
 #:
+#: The WINDOW is explicit (2026-10-09). Headless Chromium defaults to 800x600,
+#: and the page has a 900px breakpoint — so the default viewport silently
+#: exercised the NARROW layout, and a test asking "is the rail beside the
+#: boards?" was really asking "is 800px narrow?", which it is. Any measurement
+#: that depends on width now says which width it wants.
+#:
 #: `run()` decodes the DOM as UTF-8 EXPLICITLY. `text=True` alone uses the
 #: locale encoding, which on a Windows console is cp1252 — and `--dump-dom`
 #: emits the page's own typography (em dashes, arrows, the card-art placeholders
@@ -61,6 +67,11 @@ BROWSERS = (
 #: perfectly. A one-line bug that only appears once the page contains a
 #: character cp1252 lacks.
 _FLAGS = ("--headless=new", "--disable-gpu", "--no-sandbox")
+
+#: A desktop-ish window, comfortably above the page's 900px breakpoint.
+WIDE = (1400, 900)
+#: The narrow end, where the Settle Up rail goes back above the boards.
+NARROW = (800, 600)
 
 
 class BrowserUnavailable(RuntimeError):
@@ -87,7 +98,7 @@ def require_browser(case):
     return exe
 
 
-def run(doc, timeout=120):
+def run(doc, timeout=120, size=WIDE):
     """Load `doc` in headless Chromium; return the DOM it ended up with.
 
     Raises `BrowserUnavailable` when the browser never produced a document —
@@ -101,7 +112,7 @@ def run(doc, timeout=120):
         with open(page, "w", encoding="utf-8") as fh:
             fh.write(doc)
         proc = subprocess.run(
-            [exe, *_FLAGS,
+            [exe, *_FLAGS, f"--window-size={size[0]},{size[1]}",
              f"--user-data-dir={os.path.join(tmp, 'profile')}",
              "--dump-dom", "file:///" + page.replace(os.sep, "/")],
             capture_output=True, text=True, encoding="utf-8",
@@ -117,13 +128,13 @@ def run(doc, timeout=120):
     return out
 
 
-def numbers(doc, timeout=120):
+def numbers(doc, timeout=120, size=WIDE):
     """The ints the page printed into `#out`, as a dict.
 
     ints, not the strings the page printed: a string comparison would make
     `assertGreater` raise and every equality check pass on the text.
     """
-    m = re.search(r'id="out">([^<]*)<', run(doc, timeout))
+    m = re.search(r'id="out">([^<]*)<', run(doc, timeout, size))
     if not m:
         raise AssertionError("the page ran but printed no #out — the harness "
                              "document has to carry one")
@@ -131,7 +142,7 @@ def numbers(doc, timeout=120):
             for part in m.group(1).split()}
 
 
-def fields(doc, timeout=120):
+def fields(doc, timeout=120, size=WIDE):
     """The `key=value` pairs the page printed into `#out`, values as text.
 
     A value the page marked with a leading `#` (that is what `fields` uses for
@@ -139,7 +150,7 @@ def fields(doc, timeout=120):
     than comparing against `'2'`. Everything else — words, sizes like `130x172`
     — stays text.
     """
-    m = re.search(r'id="out">([^<]*)<', run(doc, timeout))
+    m = re.search(r'id="out">([^<]*)<', run(doc, timeout, size))
     if not m:
         raise AssertionError("the page ran but printed no #out — the harness "
                              "document has to carry one")

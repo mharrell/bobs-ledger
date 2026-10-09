@@ -205,9 +205,12 @@ class TestTheRailHelpers(unittest.TestCase):
                     "out.push(stepKindClass('buy') + '|' + "
                     "stepKindClass('mystery'));\n"
                     "out.push(JSON.stringify(stepDiff("
-                    "[{eid: 1}], [{eid: 1}, {eid: 2}])));\n"
-                    "out.push(JSON.stringify(stepDiff([{eid: 1}], "
-                    "[{eid: 1}])));\n"
+                    "[{eid: 1, card: 'A'}, {eid: 2, card: 'B'}], "
+                    "'buy', 'B')));\n"
+                    "out.push(JSON.stringify(stepDiff("
+                    "[{eid: 1, card: 'A'}], 'level', null)));\n"
+                    "out.push(JSON.stringify(stepDiff("
+                    "[{eid: 1, card: 'A'}], 'sell', 'A')));\n"
                     "console.log(JSON.stringify(out));\n")
         # Bytes in, UTF-8 decoded here: text=True reads node's pipe as cp1252
         # and mojibakes the non-ASCII labels (measured 2026-10-08).
@@ -249,14 +252,26 @@ class TestTheRailHelpers(unittest.TestCase):
                          "Bought Wolf Pup|Rolled the tavern|Sold BG31_816")
         self.assertEqual(self.out[11], "BRLSPC•")
         self.assertEqual(self.out[12], "k-buy|")
-        self.assertEqual(self.out[13], '{"highlight":2}')
-        self.assertEqual(self.out[14], '{"highlight":null}')
+        # Only an action that TARGETS a card highlights one (2026-10-09): a buy
+        # highlights the card it put on the board, and a level-up, a roll or a
+        # sell highlights nothing at all.
+        self.assertEqual(self.out[13], '{"highlight":2}',
+                         "a buy highlights the card it added")
+        self.assertEqual(self.out[14], '{"highlight":null}',
+                         "a level-up targets no card")
+        self.assertEqual(self.out[15], '{"highlight":null}',
+                         "a sell's card is the ghost, not a highlight")
 
 
 class TestTheStripMarker(unittest.TestCase):
     """stripMark is the strip's result line, run under node (skipped without
     it). Result is never color-only, so the glyph and the HP text are the
-    contract; unknown states are explicit, never a guess."""
+    contract.
+
+    The marker says what the fight COST, not who won (2026-10-09, player call):
+    HP dropped is a loss marker, no drop cost nothing, and an unreadable cost
+    falls back to the winner. Nothing renders a "?" — it sat inside the turn
+    number ("1? −5"), where it read as part of the number."""
 
     def setUp(self):
         if shutil.which("node") is None:
@@ -268,7 +283,7 @@ class TestTheStripMarker(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         cases = [["us", 10], ["them", 10], ["tie", None], [None, None],
-                 [None, 5], ["us", -3], ["them", 0]]
+                 [None, 5], ["us", -3], ["them", 0], ["us", None]]
         driver = os.path.join(self.tmp.name, "drive.js")
         with open(driver, "w", encoding="utf-8") as f:
             f.write(f"{source}\n"
@@ -286,22 +301,32 @@ class TestTheStripMarker(unittest.TestCase):
                             f"{proc.stderr.decode('utf-8', 'replace')[:300]}")
         self.out = json.loads(proc.stdout.decode("utf-8"))
 
-    def test_win_loss_tie_glyphs(self):
-        self.assertEqual(self.out[0]["ch"], "▲ −10")
-        self.assertEqual(self.out[0]["cls"], "win")
+    def test_hp_dropped_is_the_loss_marker(self):
+        """A turn you WON but that cost 10 HP shows the loss marker: the line
+        reports the cost, and the Result tab is where the winner lives."""
+        self.assertEqual(self.out[0]["ch"], "▼ −10")
+        self.assertEqual(self.out[0]["cls"], "loss")
         self.assertEqual(self.out[1]["ch"], "▼ −10")
         self.assertEqual(self.out[1]["cls"], "loss")
+        self.assertEqual(self.out[4]["ch"], "▼ −5")
+
+    def test_no_drop_cost_nothing_and_no_data_is_a_dash(self):
+        self.assertEqual(self.out[5]["ch"], "▲ +3")
+        self.assertEqual(self.out[5]["cls"], "win")
+        self.assertEqual(self.out[6]["ch"], "▲ 0")
+        self.assertEqual(self.out[6]["cls"], "win")
         self.assertEqual(self.out[2]["ch"], "=")
         self.assertEqual(self.out[2]["cls"], "tie")
-
-    def test_unknown_states_are_explicit(self):
-        self.assertEqual(self.out[3]["ch"], "?")
+        self.assertEqual(self.out[3]["ch"], "—")
         self.assertEqual(self.out[3]["cls"], "")
-        self.assertEqual(self.out[4]["ch"], "? −5")
 
-    def test_hp_gain_and_zero(self):
-        self.assertEqual(self.out[5]["ch"], "▲ +3")
-        self.assertEqual(self.out[6]["ch"], "▼ ±0")
+    def test_the_winner_is_the_fallback_when_the_cost_is_unreadable(self):
+        self.assertEqual(self.out[7]["ch"], "▲")
+        self.assertEqual(self.out[7]["cls"], "win")
+
+    def test_a_turn_number_never_carries_a_question_mark(self):
+        for line in self.out:
+            self.assertNotIn("?", line["ch"])
 
 
 if __name__ == "__main__":
