@@ -355,6 +355,50 @@ def build(log_path, game_index=1):
     }
 
 
+def rebuild(rid, root=None):
+    """Re-derive one stored replay from its own source log (2026-10-08).
+
+    Old saves predate later pipeline additions — the Step-through's
+    per-action boards most recently — and the store keeps `session` + `log`
+    + `game` as a POINTER precisely so today's builder can re-run over the
+    same game. The stored id is kept (an in-place update, not a -2 copy)
+    and the fresh rep is returned for immediate re-render. `root` is the
+    store override, the tests' seam.
+
+    Hearthstone ROTATES its session dirs, so a missing log is the expected
+    failure: (None, error) rather than a raise. (rep, None) on success.
+    """
+    import glob as _glob
+    import replay_store
+    from config import HS_LOG_GLOBS
+
+    stored = replay_store.load(rid, root=root)
+    if stored is None:
+        return None, f"no saved replay {rid!r}"
+    rep = stored.get("rep") or {}
+    session, log = rep.get("session"), rep.get("log")
+    game = rep.get("game") or 1
+    if not session or not log:
+        return None, ("this saved replay does not record which log it "
+                      "came from, so it cannot be rebuilt")
+    path = None
+    for pattern in HS_LOG_GLOBS:
+        for p in _glob.glob(pattern):
+            if (os.path.basename(os.path.dirname(p)) == session
+                    and os.path.basename(p) == log):
+                path = p
+                break
+        if path:
+            break
+    if not path:
+        return (None, "the session log for this replay is gone — "
+                      "Hearthstone rotates its logs, so older games may "
+                      "not be rebuildable")
+    fresh = build(path, game)
+    replay_store.save(fresh, rid=rid, root=root)
+    return fresh, None
+
+
 def _totals(phases, head):
     """Counts and the followed/ignored split. No score, deliberately."""
     counts = {"phases": len(phases), "taken": 0, "ignored": 0, "none": 0,

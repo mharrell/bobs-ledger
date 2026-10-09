@@ -50,6 +50,7 @@ import pool
 import meta
 import config
 import replay_store
+import settle_up
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -937,6 +938,9 @@ single-turn design (REPLAY_VIEWER_DESIGN.md), still being built">
 <button data-v="classic" class="on">Classic</button>
 <button data-v="tavern">Tavern</button>
 </span>
+<button id="settle-rebuild" title="Re-derive this saved game from its own
+source log — upgrades older saves to the current viewer's data (replays
+the game; the session log must still exist)">Rebuild</button>
 <button id="settle-folder" title="Open the folder the saved replays live in">Open folder</button>
 </div>
 <div id="settle-game"><div class="s-empty">Pick a saved game to see it turn by turn.</div></div>
@@ -2885,6 +2889,37 @@ document.getElementById('settle-folder').onclick = async () => {
     setTimeout(() => { b.textContent = 'Open folder'; }, 2500);
   }
 };
+// Rebuild the selected saved game from its own source log (2026-10-08):
+// older saves upgrade to the current viewer's data — the Step-through's
+// per-action boards most visibly. Slow by nature (it replays the game);
+// the button says so while it works and reports the reason on failure.
+document.getElementById('settle-rebuild').onclick = async () => {
+  const b = document.getElementById('settle-rebuild');
+  const id = document.getElementById('settle-select').value;
+  if (!id) return;
+  b.disabled = true;
+  b.textContent = 'Rebuilding…';
+  try {
+    const r = await fetch('/review/rebuild', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({id: id}),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || !j.ok) {
+      b.textContent = j.error || 'Could not rebuild';
+      setTimeout(() => { b.textContent = 'Rebuild'; }, 4000);
+      return;
+    }
+    await loadSettleList();
+    await loadSettleGame(id);
+    b.textContent = 'Rebuild';
+  } catch (e) {
+    b.textContent = 'Could not rebuild';
+    setTimeout(() => { b.textContent = 'Rebuild'; }, 4000);
+  } finally {
+    b.disabled = false;
+  }
+};
 </script>
 </body>
 </html>
@@ -3321,6 +3356,23 @@ def _review_save_response():
                            "builds when a game ends"})
     out = replay_store.save(rep)
     return _json_response(200, dict(out, ok=True))
+
+
+def _review_rebuild_response(body):
+    """(code, headers, body) for POST /review/rebuild — re-derive one saved
+    replay from its own source log (2026-10-08).
+
+    Old saves predate later pipeline additions (the Step-through's
+    per-action boards); the store's `session`+`log`+`game` pointer makes
+    them upgradable in place. 409 carries the reason — usually Hearthstone
+    having rotated the session log away."""
+    rid = (body or {}).get("id") or ""
+    if not rid:
+        return _json_response(400, {"error": "no replay id"})
+    fresh, err = settle_up.rebuild(rid)
+    if err:
+        return _json_response(409, {"error": err})
+    return _json_response(200, dict(ok=True, id=rid, rep=fresh))
 
 
 def auto_save_current_review():
@@ -4189,6 +4241,19 @@ class _Handler(BaseHTTPRequestHandler):
             # into replay_store. The one verdict-shaped write the page can
             # trigger, and only after the game it describes is over.
             code, headers, body = _review_save_response()
+            self._send(code, "application/json", body, headers=headers)
+            return
+        if self.path.rstrip("/") == "/review/rebuild":
+            # The Settle Up header's Rebuild button: re-derive a saved game
+            # from its own source log, in place. Slow by nature (it replays
+            # the game) and 409 with the reason when the log is gone.
+            n = int(self.headers.get("Content-Length") or 0)
+            try:
+                payload = json.loads(self.rfile.read(n) or b"{}")
+            except ValueError:
+                self._send(400, "application/json", b'{"error":"bad json"}')
+                return
+            code, headers, body = _review_rebuild_response(payload)
             self._send(code, "application/json", body, headers=headers)
             return
         if self.path.rstrip("/") == "/review/auto-save":

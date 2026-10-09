@@ -93,13 +93,21 @@ def summary(rep, rid):
     }
 
 
-def save(rep, root=None):
-    """Persist one review. Atomic (tmp + rename), returns {"id", "path"}."""
+def save(rep, root=None, rid=None):
+    """Persist one review. Atomic (tmp + rename), returns {"id", "path"}.
+
+    `rid` re-saves under a KNOWN id — the rebuild path (settle_up.rebuild)
+    updates a game in place instead of stacking a -2 suffixed copy beside
+    it. The id still passes through the charset guard via the write below.
+    """
     d = store_dir(root)
     os.makedirs(d, exist_ok=True)
-    taken = {n[:-len(".json")] for n in os.listdir(d)
-             if n.endswith(".json") and not n.endswith(".tmp")}
-    rid = make_id(rep, taken=taken)
+    if rid is not None:
+        taken = {rid}
+    else:
+        taken = {n[:-len(".json")] for n in os.listdir(d)
+                 if n.endswith(".json") and not n.endswith(".tmp")}
+        rid = make_id(rep, taken=taken)
     path = os.path.join(d, rid + ".json")
     body = json.dumps(summary(rep, rid) | {"rep": rep}).encode("utf-8")
     tmp = path + ".tmp"

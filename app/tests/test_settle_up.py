@@ -21,6 +21,7 @@ PAIRS, not chunks).
 """
 import os
 import sys
+import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -517,6 +518,79 @@ class TestBuildWalksALog(unittest.TestCase):
                 settle_up.build(path, 9)
         # The PowerTaskList duplicate must NOT be counted as a third game.
         self.assertIn("has 2 game(s)", str(cm.exception))
+
+
+class TestRebuild(unittest.TestCase):
+    """Re-derive a saved replay from its own source log (2026-10-08). The
+    store's session/log/game pointer is the whole mechanism; Hearthstone
+    rotating its session dirs is the expected failure, returned as a reason
+    and never raised into the tab."""
+
+    def setUp(self):
+        import replay_store
+        self.replay_store = replay_store
+        self.root = tempfile.TemporaryDirectory()
+        self.addCleanup(self.root.cleanup)
+        self.rid = replay_store.save(
+            {"created": "2026-10-07T20:53:01",
+             "session": "Hearthstone_2026_10_07_20_06_28",
+             "log": "Power.log", "game": 2, "hero": "H", "placement": 1,
+             "phases": [], "totals": {}, "timeline": {"turns": []},
+             "timeline_error": None, "caveat": "x"},
+            root=self.root.name)["id"]
+
+    def test_unknown_id_is_a_reason_not_a_raise(self):
+        rep, err = settle_up.rebuild("no-such-id")
+        self.assertIsNone(rep)
+        self.assertIn("no saved replay", err)
+
+    def test_rep_without_a_pointer_says_so(self):
+        import replay_store
+        replay_store.save({"created": "x", "phases": [], "totals": {},
+                           "timeline": {"turns": []}},
+                          root=self.root.name, rid="pointless")
+        rep, err = settle_up.rebuild("pointless", root=self.root.name)
+        self.assertIsNone(rep)
+        self.assertIn("does not record which log", err)
+
+    def test_missing_log_names_the_rotation(self):
+        import glob as globmod
+        from unittest import mock
+        import config
+        with mock.patch.object(config, "HS_LOG_GLOBS",
+                               ("C:/x/Logs/Hearthstone_*/Power.log",)), \
+             mock.patch.object(globmod, "glob", return_value=[]):
+            rep, err = settle_up.rebuild(self.rid, root=self.root.name)
+        self.assertIsNone(rep)
+        self.assertIn("rotates", err)
+
+    def test_happy_path_rebuilds_under_the_same_id(self):
+        import glob as globmod
+        from unittest import mock
+        import config
+        fresh = {"created": "2026-10-08T12:00:00",
+                 "session": "Hearthstone_2026_10_07_20_06_28",
+                 "log": "Power.log", "game": 2, "hero": "H2", "placement": 1,
+                 "phases": [{"turn": 1}], "totals": {"phases": 1},
+                 "timeline": {"turns": [{"turn": 1, "steps": [{"k": "buy"}]}]},
+                 "timeline_error": None, "caveat": "x"}
+        with mock.patch.object(config, "HS_LOG_GLOBS",
+                               ("C:/x/Logs/Hearthstone_*/Power.log",)), \
+             mock.patch.object(globmod, "glob",
+                               return_value=["C:/x/Logs/Hearthstone_2026_10_"
+                                             "07_20_06_28/Power.log"]), \
+             mock.patch.object(settle_up, "build",
+                               return_value=fresh) as b:
+            rep, err = settle_up.rebuild(self.rid, root=self.root.name)
+        self.assertIsNone(err)
+        self.assertEqual(rep, fresh)
+        b.assert_called_once_with(
+            "C:/x/Logs/Hearthstone_2026_10_07_20_06_28/Power.log", 2)
+        stored = self.replay_store.load(self.rid, root=self.root.name)
+        self.assertEqual(stored["rep"]["hero"], "H2",
+                         "the rebuild lands under the SAME id")
+        self.assertEqual(stored["rep"]["timeline"]["turns"][0]["steps"],
+                         [{"k": "buy"}])
 
 
 if __name__ == "__main__":
