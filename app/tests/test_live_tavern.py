@@ -33,7 +33,16 @@ class TestTheFlag(unittest.TestCase):
     """One toggle, one persisted key, Classic still the default."""
 
     def test_the_toggle_is_in_the_tab_row(self):
+        """ONE Classic | Tavern toggle per page (2026-10-09, player call): the
+        live flag moved out of the top nav — where it looked global and rode
+        along to the Settle Up tab beside that tab's own toggle, unthemed
+        there — and heads the LIVE page, the same place the Settle Up flag
+        sits in its header."""
         self.assertIn('id="live-viewer"', coach_ui._HTML)
+        self.assertIn('<div id="live-viewer-row">', coach_ui._HTML)
+        self.assertNotIn('#tabs #live-viewer', coach_ui._HTML,
+                         "the flag is back in the shared nav — two toggles "
+                         "again")
         nav = coach_ui._HTML[coach_ui._HTML.index('id="live-viewer"'):]
         self.assertIn('data-v="classic"', nav)
         self.assertIn('data-v="tavern"', nav)

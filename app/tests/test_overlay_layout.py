@@ -1,30 +1,28 @@
-"""The Settle Up turn card keeps ONE size when the player switches views.
+"""The Settle Up turn card fits the view it is showing, tabs on top.
 
-Reported by the maintainer 2026-10-07: *"when you switch between the phase views,
-the card changes size and makes it hard to track where you're at now."* It did,
-and for a structural reason — the three view bodies were SIBLINGS appended
-straight to the card, and switching set the inactive ones to `display:none`. A
-card was therefore exactly as tall as the view on screen, so moving from Shop to
-Battle to Result resized it, which moved the buttons and every turn below it.
-
-The fix is two lines of structure: the bodies share one grid cell (`.tviews`),
-and the inactive ones are hidden with `visibility` rather than `display` — so
-they keep their LAYOUT space and the card is always as tall as its tallest view.
+The 2026-10-07 shape held the card at ONE height across all three views: the
+bodies shared a single grid cell and the inactive ones kept their layout space
+under `visibility`. The maintainer's 2026-10-09 fix list named the cost that
+arrangement was paying all along — *"the tabs are pinned to the bottom of a
+panel with about 400px of empty space"* — and reversed it: the tab row sits
+ABOVE the views, and the panel is as tall as the view on screen
+(`display:none`, in flow).
 
 **This is measured, not asserted from the source.** `node` cannot lay anything
 out and no DOM is available to the suite, so the test drives a real browser
 (Chrome or Edge, headless) over a page built from the PAGE'S OWN `<style>`, and
 reads back `offsetHeight` under each of the three switches. The numbers are the
-control; the two structural assertions at the end are only the wiring, and they
+control; the structural assertions at the end are only the wiring, and they
 exist because a layout measurement cannot see that the JS stopped putting the
-bodies in the shared box.
+bodies in the shared box or moved the tab row above them.
 
 **The measurement is rehearsed against the OLD structure in the same run.** A
 layout check that cannot fail is worse than none — CSS that never loaded reports
-every height as 0, which is "equal". So the second case rebuilds the pre-fix
-markup (`display` toggling, sibling bodies) and the test requires the heights to
-come out UNEQUAL there: measured 2026-10-07, `shop=100 battle=40 aftermath=60`
-against `100/100/100` for the fix.
+every height as 0. So the second case rebuilds the 2026-10-07 markup (shared
+grid cell, `visibility` toggling) and the test requires the heights to come out
+EQUAL there: measured 2026-10-07, that structure read `100/100/100` where the
+in-flow one reads its three contents apart. The rehearsal is the same control
+it always was, pointed the other way.
 """
 import os
 import re
@@ -81,9 +79,10 @@ def _harness(container, prop, hidden, visible, style):
     """A card with three view bodies, measured at each of the three switches.
 
     `container` is the markup the bodies go inside, and `prop`/`hidden`/
-    `visible` are what a switch sets — the page sets `style.visibility` to
-    `hidden`, while the pre-fix code set `style.display` to `none`. One harness
-    therefore measures the fix and rehearses the bug it fixed.
+    `visible` are what a switch sets — the page sets `style.display` to
+    `none` (in flow), while the 2026-10-07 code set `style.visibility`. One
+    harness therefore measures the fix and rehearses the structure it
+    replaced.
     """
     return f"""<!doctype html><html><head><style>{style}</style></head><body>
 <pre id="out">pending</pre>
@@ -103,38 +102,51 @@ def _harness(container, prop, hidden, visible, style):
 </script></body></html>"""
 
 
-class TestTheTurnCardHoldsItsSize(unittest.TestCase):
+class TestTheCardFitsItsView(unittest.TestCase):
     def setUp(self):
         browser.require_browser(self)
         style = _page_style()
         self.assertIn(".tviews", style,
-                      "the page no longer stacks the views — the card will "
-                      "resize again when the player switches")
+                      "the page no longer marks the view container — the card "
+                      "structure below cannot be the page's own")
 
-    def test_the_card_is_the_same_height_in_all_three_views(self):
+    def test_each_view_is_as_tall_as_its_own_content(self):
+        """Shop (5 rows) > Result (3) > Battle (2): the panel is the view's
+        height, not the tallest view's. This is the deliberate reversal of
+        the 2026-10-07 rule — the fix list traded the never-resize card for
+        ~400px of dead space gone."""
         heights = _measure(self, _harness('<div class="tviews">{s}</div>',
-                                          "style.visibility", "'hidden'", "''",
+                                          "style.display", "'none'", "''",
                                           _page_style()))
-        self.assertEqual(len(set(heights.values())), 1,
-                         f"the card changes size on a view switch: {heights}")
+        self.assertEqual(len(set(heights.values())), 3,
+                         f"the card does not fit its view: {heights}")
+        self.assertGreater(heights["shop"], heights["aftermath"],
+                           f"the tallest view is not the tallest: {heights}")
+        self.assertGreater(heights["aftermath"], heights["battle"],
+                           f"the shortest view is not the shortest: {heights}")
         self.assertGreater(max(heights.values()), 0,
                            "every view measured 0 — the CSS did not load, so "
-                           "equality here would prove nothing")
+                           "these assertions would prove nothing")
 
     def test_the_measurement_would_catch_the_old_structure(self):
-        """The rehearsal. Same page, pre-fix markup (`display` toggling, no
-        shared grid cell): the heights MUST come out unequal, or this suite
-        cannot tell the fix from the bug it fixed."""
-        heights = _measure(self, _harness("{s}", "style.display", "'none'", "''",
-                                          _page_style()))
-        self.assertGreater(len(set(heights.values())), 1,
-                           f"the old structure measured equal heights ({heights})"
-                           " — this control is blind")
+        """The rehearsal. Same page, 2026-10-07 markup (one shared grid cell,
+        `visibility` toggling): the heights MUST come out equal, or this
+        suite cannot tell the fix from the structure it replaced."""
+        heights = _measure(self, _harness(
+            '<style>.tviews {{ display:grid; }}'
+            '.tviews .tbody {{ grid-area:1 / 1; }}</style><div class="tviews">'
+            '{s}</div>',
+            "style.visibility", "'hidden'", "''", _page_style()))
+        self.assertEqual(len(set(heights.values())), 1,
+                         f"the old structure measured apart ({heights})"
+                         " — this control is blind")
+        self.assertGreater(max(heights.values()), 0,
+                           "every view measured 0 — the control proved nothing")
 
 
 class TestTheWiring(unittest.TestCase):
-    """A layout measurement cannot see the JS, and the JS is what puts the three
-    bodies in the shared box and hides them the way the CSS expects."""
+    """A layout measurement cannot see the JS, and the JS is what puts the tab
+    row above the bodies and hides them the way the CSS expects."""
 
     def test_the_bodies_go_into_the_shared_container(self):
         page = coach_ui._HTML
@@ -143,12 +155,23 @@ class TestTheWiring(unittest.TestCase):
         self.assertNotIn("card.appendChild(body)", page,
                          "a body appended straight to the card is the bug")
 
-    def test_the_inactive_views_are_hidden_without_leaving_the_layout(self):
+    def test_the_tab_row_sits_above_the_views(self):
+        """The fix list: "Move the Shop / Battle / Result tabs above the
+        boards." The buttons append FIRST, or the controls are back at the
+        bottom of the panel."""
         page = coach_ui._HTML
-        self.assertIn("bodies[k].style.visibility", page)
-        self.assertNotIn("bodies[k].style.display", page,
-                         "display:none takes the view out of the layout, which "
-                         "collapses the card back to the visible view")
+        self.assertIn("card.appendChild(btns)", page)
+        self.assertIn("card.appendChild(views)", page)
+        self.assertLess(page.index("card.appendChild(btns)"),
+                        page.index("card.appendChild(views)"),
+                        "the tab row must be appended before the views")
+
+    def test_the_inactive_views_leave_the_layout(self):
+        page = coach_ui._HTML
+        self.assertIn("bodies[k].style.display", page)
+        self.assertNotIn("bodies[k].style.visibility", page,
+                         "visibility keeps a hidden view in the layout — the "
+                         "card would hold the tallest view's height again")
 
 
 if __name__ == "__main__":

@@ -104,11 +104,34 @@ class TestReviewSave(_StoreRoot):
         self.assertIn("Chenvaala", rid)
         self.assertEqual(replay_store.load(rid)["rep"]["hero"], "Chenvaala")
 
-    def test_saving_twice_keeps_both(self):
-        coach_ui.set_review("<html>r</html>", rep=_rep())
+    def test_saving_the_same_game_twice_writes_one_file(self):
+        """The Save button and the auto-save write the same rep; a second
+        click used to stack a -2 copy beside the game it duplicated (the
+        filename came from the wall clock). Since the gid (2026-10-09) a
+        repeat save lands in the SAME file — one game, one file, the rule
+        the restart path depends on."""
+        rep = _rep()
+        rep["gid"] = replay_store.game_gid("Hearthstone_x", "Power.log", 1)
+        coach_ui.set_review("<html>r</html>", rep=rep)
         first = json.loads(coach_ui._review_save_response()[2])["id"]
         second = json.loads(coach_ui._review_save_response()[2])["id"]
+        self.assertEqual(first, second)
+        self.assertEqual([n for n in os.listdir(self.tmp.name)
+                          if not n.endswith(".tmp")], [first + ".json"])
+
+    def test_saving_two_different_games_keeps_both(self):
+        one = _rep(created="2026-10-06T18:55:02")
+        one["gid"] = replay_store.game_gid("Hearthstone_x", "Power.log", 1)
+        two = _rep(hero="Other", created="2026-10-06T18:56:02")
+        two["gid"] = replay_store.game_gid("Hearthstone_x", "Power.log", 2)
+        two["game"] = 2
+        coach_ui.set_review("<html>1</html>", rep=one)
+        first = json.loads(coach_ui._review_save_response()[2])["id"]
+        coach_ui.set_review("<html>2</html>", rep=two)
+        second = json.loads(coach_ui._review_save_response()[2])["id"]
         self.assertNotEqual(first, second)
+        self.assertEqual(len([n for n in os.listdir(self.tmp.name)
+                              if n.endswith(".json")]), 2)
 
 
 class TestOpenFolder(_StoreRoot):

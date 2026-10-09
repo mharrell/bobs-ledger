@@ -188,6 +188,24 @@ def _settle_up_in_background(log_path, game_no):
     threading.Thread(target=work, daemon=True).start()
 
 
+def _replay_already_saved(log_path, game_no):
+    """True when the store already holds a replay of this exact game.
+
+    The question the game-over path asks before building one — keyed by the
+    same pointer the saved rep carries (session dir, log basename, game
+    number), through `replay_store.rid_for_game`. It is the cheap half of the
+    processed-games check: the expensive half would be rebuilding a review to
+    find out it already existed. Never raises into the tick; a store that
+    cannot be read answers "no", which costs one rebuild at worst."""
+    try:
+        import replay_store
+        return bool(replay_store.rid_for_game(
+            decision_log.session_stem(log_path),
+            os.path.basename(log_path or ""), game_no))
+    except Exception:  # noqa: BLE001 - never break the monitor over a save
+        return False
+
+
 def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     """A pending pick with no shop yet (hero selection) — rank it directly.
 
@@ -337,6 +355,16 @@ def monitor(path, poll=1.0):
     # normal loop pushes real advice on the first buy-phase state change
     # (a live shop fires within one tick of the restart).
     coach_ui.clear_analysis()
+    # One parse settle, the same call every live tick makes: the shop table
+    # only commits when tavern_offers() flushes the pending options block, so
+    # after a pure catch-up the action tracker's turn count is still 0 until
+    # something asks. The game-over check below reads that count for the
+    # restart card's round, and the restart path may never poll (a finished
+    # game advises nothing). Nothing is pushed anywhere — this is a read.
+    try:
+        coach.tavern_offers()
+    except Exception:  # noqa: BLE001 - a bad settle is one retry away
+        pass
     in_action = False
     last_state = None
     next_log_check = 0.0  # session discovery throttled to ~5s (was every tick)
@@ -519,12 +547,37 @@ def monitor(path, poll=1.0):
                 # the advisory is taken before the final fight resolves, and the
                 # standing it carries can be one the game later revised
                 # (measured 2026-10-07). Same number the report gets below.
+                #
+                # RESTART SHAPE (2026-10-09): the catch-up at the top of this
+                # function replays the leftover log, so the FIRST tick can see
+                # a game that ended before this process existed. Nothing has
+                # advised, so there is no analysis to read the place or the
+                # round from — ask the coach directly. ensure_meta is the same
+                # hero parse the advise loop runs; once it lands,
+                # final_placement() is the log's own PLACE for the friendly
+                # hero and actions.turn is the round count.
+                try:
+                    if coach.hero_card is None or coach.friendly is None:
+                        coach.ensure_meta()
+                except Exception:  # noqa: BLE001 - the card must still show
+                    pass
                 _final_place = coach.final_placement()
+                _final_round = getattr(getattr(coach, "actions", None),
+                                       "turn", None)
                 coach_ui.show_game_over(coach_ui.latest_analysis(),
-                                        placement=_final_place)
-                # ... and offer the review of THAT game. Off-thread: it
-                # replays the game, and this tick still has a log to answer.
-                _settle_up_in_background(path, state[0])
+                                        placement=_final_place,
+                                        turn=_final_round)
+                # A game the store already holds is NOT built again — that is
+                # the duplicate-every-restart bug: the catch-up re-detects the
+                # finished game, and a second review of it is seven seconds of
+                # replayed log spent producing a file the store already has.
+                # The tab lists saved games from the store, so the review is
+                # still reachable; only the rebuild is skipped.
+                if not _replay_already_saved(path, state[0]):
+                    # ... and offer the review of THAT game. Off-thread: it
+                    # replays the game, and this tick still has a log to
+                    # answer.
+                    _settle_up_in_background(path, state[0])
             # Also what the exit backstop consults: main()'s finally has no coach
             # object, and without this it shares a game that is still in
             # progress (see _game_state).
@@ -815,6 +868,19 @@ def main():
         except OSError as e:
             print(f"Coach UI skipped ({e})")
     warn_stale_meta()
+    # One-time store migration, idempotent by nature (replay_store.backfill):
+    # give every saved replay its stable game id and collapse the duplicates
+    # the old wall-clock filename minted — one per game, the newest build
+    # kept. A store that is already migrated writes nothing, so this runs on
+    # every start without a marker. Never blocks play.
+    try:
+        import replay_store
+        _mig = replay_store.backfill()
+        if _mig["removed"]:
+            print(f"saved replays: collapsed {_mig['removed']} duplicate "
+                  f"game(s) ({_mig['backfilled']} indexed)", flush=True)
+    except Exception as _e:     # noqa: BLE001 - a store that cannot migrate
+        print(f"  (saved-replay migration skipped: {_e})", flush=True)
     path = args[0] if args else find_active_log()
     if path and not os.path.exists(path):
         print(f"log not found: {path}")
