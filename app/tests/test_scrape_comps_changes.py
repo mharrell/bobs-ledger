@@ -110,6 +110,33 @@ class TestFormatTierChanges(unittest.TestCase):
     def test_no_records_says_so(self):
         self.assertIn("nothing to report", format_tier_changes([])[0])
 
+    def test_a_comp_we_do_not_hold_is_missing_not_matching(self):
+        """2026-10-08: three comps entered the tier list and read as
+        "matching" — a missing comp's None tier passed the staleness filter.
+        Missing is its own report, and the matches line must not claim a
+        completeness the copy does not have."""
+        rows = tier_changes(RECORDS + [record("undead-eternal-knight", 3,
+                                              recently=True,
+                                              updated="2026-10-08T04:41:"
+                                                      "28.657Z")], DB)
+        text = "\n".join(format_tier_changes(rows))
+        self.assertIn("MISSING 1 comp(s)", text)
+        self.assertIn("undead-eternal-knight", text)
+        self.assertNotIn("matches the live tier list", text)
+
+    def test_a_held_comp_with_no_tier_is_still_held(self):
+        """A provisional entry in our copy (meta_tier None) is HELD — it must
+        not be reported missing just because the tier is unset."""
+        db = dict(DB)
+        db["beasts-summons"] = {"meta_tier": None}
+        rows = tier_changes(RECORDS, db)
+        self.assertTrue([r for r in rows if r["slug"] == "beasts-summons"]
+                        [0]["in_db"])
+        text = "\n".join(format_tier_changes(rows))
+        self.assertNotIn("MISSING", text)
+        # tier None vs live B: behind, the honest reading
+        self.assertIn("ours None -> live B", text)
+
 
 class TestTheChangesFlagNeedsNothingLocal(unittest.TestCase):
     """`--changes` is a question about the SITE, so it must be answerable when

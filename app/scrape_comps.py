@@ -415,6 +415,12 @@ def tier_changes(records, comps_db=None):
             "recently_updated": bool(rec.get("comp_tier_recently_updated")),
             "guide_recently_updated": bool(rec.get("comp_guide_recently_updated")),
             "db_tier": db.get("meta_tier"),
+            # The comp is PRESENT in our copy at all — a tier of None on a
+            # comp we hold (a provisional entry) is a different fact from
+            # the site ranking something we have never taken (2026-10-08:
+            # three new comps read as "matching" because a missing comp's
+            # None tier passed the staleness filter).
+            "in_db": bool(comps_db) and rec["comp_slug"] in comps_db,
         })
     rows.sort(key=lambda r: r["tier_last_updated"], reverse=True)
     return rows
@@ -435,13 +441,19 @@ def format_tier_changes(rows):
         out.append(f"  {r['slug']:32} {r['previous_tier'] or '?':2} -> "
                    f"{r['tier']:2}  {r['tier_last_updated']}{behind}")
 
-    stale = [r for r in rows if r["db_tier"] not in (None, r["tier"])]
+    missing = [r for r in rows if not r["in_db"]]
+    if missing:
+        out.append(f"our copy is MISSING {len(missing)} comp(s) the site "
+                   f"ranks — re-run without --changes to take them:")
+        for r in missing:
+            out.append(f"  {r['slug']:32} new on the list at {r['tier']}")
+    stale = [r for r in rows if r["in_db"] and r["db_tier"] != r["tier"]]
     if stale:
         out.append(f"our copy is behind on {len(stale)} of {len(rows)} "
                    f"ranked comp(s) — re-run without --changes to take them:")
         for r in stale:
             out.append(f"  {r['slug']:32} ours {r['db_tier']} -> live {r['tier']}")
-    else:
+    if not missing and not stale:
         out.append(f"our copy matches the live tier list on all {len(rows)} "
                    f"ranked comps")
     return out
