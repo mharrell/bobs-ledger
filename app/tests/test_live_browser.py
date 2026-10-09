@@ -115,8 +115,19 @@ _DRIVER = r"""
     o.skel = q('.lv-skel').length;
     o.empty = [...q('.lv-empty')].map(d => d.textContent).join('|');
     o.notes = [...q('.lv-note')].map(d => d.textContent).join('|');
-    o.pick = q('.lv-stats').length;
-    o.pickfirst = txt((one('.lv-stats') || {}).firstChild || null);
+    o.pick = q('.lv-opt').length;
+    o.picknames = [...q('.lv-optname')].map(n => n.textContent).join('|');
+    o.pickhead = [...q('.lv-head b')].map(b => b.textContent).join('|');
+    o.pickvs = [...q('.lv-vs')].map(v => v.textContent).join('|');
+    o.pickbars = q('.lv-bar').length;
+    o.pickrows = [...q('.lv-opt .lv-kv')]
+      .map(d => txt(d.children[0]) + '=' + txt(d.children[d.children.length - 1]))
+      .join('|');
+    o.pickctl = [...q('.lv-pickctl .lv-chip')]
+      .map(c => c.textContent + (c.classList.contains('on') ? ':on' : ':off'))
+      .join('|');
+    o.picknote = txt(one('.lv-opts') ? one('.lv-pickctl').parentNode
+                                     .querySelector('.lv-note') : null);
     o.gobtn = txt(one('.lv-gobtn'));
     o.label = txt(one('.lv-lbl'));
     o.opplabel = txt(one('.lv-opp'));
@@ -126,13 +137,22 @@ _DRIVER = r"""
     o.alltext = root ? root.textContent.replace(/\s+/g, ' ').trim() : '';
     for (const k of Object.keys(o))
       rec(name + '.' + k, ['tavern', 'cards', 'skel', 'pick', 'classic',
-                           'taverncards']
+                           'taverncards', 'pickbars']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function shot(s) {
     _liveViewer = s.viewer || 'tavern';
     _liveTab = s.tab || 'facts';
     render(s.rep);
+    if (s.click) {
+      // A control is only tested by using it: `click` finds the chip by its
+      // label and clicks it for real, then the facts are read from what the
+      // redraw produced.
+      const chip = [...document.querySelectorAll('.lv-pickctl .lv-chip')]
+        .find(c => c.textContent === s.click);
+      if (!chip) throw new Error('no control labelled ' + s.click);
+      chip.click();
+    }
     facts(s.name);
   }
   if (typeof render !== 'function' || typeof renderLiveTavern !== 'function') {
@@ -158,8 +178,31 @@ def _page(shots):
     return coach_ui._page_html().replace("</body>", driver + "</body>")
 
 
-def _shot(name, rep, viewer="tavern", tab="facts"):
-    return {"name": name, "rep": rep, "viewer": viewer, "tab": tab}
+def _shot(name, rep, viewer="tavern", tab="facts", click=None):
+    return {"name": name, "rep": rep, "viewer": viewer, "tab": tab,
+            "click": click}
+
+
+#: A choice whose facts carry the phrasing the design BANS, and whose
+#: statistics are structured. Both matter: the first is the rehearsal (the
+#: Tavern view must reach its numbers through `option_stats` and never through
+#: the classic fact string), the second is the screen the design describes.
+def _choice_payload():
+    return _payload(choice={
+        "kind": "trinket", "source": "Lesser Trinket",
+        "ranked": [["Zed", "BG31_820", 90,
+                    "picked in 60% of games · fits your board", 2],
+                   ["Ann", "BG31_815", 10,
+                    "picked in 30% of games · fits your comp direction", 1]],
+        "option_stats": {
+            "BG31_820": {"pick_rate": 60.0, "avg_placement": 3.2,
+                         "top4": 62.0,
+                         "dist": {"1": 10.0, "2": 22.0, "3": 16.0, "4": 14.0,
+                                  "5": 12.0, "6": 11.0, "7": 8.0, "8": 7.0}},
+            "BG31_815": {"pick_rate": 30.0, "avg_placement": 4.6,
+                         "top4": 41.0},
+        },
+        "guides": {}})
 
 
 def _render(shots, size=browser.WIDE):
@@ -322,10 +365,13 @@ class TestTheViewCarriesNoVerdict(_Rendered):
     def shots(cls):
         return [_shot("t", _payload()),
                 _shot("lobby", _payload(), tab="lobby"),
-                _shot("comps", _payload(), tab="comps")]
+                _shot("comps", _payload(), tab="comps"),
+                # The pick screen too: it is the screen whose classic facts
+                # carry the banned phrasing, so it is the one worth scanning.
+                _shot("pick", _choice_payload())]
 
     def test_no_verdict_vocabulary_reaches_the_screen(self):
-        for name in ("t", "lobby", "comps"):
+        for name in ("t", "lobby", "comps", "pick"):
             text = self.got[name + ".alltext"].lower()
             self.assertTrue(text, f"{name} rendered nothing to scan")
             for word in self.VERDICTS:
@@ -336,17 +382,68 @@ class TestTheViewCarriesNoVerdict(_Rendered):
                     f"{self.got[name + '.alltext'][:200]}")
 
     def test_the_pick_screen_shows_the_game_order_and_never_a_ranking(self):
-        """§4.3: the server returns the options score-ordered (row 0 is the pick
+        """§4.3: "Order defaults to As offered. The screen never ranks for the
+        player." The server returns the options score-ordered (row 0 is the pick
         the review grades), so rendering them as they arrive would hand the
         player the model's ranking."""
-        rep = _payload(choice={"ranked": [
-            ["Zed", "BG31_820", 90, "picked in 60% of games", 2],
-            ["Ann", "BG31_815", 10, "picked in 5% of games", 1]],
-            "guides": {}})
-        got = _render([_shot("pick", rep)])
+        got = _render([_shot("pick", _choice_payload()),
+                       _shot("sorted", _choice_payload(), click="By picked %")])
         self.assertEqual(got["pick.pick"], 2, "both options rendered")
-        # Option 1 in the game's order comes first, whatever the scores say.
-        self.assertEqual(got["pick.pickfirst"], "picked in 5% of games")
+        self.assertEqual(got["pick.picknames"], "Ann|Zed",
+                         "the game's offer order, not the score order")
+        self.assertEqual(got["pick.pickctl"].count("As offered:on"), 1,
+                         "As offered is the default and is shown as active")
+        # The opt-in sort, clicked for real.
+        self.assertEqual(got["sorted.picknames"], "Zed|Ann",
+                         "clicking By picked % did not re-order")
+        self.assertIn("By picked %:on", got["sorted.pickctl"])
+
+    def test_the_pick_screen_reads_numbers_not_the_fact_string(self):
+        """The rehearsal for §1, and the reason `option_stats` exists.
+
+        The classic rows in this fixture say "fits your board" and "fits your
+        comp direction" — phrasing the design bans. The Tavern screen must show
+        the numbers those sentences were built from, and the sentences
+        themselves must not be able to reach it.
+        """
+        got = _render([_shot("pick", _choice_payload())])
+        text = got["pick.alltext"]
+        for banned in ("fits your board", "fits your comp direction"):
+            self.assertNotIn(banned, text)
+        self.assertIn("Picked in=60% of games", got["pick.pickrows"])
+        self.assertIn("Avg place=3.20", got["pick.pickrows"])
+        self.assertIn("Top 4=62%", got["pick.pickrows"])
+        # Game order again: Ann was offered first, so her 30% leads even though
+        # Zed's 60% would win any ranking.
+        self.assertEqual(got["pick.pickhead"], "30%|60%",
+                         "the headline figures follow the option order")
+        self.assertIn("+15.0 vs offered avg", got["pick.pickvs"],
+                      "the distance from the offered average, stated")
+        self.assertEqual(got["pick.pickbars"], 8,
+                         "the distribution is eight bars, one per placement")
+        # The offered average itself is on the source line: the ± figure has to
+        # be relative to something the player can see.
+        self.assertIn("Offered average: 45.0% picked", got["pick.picknote"])
+
+    def test_a_stats_shown_toggle_removes_that_row(self):
+        """§4.3: "Stats shown lets the player toggle which rows appear (also how
+        new fields get added later)." """
+        got = _render([_shot("pick", _choice_payload(), click="top 4")])
+        self.assertNotIn("Top 4=", got["pick.pickrows"])
+        self.assertIn("Picked in=60% of games", got["pick.pickrows"])
+        self.assertIn("top 4:off", got["pick.pickctl"])
+
+    def test_no_option_without_data_invents_a_row(self):
+        """§6.2/§5: an option the DBs have nothing for says so, and shows no
+        rows — rather than a zero or a guess."""
+        rep = _payload(choice={"kind": "hero", "source": "Choose One",
+                               "ranked": [["Nobody", "BG31_999", 0.0, "", 0]],
+                               "option_stats": {}, "guides": {}})
+        got = _render([_shot("bare", rep)])
+        self.assertIn("No data for this card on this patch yet.",
+                      got["bare.alltext"])
+        self.assertEqual(got["bare.pickrows"], "")
+        self.assertEqual(got["bare.pickbars"], 0)
 
 
 class TestTheHarnessItself(unittest.TestCase):

@@ -170,5 +170,63 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
         self.assertNotIn("rank", src.lower())
 
 
+class TestTheOptionsStatistics(unittest.TestCase):
+    """`choices.option_stats` is the NUMBER side of the pick screen (§4.3).
+
+    The classic panel's rows are sentences, and the trinket ones mix a statistic
+    with phrasing the design bans ("fits your board"). These are the same data as
+    numbers, and the rule that shapes them is §5's: a key appears only when the
+    DB actually has it, because a row that cannot be filled is dropped rather
+    than zeroed.
+    """
+
+    def setUp(self):
+        import choices
+        self.choices = choices
+
+    def test_a_trinket_yields_its_population_numbers(self):
+        db = self.choices._load_trinket_db()
+        name = next(iter(db))
+        st = self.choices.option_stats("trinket", [(name, "TEST_ID")])["TEST_ID"]
+        if db[name].get("pick_rate") is None:
+            self.skipTest("this checkout's trinket DB carries no population data")
+        self.assertIsInstance(st["pick_rate"], float)
+        self.assertIn("avg_placement", st)
+        self.assertEqual(len(st["dist"]), 8, "the whole distribution, 1 to 8")
+
+    def test_a_top4_share_needs_all_four_of_the_top_placements(self):
+        """A partial distribution would under-report and read as a real number."""
+        import choices
+        saved = choices._load_trinket_db
+
+        class _Fake(dict):
+            pass
+
+        fake = _Fake({"Half": {"pick_rate": 10.0, "avg_placement": 4.0,
+                               "placement_distribution": {"1": 5.0, "2": 5.0}}})
+        choices._load_trinket_db = lambda: fake
+        try:
+            st = choices.option_stats("trinket", [("Half", "ID")])["ID"]
+            self.assertNotIn("top4", st)
+            self.assertEqual(st["dist"], {"1": 5.0, "2": 5.0})
+        finally:
+            choices._load_trinket_db = saved
+
+    def test_an_option_with_no_data_contributes_nothing(self):
+        st = self.choices.option_stats("trinket", [("No Such Trinket", "X")])
+        self.assertEqual(st, {}, "an unknown option gets no zeroes")
+        self.assertEqual(self.choices.option_stats("mystery", [("A", "B")]), {})
+
+    def test_a_discover_yields_the_card_data_the_design_asks_for(self):
+        """§4.3: "discover options add `[tier] · [tribe]`"."""
+        import meta
+        cards = meta.cards()
+        cid = next(c for c, v in cards.items()
+                   if v.get("tier") is not None and v.get("tribe"))
+        st = self.choices.option_stats("discover", [("X", cid)])[cid]
+        self.assertEqual(st["tier"], cards[cid]["tier"])
+        self.assertEqual(st["tribe"], cards[cid]["tribe"])
+
+
 if __name__ == "__main__":
     unittest.main()
