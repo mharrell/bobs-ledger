@@ -81,6 +81,21 @@ class TestTheFlag(unittest.TestCase):
             self.assertNotIn("--tbg", root_rule,
                              "the Tavern palette leaked into :root")
 
+    def test_the_rebuild_button_and_its_endpoint_are_wired(self):
+        """Old saves upgrade in place: the header button POSTs the selected
+        id to /review/rebuild, which re-derives the rep from the log the
+        store's pointer names."""
+        self.assertIn('id="settle-rebuild"', coach_ui._HTML)
+        self.assertIn("fetch('/review/rebuild'", coach_ui._HTML)
+        self.assertIn("await loadSettleGame(id)", coach_ui._HTML,
+                      "a rebuilt game re-renders immediately")
+        # The server side: the response builder exists and the handler
+        # dispatches the route to it (python side, not the page string).
+        self.assertTrue(callable(coach_ui._review_rebuild_response))
+        mod_src = open(coach_ui.__file__, encoding="utf-8").read()
+        self.assertIn('"/review/rebuild"', mod_src)
+        self.assertIn("settle_up.rebuild(rid)", mod_src)
+
 
 class TestTheRailData(unittest.TestCase):
     """The Summary rail's inputs: the serve-time join names the action lists

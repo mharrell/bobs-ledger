@@ -104,6 +104,20 @@ class TestLoadPathSafety(unittest.TestCase):
     def test_load_survives_a_deleted_store(self):
         self.assertIsNone(replay_store.load("whatever", root=self.root.name))
 
+    def test_explicit_rid_updates_in_place(self):
+        """The rebuild path re-saves under the KNOWN id — an update, not a
+        -2 suffixed copy stacking up beside the game it refreshed."""
+        first = replay_store.save(_rep(), root=self.root.name)
+        out = replay_store.save(_rep(hero="Rebuilt", turns=5),
+                                root=self.root.name, rid=first["id"])
+        self.assertEqual(out["id"], first["id"])
+        self.assertEqual(sorted(os.listdir(self.root.name)),
+                         [first["id"] + ".json"],
+                         "no suffix copy beside the game it refreshed")
+        loaded = replay_store.load(first["id"], root=self.root.name)
+        self.assertEqual(loaded["rep"]["hero"], "Rebuilt")
+        self.assertEqual(len(loaded["rep"]["timeline"]["turns"]), 5)
+
 
 if __name__ == "__main__":
     unittest.main()
