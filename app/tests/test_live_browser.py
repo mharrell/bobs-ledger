@@ -51,7 +51,10 @@ def _analysis(**over):
         "hand": [{"card": "BG31_831", "score": 9}],
         # The shop as the analysis carries it: (card, score) pairs, which
         # render_json turns into the payload's named rows.
-        "shop_rank": [("BG31_820", 32), ("BG31_831", 18)],
+        # The Tavern row on top, board and hand in ONE panel under it (fix list
+        # round 1 item 4 / round 2 item 4), and one of the shop rows is a real
+        # tavern spell so the Spell tag has something to tag.
+        "shop_rank": [("BG31_820", 32), ("BG31_880", 18), ("BG31_831", 12)],
         "tribe_roster": ["BEAST", "ELEMENTAL", "MECH", "UNDEAD", "PIRATE",
                          "NAGA"],
         "out_of_pool": ["NAGA"],
@@ -132,24 +135,29 @@ def _comps_payload(**over):
         meta.corpus_stats = saved
 
 
-def _game_over_payload(enabled=False, game_over=None):
+def _game_over_payload(enabled=False, game_over=None, sent=None):
     """The end-of-game card's payload — the REAL `welcome_payload`.
 
     `welcome_payload` returns the serialized body (it is what the handler
     writes), so it is decoded here. `auto_save_enabled()` is replaced rather
     than read: it is a file on the machine, so the card's shape would otherwise
-    depend on whoever is running the suite.
+    depend on who is running the suite. `sent` replaces the SHARING ANSWER the
+    same way — the count of games shared so far lives on this machine too.
     """
     import json
     import replay_store
     saved = replay_store.auto_save_enabled
+    saved_status = coach_ui.share_status
     replay_store.auto_save_enabled = lambda: enabled
+    if sent is not None:
+        coach_ui.share_status = lambda: ("on", sent)
     try:
         body = coach_ui.welcome_payload(
             game_over=game_over if game_over is not None
             else {"placement": 3, "turn": 12})
     finally:
         replay_store.auto_save_enabled = saved
+        coach_ui.share_status = saved_status
     return json.loads(body)
 
 
@@ -248,6 +256,77 @@ _DRIVER = r"""
       return b ? Math.round(b.getBoundingClientRect().height) : 0;
     })();
     o.classic = document.getElementById('col-decide').children.length;
+    // --- the fix lists' own facts (rounds 1 and 2, 2026-10-09) ------------
+    // 1. Live fills the window: the tavern container against the viewport, and
+    //    where the main column and the rail actually sit (>=1200 side by side).
+    //    Measured on the ROOT: `root.querySelector('.tavern.live')` looks for a
+    //    DESCENDANT of it and finds nothing, which read as a 0px-wide view.
+    o.tavernw = root ? Math.round(root.getBoundingClientRect().width) : 0;
+    o.vpw = window.innerWidth;
+    o.colat2 = (function () {
+      const a = one('.lv-col'), b = one('.lv-rail');
+      if (!a || !b) return '';
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      return Math.round(ra.left) + ',' + Math.round(ra.top) + '|'
+           + Math.round(rb.left) + ',' + Math.round(rb.top);
+    })();
+    // 2. The waiting state, and the empty strip that used to sit above it.
+    o.statebarhidden = document.getElementById('statebar').hidden ? 1 : 0;
+    o.herocls = one('.lv-hero') ? one('.lv-hero').className : '';
+    o.missvals = q('.lv-st b.miss').length;
+    o.inline = [...q('.lv-inline')].map(d => d.textContent).join('|');
+    o.bhlabels = [...q('.lv-bh .lv-lbl')].map(d => d.textContent).join('|');
+    o.bhhalf = q('.lv-bh > div').length;
+    // 3. One art treatment, spell tags, names.
+    o.kinds = [...q('.tile .tag-kind')].map(d => d.textContent).join('|');
+    o.renameless = q('.lv-opt .tname').length;
+    o.tiletitles = q('.tile[title]').length;
+    o.tnamewrap = (function () {
+      const n = one('.tavern .tile .tname') || one('.tile .tname');
+      return n ? getComputedStyle(n).whiteSpace : '';
+    })();
+    o.noart = q('.tile .thumb').length;
+    // 4. The tribe row: one chip per tribe, amber when set, dimmed when not.
+    o.chipcls = [...q('.lv-tribes .lv-chip')]
+      .map(c => c.textContent + ':' + (c.classList.contains('active') ? 'active'
+             : c.classList.contains('dim') ? 'dim'
+             : c.classList.contains('out') ? 'out' : '?')).join('|');
+    o.nagacount = [...q('.lv-tribes .lv-chip')]
+      .filter(c => c.textContent === 'NAGA' || c.textContent === 'Naga').length;
+    // 5. The pick screen's own numbers and layout.
+    o.picklbl = [...q('.lv-head small')].map(d => d.textContent).join('|');
+    o.pickcolw = (function () {
+      const n = one('.lv-opt');
+      return n ? Math.round(n.getBoundingClientRect().width) : 0;
+    })();
+    o.pickctlvp = (function () {
+      const n = one('.lv-pickctl');
+      return n ? Math.round(n.getBoundingClientRect().height) : 0;
+    })();
+    o.picknameh = (function () {
+      const n = one('.lv-optname');
+      return n ? Math.round(n.getBoundingClientRect().height) : 0;
+    })();
+    o.pickcardw = (function () {
+      const n = one('.lv-opt .tile');
+      return n ? Math.round(n.getBoundingClientRect().width) : 0;
+    })();
+    // 6. The Classic | Tavern toggle's own colours (round 1 item 9).
+    o.vsegbg = (function () {
+      const b = document.querySelector('#live-viewer button');
+      return b ? getComputedStyle(b).backgroundColor : '';
+    })();
+    o.vsegon = (function () {
+      const b = document.querySelector('#live-viewer button.on');
+      return b ? getComputedStyle(b).backgroundColor : '';
+    })();
+    o.vsegpad = (function () {
+      const b = document.querySelector('#live-viewer button');
+      return b ? getComputedStyle(b).padding : '';
+    })();
+    // 7. Game over: the label, and the sharing counter in its sentence.
+    o.overlabel = txt(one('.lv-overlabel'));
+    o.fine = [...q('.lv-fine')].map(d => d.textContent).join('|');
     // §4.4: the comp rows, their tier columns, the mini-card slots with the
     // size actually laid out, the controls, and the Detail/Compare shapes.
     o.comprows = [...q('.lv-crow')].map(r => {
@@ -260,6 +339,17 @@ _DRIVER = r"""
     o.compslots = q('.lv-slot').length;
     o.slotsmiss = q('.lv-slot.miss').length;
     o.slotshand = q('.lv-slot.hand').length;
+    o.slotart = q('.lv-slot .thumb').length;
+    o.legend = [...q('.lv-legend .lv-leglbl')].map(d => d.textContent).join('|');
+    o.legendslots = q('.lv-legend .lv-slot').length;
+    o.cmpboxes = q('.lv-cmpbox').length;
+    o.cmpchecked = q('.lv-cmpbox:checked').length;
+    o.cmpdisabled = q('.lv-cmpbox:disabled').length;
+    o.rowcols = (function () {
+      const r = one('.lv-crow');
+      if (!r) return '';
+      return getComputedStyle(r).display;
+    })();
     o.ctl = [...q('.lv-ctl .lv-chip')]
       .map(c => c.textContent + (c.classList.contains('on') ? ':on' : ''))
       .join('|');
@@ -289,7 +379,7 @@ _DRIVER = r"""
     o.slotpx = box('.lv-slot');
     o.cmpslotpx = box('.lv-cmpcol .lv-slot');
     // The CARD, not the wrapper that also holds its caption: §5 sizes the art
-    // frame at 88x120, and the caption line is not part of it.
+    // frame at 88x116, and the caption line is not part of it.
     o.corepx = box('.lv-core .tile');
     o.flexpx = box('.lv-flexcards .tile');
     // Where each tier column actually sits, so "two columns" is measured rather
@@ -310,14 +400,19 @@ _DRIVER = r"""
                            'taverncards', 'pickbars', 'compslots', 'slotsmiss',
                            'slotshand', 'guideopen', 'panelw', 'saverows',
                            'checkboxin', 'tavernon', 'decidehidden',
-                           'decidekids', 'tabh']
+                           'decidekids', 'tabh', 'tavernw', 'vpw', 'slotart',
+                           'legendslots', 'cmpboxes', 'cmpchecked', 'cmpdisabled',
+                           'missvals', 'bhhalf', 'renameless', 'tiletitles',
+                           'noart', 'nagacount', 'pickcolw', 'pickctlvp',
+                           'picknameh', 'pickcardw', 'statebarhidden']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
     // A control is only tested by using it: find it by its label and click it
     // for real, then read the facts back from what the redraw produced. `row`
     // scopes the search to one comp row, because the Browse rows all carry a
-    // chip with the same label and the first match would always be the same one.
+    // control with the same label and the first match would always be the same
+    // one. A NULL label matches the first element (a checkbox has no text).
     let scope = document;
     if (row) {
       scope = [...document.querySelectorAll('.lv-crow')]
@@ -325,7 +420,7 @@ _DRIVER = r"""
       if (!scope) throw new Error('no comp row named ' + row);
     }
     const node = [...scope.querySelectorAll(sel)]
-      .find(c => c.textContent === label);
+      .find(c => label === null || c.textContent === label);
     if (!node) throw new Error('no control labelled ' + label + ' in ' + sel);
     node.click();
   }
@@ -389,13 +484,15 @@ def _shot(name, rep, viewer="tavern", tab="shop", click=None, clicks=None,
 
 
 #: Clicking a Browse row's control by the COMP it belongs to: every row carries
-#: a chip with the same label, so "the compare chip" has to name its row.
+#: a control with the same label, so "the compare box" has to name its row.
 def _open(name):
     return [".lv-copen", name, name]
 
 
 def _compare(name):
-    return [".lv-chip", "compare", name]
+    # The compare control is a CHECKBOX since fix list round 1 item 6, so there
+    # is no label to match — `null` means "the first one in this row".
+    return [".lv-cmpbox", None, name]
 
 
 #: A choice whose facts carry the phrasing the design BANS, and whose
@@ -489,27 +586,90 @@ class TestTheTavernLiveInABrowser(_Rendered):
                          "the player could undo")
         self.assertIn("tap to correct", self.got["t.label"])
 
+    def test_a_tribe_out_of_play_appears_once_and_the_chips_are_marked(self):
+        """Fix list round 1 item 3. The roster is every tribe the game has, so
+        Naga is in it AND in `out_of_pool`: iterating both printed it twice. And
+        the set state has to be visible at a glance — amber outline when the
+        tribe is banned, dimmed when it is in play."""
+        got = self.got
+        self.assertEqual(got["t.nagacount"], 1,
+                         "the out-of-play tribe is listed twice")
+        self.assertIn("BEAST:active", got["t.chipcls"],
+                      "a banned tribe is not marked as set")
+        self.assertIn("PIRATE:dim", got["t.chipcls"],
+                      "an in-play tribe is not marked as unset")
+        self.assertIn("NAGA:out", got["t.chipcls"])
+        self.assertEqual(got["t.chipcls"].count(":?"), 0,
+                         "a chip with no state class at all")
+
     def test_the_tab_row_selects_the_screen_and_opens_on_shop(self):
         """§4.1's second tab row: `Shop | Comps | Lobby`. The facts table is not
         one of them — it is the rail beside every screen (§4.2 lists it there),
         so it is never hidden and never says anything twice."""
         self.assertEqual(self.got["t.tabs"], "Shop|Comps|Lobby")
         self.assertEqual(self.got["t.tabon"], "Shop")
-        self.assertEqual(self.got["t.panels"],
-                         "Tavern|Your board|Your hand|Facts")
+        self.assertEqual(self.got["t.panels"], "Tavern|Board and hand|Facts")
         self.assertEqual(self.got["comps.panels"], "Comps|Facts")
         self.assertEqual(self.got["lobby.panels"], "Lobby|Facts")
         # §8: 44px minimum targets, measured rather than declared.
         self.assertGreaterEqual(self.got["t.tabh"], 44)
 
+    def test_the_page_fills_the_window_and_the_rail_sits_beside_it(self):
+        """Fix list round 1 item 1: the tavern container was a flex rule inside a
+        two-column GRID — and inside the flex COLUMN the page falls back to below
+        1200x900, `flex-basis` is a height, so it did not stretch either.
+        Measured before the fix: 815px of a 1384px window.
+        Round 2 item 9 sets the breakpoints: main + 340px rail at >=1200px,
+        stacked below it."""
+        # BOTH branches of `#app`'s layout: the grid (a tall window) and the flex
+        # column (a short one).
+        for size in ((1400, 1000), (1400, 900)):
+            got = _render([_shot("f", _payload())], size=size)
+            self.assertGreater(got["f.tavernw"], got["f.vpw"] * 0.9,
+                               f"the tavern view is {got['f.tavernw']}px wide in "
+                               f"a {got['f.vpw']}px window at {size}")
+            # The two columns of the page itself: main left, rail right.
+            left, right = got["f.colat2"].split("|")
+            self.assertEqual(left.split(",")[1], right.split(",")[1],
+                             f"the rail is not level with the main column at {size}")
+            self.assertLess(int(left.split(",")[0]), int(right.split(",")[0]))
+        # 700-1200 stacks them (round 2 item 9).
+        mid = _render([_shot("m", _payload())], size=(1000, 900))
+        mleft, mright = mid["m.colat2"].split("|")
+        self.assertNotEqual(mleft.split(",")[1], mright.split(",")[1],
+                            "at 1000px the rail should be under the main column")
+        # ...and below 700 the pick grid is a single column, with the board and
+        # hand stacked rather than squeezed.
+        narrow = _render([_shot("n", _choice_payload())], size=(600, 900))
+        self.assertGreater(narrow["n.pickcolw"], 400,
+                           "the pick grid is not a single column under 700px")
+        bhn = _render([_shot("b", _payload())], size=(600, 900))
+        self.assertEqual(bhn["b.bhhalf"], 2)
+        self.assertNotEqual(bhn["b.colat2"].split("|")[0].split(",")[1],
+                            bhn["b.colat2"].split("|")[1].split(",")[1],
+                            "the rail should be under the main column at 600px")
+
     def test_the_facts_are_the_numbers_behind_the_classic_verdicts(self):
+        """...minus "Lethal at", which printed effective HP a second time under a
+        second name (fix list round 1 item 5 / round 2 item 6)."""
         kv = self.got["t.kv"]
         for row in ("Effective HP=30", "Took last fight=4", "Last 3 fights=−21",
-                    "Lethal at=30 damage", "Damage cap=10",
-                    "Board stats=14 vs 19 (seen 1 round ago)",
+                    "Damage cap=10",
+                    "Board stats — you vs lobby avg=14 vs 19 (seen 1 round ago)",
                     "Level up=tier 3 → 4 for 7g"):
             self.assertIn(row, kv, f"missing facts row: {row}")
+        self.assertNotIn("Lethal at", kv,
+                         "the row that repeats effective HP is still there")
         self.assertIn("observational, not causal", self.got["t.notes"])
+
+    def test_the_lobby_figure_is_named_as_an_average(self):
+        """The estimate half of the same row: "~59 (lobby)" did not say WHAT
+        about the lobby was being compared. `lobby_opp` is the analysis field
+        the scout strip falls back to — `opp_lobby` is DERIVED from it in
+        `render_json`, so setting that directly proves nothing."""
+        got = _render([_shot("lb", _payload(opp_stats=None, lobby_opp=59))])
+        self.assertIn("Board stats — you vs lobby avg=14 vs ~59 lobby avg",
+                      got["lb.kv"])
 
     def test_a_value_nobody_read_is_a_dash(self):
         """§6.4. The fixture drops the fragility block and the level cost, so
@@ -517,20 +677,63 @@ class TestTheTavernLiveInABrowser(_Rendered):
         row that always exists says so with a dash."""
         self.assertNotIn("Effective HP", self.got["notread.kv"])
         self.assertNotIn("Level up", self.got["notread.kv"])
-        self.assertIn("Board stats=—", self.got["notread.kv"])
+        self.assertIn("Board stats — you vs lobby avg=—", self.got["notread.kv"])
         self.assertNotIn("?", self.got["notread.alltext"])
 
-    def test_the_shop_before_it_parses_is_a_skeleton_with_a_sentence(self):
-        self.assertEqual(self.got["noshop.skel"], 4)
+    def test_the_shop_before_it_parses_is_a_sentence_and_not_dash_bars(self):
+        """Fix list round 2 item 2: the design's §6.1 asked for four dashed
+        skeleton cards; the player's call replaces them, because they read as
+        thick dash bars carrying nothing."""
+        got = self.got
+        self.assertEqual(got["noshop.skel"], 0, "the dash bars are still drawn")
         self.assertIn("Reading the shop. This updates when your next shop opens.",
-                      self.got["noshop.notes"])
-        self.assertEqual(self.got["noshop.taverncards"], 0,
-                         "the skeleton is not a card row")
-        self.assertGreaterEqual(self.got["t.taverncards"], 2,
+                      got["noshop.notes"])
+        self.assertEqual(got["noshop.taverncards"], 0)
+        self.assertGreaterEqual(got["t.taverncards"], 2,
                                 "a parsed shop renders its cards")
 
+    def test_the_waiting_state_dashes_the_numbers_and_names_the_slot(self):
+        """Fix list round 2 item 2: before the first shop of a game the status
+        bar shows muted dashes, and the hero slot says what the page is waiting
+        for instead of a dash with no noun."""
+        got = _render([_shot("w", _payload(hero=None, gold=None, tier=None,
+                                           health=None, scenario={},
+                                           current_place=None))])
+        self.assertEqual(got["w.hero"], "Waiting for the next shop to open")
+        self.assertIn("waiting", got["w.herocls"])
+        self.assertEqual(got["w.missvals"], 5, "every unread number is a dash")
+        self.assertEqual(got["w.stats"],
+                         "Gold:—|Tier:—|HP:—|Turn:—|Place:—")
+
+    def test_the_empty_strip_at_the_top_is_hidden(self):
+        """Fix list round 2 item 7: `#statebar` has a background and a radius, so
+        blanking it left a rounded empty bar above the card. The classic live
+        view is the one that fills it."""
+        got = self.got
+        self.assertEqual(got["t.statebarhidden"], 1,
+                         "the tavern view draws its own status bar, so the "
+                         "classic strip must not be there at all")
+        self.assertEqual(got["classic.statebarhidden"], 0,
+                         "the classic view needs the strip")
+        # The welcome card is the one that leaves it empty.
+        welcome = _render([_shot("wel", _welcome_payload(), viewer="classic")])
+        self.assertEqual(welcome["wel.statebarhidden"], 1,
+                         "an empty state strip is a rounded bar with nothing in "
+                         "it")
+
+    def test_board_and_hand_share_one_panel_side_by_side(self):
+        """Fix list round 1 item 4 / round 2 item 4: the taverner's row on top,
+        then one panel holding the board and the hand in two columns."""
+        got = self.got
+        self.assertEqual(got["t.bhlabels"], "Your board|Your hand")
+        self.assertEqual(got["t.bhhalf"], 2)
+        self.assertGreaterEqual(got["t.cards"], 3)
+
+    def test_an_empty_board_or_hand_says_empty_inline(self):
+        got = _render([_shot("e", _payload(sell_rank=[], hand=[]))])
+        self.assertEqual(got["e.inline"], "empty|empty")
+
     def test_cards_carry_a_caption_below_them(self):
-        self.assertGreaterEqual(self.got["t.cards"], 3)
         self.assertTrue(self.got["t.caps"], "no captions rendered")
         self.assertIn("hand", self.got["t.caps"], "the hand row is captioned")
         self.assertIn("scaler", self.got["t.caps"],
@@ -555,6 +758,19 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertEqual(got["lobby.tabon"], "Lobby")
         self.assertIn("Beast=2 of 3 seen seats (2+ copies)", got["lobby.kv"])
         self.assertIn("as of round 8", got["lobby.opplabel"])
+
+    def test_a_spell_is_tagged_rather_than_framed_differently(self):
+        """Round 2 item 3: one art treatment for every card, and the one kind that
+        is not a minion says so in a tag. `BG31_880` is a real tavern spell in the
+        shipped DB, so the tag comes from the payload's own `tag` field rather
+        than from anything this test invents."""
+        got = self.got
+        self.assertEqual(got["t.kinds"], "Spell",
+                         "the spell in the shop row is not tagged")
+        # Every card drawn the same way: art in the frame, name below it.
+        self.assertGreaterEqual(got["t.noart"], 1)
+        self.assertEqual(got["t.tnamewrap"], "normal",
+                         "card names are still clamped to one line")
 
     def test_classic_still_renders_after_a_tavern_render(self):
         """The flag's contract, and the way BACK.
@@ -643,15 +859,18 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         """
         got = _render([_shot("pick", _choice_payload())])
         text = got["pick.alltext"]
-        for banned in ("fits your board", "fits your comp direction"):
+        for banned in ("fits your board", "fits my comp direction",
+                       "fits your comp direction"):
             self.assertNotIn(banned, text)
-        self.assertIn("Picked in=60% of games", got["pick.pickrows"])
         self.assertIn("Avg place=3.20", got["pick.pickrows"])
         self.assertIn("Top 4=62%", got["pick.pickrows"])
-        # Game order again: Ann was offered first, so her 30% leads even though
-        # Zed's 60% would win any ranking.
-        self.assertEqual(got["pick.pickhead"], "30%|60%",
-                         "the headline figures follow the option order")
+        # Game order again: Ann was offered first, so her 30.0% leads even though
+        # Zed's 60.0% would win any ranking.
+        self.assertEqual(got["pick.pickhead"], "30.0%|60.0%",
+                         "the headline figures follow the option order, and carry "
+                         "one decimal (fix list round 1 item 2)")
+        self.assertEqual(got["pick.picklbl"], "Picked|Picked",
+                         "the headline figure says what it is")
         self.assertIn("+15.0 vs offered avg", got["pick.pickvs"],
                       "the distance from the offered average, stated")
         self.assertEqual(got["pick.pickbars"], 8,
@@ -660,12 +879,38 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         # be relative to something the player can see.
         self.assertIn("Offered average: 45.0% picked", got["pick.picknote"])
 
+    def test_the_pick_screen_names_each_option_once(self):
+        """Fix list round 1 item 2 / round 2 item 1: the tile's own caption is a
+        second, width-clamped copy of the name, and the headline used to repeat
+        the pick rate as a row as well."""
+        got = self.got
+        self.assertEqual(got["pick.renameless"], 0,
+                         "the option's art still carries its own name caption")
+        self.assertEqual(got["pick.picknames"], "Ann|Zed")
+        self.assertNotIn("Picked in", got["pick.pickrows"],
+                         "the pick rate is still repeated as a stat row")
+        self.assertGreaterEqual(got["pick.tiletitles"], 2,
+                                "the full name is not on the tile's title")
+
+    def test_the_pick_columns_and_the_controls_are_sized_as_asked(self):
+        """>=200px columns, a fixed-height name, the 130px art, and the controls
+        on one row (fix list round 1 item 2 / round 2 item 1)."""
+        got = self.got
+        self.assertGreaterEqual(got["pick.pickcolw"], 200,
+                                "an option column is narrower than 200px")
+        self.assertGreaterEqual(got["pick.picknameh"], 30,
+                                "the name line is not tall enough to hold two "
+                                "lines at a fixed height")
+        self.assertEqual(got["pick.pickcardw"], 130)
+        # One row of controls: a wrapped row would be ~2x a single button.
+        self.assertLess(got["pick.pickctlvp"], 60)
+
     def test_a_stats_shown_toggle_removes_that_row(self):
         """§4.3: "Stats shown lets the player toggle which rows appear (also how
         new fields get added later)." """
         got = _render([_shot("pick", _choice_payload(), click="top 4")])
         self.assertNotIn("Top 4=", got["pick.pickrows"])
-        self.assertIn("Picked in=60% of games", got["pick.pickrows"])
+        self.assertIn("Avg place=3.20", got["pick.pickrows"])
         self.assertIn("top 4:off", got["pick.pickctl"])
 
     def test_no_option_without_data_invents_a_row(self):
@@ -782,7 +1027,7 @@ class TestTheCompsScreens(_Rendered):
 
     def test_the_core_slots_are_the_designs_34_by_46(self):
         """§5 sizes the Browse slot at 34x46 and the Compare slot at 52x70. A
-        tile is 88-124px wide, so a slot that inherits the card rule would be
+        tile is 88-130px wide, so a slot that inherits the card rule would be
         more than twice the specified size."""
         self.assertEqual(self.got["browse.slotpx"], "34x46")
         self.assertEqual(self.got["compare.cmpslotpx"], "52x70")
@@ -790,6 +1035,55 @@ class TestTheCompsScreens(_Rendered):
         # dashed rather than a smaller solid box.
         self.assertGreaterEqual(self.got["browse.compslots"], 10)
         self.assertGreaterEqual(self.got["browse.slotsmiss"], 1)
+
+    def test_a_slot_carries_the_cards_art_and_a_legend_explains_the_colours(self):
+        """Fix list round 1 item 6: a row of coloured rectangles said nothing
+        about WHICH core cards a comp wants, so the slot shows the card's own art
+        (dimmed when you do not own it) — and a legend says what the colours mean,
+        drawn from the slot element itself."""
+        got = self.got
+        self.assertGreaterEqual(got["browse.slotart"], 10,
+                                "the slots have no art in them")
+        self.assertEqual(got["browse.legend"],
+                         "on board|in hand|not owned|banned this game")
+        self.assertEqual(got["browse.legendslots"], 4,
+                         "the legend swatches are not the slot element")
+        # The in-hand slot is still distinguishable, and a missing one is dimmed
+        # rather than hidden.
+        self.assertGreaterEqual(got["browse.slotshand"], 1)
+
+    def test_compare_is_a_checkbox_and_the_rows_are_a_grid(self):
+        """Fix list round 1 item 6: "compare as a checkbox", and rows that line up
+        (a flex row with `margin-left:auto` could not promise the same x for the
+        owned count down a column)."""
+        got = self.got
+        # Seven visible rows: two S + the five the A column shows before its cap.
+        self.assertEqual(got["browse.cmpboxes"], 7,
+                         "one compare box per visible row")
+        self.assertEqual(got["browse.cmpchecked"], 0)
+        self.assertEqual(got["compare.cmpchecked"], 3,
+                         "the three ticked rows are not ticked")
+        self.assertEqual(got["four.cmpchecked"], 3,
+                         "a fourth tick was accepted")
+        self.assertGreaterEqual(got["four.cmpdisabled"], 1,
+                                "the remaining boxes are not disabled with a "
+                                "reason")
+        self.assertEqual(got["browse.rowcols"], "grid")
+
+    def test_the_board_caption_reads_out_of_play_not_cant_grow(self):
+        """Fix list round 1 item 7 / round 2 item 5, and the reason the payload
+        carries the tribe: the value pass's own string ("banned tribe — can't
+        grow") is what the CLASSIC Sell box shows and what its test pins, so the
+        tavern caption is built from data instead."""
+        got = _render([_shot("ban", _payload(
+            board=[{"card": "BG31_815", "atk": 5, "health": 5,
+                    "tribe": "BEAST"},
+                   {"card": "BG31_820", "atk": 2, "health": 2,
+                    "tribe": "ELEMENTAL"}],
+            banned=["Beast"], bans_manual=True))])
+        self.assertIn("Beast — out of play", got["ban.caps"])
+        self.assertNotIn("can't grow", got["ban.alltext"])
+        self.assertNotIn("banned tribe", got["ban.alltext"])
 
     def test_detail_draws_the_core_row_and_the_flex_row_at_their_sizes(self):
         """The design's WIDTHS are the contract (88 core, 76 flex). The HEIGHT
@@ -918,8 +1212,25 @@ class TestTheGameOverCard(_Rendered):
     def test_the_card_is_the_placement_and_the_round(self):
         got = self.got
         self.assertEqual(got["over.tavern"], 1)
+        self.assertEqual(got["over.overlabel"], "Game over",
+                         "the big line has no label (fix list round 1 item 8)")
         self.assertEqual(got["over.overbig"], "3rd · Round 12")
         self.assertEqual(got["over.gobtn"], "Open in Settle Up")
+
+    def test_the_sharing_counter_follows_the_game(self):
+        """Fix list round 1 item 8: the summary says how many games have been
+        shared, so it has to move with the game. A card that keeps the previous
+        game's count is exactly the kind of stale number this project treats as a
+        bug — and the count is real here: `share_status()` is what
+        `welcome_payload` reads, replaced per payload as the machine's own
+        answer would be."""
+        first = _game_over_payload(sent=3)
+        second = _game_over_payload(sent=4)
+        self.assertIn("(3 shared so far)", first["privacy"])
+        got = _render([_shot("g1", first), _shot("g2", second)])
+        self.assertIn("3 shared so far", got["g1.fine"])
+        self.assertIn("4 shared so far", got["g2.fine"],
+                      "the card kept the previous game's count")
 
     def test_the_auto_save_answer_and_its_control_share_one_row(self):
         """§6.5: "Merge `Saved to the Settle Up tab automatically ✓` and the
