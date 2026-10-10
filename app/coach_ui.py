@@ -694,13 +694,25 @@ _HTML = r"""<!doctype html>
      untouched. It used to live in the top nav; it heads the LIVE page now
      (one toggle per page — see the markup note). */
   #live-viewer-row { grid-column:1 / -1; display:flex;
-                     justify-content:flex-end; margin:0 0 6px; }
+                     justify-content:flex-end; margin:0 0 8px; }
   #live-viewer-row[hidden] { display:none; }
   /* The Tavern Live view's own container, and the two classic panes it hides
      (2026-10-09). Hiding rather than replacing is what keeps the way back to
-     Classic working. */
-  #app #live-tavern { flex:1 1 100%; min-width:0; }
+     Classic working.
+     **It FILLS the window now (2026-10-09, fix list round 1).** `#app` is a
+     two-column grid above 1200x900 and a flex COLUMN at or below it, and the
+     tavern container was a grid rule with `flex:1 1 100%` as its size in the
+     flex case — where `flex-basis` is a height, so it did not stretch across.
+     Measured before the fix: 815px of a 1384px window. One column when the grid
+     applies, and `width:100%` in both. */
+  #app.tavern-on { grid-template-columns:minmax(0,1fr); align-items:stretch; }
+  #app.tavern-on #live-tavern { grid-column:1 / -1; width:100%;
+                                min-width:0; }
   #app.tavern-on > #col-decide, #app.tavern-on > #col-ref { display:none; }
+  /* An EMPTY state strip is a rounded bar with nothing in it, and the welcome
+     and game-over cards leave it empty by design (2026-10-09, fix list round 2
+     item 7). It is hidden rather than blanked. */
+  #statebar[hidden] { display:none; }
   /* The release stamp (2026-10-07): which release this overlay was served
      by, bottom-right and nearly invisible. A screenshot or a field report
      can then name the release without anyone digging for it — the question
@@ -733,14 +745,34 @@ _HTML = r"""<!doctype html>
      it until today**: the JS set `class="on"` on a span that had no class, so
      the shipped Classic | Tavern toggle gave NO visible sign of which viewer
      was active. Both spans carry it now. */
+  /* The segment control itself (2026-10-09, fix list round 1 item 9 / round 2
+     item 8: "theme the Classic | Tavern toggle"). `.vseg` only ever described
+     the ACTIVE state and the radii — the buttons themselves were whatever the
+     browser draws, which is why the Live one read as a white pill with grey
+     text. It is themed here for BOTH pages (the Settle Up pair sits in
+     `.s-head`, whose own button rule agrees with this), and over the Tavern
+     view it takes the tavern palette, so the control matches what it toggles. */
   .vseg { display:inline-flex; gap:0; }
+  .vseg button { background:var(--panel); color:var(--dim);
+                 border:1px solid var(--border); padding:6px 12px;
+                 font:600 12px "Segoe UI", system-ui; cursor:pointer; }
+  .vseg button:hover { color:var(--text-2); }
   .vseg button { border-radius:0; }
+  #live-viewer-row .vseg button { padding:6px 14px; }
   .vseg button:first-child { border-radius:var(--radius) 0 0 var(--radius); }
   .vseg button:last-child { border-radius:0 var(--radius) var(--radius) 0;
                             border-left:none; }
   .vseg button.on { color:var(--text); background:var(--panel2);
                     border-color:rgba(255,255,255,.22); }
   .vseg button:disabled { opacity:.45; cursor:default; color:var(--dim); }
+  /* Over the Tavern view: the same control in the tavern's own colours, with
+     the design's selection amber for the active half (§7: amber is selection). */
+  #app.tavern-on #live-viewer-row .vseg button {
+    background:var(--tpanel); color:var(--tmute); border-color:var(--tline);
+    padding:6px 14px; min-height:44px; }
+  #app.tavern-on #live-viewer-row .vseg button:hover { color:var(--ttext); }
+  #app.tavern-on #live-viewer-row .vseg button.on {
+    background:var(--tsel); color:var(--tonsel); border-color:var(--tsel); }
   /* An id beats the UA's [hidden] rule, so hiding this has to be said. */
   #settle-mode[hidden] { display:none; }
   /* The Tavern palette (REPLAY_VIEWER_DESIGN.md §6), SCOPED to .tavern so the
@@ -841,9 +873,14 @@ _HTML = r"""<!doctype html>
      render). Over art that already fills the card it would be clipped by the
      frame, so it is off here — the hover CARD is the tooltip. */
   .tavern .tile img.thumb.canzoom:hover { transform:none; }
+  /* Full names, on TWO lines (fix list round 2 item 3): truncating to one line
+     with an ellipsis hid which of "Murloc Warleader" and "Murloc Tidecaller" a
+     tile was, on a screen where the name is the only identifier. The hover
+     tooltip still carries the whole card. */
   .tavern .tile .tname { width:100%; font-size:11px; line-height:1.25;
-                         margin-top:2px; white-space:nowrap; overflow:hidden;
-                         text-overflow:ellipsis; }
+                         margin-top:2px; white-space:normal; overflow:hidden;
+                         display:-webkit-box; -webkit-line-clamp:2;
+                         -webkit-box-orient:vertical; }
   .tavern .tile .tsub { font-size:13px; font-weight:700; line-height:1.2; }
   .tavern .tile .tsub .stat-atk { color:var(--tatk); }
   .tavern .tile .tsub .stat-hp { color:var(--thp); }
@@ -856,6 +893,12 @@ _HTML = r"""<!doctype html>
     font-weight:700; padding:2px 5px; border-radius:4px; }
   .tavern .tile .tag-new { background:var(--tbuff); color:var(--tonbuff); }
   .tavern .tile .tag-sold { background:var(--tloss); color:var(--tonsel); }
+  /* What the card IS, for the one kind that is not a minion: a tag in the other
+     corner, never a different frame (fix list round 2 item 3). */
+  .tavern .tile .tag-kind { position:absolute; top:4px; right:4px; z-index:2;
+                            font-size:10px; font-weight:700; padding:2px 5px;
+                            border-radius:4px; background:var(--tk-play);
+                            color:var(--tk-play-t); }
   /* Net change: one buff-green "+0/+3" (2026-10-09, player call) — the buff
      is the fact, and per-stat gold/red is the base stats' job. */
   .tavern .tile .tdelta { font-size:12px; font-weight:700; color:var(--tbuff); }
@@ -955,17 +998,36 @@ _HTML = r"""<!doctype html>
   .lv-status { display:flex; align-items:flex-end; gap:22px; flex-wrap:wrap;
                margin:0 0 12px; }
   .tavern.live .lv-hero { font:700 18px "Segoe UI", system-ui; }
+  /* The hero slot is a sentence before the first shop of a game (fix list round
+     2 item 2): muted and not bold, because it is a state, not a hero. */
+  .tavern.live .lv-hero.waiting { font:600 15px "Segoe UI", system-ui;
+                                  color:var(--tmute); }
   .tavern.live .lv-st { display:flex; flex-direction:column; }
   .tavern.live .lv-st small { font-size:11px; letter-spacing:.1em;
                               text-transform:uppercase; color:var(--tmute); }
   .tavern.live .lv-st b { font:600 26px "Segoe UI", system-ui; }
+  /* §6.4: a value nobody read is a dash in --mute, never a guess. */
+  .tavern.live .lv-st b.miss { color:var(--tmute); font-weight:400; }
   /* Gold is the currency colour, which is --atk's other job (§4.2/§7). */
-  .tavern.live .lv-st.gold b { color:var(--tatk); }
-  .tavern.live .lv-main { display:grid; grid-template-columns:minmax(0,1fr) 340px;
+  .tavern.live .lv-st.gold b:not(.miss) { color:var(--tatk); }
+  /* The two columns of the Live page (fix list round 2 item 9): main + a 340px
+     rail at >=1200px, STACKED from 700 to 1200, and a single-column pick grid
+     under 700. The rail used to drop out at 900px, which left a 1000px window
+     with a rail that could have fitted. */
+  .tavern.live .lv-main { display:grid; grid-template-columns:minmax(0,1fr);
                           gap:14px; align-items:start; }
-  @media (max-width: 900px) {
-    .tavern.live .lv-main { grid-template-columns:1fr; }
+  @media (min-width: 1200px) {
+    .tavern.live .lv-main { grid-template-columns:minmax(0,1fr) 340px; }
   }
+  /* Shop screen (fix list round 1 item 4 / round 2 item 4): the taverner's row
+     on top, then ONE panel holding the board and the hand side by side. */
+  .tavern.live .lv-bh { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+                        gap:14px; align-items:start; }
+  @media (max-width: 699.98px) {
+    .tavern.live .lv-bh { grid-template-columns:1fr; }
+  }
+  .tavern.live .lv-bh > div { min-width:0; }
+  .tavern.live .lv-inline { color:var(--tmute); font-size:12px; padding:2px 0; }
   .tavern.live .lv-pn { background:var(--tpanel); border:1px solid var(--tline);
                         border-radius:12px; padding:12px 14px;
                         margin:0 0 12px; }
@@ -1004,32 +1066,51 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-chip { padding:5px 11px; border-radius:14px;
                           background:var(--tcard); border:1px solid var(--tline);
                           font-size:12px; cursor:pointer; }
+  /* Active = an amber outline, inactive = dimmed (fix list round 1 item 3). The
+     amber is --tsel, the design's selection colour; nothing here is a verdict
+     about the tribe, only about which chips are set. */
+  .tavern.live .lv-chip.active { border:2px solid var(--tsel);
+                                 color:var(--ttext); padding:4px 10px; }
+  .tavern.live .lv-chip.dim { opacity:.5; }
+  .tavern.live .lv-chip.dim:hover { opacity:.85; }
   /* Out of play is NOT a ban the player could undo (§4.2): struck through, and
      not clickable, so it can never read as one of the five. */
   .tavern.live .lv-chip.out { border-color:var(--tloss); color:var(--tmute);
                               text-decoration:line-through; cursor:default; }
   .tavern.live .lv-chip.picked { border-color:var(--tsel); }
-  .tavern.live .lv-skel { width:var(--tcardw); aspect-ratio:88/120;
-                          border-radius:10px; border:1px dashed var(--tline);
-                          opacity:.5; }
-  /* §4.3's pick screen: the controls row, the option columns (four at ~250px,
-     three at ~340px when there are three or fewer), the headline figure and
-     §5's distribution bars. */
-  .tavern.live .lv-pickctl { display:flex; flex-wrap:wrap; gap:6px;
-                             align-items:center; margin:0 0 8px; }
+  /* The design's §6.1 four dashed skeleton cards went with fix list round 2 item
+     2 (the player's call: they read as thick dash bars carrying nothing). The
+     sentence beside them says the same thing, and the class is gone entirely so
+     no rule can quietly bring the bars back. */
+  /* §4.3's pick screen: the controls row, the option columns (>=200px each, so
+     a narrow window gets fewer of them rather than a squashed one — fix list
+     round 1 item 2), the headline figure and §5's distribution bars. */
+  .tavern.live .lv-pickctl { display:flex; flex-wrap:nowrap; gap:12px;
+                             align-items:center; margin:0 0 10px;
+                             overflow-x:auto; }
   .tavern.live .lv-chip.on { border-color:var(--tsel); color:var(--ttext); }
   .tavern.live .lv-chip.off { opacity:.45; cursor:default; }
-  .tavern.live .lv-opts { display:grid; gap:16px;
-                          grid-template-columns:repeat(4, minmax(0, 1fr)); }
-  .tavern.live .lv-opts.wide { grid-template-columns:repeat(3, minmax(0, 1fr)); }
-  @media (max-width: 900px) {
-    .tavern.live .lv-opts,
-    .tavern.live .lv-opts.wide { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  /* >=200px columns (fix list round 1 item 2), capped near the design's own
+     column width so two options do not stretch to half the window each — the
+     CARD is 130px and a 660px column around it reads as a mistake. Centered,
+     because a pick screen with two options should look like two options. */
+  .tavern.live .lv-opts { display:grid; gap:16px; justify-content:center;
+                          grid-template-columns:repeat(auto-fit,
+                                                 minmax(200px, 340px)); }
+  @media (max-width: 699.98px) {
+    .tavern.live .lv-opts { grid-template-columns:1fr; }
   }
   .tavern.live .lv-opt { display:flex; flex-direction:column;
-                         align-items:center; gap:4px; }
+                         align-items:center; gap:12px; }
+  /* §5: a pick option's card is 130 wide. */
+  .tavern.live .lv-opt { --tcardw:130px; }
+  /* A FIXED-height name (fix list round 1 item 2): one line or two, the
+     headline and the bars below it always start at the same height, so the
+     options can be read across. */
   .tavern.live .lv-optname { font-weight:600; font-size:13px;
-                             text-align:center; }
+                             text-align:center; min-height:34px;
+                             display:flex; align-items:center;
+                             justify-content:center; }
   .tavern.live .lv-head { display:flex; flex-direction:column;
                           align-items:center; margin:4px 0; }
   .tavern.live .lv-head b { font:600 26px "Segoe UI", system-ui; }
@@ -1063,26 +1144,57 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-ctier > h4 { margin:0 0 6px; font-size:11px;
                                 letter-spacing:.12em; text-transform:uppercase;
                                 color:var(--tmute); }
-  .tavern.live .lv-crow { display:flex; flex-wrap:wrap; gap:8px;
-                          align-items:center; padding:6px 0;
+  /* A comp row is a GRID with fixed columns (fix list round 1 item 6:
+     "consistent rows"): the slots, the owned count, the average placement and
+     the compare box start at the same x down the whole column, which a flex row
+     with `margin-left:auto` could not promise. */
+  .tavern.live .lv-crow { display:grid;
+                          grid-template-columns:minmax(0,1fr) auto 92px 58px 88px;
+                          gap:10px; align-items:center; padding:7px 0;
                           border-bottom:1px solid var(--tline); font-size:12px; }
-  .tavern.live .lv-cname { flex:1 1 150px; min-width:0; display:flex;
+  @media (max-width: 699.98px) {
+    .tavern.live .lv-crow { grid-template-columns:minmax(0,1fr) auto; }
+  }
+  .tavern.live .lv-cname { min-width:0; display:flex;
                            flex-wrap:wrap; gap:6px; align-items:baseline; }
   .tavern.live .lv-copen { cursor:pointer; text-decoration:underline; }
   .tavern.live .lv-crow.low .lv-cname, .tavern.live .lv-crow.low .lv-slots,
   .tavern.live .lv-crow.low .lv-owned, .tavern.live .lv-crow.low .lv-ap {
     opacity:.55; }
-  .tavern.live .lv-owned { color:var(--ttext); font-weight:600; }
-  .tavern.live .lv-ap { margin-left:auto; font-weight:600; }
+  .tavern.live .lv-owned { color:var(--ttext); font-weight:600;
+                           white-space:nowrap; }
+  .tavern.live .lv-ap { font-weight:600; }
   .tavern.live .lv-ap.miss { color:var(--tmute); font-weight:400; }
   .tavern.live .lv-chip.lowsamp { cursor:default; color:var(--tmute);
                                   font-size:11px; padding:2px 8px; }
   .tavern.live .lv-slots { display:flex; flex-wrap:wrap; gap:3px; }
   .tavern.live .lv-slot { display:inline-block; width:34px; height:46px;
                           border-radius:5px; background:var(--tcard);
-                          border:2px solid var(--tbuff); box-sizing:border-box; }
-  .tavern.live .lv-slot.miss { border:1px dashed var(--tline); opacity:.5; }
-  .tavern.live .lv-slot.banned { border:2px solid var(--tloss); opacity:.5; }
+                          border:2px solid var(--tbuff); box-sizing:border-box;
+                          overflow:hidden; position:relative; }
+  /* The core card's own art, size of the slot. Missing/banned are DIMMED rather
+     than hidden — the comp still says which cards it wants. */
+  .tavern.live .lv-slot .thumb { display:block; width:100%; height:100%;
+                                 object-fit:cover; border-radius:0; }
+  .tavern.live .lv-slot.miss { border:1px dashed var(--tline); }
+  .tavern.live .lv-slot.miss .thumb, .tavern.live .lv-slot.banned .thumb {
+    opacity:.35; filter:grayscale(1); }
+  .tavern.live .lv-slot.banned { border:2px solid var(--tloss); }
+  .tavern.live .lv-slot .thumb.ph { font-size:12px; color:var(--tmute);
+                                    background:var(--tcard); }
+  /* The legend is the slot element itself, so it cannot drift from the rows. */
+  .tavern.live .lv-legend { display:flex; flex-wrap:wrap; gap:14px;
+                            align-items:center; margin:10px 0 0; }
+  .tavern.live .lv-legitem { display:inline-flex; align-items:center; gap:6px; }
+  .tavern.live .lv-legend .lv-slot { width:20px; height:27px; }
+  .tavern.live .lv-leglbl { color:var(--tmute); font-size:11px; }
+  .tavern.live .lv-cmpcell { display:inline-flex; align-items:center; gap:6px;
+                             justify-content:flex-start; }
+  .tavern.live .lv-cmpbox { width:18px; height:18px; margin:0;
+                            accent-color:var(--tsel); cursor:pointer; }
+  .tavern.live .lv-cmpbox:disabled { cursor:default; }
+  .tavern.live .lv-cmplbl { color:var(--tmute); font-size:11px;
+                            cursor:pointer; }
   .tavern.live .lv-more { background:var(--tpanel); color:var(--ttext);
                           border:1px solid var(--tline); border-radius:8px;
                           padding:5px 10px; margin-top:6px; min-height:44px;
@@ -1117,9 +1229,12 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-gslot { margin-top:6px; }
   .tavern.live .lv-gtext { margin:0 0 6px; }
   .tavern.live .lv-gmd { white-space:pre-wrap; font:inherit; margin:0; }
-  .tavern.live .lv-over { text-align:center; }
+  .tavern.live .lv-over { text-align:center; padding:22px 18px 26px; }
+  .tavern.live .lv-overlabel { font:600 12px "Segoe UI", system-ui;
+                               letter-spacing:.14em; text-transform:uppercase;
+                               color:var(--tmute); margin:0 0 10px; }
   .tavern.live .lv-overbig { font:700 26px "Segoe UI", system-ui;
-                             margin-bottom:6px; }
+                             margin-bottom:16px; }
   .tavern.live .lv-gobtn { background:var(--tpanel); color:var(--ttext);
                            border:1px solid var(--tline); border-radius:8px;
                            min-height:44px;
@@ -1472,12 +1587,21 @@ function thumb(cid, name) {
 function tile(cid, name, sub, opts) {
   opts = opts || {};
   const t = el('div', 'tile' + (opts.cls ? ' ' + opts.cls : ''));
+  // The plain-text full name, alongside the hover card render: a name that had
+  // to wrap or clamp is still readable in full by hovering anywhere on the tile
+  // (fix list round 2 item 3).
+  t.title = name || '';
   const img = thumb(cid, name);
   if (opts.golden) img.classList.add('golden');
   t.appendChild(img);
-  const nm = el('div', 'tname', badgeName(cid, name));
-  if (opts.n > 1) nm.appendChild(el('span', 'xcount', '  ×' + opts.n));
-  t.appendChild(nm);
+  // `noname`: the pick screen names an option ONCE, in the fixed-height line
+  // under it (fix list round 1 item 2 / round 2 item 1 — the tile's own caption
+  // is clamped to the card's width and read as a truncated second name).
+  if (!opts.noname) {
+    const nm = el('div', 'tname', badgeName(cid, name));
+    if (opts.n > 1) nm.appendChild(el('span', 'xcount', '  ×' + opts.n));
+    t.appendChild(nm);
+  }
   if (sub) {
     const s = el('div', 'tsub');
     if (sub.nodeType) s.appendChild(sub);
@@ -1666,6 +1790,11 @@ function lvClearTavern() {
   const lt = document.getElementById('live-tavern');
   if (lt) { lt.hidden = true; lt.innerHTML = ''; }
   document.getElementById('app').classList.remove('tavern-on');
+  // The classic strip is the classic renderer's, and it fills it right after
+  // this. It is UNHIDDEN here rather than there so the two viewers cannot both
+  // leave it hidden (fix list round 2 item 7 hides it while it is empty).
+  const bar = document.getElementById('statebar');
+  if (bar) bar.hidden = false;
 }
 function renderWelcome(a) {
   const decide = document.getElementById('col-decide');
@@ -1676,6 +1805,9 @@ function renderWelcome(a) {
   decide.innerHTML = '';
   ref.innerHTML = '';
   statebar.textContent = '';
+  // This card carries its own headline, so the strip is not just blank — an
+  // empty one is a rounded bar with nothing in it (fix list round 2 item 7).
+  statebar.hidden = true;
   const card = el('div', 'welcome');
   // `title` only exists on the end-of-game card ("Game over"); a first-run card
   // is headed by the product name.
@@ -1832,23 +1964,34 @@ function lvKV(label, value) {
 }
 //: A card with its one-line caption UNDERNEATH (§4.2), rather than the tile's
 //: name over the art: the caption is the data line, and it needs the width.
-function lvCard(cid, name, cap) {
+//: `opts.kind` adds a corner tag naming what the card IS ("Spell") — one art
+//: treatment for every card, with the kind said in a tag rather than drawn as a
+//: different frame (fix list round 2 item 3).
+function lvCard(cid, name, cap, opts) {
   const wrap = el('div', 'lv-card');
-  wrap.appendChild(tile(cid, name, null, {}));
+  const t = tile(cid, name, null, {});
+  if (opts && opts.kind) t.appendChild(el('span', 'tag-kind', opts.kind));
+  wrap.appendChild(t);
   wrap.appendChild(el('span', 'lv-cap', cap));
   return wrap;
 }
 function lvEmptyRow(text) { return el('div', 'lv-empty', text); }
 
 //: §4.2 status bar: the hero, then six numbers. Gold takes the currency colour;
-//: everything else is --text, and nothing here is a judgement.
+//: everything else is --text, and nothing here is a judgement. Before the first
+//: shop of a game there is no hero to name, and the slot says what the page is
+//: waiting for instead (fix list round 2 item 2); a number nobody has read is a
+//: dash in --mute (§6.4), not a guess.
 function lvStatus(a) {
   const bar = el('div', 'lv-status');
-  bar.appendChild(el('span', 'lv-hero', lvVal(a.hero)));
+  bar.appendChild(a.hero
+    ? el('span', 'lv-hero', a.hero)
+    : el('span', 'lv-hero waiting', 'Waiting for the next shop to open'));
   const st = (label, value, cls) => {
     const d = el('span', 'lv-st' + (cls ? ' ' + cls : ''));
     d.appendChild(el('small', null, label));
-    d.appendChild(el('b', null, lvVal(value)));
+    const unread = value == null || value === '';
+    d.appendChild(el('b', unread ? 'miss' : null, lvVal(unread ? null : value)));
     return d;
   };
   bar.appendChild(st('Gold', a.gold, 'gold'));
@@ -1860,9 +2003,25 @@ function lvStatus(a) {
                                               : null));
   return bar;
 }
+//: The waiting state (fix list round 2 item 2): the status bar with everything
+//: dashed, and one line saying what the page is waiting for. The design's §6.1
+//: asked for four dashed skeleton cards here; the player's call replaces them —
+//: they read as "thick dash bars" with no information in them, and the sentence
+//: says the same thing.
+function lvWaiting(a) {
+  const p = el('div', 'lv-pn');
+  p.appendChild(el('h3', null, 'Shop'));
+  p.appendChild(el('p', 'lv-note', 'Reading the shop. This updates when your '
+                                   + 'next shop opens.'));
+  if (a.status) p.appendChild(el('p', 'lv-inline', a.status));
+  return p;
+}
 //: §4.2's ONE tribe row. Out-of-play tribes are struck through and never read
 //: as a ban the player could undo; tapping any chip corrects the set, which is
 //: what makes every comp filter downstream exact.
+//: ACTIVE is an amber outline, INACTIVE is dimmed (fix list round 1 item 3), and
+//: a tribe that is out of play appears ONCE — it is in the roster AND in
+//: `out_of_pool`, so iterating both printed Naga twice.
 function lvTribes(a) {
   const row = el('div', 'lv-tribes');
   row.appendChild(el('span', 'lv-lbl', a.bans_manual
@@ -1870,20 +2029,23 @@ function lvTribes(a) {
     : 'Lobby tribes · ' + (a.tribes_seen || 0) + '/5 confirmed'));
   const oop = new Set(a.out_of_pool || []);
   const picked = new Set(a.bans_manual ? (a.banned || []) : []);
-  (a.tribe_roster || []).forEach(t => {
-    const chip = el('span', 'lv-chip' + (picked.has(t) ? ' picked' : ''), t);
+  (a.tribe_roster || []).filter(t => !oop.has(t)).forEach(t => {
+    const on = picked.has(t);
+    const chip = el('span', 'lv-chip ' + (on ? 'active' : 'dim'), t);
+    chip.title = on ? 'Banned in this game — tap to clear'
+                    : 'In play — tap to ban';
     chip.onclick = () => {
       if (picked.has(t)) picked.delete(t);
       else picked.add(t);
       postBans([...picked]);
-      chip.classList.toggle('picked');
+      chip.classList.toggle('active');
+      chip.classList.toggle('dim');
     };
     row.appendChild(chip);
   });
-  // Out of play, LAST and struck through. The payload's roster already leaves
-  // these out, so iterating the roster alone silently dropped the distinction
-  // the design asks for — a rotated tribe has to be visible as its own state,
-  // never as a ban the player could undo (2026-10-09, measured in a browser).
+  // Out of play, LAST and struck through. The payload's roster includes these
+  // (it is the canonical list of tribes), so the filter above is what keeps the
+  // row from saying Naga twice.
   oop.forEach(t => {
     const chip = el('span', 'lv-chip out', t);
     chip.title = 'Out of play: rotated by a patch, so no lobby can offer it. '
@@ -1895,6 +2057,8 @@ function lvTribes(a) {
 //: §4.2 Facts tab. The numbers, and only the numbers: the classic strip's
 //: "FRAGILE — … a 14-hit ends it" and its "favored/behind" forecast are
 //: verdicts, and they are replaced here by the same values as rows.
+//: "Lethal at" is gone (fix list round 1 item 5 / round 2 item 6): it printed
+//: effective HP a second time under a second name.
 function lvFacts(a) {
   const p = el('div', 'lv-pn');
   p.appendChild(el('h3', null, 'Facts'));
@@ -1904,13 +2068,11 @@ function lvFacts(a) {
   if (fr.recent3 != null) {
     p.appendChild(lvKV('Last 3 fights', '−' + fr.recent3));
   }
-  if (fr.eff_health != null) {
-    p.appendChild(lvKV('Lethal at', fr.eff_health + ' damage'));
-  }
   if (fr.cap != null) p.appendChild(lvKV('Damage cap', fr.cap));
-  // Board stats, you vs last seen (§1): "51 vs ~59 (seen 1 round ago)", never
+  // Board stats, you vs last seen (§1): "51 vs ~59 (lobby avg)", never
   // "favored" or "strong". An exact read is the opponent we fought; the lobby
-  // figure is an estimate and keeps its '~'.
+  // figure is a median over the lobby's recent fights and says so (fix list
+  // round 1 item 5: "you vs lobby avg", not a bare "lobby").
   const bs = a.board_stats;
   let vs = null;
   if (bs != null && a.opp_stats != null) {
@@ -1918,11 +2080,11 @@ function lvFacts(a) {
        + (a.opp_age ? ' (seen ' + a.opp_age + ' round'
           + (a.opp_age === 1 ? '' : 's') + ' ago)' : '');
   } else if (bs != null && a.opp_lobby != null) {
-    vs = bs + ' vs ~' + a.opp_lobby + ' (lobby)';
+    vs = bs + ' vs ~' + a.opp_lobby + ' lobby avg';
   } else if (bs != null) {
     vs = String(bs);
   }
-  p.appendChild(lvKV('Board stats', vs));
+  p.appendChild(lvKV('Board stats — you vs lobby avg', vs));
   if (a.level_cost != null) {
     p.appendChild(lvKV('Level up', a.tier != null && a.tier < 6
       ? 'tier ' + a.tier + ' → ' + (a.tier + 1) + ' for ' + a.level_cost + 'g'
@@ -1958,14 +2120,17 @@ function lvCompTribe(c) { return c.tribe || 'Mixed'; }
 
 //: §5's core slot: 34x46 in Browse, 52x70 in Compare (one CSS rule each), 5px
 //: radius; owned = a 2px --buff border on --tcard, missing = 1px dashed --line
-//: at 50% opacity. The state rides the tooltip as well as the colour — §8:
-//: nothing is communicated by colour alone — and Detail spells it out in a
-//: caption under the card.
-function lvSlot(x) {
+//: at 50% opacity. The slot carries the card's own ART, dimmed when you do not
+//: own it (fix list round 1 item 6) — a row of coloured rectangles said nothing
+//: about WHICH core cards a comp wants. The hover shows the full card render
+//: (the same `thumb` handler the tiles use) and the tooltip names it, so the
+//: state is never carried by colour alone (§8).
+function lvSlot(x, bare) {
   const state = x.banned ? 'banned'
               : x.owned ? 'board' : x.in_hand ? 'hand' : 'miss';
   const s = el('span', 'lv-slot ' + state);
-  s.title = (x.name || x.card) + ' — '
+  if (!bare && x.card) s.appendChild(thumb(x.card, x.name));
+  s.title = (x.name || x.card || '') + (x.card ? ' — ' : '')
           + (state === 'banned' ? 'banned this game'
              : state === 'board' ? 'on board'
              : state === 'hand' ? 'in hand' : 'not owned');
@@ -1980,6 +2145,21 @@ function lvSlots(cards) {
   (cards || []).forEach(x => wrap.appendChild(lvSlot(x)));
   if (!wrap.children.length) wrap.appendChild(el('span', 'lv-empty', 'no core list'));
   return wrap;
+}
+//: What the slot colours mean (fix list round 1 item 6: "legend for any slot
+//: colors"). The swatches are the slot element itself, so the legend cannot
+//: drift from what the rows draw.
+function lvSlotLegend() {
+  const row = el('div', 'lv-legend');
+  [['board', 'on board'], ['hand', 'in hand'],
+   ['miss', 'not owned'], ['banned', 'banned this game']].forEach(([cls, label]) => {
+    const item = el('span', 'lv-legitem');
+    item.appendChild(lvSlot({owned: cls === 'board', in_hand: cls === 'hand',
+                             banned: cls === 'banned'}, true));
+    item.appendChild(el('span', 'lv-leglbl', label));
+    row.appendChild(item);
+  });
+  return row;
 }
 //: §4.4 counts a core card owned when it is on the board OR IN HAND. The
 //: payload's `owned` flag is the classic panel's board-only rule, so the Tavern
@@ -2019,18 +2199,34 @@ function lvCompRow(a, c) {
   row.appendChild(el('b', 'lv-ap' + (st && st.avg_place != null ? '' : ' miss'),
                      st && st.avg_place != null ? st.avg_place.toFixed(2) : '—'));
   const picked = _liveCompare.has(c.slug);
-  const cmp = el('span', 'lv-chip' + (picked ? ' on' : ''),
-                 picked ? 'comparing' : 'compare');
-  cmp.onclick = () => {
+  const full = !picked && _liveCompare.size >= LIVE_COMPARE_MAX;
+  // A CHECKBOX, not a chip (fix list round 1 item 6): "compare" is a
+  // selection you make about up to three rows, and a checkbox is what that
+  // looks like. It is disabled (with the reason in its title) once three are
+  // ticked rather than silently doing nothing.
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.className = 'lv-cmpbox';
+  cb.id = 'lv-cmp-' + String(c.slug || 'x').replace(/[^A-Za-z0-9_-]/g, '');
+  cb.checked = picked;
+  cb.disabled = full;
+  if (full) {
+    cb.title = 'Compare holds up to ' + LIVE_COMPARE_MAX + ' comps — untick one '
+             + 'to add another.';
+  }
+  cb.onchange = () => {
     if (_liveCompare.has(c.slug)) _liveCompare.delete(c.slug);
     else if (_liveCompare.size < LIVE_COMPARE_MAX) _liveCompare.add(c.slug);
     renderLiveTavern(a);
   };
-  if (!picked && _liveCompare.size >= LIVE_COMPARE_MAX) {
-    cmp.title = 'Compare holds up to ' + LIVE_COMPARE_MAX + ' comps — drop one '
-              + 'to add another.';
-  }
-  row.appendChild(cmp);
+  const lbl = document.createElement('label');
+  lbl.htmlFor = cb.id;
+  lbl.className = 'lv-cmplbl';
+  lbl.textContent = 'compare';
+  const cell = el('span', 'lv-cmpcell');
+  cell.appendChild(cb);
+  cell.appendChild(lbl);
+  row.appendChild(cell);
   return row;
 }
 
@@ -2133,9 +2329,14 @@ function lvCompsBrowse(a) {
     cols.appendChild(col);
   });
   p.appendChild(cols);
+  // The slot colours get a LEGEND (fix list round 1 item 6), drawn from the slot
+  // element itself so it cannot drift from the rows. The paragraph under it
+  // keeps the two facts the legend cannot show: where the numbers come from, and
+  // that some comps are not listed at all.
+  p.appendChild(lvSlotLegend());
   p.appendChild(el('p', 'lv-note',
-    'A solid slot is a core card on your board or in hand; a dashed one is not '
-    + 'owned. Average placement is this project\'s own game corpus — '
+    'Slots are the comp\'s core cards, with their art dimmed when you do not '
+    + 'own them. Average placement is this project\'s own game corpus — '
     + 'observational, not causal.'
     + (hidden ? ' ' + hidden + ' comp' + (hidden === 1 ? '' : 's')
                 + ' hidden: their tribe is out of play this patch.' : '')));
@@ -2331,11 +2532,10 @@ function lvShop(a) {
   const body = el('div');
   const rows = a.shop_rank || [];
   if (!rows.length) {
-    // §6.1: the shop has not parsed yet — four skeletons and a sentence,
-    // instead of the classic page's "offer not parsed yet".
-    const sk = el('div', 'lv-row');
-    for (let i = 0; i < 4; i++) sk.appendChild(el('div', 'lv-skel'));
-    body.appendChild(sk);
+    // §6.1's sentence, without its four dashed skeleton cards: the player's
+    // call (fix list round 2 item 2) is that they read as thick dash bars with
+    // no information in them. The status bar above says the same thing about
+    // the hero slot.
     body.appendChild(el('p', 'lv-note',
       'Reading the shop. This updates when your next shop opens.'));
     return body;
@@ -2345,26 +2545,32 @@ function lvShop(a) {
     const bits = [];
     if (s.price != null) bits.push(s.price + 'g');
     if (s.pool) bits.push(s.pool);
-    wrap.appendChild(lvCard(s.card, s.name,
-                            bits.join(' · ') || '—'));
+    wrap.appendChild(lvCard(s.card, s.name, bits.join(' · ') || '—',
+                            s.tag === 'spell' ? {kind: 'Spell'} : null));
   });
   body.appendChild(wrap);
   return body;
 }
 //: §4.2 board row: the caption is the comp role the value pass already names
 //: ("comp core", "off-comp filler"), which is a fact about membership.
+//: One tribe a lobby has banned reads "<Tribe> — out of play" here (fix list
+//: round 1 item 7 / round 2 item 5). The reason string itself ("banned tribe —
+//: can't grow") is the value pass's, shared with the classic page and pinned by
+//: its own test, so the tavern caption is built from DATA — the minion's tribe
+//: plus the flag the payload carries — rather than by rewriting that sentence.
 function lvBoard(a) {
   const body = el('div');
   const rows = a.sell_rank || [];
   if (!rows.length) {
-    body.appendChild(lvEmptyRow('Nothing on the board.'));
+    body.appendChild(el('p', 'lv-inline', 'empty'));
     return body;
   }
   const wrap = el('div', 'lv-row');
   rows.forEach(s => {
-    wrap.appendChild(lvCard(s.card, s.name,
-                            s.why || (s.score != null
-                                      ? String(Math.round(s.score)) : '—')));
+    const cap = s.off_play
+      ? ((s.tribe || 'Tribe') + ' — out of play')
+      : (s.why || (s.score != null ? String(Math.round(s.score)) : '—'));
+    wrap.appendChild(lvCard(s.card, s.name, cap));
   });
   body.appendChild(wrap);
   return body;
@@ -2373,13 +2579,27 @@ function lvHand(a) {
   const body = el('div');
   const rows = a.hand || [];
   if (!rows.length) {
-    body.appendChild(lvEmptyRow('Hand empty.'));
+    body.appendChild(el('p', 'lv-inline', 'empty'));
     return body;
   }
   const wrap = el('div', 'lv-row');
   rows.forEach(s => wrap.appendChild(lvCard(s.card, s.name, 'hand')));
   body.appendChild(wrap);
   return body;
+}
+//: The board and the hand, ONE panel with the two side by side (fix list round
+//: 2 item 4). Each half says "empty" inline rather than showing a sentence where
+//: a row of cards would be, so the panel does not change shape when the board is
+//: wiped.
+function lvBoardHand(a) {
+  const grid = el('div', 'lv-bh');
+  [['Your board', lvBoard(a)], ['Your hand', lvHand(a)]].forEach(([label, body]) => {
+    const half = el('div');
+    half.appendChild(el('div', 'lv-lbl', label));
+    half.appendChild(body);
+    grid.appendChild(half);
+  });
+  return grid;
 }
 //: §4.3's two opt-in controls, session state. "As offered" is the default and
 //: the screen never ranks unless the player asks for an order — the server's
@@ -2391,11 +2611,12 @@ const LIVE_ORDER_LABELS = {pick_rate: 'picked %', avg_placement: 'avg place'};
 
 //: The rows an option can show, in the design's order, each emitted only when
 //: its data exists (§5). The key doubles as the Stats-shown toggle.
+//: `pick_rate` is NOT one of them: it is the headline figure ("31% · Picked"),
+//: and the row that repeated it ("Picked in 31% of games") was the duplicate the
+//: fix list names (round 2 item 1). It stays available as an ORDER, which reads
+//: the stats directly rather than through this list.
 function lvStatRows(st) {
   const rows = [];
-  if (st.pick_rate != null) {
-    rows.push(['pick_rate', 'Picked in', st.pick_rate.toFixed(0) + '% of games']);
-  }
   if (st.avg_placement != null) {
     rows.push(['avg_placement', 'Avg place', st.avg_placement.toFixed(2)]);
   }
@@ -2464,12 +2685,17 @@ function lvPick(a) {
   rows.forEach(([name, cid]) => {
     const st = stats[cid] || {};
     const col = el('div', 'lv-opt');
-    col.appendChild(tile(cid, name, null, {}));
+    // The art carries no caption of its own: the name under it is the ONE name
+    // (round 1 item 2), at a fixed height so the headline figures line up.
+    col.appendChild(tile(cid, name, null, {noname: true}));
     col.appendChild(el('div', 'lv-optname', name));
     if (st.pick_rate != null) {
+      // "31% · Picked", one decimal (round 1 item 2 / round 2 item 1). The
+      // label says what the number IS, and the row that used to repeat it is
+      // gone.
       const head = el('div', 'lv-head');
-      head.appendChild(el('b', null, st.pick_rate.toFixed(0) + '%'));
-      head.appendChild(el('small', null, 'picked in'));
+      head.appendChild(el('b', null, st.pick_rate.toFixed(1) + '%'));
+      head.appendChild(el('small', null, 'Picked'));
       if (avg != null) {
         const d = st.pick_rate - avg;
         head.appendChild(el('i', 'lv-vs',
@@ -2520,9 +2746,13 @@ function lvPickControls(ch, stats, redraw) {
       bar.appendChild(c);
     });
   const keys = [];
+  const orderKeys = [];
   Object.keys(stats).forEach(cid => {
     lvStatRows(stats[cid]).forEach(([k]) => {
       if (!keys.includes(k)) keys.push(k);
+    });
+    Object.keys(stats[cid] || {}).forEach(k => {
+      if (LIVE_STAT_LABELS[k] && !orderKeys.includes(k)) orderKeys.push(k);
     });
   });
   if (keys.length) {
@@ -2539,8 +2769,11 @@ function lvPickControls(ch, stats, redraw) {
     });
   }
   const orders = [['offered', 'As offered']];
-  if (keys.includes('pick_rate')) orders.push(['pick_rate', 'By picked %']);
-  if (keys.includes('avg_placement')) {
+  // The order options read the STATS, not the visible rows: "By picked %" is the
+  // most useful sort there is, and the headline no longer leaves a row behind to
+  // hang it on (fix list round 2 item 1).
+  if (orderKeys.includes('pick_rate')) orders.push(['pick_rate', 'By picked %']);
+  if (orderKeys.includes('avg_placement')) {
     orders.push(['avg_placement', 'By avg place']);
   }
   bar.appendChild(el('span', 'lv-lbl', 'Order'));
@@ -2598,10 +2831,15 @@ function renderTavernGameOver(a) {
   box.innerHTML = '';
   // The classic strip is the other viewer's; this card has its own numbers, and
   // leaving a stale one behind the card is how two disagreeing copies appear.
-  document.getElementById('statebar').innerHTML = '';
+  const bar = document.getElementById('statebar');
+  bar.innerHTML = '';
+  bar.hidden = true;
   const root = el('div', 'tavern live');
   const p = el('div', 'lv-pn lv-over');
   const go = a.game_over || {};
+  // §6.5 with a label and room around it (fix list round 1 item 8): the big
+  // line is what the player looks for, so it says what it is.
+  p.appendChild(el('div', 'lv-overlabel', 'Game over'));
   p.appendChild(el('div', 'lv-overbig',
     (go.placement ? lvOrdinal(go.placement) : '—')
     + (go.turn ? ' · Round ' + go.turn : '')));
@@ -2629,8 +2867,11 @@ function renderLiveTavern(a) {
   box.hidden = false;
   box.innerHTML = '';
   // The tavern status bar carries these facts now, so the classic strip is
-  // cleared rather than left showing a second, differently-worded copy.
-  document.getElementById('statebar').innerHTML = '';
+  // cleared rather than left showing a second, differently-worded copy — and
+  // HIDDEN, because an empty strip is a rounded bar with nothing in it.
+  const bar = document.getElementById('statebar');
+  bar.innerHTML = '';
+  bar.hidden = true;
   const root = el('div', 'tavern live');
   // No game-over band here: that card arrives on its own payload (`welcome:
   // true`), which `render` sends to `renderTavernGameOver` instead of to this
@@ -2667,9 +2908,14 @@ function renderLiveTavern(a) {
     // player is doing.
     left.appendChild(lvPick(a));
   } else {
-    left.appendChild(lvPanel('Tavern', lvShop(a)));
-    left.appendChild(lvPanel('Your board', lvBoard(a)));
-    left.appendChild(lvPanel('Your hand', lvHand(a)));
+    // The taverner's row on top, then board and hand in ONE panel (fix list
+    // round 1 item 4 / round 2 item 4). A shop nobody has read yet says so on
+    // its own screen instead of drawing four skeleton bars.
+    const shop = a.shop_rank || [];
+    left.appendChild(shop.length
+      ? lvPanel('Tavern', lvShop(a))
+      : lvWaiting(a));
+    left.appendChild(lvPanel('Board and hand', lvBoardHand(a)));
   }
   main.appendChild(left);
   const rail = el('div', 'lv-rail');
@@ -2723,6 +2969,10 @@ function render(a) {
   decide.innerHTML = '';
   ref.innerHTML = '';
   statebar.innerHTML = '';
+  // The classic renderer is the one that fills the strip, so it is the one that
+  // shows it again (the welcome and Tavern paths hide it, item 7 of the round-2
+  // fix list).
+  statebar.hidden = false;
   if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
   // Pane grouping: DECIDE = the turn's decision (never scrolled away),
   // REFERENCE = scout intel and shopping lists. The headers re-render with
@@ -5068,8 +5318,19 @@ def _comps_by_slug():
             if isinstance(c, dict)}
 
 
-#: A comp with fewer games than this in our own corpus is flagged `low sample`
-#: rather than hidden (LIVE_VIEW_DESIGN.md §5/§11). It is a GAMES count because
+def _canon_tribe(raw):
+    """A log tribe tag ("BEAST", "DEMON/QUILBOAR") as the meta DB's own name.
+
+    `value.normalize` is the very canonicalizer `value.sell_reason` compares
+    against, so a caption built from this cannot disagree with the reason about
+    which tribe a minion belongs to.
+    """
+    if not raw:
+        return None
+    return value.normalize(raw) or raw
+
+
+#: A comp with fewer games than this in our own corpus is flagged `low sample`#: rather than hidden (LIVE_VIEW_DESIGN.md §5/§11). It is a GAMES count because
 #: that is what the corpus records — a threshold invented from a percentage would
 #: be a number nobody measured, and the scraped tables carry no sample size at
 #: all, so their low-sample marker stays unwritten (the §11 question, recorded
@@ -5201,10 +5462,20 @@ def render_json(analysis):
             break
     banned_tribes = set(analysis.get("banned") or [])
     for g in sell:
-        g["why"] = sell_reason(board_by_card.get(g["card"], {}),
-                               card_db.get(g["card"]), comp=target_comp,
+        board_minion = board_by_card.get(g["card"], {})
+        g["why"] = sell_reason(board_minion, card_db.get(g["card"]),
+                               comp=target_comp,
                                core=core_ids, addons=addon_ids,
                                banned_tribes=banned_tribes)
+        # WHICH tribe the caption needs, and whether this row is the banned-tribe
+        # one: the Tavern board caption reads "<Tribe> — out of play" instead of
+        # the value pass's "banned tribe — can't grow" (fix list round 1 item 7),
+        # and it is built from these two facts rather than by rewriting the
+        # shared string the classic page and `test_hand_engine` both pin.
+        # `normalize` is the same canonicalizer `sell_reason` compared with, so a
+        # board minion logged as BEAST reads "Beast" and not the raw tag.
+        g["tribe"] = _canon_tribe(board_minion.get("tribe"))
+        g["off_play"] = (g["why"] == "banned tribe — can't grow")
     a["sell_rank"] = sell
     # Hand-charge engine status (2026-09-10: the Forager/Counter kit died
     # silently — the overlay now shows deployer on board? space? charging).

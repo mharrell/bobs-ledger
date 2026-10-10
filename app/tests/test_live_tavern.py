@@ -97,7 +97,7 @@ class TestTheBranch(unittest.TestCase):
         self.assertIn("el('div', 'tavern live')", src,
                       "the tavern view has to be scoped to .tavern.live, or the "
                       "Settle Up Tavern rules and these leak into each other")
-        for part in ("lvStatus", "lvTribes", "lvShop", "lvBoard", "lvHand",
+        for part in ("lvStatus", "lvTribes", "lvShop", "lvBoardHand", "lvWaiting",
                      "lvCompsScreen", "lvLobby", "lvFacts"):
             self.assertIn(part, src)
 
@@ -116,10 +116,10 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
 
     TAVERN = ("lvStatus", "lvTribes", "lvFacts", "lvCompsBrowse", "lvCompDetail",
               "lvCompCompare", "lvCompsScreen", "lvCompRow", "lvCompStats",
-              "lvCompSortRows", "lvSlot", "lvSlotCap", "lvSlots", "lvOwned",
-              "lvLobby", "lvShop", "lvBoard", "lvHand", "lvPick", "lvGameOver",
-              "lvTabs", "renderLiveTavern", "lvCard", "lvKV", "lvPanel",
-              "lvEmptyRow", "lvVal")
+              "lvCompSortRows", "lvSlot", "lvSlotCap", "lvSlots", "lvSlotLegend",
+              "lvOwned", "lvLobby", "lvShop", "lvBoard", "lvHand", "lvBoardHand",
+              "lvWaiting", "lvPick", "lvPickControls", "lvTabs", "renderLiveTavern",
+              "lvCard", "lvKV", "lvPanel", "lvEmptyRow", "lvVal")
 
     def _tavern_source(self):
         return "\n".join(filter(None, (_function(n) for n in self.TAVERN)))
@@ -392,6 +392,149 @@ class TestTheGameOverCard(unittest.TestCase):
         self.assertEqual(coach_ui._HTML.count("lvClearTavern"), 3,
                          "defined once, called from the classic path and from "
                          "the welcome branch")
+
+
+class TestTheFixListRounds(unittest.TestCase):
+    """The two Live fix lists of 2026-10-09, at source level.
+
+    The rendered half of every one of these is measured in `test_live_browser`
+    (which is where the layout claims have to be checked, because a rule can
+    exist and lose to a more specific one). This is the half a browser cannot
+    state: which rule was written, and which call was made from where.
+    """
+
+    def test_live_fills_the_window(self):
+        """Round 1 item 1. `#app` is a grid above 1200x900 and a flex COLUMN at or
+        below it, so the fix has to cover both: one grid column, and a width that
+        does not depend on `flex-basis` being a width (measured before the fix:
+        815px of a 1384px window)."""
+        html = coach_ui._HTML
+        self.assertIn("#app.tavern-on { grid-template-columns:minmax(0,1fr);",
+                      html)
+        self.assertIn("#app.tavern-on #live-tavern { grid-column:1 / -1; "
+                      "width:100%;", html)
+
+    def test_the_breakpoints_are_the_ones_asked_for(self):
+        """Round 2 item 9: main + 340px rail at >=1200px, stacked 700-1200, and a
+        single-column pick grid under 700."""
+        html = coach_ui._HTML
+        self.assertIn("@media (min-width: 1200px) {", html)
+        self.assertIn(".tavern.live .lv-main { grid-template-columns:"
+                      "minmax(0,1fr) 340px; }", html)
+        self.assertIn("@media (max-width: 699.98px) {", html)
+        self.assertIn(".tavern.live .lv-opts { grid-template-columns:1fr; }", html)
+        # The stacked default is the base rule, not a media query: 700-1200 is
+        # the common laptop window.
+        self.assertIn(".tavern.live .lv-main { display:grid; "
+                      "grid-template-columns:minmax(0,1fr);", html)
+
+    def test_the_classic_tavern_toggle_is_themed(self):
+        """Round 1 item 9 / round 2 item 8. `.vseg` described the ACTIVE state and
+        the radii only, so the buttons were whatever the browser draws."""
+        html = coach_ui._HTML
+        block = re.search(r"\.vseg button \{([^}]*)\}", html)
+        self.assertIsNotNone(block)
+        for prop in ("background:var(--panel)", "border:1px solid var(--border)",
+                     "padding:6px 12px"):
+            self.assertIn(prop, block.group(1))
+        self.assertIn("#app.tavern-on #live-viewer-row .vseg button", html)
+        self.assertIn("background:var(--tsel); color:var(--tonsel);", html)
+
+    def test_the_facts_drop_lethal_at_and_name_the_lobby_average(self):
+        """Round 1 item 5 / round 2 item 6."""
+        src = _function("lvFacts")
+        self.assertNotIn("Lethal at", src)
+        self.assertIn("lobby avg", src)
+        self.assertIn("'Board stats — you vs lobby avg'", src)
+
+    def test_a_tribe_out_of_play_is_listed_once(self):
+        """Round 1 item 3: the roster contains every tribe, `out_of_pool` names
+        the rotated ones, and iterating both printed Naga twice."""
+        src = _function("lvTribes")
+        self.assertIn(".filter(t => !oop.has(t))", src)
+        self.assertIn("'lv-chip ' + (on ? 'active' : 'dim')", src)
+
+    def test_the_comps_slots_carry_art_and_a_legend(self):
+        """Round 1 item 6."""
+        src = _function("lvSlot")
+        self.assertIn("thumb(x.card, x.name)", src)
+        legend = _function("lvSlotLegend")
+        self.assertIsNotNone(legend, "the slot legend is missing")
+        for label in ("on board", "in hand", "not owned", "banned this game"):
+            self.assertIn(label, legend)
+        self.assertIn("lvSlot({", legend)
+        row = _function("lvCompRow")
+        self.assertIn("cb.type = 'checkbox'", row)
+        self.assertIn("'lv-cmpbox'", row)
+
+    def test_the_pick_screen_shows_one_name_and_a_one_decimal_headline(self):
+        """Round 1 item 2 / round 2 item 1."""
+        src = _function("lvPick")
+        self.assertIn("{noname: true}", src)
+        self.assertIn("st.pick_rate.toFixed(1) + '%'", src)
+        self.assertIn("'Picked'", src)
+        # The row that repeated it is gone from the stat rows; the ORDER still
+        # reads the stats, so "By picked %" survives.
+        self.assertNotIn("'Picked in'", _function("lvStatRows"))
+        self.assertIn("orderKeys.includes('pick_rate')",
+                      _function("lvPickControls"))
+
+    def test_the_waiting_state_has_no_skeleton_bars(self):
+        """Round 2 item 2: the design's §6.1 dashed skeletons are gone, and the
+        hero slot says what the page is waiting for."""
+        html = coach_ui._HTML
+        self.assertNotIn("lv-skel", html)
+        self.assertNotIn("lv-skel", _function("lvWaiting") or "")
+        self.assertIn("Waiting for the next shop to open", _function("lvStatus"))
+        self.assertIn("Reading the shop", _function("lvWaiting"))
+
+    def test_the_empty_state_strip_is_hidden_where_it_is_empty(self):
+        """Round 2 item 7."""
+        html = coach_ui._HTML
+        self.assertIn("#statebar[hidden] { display:none; }", html)
+        self.assertIn("statebar.hidden = true", _function("renderWelcome"))
+        self.assertIn("bar.hidden = true", _function("renderLiveTavern"))
+        self.assertIn("bar.hidden = false", _function("lvClearTavern"))
+
+    def test_one_art_treatment_and_a_tag_for_what_a_card_is(self):
+        """Round 2 item 3."""
+        self.assertIn("if (!opts.noname) {", coach_ui._HTML)
+        self.assertIn("t.title = name || '';", coach_ui._HTML)
+        src = _function("lvShop")
+        self.assertIn("s.tag === 'spell' ? {kind: 'Spell'} : null", src)
+        self.assertIn("-webkit-line-clamp:2", coach_ui._HTML)
+        self.assertIn(".tavern .tile .tag-kind", coach_ui._HTML)
+
+    def test_the_board_and_the_hand_share_one_panel(self):
+        """Round 1 item 4 / round 2 item 4."""
+        src = _function("lvBoardHand")
+        self.assertIsNotNone(src)
+        self.assertIn("'Your board'", src)
+        self.assertIn("'Your hand'", src)
+        self.assertIn("'lv-bh'", src)
+        self.assertIn("'empty'", _function("lvBoard"))
+        self.assertIn("'empty'", _function("lvHand"))
+
+    def test_the_banned_tribe_caption_is_built_from_data(self):
+        """Round 1 item 7 / round 2 item 5. The value pass's own string stays as
+        it is — the classic Sell box shows it and `test_hand_engine` pins it — so
+        the payload carries the tribe and the flag instead."""
+        src = _function("lvBoard")
+        self.assertIn("s.off_play", src)
+        self.assertIn("' — out of play'", src)
+        self.assertNotIn("can't grow", src)
+        # The producer side.
+        code = open(os.path.join(HERE, "coach_ui.py"), encoding="utf-8").read()
+        self.assertIn('g["off_play"] = (g["why"] == "banned tribe — can\'t grow")',
+                      code)
+        self.assertIn('g["tribe"] = _canon_tribe(board_minion.get("tribe"))', code)
+        self.assertIn("def _canon_tribe(raw):", code)
+
+    def test_the_game_over_card_is_labelled(self):
+        """Round 1 item 8."""
+        src = _function("renderTavernGameOver")
+        self.assertIn("'lv-overlabel', 'Game over'", src)
+        self.assertIn(".lv-overlabel {", coach_ui._HTML)
 
 
 class TestTheOptionsStatistics(unittest.TestCase):
