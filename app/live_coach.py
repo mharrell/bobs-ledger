@@ -438,6 +438,7 @@ _GAME_DEFAULTS = {
     "cur_lines": list,
     "shop_cards": list,
     "shop_eids": dict,       # shop card id -> offer entity id (exact pricing)
+    "shop_offer_entities": list,  # [{eid, card}] per OFFER, in log order
     "_sticky_target": None,  # last shown comp, for sticky same-tribe direction
     "_pending_shop": list,   # offers buffered for the open options block
     "_pending_is_shop": False,  # the open block carries a tavern button
@@ -615,6 +616,7 @@ class LiveCoach:
             self._flush_shop_block()
             self.shop_cards = []
             self.shop_eids = {}
+            self.shop_offer_entities = []
             self._pending_shop = []
             self._pending_is_shop = False
             self._pending_activations = []
@@ -1164,7 +1166,19 @@ class LiveCoach:
         regex comment); options blocks merge into the table on flush."""
         self.shop_cards = [(self._zone_shop_p.get(eid), cid)
                            for eid, cid in self._zone_shop.items()]
+        # Card id -> offer entity id, for pricing. LOSSY on purpose (a dict
+        # cannot hold two copies of one card) and used only for the price, which
+        # is a property of the CARD; `shop_offer_entities` is the per-OFFER view.
         self.shop_eids = {cid: eid for eid, cid in self._zone_shop.items()}
+        # The offers as ENTITIES, in the log's order, one entry per offer — two
+        # copies of one minion are two entries with two entity ids (2026-10-09,
+        # round-3 fix list item 1: a tavern keyed by card id drew one card where
+        # the game showed two).
+        self.shop_offer_entities = [
+            {"eid": eid, "card": cid}
+            for eid, cid in self._zone_shop.items()
+            if self.friendly is None
+            or self._zone_shop_p.get(eid) != self.friendly]
         # The shop table exists: a pending MAIN_ACTION was a real buy phase.
         # This is the promotion point — the first moment the log has PROVEN
         # a shop (combat's step pairs never fill the table; see feed()).
@@ -1772,6 +1786,11 @@ class LiveCoach:
             # scores become facts beside each card rather than a ranking
             # (PIVOT.md §2).
             "shop_offers": self.tavern_offers(),
+            # ...and the same offers as ENTITIES, one entry per offer, in the
+            # same order (2026-10-09, round-3 fix list item 1). `shop_offers` is
+            # card ids, so two copies of one minion are two identical strings;
+            # this is what lets the page draw two cards, as the game does.
+            "shop_entities": list(self.shop_offer_entities),
             "buy_this": shop[0][0] if shop else None,
             "choice": choice_advice,
             "target_comp": target["name"] if target else None,

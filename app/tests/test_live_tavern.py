@@ -276,7 +276,7 @@ class TestTheCompScreensAtSource(unittest.TestCase):
         self.assertIn("aspect-ratio:76/100;", html)
 
     def test_the_browse_cap_and_the_compare_limit_are_named_constants(self):
-        self.assertIn("const LIVE_COMP_ROWS = 5;", coach_ui._HTML)
+        self.assertIn("const LIVE_COMP_ROWS = 6;", coach_ui._HTML)
         self.assertIn("const LIVE_COMPARE_MAX = 3;", coach_ui._HTML)
         src = _function("lvCompsBrowse")
         self.assertIn("LIVE_COMP_ROWS", src)
@@ -430,15 +430,90 @@ class TestTheFixListRounds(unittest.TestCase):
 
     def test_the_classic_tavern_toggle_is_themed(self):
         """Round 1 item 9 / round 2 item 8. `.vseg` described the ACTIVE state and
-        the radii only, so the buttons were whatever the browser draws."""
+        the radii only, so the buttons were whatever the browser draws. Round 3
+        item 7 moved the control onto the NAV row, so the tavern palette rides
+        the nav's own class."""
         html = coach_ui._HTML
         block = re.search(r"\.vseg button \{([^}]*)\}", html)
         self.assertIsNotNone(block)
         for prop in ("background:var(--panel)", "border:1px solid var(--border)",
                      "padding:6px 12px"):
             self.assertIn(prop, block.group(1))
-        self.assertIn("#app.tavern-on #live-viewer-row .vseg button", html)
+        self.assertIn("#tabs.tavern #live-viewer-row .vseg button", html)
         self.assertIn("background:var(--tsel); color:var(--tonsel);", html)
+
+    def test_the_live_viewer_toggle_lives_on_the_nav_row(self):
+        """Round 3 item 7: right-aligned on the nav row, and hidden while Settle
+        Up is the open tab (that page has its own toggle in its header)."""
+        html = coach_ui._HTML
+        nav = html[html.index('<nav id="tabs">'):html.index("</nav>")]
+        self.assertIn('id="live-viewer-row"', nav,
+                      "the live viewer flag is not on the nav row")
+        self.assertIn("#live-viewer-row { display:flex; align-items:center; "
+                      "margin-left:auto; }", html)
+        self.assertIn("viewer.hidden = !live;", _function("showTab"))
+        self.assertIn("nav.classList.toggle('tavern'",
+                      _function("setLiveViewer"))
+
+
+class TestTheEntityRows(unittest.TestCase):
+    """Round 3 item 1: the tavern is a list of ENTITIES, not a card-keyed list.
+
+    One row per OFFER, one row per board minion — two identical cards are two
+    cards, because that is what the game showed. The payload's `shop_rank` was
+    built by keying the offers onto a card-keyed ranking (one entry per distinct
+    card), so the second copy of an offer was dropped on the floor.
+    """
+
+    def setUp(self):
+        import live_coach  # noqa: F401  (the circular-import primer)
+        self.code = open(os.path.join(HERE, "coach_ui.py"), encoding="utf-8").read()
+
+    def _analysis(self, **over):
+        import test_live_browser as tlb
+        return tlb._comps_analysis(**over) if False else tlb._analysis(**over)
+
+    def test_the_offers_reach_the_payload_as_entities(self):
+        out = coach_ui.render_json(self._analysis(
+            shop_offers=["BG31_820", "BG31_820"],
+            shop_entities=[{"eid": 7, "card": "BG31_820"},
+                           {"eid": 8, "card": "BG31_820"}]))
+        self.assertEqual([(r["card"], r["eid"]) for r in out["shop_rank"]],
+                         [("BG31_820", 7), ("BG31_820", 8)])
+
+    def test_the_pool_chip_is_the_cards_number_on_both_copies(self):
+        """...and it is not summed or halved: the pool is a property of the
+        CARD, and the row says the same thing about both copies. `BG31_815` is a
+        real pool card (an unknown id has no chip at all, which is why the
+        fixture uses one)."""
+        out = coach_ui.render_json(self._analysis(
+            shop_offers=["BG31_815", "BG31_815"],
+            shop_entities=[{"eid": 7, "card": "BG31_815"},
+                           {"eid": 8, "card": "BG31_815"}],
+            own_pool={"BG31_815": 1}))
+        pools = [r["pool"] for r in out["shop_rank"]]
+        self.assertEqual(pools[0], pools[1])
+        self.assertIn("pool left", pools[0] or "")
+
+    def test_the_board_row_is_built_from_the_board_itself(self):
+        src = _function("lvBoard") or ""
+        self.assertIn("a.board_cards", src)
+        self.assertIn("sell_rank", src, "the old payload still has a fallback")
+        self.assertIn("passedThrough(", self.code,
+                      "the Settle Up tray still walks an id-keyed map")
+
+    def test_the_producer_keeps_a_per_offer_entity_list(self):
+        code = open(os.path.join(HERE, "live_coach.py"), encoding="utf-8").read()
+        self.assertIn("self.shop_offer_entities = [", code)
+        self.assertIn('"shop_entities": list(self.shop_offer_entities),', code)
+
+    def test_the_report_still_names_the_new_analysis_field(self):
+        """`session_report.SPEC` has teeth in both directions: a new analysis key
+        the report neither ships nor drops REFUSES the send."""
+        import session_report
+        self.assertIn("shop_entities", session_report.DROPPED_FROM_ANALYSIS)
+        self.assertTrue(any("shop_entities[]" in s
+                            for s in session_report.DROPPED_ON_PURPOSE))
 
     def test_the_facts_drop_lethal_at_and_name_the_lobby_average(self):
         """Round 1 item 5 / round 2 item 6."""

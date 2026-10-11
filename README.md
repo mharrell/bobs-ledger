@@ -151,14 +151,16 @@ the **Facts** table always beside it.
   your board's stats against the last board seen, and what levelling up costs.
   Those are the same facts the classic layout carries, stated as numbers instead
   of as a read on the game — nothing on the Tavern screen tells you what to do.
-- **Comps** — the comps this lobby allows, in a column per source tier, each with
-  its core cards as small slots that say whether you own them (on board or in
-  hand), how much of the core you hold, and the average placement your own played
-  games have produced for it, marked **low sample** when that count is small.
-  Filter by tribe, sort by tier, overlap or average placement, open a comp for its
-  core and flex cards and its written guide, and tick up to three to compare them
-  side by side. Comps whose tribe is not in play this patch are hidden, and the
-  count of them is shown.
+- **Comps** — the comps this lobby allows, grouped under a sticky header per
+  source tier (one column, or two once the window is wide enough for both), each
+  with its core cards as small slots showing the cards themselves, dimmed when you
+  do not own them, then how much of the core you hold and the average placement
+  your own played games have produced for it — marked **low sample** when that
+  count is small, and left out altogether while no comp in that tier has been
+  played. Sort by tier, overlap or average placement, open a comp for its core and
+  flex cards and its written guide, and tick up to three to compare them side by
+  side. Comps whose tribe is not in play this patch are hidden, and the count of
+  them is shown.
 - **Lobby** — who among the seats you have seen is contesting which tribe, and the
   last board the next opponent staged, with their trinkets.
 
