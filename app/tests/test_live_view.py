@@ -183,13 +183,45 @@ class TestTavernIsNotRanked(unittest.TestCase):
         self.assertEqual([s["card"] for s in out["shop_rank"]],
                          sorted(["BG36_116", "BG28_810"]))
 
-    def test_a_duplicated_offer_takes_its_first_position(self):
-        # Two copies of one minion can sit in one tavern. tavern_offers() does
-        # not dedupe, shop_rank does; first occurrence wins.
+    def test_a_duplicated_offer_renders_twice(self):
+        # Two copies of one minion can sit in one tavern, and the game shows two
+        # cards. The row used to be keyed onto the card-keyed `shop_rank`, so the
+        # second copy vanished (round-3 fix list item 1): it is built from the
+        # per-OFFER entity list now, so the row keeps the game's own count.
+        a = _analysis(shop_offers=["BG36_116", "BG28_810", "BG36_116"],
+                      shop_entities=[{"eid": 1, "card": "BG36_116"},
+                                     {"eid": 2, "card": "BG28_810"},
+                                     {"eid": 3, "card": "BG36_116"}])
+        out = coach_ui.render_json(a)
+        self.assertEqual([s["card"] for s in out["shop_rank"]],
+                         ["BG36_116", "BG28_810", "BG36_116"])
+        self.assertEqual([s["eid"] for s in out["shop_rank"]], [1, 2, 3])
+
+    def test_an_offer_list_without_entities_still_renders_its_copies(self):
+        """A payload recorded before `shop_entities` existed (the review renders
+        old records) still has the offer ORDER and its duplicates: the row is one
+        card per offer, with no entity id to key it by."""
         a = _analysis(shop_offers=["BG36_116", "BG28_810", "BG36_116"])
         out = coach_ui.render_json(a)
         self.assertEqual([s["card"] for s in out["shop_rank"]],
-                         ["BG36_116", "BG28_810"])
+                         ["BG36_116", "BG28_810", "BG36_116"])
+        self.assertEqual([s["eid"] for s in out["shop_rank"]], [None, None, None])
+
+    def test_the_board_row_is_one_card_per_minion(self):
+        """The same dedupe lived in the board row: it drew the classic Sell row,
+        which groups BY CARD ("×2"). `board_cards` is one entry per board
+        minion, so two copies of one minion are two cards."""
+        a = _analysis(board=[{"card": "BG36_116", "atk": 5, "health": 5,
+                              "tribe": "BEAST"},
+                             {"card": "BG36_116", "atk": 9, "health": 9,
+                              "tribe": "BEAST"}],
+                      sell_rank=[("BG36_116", 12), ("BG36_116", 30)])
+        out = coach_ui.render_json(a)
+        self.assertEqual([r["atk"] for r in out["board_cards"]], [5, 9],
+                         "two identical minions are one entity each")
+        self.assertEqual(len(out["sell_rank"]), 1,
+                         "the classic Sell row still groups by card")
+        self.assertEqual(out["sell_rank"][0]["n"], 2)
 
 
 class TestHandRowsAreFacts(unittest.TestCase):

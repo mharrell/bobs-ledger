@@ -124,11 +124,13 @@ def _comps_analysis(**over):
     return a
 
 
-def _comps_payload(**over):
-    """The comps payload, with the corpus reader replaced by `_CORPUS`."""
+def _comps_payload(corpus=None, **over):
+    """The comps payload, with the corpus reader replaced by `_CORPUS` — or by
+    whatever a test hands in: `{}` is "the corpus has never seen these comps",
+    which is what the avg-placement column hides itself for (round 3 item 5)."""
     import meta
     saved = meta.corpus_stats
-    meta.corpus_stats = lambda: _CORPUS
+    meta.corpus_stats = lambda: (_CORPUS if corpus is None else corpus)
     try:
         return coach_ui.render_json(_comps_analysis(**over))
     finally:
@@ -200,6 +202,13 @@ _DRIVER = r"""
     o.tabs = [...q('.lv-tabs button')].map(b => b.textContent).join('|');
     o.tabon = txt(one('.lv-tabs button.on'));
     o.panels = [...q('.lv-pn > h3')].map(h => h.textContent).join('|');
+    // The first panel's own text, for claims about ONE panel rather than the
+    // page: "Lobby tribes" belongs to the page's tribe row, and the comps panel
+    // must not have a second copy of it (round 3 item 4).
+    o.paneltext = (function () {
+      const p = one('.lv-pn');
+      return p ? p.textContent.replace(/\\s+/g, ' ').trim() : '';
+    })();
     // Label/value from the row's FIRST and LAST child: the comps row's label is
     // itself a <b> wrapping the name, so a bare querySelector('b') read the name
     // back as the value (measured 2026-10-09).
@@ -350,6 +359,77 @@ _DRIVER = r"""
       if (!r) return '';
       return getComputedStyle(r).display;
     })();
+    // Round 3: the columns, the strip, the name, the avg track and the toggle.
+    o.cmptracks = (function () {
+      const r = one('.lv-crow');
+      if (!r) return '';
+      return getComputedStyle(r).gridTemplateColumns;
+    })();
+    o.colw = [...q('.lv-ctier')].map(c => Math.round(c.getBoundingClientRect().width)).join('|');
+    o.colx = [...q('.lv-ctier')].map(c => Math.round(c.getBoundingClientRect().left)).join('|');
+    o.cols = [...q('.lv-ctier')].length;
+    o.h4pos = (function () {
+      const h = one('.lv-ctier > h4');
+      return h ? getComputedStyle(h).position : '';
+    })();
+    o.stripwrap = (function () {
+      const s = one('.lv-slots');
+      return s ? getComputedStyle(s).flexWrap : '';
+    })();
+    o.slotflex = (function () {
+      const s = one('.lv-slot');
+      return s ? getComputedStyle(s).flex : '';
+    })();
+    o.nameclamp = (function () {
+      const n = one('.lv-copen');
+      return n ? getComputedStyle(n).webkitLineClamp : '';
+    })();
+    o.nameunder = (function () {
+      const n = one('.lv-copen');
+      return n ? getComputedStyle(n).textDecorationLine : '';
+    })();
+    o.avgcells = q('.lv-ap').length;
+    o.hasavg = q('.lv-ctier.has-avg').length;
+    o.hnote = [...q('.lv-hnote')].map(n => n.textContent).join('|');
+    o.unconfirmed = q('.lv-crow .lv-tier').length
+      ? [...q('.lv-crow .lv-tier')].filter(t => /unconfirmed/.test(t.textContent)).length
+      : 0;
+    o.ctlchips = [...q('.lv-ctl .lv-chip')].map(c => c.textContent).join('|');
+    o.ctlrows = q('.lv-ctl').length;
+    // The compare control's own theming, and where the toggle lives.
+    o.cmpskin = (function () {
+      const b = one('.lv-cmpbox');
+      if (!b) return '';
+      const s = getComputedStyle(b);
+      return s.appearance + ',' + s.backgroundColor;
+    })();
+    o.toggleinnav = document.querySelector('#tabs #live-viewer') ? 1 : 0;
+    // A COMMA, not an angle bracket: the harness reads `#out` with
+    // `id="out">([^<]*)<`, so a '<' inside a value ends the capture early
+    // (measured 2026-10-09 — it came back as a one-field value).
+    o.toggleright = (function () {
+      const r = document.querySelector('#live-viewer-row');
+      if (!r) return '';
+      const b = r.getBoundingClientRect();
+      return Math.round(window.innerWidth - b.right) + ','
+           + Math.round(b.left);
+    })();
+    o.togglehidden = (function () {
+      const r = document.querySelector('#live-viewer-row');
+      return r && r.hidden ? 1 : 0;
+    })();
+    // One row per OFFER / per board minion (round 3 item 1). Scoped to the FIRST
+    // panel (the tavern), because the board and hand rows are cards too.
+    o.shopcards = panes.length
+      ? panes[0].querySelectorAll('.lv-card').length : 0;
+    o.shopkeys = panes.length
+      ? [...panes[0].querySelectorAll('.tname')].map(n => n.textContent).join('|')
+      : '';
+    o.boardcards = (function () {
+      const halves = q('.lv-bh > div');
+      return halves.length ? halves[0].querySelectorAll('.lv-card').length : 0;
+    })();
+    o.poolchips = [...q('.lv-pn .lv-cap')].map(c => c.textContent).join('|');
     o.ctl = [...q('.lv-ctl .lv-chip')]
       .map(c => c.textContent + (c.classList.contains('on') ? ':on' : ''))
       .join('|');
@@ -404,7 +484,10 @@ _DRIVER = r"""
                            'legendslots', 'cmpboxes', 'cmpchecked', 'cmpdisabled',
                            'missvals', 'bhhalf', 'renameless', 'tiletitles',
                            'noart', 'nagacount', 'pickcolw', 'pickctlvp',
-                           'picknameh', 'pickcardw', 'statebarhidden']
+                           'picknameh', 'pickcardw', 'statebarhidden', 'cols',
+                           'avgcells', 'hasavg', 'unconfirmed', 'ctlrows',
+                           'toggleinnav', 'togglehidden', 'shopcards',
+                           'boardcards']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
@@ -451,6 +534,10 @@ _DRIVER = r"""
     render(s.rep);
     if (s.click) clickCtl('.lv-pickctl .lv-chip', s.click);
     (s.clicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
+    // `settle`: the payload renders on the live tab and the SETTLE tab is then
+    // opened, which is how "the live viewer flag is out of the way over there"
+    // is measured rather than asserted from the source.
+    if (s.settle) showTab('settle');
     facts(s.name);
   }
   if (typeof render !== 'function' || typeof renderLiveTavern !== 'function') {
@@ -477,10 +564,10 @@ def _page(shots):
 
 
 def _shot(name, rep, viewer="tavern", tab="shop", click=None, clicks=None,
-          pre=None, pretab=None, preclicks=None):
+          pre=None, pretab=None, preclicks=None, settle=False):
     return {"name": name, "rep": rep, "viewer": viewer, "tab": tab,
             "click": click, "clicks": clicks or [], "pre": pre,
-            "pretab": pretab, "preclicks": preclicks or []}
+            "pretab": pretab, "preclicks": preclicks or [], "settle": settle}
 
 
 #: Clicking a Browse row's control by the COMP it belongs to: every row carries
@@ -730,7 +817,9 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertGreaterEqual(got["t.cards"], 3)
 
     def test_an_empty_board_or_hand_says_empty_inline(self):
-        got = _render([_shot("e", _payload(sell_rank=[], hand=[]))])
+        # The board is a list of ENTITIES now (round 3 item 1), so an empty
+        # board is an empty `board` list — not an empty sell_rank.
+        got = _render([_shot("e", _payload(board=[], sell_rank=[], hand=[]))])
         self.assertEqual(got["e.inline"], "empty|empty")
 
     def test_cards_carry_a_caption_below_them(self):
@@ -771,6 +860,63 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertGreaterEqual(got["t.noart"], 1)
         self.assertEqual(got["t.tnamewrap"], "normal",
                          "card names are still clamped to one line")
+
+    def test_two_identical_offers_are_two_cards(self):
+        """Round 3 item 1: the tavern is a list of ENTITIES. The row used to be
+        built by keying the offers onto a card-keyed ranking, so a tavern
+        offering the same minion twice drew ONE card. The pool chip is the
+        CARD's number and is the same on both — it is not halved, and the two
+        copies are not added up into it."""
+        rep = _payload(shop_entities=[{"eid": 101, "card": "BG31_820"},
+                                      {"eid": 102, "card": "BG31_820"},
+                                      {"eid": 103, "card": "BG31_831"}],
+                       shop_offers=["BG31_820", "BG31_820", "BG31_831"])
+        self.assertEqual([r["eid"] for r in rep["shop_rank"]], [101, 102, 103])
+        got = _render([_shot("dup", rep)])
+        self.assertEqual(got["dup.taverncards"], 3,
+                         "two identical offers did not render two cards")
+        pools = got["dup.poolchips"].split("|")
+        self.assertEqual(pools[0], pools[1],
+                         "the two copies of one card report different pools")
+        names = got["dup.shopkeys"].split("|")
+        self.assertEqual(len(names), 3)
+        self.assertEqual(names[0], names[1],
+                         "the two copies of the duplicated offer are not the "
+                         "same card")
+        self.assertNotEqual(names[1], names[2])
+
+    def test_two_identical_board_minions_are_two_cards(self):
+        """The same dedupe lived in the board row: it drew the classic Sell row,
+        which groups BY CARD ("×2"), so a board with two copies of one minion
+        showed one card. `board_cards` is per entity — and the fallback for a
+        payload recorded before it keeps the ×N badge."""
+        rep = _payload(board=[{"card": "BG31_815", "atk": 5, "health": 5,
+                               "tribe": "Beast", "eid": 11},
+                              {"card": "BG31_815", "atk": 9, "health": 9,
+                               "tribe": "Beast", "eid": 12}])
+        self.assertEqual([r["eid"] for r in rep["board_cards"]], [11, 12])
+        self.assertEqual(rep["board_cards"][1]["atk"], 9,
+                         "the second copy is not its own entity")
+        got = _render([_shot("dup", rep)])
+        self.assertEqual(got["dup.boardcards"], 2)
+
+    def test_the_classic_tavern_toggle_sits_on_the_nav_row(self):
+        """Round 3 item 7: right-aligned on the nav row, and out of the way while
+        Settle Up is open — that page has its own viewer toggle in its header."""
+        got = self.got
+        self.assertEqual(got["t.toggleinnav"], 1,
+                         "the live viewer flag is not on the nav row")
+        right, left = [int(v) for v in got["t.toggleright"].split(",")]
+        self.assertLess(right, 60, f"the toggle is {right}px from the right edge")
+        self.assertGreater(left, 200,
+                           "the toggle is not pushed to the right of the nav")
+        self.assertEqual(got["t.togglehidden"], 0)
+        # ...and it is out of the way over there: switching to Settle Up hides
+        # it, because that page has its own viewer toggle in its header.
+        settle = _render([_shot("s", _payload(), settle=True)])
+        self.assertEqual(settle["s.togglehidden"], 1,
+                         "the live viewer flag is still on screen over Settle Up, "
+                         "beside that page's own toggle")
 
     def test_classic_still_renders_after_a_tavern_render(self):
         """The flag's contract, and the way BACK.
@@ -940,11 +1086,12 @@ class TestTheCompsScreens(_Rendered):
     def shots(cls):
         base = _comps_payload()
         return [_shot("browse", base, tab="comps"),
-                _shot("filter", base, tab="comps",
-                      clicks=[[".lv-ctl .lv-chip", "BEAST"]]),
                 _shot("overlap", base, tab="comps",
                       clicks=[[".lv-ctl .lv-chip", "Overlap"]]),
-                _shot("more", base, tab="comps", clicks=[[".lv-more", "+ 2 more"]]),
+                _shot("more", base, tab="comps", clicks=[[".lv-more", "+ 1 more"]]),
+                _shot("noavg", _comps_payload(corpus={}), tab="comps"),
+                _shot("detecting", _comps_payload(tribes_detecting=True),
+                      tab="comps"),
                 _shot("detail", base, tab="comps",
                       clicks=[_open("Elementals")]),
                 _shot("back", base, tab="comps",
@@ -964,8 +1111,8 @@ class TestTheCompsScreens(_Rendered):
         self.assertTrue(got["browse.comprows"].startswith(
             "Elementals|3 of 3 owned|3.83 ; Menagerie|1 of 2 owned|—"),
             got["browse.comprows"])
-        # The A column holds the design's five rows and says what it left out.
-        self.assertEqual(got["browse.more"], "+ 2 more")
+        # ~6 rows per tier, then the count of what is left (round 3 item 3).
+        self.assertEqual(got["browse.more"], "+ 1 more")
         self.assertEqual(got["browse.more"].count("+ "), 1)
         # The cap is per column, so the S column is not capped away too.
         self.assertIn("Elementals", got["browse.comprows"])
@@ -976,20 +1123,97 @@ class TestTheCompsScreens(_Rendered):
         self.assertEqual(got["more.more"], "",
                          "nothing left to expand once it is open")
 
-    def test_the_lobby_tribe_filter_narrows_the_list(self):
-        """§4.2: "The Comps list filters by this row." One chip per tribe that
-        is actually in play — a chip that could only empty the list is noise."""
+    def test_the_comps_columns_are_never_three_wide(self):
+        """Round 3 item 3: single column with sticky headers, two only when each
+        holds 520px, never three. The cap is `max-width:calc(50% - 9px)` — a
+        viewport media query cannot express it, because the main column is the
+        window MINUS the rail above 1200px."""
         got = self.got
-        self.assertIn("ELEMENTAL", got["browse.ctl"])
-        self.assertIn("Mixed", got["browse.ctl"],
-                      "a comp with no single tribe is its own chip")
-        self.assertNotIn("NAGA", got["browse.ctl"],
-                         "an out-of-play tribe has no comps to filter to")
-        self.assertIn("Source tier:on", got["browse.ctl"])
-        self.assertEqual(got["filter.comprows"], "Beasts|2 of 2 owned|4.00|low")
-        self.assertIn("BEAST:on", got["filter.ctl"])
-        self.assertIn("All tribes", got["filter.ctl"],
-                      "the filter has to be clearable without a reload")
+        widths = [int(w) for w in got["browse.colw"].split("|")]
+        self.assertLessEqual(got["browse.cols"], 2,
+                             f"{got['browse.cols']} comps columns on screen")
+        for w in widths:
+            self.assertGreaterEqual(w, 520, f"a column is only {w}px")
+        self.assertEqual(got["browse.h4pos"], "sticky",
+                         "the tier headers do not stick")
+        # A window wide enough for two 520px columns puts them side by side, and
+        # NEVER a third: eight columns would fit at this width if it were
+        # allowed to.
+        wide = _render([_shot("w", _comps_payload(), tab="comps")],
+                       size=(2600, 1200))
+        self.assertEqual(wide["w.cols"], 2,
+                         "a 2600px window showed more or fewer than two columns")
+        xs = [int(x) for x in wide["w.colx"].split("|")]
+        self.assertEqual(len(set(xs)), 2, "the two columns are stacked")
+        for w in [int(v) for v in wide["w.colw"].split("|")]:
+            self.assertGreaterEqual(w, 520)
+
+    def test_the_avg_column_is_hidden_until_the_corpus_has_data(self):
+        """Round 3 item 5: a column of dashes is a column of nothing."""
+        got = self.got
+        self.assertGreater(got["browse.avgcells"], 0,
+                           "the fixture has corpus data, so the column is there")
+        self.assertEqual(got["browse.hasavg"], got["browse.cols"])
+        self.assertEqual(got["noavg.avgcells"], 0,
+                         "a dash per row is printed where the corpus is empty")
+        self.assertEqual(got["noavg.hasavg"], 0)
+        self.assertIn("Elementals|3 of 3 owned", got["noavg.comprows"])
+        # Three tracks instead of four: the avg column is gone, not empty.
+        self.assertEqual(len(got["noavg.cmptracks"].split()), 3,
+                         got["noavg.cmptracks"])
+
+    def test_the_comps_panel_has_no_second_tribe_chip_row(self):
+        """Round 3 item 4: the page has ONE tribe row, above the tabs, and the
+        comps panel had a copy of it. The not-confirmed state is said once, in
+        the panel header, instead of on every row."""
+        got = self.got
+        self.assertEqual(got["browse.ctlchips"],
+                         "Source tier|Overlap|Avg placement",
+                         "the comps controls are not just the sort chips")
+        self.assertNotIn("Lobby tribes", got["browse.paneltext"],
+                         "the comps panel has its own tribe chip row again")
+        self.assertEqual(got["browse.unconfirmed"], 0,
+                         "a row still carries the unconfirmed note")
+        # The harness strips values, so the leading space of the header note is
+        # not part of what comes back.
+        self.assertEqual(got["detecting.hnote"], "· tribes not confirmed yet")
+        self.assertEqual(got["detecting.unconfirmed"], 0)
+        # ...and one chip row for the tribes, on the page itself.
+        self.assertIn("BEAST", got["detecting.chips"])
+
+    def test_a_comp_row_is_a_grid_with_the_strip_and_the_name_in_it(self):
+        """Round 3 item 2: `minmax(0,1fr) auto 64px 90px`, a nowrap 34x46 strip,
+        a name clamped to two lines, and nothing positioned over the name."""
+        got = self.got
+        tracks = got["browse.cmptracks"].split()
+        self.assertEqual(len(tracks), 4, got["browse.cmptracks"])
+        self.assertIn("64px", tracks)
+        self.assertIn("90px", tracks)
+        self.assertEqual(got["browse.stripwrap"], "nowrap",
+                         "the core strip still wraps")
+        self.assertEqual(got["browse.slotflex"], "0 0 auto",
+                         "a slot can still be squeezed by the strip")
+        self.assertEqual(got["browse.nameclamp"], "2",
+                         "the comp name is not clamped to two lines")
+        self.assertEqual(got["browse.slotpx"], "34x46")
+        # The compare box sits at the START of the row, in flow: the name is to
+        # its right, so nothing is over anything.
+        withbox = _render([_shot("wb", _comps_payload(), tab="comps",
+                                 clicks=[[".lv-cmpbox", None, "Beasts"]])])
+        self.assertEqual(withbox["wb.cmpchecked"], 1)
+        self.assertEqual(withbox["wb.rowcols"], "grid")
+
+    def test_the_compare_box_and_the_comp_name_are_themed(self):
+        """Round 3 item 6: a themed checkbox, and names underlined on hover
+        only — a column of permanent underlines read as a wall of links."""
+        got = self.got
+        self.assertIn("none", got["browse.cmpskin"],
+                      "the checkbox is still the browser's default control")
+        self.assertEqual(got["browse.nameunder"], "none",
+                         "every comp name wears an underline")
+        hovered = _render([_shot("h", _comps_payload(), tab="comps",
+                                 clicks=[[".lv-ctl .lv-chip", "Overlap"]])])
+        self.assertEqual(hovered["h.nameunder"], "none")
 
     def test_the_sort_control_reorders_within_a_tier(self):
         """The default is the source's own tier order; sorting by overlap or by
@@ -1057,8 +1281,8 @@ class TestTheCompsScreens(_Rendered):
         (a flex row with `margin-left:auto` could not promise the same x for the
         owned count down a column)."""
         got = self.got
-        # Seven visible rows: two S + the five the A column shows before its cap.
-        self.assertEqual(got["browse.cmpboxes"], 7,
+        # Eight visible rows: two S + the six the A column shows before its cap.
+        self.assertEqual(got["browse.cmpboxes"], 8,
                          "one compare box per visible row")
         self.assertEqual(got["browse.cmpchecked"], 0)
         self.assertEqual(got["compare.cmpchecked"], 3,
@@ -1153,29 +1377,16 @@ class TestTheCompsScreens(_Rendered):
         self.assertEqual(got["four.cmpcols"], "Elementals|Aardvark|Beasts",
                          "the fourth comp is refused, not silently swapped in")
 
-    def test_the_tier_columns_sit_side_by_side_and_wrap_when_narrow(self):
-        """§4.4: "Two columns: S tier left, A tier right (add more tiers by
-        wrapping)." Measured at both ends, because a width claim that does not
-        say which width it means is the Settle Up rail bug all over again."""
+    def test_the_comps_screens_get_the_main_column(self):
+        """The design's §4.4 columns need the main column, not the 340px rail —
+        and round 3 item 3 re-cut how many of them there are (see
+        `test_the_comps_columns_are_never_three_wide`)."""
         got = self.got
-        at = got["browse.colat"].split("|")
-        self.assertGreaterEqual(len(at), 2, "no tier columns rendered")
-        self.assertEqual(at[0].split(",")[1], at[1].split(",")[1],
-                         "the S and A columns are not level — they wrapped")
-        self.assertNotEqual(at[0].split(",")[0], at[1].split(",")[0])
         self.assertGreater(got["browse.panelw"], 600,
                            "the comps screens need the main column: a 340px rail "
-                           "cannot hold two tier columns")
-        # Below the 900px breakpoint the RAIL moves under the boards (§4.2), so
-        # the columns still fit at a narrow window — they wrap only when the
-        # column itself cannot hold two of them, which is what "by wrapping"
-        # means. Anything the player runs is wider than this.
-        narrow = _render([_shot("n", _comps_payload(), tab="comps")],
-                         size=(520, 800))
-        nat = narrow["n.colat"].split("|")
-        self.assertEqual(nat[0].split(",")[0], nat[1].split(",")[0],
-                         "two tier columns in a 520px window: they should stack")
-        self.assertNotEqual(nat[0].split(",")[1], nat[1].split(",")[1])
+                           "cannot hold one 520px column, let alone two")
+        self.assertGreaterEqual(len(got["browse.colat"].split("|")), 2,
+                                "no tier columns rendered")
 
     def test_a_low_sample_comp_is_flagged_by_games_count(self):
         """§5: "Low sample marker ... Define the threshold by games count, not a

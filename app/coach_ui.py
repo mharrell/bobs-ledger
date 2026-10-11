@@ -693,8 +693,12 @@ _HTML = r"""<!doctype html>
      styling toggle, not a rewrite switch, and the classic path below is
      untouched. It used to live in the top nav; it heads the LIVE page now
      (one toggle per page — see the markup note). */
-  #live-viewer-row { grid-column:1 / -1; display:flex;
-                     justify-content:flex-end; margin:0 0 8px; }
+  /* The Live viewer flag (2026-10-09). It lives on the NAV row, right-aligned
+     (round-3 fix list item 7): it is a page-level choice, and the nav row is
+     where the page-level controls are. It is HIDDEN while Settle Up is the open
+     tab — that page has its own viewer toggle in its header, and two toggles on
+     screen at once was the reason it was moved off the nav in the first place. */
+  #live-viewer-row { display:flex; align-items:center; margin-left:auto; }
   #live-viewer-row[hidden] { display:none; }
   /* The Tavern Live view's own container, and the two classic panes it hides
      (2026-10-09). Hiding rather than replacing is what keeps the way back to
@@ -766,12 +770,13 @@ _HTML = r"""<!doctype html>
                     border-color:rgba(255,255,255,.22); }
   .vseg button:disabled { opacity:.45; cursor:default; color:var(--dim); }
   /* Over the Tavern view: the same control in the tavern's own colours, with
-     the design's selection amber for the active half (§7: amber is selection). */
-  #app.tavern-on #live-viewer-row .vseg button {
+     the design's selection amber for the active half (§7: amber is selection).
+     The class rides the NAV row, because that is where the control lives now. */
+  #tabs.tavern #live-viewer-row .vseg button {
     background:var(--tpanel); color:var(--tmute); border-color:var(--tline);
     padding:6px 14px; min-height:44px; }
-  #app.tavern-on #live-viewer-row .vseg button:hover { color:var(--ttext); }
-  #app.tavern-on #live-viewer-row .vseg button.on {
+  #tabs.tavern #live-viewer-row .vseg button:hover { color:var(--ttext); }
+  #tabs.tavern #live-viewer-row .vseg button.on {
     background:var(--tsel); color:var(--tonsel); border-color:var(--tsel); }
   /* An id beats the UA's [hidden] rule, so hiding this has to be said. */
   #settle-mode[hidden] { display:none; }
@@ -899,6 +904,13 @@ _HTML = r"""<!doctype html>
                             font-size:10px; font-weight:700; padding:2px 5px;
                             border-radius:4px; background:var(--tk-play);
                             color:var(--tk-play-t); }
+  /* How many copies one card stands for, on the fallback paths that still group
+     by card (a payload recorded before `board_cards`). */
+  .tavern .tile .tag-count { position:absolute; top:4px; right:4px; z-index:2;
+                             font-size:10px; font-weight:700; padding:2px 5px;
+                             border-radius:4px; background:var(--tcard);
+                             color:var(--ttext);
+                             border:1px solid var(--tline); }
   /* Net change: one buff-green "+0/+3" (2026-10-09, player call) — the buff
      is the fact, and per-stat gold/red is the base stats' job. */
   .tavern .tile .tdelta { font-size:12px; font-weight:700; color:var(--tbuff); }
@@ -1033,6 +1045,9 @@ _HTML = r"""<!doctype html>
                         margin:0 0 12px; }
   .tavern.live .lv-pn > h3 { margin:0 0 8px; font-size:12px; letter-spacing:.12em;
                              text-transform:uppercase; color:var(--tmute); }
+  /* The one place the not-confirmed-yet state is said (round 3 item 4). */
+  .tavern.live .lv-hnote { text-transform:none; letter-spacing:0;
+                           font-size:11px; color:var(--tmute); }
   .tavern.live .lv-row { display:flex; flex-wrap:wrap; gap:12px; }
   .tavern.live .lv-card { display:flex; flex-direction:column;
                           align-items:center; }
@@ -1140,24 +1155,52 @@ _HTML = r"""<!doctype html>
                          align-items:center; margin:0 0 10px; }
   .tavern.live .lv-cols { display:flex; flex-wrap:wrap; gap:16px;
                           align-items:flex-start; }
-  .tavern.live .lv-ctier { flex:1 1 300px; min-width:260px; }
-  .tavern.live .lv-ctier > h4 { margin:0 0 6px; font-size:11px;
+  /* The comps columns: ONE column by default, with the tier headers sticking to
+     the top of the page as it scrolls (round 3 item 3), and TWO only when each
+     can hold 520px. NEVER three: `max-width:calc(50% - 9px)` is what caps it —
+     a third column would have to be narrower than half, so it wraps instead,
+     however wide the window gets. (A viewport media query cannot express this:
+     the main column is the window MINUS the 340px rail above 1200px.) */
+  .tavern.live .lv-cols { display:flex; flex-wrap:wrap; gap:18px;
+                          align-items:flex-start; }
+  .tavern.live .lv-ctier { flex:0 1 520px; min-width:520px;
+                           max-width:calc(50% - 9px); min-height:0; }
+  /* A lone tier takes the whole width rather than half of it. */
+  .tavern.live .lv-ctier:only-child { max-width:100%; }
+  .tavern.live .lv-ctier > h4 { position:sticky; top:0; z-index:2;
+                                background:var(--tpanel);
+                                margin:0 0 6px; padding:4px 0;
+                                font-size:11px;
                                 letter-spacing:.12em; text-transform:uppercase;
                                 color:var(--tmute); }
   /* A comp row is a GRID with fixed columns (fix list round 1 item 6:
-     "consistent rows"): the slots, the owned count, the average placement and
-     the compare box start at the same x down the whole column, which a flex row
-     with `margin-left:auto` could not promise. */
+     "consistent rows"; round 3 item 2 fixes the tracks): name | core slots |
+     owned 64 | avg 90. The avg track EXISTS only for a column whose comps have
+     corpus data (round 3 item 5) — a column of dashes was a column of nothing —
+     which is why the four-track rule hangs off `has-avg`. The compare checkbox
+     is IN FLOW beside the name: nothing is positioned over anything. */
   .tavern.live .lv-crow { display:grid;
-                          grid-template-columns:minmax(0,1fr) auto 92px 58px 88px;
+                          grid-template-columns:minmax(0,1fr) auto 64px;
                           gap:10px; align-items:center; padding:7px 0;
                           border-bottom:1px solid var(--tline); font-size:12px; }
+  .tavern.live .lv-ctier.has-avg .lv-crow {
+    grid-template-columns:minmax(0,1fr) auto 64px 90px; }
   @media (max-width: 699.98px) {
-    .tavern.live .lv-crow { grid-template-columns:minmax(0,1fr) auto; }
+    .tavern.live .lv-crow,
+    .tavern.live .lv-ctier.has-avg .lv-crow {
+      grid-template-columns:minmax(0,1fr) auto; }
   }
   .tavern.live .lv-cname { min-width:0; display:flex;
-                           flex-wrap:wrap; gap:6px; align-items:baseline; }
-  .tavern.live .lv-copen { cursor:pointer; text-decoration:underline; }
+                           flex-wrap:wrap; gap:6px; align-items:center; }
+  .tavern.live .lv-cname .lv-copen { min-width:0; }
+  /* Two lines at most, then it ellipses (round 3 item 2) — a comp name is two
+     words and a hyphen, and a third line pushed the slots out of line. */
+  .tavern.live .lv-copen { cursor:pointer; text-decoration:none;
+                           display:-webkit-box; -webkit-line-clamp:2;
+                           -webkit-box-orient:vertical; overflow:hidden; }
+  /* Underlined on HOVER only (round 3 item 6): every name in the list wearing a
+     link underline made the column read as a wall of links. */
+  .tavern.live .lv-copen:hover { text-decoration:underline; }
   .tavern.live .lv-crow.low .lv-cname, .tavern.live .lv-crow.low .lv-slots,
   .tavern.live .lv-crow.low .lv-owned, .tavern.live .lv-crow.low .lv-ap {
     opacity:.55; }
@@ -1167,9 +1210,12 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-ap.miss { color:var(--tmute); font-weight:400; }
   .tavern.live .lv-chip.lowsamp { cursor:default; color:var(--tmute);
                                   font-size:11px; padding:2px 8px; }
-  .tavern.live .lv-slots { display:flex; flex-wrap:wrap; gap:3px; }
+  /* The core-card strip is a single NOWRAP row of 34x46 slots (round 3 item 2):
+     wrapping turned a six-card core into a ragged two-line block that pushed
+     the owned count out of line with every other row. */
+  .tavern.live .lv-slots { display:flex; flex-wrap:nowrap; gap:3px; }
   .tavern.live .lv-slot { display:inline-block; width:34px; height:46px;
-                          border-radius:5px; background:var(--tcard);
+                          flex:none; border-radius:5px; background:var(--tcard);
                           border:2px solid var(--tbuff); box-sizing:border-box;
                           overflow:hidden; position:relative; }
   /* The core card's own art, size of the slot. Missing/banned are DIMMED rather
@@ -1190,9 +1236,20 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-leglbl { color:var(--tmute); font-size:11px; }
   .tavern.live .lv-cmpcell { display:inline-flex; align-items:center; gap:6px;
                              justify-content:flex-start; }
-  .tavern.live .lv-cmpbox { width:18px; height:18px; margin:0;
-                            accent-color:var(--tsel); cursor:pointer; }
-  .tavern.live .lv-cmpbox:disabled { cursor:default; }
+  /* A themed checkbox, not the browser's (round 3 item 6): the default control
+     is a light-grey square that looks pasted onto the tavern palette. */
+  .tavern.live .lv-cmpbox { appearance:none; width:18px; height:18px; margin:0;
+                            border:1px solid var(--tline); border-radius:4px;
+                            background:var(--tcard); cursor:pointer;
+                            display:inline-grid; place-content:center;
+                            flex:none; }
+  .tavern.live .lv-cmpbox:hover { border-color:var(--tsel); }
+  .tavern.live .lv-cmpbox:checked { background:var(--tsel);
+                                    border-color:var(--tsel); }
+  .tavern.live .lv-cmpbox:checked::after { content:'✓'; font-size:12px;
+                                           font-weight:700;
+                                           color:var(--tonsel); }
+  .tavern.live .lv-cmpbox:disabled { opacity:.45; cursor:default; }
   .tavern.live .lv-cmplbl { color:var(--tmute); font-size:11px;
                             cursor:pointer; }
   .tavern.live .lv-more { background:var(--tpanel); color:var(--ttext);
@@ -1318,14 +1375,11 @@ _HTML = r"""<!doctype html>
 <button class="tab on" data-tab="live">Another Round</button>
 <button class="tab" data-tab="settle">Settle Up</button>
 <button id="share-toggle" hidden></button>
-</nav>
-<div id="app">
-<!-- ONE Classic | Tavern toggle per page (2026-10-09, player call). The live
-     one used to sit in the TOP NAV, where it looked global and rode along to
-     the Settle Up tab beside that tab's own toggle — two controls, one of
-     them unthemed there (the nav's `#tabs button` rules outranked the
-     segment styling). It lives at the top of the LIVE page now, the same
-     place the Settle Up toggle sits in its header. -->
+<!-- The Live page's Classic | Tavern flag, right-aligned on the NAV row
+     (round-3 fix list item 7): it is a page-level choice, and the nav row is
+     where the page-level controls live. It HIDES itself while Settle Up is
+     open — that page has its own viewer toggle in its header, and two toggles
+     on screen at once is what moved this off the nav in the first place. -->
 <div id="live-viewer-row">
 <span id="live-viewer" class="vseg" title="Live page style — Tavern is the
 reference layout (LIVE_VIEW_DESIGN.md): the same facts, no verdicts">
@@ -1333,6 +1387,8 @@ reference layout (LIVE_VIEW_DESIGN.md): the same facts, no verdicts">
 <button data-v="tavern">Tavern</button>
 </span>
 </div>
+</nav>
+<div id="app">
 <section id="col-decide"></section>
 <section id="col-ref"></section>
 <!-- The Tavern Live view's own container (2026-10-09). It is separate from the
@@ -1971,6 +2027,9 @@ function lvCard(cid, name, cap, opts) {
   const wrap = el('div', 'lv-card');
   const t = tile(cid, name, null, {});
   if (opts && opts.kind) t.appendChild(el('span', 'tag-kind', opts.kind));
+  // A count badge for a row that IS one card per element but wants to say how
+  // many copies it stands for (the fallback path of a board row).
+  if (opts && opts.badge) t.appendChild(el('span', 'tag-count', opts.badge));
   wrap.appendChild(t);
   wrap.appendChild(el('span', 'lv-cap', cap));
   return wrap;
@@ -2100,10 +2159,9 @@ function lvFacts(a) {
 //: touches the analysis.
 let _liveComp = null;              // slug while Detail is open, else Browse
 let _liveCompSort = 'tier';        // tier | overlap | avg_place (default tier)
-let _liveCompFilter = new Set();   // tribe labels; empty = every tribe in play
 let _liveCompMore = new Set();     // tier groups whose rows past the cap show
 let _liveCompare = new Set();      // up to three slugs, in the order picked
-const LIVE_COMP_ROWS = 5;          // §4.4: "about five visible rows"
+const LIVE_COMP_ROWS = 6;          // round 3 item 3: "cap ~6 rows per tier"
 const LIVE_COMPARE_MAX = 3;        // §4.4: "Up to three comps"
 
 //: A comp's `tribe` and the lobby's set are the same canonical vocabulary
@@ -2169,51 +2227,33 @@ function lvOwned(cards) {
   return (cards || []).filter(x => x && (x.owned || x.in_hand)).length;
 }
 
-//: §4.4 Browse, one row:
-//: `[Comp name + tribe] [core-card slots] [N of M owned] [avg placement]`.
-//: The average placement comes from this project's own corpus and is a dash when
-//: the corpus has never seen the comp — absent beats invented.
-function lvCompRow(a, c) {
+//: §4.4 Browse, one row, in the grid round 3 item 2 fixes:
+//: `[compare] [Comp name + chips] [core-card slots] [N of M owned] [avg]`.
+//: `anyAvg` is false when the whole tier column has no corpus data, and then the
+//: last cell is not rendered at all (round 3 item 5): a column of dashes was a
+//: column of nothing.
+function lvCompRow(a, c, anyAvg) {
   const core = c.core || [];
   const st = c.stats || null;
   const row = el('div', 'lv-crow');
   if (st && st.low_sample) row.classList.add('low');
-  const name = el('span', 'lv-cname');
-  const open = el('b', 'lv-copen', c.name || c.slug);
-  open.title = 'Open the comp';
-  open.onclick = () => { _liveComp = c.slug; renderLiveTavern(a); };
-  name.appendChild(open);
-  name.appendChild(el('i', 'lv-tier', c.meta_tier ? c.meta_tier + ' tier'
-                          : (c.provisional ? 'provisional' : 'no published tier')));
-  name.appendChild(el('i', 'lv-tier', lvCompTribe(c)));
-  if (c.tribe_confirmed === false) {
-    name.appendChild(el('i', 'lv-tier', 'tribe unconfirmed'));
-  }
-  if (st && st.low_sample) {
-    name.appendChild(el('span', 'lv-chip lowsamp', 'low sample'));
-  }
-  row.appendChild(name);
-  row.appendChild(lvSlots(core));
-  row.appendChild(el('b', 'lv-owned',
-                     lvOwned(core) + ' of ' + core.length + ' owned'));
-  row.appendChild(el('b', 'lv-ap' + (st && st.avg_place != null ? '' : ' miss'),
-                     st && st.avg_place != null ? st.avg_place.toFixed(2) : '—'));
   const picked = _liveCompare.has(c.slug);
   const full = !picked && _liveCompare.size >= LIVE_COMPARE_MAX;
-  // A CHECKBOX, not a chip (fix list round 1 item 6): "compare" is a
-  // selection you make about up to three rows, and a checkbox is what that
-  // looks like. It is disabled (with the reason in its title) once three are
-  // ticked rather than silently doing nothing.
+  // A CHECKBOX, not a chip (fix list round 1 item 6): "compare" is a selection
+  // you make about up to three rows, and a checkbox is what that looks like. It
+  // is disabled (with the reason in its title) once three are ticked rather than
+  // silently doing nothing. It sits IN FLOW at the start of the row — nothing is
+  // positioned over the name (round 3 item 2).
   const cb = document.createElement('input');
   cb.type = 'checkbox';
   cb.className = 'lv-cmpbox';
   cb.id = 'lv-cmp-' + String(c.slug || 'x').replace(/[^A-Za-z0-9_-]/g, '');
   cb.checked = picked;
   cb.disabled = full;
-  if (full) {
-    cb.title = 'Compare holds up to ' + LIVE_COMPARE_MAX + ' comps — untick one '
-             + 'to add another.';
-  }
+  cb.title = full
+    ? 'Compare holds up to ' + LIVE_COMPARE_MAX + ' comps — untick one to add '
+      + 'another.'
+    : 'Add this comp to the comparison';
   cb.onchange = () => {
     if (_liveCompare.has(c.slug)) _liveCompare.delete(c.slug);
     else if (_liveCompare.size < LIVE_COMPARE_MAX) _liveCompare.add(c.slug);
@@ -2226,7 +2266,27 @@ function lvCompRow(a, c) {
   const cell = el('span', 'lv-cmpcell');
   cell.appendChild(cb);
   cell.appendChild(lbl);
-  row.appendChild(cell);
+  const name = el('span', 'lv-cname');
+  name.appendChild(cell);
+  const open = el('b', 'lv-copen', c.name || c.slug);
+  open.title = 'Open the comp';
+  open.onclick = () => { _liveComp = c.slug; renderLiveTavern(a); };
+  name.appendChild(open);
+  name.appendChild(el('i', 'lv-tier', c.meta_tier ? c.meta_tier + ' tier'
+                          : (c.provisional ? 'provisional' : 'no published tier')));
+  name.appendChild(el('i', 'lv-tier', lvCompTribe(c)));
+  if (st && st.low_sample) {
+    name.appendChild(el('span', 'lv-chip lowsamp', 'low sample'));
+  }
+  row.appendChild(name);
+  row.appendChild(lvSlots(core));
+  row.appendChild(el('b', 'lv-owned',
+                     lvOwned(core) + ' of ' + core.length + ' owned'));
+  if (anyAvg) {
+    row.appendChild(el('b', 'lv-ap' + (st && st.avg_place != null ? '' : ' miss'),
+                       st && st.avg_place != null ? st.avg_place.toFixed(2)
+                                                  : '—'));
+  }
   return row;
 }
 
@@ -2252,12 +2312,23 @@ function lvCompSortRows(rows) {
   return rows;
 }
 
-//: §4.4 Browse: the lobby-tribe filter, the sort control, one column per source
-//: tier (S left, A right, more tiers by wrapping), about five rows each with a
-//: `+ N more`, and Compare underneath once two comps are picked.
+//: §4.4 Browse: the sort control, one column per source tier with a sticky
+//: header, about six rows each with a `+ N more`, and Compare underneath once
+//: two comps are picked.
+//:
+//: The tribe FILTER row is gone (round 3 item 4): the page already has one tribe
+//: row above the tabs, and a second set of the same chips inside this panel was
+//: the duplicate. The "not confirmed yet" state is said ONCE, in the panel header
+//: (and no longer per row).
 function lvCompsBrowse(a) {
   const p = el('div', 'lv-pn');
-  p.appendChild(el('h3', null, 'Comps'));
+  const head = el('h3', null, 'Comps');
+  if (a.tribes_detecting) {
+    // Said ONCE, here (round 3 item 4) — it used to ride every row, which made
+    // the whole list look tentative instead of one state of the game.
+    head.appendChild(el('span', 'lv-hnote', ' · tribes not confirmed yet'));
+  }
+  p.appendChild(head);
   const all = a.comps || [];
   if (!all.length) {
     p.appendChild(lvEmptyRow('No comps read yet — they appear once the bans '
@@ -2265,32 +2336,12 @@ function lvCompsBrowse(a) {
     return p;
   }
   // §4.4: comps for out-of-play tribes are hidden — they cannot be built at all
-  // this patch, so a filter that revealed one would be offering a comp nobody
-  // can play. Counted, because "some are hidden" is a fact worth stating.
+  // this patch, and a row that revealed one would be offering a comp nobody can
+  // play. Counted, because "some are hidden" is a fact worth stating.
   const oop = a.out_of_pool || [];
   const inplay = all.filter(c => !(c.tribe && oop.some(t => lvTribeHit(c.tribe, t))));
   const hidden = all.length - inplay.length;
-  const labels = [];
-  inplay.forEach(c => {
-    const t = lvCompTribe(c);
-    if (!labels.includes(t)) labels.push(t);
-  });
   const ctl = el('div', 'lv-ctl');
-  ctl.appendChild(el('span', 'lv-lbl', 'Lobby tribes'));
-  labels.forEach(t => {
-    const on = _liveCompFilter.has(t);
-    const chip = el('span', 'lv-chip' + (on ? ' on' : ''), t);
-    chip.onclick = () => {
-      if (on) _liveCompFilter.delete(t); else _liveCompFilter.add(t);
-      renderLiveTavern(a);
-    };
-    ctl.appendChild(chip);
-  });
-  if (_liveCompFilter.size) {
-    const clear = el('span', 'lv-chip', 'All tribes');
-    clear.onclick = () => { _liveCompFilter.clear(); renderLiveTavern(a); };
-    ctl.appendChild(clear);
-  }
   ctl.appendChild(el('span', 'lv-lbl', 'Sort'));
   [['tier', 'Source tier'], ['overlap', 'Overlap'],
    ['avg_place', 'Avg placement']].forEach(([v, label]) => {
@@ -2299,8 +2350,7 @@ function lvCompsBrowse(a) {
     ctl.appendChild(chip);
   });
   p.appendChild(ctl);
-  const rows = inplay.filter(c => !_liveCompFilter.size
-                                  || _liveCompFilter.has(lvCompTribe(c)));
+  const rows = inplay;
   const groups = [];
   rows.forEach(c => {
     const key = c.meta_tier || (c.provisional ? 'provisional' : '—');
@@ -2317,9 +2367,14 @@ function lvCompsBrowse(a) {
   groups.forEach(g => {
     const sorted = lvCompSortRows(g.rows.slice());
     const col = el('div', 'lv-ctier');
+    // The avg column exists only where the corpus has something to put in it
+    // (round 3 item 5): a column of "—" told the player nothing and took 90px
+    // from the name.
+    const anyAvg = sorted.some(c => (c.stats || {}).avg_place != null);
+    if (anyAvg) col.classList.add('has-avg');
     col.appendChild(el('h4', null, g.label + ' · ' + sorted.length));
     const show = _liveCompMore.has(g.key) ? sorted : sorted.slice(0, LIVE_COMP_ROWS);
-    show.forEach(c => col.appendChild(lvCompRow(a, c)));
+    show.forEach(c => col.appendChild(lvCompRow(a, c, anyAvg)));
     if (sorted.length > show.length) {
       const more = el('button', 'lv-more',
                       '+ ' + (sorted.length - show.length) + ' more');
@@ -2560,7 +2615,15 @@ function lvShop(a) {
 //: plus the flag the payload carries — rather than by rewriting that sentence.
 function lvBoard(a) {
   const body = el('div');
-  const rows = a.sell_rank || [];
+  // ONE CARD PER MINION (round-3 item 1): `board_cards` is per entity, so two
+  // identical minions are two cards. It falls back to the classic Sell row
+  // (`sell_rank`, grouped by card — one row with ×N) for a payload recorded
+  // before that field existed.
+  const rows = a.board_cards
+    ? a.board_cards
+    : (a.sell_rank || []).map(s => ({card: s.card, name: s.name, why: s.why,
+                                     score: s.score, tribe: s.tribe,
+                                     off_play: s.off_play, n: s.n}));
   if (!rows.length) {
     body.appendChild(el('p', 'lv-inline', 'empty'));
     return body;
@@ -2570,7 +2633,8 @@ function lvBoard(a) {
     const cap = s.off_play
       ? ((s.tribe || 'Tribe') + ' — out of play')
       : (s.why || (s.score != null ? String(Math.round(s.score)) : '—'));
-    wrap.appendChild(lvCard(s.card, s.name, cap));
+    wrap.appendChild(lvCard(s.card, s.name, cap,
+                            s.n > 1 ? {badge: '×' + s.n} : null));
   });
   body.appendChild(wrap);
   return body;
@@ -2930,6 +2994,10 @@ function setLiveViewer(v) {
   catch (e) { /* private mode */ }
   document.querySelectorAll('#live-viewer button').forEach(
     b => { b.className = b.dataset.v === _liveViewer ? 'on' : ''; });
+  // The control sits on the nav row, so the NAV takes the tavern palette while
+  // the tavern view is the one on screen (it matches what it toggles).
+  const nav = document.getElementById('tabs');
+  if (nav) nav.classList.toggle('tavern', _liveViewer === 'tavern');
   // Re-render from the payload already on screen: the poll would do it within
   // 300ms, but a toggle that waits reads as a control that did nothing.
   if (_lastParsed) render(_lastParsed);
@@ -3498,6 +3566,11 @@ function showTab(name) {
   document.getElementById('settle').className = live ? '' : 'on';
   document.querySelectorAll('#tabs .tab').forEach(b =>
     b.className = 'tab' + (b.dataset.tab === name ? ' on' : ''));
+  // The Live viewer flag is a LIVE-page control on the shared nav row
+  // (round-3 item 7), so it is only on screen while the live tab is: Settle Up
+  // has its own Classic | Tavern in its header.
+  const viewer = document.getElementById('live-viewer-row');
+  if (viewer) viewer.hidden = !live;
   try { localStorage.setItem('bl-tab', name); } catch (e) { /* private mode */ }
   if (!live) loadSettleList();
 }
@@ -3652,6 +3725,26 @@ function flipKinds(bought, sold) {
   for (const s of sold || []) {
     const id = s.card || s;
     out[id] = boughtIds.has(id) ? 'flipped' : 'sold';
+  }
+  return out;
+}
+// The minions a turn bought AND sold (design §4.4's "passed through" tray), ONE
+// ENTRY PER EVENT (round-3 item 1's audit of the same dedupe): the old version
+// walked an id-keyed map, so buying and selling the same minion twice in one
+// phase drew ONE ghost. The tray's job is to show what the phase moved, and the
+// log moved two.
+function passedThrough(bought, sold) {
+  const boughtIds = new Set((bought || []).map(x => x.card || x));
+  const pool = (bought || []).concat(sold || []);
+  const named = id => {
+    const src = pool.find(x => (x.card || x) === id);
+    return typeof src === 'string' || src == null
+      ? {card: id, name: id} : src;
+  };
+  const out = [];
+  for (const s of sold || []) {
+    const id = s.card || s;
+    if (boughtIds.has(id)) out.push(named(id));
   }
   return out;
 }
@@ -4375,13 +4468,10 @@ function settleTurnCard(r, phases, opts) {
     // Passed through (design §4.4): minions bought AND sold this phase —
     // they never touch either board, so this tray is the only place their
     // card art appears. Ghost styling, hidden when there are none.
-    const kinds = flipKinds((r.took || {}).bought, (r.took || {}).sold);
-    const pool = ((r.took || {}).bought || []).concat((r.took || {}).sold || []);
-    const flipped = Object.keys(kinds).filter(k => kinds[k] === 'flipped')
-      .map(id => {
-        const src = pool.find(x => (x.card || x) === id);
-        return typeof src === 'string' ? {card: src, name: src} : src;
-      });
+    // ONE GHOST PER EVENT (round-3 item 1's audit of the same dedupe): this
+    // used to walk an id-keyed map, so a phase that bought and sold the same
+    // minion twice drew one ghost.
+    const flipped = passedThrough((r.took || {}).bought, (r.took || {}).sold);
     if (flipped.length) {
       const tray = document.createElement('div');
       tray.className = 'brow stacked';
@@ -5521,29 +5611,40 @@ def render_json(analysis):
     # THE TAVERN ROW IS IN THE GAME'S OWN ORDER (2026-10-06, PIVOT.md).
     # value.shop_ranking returns most-valuable-first, and a best-first row IS
     # the recommendation — the ranking is the verdict, not just the score
-    # beside it. live_coach hands us `shop_offers` (the offers in the order the
-    # log lists them), so each tile keeps every FACT — its price, its pool
-    # count, whether it is a comp piece, its value score — and loses the
-    # ordering that made one of them "the" buy. `buy_this` (the named headline)
-    # is in LIVE_VERDICT_KEYS, so the page cannot name one either.
+    # beside it. live_coach hands us the offers in the order the log lists them,
+    # so each tile keeps every FACT — its price, its pool count, whether it is a
+    # comp piece, its value score — and loses the ordering that made one of them
+    # "the" buy. `buy_this` (the named headline) is in LIVE_VERDICT_KEYS, so the
+    # page cannot name one either.
     #
-    # setdefault: two copies of the same minion CAN sit in one tavern, and
-    # tavern_offers() does not dedupe while shop_rank does. First occurrence
-    # wins, which is how a player reads the row.
-    _order = {}
-    for _i, _cid in enumerate(analysis.get("shop_offers") or []):
-        _order.setdefault(_cid, _i)
-    if _order:
-        _ranked = sorted(analysis.get("shop_rank", []),
-                         key=lambda cv: _order.get(cv[0], 1 << 30))
+    # ONE ROW PER OFFER, NOT PER CARD (2026-10-09, round-3 fix list item 1).
+    # `shop_rank` is a card-keyed ranking — one entry per distinct card — so a
+    # tavern offering the SAME minion twice drew ONE card: the row was built by
+    # keying offers onto the ranking, and `setdefault` quietly dropped the
+    # second copy. The offers themselves are entities (`shop_entities`, one
+    # entry per offer with the log's own eid), so the row is built from those
+    # and each copy gets the card's facts — its score is a property of the CARD,
+    # which is why one lookup serves both copies and the POOL chip is the same
+    # number twice rather than a halved or doubled one.
+    _facts = {c: v for c, v in analysis.get("shop_rank", [])}
+    _entities = analysis.get("shop_entities") or []
+    if _entities:
+        _offers = [(e.get("card"), e.get("eid")) for e in _entities
+                   if isinstance(e, dict)]
     else:
-        # No offer list: an analysis recorded before this field existed (the
-        # review renders old records), or a shop that has not parsed. Sort by
-        # card id rather than leaving value.shop_ranking's order in place —
-        # arbitrary is fine, best-first is the one thing this row must never
-        # silently become again.
-        _ranked = sorted(analysis.get("shop_rank", []), key=lambda cv: str(cv[0]))
-    a["shop_rank"] = [dict(card=c, name=names.get(c, c), score=round(v),
+        # No entity list: an analysis recorded before this field existed (the
+        # review renders old records) or a caller that built its own payload.
+        # The offer ORDER is still the log's; only the entity ids are missing.
+        _offers = [(c, None) for c in (analysis.get("shop_offers") or [])]
+    if not _offers:
+        # No offer list at all: no shop parsed. Sort by card id rather than
+        # leaving value.shop_ranking's order in place — arbitrary is fine,
+        # best-first is the one thing this row must never silently become again.
+        _offers = [(c, None)
+                   for c, _v in sorted(analysis.get("shop_rank", []),
+                                       key=lambda cv: str(cv[0]))]
+    a["shop_rank"] = [dict(card=c, eid=e, name=names.get(c, c),
+                           score=round(_facts.get(c, 0.0)),
                            price=prices.get(c),
                            pool=(pool.chip(c, held)
                                  if held is not None else None),
@@ -5552,7 +5653,25 @@ def render_json(analysis):
                                 "spell" if c in spells else
                                 "deploys hand" if c.rstrip("_G") in deployers
                                 else None))
-                      for c, v in _ranked]
+                      for c, e in _offers]
+    # THE BOARD AS ENTITIES TOO (round-3 item 1). `sell_rank` is grouped BY CARD
+    # for the classic Sell box ("Fauna Whisperer ×2", one row, the instance you
+    # would sell first) — and the Tavern's board row drew from it, so two
+    # identical minions on the board rendered one card. This is one row per
+    # minion, in board order, carrying the same per-card facts.
+    _why = {g["card"]: g for g in sell}
+    a["board_cards"] = []
+    for _m in analysis.get("board", []):
+        _cid = _m.get("card")
+        _g = _why.get(_cid) or {}
+        a["board_cards"].append({
+            "card": _cid, "eid": _m.get("eid"), "name": names.get(_cid, _cid),
+            "atk": _m.get("atk"), "health": _m.get("health"),
+            "golden": bool(_m.get("golden")),
+            "score": _g.get("score"), "why": _g.get("why"),
+            "tribe": _g.get("tribe"), "off_play": bool(_g.get("off_play")),
+            "fuel": bool(_g.get("fuel")),
+        })
     # Next-opponent composition (phase 2): the seat's last-known board as
     # named tiles, golden-flagged, biggest first. Age rides along — the box
     # says "as of round N" so a stale preview never reads current.
