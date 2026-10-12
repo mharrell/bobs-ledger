@@ -515,6 +515,46 @@ class TestTheEntityRows(unittest.TestCase):
         self.assertTrue(any("shop_entities[]" in s
                             for s in session_report.DROPPED_ON_PURPOSE))
 
+
+class TestTheShippedCompsDb(unittest.TestCase):
+    """A tier refresh is a DATA change, and nothing else checks that the shipped
+    DB's own records survive the producer.
+
+    Every other comps test runs on a fixture, so a bad refresh (a comp with no
+    tribe, a core that no longer resolves, a hand-added field that went missing)
+    would ship and only show up on a player's screen. This runs the REAL
+    `meta/comps.json` through `render_json` and requires every comp in it to come
+    out the other side as a row with a name, a tier label and a core list.
+    """
+
+    def test_every_comp_in_the_shipped_db_renders(self):
+        import meta
+        import test_live_browser as tlb
+        real = meta.comps()
+        self.assertGreater(len(real), 20)
+        out = coach_ui.render_json(tlb._analysis(game_comps=real))
+        self.assertEqual(len(out["comps"]), len(real),
+                         "a comp in the shipped DB has no row in the payload")
+        for row in out["comps"]:
+            self.assertTrue(row["name"], row)
+            self.assertTrue(row["core"], f"{row['slug']} has no core cards")
+            self.assertIsInstance(row["stats"], (dict, type(None)))
+            self.assertIn(row["tribe_confirmed"], (True, False))
+
+    def test_every_comp_in_the_shipped_db_has_a_canonical_tribe(self):
+        """`scrape_comps.py` never writes `tribe` — it is hand-added on every new
+        comp, and a refresh that forgets it is a comp no tribe filter can find.
+        `check_meta.py` enforces this too; this is the same rule where the suite
+        will see it fail."""
+        import meta
+        import tribes
+        real = meta.comps()
+        for slug, comp in real.items():
+            if comp.get("name") == "Menagerie":
+                continue          # mixed by definition, and check_meta says so
+            self.assertIn(comp.get("tribe"), tribes.DISPLAY_TRIBES,
+                          f"{slug} has tribe {comp.get('tribe')!r}")
+
     def test_the_facts_drop_lethal_at_and_name_the_lobby_average(self):
         """Round 1 item 5 / round 2 item 6."""
         src = _function("lvFacts")

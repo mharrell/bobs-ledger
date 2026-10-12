@@ -15,7 +15,7 @@
       "BG28_707"
     ],
     "summary": "Play elementals to scale from big shop",
-    "when_to_commit": "Brann Bronzebeard + shop buff (Nomi, Kitchen Nightmare) + Unbound Tempest",
+    "when_to_commit": "Brann Bronzebeard + shop buff (Air Revenant) + Unbound Tempest",
     "common_enablers": "Brann Bronzebeard\nTavern Tempest + Kelp Keeper",
     "representative_card": "BG36_352",
     "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
@@ -719,8 +719,8 @@
       "BG32_821"
     ],
     "addons": [
-      "BG34_633",
-      "BG34_638t"
+      "BG33_830",
+      "BG34_633"
     ],
     "summary": "Teach Murlocs spells and proc them",
     "when_to_commit": "Brann Bronzebeard + Magicfin Mycologist + Young Murk-eye",
@@ -741,7 +741,7 @@
       "BG29_813"
     ],
     "addons": [
-      "TB_BaconShop_HERO_60_Buddy",
+      "BG36_241",
       "BGS_034"
     ],
     "summary": "Proc Divine Shields to scale",
@@ -799,8 +799,29 @@
     "tribe": "Dragon",
     "how_to_play": "Spell-power Dragons: Bronze Timewalker's Rally gets a Chromadrake and Sky-hatch Runaway's Activate re-triggers any Rally, so the pair manufactures spell power every turn — and Brann Bronzebeard doubles the Chromadrakes' effects while he lives. Crimson Vindicator is the payoff (Divine Shield; its Rally casts Mighty Dragonbreath), procced over and over by Sky-hatch Runaway, with Runic Arcanist's start-of-combat Shiny Ring adding two more spell-power casts. Park the Dragons you care about beside Persistent Poet — adjacent Dragons permanently keep the stats and keywords they gain in combat, which is how the buffs outlive the fight. Heroic Broodmother and Felfire Conjurer round out the board."
   },
-  "murlocs-volumizer": {
-    "name": "Murlocs - Volumizer",
+  "quilboar-gem-barrage": {
+    "name": "Quilboar - Gem Barrage",
+    "difficulty": "Medium",
+    "meta_tier": "A",
+    "core": [
+      "BG34_684",
+      "BG34_682"
+    ],
+    "addons": [
+      "BG26_ICC_901",
+      "BG28_633",
+      "BG25_354"
+    ],
+    "summary": "Make shop big with gems",
+    "when_to_commit": "Gem scaling/Spell Power + Razorfen Flapper + payoff (Trench Fighter/Felboar)",
+    "common_enablers": "Gem Scaling/Spell Power\nRazorfen Flapper",
+    "representative_card": "BG34_682",
+    "source": "hsreplay.net comp pages (scrape_comps.py)",
+    "tribe": "Quilboar",
+    "how_to_play": "Barrage supply is the comp. Razorfen Flapper's deathrattle hands you a Blood Gem Barrage, and each one gives the tavern's minions +1/+1 worth of Blood Gems on every refresh for the rest of the game, so the supply compounds. Titus Rivendare makes that deathrattle fire an extra time, and Trench Fighter pays a Gem Confiscation at the end of every turn (two Blood Gems on one minion, stealing its neighbours'), which Drakkari Enchanter doubles. Felboar is what the gems are for: every third spell you cast consumes a tavern minion for its stats."
+  },
+  "mechs-volumizer": {
+    "name": "Mechs - Volumizer",
     "difficulty": "Hard",
     "meta_tier": "B",
     "core": [
@@ -821,7 +842,7 @@
     "common_enablers": "Volumizer generation (Conveyor Construct)",
     "representative_card": "BG36_366",
     "source": "hsreplay.net comp pages (scrape_comps.py)",
-    "tribe": "Murloc",
-    "how_to_play": "Volumizers are the Magnetic pieces this comp generates cheaply and stacks onto one hull, and Utility Drone is the payoff: +4/+5 to your board at end of turn for each Magnetization it carries. Resourceful Robot makes a Volumizer every turn and copies it; a reborn Conveyor Construct repeats its deathrattle; Auto Accelerator and Auto Reveille are the other generators, and Kelp Keeper re-triggers a Battlecry (Brann Bronzebeard doubles one too). Early Volumizers are economy — they fund the levels that hit Utility Drone — then Drakkari Enchanter makes every end-of-turn effect fire twice. Most of the hull is Mechs despite the name; the Murlocs (Kelp Keeper, Spark Snapper) are the support pieces."
+    "tribe": "Mech",
+    "how_to_play": "Volumizers are the Magnetic pieces this comp generates cheaply and stacks onto one hull, and Utility Drone is the payoff: +4/+5 to your board at end of turn for each Magnetization it carries. Resourceful Robot makes a Volumizer every turn and copies it; a reborn Conveyor Construct repeats its deathrattle; Auto Accelerator and Auto Reveille are the other generators, and Kelp Keeper re-triggers a Battlecry (Brann Bronzebeard doubles one too). Early Volumizers are economy — they fund the levels that hit Utility Drone — then Drakkari Enchanter makes every end-of-turn effect fire twice. The hull is Mechs; Kelp Keeper and Spark Snapper are the support pieces."
   }
 }
