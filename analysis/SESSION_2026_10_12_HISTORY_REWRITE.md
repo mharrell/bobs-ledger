@@ -86,8 +86,16 @@ byte channel and this stream carries the repo's PNGs.
   rewriting was measured wrong**: `update.decide` orders releases by the
   manifest's `created` stamp, not by the version string. Published releases stay
   valid — the channel serves immutable signed bytes, and every install carries
-  its own `.update_state.json`. Nothing was republished: the channel still serves
-  `98af874` (created 2026-10-10T23:44), whose commit is now `9b31936`.
+  its own `.update_state.json`. Nothing was republished AT THAT MOMENT: the
+  channel served `98af874` (created 2026-10-10T23:44), whose commit is now
+  `9b31936`. The maintainer asked for a release later in the same session, so
+  **`03f1411` is the published version now** — 2026-10-12T08:11:08, 1,592,566
+  bytes, signed with the pinned `4d8fc45534ba558d`, the GitHub asset
+  byte-identical to the KV copy, and the SHIPPED updater offered
+  `98af874 -> 03f1411` from a simulated previous install, applied 254 files, and
+  then reported up to date. Its note describes the 2026-10-12 tier refresh, which
+  is the player-visible change; `03f1411` is the commit that carries both the
+  refresh and this session's notes.
 * Left as known artifacts: `refs/tags/<old-sha>` names no longer describe their
   commit (already true of the 31 rewritten tags — the name-preserving rule);
   GitHub keeps unreachable objects for a while, so an old commit is still
