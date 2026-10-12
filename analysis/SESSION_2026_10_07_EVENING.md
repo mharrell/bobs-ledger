@@ -23,6 +23,16 @@ lives in the warning at the top of the working notes.**
    (its known, accepted exception). History still carries everything;
    rewriting it would rewrite the release version strings (the BattleTag
    decision, applied again).
+
+   **OVERTAKEN 2026-10-12.** History WAS rewritten — all 605 commits, force
+   pushed, every release tag moved — because the maintainer asked for the
+   assistant's commit attributions gone, and the working notes / tooling
+   directory are named in the tracked `.gitignore` now too. The sentence above
+   was also measured wrong in the direction that mattered: the update join does
+   NOT rest on the version STRING (`update.decide` orders releases by the
+   manifest's `created` stamp), so players were never at risk; what the rewrite
+   did cost is every SHA this repository cites, which is what the map ships for.
+   Detail: `analysis/SESSION_2026_10_12_HISTORY_REWRITE.md`.
 2. **The trinket drift is CLOSED**: doctor read 21 missing, then a moving
    newest-6-log window (the machine was in live use the whole session) kept
    surfacing new ids; the final state is **ok, 112/112 recorded, 237 rows**.

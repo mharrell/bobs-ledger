@@ -414,6 +414,12 @@ re-saved.
    naming this file, and four FUNCTIONAL strings keep their names
    (`publish_release.EXCLUDE_DIRS/.EXCLUDE_FILES`, `update.PROTECTED` ×2) —
    `git grep -inE "claude|anthropic"` must show exactly those four.
+
+   **OVERTAKEN 2026-10-12**: the four FUNCTIONAL strings are unchanged, but they
+   are no longer the whole answer — the tracked `.gitignore` names the local
+   tooling paths too, by the maintainer's instruction after the history rewrite,
+   so `git grep -inE "claude|anthropic"` outside `analysis/` returns 7 lines.
+   Measurement and reasoning: `analysis/SESSION_2026_10_12_HISTORY_REWRITE.md`.
 2. **The trinket drift is CLOSED** (112/112 recorded). 11 entries still
    carry the `review` key — **the maintainer still owes them a read**
    (delete the key once agreed). Re-run `refresh_trinkets.py` after play

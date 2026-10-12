@@ -7,10 +7,23 @@ venv/
 # IDE
 .idea/
 
-# Per-install local state — the local tooling's own directory, the working
-# notes, and a local key bootstrap — is ignored via .git/info/exclude, which
-# is deliberately not a tracked file: per-install paths are named where they
-# are used, the same reason .hs_home.json below has no directory prefix.
+# Local tooling and working notes — the local tooling's own directory, the
+# working notes, a local key bootstrap, the design notes written to hand to a
+# coding session. Ignored in TWO places since 2026-10-12: here, and in
+# .git/info/exclude. It used to be info/exclude ALONE, on the reasoning that
+# per-install paths are named where they are used; the maintainer's instruction
+# after the history rewrite is that these are named in the tracked file too, so
+# that a clone running `sync.py --new` (which commits untracked files) cannot
+# commit them. Never tracked, never shipped either way. Per-install PATHS are
+# still named where they are used and not here: that is why .hs_home.json below
+# carries no directory prefix.
+.claude/
+.dsh/
+CLAUDE.md
+claude_code_zai_env.sh
+REPLAY_VIEWER_DESIGN.md
+LIVE_VIEW_DESIGN.md
+SETTLE_UP_FIXES.md
 
 # NOTE: python-hslog/ is TRACKED. It used to be gitignored, which meant a
 # clone lacked the parser while the release zip had it — the spin-out into
