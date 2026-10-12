@@ -158,7 +158,17 @@ EXCLUDE_FILES = {".art_miss.json", ".cards_cache.json",
                  # The working fix lists (2026-10-09): the same class as the
                  # maintainer docs above — the notes a session works from,
                  # kept out of the player's folder the same way.
-                 "SETTLE_UP_FIXES.md"}
+                 "SETTLE_UP_FIXES.md",
+                 # The dev live-replay harness (2026-10-12) and its suite. It
+                 # drives the overlay from a finished game so Another Round can
+                 # be looked at without playing — which makes it a "replay mode"
+                 # in a player's download, i.e. a product feature it is not. A
+                 # player has no use for it and every reason to be confused by
+                 # it, so the file AND its tests stay out together: a shipped
+                 # test importing a module the zip does not carry is a suite
+                 # that fails in an install (`test_history_scan` vs the excluded
+                 # `history_scan.py` is the shape this avoids repeating).
+                 "live_replay.py", "test_live_replay.py"}
 
 #: Always written fresh by this script, so a stale local copy must not win
 #: the zip's duplicate-entry race (VERSION is excluded for the same reason).

@@ -88,7 +88,7 @@ import json
 import os
 import sys
 
-from config import HS_LOG_GLOB
+from config import HS_LOG_GLOB, HS_LOG_GLOBS
 from extract_game import split_game_chunks
 import outcome_audit
 import replay_store
@@ -362,6 +362,30 @@ def build(log_path, game_index=1):
     }
 
 
+def log_path_for(session, log):
+    """The on-disk session log a stored replay's pointer names, or None.
+
+    `session` is the session DIRECTORY's name and `log` the log's basename —
+    the pair `build` records and `replay_store.game_gid` hashes. Both known
+    shapes are searched (`config.log_globs`), because a macOS install writes a
+    flat `Logs/Power.log` where Windows writes `Hearthstone_*/Power.log`.
+
+    It is a function rather than three lines inside `rebuild` because the dev
+    live-replay tool (live_replay.py) resolves the same pointer to slice the
+    same game, and "which file is this saved game" must have ONE answer: a
+    second copy that drifted by one directory level would send Rebuild and the
+    dev view to two different games.
+    """
+    if not session or not log:
+        return None
+    for pattern in HS_LOG_GLOBS:
+        for p in glob.glob(pattern):
+            if (os.path.basename(os.path.dirname(p)) == session
+                    and os.path.basename(p) == log):
+                return p
+    return None
+
+
 def rebuild(rid, root=None):
     """Re-derive one stored replay from its own source log (2026-10-08).
 
@@ -375,10 +399,6 @@ def rebuild(rid, root=None):
     Hearthstone ROTATES its session dirs, so a missing log is the expected
     failure: (None, error) rather than a raise. (rep, None) on success.
     """
-    import glob as _glob
-    import replay_store
-    from config import HS_LOG_GLOBS
-
     stored = replay_store.load(rid, root=root)
     if stored is None:
         return None, f"no saved replay {rid!r}"
@@ -388,15 +408,7 @@ def rebuild(rid, root=None):
     if not session or not log:
         return None, ("this saved replay does not record which log it "
                       "came from, so it cannot be rebuilt")
-    path = None
-    for pattern in HS_LOG_GLOBS:
-        for p in _glob.glob(pattern):
-            if (os.path.basename(os.path.dirname(p)) == session
-                    and os.path.basename(p) == log):
-                path = p
-                break
-        if path:
-            break
+    path = log_path_for(session, log)
     if not path:
         return (None, "the session log for this replay is gone — "
                       "Hearthstone rotates its logs, so older games may "

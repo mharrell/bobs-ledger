@@ -206,7 +206,8 @@ def _replay_already_saved(log_path, game_no):
         return False
 
 
-def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
+def _advise_pick(coach, log_path=None, log_offset=None, game_no=None,
+                 record=True):
     """A pending pick with no shop yet (hero selection) — rank it directly.
 
     The buy-phase loop can't fire here: hero selection has no tavern offers
@@ -214,6 +215,10 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     this path the hero pick (the most consequential pick of the game) never
     showed. Pushes a minimal analysis (the "Choose 1" overlay box) and prints
     the ranked options.
+
+    `record=False` is the dev live-replay seam (live_replay.py): a replayed
+    game must show the pick panel this function builds and write nothing to
+    the decision log. Default True leaves every live call site unchanged.
     """
     global _last_state
     c = coach.choice
@@ -260,8 +265,9 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     # session, which is what the beta corpus then shipped (2026-10-02).
     _last_state = state
     coach_ui.update_analysis(a)
-    decision_log.record(a, log_path=log_path, log_offset=log_offset,
-                        game_no=game_no)
+    if record:
+        decision_log.record(a, log_path=log_path, log_offset=log_offset,
+                            game_no=game_no)
     print("\n" + "=" * 52)
     # The console copy of the pick panel: the facts each option carries, in the
     # order the game offered them (rows arrive score-ordered — that order is
@@ -274,7 +280,8 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None):
     print("=" * 52 + "\n", flush=True)
 
 
-def _advise(coach, force=False, log_path=None, log_offset=None, game_no=None):
+def _advise(coach, force=False, log_path=None, log_offset=None, game_no=None,
+            record=True):
     """Analyze the current incremental state, push to the overlay, and print.
 
     Skips the text print if the decision state (gold, tier, board, shop) is
@@ -289,6 +296,13 @@ def _advise(coach, force=False, log_path=None, log_offset=None, game_no=None):
     decision state as advised), False when analyze produced nothing or threw
     — the monitor retries those (2026-09-08: a state marked advised while the
     analysis silently failed meant no advice for the rest of the buy phase).
+
+    `record=False` is the dev live-replay seam (live_replay.py). The page must
+    show exactly the payload the live loop would push for that moment, and a
+    replayed game must reach no record at all: a replay is not a played game,
+    and the corpus joins on (log, byte offset, game) — a replayed game would
+    land there as a second, differently-timed read of the same moments.
+    Default True leaves every live call site unchanged.
     """
     global _last_state
     try:
@@ -300,8 +314,9 @@ def _advise(coach, force=False, log_path=None, log_offset=None, game_no=None):
         if fingerprint == _last_state and not force:
             return True  # nothing the advice depends on has changed
         _last_state = fingerprint
-        decision_log.record(a, log_path=log_path, log_offset=log_offset,
-                            game_no=game_no)
+        if record:
+            decision_log.record(a, log_path=log_path, log_offset=log_offset,
+                                game_no=game_no)
         print("\n" + "=" * 52)
         print(describe(a))
         print("=" * 52 + "\n", flush=True)

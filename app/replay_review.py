@@ -45,16 +45,16 @@ def _phases(chunk):
     return bounds
 
 
-def _advise_point(lines, phase_lo, phase_hi):
-    """Feed from game start; return (analysis, stop_index) at the exact moment
-    live.py advises (shop parsed after MAIN_ACTION).
+def feed_to_settle(coach, lines, phase_lo, phase_hi, start=0):
+    """Feed `lines[start:]` through `coach` to the settle point of the buy
+    phase that begins at `phase_lo`; return (stop_index, saw_offers).
 
     The live monitor fires at the end of a ~1s poll batch, by which time the
     options block has fully arrived. Feeding line-by-line and firing on the
     first tavern offer instead ranks a PARTIAL shop (one offer) — advice that
     was never actually shown live (the t9/t15 one-card rankings were this
-    artifact). Fire once the offer set has been stable for a stretch, like the
-    settled state the live loop actually advises on.
+    artifact). So the settle rule is "the offer set has been stable for a
+    stretch", which is the settled shop the live loop actually advises on.
 
     The coach is ALSO analyzed at each buy-phase boundary while feeding, exactly
     as live.py does, and that is not cosmetic: `analyze()` is what assigns
@@ -71,16 +71,22 @@ def _advise_point(lines, phase_lo, phase_hi):
     order, the 09-22 evening game 2 fatal turn flips from
     "ahead on paper — 346 vs ~163" to "behind — 346 vs ~872, seen 1 round ago;
     don't take this fight".
+
+    ONE OWNER FOR THE CADENCE (2026-10-12). `_advise_point` (the review) and
+    the dev live-replay driver both need "the moment live.py advises in phase
+    N", and they must not answer it with two copies of this loop: the driver
+    shows a payload on the real overlay page, so a cadence that drifted here
+    would put frames on screen that no game ever produced. The caller owns the
+    coach, so the review gets a fresh one per phase while the driver keeps a
+    single one and resumes at `start` where the previous phase settled.
     """
-    import live_coach
-    coach = live_coach.LiveCoach()
     stop = len(lines)
     armed = False
     saw_offers = False
     prev_offers = None
     last_change = 0
     SETTLE = 20  # lines without new offers = the options block is complete
-    for j in range(0, phase_hi if phase_hi is not None else len(lines)):
+    for j in range(start, phase_hi if phase_hi is not None else len(lines)):
         line = lines[j]
         if j >= phase_lo and "tag=STEP value=MAIN_ACTION" in line:
             armed = True
@@ -98,6 +104,19 @@ def _advise_point(lines, phase_lo, phase_hi):
             elif offers and j - last_change >= SETTLE:
                 stop = j + 1
                 break
+    return stop, saw_offers
+
+
+def _advise_point(lines, phase_lo, phase_hi):
+    """Feed from game start; return (analysis, stop_index, saw_offers) at the
+    exact moment live.py advises (shop parsed after MAIN_ACTION).
+
+    A fresh coach, fed by `feed_to_settle` — which owns the cadence, the two
+    rules it encodes and the measurements behind them.
+    """
+    import live_coach
+    coach = live_coach.LiveCoach()
+    stop, saw_offers = feed_to_settle(coach, lines, phase_lo, phase_hi)
     return coach.analyze(), stop, saw_offers
 
 

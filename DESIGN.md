@@ -455,6 +455,17 @@ API (verify whether the hosted API accepts `image_url` in `content`). See
   - `live.py` — live monitor + overlay server.
   - `coach_ui.py` — overlay (two-pane Decide/Reference on wide windows, prices,
     card art).
+  - `live_replay.py` — **dev-only** live replay (2026-10-12): drives the real
+    overlay from a FINISHED game so Another Round can be looked at without
+    playing — `n`/`p` walk the buy phases, `k` reaches the hero pick and the
+    mid-game Choose-1 panels, `e` ends the game onto the real end-of-game card
+    and builds its review. Every frame is pushed through the live functions
+    (`live._advise` / `live._advise_pick` / `coach_ui.show_game_over`) with
+    `record=False`, so it shows what a live page shows and writes nothing;
+    `e` refuses for a game the log says has not ended, because the review is
+    where the plan lives. Excluded from the release zip with its tests, and
+    never documented in the README: a "replay mode" in a player's download
+    would read as a product feature.
   - `validate_growth.py` — simulator validation against real games.
   - `replay_stats.py` — deterministic replay-analysis pipeline (corpus stats).
   - `replay_review.py` — per-phase coach-recommendation vs player-actions diff.
