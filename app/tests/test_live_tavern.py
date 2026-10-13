@@ -97,13 +97,34 @@ class TestTheBranch(unittest.TestCase):
         self.assertIn("el('div', 'tavern live')", src,
                       "the tavern view has to be scoped to .tavern.live, or the "
                       "Settle Up Tavern rules and these leak into each other")
-        for part in ("lvStatus", "lvTribes", "lvShop", "lvBoardHand", "lvWaiting",
-                     "lvCompsScreen", "lvLobby", "lvFacts"):
+        for part in ("lvStatus", "lvTribes", "lvBody"):
             self.assertIn(part, src)
+        # The sections themselves (fix list round 4 item 5): the renderer builds
+        # the page from ONE list of section names, so a section cannot mean one
+        # thing in a column and another in the accordion.
+        body = _function("lvPanelBody")
+        for part in ("lvShop", "lvBoardHand", "lvWaiting", "lvCompsScreen",
+                     "lvLobbyBody", "lvFacts", "lvOpponent", "lvPick"):
+            self.assertIn(part, body)
 
-    def test_the_tab_row_is_the_screens_not_the_rail(self):
-        self.assertIn("const LIVE_TABS = [['shop', 'Shop'], "
-                      "['comps', 'Comps'], ['lobby', 'Lobby']];", coach_ui._HTML)
+    def test_the_tab_row_is_gone_and_the_sections_are_the_page(self):
+        """REVERSED 2026-10-13 (fix list round 4 item 5) from
+        `test_the_tab_row_is_the_screens_not_the_rail`, which pinned §4.1's
+        `Shop | Comps | Lobby` row. The row selected between exclusive screens;
+        above 1180px of box width every section is on screen at once and below it
+        they are all sections of one accordion, so there is nothing left for it to
+        select — the row, its constant and its CSS are all gone, and the live rule
+        for a class nothing carries is how a removed control comes back."""
+        html = coach_ui._HTML
+        self.assertNotIn("LIVE_TABS", html)
+        self.assertNotIn("_liveTab", html)
+        # The CSS for the removed row is gone, and the ONE surviving mention is
+        # the comment in its place — a rule is what could bring the row back.
+        self.assertNotIn(".tavern.live .lv-tabs", html)
+        self.assertIn("has no element to style at any width now", html)
+        # The tab row's successor: the section names, in one place.
+        self.assertIn("lvSection('Tavern'", _function("lvColumns"))
+        self.assertIn("lvSection('Facts'", _function("lvAccordion"))
 
 
 class TestTheDesignsLanguageRules(unittest.TestCase):
@@ -114,11 +135,12 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
     TAVERN functions only.
     """
 
-    TAVERN = ("lvStatus", "lvTribes", "lvFacts", "lvCompsBrowse", "lvCompDetail",
-              "lvCompCompare", "lvCompsScreen", "lvCompRow", "lvCompStats",
-              "lvCompSortRows", "lvSlot", "lvSlotCap", "lvSlots", "lvSlotLegend",
-              "lvOwned", "lvLobby", "lvShop", "lvBoard", "lvHand", "lvBoardHand",
-              "lvWaiting", "lvPick", "lvPickControls", "lvTabs", "renderLiveTavern",
+    TAVERN = ("lvStatus", "lvTribes", "lvFacts", "lvCompsBrowse", "lvCompsBody",
+              "lvCompDetail", "lvCompCompare", "lvCompsScreen", "lvCompRow",
+              "lvCompStats", "lvCompSortRows", "lvSlot", "lvSlotCap", "lvSlots",
+              "lvSlotLegend", "lvOwned", "lvLobbyBody", "lvShop",
+              "lvBoard", "lvHand", "lvBoardHand",
+              "lvWaiting", "lvPick", "lvPickControls", "renderLiveTavern",
               "lvCard", "lvKV", "lvPanel", "lvEmptyRow", "lvVal",
               # Fix list round 4 items 3 and 4: the rolled-past row, the panel's
               # read age, the tavern/opponent mix and the next-opponent panel.
@@ -126,7 +148,12 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
               # §1, and a function it does not know about is a screen it does
               # not check.
               "lvPassed", "lvMix", "lvMixRow", "lvReadAge", "lvAgeText",
-              "lvOpponent", "oppStatsLine", "oppMixLine")
+              "lvOpponent", "oppStatsLine", "oppMixLine",
+              # Fix list round 4 item 5: the layout. `lvSectionLine` is the one
+              # that matters most — a one-line summary in a header is exactly
+              # where a verdict would sneak onto the page.
+              "lvBody", "lvColumns", "lvAccordion", "lvSection", "lvSectionLine",
+              "lvPanelBody", "lvCompsNote", "lvPicking")
 
     def _tavern_source(self):
         return "\n".join(filter(None, (_function(n) for n in self.TAVERN)))
@@ -285,7 +312,9 @@ class TestTheCompScreensAtSource(unittest.TestCase):
     def test_the_browse_cap_and_the_compare_limit_are_named_constants(self):
         self.assertIn("const LIVE_COMP_ROWS = 6;", coach_ui._HTML)
         self.assertIn("const LIVE_COMPARE_MAX = 3;", coach_ui._HTML)
-        src = _function("lvCompsBrowse")
+        # The cap lives in the BROWSE BODY (fix list round 4 item 5: the panel
+        # wrapper moved to `lvSection`, the list did not).
+        src = _function("lvCompsBody")
         self.assertIn("LIVE_COMP_ROWS", src)
         src = _function("lvCompRow")
         self.assertIn("LIVE_COMPARE_MAX", src)
@@ -302,39 +331,69 @@ class TestTheCompScreensAtSource(unittest.TestCase):
         # classic classes and is cached page-wide.
         self.assertIn("_lvGuideCache", coach_ui._HTML)
 
-    def test_the_facts_table_is_the_rail_and_not_a_tab(self):
-        """§4.1's tab row is `Shop | Comps | Lobby`; §4.2 puts the facts table in
-        the rail. Keeping it there means it is never hidden — and it can only
-        say anything once."""
-        self.assertIn("const LIVE_TABS = [['shop', 'Shop'], "
-                      "['comps', 'Comps'], ['lobby', 'Lobby']];", coach_ui._HTML)
-        self.assertIn("let _liveTab = 'shop';", coach_ui._HTML)
-        src = _function("renderLiveTavern")
-        self.assertIn("rail.appendChild(lvFacts(a));", src)
-        self.assertNotIn("_liveTab === 'facts'", src)
+    def test_the_facts_table_is_a_section_and_never_a_screen_of_its_own(self):
+        """REVERSED 2026-10-13 (fix list round 4 item 5) from
+        `test_the_facts_table_is_the_rail_and_not_a_tab`. The rail is gone with
+        the tab row it sat beside: the facts table is column 3 of the
+        three-column layout and the PINNED strip of the accordion, and it is one
+        panel either way — `lvFacts` returns the table and `lvSection` wraps it,
+        so there is exactly one `.lv-pn` and one heading for it. `_liveTab` and
+        `LIVE_TABS` are gone with the row, so "the facts table is not one of the
+        tabs" is now true by there being no tabs.
+        """
+        self.assertNotIn("LIVE_TABS", coach_ui._HTML)
+        self.assertNotIn("_liveTab", coach_ui._HTML)
+        # One section per arrangement, and the facts table is one of them.
+        cols = _function("lvColumns") or ""
+        acc = _function("lvAccordion") or ""
+        self.assertEqual(cols.count("lvSection('Facts'"), 1)
+        self.assertEqual(acc.count("lvSection('Facts'"), 1)
+        # `lvFacts` builds the TABLE, not a panel: a panel here would nest one
+        # `.lv-pn` inside another and give the section two headings.
+        self.assertNotIn("'lv-pn'", _function("lvFacts") or "")
 
     def test_the_focus_ring_and_the_target_sizes_are_declared(self):
         """§8: "Visible focus ring (2px `--sel`, with offset) on all controls;
         44px minimum click targets for buttons and tabs." The ring is scoped to
         `.tavern`, so it reaches both Tavern viewers and leaves the classic pages
-        with the browser's own."""
+        with the browser's own.
+
+        The tab row's own entry went with the tab row (round 4 item 5); its
+        successor is the accordion section header, which is a `<h3>` carrying a
+        click handler, so it is in this list instead.
+        """
         html = coach_ui._HTML
         self.assertIn(".tavern :focus-visible { outline:2px solid var(--tsel); "
                       "outline-offset:2px; }", html)
-        for sel in (".tavern.live .lv-tabs button", ".tavern.live .lv-more",
+        for sel in (".tavern.live .lv-acc > h3", ".tavern.live .lv-more",
                     ".tavern.live .lv-back", ".tavern.live .lv-gobtn"):
             block = re.search(re.escape(sel) + r"\s*\{([^}]*)\}", html)
             self.assertIsNotNone(block, f"{sel} lost its rule")
             self.assertIn("min-height:44px", block.group(1),
                           f"{sel} is under the design's 44px minimum target")
 
-    def test_every_screen_switch_is_a_click_away_from_the_list(self):
-        src = _function("renderLiveTavern")
-        for branch in ("_liveTab === 'comps'", "_liveTab === 'lobby'",
-                       "a.choice && a.choice.ranked"):
-            self.assertIn(branch, src, f"the tab branch {branch} is missing")
-        self.assertIn("_liveComp = null;", src,
-                      "switching tabs has to drop the open comp detail")
+    def test_every_section_switch_is_a_click_away_from_the_list(self):
+        """REVERSED 2026-10-13 (fix list round 4 item 5) from
+        `test_every_screen_switch_is_a_click_away_from_the_list`, which pinned
+        `_liveTab`'s three branches. The screens are sections now, and the click
+        that reaches one is the header's own — in the accordion it is the only
+        way (the section is `display:none` until it is opened), and in the
+        three-column layout every section is visible, so the equivalent claim is
+        that the comps list is one click from its own Detail and back."""
+        cols = _function("lvColumns") or ""
+        self.assertIn("lvPicking(a)", cols)
+        for section in ("'Tavern'", "'Board and hand'", "'Comps'",
+                        "'Next opponent'", "'Lobby'"):
+            self.assertIn(section, cols,
+                          f"the layout lost its {section} section")
+        # The accordion header is a real control: clickable, keyboard-reachable,
+        # and it carries the state it toggles.
+        sec = _function("lvSection") or ""
+        self.assertIn("h.onclick = flip;", sec)
+        self.assertIn("h.onkeydown", sec)
+        self.assertIn("aria-expanded", sec)
+        self.assertIn("_liveComp = null;", _function("lvCompDetail") or "",
+                      "the back link has to drop the open comp detail")
 
 
 class TestTheRoundsFourthList(unittest.TestCase):
@@ -405,7 +464,7 @@ class TestTheRoundsFourthList(unittest.TestCase):
         src = _function("lvPassed") or ""
         self.assertIn("a.shop_passed", src)
         self.assertIn("s.card", src)
-        for bad in ("shop_eids", "\.get(s\.card", "names[s.card]"):
+        for bad in ("shop_eids", r"\.get(s\.card", "names[s.card]"):
             self.assertNotIn(bad, src,
                              "the rolled-past row keys something by card id")
         # §5's data rule and item 3's "never empty without a state".
@@ -421,8 +480,13 @@ class TestTheRoundsFourthList(unittest.TestCase):
         self.assertIn("lvReadAge()", _function("lvPanel") or "")
         self.assertIn("lvReadAge()", _function("lvWaiting") or "",
                       "the empty shop is the panel where the age matters most")
-        self.assertIn("document.getElementById('lv-read')",
+        # A CLASS, not an id (fix list round 4 item 5): the Tavern panel is built
+        # in BOTH arrangements, so an id would be duplicated in one document and
+        # `getElementById` would fill whichever came first, leaving the other
+        # line empty forever.
+        self.assertIn("querySelectorAll('.lv-read')",
                       _function("tickReadAge") or "")
+        self.assertNotIn(".id = 'lv-read'", coach_ui._HTML)
 
     def test_the_mix_is_counted_per_offer_where_the_cards_are_known(self):
         """§5's data rule: a card neither DB carries contributes NOTHING rather

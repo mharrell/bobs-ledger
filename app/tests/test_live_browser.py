@@ -205,27 +205,151 @@ _DRIVER = r"""
   const rec = (k, v) => recs.push(k + '=' + String(v));
   const SHOTS = __SHOTS__;
   const txt = el => el ? el.textContent : '';
+  // WHICH ARRANGEMENT IS ON SCREEN (fix list round 4 item 5): both are built,
+  // because the width that decides is a CONTAINER query and JS cannot read its
+  // answer — so this ASKS THE LAYOUT instead. The sheet leaves exactly one of the
+  // two displayed, and a displayed grid has a width while a `display:none` one
+  // measures 0, so the wider box is the one on screen. Nothing anywhere in this
+  // driver forces a display: the widths measured have to be the ones the real
+  // page produces, and an inline override would measure a layout the player never
+  // sees. `shot()` needs the same answer as `facts()` — a page-wide search for a
+  // section called "Comps" finds the HIDDEN one first — so it is one function.
+  function shownArrangement() {
+    const boxes = [...document.querySelectorAll('.tavern.live .lv-main')];
+    let best = null;
+    boxes.forEach(b => {
+      if (!best
+          || b.getBoundingClientRect().width > best.getBoundingClientRect().width) {
+        best = b;
+      }
+    });
+    return best;
+  }
+  //: A panel by the TITLE in its heading (the text node — the one-line summary
+  //: lives in a span beside it), inside the arrangement on screen. The
+  //: end-of-game card has no arrangements, so a page-wide fallback covers it.
+  function sectionPanel(want) {
+    const scope = shownArrangement() || document;
+    return [...scope.querySelectorAll('.lv-pn')].find(x => {
+      const hd = x.querySelector('h3');
+      if (!hd) return false;
+      let t = '';
+      hd.childNodes.forEach(n => {
+        if (n.nodeType === 3) t += n.textContent;
+      });
+      return t.trim() === want;
+    });
+  }
   function facts(name) {
     const root = document.querySelector('.tavern.live');
-    const q = s => root ? root.querySelectorAll(s) : [];
-    const one = s => root ? root.querySelector(s) : null;
+    const body = root ? root.querySelector('.lv-body') : null;
+    // The end-of-game CARD has no arrangements at all — one centred panel and its
+    // own entry point (`renderTavernGameOver`) — so there the root IS the scope.
+    const scope = shownArrangement() || root;
+    const arr = !body ? (root ? 'card' : '')
+              : (scope && scope.classList.contains('lv-layout-cols') ? 'cols'
+                 : 'acc');
+    const q = s => scope ? scope.querySelectorAll(s) : [];
+    const one = s => scope ? scope.querySelector(s) : null;
+    // The page chrome ABOVE the arrangements — the status bar and the tribe row
+    // — is on the root, not inside either arrangement (round 4 item 5).
+    const rq = s => root ? root.querySelectorAll(s) : [];
+    const rone = s => root ? root.querySelector(s) : null;
+    // A root-wide read that skips the HIDDEN arrangement: the chrome above the
+    // arrangements has to be read from the root, and a page-wide `.lv-chip`
+    // would count the comps panel's controls twice (both arrangements build
+    // them). `offsetParent` is null for the arrangement the container query has
+    // turned off.
+    const live = n => !!n.offsetParent;
+    const all = s => [...rq(s)].filter(live);
     const o = {};
     o.tavern = root ? 1 : 0;
-    o.hero = txt(one('.lv-hero'));
-    o.stats = [...q('.lv-st')]
+    o.arr = arr;
+    o.bodyw = body ? Math.round(body.getBoundingClientRect().width) : 0;
+    o.hero = txt(rone('.lv-hero'));
+    o.stats = all('.lv-st')
       .map(d => txt(d.querySelector('small')) + ':' + txt(d.querySelector('b')))
       .join('|');
-    o.chips = [...q('.lv-chip')].map(c => c.textContent).join('|');
-    o.outchips = [...q('.lv-chip.out')].map(c => c.textContent).join('|');
-    o.tabs = [...q('.lv-tabs button')].map(b => b.textContent).join('|');
+    o.chips = all('.lv-chip').map(c => c.textContent).join('|');
+    o.outchips = all('.lv-chip.out').map(c => c.textContent).join('|');
+    // The tab row is GONE (round 4 item 5) and `lv-tabs` has no element to
+    // count — so these two read what replaced it. `tabh` stays a measurement of
+    // a real control: the accordion header, which is the tab row's successor.
+    o.tabs = q('.lv-tabs button').length;
     o.tabon = txt(one('.lv-tabs button.on'));
-    o.panels = [...q('.lv-pn > h3')].map(h => h.textContent).join('|');
+    o.tabh = (function () {
+      const h = one('.lv-acc > h3');
+      return h ? Math.round(h.getBoundingClientRect().height) : 0;
+    })();
+    // The panel names, from the h3's own TITLE only: the header carries the
+    // one-line summary in a span beside it (`lv-sum`), and reading the whole h3
+    // would fold the summary into the panel name every test here pins.
+    const title = h => {
+      let s = '';
+      h.childNodes.forEach(n => {
+        if (n.nodeType === 3) s += n.textContent;
+      });
+      return s.trim();
+    };
+    const secs = [...q('.lv-pn')];
+    const head = p => p.querySelector('h3');
+    o.panels = secs.filter(head).map(p => title(head(p))).join('|');
+    o.panelcount = secs.length;
+    o.sums = secs.map(p => txt(p.querySelector('.lv-sum'))).join('|');
+    o.shut = secs.filter(p => p.classList.contains('shut'))
+      .map(p => title(head(p))).join('|');
+    o.accs = q('.lv-acc').length;
+    // Whether the Facts panel is the pinned strip, and where it sits.
+    o.factspin = (function () {
+      const p = one('.lv-pin');
+      return p ? getComputedStyle(p).position : '';
+    })();
+    o.factsat = (function () {
+      const p = one('.lv-pin');
+      if (!p) return '';
+      const r = p.getBoundingClientRect();
+      return Math.round(r.left) + ',' + Math.round(r.top);
+    })();
+    // THE PIN, MEASURED (item 5): scroll the page and see which offsets move.
+    // `window.scrollTo` needs a document taller than the window, which is why
+    // the two ends of this are compared rather than any one of them asserted.
+    o.scroll = (function () {
+      const p = one('.lv-pin');
+      const first = one('.lv-pn');
+      if (!p || !first) return '';
+      const before = [Math.round(first.getBoundingClientRect().top),
+                      Math.round(p.getBoundingClientRect().top)];
+      window.scrollTo(0, 300);
+      const after = [Math.round(first.getBoundingClientRect().top),
+                     Math.round(p.getBoundingClientRect().top)];
+      window.scrollTo(0, 0);
+      // A COMMA, not an arrow: the harness reads these back as `key=value`
+      // pairs, and every value has to be one token.
+      return before.join('/') + ',' + after.join('/');
+    })();
+    // The three columns of the three-column arrangement, in order.
+    o.colw = (function () {
+      if (arr !== 'cols') return '';
+      return [...scope.querySelectorAll('.lv-col')]
+        .map(c => Math.round(c.getBoundingClientRect().width)).join('|');
+    })();
+    o.colx = (function () {
+      if (arr !== 'cols') return '';
+      return [...scope.querySelectorAll('.lv-col')]
+        .map(c => Math.round(c.getBoundingClientRect().left)).join('|');
+    })();
+    // The panel names per column, so "column 2 is Comps" is measured.
+    o.colpanels = (function () {
+      if (arr !== 'cols') return '';
+      return [...scope.querySelectorAll('.lv-col')].map(c =>
+        [...c.querySelectorAll('.lv-pn > h3')].map(title).join('+')).join('|');
+    })();
     // The first panel's own text, for claims about ONE panel rather than the
     // page: "Lobby tribes" belongs to the page's tribe row, and the comps panel
     // must not have a second copy of it (round 3 item 4).
     o.paneltext = (function () {
       const p = one('.lv-pn');
-      return p ? p.textContent.replace(/\\s+/g, ' ').trim() : '';
+      return p ? p.textContent.replace(/\s+/g, ' ').trim() : '';
     })();
     // Label/value from the row's FIRST and LAST child: the comps row's label is
     // itself a <b> wrapping the name, so a bare querySelector('b') read the name
@@ -277,33 +401,35 @@ _DRIVER = r"""
       document.getElementById('col-decide')).display === 'none' ? 1 : 0;
     o.decidekids = document.getElementById('col-decide').children.length;
     o.label = txt(one('.lv-lbl'));
+    // The TRIBE ROW's own label: `.lv-lbl` first is the tavern mix or the comps
+    // Sort chip now that every section renders at once (round 4 item 5).
+    o.tribelbl = txt(rone('.lv-tribes .lv-lbl'));
     o.opplabel = txt(one('.lv-opp'));
-    o.tabh = (function () {
-      const b = one('.lv-tabs button');
-      return b ? Math.round(b.getBoundingClientRect().height) : 0;
-    })();
     o.classic = document.getElementById('col-decide').children.length;
     // --- the fix lists' own facts (rounds 1 and 2, 2026-10-09) ------------
     // 1. Live fills the window: the tavern container against the viewport, and
-    //    where the main column and the rail actually sit (>=1200 side by side).
-    //    Measured on the ROOT: `root.querySelector('.tavern.live')` looks for a
-    //    DESCENDANT of it and finds nothing, which read as a 0px-wide view.
+    //    where the sections actually sit. Measured on the ROOT:
+    //    `root.querySelector('.tavern.live')` looks for a DESCENDANT of it and
+    //    finds nothing, which read as a 0px-wide view.
     o.tavernw = root ? Math.round(root.getBoundingClientRect().width) : 0;
     o.vpw = window.innerWidth;
-    o.colat2 = (function () {
-      const a = one('.lv-col'), b = one('.lv-rail');
-      if (!a || !b) return '';
-      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
-      return Math.round(ra.left) + ',' + Math.round(ra.top) + '|'
-           + Math.round(rb.left) + ',' + Math.round(rb.top);
-    })();
+    // Where the panel sections sit relative to each other, whatever the mode:
+    // stacked (different tops) or side by side (one top, different lefts).
+    o.sectat = [...q('.lv-pn')].map(p => {
+      const r = p.getBoundingClientRect();
+      return Math.round(r.left) + ',' + Math.round(r.top);
+    }).join('|');
     // 2. The waiting state, and the empty strip that used to sit above it.
     o.statebarhidden = document.getElementById('statebar').hidden ? 1 : 0;
-    o.herocls = one('.lv-hero') ? one('.lv-hero').className : '';
-    o.missvals = q('.lv-st b.miss').length;
+    o.herocls = rone('.lv-hero') ? rone('.lv-hero').className : '';
+    o.missvals = all('.lv-st b.miss').length;
     o.inline = [...q('.lv-inline')].map(d => d.textContent).join('|');
     o.bhlabels = [...q('.lv-bh .lv-lbl')].map(d => d.textContent).join('|');
     o.bhhalf = q('.lv-bh > div').length;
+    // Where the board and the hand sit vertically, so "stacked under 700px" is
+    // measured rather than inferred from the grid rule that does it.
+    o.tops = [...q('.lv-bh > div')]
+      .map(d => Math.round(d.getBoundingClientRect().top)).join('|');
     // 3. One art treatment, spell tags, names.
     o.kinds = [...q('.tile .tag-kind')].map(d => d.textContent).join('|');
     o.renameless = q('.lv-opt .tname').length;
@@ -314,11 +440,11 @@ _DRIVER = r"""
     })();
     o.noart = q('.tile .thumb').length;
     // 4. The tribe row: one chip per tribe, amber when set, dimmed when not.
-    o.chipcls = [...q('.lv-tribes .lv-chip')]
+    o.chipcls = all('.lv-tribes .lv-chip')
       .map(c => c.textContent + ':' + (c.classList.contains('active') ? 'active'
              : c.classList.contains('dim') ? 'dim'
              : c.classList.contains('out') ? 'out' : '?')).join('|');
-    o.nagacount = [...q('.lv-tribes .lv-chip')]
+    o.nagacount = all('.lv-tribes .lv-chip')
       .filter(c => c.textContent === 'NAGA' || c.textContent === 'Naga').length;
     // 5. The pick screen's own numbers and layout.
     o.picklbl = [...q('.lv-head small')].map(d => d.textContent).join('|');
@@ -329,6 +455,17 @@ _DRIVER = r"""
     o.pickctlvp = (function () {
       const n = one('.lv-pickctl');
       return n ? Math.round(n.getBoundingClientRect().height) : 0;
+    })();
+    // The COUNT above and the control line's own width: a row that is really one
+    // row is not as wide as its box, because the box is the panel.
+    o.pickctlw = (function () {
+      const n = one('.lv-pickctl');
+      return n ? Math.round(n.getBoundingClientRect().width) : 0;
+    })();
+    o.pickctlbox = (function () {
+      const n = one('.lv-pickctl');
+      if (!n || !n.parentNode) return 0;
+      return Math.round(n.parentNode.getBoundingClientRect().width);
     })();
     o.picknameh = (function () {
       const n = one('.lv-optname');
@@ -383,9 +520,27 @@ _DRIVER = r"""
       if (!r) return '';
       return getComputedStyle(r).gridTemplateColumns;
     })();
-    o.colw = [...q('.lv-ctier')].map(c => Math.round(c.getBoundingClientRect().width)).join('|');
-    o.colx = [...q('.lv-ctier')].map(c => Math.round(c.getBoundingClientRect().left)).join('|');
+    // The comps TIER columns. Named apart from `colw`/`colx` above, which are
+    // the three columns of the LAYOUT (round 4 item 5) — two different meanings
+    // of "column" in one view, and one driver key cannot be both.
+    o.ctierw = [...q('.lv-ctier')].map(c => Math.round(c.getBoundingClientRect().width)).join('|');
+    o.ctierx = [...q('.lv-ctier')].map(c => Math.round(c.getBoundingClientRect().left)).join('|');
     o.cols = [...q('.lv-ctier')].length;
+    // The COMP panel's own box, by its heading: with three columns, "how wide is
+    // the comps screen" is what decides how many tier columns fit in it, and
+    // `.lv-pn` first would be the Tavern panel.
+    o.compsw = (function () {
+      const p = [...q('.lv-pn')].find(x => {
+        const h = x.querySelector('h3');
+        if (!h) return false;
+        let t = '';
+        h.childNodes.forEach(n => {
+          if (n.nodeType === 3) t += n.textContent;
+        });
+        return t.trim() === 'Comps';
+      });
+      return p ? Math.round(p.getBoundingClientRect().width) : 0;
+    })();
     o.h4pos = (function () {
       const h = one('.lv-ctier > h4');
       return h ? getComputedStyle(h).position : '';
@@ -498,14 +653,27 @@ _DRIVER = r"""
       const n = one('.lv-pn');
       return n ? Math.round(n.getBoundingClientRect().width) : 0;
     })();
+    // The section HEADER's own box. It is the control that replaced the tab row
+    // (round 4 item 5), so its target size is measured rather than declared —
+    // and it is a `.lv-pn > h3`, which exists in BOTH arrangements, unlike the
+    // accordion-specific `.lv-acc`.
+    o.h3h = (function () {
+      const h = one('.lv-pn > h3');
+      return h ? Math.round(h.getBoundingClientRect().height) : 0;
+    })();
     // EVERY word the view puts on screen, for the §1 scan. The panel headers
     // and the status labels are in here too — a verdict can hide in a label.
     o.alltext = root ? root.textContent.replace(/\s+/g, ' ').trim() : '';
     // --- fix list round 4 items 3 and 4 -----------------------------------
     // A panel BY ITS HEADING, so "the next opponent's rows" cannot be answered
     // by some other panel's rows (the fixtures carry several .lv-kv tables).
-    const pn = title => [...q('.lv-pn')]
-      .find(p => txt(p.querySelector('h3')) === title);
+    // The heading's TITLE is the text node, not `textContent`: every header
+    // carries the round 4 item 5 one-line summary in a span beside the name, so
+    // `textContent` would read "Next opponentReno" and match nothing.
+    const pn = want => [...q('.lv-pn')].find(p => {
+      const h = p.querySelector('h3');
+      return h ? title(h) === want : false;
+    });
     // The offers that LEFT the shop this turn: one card per OFFER ENTITY.
     o.passedlbl = txt(one('.lv-passed .lv-lbl'));
     o.passedcards = q('.lv-passed .lv-card').length;
@@ -514,8 +682,10 @@ _DRIVER = r"""
     o.passedcaps = [...q('.lv-passed .lv-cap')].map(c => c.textContent)
       .join('|');
     o.passednote = txt(one('.lv-passed .lv-note'));
-    // How long ago the panel was read, ON the panel (item 3(b)).
-    o.readage = txt(document.getElementById('lv-read'));
+    // How long ago the panel was read, ON the panel (item 3(b)). A class, not
+    // the id it used to be: the Tavern panel exists in both arrangements (item
+    // 5), so an id would have been duplicated.
+    o.readage = txt(one('.lv-read'));
     // The tribe composition of the shop, and of the opponent's board.
     o.mixlbl = [...q('.lv-mix .lv-lbl')].map(d => d.textContent).join('|');
     o.mixchips = [...q('.lv-mixchip')].map(d => d.textContent).join('|');
@@ -550,7 +720,8 @@ _DRIVER = r"""
                            'picknameh', 'pickcardw', 'statebarhidden', 'cols',
                            'avgcells', 'hasavg', 'crowrows', 'unavail', 'ctlrows',
                            'toggleinnav', 'togglehidden', 'shopcards',
-                           'boardcards', 'passedcards', 'oppcards']
+                           'boardcards', 'passedcards', 'oppcards',
+                           'tabs', 'panelcount', 'accs', 'bodyw']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
@@ -585,18 +756,56 @@ _DRIVER = r"""
     _livePickOrder = 'offered';
     _livePickHidden = new Set();
     _liveViewer = s.viewer || 'tavern';
+    // THE OPEN/CLOSED SECTIONS ARE LOCALSTORAGE, NOT A MODULE VARIABLE (round 4
+    // item 5), so the reset above cannot reach them: a shot that shut a section
+    // would hand that to every shot after it, and the leak would be between
+    // SHOTS rather than inside one. Cleared first, then written when this shot
+    // asks for a state — so "nothing stored" is the default every shot starts
+    // from, and nothing else in this driver touches the key.
+    try { localStorage.removeItem('bl-lv-open'); }
+    catch (e) { /* private mode */ }
+    if (s.open != null) {
+      try { localStorage.setItem('bl-lv-open', s.open); }
+      catch (e) { /* private mode */ }
+    }
     // `pre` is the screen the player was looking at before this payload arrived
     // (a live payload, then the end-of-game one) — the only way to test that the
     // new card replaces it rather than leaving it behind.
     if (s.pre) {
-      _liveTab = s.pretab || 'shop';
       render(s.pre);
       (s.preclicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
     }
-    _liveTab = s.tab || 'shop';
     render(s.rep);
     if (s.click) clickCtl('.lv-pickctl .lv-chip', s.click);
     (s.clicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
+    // A panel by its heading TITLE, inside the arrangement that is ON SCREEN
+    // (`sectionPanel` above): both arrangements are in the DOM and both build a
+    // section called "Comps", so a page-wide search finds the hidden one first
+    // and reports that the section is not foldable — measured 2026-10-13.
+    if (s.reveal) {
+      const p = sectionPanel(s.reveal);
+      if (!p) throw new Error('no section titled ' + s.reveal);
+      const h = p.querySelector('h3');
+      if (h && h.getAttribute('role') === 'button'
+          && p.classList.contains('shut')) h.click();
+      window.scrollTo(0, Math.max(0, p.getBoundingClientRect().top
+                                     + window.scrollY - 8));
+    }
+    // `toggle`: click a section's header, then RE-RENDER the same payload — which
+    // is what the 5-second shop re-read does (`live.SHOP_REREAD_SECONDS`). The
+    // section's state is persisted, so a render that did not re-apply it from
+    // storage would pop the section back to its default right there, in front of
+    // the player.
+    if (s.toggle) {
+      const p = sectionPanel(s.toggle);
+      if (!p) throw new Error('no section titled ' + s.toggle);
+      const h = p.querySelector('h3');
+      if (!h || h.getAttribute('role') !== 'button') {
+        throw new Error(s.toggle + ' is not a foldable section');
+      }
+      h.click();
+      render(s.rep);
+    }
     // `settle`: the payload renders on the live tab and the SETTLE tab is then
     // opened, which is how "the live viewer flag is out of the way over there"
     // is measured rather than asserted from the source.
@@ -626,11 +835,23 @@ def _page(shots):
     return coach_ui._page_html().replace("</body>", driver + "</body>")
 
 
-def _shot(name, rep, viewer="tavern", tab="shop", click=None, clicks=None,
-          pre=None, pretab=None, preclicks=None, settle=False):
-    return {"name": name, "rep": rep, "viewer": viewer, "tab": tab,
+def _shot(name, rep, viewer="tavern", reveal=None, click=None, clicks=None,
+          pre=None, preclicks=None, settle=False, open=None, toggle=None):
+    """One shot.
+
+    `reveal` is the SECTION the player is looking at (the successor of the old
+    `tab`: every section is on the page now, so "the Comps screen" means "Comps
+    is the part of the page being read"). `open` is this shot's stored
+    open/closed state for the accordion — the `bl-lv-open` value written before
+    the render, e.g. `'-Comps'` for a shut Comps. `toggle` names a section whose
+    header is CLICKED after the render and then RE-RENDERS the same payload,
+    which is the 5-second re-read in miniature (fix list round 4 item 5: the
+    state has to survive it).
+    """
+    return {"name": name, "rep": rep, "viewer": viewer, "reveal": reveal,
             "click": click, "clicks": clicks or [], "pre": pre,
-            "pretab": pretab, "preclicks": preclicks or [], "settle": settle}
+            "preclicks": preclicks or [], "settle": settle, "open": open,
+            "toggle": toggle}
 
 
 #: Clicking a Browse row's control by the COMP it belongs to: every row carries
@@ -731,14 +952,33 @@ class _Rendered(unittest.TestCase):
     _outcome = None
 
     @classmethod
+    def size(cls):
+        """The window this class's shots are laid out in.
+
+        It is a class property rather than a constant because the LAYOUT is what
+        fix list round 4 item 5 makes width-dependent: a class whose claim is
+        about the accordion has to say so, or it would be measuring whatever the
+        default window happens to be (`browser.WIDE`), which is the whole failure
+        this harness exists to prevent — "a claim about the window is not a claim
+        about the container".
+        """
+        return browser.WIDE
+
+    @classmethod
     def shots(cls):
         raise NotImplementedError
 
     def setUp(self):
         cls = type(self)
-        if cls._outcome is None:
+        # `cls.__dict__`, not `cls._outcome`: the cache must be PER SUBCLASS. It
+        # was not, and the classes below that ask for a different window inherited
+        # whichever class ran first — so a class whose shots are about the
+        # accordion was reading the three-column layout rendered at 1400x900 and
+        # every one of its assertions failed on a page it never asked for
+        # (measured 2026-10-13, while adding the round 4 item 5 layout classes).
+        if "_outcome" not in cls.__dict__:
             try:
-                cls._outcome = _render(cls.shots())
+                cls._outcome = _render(cls.shots(), size=cls.size())
             except Exception as e:      # noqa: BLE001 - replayed right below
                 cls._outcome = e
         if isinstance(cls._outcome, BaseException):
@@ -752,10 +992,10 @@ class TestTheTavernLiveInABrowser(_Rendered):
     @classmethod
     def shots(cls):
         return [_shot("t", _payload()),
-                _shot("comps", _comps_payload(), tab="comps"),
+                _shot("comps", _comps_payload(), reveal="Comps"),
                 _shot("nocomps", _comps_payload(game_comps={}, tribe_pressure=[]),
-                      tab="comps"),
-                _shot("lobby", _payload(), tab="lobby"),
+                      reveal="Comps"),
+                _shot("lobby", _payload(), reveal="Lobby"),
                 _shot("notread", _payload(fragility=None, level_cost=None,
                                           board_stats=None, opp_stats=None,
                                           opp_lobby=None)),
@@ -776,7 +1016,11 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertEqual(self.got["t.outchips"], "NAGA",
                          "out-of-play tribes are their own state, never a ban "
                          "the player could undo")
-        self.assertIn("tap to correct", self.got["t.label"])
+        # The row's own label, not the first `.lv-lbl` on the page: the tavern
+        # mix and the comps Sort label come first now that every section is
+        # rendered at once (round 4 item 5), and `.lv-lbl` first would read one
+        # of those.
+        self.assertIn("tap to correct", self.got["t.tribelbl"])
 
     def test_a_tribe_out_of_play_appears_once_and_the_chips_are_marked(self):
         """Fix list round 1 item 3. The roster is every tribe the game has, so
@@ -794,35 +1038,55 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertEqual(got["t.chipcls"].count(":?"), 0,
                          "a chip with no state class at all")
 
-    def test_the_tab_row_selects_the_screen_and_opens_on_shop(self):
-        """§4.1's second tab row: `Shop | Comps | Lobby`. The facts table is not
-        one of them — it is the rail beside every screen (§4.2 lists it there),
-        so it is never hidden and never says anything twice.
+    def test_the_sections_are_the_whole_page_and_the_tabs_are_gone(self):
+        """REVERSED 2026-10-13 (fix list round 4 item 5). This pinned §4.1's tab
+        row — `Shop | Comps | Lobby`, in DOM order, with the Facts table beside
+        every screen — because the screens were exclusive and the row is what
+        selected one. Above 1180px of box width every section is on screen at
+        once and below it they are all sections of one accordion, so there is
+        nothing left for a tab row to select: a control that hides what is
+        already visible is not a fact, it is a way to hide one. The `lv-tabs`
+        class and its CSS went with it (see `test_live_tavern`).
 
-        The list is IN DOM ORDER and this pin is exact, which is the point: it
-        changed once, for fix list round 4 item 4, when the announced next
-        opponent got a panel of its own (`Next opponent`, in the main column
-        under Board and hand — the panel carries their last-seen BOARD, and a
-        row of 76px cards in the 340px rail wraps into a column of cards).
-        The Shop screen is the only one that grows it: the rail's Facts table
-        stays last, beside every screen.
+        What replaces it: the six sections, in DOM order, each with a heading —
+        and the tab row really gone, measured as an absence WITH a control, since
+        a count that can only ever be zero is not a measurement (the mistake
+        commit 62fb33d fixed in this very suite). The control is `panelcount`:
+        the selector that used to find the tabs still finds the panels.
         """
-        self.assertEqual(self.got["t.tabs"], "Shop|Comps|Lobby")
-        self.assertEqual(self.got["t.tabon"], "Shop")
+        for shot in ("t", "comps", "lobby"):
+            self.assertEqual(self.got[shot + ".tabs"], 0,
+                             f"{shot} still carries a tab row")
+            self.assertGreaterEqual(self.got[shot + ".panelcount"], 5,
+                                    f"{shot} rendered almost no sections, so the "
+                                    f"zero above is a selector that matches "
+                                    f"nothing rather than a removed tab row")
         self.assertEqual(self.got["t.panels"],
-                         "Tavern|Board and hand|Next opponent|Facts")
-        self.assertEqual(self.got["comps.panels"], "Comps|Facts")
-        self.assertEqual(self.got["lobby.panels"], "Lobby|Facts")
-        # §8: 44px minimum targets, measured rather than declared.
-        self.assertGreaterEqual(self.got["t.tabh"], 44)
+                         "Tavern|Board and hand|Comps|Facts|Next opponent|Lobby")
+        # The comps and lobby shots are the SAME page (round 4 item 5): every
+        # section is rendered, and `reveal` only scrolled to one of them.
+        self.assertEqual(self.got["comps.panels"], self.got["t.panels"])
+        self.assertEqual(self.got["lobby.panels"], self.got["t.panels"])
+        # §8: 44px minimum targets. The accordion header is the control that
+        # replaced the tabs; it is measured in `TestTheAccordionLayout`, at the
+        # width where the accordion is the arrangement on screen. What can be
+        # asserted HERE is that a section header is a real box rather than a
+        # 0-height artefact of a collapsed one.
+        self.assertGreaterEqual(int(self.got["t.h3h"]), 14,
+                                "a section header has no height")
 
-    def test_the_page_fills_the_window_and_the_rail_sits_beside_it(self):
+    def test_the_page_fills_the_window(self):
         """Fix list round 1 item 1: the tavern container was a flex rule inside a
         two-column GRID — and inside the flex COLUMN the page falls back to below
         1200x900, `flex-basis` is a height, so it did not stretch either.
         Measured before the fix: 815px of a 1384px window.
-        Round 2 item 9 sets the breakpoints: main + 340px rail at >=1200px,
-        stacked below it."""
+
+        The rail half of this test moved to the layout tests (fix list round 4
+        item 5, 2026-10-13): the view is no longer two columns of panels, it is
+        three columns above 1180px of box and an accordion below, so what
+        "beside it" means is measured in `TestTheColumnLayout` and
+        `TestTheAccordionLayout`. What stays here is the claim that still holds
+        in EVERY mode: the tavern container is the window."""
         # BOTH branches of `#app`'s layout: the grid (a tall window) and the flex
         # column (a short one).
         for size in ((1400, 1000), (1400, 900)):
@@ -830,26 +1094,22 @@ class TestTheTavernLiveInABrowser(_Rendered):
             self.assertGreater(got["f.tavernw"], got["f.vpw"] * 0.9,
                                f"the tavern view is {got['f.tavernw']}px wide in "
                                f"a {got['f.vpw']}px window at {size}")
-            # The two columns of the page itself: main left, rail right.
-            left, right = got["f.colat2"].split("|")
-            self.assertEqual(left.split(",")[1], right.split(",")[1],
-                             f"the rail is not level with the main column at {size}")
-            self.assertLess(int(left.split(",")[0]), int(right.split(",")[0]))
-        # 700-1200 stacks them (round 2 item 9).
-        mid = _render([_shot("m", _payload())], size=(1000, 900))
-        mleft, mright = mid["m.colat2"].split("|")
-        self.assertNotEqual(mleft.split(",")[1], mright.split(",")[1],
-                            "at 1000px the rail should be under the main column")
         # ...and below 700 the pick grid is a single column, with the board and
         # hand stacked rather than squeezed.
         narrow = _render([_shot("n", _choice_payload())], size=(600, 900))
         self.assertGreater(narrow["n.pickcolw"], 400,
                            "the pick grid is not a single column under 700px")
+        self.assertEqual(narrow["n.arr"], "acc",
+                         "600px is inside the accordion's range")
         bhn = _render([_shot("b", _payload())], size=(600, 900))
         self.assertEqual(bhn["b.bhhalf"], 2)
-        self.assertNotEqual(bhn["b.colat2"].split("|")[0].split(",")[1],
-                            bhn["b.colat2"].split("|")[1].split(",")[1],
-                            "the rail should be under the main column at 600px")
+        # The board and hand are STACKED at that width, not side by side: their
+        # tops differ, which is what the old rail comparison was really asking
+        # (`colat2` read the rail's own position).
+        bh = bhn["b.tops"].split("|")
+        self.assertEqual(len(bh), 2)
+        self.assertNotEqual(bh[0], bh[1],
+                            "the board and the hand should stack under 700px")
 
     def test_the_facts_are_the_numbers_behind_the_classic_verdicts(self):
         """...minus "Lethal at", which printed effective HP a second time under a
@@ -957,9 +1217,14 @@ class TestTheTavernLiveInABrowser(_Rendered):
     def test_an_empty_comps_tab_says_why_rather_than_showing_nothing(self):
         self.assertIn("No comps read yet", self.got["nocomps.empty"])
 
-    def test_the_lobby_tab_is_sightings_and_the_last_seen_board(self):
+    def test_the_lobby_section_is_sightings_and_the_last_seen_board(self):
+        """REVERSED 2026-10-13 (fix list round 4 item 5) from `…_tab_is_…`: the
+        Lobby is not a screen a tab selects any more, it is a section of the
+        page (column 3 in the three-column layout, a foldable section in the
+        accordion). Its content is what this test is about, and that is
+        unchanged — including the seat's own handle, which `lvOpponent` leaves
+        out on purpose and this panel has always carried."""
         got = self.got
-        self.assertEqual(got["lobby.tabon"], "Lobby")
         self.assertIn("Beast=2 of 3 seen seats (2+ copies)", got["lobby.kv"])
         self.assertIn("as of round 8", got["lobby.opplabel"])
 
@@ -1048,6 +1313,293 @@ class TestTheTavernLiveInABrowser(_Rendered):
                            "the way back to Classic is broken")
 
 
+class TestTheLayoutByWidth(_Rendered):
+    """Fix list round 4 item 5: three columns at a wide window, NO tabs.
+
+    The width that decides is the BOX's, not the window's, and the container query
+    cannot be read from JS — so each claim names the window it is about and
+    measures what the real sheet produced in it. The class's own shot is the
+    1400x900 default, whose box is 1325px, so it ALSO renders three columns: 1325
+    is past the 1180px the columns need, which is the answer "1400x900 is an
+    accordion window" would have got wrong.
+    """
+
+    @classmethod
+    def shots(cls):
+        return [_shot("w", _comps_payload())]
+
+    def test_the_default_window_is_already_three_columns(self):
+        """The harness's own 1400x900 window: box 1325px, columns 498.5/498.5/300.
+        Worth stating because `#app` is a flex COLUMN at that height, so the box is
+        the whole window minus the page's padding — a window-width rule would have
+        called this "inside 700-1500" and drawn an accordion over three columns
+        that fit."""
+        got = self.got
+        self.assertEqual(int(got["w.bodyw"]), 1325)
+        self.assertEqual(got["w.arr"], "cols")
+        self.assertEqual(got["w.colpanels"],
+                         "Tavern+Board and hand|Comps|Facts+Next opponent+Lobby")
+
+    def test_three_columns_at_a_1920_window(self):
+        """MEASURED 2026-10-13 at 1920x1080: three columns at 622/622/300 inside
+        a 1572px box. The box is 1572 and not 1592 because `#wrap` caps the PAGE
+        at 1600px (a pre-existing rule of the shell), so this is as wide as the
+        tavern view ever gets — which is why the numbers here and at a 3200px
+        window are the same, and why "wider window" is not a layout this view has
+        to answer for."""
+        got = _render([_shot("w", _comps_payload())], size=(1920, 1080))
+        self.assertEqual(got["w.arr"], "cols",
+                         f"a 1920x1080 window is not in the three-column layout "
+                         f"(box {got['w.bodyw']}px)")
+        widths = [int(v) for v in got["w.colw"].split("|")]
+        self.assertEqual(len(widths), 3, f"columns: {got['w.colw']}")
+        self.assertEqual(widths, [622, 622, 300])
+        xs = [int(x) for x in got["w.colx"].split("|")]
+        self.assertEqual(len(set(xs)), 3, "the three columns are not side by side")
+        self.assertEqual(xs, sorted(xs), "the columns are out of order")
+        # WHAT IS IN EACH ONE, in order: the two screens the player reads the
+        # game through | Comps | the reference material.
+        self.assertEqual(got["w.colpanels"],
+                         "Tavern+Board and hand|Comps|Facts+Next opponent+Lobby")
+
+    def test_the_tab_row_is_gone_at_that_width(self):
+        """§4.1's `Shop | Comps | Lobby` row selected between exclusive screens;
+        with every section on screen it has nothing left to select. Gone is
+        measured with a POSITIVE CONTROL, because a selector that matches nothing
+        would make this assertion pass on a page with no layout at all (the
+        mistake commit 62fb33d fixed in this same file)."""
+        got = _render([_shot("w", _comps_payload())], size=(1920, 1080))
+        self.assertEqual(got["w.tabs"], 0, "the tab row is still rendered")
+        self.assertEqual(got["w.panelcount"], 6,
+                         "the selector that counted the tabs found no SECTIONS "
+                         "either, so the zero above is not a measurement")
+        self.assertEqual(got["w.panels"],
+                         "Tavern|Board and hand|Comps|Facts|Next opponent|Lobby")
+
+    def test_a_shorter_window_still_gets_three_columns(self):
+        """The container query reads the BOX, and the box is the PAGE, which
+        `#wrap` caps at 1600px: measured, a 1920x900 window and a 1920x1080 one
+        both give it 1572px, because the 1600px cap is reached before the shell's
+        1200x900 grid branch can matter. So both branches of `#app` produce three
+        columns at this width, which is the claim — the layout does not flip when
+        the window gets shorter."""
+        for size in ((1920, 900), (1920, 1080), (3200, 1200)):
+            got = _render([_shot("s", _comps_payload())], size=size)
+            self.assertEqual(got["s.arr"], "cols", f"not three columns at {size}")
+            self.assertEqual(len(got["s.colw"].split("|")), 3, f"at {size}")
+            self.assertEqual(got["s.colpanels"].count("|"), 2, f"at {size}")
+
+    def test_the_width_that_switches_the_layout_is_the_boxes(self):
+        """The threshold measured as a THRESHOLD, on one payload: the box is the
+        window minus the page's 14px of padding each side, so 1200x900 gives it
+        1125px (under the 1180 the columns need) and 1250x900 gives it 1175px —
+        still under, because `#app` keeps its 340px rail until 1200x900 — and
+        1400x900 gives it 1325px, which is over. Three windows, two answers, and
+        the one that decides is the BOX's width: at 1250 the WINDOW is above 1180
+        and the box is not, which is the trap a window-width rule would have
+        walked into."""
+        narrow = _render([_shot("n", _comps_payload())], size=(1200, 900))
+        self.assertEqual(int(narrow["n.bodyw"]), 1125)
+        self.assertEqual(narrow["n.arr"], "acc",
+                         "a 1125px box got the three-column layout")
+        just = _render([_shot("j", _comps_payload())], size=(1250, 900))
+        self.assertLess(int(just["j.bodyw"]), 1180,
+                        "the 1250px window's box is not the one being measured")
+        self.assertEqual(just["j.arr"], "acc",
+                         "a box under 1180px got the columns")
+        over = _render([_shot("w", _comps_payload())], size=(1400, 900))
+        self.assertEqual(int(over["w.bodyw"]), 1325)
+        self.assertEqual(over["w.arr"], "cols",
+                         "a 1325px box did not get the columns")
+
+
+class TestTheAccordionLayout(_Rendered):
+    """Fix list round 4 item 5, the middle of the range: 700-1180px of box.
+
+    One column of foldable sections, a one-line summary in every header, and the
+    Facts table PINNED above them. The pin is measured by scrolling: a strip whose
+    offset does not move while the section above it does is pinned, and one
+    number on its own cannot tell the two apart.
+    """
+
+    @classmethod
+    def size(cls):
+        # 1100x900: the box measures 1025px, inside the accordion's range and
+        # under the 1180px the three columns need.
+        return (1100, 900)
+
+    @classmethod
+    def shots(cls):
+        # A board that wraps: the accordion has to be TALLER than the window for
+        # the scroll measurement to have anything to scroll, and the stock
+        # fixture fits 900px.
+        big = _payload(board=[{"card": "BG31_815", "atk": 5, "health": 5,
+                               "tribe": "Beast", "eid": i}
+                              for i in range(20)])
+        return [_shot("a", big),
+                _shot("flat", _payload()),
+                _shot("shut", _payload(), open="-Comps,-Lobby")]
+
+    def test_one_column_with_a_summary_line_in_every_header(self):
+        got = self.got
+        self.assertEqual(got["flat.arr"], "acc")
+        self.assertEqual(got["flat.panels"],
+                         "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
+        # One line per section, and every one is a COUNT and a noun — the same
+        # kind of fact the panels below already carry. §1 is about words on the
+        # screen, and a header summary is exactly where a verdict would sneak in,
+        # which is why `lvSectionLine` is in the source scan in `test_live_tavern`
+        # as well.
+        self.assertEqual(
+            got["flat.sums"],
+            "|3 offers|2 on board · 1 in hand|1 of 1 available|Reno"
+            "|2 of 3 seen seats")
+        # The strip carries no line of its own: it IS the facts, and its rows are
+        # the summary.
+        self.assertEqual(got["flat.sums"].split("|")[0], "")
+
+    def test_the_facts_strip_is_pinned_while_the_rest_scrolls(self):
+        """Measured at 1100x900 with a board of 20 cards: the box is 1025px, so
+        the accordion is the layout, the strip sits 164px down the page (the
+        status bar and the tribe row are above it) and the sections run to 2900px
+        below that. One scroll of 300px takes the strip's viewport top from 164 to
+        0 — stuck at `top:0` — while the first section under it moves to 0 as
+        well, i.e. by the whole scroll distance. Both numbers are read from the
+        two ends of one scroll, because one screenshot cannot tell a pinned strip
+        from a strip that happens to be at the top."""
+        got = self.got
+        self.assertEqual(got["a.factspin"], "sticky",
+                         "the facts strip is not a sticky element")
+        before, after = got["a.scroll"].split(",")
+        f0, s0 = [int(v) for v in before.split("/")]
+        f1, s1 = [int(v) for v in after.split("/")]
+        self.assertGreater(s0, 0, "the strip is not below the fold to start with")
+        self.assertEqual(s1, 0, "the strip did not come to rest at the top")
+        self.assertEqual(got["a.factsat"].split(",")[1], str(s0),
+                         "the strip is not where the scroll measurement put it")
+        # The strip and the section below it both end at the top, which is what
+        # "the page scrolled under the strip" means — and the strip STARTED below
+        # the section's line, so it was carried to the top rather than being
+        # there all along.
+        self.assertEqual(f1, 0)
+        self.assertGreater(f0, s0 - 1)
+        self.assertGreater(s0 - s1, 40,
+                           f"the scroll was too small to measure anything "
+                           f"({s0} -> {s1})")
+
+    def test_the_accordion_headers_are_the_designs_target_size(self):
+        """§8's 44px minimum click target, measured on the control that replaced
+        the tab row rather than declared in the sheet."""
+        got = self.got
+        self.assertGreaterEqual(got["flat.tabh"], 44,
+                                "the accordion header is under the 44px target")
+
+    def test_the_sections_are_shut_by_default_and_say_so(self):
+        """The three the player CONSULTS are shut — five open sections is a stack
+        five screens tall — and the two they read the game through are open."""
+        got = self.got
+        self.assertEqual(got["flat.shut"], "Comps|Next opponent|Lobby")
+        self.assertNotIn("Tavern", got["flat.shut"])
+        self.assertNotIn("Board and hand", got["flat.shut"])
+
+    def test_a_narrow_window_collapses_to_one_column(self):
+        """The third width: 640x900 gives the box 565px — the same accordion, one
+        column of it. Every section shares an x and each top is above the next, so
+        the sections are stacked rather than squeezed side by side."""
+        got = _render([_shot("n", _comps_payload())], size=(640, 900))
+        self.assertLess(int(got["n.bodyw"]), 700)
+        self.assertEqual(got["n.arr"], "acc")
+        self.assertEqual(got["n.panels"],
+                         "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
+        self.assertEqual(got["n.colw"], "",
+                         "a 640px window rendered the three-column layout")
+        lefts = {v.split(",")[0] for v in got["n.sectat"].split("|")}
+        tops = [int(v.split(",")[1]) for v in got["n.sectat"].split("|")]
+        self.assertEqual(len(lefts), 1, f"the sections are not one column: {lefts}")
+        self.assertEqual(tops, sorted(tops), f"the sections are out of order: {tops}")
+        # ...and it still says what each one holds, which is what the summary line
+        # is for: at this width a section can be off screen entirely.
+        self.assertIn("3 offers", got["n.sums"])
+
+
+class TestTheAccordionStateSurvivesARerender(_Rendered):
+    """The way this item ships broken (fix list round 4 item 5).
+
+    The shop is re-read every 5 seconds (`live.SHOP_REREAD_SECONDS`) and the page
+    re-renders the WHOLE tavern view whenever the payload string changes, so a
+    section whose state lived in the DOM only would pop open or shut under the
+    player's hands every 5 seconds. The state is re-applied from localStorage on
+    every render, and `toggle` in the driver is the real thing: it clicks the
+    header and renders AGAIN.
+    """
+
+    @classmethod
+    def size(cls):
+        # The state lives in the ACCORDION, so this class runs where the
+        # accordion is the arrangement (the same 1100x900 window as
+        # `TestTheAccordionLayout`).
+        return (1100, 900)
+
+    @classmethod
+    def shots(cls):
+        return [_shot("persist", _payload(), toggle="Comps"),
+                _shot("stored", _payload(), open="-Comps,-Lobby"),
+                # The key is read in a try/catch and PARSED defensively: private
+                # mode, a half-written value and a value from an older version all
+                # have to render the page.
+                _shot("garbage", _payload(), open="junk,,nonsense,,"),
+                _shot("nothing", _payload())]
+
+    def test_a_toggled_section_survives_the_next_render(self):
+        got = self.got
+        # The click landed: Comps is shut by default, so the header's click opens
+        # it, and the driver reports the state AFTER re-rendering the same
+        # payload (what the 5s poll does, and the only thing that can pop a
+        # section open).
+        self.assertEqual(got["persist.shut"], "Next opponent|Lobby",
+                         "clicking the Comps header did not stick across a "
+                         "re-render — the open/closed state is not re-applied "
+                         "from storage")
+        self.assertEqual(got["persist.panelcount"], 6,
+                         "the zero-ish shut list above is a page that rendered "
+                         "nothing")
+
+    def test_a_stored_state_is_what_renders(self):
+        """The other direction, and the one that makes the test above mean
+        something: a stored `-Comps` has to come back SHUT, or "survives a
+        re-render" would also be satisfied by a page that ignores storage."""
+        got = self.got
+        self.assertEqual(got["stored.shut"], "Comps|Next opponent|Lobby",
+                         "a stored shut section rendered open (Next opponent is "
+                         "shut by default, so it is the control)")
+        self.assertNotIn("Tavern", got["stored.shut"],
+                         "a section with nothing stored lost its default")
+
+    def test_a_garbage_stored_value_cannot_break_the_render(self):
+        """A value the page cannot parse costs the player their open/closed state
+        and NOTHING else: every section renders, with its default."""
+        got = self.got
+        self.assertEqual(got["garbage.panels"], got["nothing.panels"],
+                         "a garbage value changed which sections render")
+        self.assertEqual(got["garbage.shut"], got["nothing.shut"],
+                         f"a garbage value was partly believed: "
+                         f"{got['garbage.shut']}")
+        self.assertEqual(got["nothing.shut"], "Comps|Next opponent|Lobby",
+                         "the defaults are not the two-open three-shut set")
+
+    def test_the_summaries_carry_no_verdict(self):
+        """The header summaries are the newest place a verdict could appear, so
+        they are scanned here as well as in `TestTheViewCarriesNoVerdict` (which
+        has the whole vocabulary)."""
+        got = self.got
+        text = got["nothing.sums"].lower()
+        self.assertTrue(text.strip(), "no summaries rendered, so nothing was "
+                                      "scanned")
+        for word in ("best", "should", "worth ", "rank", "hunt", "you want",
+                     "priorit"):
+            self.assertNotIn(word, text)
+
+
 class TestTheViewCarriesNoVerdict(_Rendered):
     """§1, measured on the text that actually reaches the screen.
 
@@ -1065,14 +1617,14 @@ class TestTheViewCarriesNoVerdict(_Rendered):
     @classmethod
     def shots(cls):
         return [_shot("t", _payload()),
-                _shot("lobby", _payload(), tab="lobby"),
-                _shot("comps", _comps_payload(), tab="comps"),
+                _shot("lobby", _payload(), reveal="Lobby"),
+                _shot("comps", _comps_payload(), reveal="Comps"),
                 # §4.4's Detail and Compare are screens too, and the guide block
                 # is prose from the meta DB: if a verdict can reach this view,
                 # these are the two places it would.
-                _shot("detail", _comps_payload(), tab="comps",
+                _shot("detail", _comps_payload(), reveal="Comps",
                       clicks=[_open("Elementals")]),
-                _shot("compare", _comps_payload(), tab="comps",
+                _shot("compare", _comps_payload(), reveal="Comps",
                       clicks=[_compare("Elementals"), _compare("Beasts"),
                               _compare("Menagerie")]),
                 # The pick screen too: it is the screen whose classic facts
@@ -1200,23 +1752,23 @@ class TestTheCompsScreens(_Rendered):
     @classmethod
     def shots(cls):
         base = _comps_payload()
-        return [_shot("browse", base, tab="comps"),
-                _shot("overlap", base, tab="comps",
+        return [_shot("browse", base, reveal="Comps"),
+                _shot("overlap", base, reveal="Comps",
                       clicks=[[".lv-ctl .lv-chip", "Overlap"]]),
-                _shot("more", base, tab="comps", clicks=[[".lv-more", "+ 1 more"]]),
-                _shot("noavg", _comps_payload(corpus={}), tab="comps"),
+                _shot("more", base, reveal="Comps", clicks=[[".lv-more", "+ 1 more"]]),
+                _shot("noavg", _comps_payload(corpus={}), reveal="Comps"),
                 _shot("detecting", _comps_payload(tribes_detecting=True),
-                      tab="comps"),
+                      reveal="Comps"),
                 _shot("unavailshot", _comps_with_an_unavailable_tribe(),
-                      tab="comps"),
-                _shot("detail", base, tab="comps",
+                      reveal="Comps"),
+                _shot("detail", base, reveal="Comps",
                       clicks=[_open("Elementals")]),
-                _shot("back", base, tab="comps",
+                _shot("back", base, reveal="Comps",
                       clicks=[_open("Elementals"), [".lv-back", "◀ Comps"]]),
-                _shot("compare", base, tab="comps",
+                _shot("compare", base, reveal="Comps",
                       clicks=[_compare("Elementals"), _compare("Beasts"),
                               _compare("Menagerie")]),
-                _shot("four", base, tab="comps",
+                _shot("four", base, reveal="Comps",
                       clicks=[_compare("Elementals"), _compare("Aardvark"),
                               _compare("Beasts"), _compare("Menagerie"),
                               _compare("Filler 1")])]
@@ -1242,29 +1794,44 @@ class TestTheCompsScreens(_Rendered):
 
     def test_the_comps_columns_are_never_three_wide(self):
         """Round 3 item 3: single column with sticky headers, two only when each
-        holds 520px, never three. The cap is `max-width:calc(50% - 9px)` — a
-        viewport media query cannot express it, because the main column is the
-        window MINUS the rail above 1200px."""
+        holds 520px, never three — the cap is `max-width:calc(50% - 9px)`, which a
+        viewport media query cannot express.
+
+        NARROWED 2026-10-13 (fix list round 4 item 5). While the comps screen was
+        the page's whole main column, a 2600px window made two 520px columns fit
+        and this test measured exactly that. The three-column layout gives the
+        comps panel ONE of three: MEASURED, its box is 499px at 1400x900 and 622px
+        at 1920x1080 and at a 3200px window — the tavern container maxes out at
+        1572px — and two 520px columns need 1058. So the side-by-side pair is not
+        reachable in this arrangement at ANY window size. What holds in both is
+        the column count and the fit: never three, and never wider than the box
+        (the flat `min-width:520px` inside a 499px panel laid both columns out at
+        the same x, 520px each, on top of one another — measured 2026-10-13).
+        """
         got = self.got
-        widths = [int(w) for w in got["browse.colw"].split("|")]
         self.assertLessEqual(got["browse.cols"], 2,
                              f"{got['browse.cols']} comps columns on screen")
-        for w in widths:
-            self.assertGreaterEqual(w, 520, f"a column is only {w}px")
         self.assertEqual(got["browse.h4pos"], "sticky",
                          "the tier headers do not stick")
-        # A window wide enough for two 520px columns puts them side by side, and
-        # NEVER a third: eight columns would fit at this width if it were
-        # allowed to.
-        wide = _render([_shot("w", _comps_payload(), tab="comps")],
-                       size=(2600, 1200))
+        box = int(got["browse.compsw"])
+        for w in [int(v) for v in got["browse.ctierw"].split("|")]:
+            self.assertLessEqual(w, box + 1,
+                                 "a tier column is wider than the screen it is "
+                                 "in — the flex floor is not capped at the box")
+        # Wider than any of it: the same is true at a 3200px window, where the
+        # comps panel is at its widest (622px) and still one column short of a
+        # pair — the control proving the stack above is not a narrow-window
+        # accident.
+        wide = _render([_shot("w", _comps_payload(), reveal="Comps")],
+                       size=(3200, 1200))
+        self.assertGreater(int(wide["w.compsw"]), 600,
+                           "the fixture is not measuring a wide comps panel")
         self.assertEqual(wide["w.cols"], 2,
-                         "a 2600px window showed more or fewer than two columns")
-        xs = [int(x) for x in wide["w.colx"].split("|")]
-        self.assertEqual(len(set(xs)), 2, "the two columns are stacked")
-        for w in [int(v) for v in wide["w.colw"].split("|")]:
-            self.assertGreaterEqual(w, 520)
-
+                         "the payload carries two tiers, so two columns render")
+        xs = [int(x) for x in wide["w.ctierx"].split("|")]
+        self.assertEqual(len(set(xs)), 1,
+                         "two 520px columns cannot fit a 622px panel, so they "
+                         "stack — a second x here would mean they overlap")
     def test_the_avg_column_is_hidden_until_the_corpus_has_data(self):
         """Round 3 item 5, tightened by round 4 item 6: a column of dashes is a
         column of nothing, and the decision is the WHOLE list's rather than one
@@ -1350,7 +1917,7 @@ class TestTheCompsScreens(_Rendered):
         self.assertEqual(got["browse.slotpx"], "34x46")
         # The compare box sits at the START of the row, in flow: the name is to
         # its right, so nothing is over anything.
-        withbox = _render([_shot("wb", _comps_payload(), tab="comps",
+        withbox = _render([_shot("wb", _comps_payload(), reveal="Comps",
                                  clicks=[[".lv-cmpbox", None, "Beasts"]])])
         self.assertEqual(withbox["wb.cmpchecked"], 1)
         self.assertEqual(withbox["wb.rowcols"], "grid")
@@ -1363,7 +1930,7 @@ class TestTheCompsScreens(_Rendered):
                       "the checkbox is still the browser's default control")
         self.assertEqual(got["browse.nameunder"], "none",
                          "every comp name wears an underline")
-        hovered = _render([_shot("h", _comps_payload(), tab="comps",
+        hovered = _render([_shot("h", _comps_payload(), reveal="Comps",
                                  clicks=[[".lv-ctl .lv-chip", "Overlap"]])])
         self.assertEqual(hovered["h.nameunder"], "none")
 
@@ -1385,7 +1952,7 @@ class TestTheCompsScreens(_Rendered):
         """Opt-in, and stated as the player's choice — the screens never rank on
         their own. Aardvark averages 2.00, Beasts 4.00, and the comps nobody has
         played sort last rather than at zero."""
-        got = _render([_shot("avg", _comps_payload(), tab="comps",
+        got = _render([_shot("avg", _comps_payload(), reveal="Comps",
                              clicks=[[".lv-ctl .lv-chip", "Avg placement"]])])
         rows = got["avg.comprows"].split(" ; ")[2:]
         self.assertTrue(rows[0].startswith("Aardvark|0 of 1 owned|2.00"), rows[0])
@@ -1530,15 +2097,30 @@ class TestTheCompsScreens(_Rendered):
                          "the fourth comp is refused, not silently swapped in")
 
     def test_the_comps_screens_get_the_main_column(self):
-        """The design's §4.4 columns need the main column, not the 340px rail —
-        and round 3 item 3 re-cut how many of them there are (see
-        `test_the_comps_columns_are_never_three_wide`)."""
+        """The design's §4.4 columns need real width, not a 340px rail, and round
+        3 item 3 re-cut how many of them there are (see
+        `test_the_comps_columns_are_never_three_wide`).
+
+        REVERSED 2026-10-13 (fix list round 4 item 5). This pinned
+        `panelw > 600` — "the comps screens have the main column, not the rail" —
+        which was the contract while the comps screen was the MAIN COLUMN and the
+        facts table was a 340px rail beside it. The three-column layout gives the
+        comps screen a COLUMN of its own by design, and at 1400x900 that column
+        is 499px: narrower than the old threshold, and correct. What the design
+        still needs from this test is that the comps panel gets a column of its
+        own rather than the rail's width, and that the tier columns it renders
+        inside it are never squeezed below 520 — which is measured here and one
+        test up.
+        """
         got = self.got
-        self.assertGreater(got["browse.panelw"], 600,
-                           "the comps screens need the main column: a 340px rail "
-                           "cannot hold one 520px column, let alone two")
-        self.assertGreaterEqual(len(got["browse.colat"].split("|")), 2,
+        self.assertGreater(int(got["browse.compsw"]), 400,
+                           "the comps screens are down to the facts rail's width "
+                           "again (the 4.4 columns need a column of their own)")
+        self.assertGreaterEqual(len(got["browse.colat"].split("|")), 1,
                                 "no tier columns rendered")
+        # ...and the column is a real page column, not a rail: at 1400x900 the
+        # page's three columns measure 499/499/300 (round 4 item 5).
+        self.assertLessEqual(len(got["browse.colw"].split("|")), 3)
 
     def test_a_low_sample_comp_is_flagged_by_games_count(self):
         """§5: "Low sample marker ... Define the threshold by games count, not a
@@ -1733,7 +2315,7 @@ class TestTheGameOverCard(_Rendered):
                 # A tavern render, then the game-over payload: the card, not the
                 # last shop screen still standing behind it.
                 _shot("after", _game_over_payload(), pre=_comps_payload(),
-                      pretab="comps", preclicks=[_open("Elementals")]),
+                      preclicks=[_open("Elementals")]),
                 _shot("firstrun", _welcome_payload(), viewer="tavern")]
 
     def test_the_card_is_the_placement_and_the_round(self):
