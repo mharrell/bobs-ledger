@@ -140,10 +140,27 @@ recommendation, and no option is highlighted as the one to take.
 **Two ways to read the live game: Classic and Tavern.** A **Classic | Tavern**
 switch sits at the top of the Another Round page, and **Classic** is what is
 described above — the default, and the only thing you see until you change it. **Tavern** is the same
-information in the tavern's own dark palette, laid out as a screen per job: a
-status bar naming the hero with gold, tier, health, turn and place; one row of
-lobby tribes you can tap to correct; and a **Shop | Comps | Lobby** tab row with
-the **Facts** table always beside it.
+information in the tavern's own dark palette: a status bar naming the hero with
+gold, tier, health, turn and place, and one row of lobby tribes you can tap to
+correct.
+
+**The page rearranges itself as the window changes**, in three steps, and there
+are no tabs at any of them — with everything on screen at once there is nothing
+for a tab row to select:
+
+- **A wide window (1500px and over) is three columns.** The tavern's offers with
+  your board and hand on the left, **Comps** in the middle, and the reference
+  material on the right: the **Facts** table, then the announced next opponent,
+  then the **Lobby**.
+- **A middle window (700 to 1500px) is one column of sections** you open and
+  close by clicking their headings, with the **Facts** table pinned above them so
+  it stays put while the rest scrolls. Every heading carries a one-line summary
+  of what is under it — `3 offers`, `2 on board · 1 in hand`, `2 of 3 seen seats`
+  — so a closed section still says what it holds. Which sections are open is
+  remembered for next time.
+- **Under 700px** it is the same one column, narrower.
+
+Every section is the same screenful of facts wherever it lands:
 
 - **Shop** — the tavern's offers, your board and your hand as rows of cards with
   a one-line caption under each, the mix of tribes on offer, how long ago the
@@ -151,13 +168,13 @@ the **Facts** table always beside it.
   per offer, so two copies of the same minion are two cards). Beneath those rows
   sits the announced **next opponent** — their hero, the board they last staged,
   what it was worth with how many rounds ago that was read, and their tribe mix.
-  Beside them the rail carries the **Facts**: effective health, what the last
-  fight cost, what the last three cost, the per-combat damage cap, your board's
-  stats against the last board seen, and what levelling up costs. Those are the
-  same facts the classic layout carries, stated as numbers instead of as a read
-  on the game — nothing on the Tavern screen tells you what to do.
+- **Facts** — effective health, what the last fight cost, what the last three
+  cost, the per-combat damage cap, your board's stats against the last board
+  seen, and what levelling up costs. Those are the same facts the classic layout
+  carries, stated as numbers instead of as a read on the game — nothing on the
+  Tavern screen tells you what to do.
 - **Comps** — the comps this lobby allows, grouped under a sticky header per
-  source tier (one column, or two once the window is wide enough for both), each
+  source tier (one column, or two once the room is there for both), each
   with its core cards as small slots showing the cards themselves, dimmed when you
   do not own them, then how much of the core you hold and the average placement
   your own played games have produced for it — marked **low sample** when that
