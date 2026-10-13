@@ -1227,6 +1227,149 @@ class TestManualBans(unittest.TestCase):
         self.assertIsNone(c._manual_key)
 
 
+#: The five the player tapped on the reveal screen of the game below, taken
+#: from what the released install STORED as `banned` — which is what the taps
+#: were, under the old direction. Canonical display names.
+_MEASURED_TAPS = ["Beast", "Demon", "Quilboar", "Undead", "Aberration"]
+
+#: That game's ENTIRE shop history, as its own decision log recorded it:
+#: (card id, the tribe the log's own tags gave it). Turn 1 Buzzing Vermin and
+#: Zoatroid, turn 2 Flittering Bat twice and Risen Rider, turn 3 Underrot Spawn,
+#: Scarlet Skull and Roadboar. Every one of them from a tribe the app had marked
+#: NOT available.
+_MEASURED_OFFERS = (
+    ("BG31_803", "Beast"),        # Buzzing Vermin, turn 1
+    ("BG36_098", "Aberration"),   # Zoatroid, turn 1 — it was on the board too
+    ("BG36_200", "Beast"),        # Flittering Bat, turn 2
+    ("BG36_200", "Beast"),        # ... twice in one shop: two offers, one card
+    ("BG25_001", "Undead"),       # Risen Rider, turn 2
+    ("BG36_116", "Aberration"),   # Underrot Spawn, turn 3
+    ("BG25_022", "Undead"),       # Scarlet Skull, turn 3
+    ("BG20_101", "Quilboar"),     # Roadboar, turn 3
+)
+
+
+class TestTheMeasuredGameIsNotInverted(unittest.TestCase):
+    """THE PIN THAT WOULD HAVE CAUGHT IT — real offers, not an invented fixture.
+
+    The failure, measured from a released install's own decision log (session
+    2026-10-13_12_01_10, 181 records): the player tapped five tribes at hero
+    select, the app stored `banned` = those five and `tribes_available` = the
+    other five, and then EVERY shop offer in that game came from the list the app
+    called unavailable. A family-banned tribe is removed from the pool, so a
+    banned tribe's minion cannot be offered at all — eight offers, every one of
+    them from a "banned" tribe (one of which was on the player's own board), is
+    not luck. The lobby WAS the tapped five.
+
+    Card ids and tribe names carry no personal data — no handle, no session name,
+    no path — which is the house rule for fixtures. The tribes are read from the
+    real meta DB by id rather than written into the table, so the table cannot
+    assert a tribe the card does not have.
+
+    The POSITIVE CONTROL is explicit and is the point of the class: the same
+    offers run against the OLD direction must violate the claim. Without it,
+    "every offer is inside `tribes_available`" could be true because the table is
+    empty or because both directions happen to agree.
+    """
+
+    TAPS = _MEASURED_TAPS
+    OFFERS = _MEASURED_OFFERS
+
+    def tearDown(self):
+        import coach_ui
+        coach_ui.store_manual_in_play([])
+
+    def _payload(self):
+        """The live payload for a coach whose player tapped these five.
+
+        The same shape `TestManualBans` uses: the manual set is read off
+        `coach_ui`, and `analyze()` runs with the value pass and the board
+        resolver mocked out — this test is about the tribe keys, and a
+        partially-fed coach has no board to resolve.
+        """
+        from unittest import mock
+        from live_coach import LiveCoach
+        import coach_ui
+        c = LiveCoach()
+        c.friendly = 7
+        c.hero_card = "BG30_HERO_100"
+        c._comps = {}
+        c._card_races = {}
+        c.cur_lines = ["x"]
+        coach_ui.store_manual_in_play(self.TAPS)
+        with mock.patch.object(LiveCoach, "_resolve_boards"), \
+                mock.patch.object(c.gs, "final_board", return_value=([], None)), \
+                mock.patch("live_coach.sell_recommendation", return_value=[]), \
+                mock.patch("live_coach.comp_target", return_value=None), \
+                mock.patch("live_coach.comp_cards", return_value=None), \
+                mock.patch("live_coach.target_state", return_value=None), \
+                mock.patch("live_coach.top_move", return_value=""):
+            return c.analyze()
+
+    @staticmethod
+    def _tribes_by_id():
+        import meta
+        return {m["id"]: m.get("tribe") for m in meta.minions()}
+
+    def test_every_measured_offer_is_in_the_tapped_five(self):
+        db = self._tribes_by_id()
+        # The fixture's own guard: a card id that no longer resolves (ids drift
+        # across patches) would silently shrink the table, and a claim over an
+        # empty table is not a claim.
+        missing = [cid for cid, _t in self.OFFERS if cid not in db]
+        self.assertEqual(missing, [], "the offer table references unknown ids")
+        # And the DB agrees with the log's own tribes, so the table is the log's
+        # data rather than a hand-written expectation.
+        for cid, tribe in self.OFFERS:
+            self.assertEqual(db[cid], tribe, f"{cid} is not a {tribe}")
+
+        a = self._payload()
+        # The headline claim FIRST, so a reversed engine trips this one rather
+        # than a key-equality assertion above it: every offer this game was
+        # shown belongs to a tribe the app says is in the tavern.
+        available = set(a["tribes_available"])
+        outside = sorted({db[cid] for cid, _t in self.OFFERS} - available)
+        self.assertEqual(
+            outside, [],
+            "a shop offer came from a tribe the app marked unavailable — a "
+            "family-banned tribe is removed from the pool, so this is the "
+            "inverted tap set that shipped")
+        self.assertEqual(a["tribes_available"], sorted(self.TAPS))
+        # ...and the complement is what got called banned, which is the key the
+        # classic strip and session_report read. NOTE the number: the install
+        # stored exactly this list as `tribes_available`, i.e. the app published
+        # the true BANNED set under the available label — the inversion in one
+        # line.
+        self.assertEqual(set(a["banned"]),
+                         {"Dragon", "Elemental", "Mech", "Murloc", "Pirate"},
+                         "the release stored this very list as its "
+                         "tribes_available")
+        self.assertEqual(set(a["banned"]) & {db[cid] for cid, _t in self.OFFERS},
+                         set())
+
+    def test_the_old_direction_violates_it(self):
+        """THE POSITIVE CONTROL. The old `allowed` was the roster minus the taps:
+        run the same real offers through it and the claim above must FAIL — the
+        offers sit outside it, which is precisely why the player saw a board full
+        of minions from tribes the page called not available."""
+        from tribes import DISPLAY_TRIBES
+        db = self._tribes_by_id()
+        oop = {"Naga"}          # this patch's rotated tribe
+        old_available = {t for t in DISPLAY_TRIBES
+                         if t not in set(self.TAPS) and t not in oop}
+        self.assertEqual(old_available,
+                         {"Dragon", "Elemental", "Mech", "Murloc", "Pirate"},
+                         "the shipped reading was the exact complement")
+        offenders = {db[cid] for cid, _t in self.OFFERS} - old_available
+        self.assertEqual(offenders,
+                         {"Beast", "Aberration", "Undead", "Quilboar"},
+                         "the control does not discriminate: under the old "
+                         "direction every offer's tribe must be outside the set")
+        self.assertEqual(len(self.OFFERS), 8,
+                         "the offer table shrank — the control above and the "
+                         "test it controls both weaken with it")
+
+
 class TestRenderJsonComps(unittest.TestCase):
     def test_playable_comps_become_rich_tier_rows(self):
         """The comps panel needs more than names: each playable comp row
