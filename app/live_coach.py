@@ -491,8 +491,8 @@ _GAME_DEFAULTS = {
     "_bans_ready": False,
     "tribes_detecting": False,  # 5/5 ban set not confirmed yet (window state)
     "tribes_seen": 0,        # pure tribes the pool reveal has shown so far
-    "bans_manual": False,    # the player set the bans in the overlay
-    "_manual_key": None,     # tuple of the applied manual ban list
+    "bans_manual": False,    # the player set the tribes by hand (the 5 in play)
+    "_manual_key": None,     # tuple of the applied manual in-play list
     "_card_races": None,
     "_seed": None,
     "_comps": None,
@@ -1122,11 +1122,12 @@ class LiveCoach:
         Naga since 36.6.1; fail-open to empty when the registry is off or
         unreadable). `self.out_of_pool` rides the payload so the strip can
         label a rotated tribe as such instead of banned; the manual path
-        subtracts the same set, keeping its 5-allowed invariant intact.
+        subtracts the same set from the taps, keeping its 5-allowed invariant
+        intact.
         """
         if self._comps is None or not self.cur_lines:
             return
-        # Manual bans (overlay tap-the-ban-screen picker) are authoritative:
+        # Manual taps (overlay reveal-screen picker) are authoritative:
         # the reveal is exact at t0 while the pool inference needs minutes
         # (2026-09-19: minute 12/14 in the evening games). Applied once per
         # distinct list; clearing the taps falls back to the inference.
@@ -1136,18 +1137,29 @@ class LiveCoach:
             if not (self.bans_manual and self._manual_key == key):
                 self._manual_key = key
                 self.bans_manual = True
-                # allowed = the tribes the pool CAN offer minus the tapped
-                # bans. Out-of-play tribes are subtracted too: the reveal
-                # screen offers the current pool's tribes (Naga is not on it,
-                # 36.6.1), so tapping 5 bans must leave 5 allowed, not 6 —
-                # otherwise the manual path breaks the very 5/5 invariant the
-                # inference path is built on. Fail-open (empty) when the
-                # registry is unavailable.
+                # THE FIVE TAPS ARE WHAT IS IN THE TAVERN (2026-10-13, the
+                # maintainer's call: "Make it so the five I tap are what ARE
+                # IN THE TAVERN"). The old expression was the roster MINUS
+                # the taps, which marked the tapped five as the BANNED set.
+                # The failure it shipped, measured from a released install's
+                # own decision log (session 2026-10-13_12_01_10, 181
+                # records): the app stored banned = [Beast, Demon, Quilboar,
+                # Undead, Aberration] — exactly the taps — while EVERY shop
+                # offer in that session came from one of those five (t1
+                # Buzzing Vermin/Zoatroid, t2 Flittering Bat x2/Risen Rider,
+                # t3 Underrot Spawn/Scarlet Skull/Roadboar, and Zoatroid sat
+                # on the player's own board), so the lobby WAS the tapped set
+                # and every comp row, every chip and the "N of M available"
+                # summary read the inverse of the truth. `banned` is still
+                # DERIVED (see _banned) and is now right on its own.
+                # Out-of-play tribes are subtracted as before: the reveal
+                # screen lists the CURRENT pool's tribes (Naga is not on it,
+                # 36.6.1), so this is belt-and-braces against a tap that
+                # could only come from a stale page or registry.
                 self.out_of_pool = sorted(out_of_pool_tribes())
                 oop = set(self.out_of_pool)
                 self.allowed = sorted(t for t in DISPLAY_TRIBES
-                                      if t not in set(manual)
-                                      and t not in oop)
+                                      if t in set(manual) and t not in oop)
                 self._bans_ready = True
                 self.tribes_seen = len(self.allowed)
                 self.tribes_detecting = False
@@ -1890,8 +1902,10 @@ class LiveCoach:
             # instead of implying every tribe shown is confirmed (2026-09-10).
             "tribes_detecting": self.tribes_detecting,
             "tribes_seen": self.tribes_seen,
-            # Manual bans landed (overlay picker): the panel shows the
-            # picker in "set by you" mode and every filter is exact.
+            # The player set the tribes by hand (overlay picker): the panel
+            # shows the picker in "set by you" mode and every filter is exact.
+            # The KEY keeps its name and its meaning ("set by hand") — the
+            # value it describes is the in-play set, not the bans (2026-10-13).
             "bans_manual": self.bans_manual,
             # The picker's tap list (canonical display names) + per-game id
             # so the UI can reset its local picker state on a new game.

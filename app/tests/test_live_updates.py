@@ -1048,30 +1048,44 @@ class TestBanGate(unittest.TestCase):
 
 
 class TestManualBans(unittest.TestCase):
-    """The overlay's tap-the-ban-screen picker (2026-09-19): the ban list is
+    """The overlay's tap-the-reveal picker (2026-09-19): the ban list is
     provably not in any log (identical CREATE_GAME setup across different-ban
     games), the pool inference converged at minute 12/14 in the evening
-    games, and a manual set is exact from t0. Manual bans are authoritative
-    for the rest of the game and reset with it.
+    games, and a manual set is exact from t0. A manual set is authoritative
+    for the rest of the game and resets with it.
+
+    REVERSED 2026-10-13 — THE TAPS ARE THE IN-PLAY SET, not the banned set.
+    Measured from a released install's own decision log (session
+    2026-10-13_12_01_10, 181 records): the app stored banned = [Beast, Demon,
+    Quilboar, Undead, Aberration] AND tribes_available = [Dragon, Elemental,
+    Mech, Murloc, Pirate] — exact complements — while every shop offer in
+    that whole session came from the FIRST list (t1 Buzzing Vermin/Zoatroid,
+    t2 Flittering Bat x2/Risen Rider, t3 Underrot Spawn/Scarlet Skull/
+    Roadboar), i.e. from the tribes the app had marked NOT available. A
+    family-banned tribe is removed from the pool and can never be offered, so
+    the lobby really was the tapped five and every comp row, chip and "N of M
+    available" summary was the inverse of the truth. The pins below used to
+    assert the complement; they now assert `allowed == the taps`.
 
     Three states since 36.6.1 (2026-09-22): the reveal screen offers the
-    CURRENT pool's tribes (Aberration is on it, Naga is not), so the manual
-    complement is the 11-tribe roster minus the taps minus the out-of-play
-    tribes — still exactly 5 allowed, which is the invariant the inference
-    path's 5/5 gate is built on."""
+    CURRENT pool's tribes (Aberration is on it, Naga is not), so the taps are
+    five of the ten in-play tribes and the out-of-play set is subtracted from
+    them — still exactly 5 allowed, the invariant the inference path's 5/5
+    gate is built on."""
 
-    TEAMS = ["Beast", "Demon", "Dragon", "Elemental", "Mech"]
+    #: The five the player taps on the reveal screen = what is in the tavern.
+    TEAMS = ["Beast", "Mech", "Pirate", "Quilboar", "Undead"]
 
     def _coach(self):
         from live_coach import LiveCoach
         c = LiveCoach()
-        # Two IN-PLAY comps (Murloc, Mech) next to the Beast one, plus the
-        # rotated Naga one: the taps must be what moves the in-play comps,
-        # while the Naga comp is dead by ROTATION whatever the taps say
-        # (out of play — see meta/out_of_play.json). Core ids are real pool
-        # minions that are still in play (Flighty Scout / Cord Puller —
-        # BG33_140 River Skipper is a Murloc but was itself removed in
-        # 36.6.1, so a comp built on it would drop for the wrong reason).
+        # Two IN-PLAY comps (Beast, Mech) next to a Murloc one and the rotated
+        # Naga one: the taps must be what moves the in-play comps, while the
+        # Naga comp is dead by ROTATION whatever the taps say (out of play —
+        # see meta/out_of_play.json). Core ids are real pool minions that are
+        # still in play (Flighty Scout / Cord Puller — BG33_140 River Skipper
+        # is a Murloc but was itself removed in 36.6.1, so a comp built on it
+        # would drop for the wrong reason).
         c._comps = {
             "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
                          "core": ["BG30_111"]},
@@ -1097,17 +1111,17 @@ class TestManualBans(unittest.TestCase):
         c._refresh_bans()
         self.assertTrue(c._bans_ready)
         self.assertTrue(c.bans_manual)
-        # Allowed = the in-play tribes (the 11-tribe roster minus out-of-play
-        # Naga) minus the 5 taps -> 5, and the rotated tribe is reported as
-        # out of play rather than as a 6th ban.
-        self.assertEqual(c.allowed, ["Aberration", "Murloc", "Pirate",
-                                     "Quilboar", "Undead"])
+        # The taps ARE the in-play five (2026-10-13). The rotated tribe is
+        # reported as out of play rather than as a 6th member of the set.
+        self.assertEqual(c.allowed, ["Beast", "Mech", "Pirate", "Quilboar",
+                                     "Undead"])
         self.assertEqual(c.out_of_pool, ["Naga"])
         # The manual set reached the comp filter: the Beast and Mech comps are
-        # out (tapped), the Naga comp is out by ROTATION, the Murloc comp —
-        # whose tribe is NOT tapped — is the one that survives.
-        self.assertEqual(set(c.playable), {"murlocs-z"})
+        # IN (tapped = in the tavern), the Naga comp is out by ROTATION, and
+        # the Murloc comp — whose tribe was NOT tapped — is the one that drops.
+        self.assertEqual(set(c.playable), {"beasts-x", "mechs-w"})
         self.assertNotIn("nagas-y", c.playable)
+        self.assertNotIn("murlocs-z", c.playable)
         self.assertFalse(c.tribes_detecting)
         self.assertEqual(c.tribes_seen, 5)
 
@@ -1123,24 +1137,62 @@ class TestManualBans(unittest.TestCase):
         coach_ui.store_manual_bans(self.TEAMS)
         c._refresh_bans()
         self.assertTrue(c.bans_manual)
-        self.assertEqual(c.allowed, ["Aberration", "Murloc", "Pirate",
-                                     "Quilboar", "Undead"])
+        self.assertEqual(c.allowed, ["Beast", "Mech", "Pirate", "Quilboar",
+                                     "Undead"])
 
     def test_changing_the_taps_reapplies(self):
         import coach_ui
         c = self._coach()
         coach_ui.store_manual_bans(self.TEAMS)
         c._refresh_bans()
-        self.assertEqual(set(c.playable), {"murlocs-z"})  # Mech tapped
-        coach_ui.store_manual_bans(["Beast", "Demon", "Dragon", "Elemental",
-                                    "Murloc"])
+        self.assertEqual(set(c.playable), {"beasts-x", "mechs-w"})  # Mech in
+        coach_ui.store_manual_bans(["Beast", "Murloc", "Pirate", "Quilboar",
+                                    "Undead"])
         c._refresh_bans()
-        self.assertEqual(c.allowed, ["Aberration", "Mech", "Pirate",
-                                     "Quilboar", "Undead"])
-        # The survivor FLIPS with the taps: Murloc is banned now and Mech is
-        # not, while the Beast comp stays banned and the Naga comp stays
+        self.assertEqual(c.allowed, ["Beast", "Murloc", "Pirate", "Quilboar",
+                                     "Undead"])
+        # The survivor FLIPS with the taps: Murloc is in the tavern now and
+        # Mech is not, while the Beast comp stays in and the Naga comp stays
         # rotated out of the pool either way.
-        self.assertEqual(set(c.playable), {"mechs-w"})
+        self.assertEqual(set(c.playable), {"beasts-x", "murlocs-z"})
+
+    def test_the_banned_set_is_derived_from_the_taps(self):
+        """`banned` stays a DERIVED key (live_coach._banned) and the flip makes
+        it correct on its own: the payload's banned list is the complement of
+        the tapped five within this patch's pool — the tribes the tavern cannot
+        offer — and never the taps themselves (2026-10-13, the session above).
+
+        Read from the PAYLOAD, not from the engine attribute: `banned` and
+        `tribes_available` are the two keys the pages and the session report
+        consume, and the failure being fixed was one of those two reading the
+        inverse of the other.
+        """
+        from unittest import mock
+        from live_coach import LiveCoach
+        import coach_ui
+        c = self._coach()
+        c.friendly = 7          # the payload only exists once the hero parses
+        c.hero_card = "BG30_HERO_100"
+        coach_ui.store_manual_bans(self.TEAMS)
+        with mock.patch.object(LiveCoach, "_resolve_boards"), \
+                mock.patch.object(c.gs, "final_board", return_value=([], None)), \
+                mock.patch("live_coach.sell_recommendation", return_value=[]), \
+                mock.patch("live_coach.comp_target", return_value=None), \
+                mock.patch("live_coach.comp_cards", return_value=None), \
+                mock.patch("live_coach.target_state", return_value=None), \
+                mock.patch("live_coach.top_move", return_value=""):
+            a = c.analyze()
+        self.assertEqual(a["tribes_available"], sorted(self.TEAMS))
+        self.assertEqual(set(a["banned"]), {"Aberration", "Demon", "Dragon",
+                                            "Elemental", "Murloc"})
+        self.assertEqual(a["out_of_pool"], ["Naga"])
+        # The positive control: the taps are NOT reported as banned. This is
+        # the reading the released install shipped for a whole session.
+        self.assertFalse(set(a["banned"]) & set(a["tribes_available"]))
+        self.assertEqual(set(a["banned"]) | set(a["tribes_available"])
+                         | {"Naga"},
+                         set(a["tribe_roster"]),
+                         "the two keys plus the rotated tribe are the roster")
 
     def test_clearing_reopens_detection(self):
         import coach_ui
