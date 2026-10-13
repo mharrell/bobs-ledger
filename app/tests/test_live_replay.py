@@ -621,16 +621,27 @@ class TestTheBandInABrowser(unittest.TestCase):
 <pre id="out">pending</pre>
 <script>
 (function () {
+  // COUNTS ARE MARKED `#` (2026-10-12): `browser.fields` returns an int only
+  // for a value the page marked with a leading '#'; every other value comes
+  // back as TEXT (that is the convention `test_settle_browser` and
+  // `test_live_browser` both follow). This driver pushed bare `1`s, so
+  // `assertEqual(got['bandpresent'], 1)` compared '1' to 1 and
+  // `assertGreater(got['classicpane'], 0)` raised TypeError on a str. Both
+  // assertions therefore FAILED rather than passing — which nobody saw, because
+  // that session's sandbox could not start Chromium, so these two tests
+  // SKIPPED (a browser that cannot start is a skip, `browser.py`). The repair
+  // is the marker, not weaker assertions.
   const rec = [];
+  const num = v => '#' + String(v);
   const band = document.getElementById('replay-band');
-  rec.push('bandpresent=' + (band ? 1 : 0));
-  rec.push('bandvisible=' + (band && band.offsetHeight > 0 ? 1 : 0));
-  rec.push('bandtop=' + (band ? Math.round(band.getBoundingClientRect().top) : -1));
-  rec.push('navtop=' + Math.round(
-    document.getElementById('tabs').getBoundingClientRect().top));
-  rec.push('classicpane=' + document.getElementById('col-decide').children.length);
-  rec.push('tavern=' + (document.querySelector('.tavern.live') ? 1 : 0));
-  rec.push('share=' + (document.getElementById('share-toggle') ? 1 : 0));
+  rec.push('bandpresent=' + num(band ? 1 : 0));
+  rec.push('bandvisible=' + num(band && band.offsetHeight > 0 ? 1 : 0));
+  rec.push('bandtop=' + num(band ? Math.round(band.getBoundingClientRect().top) : -1));
+  rec.push('navtop=' + num(Math.round(
+    document.getElementById('tabs').getBoundingClientRect().top)));
+  rec.push('classicpane=' + num(document.getElementById('col-decide').children.length));
+  rec.push('tavern=' + num(document.querySelector('.tavern.live') ? 1 : 0));
+  rec.push('share=' + num(document.getElementById('share-toggle') ? 1 : 0));
   document.getElementById('out').textContent = rec.join(' ;; ');
 })();
 </script>
