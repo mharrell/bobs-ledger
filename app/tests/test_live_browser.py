@@ -189,7 +189,7 @@ def _game_over_payload(enabled=False, game_over=None, sent=None):
 
 
 def _welcome_payload():
-    """A FIRST-RUN welcome: no game over, so the classic card, in either viewer."""
+    """A FIRST-RUN welcome: no game over, so the shell card."""
     import json
     import replay_store
     saved = replay_store.auto_save_enabled
@@ -201,9 +201,13 @@ def _welcome_payload():
     return json.loads(body)
 
 
-#: The driver: set the viewer, run the REAL render(), report what is on screen.
-#: It is defensive the same way the Settle Up driver is — a renderer that throws
-#: has to SAY so, or a passing case proves nothing.
+#: The driver: run the REAL render(), report what is on screen. It is defensive
+#: the same way the Settle Up driver is — a renderer that throws has to SAY so,
+#: or a passing case proves nothing.
+#:
+#: It used to set the viewer first (`_liveViewer = s.viewer || 'tavern'`) because
+#: two renderers existed behind that flag. There is one live page now, and each
+#: shot's `viewer=` argument is GONE rather than left as a dead parameter.
 _DRIVER = r"""
 <pre id="out">pending</pre>
 <script>
@@ -421,28 +425,22 @@ _DRIVER = r"""
       .classList.contains('tavern-on') ? 1 : 0;
     o.decidehidden = getComputedStyle(
       document.getElementById('col-decide')).display === 'none' ? 1 : 0;
-    o.decidekids = document.getElementById('col-decide').children.length;
+    // THE CARD SLOT, and the two fields this replaces (`decidekids` and
+    // `classic`, which both read this same count). They measured "the classic
+    // page drew": the classic renderer wrote the pane headers and the card into
+    // `#col-decide`, so a non-zero count was the classic page being on screen.
+    // Live frames no longer write there at all — only the welcome/game-over card
+    // does — so the honest read is that count, with the opposite meaning.
+    o.cardslotkids = document.getElementById('col-decide').children.length;
+    // The classic tribe picker's row, which no longer exists: the Tavern row
+    // (`.lv-tribes`) is the only picker, so a hit here is a removed control back
+    // on the page. Page-wide on purpose — it would be OUTSIDE the view's root.
+    o.inplaychips = document.querySelectorAll('.inplaychips').length;
     o.label = txt(one('.lv-lbl'));
     // The TRIBE ROW's own label: `.lv-lbl` first is the tavern mix or the comps
     // Sort chip now that every section renders at once (round 4 item 5).
     o.tribelbl = txt(rone('.lv-tribes .lv-lbl'));
     o.opplabel = txt(one('.lv-opp'));
-    o.classic = document.getElementById('col-decide').children.length;
-    // The CLASSIC tribe picker — the page that ASKS for the five (2026-10-13).
-    // `.inplaychips` exists only there (the tavern's row is `.lv-tribes`), and
-    // the line asking for the set is the div right above it. Read from the real
-    // render because the words ARE the bug this fixes: the old line asked for
-    // the five BANNED tribes, so a player following it produced the complement
-    // on purpose.
-    const picker = document.querySelector('.inplaychips');
-    o.pickline = picker ? txt(picker.previousElementSibling) : '';
-    o.pickchips = picker
-      ? [...picker.children].map(c => c.textContent).join('|') : '';
-    o.pickpicked = picker
-      ? [...picker.children].filter(c => c.classList.contains('picked'))
-          .map(c => c.textContent).join('|')
-      : '';
-    o.pickcount = picker ? picker.children.length : 0;
     // --- the fix lists' own facts (rounds 1 and 2, 2026-10-09) ------------
     // 1. Live fills the window: the tavern container against the viewport, and
     //    where the sections actually sit. Measured on the ROOT:
@@ -456,8 +454,9 @@ _DRIVER = r"""
       const r = p.getBoundingClientRect();
       return Math.round(r.left) + ',' + Math.round(r.top);
     }).join('|');
-    // 2. The waiting state, and the empty strip that used to sit above it.
-    o.statebarhidden = document.getElementById('statebar').hidden ? 1 : 0;
+    // 2. The waiting state. (`statebarhidden` read the classic strip's `hidden`
+    // flag here; the strip and its element are gone, so a read of it would throw
+    // — which is why the field went rather than being left to return 0.)
     o.herocls = rone('.lv-hero') ? rone('.lv-hero').className : '';
     o.missvals = all('.lv-st b.miss').length;
     o.inline = [...q('.lv-inline')].map(d => d.textContent).join('|');
@@ -512,19 +511,11 @@ _DRIVER = r"""
       const n = one('.lv-opt .tile');
       return n ? Math.round(n.getBoundingClientRect().width) : 0;
     })();
-    // 6. The Classic | Tavern toggle's own colours (round 1 item 9).
-    o.vsegbg = (function () {
-      const b = document.querySelector('#live-viewer button');
-      return b ? getComputedStyle(b).backgroundColor : '';
-    })();
-    o.vsegon = (function () {
-      const b = document.querySelector('#live-viewer button.on');
-      return b ? getComputedStyle(b).backgroundColor : '';
-    })();
-    o.vsegpad = (function () {
-      const b = document.querySelector('#live-viewer button');
-      return b ? getComputedStyle(b).padding : '';
-    })();
+    // (The Classic | Tavern toggle's three colour reads — `vsegbg`, `vsegon`,
+    // `vsegpad` — were here and were already unreferenced; the control is gone,
+    // so the reads would answer for a null and the fields went with them. The one
+    // segment control left, `#settle-mode`, is themed by the same `.vseg` rules
+    // that `test_live_tavern.test_the_segment_control_is_themed` pins.
     // 7. Game over: the label, and the sharing counter in its sentence.
     o.overlabel = txt(one('.lv-overlabel'));
     o.fine = [...q('.lv-fine')].map(d => d.textContent).join('|');
@@ -621,21 +612,12 @@ _DRIVER = r"""
       const s = getComputedStyle(b);
       return s.appearance + ',' + s.backgroundColor;
     })();
-    o.toggleinnav = document.querySelector('#tabs #live-viewer') ? 1 : 0;
-    // A COMMA, not an angle bracket: the harness reads `#out` with
-    // `id="out">([^<]*)<`, so a '<' inside a value ends the capture early
-    // (measured 2026-10-09 — it came back as a one-field value).
-    o.toggleright = (function () {
-      const r = document.querySelector('#live-viewer-row');
-      if (!r) return '';
-      const b = r.getBoundingClientRect();
-      return Math.round(window.innerWidth - b.right) + ','
-           + Math.round(b.left);
-    })();
-    o.togglehidden = (function () {
-      const r = document.querySelector('#live-viewer-row');
-      return r && r.hidden ? 1 : 0;
-    })();
+    // (The flag's geometry — `toggleinnav`, `toggleright`, `togglehidden` — was
+    // read here to pin where the Classic | Tavern control sat and that Settle Up
+    // hid it. There is no control and no row: `navviewer` is the absence read
+    // that replaces all three.)
+    o.navviewer = document.querySelectorAll(
+      '#tabs #live-viewer, #live-viewer-row, #settle-viewer').length;
     // One row per OFFER / per board minion (round 3 item 1), scoped to the
     // TAVERN section BY NAME (see `tavpanel` above), because the board and hand
     // rows are cards too and the pinned Facts strip is the first panel in the
@@ -748,19 +730,19 @@ _DRIVER = r"""
       return p ? txt(p.querySelector('.lv-empty')) : '';
     })();
     for (const k of Object.keys(o))
-      rec(name + '.' + k, ['tavern', 'cards', 'skel', 'pick', 'classic',
+      rec(name + '.' + k, ['tavern', 'cards', 'skel', 'pick',
                            'taverncards', 'pickbars', 'compslots', 'slotsmiss',
                            'slotshand', 'guideopen', 'panelw', 'saverows',
                            'checkboxin', 'tavernon', 'decidehidden',
-                           'decidekids', 'tabh', 'tavernw', 'vpw', 'slotart',
+                           'cardslotkids', 'tabh', 'tavernw', 'vpw', 'slotart',
                            'legendslots', 'cmpboxes', 'cmpchecked', 'cmpdisabled',
                            'missvals', 'bhhalf', 'renameless', 'tiletitles',
                            'noart', 'nagacount', 'pickcolw', 'pickctlvp',
-                           'picknameh', 'pickcardw', 'statebarhidden', 'cols', 'vw',
+                           'picknameh', 'pickcardw', 'cols', 'vw',
                            'avgcells', 'hasavg', 'crowrows', 'unavail', 'ctlrows',
-                           'toggleinnav', 'togglehidden', 'shopcards',
+                           'navviewer', 'inplaychips', 'shopcards',
                            'boardcards', 'passedcards', 'oppcards',
-                           'tabs', 'panelcount', 'accs', 'bodyw', 'pickcount']
+                           'tabs', 'panelcount', 'accs', 'bodyw']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
@@ -794,7 +776,6 @@ _DRIVER = r"""
     _liveCompare = new Set();
     _livePickOrder = 'offered';
     _livePickHidden = new Set();
-    _liveViewer = s.viewer || 'tavern';
     // THE OPEN/CLOSED SECTIONS ARE LOCALSTORAGE, NOT A MODULE VARIABLE (round 4
     // item 5), so the reset above cannot reach them: a shot that shut a section
     // would hand that to every shot after it, and the leak would be between
@@ -846,8 +827,8 @@ _DRIVER = r"""
       render(s.rep);
     }
     // `settle`: the payload renders on the live tab and the SETTLE tab is then
-    // opened, which is how "the live viewer flag is out of the way over there"
-    // is measured rather than asserted from the source.
+    // opened — the shot that used to measure "the live viewer flag is out of the
+    // way over there", kept because the ABSENCE has to hold on both tabs.
     if (s.settle) showTab('settle');
     facts(s.name);
   }
@@ -869,12 +850,27 @@ _DRIVER = r"""
 """
 
 
+def _render_source():
+    """The page's source with its comments removed — for ABSENCE assertions.
+
+    The page's own comments NAME what was removed, on purpose ("`#statebar` was
+    the classic live page's stat tile row ... the element, its CSS rules and
+    every line that touched it are gone"), so an absence check on the raw string
+    fails on the explanation rather than on a regression. Only `/* */`, `<!-- -->`
+    and `//` comments are removed, so live code is never removed with them.
+    """
+    import re
+    body = re.sub(r"/\*.*?\*/", "", coach_ui._HTML, flags=re.S)
+    body = re.sub(r"<!--.*?-->", "", body, flags=re.S)
+    return re.sub(r"//[^\n]*", "", body)
+
+
 def _page(shots):
     driver = _DRIVER.replace("__SHOTS__", __import__("json").dumps(shots))
     return coach_ui._page_html().replace("</body>", driver + "</body>")
 
 
-def _shot(name, rep, viewer="tavern", reveal=None, click=None, clicks=None,
+def _shot(name, rep, reveal=None, click=None, clicks=None,
           pre=None, preclicks=None, settle=False, open=None, toggle=None):
     """One shot.
 
@@ -886,8 +882,13 @@ def _shot(name, rep, viewer="tavern", reveal=None, click=None, clicks=None,
     header is CLICKED after the render and then RE-RENDERS the same payload,
     which is the 5-second re-read in miniature (fix list round 4 item 5: the
     state has to survive it).
+
+    NO `viewer` ARGUMENT (2026-10-13). Every shot used to pass one (default
+    "tavern") so the driver could set `_liveViewer` before rendering; with the
+    choice gone the parameter would set nothing, and a dead parameter is how a
+    shot silently stops testing what its name says.
     """
-    return {"name": name, "rep": rep, "viewer": viewer, "reveal": reveal,
+    return {"name": name, "rep": rep, "reveal": reveal,
             "click": click, "clicks": clicks or [], "pre": pre,
             "preclicks": preclicks or [], "settle": settle, "open": open,
             "toggle": toggle}
@@ -1039,11 +1040,10 @@ class TestTheTavernLiveInABrowser(_Rendered):
                                           board_stats=None, opp_stats=None,
                                           opp_lobby=None)),
                 _shot("noshop", _payload(shop_rank=[])),
-                # A game number, so the picker's own seed runs: the client only
-                # reseeds its tap set when the game changes, and `game_no` null
-                # is where it starts (see the sync in `_render`, read by
-                # `test_the_classic_picker_asks_for_the_five_in_the_tavern`).
-                _shot("classic", _payload(game_no=7), viewer="classic")]
+                # A game number, so the tribe row's own state is a real one
+                # (the row marks the five the server says are in play, so the
+                # payload has to carry a game's worth of them).
+                _shot("g7", _payload(game_no=7))]
 
     def test_the_status_bar_is_the_hero_and_six_numbers(self):
         self.assertEqual(self.got["t.tavern"], 1)
@@ -1053,28 +1053,30 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertEqual(self.got["t.stats"],
                          "Gold:7|Tier:3|HP:26+4|Turn:9|Place:3rd")
 
-    def test_the_classic_picker_asks_for_the_five_in_the_tavern(self):
-        """The page that ASKS for the set (2026-10-13), read off the render.
+    def test_the_tavern_row_is_the_only_picker_left(self):
+        """REVERSED 2026-10-13 from
+        `test_the_classic_picker_asks_for_the_five_in_the_tavern`, which read the
+        CLASSIC picker's chip row (`.inplaychips`) and the sentence above it: the
+        line used to read "tap the 5 banned tribes to set them now", so a player
+        who followed it produced the complement on purpose.
 
-        A browser read rather than a source grep, because the WORDS are the bug:
-        the line used to read "tap the 5 banned tribes to set them now", so a
-        player who followed the instruction produced the complement on purpose
-        and the app then marked the wrong five. The chips are the in-pool roster
-        (the out-of-play tribe is not on the game's own panel either), and the
-        seeded taps are `tribes_available` — the five in the tavern — so the page
-        opens on the same answer the server holds.
+        That row went with the classic renderer, and the claim it carried is not
+        dropped with it — it MOVES to the Tavern row, which is now the page that
+        asks for the set: `tribelbl` is the "tap to correct" line, and the marks
+        are the five `tribes_available`
+        (`test_a_tribe_out_of_play_appears_once_and_the_chips_are_marked`
+        measures those, and this asserts the ask is still on screen at all and
+        that no second picker came back).
         """
         got = self.got
-        self.assertIn("the 5 tribes in your tavern", got["classic.pickline"])
-        self.assertNotIn("ban", got["classic.pickline"].lower(),
-                         "the picker asks for the banned set again — a player "
+        self.assertEqual(got["g7.inplaychips"], 0,
+                         "the classic picker's chip row is back — two pickers "
+                         "writing the same set from two places")
+        self.assertEqual(got["t.inplaychips"], 0)
+        self.assertIn("tap to correct", got["g7.tribelbl"])
+        self.assertNotIn("ban", got["g7.tribelbl"].lower(),
+                         "the row asks for the banned five again — a player "
                          "following it produces the complement")
-        # 7 roster entries minus the out-of-play NAGA, which is not tappable.
-        self.assertEqual(got["classic.pickcount"], 6)
-        self.assertNotIn("NAGA", got["classic.pickchips"])
-        self.assertEqual(sorted(got["classic.pickpicked"].split("|")),
-                         ["BEAST", "ELEMENTAL", "MECH", "PIRATE", "UNDEAD"],
-                         "the picker did not open on the player's five")
 
     def test_the_tribe_row_is_one_row_and_out_of_play_is_struck_not_banned(self):
         """The row's label and the fact that an out-of-play tribe is its own
@@ -1261,21 +1263,27 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertEqual(got["w.stats"],
                          "Gold:—|Tier:—|HP:—|Turn:—|Place:—")
 
-    def test_the_empty_strip_at_the_top_is_hidden(self):
-        """Fix list round 2 item 7: `#statebar` has a background and a radius, so
-        blanking it left a rounded empty bar above the card. The classic live
-        view is the one that fills it."""
+    def test_there_is_no_state_strip_at_all(self):
+        """REVERSED 2026-10-13 from `test_the_empty_strip_at_the_top_is_hidden`
+        (fix list round 2 item 7: `#statebar` has a background and a radius, so
+        blanking it left a rounded empty bar above the card).
+
+        The strip was the classic live view's; the Tavern view draws its own
+        status bar inside `#live-tavern`. That page is deleted, so nothing wrote
+        to the strip and hiding what nothing writes to is a workaround rather
+        than a fix — the element, its CSS and its writers are gone. The read that
+        replaces the hidden-flag check is the CARD SLOT: on a live frame it is
+        empty, which is the half of this a bare absence could not say.
+        """
         got = self.got
-        self.assertEqual(got["t.statebarhidden"], 1,
-                         "the tavern view draws its own status bar, so the "
-                         "classic strip must not be there at all")
-        self.assertEqual(got["classic.statebarhidden"], 0,
-                         "the classic view needs the strip")
-        # The welcome card is the one that leaves it empty.
-        welcome = _render([_shot("wel", _welcome_payload(), viewer="classic")])
-        self.assertEqual(welcome["wel.statebarhidden"], 1,
-                         "an empty state strip is a rounded bar with nothing in "
-                         "it")
+        self.assertEqual(got["t.tavern"], 1)
+        self.assertEqual(got["t.cardslotkids"], 0,
+                         "a card is sitting in the slot under a live frame")
+        welcome = _render([_shot("wel", _welcome_payload())])
+        self.assertGreater(welcome["wel.cardslotkids"], 0,
+                           "the first-run card did not draw in the slot")
+        # And the strip is not merely hidden: the element is not in the page.
+        self.assertNotIn("statebar", _render_source())
 
     def test_board_and_hand_share_one_panel_side_by_side(self):
         """Fix list round 1 item 4 / round 2 item 4: the taverner's row on top,
@@ -1374,37 +1382,44 @@ class TestTheTavernLiveInABrowser(_Rendered):
         got = _render([_shot("dup", rep)])
         self.assertEqual(got["dup.boardcards"], 2)
 
-    def test_the_classic_tavern_toggle_sits_on_the_nav_row(self):
-        """Round 3 item 7: right-aligned on the nav row, and out of the way while
-        Settle Up is open — that page has its own viewer toggle in its header."""
-        got = self.got
-        self.assertEqual(got["t.toggleinnav"], 1,
-                         "the live viewer flag is not on the nav row")
-        right, left = [int(v) for v in got["t.toggleright"].split(",")]
-        self.assertLess(right, 60, f"the toggle is {right}px from the right edge")
-        self.assertGreater(left, 200,
-                           "the toggle is not pushed to the right of the nav")
-        self.assertEqual(got["t.togglehidden"], 0)
-        # ...and it is out of the way over there: switching to Settle Up hides
-        # it, because that page has its own viewer toggle in its header.
-        settle = _render([_shot("s", _payload(), settle=True)])
-        self.assertEqual(settle["s.togglehidden"], 1,
-                         "the live viewer flag is still on screen over Settle Up, "
-                         "beside that page's own toggle")
+    def test_no_viewer_control_is_on_either_tab(self):
+        """REVERSED 2026-10-13 from
+        `test_the_classic_tavern_toggle_sits_on_the_nav_row` (round 3 item 7:
+        right-aligned on the nav row, hidden while Settle Up was open). All three
+        reads it used — where the flag sat, that it was visible on the live tab
+        and that the Settle Up tab hid it — were reads of the control.
 
-    def test_classic_still_renders_after_a_tavern_render(self):
-        """The flag's contract, and the way BACK.
-
-        These shots run in order, so by the time this one renders Classic the
-        page has already drawn the Tavern view — which is what caught the first
-        version: it cleared `#app`, destroying `#col-decide`/`#col-ref`, so the
-        toggle to Tavern worked and the toggle back threw. The tavern view has
-        its own container now and the classic panes are only hidden.
+        What replaces them is the absence, on BOTH tabs (the same discipline the
+        tab-row reversal in this suite uses: a count that can only ever be zero
+        is not a measurement, so the read spans the three ids the two flags and
+        their row could come back under, and the tavern view is asserted present
+        in the same shot).
         """
-        self.assertEqual(self.got["classic.tavern"], 0)
-        self.assertGreater(self.got["classic.classic"], 0,
-                           "the classic panes are empty after a tavern render — "
-                           "the way back to Classic is broken")
+        got = self.got
+        self.assertEqual(got["t.tavern"], 1,
+                         "the live view is not the page, so the zero below "
+                         "proves nothing")
+        self.assertEqual(got["t.navviewer"], 0,
+                         "a Classic | Tavern control is on the nav row")
+        settle = _render([_shot("s", _payload(), settle=True)])
+        self.assertEqual(settle["s.navviewer"], 0,
+                         "a viewer control is on screen over Settle Up")
+
+    def test_a_second_live_frame_still_draws_the_live_view(self):
+        """REVERSED 2026-10-13 from `test_classic_still_renders_after_a_tavern_render`,
+        which pinned the way BACK from the Tavern view to Classic — the bug being
+        that the first version cleared `#app` and destroyed the panes.
+
+        There is no way back and nothing to go back to; what still has to hold is
+        that a frame drawn after another frame re-draws the view rather than
+        leaving the page blank, and that the card slot stays empty. These shots
+        run in order, so `g7` has already drawn over `noshop` by the time it is
+        read.
+        """
+        self.assertEqual(self.got["g7.tavern"], 1)
+        self.assertEqual(self.got["g7.panelcount"], self.got["t.panelcount"],
+                         "the second frame drew a different page")
+        self.assertEqual(self.got["g7.cardslotkids"], 0)
 
 
 class TestTheLayoutByWidth(_Rendered):
@@ -2445,22 +2460,23 @@ class TestTheGameOverCard(_Rendered):
     """§6.5, and the reachability bug behind it.
 
     The end-of-game card arrives on a `welcome: true` payload with no board, and
-    `render` returned at the welcome branch BEFORE the viewer was consulted — so
-    the Tavern game-over card could not be reached in a real session at all, while
-    a direct `renderLiveTavern` call in a test made it look alive. These shots go
-    through `render`, so the route is part of what is measured.
+    `render` used to return at the welcome branch BEFORE the viewer was consulted
+    — so the Tavern game-over card could not be reached in a real session at all
+    while a direct `renderLiveTavern` call in a test made it look alive. These
+    shots go through `render`, so the route is part of what is measured, and
+    since 2026-10-13 there is one card: the route no longer consults a viewer and
+    the shot that rendered the CLASSIC game-over card is gone with that card.
     """
 
     @classmethod
     def shots(cls):
         return [_shot("over", _game_over_payload()),
                 _shot("auto", _game_over_payload(enabled=True)),
-                _shot("classic", _game_over_payload(), viewer="classic"),
-                # A tavern render, then the game-over payload: the card, not the
+                # A live render, then the game-over payload: the card, not the
                 # last shop screen still standing behind it.
                 _shot("after", _game_over_payload(), pre=_comps_payload(),
                       preclicks=[_open("Elementals")]),
-                _shot("firstrun", _welcome_payload(), viewer="tavern")]
+                _shot("firstrun", _welcome_payload())]
 
     def test_the_card_is_the_placement_and_the_round(self):
         got = self.got
@@ -2511,40 +2527,49 @@ class TestTheGameOverCard(_Rendered):
         self.assertIn(rep["privacy"], got["over.notes"],
                       "the sharing summary is not on the card")
 
-    def test_the_render_route_reaches_the_tavern_card(self):
+    def test_the_render_route_reaches_the_card(self):
         """The bug this class exists for."""
         got = self.got
         self.assertEqual(got["after.tavern"], 1)
         self.assertEqual(got["after.overbig"], "3rd · Round 12")
         self.assertEqual(got["after.tavernon"], 1)
         self.assertEqual(got["after.decidehidden"], 1,
-                         "the classic pane is not hidden behind the card")
+                         "the card slot is not hidden behind the card")
 
-    def test_classic_still_shows_the_classic_game_over_card(self):
+    def test_the_game_over_payload_always_draws_this_card(self):
+        """REVERSED 2026-10-13 from
+        `test_classic_still_shows_the_classic_game_over_card`, which rendered the
+        same payload with the viewer set to classic and asserted the OTHER card
+        drew (a card in `#col-decide` and no tavern layout). There is one card
+        now, so the honest pin is that the payload reaches it and leaves the slot
+        empty — which is what makes the card in the shot not a leftover.
+        """
         got = self.got
-        self.assertEqual(got["classic.tavern"], 0,
-                         "the tavern layout survived a Classic render")
-        self.assertGreaterEqual(got["classic.decidekids"], 1,
-                                "the classic game-over card did not draw")
+        self.assertEqual(got["over.tavern"], 1)
+        self.assertEqual(got["over.cardslotkids"], 0,
+                         "something is still drawing in the card slot")
+        self.assertEqual(got["over.decidehidden"], 1)
 
-    def test_a_first_run_card_is_classic_and_clears_the_tavern_layout(self):
-        """The other half of the same bug: a first-run welcome has no Tavern
-        design, so it draws the classic card — but the Tavern container kept its
-        last frame and `tavern-on` kept the panes hidden, so the card appeared
-        behind a stale Tavern screen."""
+    def test_a_first_run_card_clears_the_live_view(self):
+        """The other half of the same bug: a first-run welcome has no live-view
+        design, so it draws the shell card — but the view's container kept its
+        last frame and `tavern-on` kept the card slot hidden, so the card
+        appeared behind a stale screen. (The card itself is no longer "the
+        classic card": it is the only one there is.)"""
         got = self.got
         self.assertEqual(got["firstrun.tavern"], 0)
         self.assertEqual(got["firstrun.tavernon"], 0)
         self.assertEqual(got["firstrun.decidehidden"], 0)
-        self.assertGreater(got["firstrun.classic"], 0,
-                           "the classic welcome card is not on screen")
+        self.assertGreater(got["firstrun.cardslotkids"], 0,
+                           "the welcome card is not on screen")
 
 
 class TestTheHarnessItself(unittest.TestCase):
     def test_a_broken_payload_is_reported_rather_than_swallowed(self):
         """The rehearsal, and it has to break something THIS view reads: a shop
-        the renderer iterates. (Breaking `board` would prove nothing — the
-        classic renderer walks it and the tavern view never does.)"""
+        the renderer iterates. (Breaking `board` would prove nothing — the view
+        reads `board_cards`, and a payload with no `board` at all is a shape
+        `live.py` never sends.)"""
         bad = _payload()
         bad["shop_rank"] = "not a list"
         browser.require_browser(self)

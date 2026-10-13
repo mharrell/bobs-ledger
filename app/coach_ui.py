@@ -427,124 +427,66 @@ _HTML = r"""<!doctype html>
   body { margin:0; background:var(--bg); color:var(--text);
          font:14px/1.45 "Segoe UI", system-ui, sans-serif; padding:8px; }
   #wrap { max-width:1600px; margin:0 auto; }
-  /* State strip: stat tiles (muted label over a semibold value), then the
-     chip row (triggers, bans, out-of-play, forecast). */
-  #statebar { display:flex; align-items:center; gap:16px; flex-wrap:wrap;
-              background:var(--panel); border:1px solid var(--border);
-              border-radius:var(--radius); padding:6px 12px; margin-bottom:8px;
-              font-size:14px; }
-  #statebar .tile { display:inline-flex; flex-direction:column;
-                    align-items:flex-start; line-height:1.25; }
-  #statebar .lbl { color:var(--dim); font-weight:400; font-size:11px; }
-  #statebar .val { font-weight:600; font-size:15px;
-                   font-variant-numeric:tabular-nums; }
-  #statebar .val.gold { color:var(--gold); }
-  #statebar .val.warn { color:var(--warn); }
-  /* DYING HP: --crit-ink, not --critical — critical is 3.6:1 on this
-     surface, below large-text size at 15px. */
-  #statebar .val.bad { color:var(--crit-ink); font-weight:700; }
-  #statebar .good { color:var(--good); font-weight:600; font-size:12px; }
-  #statebar .bad { color:var(--bad); font-weight:600; font-size:12px; }
-  #statebar .banned { color:var(--text-2); font-weight:400; font-size:12px; }
-  /* Out-of-play tribes (rotated by a patch: Naga since 36.6.1) are a THIRD
-     state, not a ban — struck through and warn-colored so "Naga — out of
-     play" never reads as "Naga was banned this game". */
-  #statebar .oop { color:var(--warn); font-weight:400; font-size:12px;
-                   text-decoration:line-through; }
-  /* Tribe picker (2026-09-19): at hero select the game's own minion-types
-     panel lists the tribes IN the tavern this game, and tapping those five
-     makes the bans exact from turn 1 while the pool inference takes minutes.
-     The taps ARE the in-tavern five (2026-10-13, was the five banned) — the
-     old direction marked the tapped five as banned, which inverted every comp
-     row, chip and count for a whole game. */
-  .inplaychips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
-  .inplaychips .chip { border:1px solid var(--border); border-radius:12px;
-                    padding:2px 10px; font-size:12px; cursor:pointer;
-                    color:var(--dim); user-select:none; }
-  /* Picked = "you have said this one is in the tavern" — an affirmative mark
-     now (2026-10-13). It was red with a line-through, which is how this page
-     draws "banned": the chip said the opposite of what the tap meant, in the
-     same visual language, which is the bug that survived a year of looking at
-     this picker. */
-  .inplaychips .chip.picked { border-color:var(--good); color:var(--text);
-                              background:var(--panel2); }
-  /* Two panes on a wide window: DECIDE (the turn's decision — never
-     needs scrolling, sticky) and REFERENCE (scout intel + shopping
-     lists, scrolls). Under 1200px — or a very short window, where a
-     sticky column taller than the viewport would trap its bottom —
-     they stack into the original single priority column, decide first.
-     NEVER set overflow on a pane: it clips the 4.5x hover zoom. */
-  #app { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  /* (The STATE STRIP lived here: stat tiles, the trigger chips, the ban and
+     out-of-play lists, the next-fight forecast. It was the classic live page's
+     header row, and the Tavern view answers all of it in `lvStatus` and
+     `lvFacts` with rows rather than a strip. Nothing writes to it any more, so
+     the element and its rules went with the renderer on 2026-10-13 — a live
+     rule for a class nothing carries is how a removed control comes back.) */
+  /* (The tribe picker's chip row lived here — `.inplaychips`, the five in the
+     tavern, red-with-a-line-through until 2026-10-13 inverted it to an
+     affirmative mark. The Tavern view has its own row (`.lv-tribes`), and the
+     `/bans` + `/in_play` route keeps serving it; only this renderer's copy of
+     the picker is gone.) */
+  /* ONE COLUMN (2026-10-13). The two-pane page is gone: DECIDE held the turn's
+     decision and was sticky, REFERENCE scrolled beside it. With a single
+     renderer the shell has one element left — the welcome and game-over card's
+     slot — so the second track, the sticky rule and the pane-stack rule had
+     nothing to lay out. NEVER set overflow here: it clips the 4.5x hover zoom. */
+  #app { display:grid; grid-template-columns:minmax(0,1fr);
          gap:8px; align-items:start; }
-  #app > section { display:flex; flex-direction:column; gap:8px;
-                   min-width:0; }
-  #col-decide { position:sticky; top:8px; }
+  /* The short-window fallback. Kept as a flex COLUMN rather than deleted with
+     the two-pane layout: it is the branch the browser suite measures the live
+     view in (a 1400x900 window lands here), and `flex-basis` being a height in
+     it is the bug fix list round 1 item 1 was about. */
   @media (max-width:1199.98px), (max-height:899px) {
     #app { display:flex; flex-direction:column; }
-    #col-decide { position:static; }
   }
-  .box { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
-         padding:7px 9px; }
-  .box h3 { margin:0 0 4px; font-size:11px; letter-spacing:.06em;
-            text-transform:uppercase; color:var(--dim); }
-  /* The situation panel leads the page: gold border. It used to be "Do this
-     now" with big numbered steps; the steps are gone (2026-10-06, PIVOT.md) —
-     what it carries now is state, danger and a pending pick's options. */
-  .instructions { border:2px solid var(--gold); padding:10px 12px; }
-  .instructions h3 { color:var(--gold); font-size:12px; }
-  .instructions .footline { margin-top:6px; padding-top:5px;
-                            border-top:1px solid var(--border);
-                            color:var(--dim); font-size:13px; }
-  /* The situation read: direction, strength, danger in one line. */
-  .instructions .situation { font-size:14px; font-weight:600;
-                             color:var(--warn); padding:2px 0 3px; }
-  /* DANGER: the fragility band as its own line. The 2026-09-18 loss was a
-     misread of a legal-looking plan at 14 HP, so this must not be buried in
-     the row above it. */
-  .instructions .danger { font-size:15px; font-weight:700; padding:4px 6px;
-                          margin:2px 0 4px; border-radius:3px; }
-  /* Status never rides color alone: the mark (▲/■) + the word FRAGILE/DYING
-     carry the state; the tint band just makes it un-missable. Body text is
-     ink (--crit-ink for dying), never the status color itself — critical is
-     3.6:1 on this surface, too low for small text. */
-  .instructions .danger.fragile { color:var(--text); background:var(--warn-bg);
-                                  border:1px solid var(--warn-border); }
-  .instructions .danger.fragile .dmark { color:var(--warn); }
-  .instructions .danger.dying { color:var(--crit-ink); background:var(--crit-bg);
-                                border:1px solid var(--crit-border); }
-  .instructions .danger.dying .dmark { color:var(--critical); }
-  #statebar .warn { color:var(--warn); font-weight:700; }
+  /* (The SITUATION BOX lived here — `.instructions`, the gold-bordered card
+     that led the page, with its `.situation` read, its `.danger` fragility band
+     (`.fragile`/`.dying` + `.dmark`) and its `.footline` rows, plus the
+     `.box`/`.box h3` panel they were built from. Every one of them was rendered
+     by the classic live page, which went on 2026-10-13; the Tavern view answers
+     the same questions in `lvFacts`/`lvBoardHand` panels, and its own fragility
+     band is a row. A rule whose class nothing carries is how a removed control
+     comes back, so the rules went with the renderer.) */
   /* (The plan-step rules lived here: the kind chip, the action, the tag, the
      reason, the hover clone, and "step 1 is the view's ONE hero". All of it
      styled the numbered plan, which the live page no longer renders — the step
      vocabulary went with it on 2026-10-06, PIVOT.md. The `.hero` rule's whole
      premise was that one line was the answer.) */
-  /* Horizontal game-like card tiles: thumb on top, name below. */
-  .tiles { display:flex; flex-wrap:wrap; gap:10px 12px; align-items:flex-start; }
+  /* Horizontal game-like card tiles: thumb on top, name below. (The `.tiles`
+     flex ROW was the classic page's card container: the Tavern view puts its
+     cards in `.lv-row`, `.brow-tiles`, `.lv-opts` and `.lv-slots`. It went with
+     that renderer on 2026-10-13, and `.tile` itself survives — the Tavern card
+     IS this component, restyled under `.tavern`.) */
   .tile { display:flex; flex-direction:column; align-items:center; gap:2px;
           width:104px; min-width:0; text-align:center; }
   .tile .thumb { width:56px; height:56px; }
   .tile .tname { font-size:12px; line-height:1.25; width:104px; overflow:hidden;
                  text-overflow:ellipsis; white-space:nowrap; }
   .tile .tsub { font-size:11px; color:var(--text-2); }
-  .tile .xcount { color:var(--dim); font-size:11px; }
   /* (`.tile.buynow` — the plan's pick glowing gold in the shop row — went with
      the ranking itself: one lit tile is the recommendation the live page no
      longer makes, 2026-10-06.) */
   /* (The sell groups lived here: "Safe to sell | Do not sell" as two labelled
      columns with a divider and good/bad name colors. Both labels are verdicts;
      the box is "Your board" now, one row of numbers and roles.) */
-  /* Hand-charge engine row: deployer on board? slot free? charging? */
-  .engrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
-  .engbit { font-size:12px; color:var(--text-2); }
-  .engbit.ok { color:var(--good); }
-  .engbit.bad { color:var(--bad); font-weight:700; }
-  /* Target-comp tiles: missing pieces fully opaque, owned faded. */
-  .tile.comprow { opacity:.4; }
-  .tile.comprow.missing { opacity:1; }
-  /* A banned-tribe piece of a hybrid comp: struck out, dim. */
-  .tile.comprow.bannedrow .tname { text-decoration:line-through; }
-  .tile.comprow.bannedrow .tsub { color:var(--bad); }
+  /* (The HAND ENGINE row (`engrow`/`engbit`) and the target-comp tile states
+     (`comprow`/`missing`/`bannedrow`) lived here. Both were the classic live
+     page's boxes — the engine checks and the "comp pieces" hunt list — and went
+     with it on 2026-10-13. `hand_engine` still computes the engine in the
+     analysis for telemetry and the corpus; it is the RENDERING that is gone.) */
   .gold { color:var(--gold); }
   .thumb { width:56px; height:56px; border-radius:5px; object-fit:cover; flex:none;
            cursor:zoom-in; transition:transform .12s ease-out; }
@@ -573,67 +515,25 @@ _HTML = r"""<!doctype html>
             box-shadow:0 8px 24px var(--shadow); }
   .tipname { font-weight:700; font-size:13px; }
   .tiptext { font-size:12px; color:var(--text-2); margin-top:2px; }
-  .chips { display:flex; flex-wrap:wrap; gap:4px; }
-  .chip { background:var(--panel2); border-radius:10px; padding:1px 8px;
-          font-size:13px; }
-  /* Comps panel (bottom): tier headers + click-to-expand comp rows. The
-     expanded shopping list reuses the target-comp tile language (owned
-     faded, banned struck out, missing opaque). */
-  .cptier { font-size:11px; font-weight:700; letter-spacing:.06em;
-            text-transform:uppercase; color:var(--dim); margin:6px 0 2px; }
-  .cptier:first-child { margin-top:0; }
-  .crowhead { display:flex; align-items:baseline; gap:7px; padding:2px 6px;
-              cursor:pointer; border-radius:4px; }
-  .crowhead:hover { background:var(--panel2); }
-  /* Detection-window rows: tribe not yet confirmed in this lobby — still
-     listed (it's the game-level view) but visibly uncertain. */
-  .crow.unconf { opacity:.5; }
-  .carrow { color:var(--dim); font-size:11px; flex:none; width:10px; }
-  .cname { font-weight:600; }
-  .cstat { color:var(--text-2); font-size:12px; flex:none; }
-  .cbody { padding:0 0 4px 17px; }
-  /* Comp guidance (2026-10-02): the curated per-comp advice that ships in
-     meta/comps.json and the mined guide fetched on expand. Before this the
-     expanded row showed card chips only, so none of it reached a player. */
-  .cguidance { margin:0 0 5px; }
-  .cline { font-size:12px; line-height:1.45; padding:1px 0; }
-  .cline.dim { color:var(--text-2); }
-  .cguideslot:empty { display:none; }
-  .cguidefull { margin-top:5px; padding-top:5px;
-                border-top:1px solid var(--gridline); }
-  .cguidemd { font-size:12px; line-height:1.5; color:var(--text-2);
-              white-space:pre-wrap; margin:3px 0 0; font-family:inherit;
-              max-height:320px; overflow-y:auto; }
+  /* (The classic COMPONENTS PANEL's rules lived here — `cptier` tier headers,
+     the `crowhead`/`crow`/`carrow`/`cname`/`cstat`/`cbody` rows with their
+     `unconf` state, the `cguidance`/`cline` advice block and the
+     `cguideslot`/`cguidefull`/`cguidemd` fetched-guide node. The panel, its
+     helpers and the `/guide/<slug>` renderer went on 2026-10-13; the Tavern
+     comps screen has its own vocabulary (`lv-crow`, `lv-copen`, `lv-meta`,
+     `lv-gmd`) and its own `lvLoadGuide`. The classic picker's `.chips`/`.chip`
+     row went with them — the Tavern tribe row is `.lv-tribes`/`.lv-chip`.) */
   /* (The plan's per-step line and its gold step number lived here. The plan is
      not rendered on the live page any more — 2026-10-06, PIVOT.md.) */
-  .target { font-size:14px; font-weight:600; color:var(--gold); }
-  .tag-core { color:var(--gold); }
-  .tag-spell { color:var(--k-spell); }
-  .tag-addon { color:var(--warn); }
-  /* Comp direction meter: track (light step of the same ramp) + severity
-     fill + candidate name + the text state that carries the meaning. */
-  .mrow { display:flex; align-items:center; gap:8px; padding:2px 0;
-          font-size:14px; min-width:0; }
-  .mrow .meter { width:44px; height:8px; border-radius:4px; flex:none;
-                 background:rgba(255,217,122,.16); overflow:hidden;
-                 position:relative; }
-  .mrow .meter.near { background:rgba(250,178,25,.14); }
-  .mrow .meter:not(.met):not(.near) { background:var(--gridline); }
-  .mrow .meter .fill { position:absolute; inset:0 auto 0 0; display:block;
-                       height:100%; border-radius:4px; min-width:4px;
-                       background:var(--dim); }
-  .mrow .meter.near .fill { background:var(--warn); }
-  .mrow .meter.met .fill { background:var(--gold); }
-  .mrow .mname { font-weight:600; overflow:hidden; text-overflow:ellipsis;
-                 white-space:nowrap; }
-  .mrow .mstat { color:var(--text-2); font-size:12px; flex:none; }
-  .mrow.locked .mname { color:var(--gold); font-weight:700; }
-  /* Pane headers: the two-pane grouping (Decide | Reference). */
-  .pane-h { margin:0; font-size:11px; font-weight:700; letter-spacing:.14em;
-            text-transform:uppercase; color:var(--dim); }
+  /* (THE TARGET-COMP BOX, THE COMP-DIRECTION METER AND THE PANE HEADERS lived
+     here: `.target`, the `tag-core`/`tag-spell`/`tag-addon` shop tags, the
+     `.mrow` meter with its `meter`/`near`/`met`/`fill`/`mname`/`mstat`/`locked`
+     parts, `.pane-h` (the "Decide | Reference" headers), `.score` and
+     `.xcount`. All of them were rendered by the classic live page and went with
+     it on 2026-10-13 — the Tavern comps screen states the same facts as rows
+     and slots, and the pane headers died with the two-pane shell. `.none`
+     survives: the Tavern panels use it for an empty row.) */
   .none { color:var(--dim); font-style:italic; }
-  .score { color:var(--dim); flex:none; }
-  .xcount { color:var(--dim); font-weight:400; }
   /* Welcome (the deliberate empty state): teaches instead of faking.
      Shown on fresh boot, a new game's first tick, and after Clear. */
   .welcome { margin-top:8vh; padding:30px 34px; border:1px solid var(--dim);
@@ -696,48 +596,22 @@ _HTML = r"""<!doctype html>
   #tabs #share-toggle:hover { opacity:1; color:var(--text-2);
                               border-color:var(--border); }
   #tabs #share-toggle[hidden] { display:none; }
-  /* The Live viewer flag (2026-10-09): Classic is the shipped renderer, Tavern
-     is the LIVE_VIEW_DESIGN.md build. Same shape as the Settle Up flag — a
-     styling toggle, not a rewrite switch, and the classic path below is
-     untouched. It used to live in the top nav; it heads the LIVE page now
-     (one toggle per page — see the markup note). */
-  /* The Live viewer flag (2026-10-09). It lives on the NAV row, right-aligned
-     (round-3 fix list item 7): it is a page-level choice, and the nav row is
-     where the page-level controls are. It is HIDDEN while Settle Up is the open
-     tab — that page has its own viewer toggle in its header, and two toggles on
-     screen at once was the reason it was moved off the nav in the first place. */
-  #live-viewer-row { display:flex; align-items:center; margin-left:auto; }
-  #live-viewer-row[hidden] { display:none; }
-  /* The Tavern Live view's own container, and the two classic panes it hides
-     (2026-10-09). Hiding rather than replacing is what keeps the way back to
-     Classic working.
-     **It FILLS the window now (2026-10-09, fix list round 1).** `#app` is a
-     two-column grid above 1200x900 and a flex COLUMN at or below it, and the
-     tavern container was a grid rule with `flex:1 1 100%` as its size in the
-     flex case — where `flex-basis` is a height, so it did not stretch across.
-     Measured before the fix: 815px of a 1384px window. One column when the grid
-     applies, and `width:100%` in both. */
-  #app.tavern-on { grid-template-columns:minmax(0,1fr); align-items:stretch; }
-  #app.tavern-on #live-tavern { grid-column:1 / -1; width:100%;
-                                min-width:0; }
-  #app.tavern-on > #col-decide, #app.tavern-on > #col-ref { display:none; }
-  /* IN TAVERN MODE THE VIEW TAKES THE WHOLE WINDOW (fix list round 4 item 5,
-     2026-10-13). The tavern is not two panes, so the shell's two-column grid has
-     nothing to put in its second column — and its 340px of rail came straight off
-     the layout this view measures. This rule only has anything to override in the
-     GRID branch of `#app` (width >=1200px AND height >=900px); below that the
-     shell is a flex column already. MEASURED at a 1500x1000 window, where the
-     branch is the grid: with this rule the box is 1432px, and without it 1132px
-     — three squeezed columns against three usable ones. The three-column layout
-     itself is a WINDOW rule and asks for 1800px, above which `#wrap`'s 1600px cap
-     means the box is 1572px whatever the window is. */
-  @media (min-width: 1180px) {
-    #app.tavern-on { grid-template-columns:minmax(0,1fr); }
-  }
-  /* An EMPTY state strip is a rounded bar with nothing in it, and the welcome
-     and game-over cards leave it empty by design (2026-10-09, fix list round 2
-     item 7). It is hidden rather than blanked. */
-  #statebar[hidden] { display:none; }
+  /* (The Live viewer flag's row lived here — `#live-viewer-row`, right-aligned
+     on this nav row since round-3 item 7, and hidden by `showTab` while Settle
+     Up was open because that page had its own. Both flags went on 2026-10-13
+     with the choice they offered, and so did the two rules.) */
+  /* The live view's own container. It is HIDDEN, not destroyed: the welcome and
+     game-over card lives in `#col-decide`, and hiding rather than replacing is
+     what keeps the card working across a live frame.
+     **It FILLS the window (2026-10-09, fix list round 1).** `#app` is a grid
+     above 1200x900 and a flex COLUMN at or below it, and the container was a
+     grid rule with `flex:1 1 100%` as its size in the flex case — where
+     `flex-basis` is a height, so it did not stretch across. Measured before the
+     fix: 815px of a 1384px window. `width:100%` is what holds in both branches,
+     and since 2026-10-13 the base `#app` rule is one column, so the
+     `grid-template-columns` override has nothing left to override. */
+  #app.tavern-on #live-tavern { width:100%; min-width:0; }
+  #app.tavern-on > #col-decide { display:none; }
   /* The release stamp (2026-10-07): which release this overlay was served
      by, bottom-right and nearly invisible. A screenshot or a field report
      can then name the release without anyone digging for it — the question
@@ -762,49 +636,40 @@ _HTML = r"""<!doctype html>
                    padding:6px 12px; font:600 12px "Segoe UI", system-ui;
                    cursor:pointer; }
   .s-head button:hover { color:var(--text-2); }
-  /* The two Settle Up segment controls (2026-10-08 viewer flag; 2026-10-09
-     mode): Classic | Tavern picks the renderer, Summary | Step through picks
-     the Tavern mode and sits next to the game dropdown. A styling toggle, not
-     a rewrite switch — the classic path is byte-for-byte the old renderer.
+  /* The ONE segment control left in the Settle Up header (2026-10-09): Summary
+      | Step through, next to the game dropdown. It was one of two — the other
+      was `Classic | Tavern`, which picked the reviewer and went on 2026-10-13
+      with the choice.
      **The `.vseg` class is what styles the active button, and nothing carried
-     it until today**: the JS set `class="on"` on a span that had no class, so
-     the shipped Classic | Tavern toggle gave NO visible sign of which viewer
-     was active. Both spans carry it now. */
+     it until 2026-10-09**: the JS set `class="on"` on a span with no class, so
+     the shipped control gave NO visible sign of which half was active. */
   /* The segment control itself (2026-10-09, fix list round 1 item 9 / round 2
      item 8: "theme the Classic | Tavern toggle"). `.vseg` only ever described
      the ACTIVE state and the radii — the buttons themselves were whatever the
-     browser draws, which is why the Live one read as a white pill with grey
-     text. It is themed here for BOTH pages (the Settle Up pair sits in
-     `.s-head`, whose own button rule agrees with this), and over the Tavern
-     view it takes the tavern palette, so the control matches what it toggles. */
+     browser draws, which is why the toggle read as a white pill with grey text.
+     It is themed here for the control's home in `.s-head`, whose own button
+     rule agrees with this. The tavern-palette override that rode the nav row
+     went with the live flag: `.tavern` cannot reach the nav (the nav is a
+     sibling of `#app`), so that rule was only ever about the deleted control. */
   .vseg { display:inline-flex; gap:0; }
   .vseg button { background:var(--panel); color:var(--dim);
                  border:1px solid var(--border); padding:6px 12px;
                  font:600 12px "Segoe UI", system-ui; cursor:pointer; }
   .vseg button:hover { color:var(--text-2); }
   .vseg button { border-radius:0; }
-  #live-viewer-row .vseg button { padding:6px 14px; }
   .vseg button:first-child { border-radius:var(--radius) 0 0 var(--radius); }
   .vseg button:last-child { border-radius:0 var(--radius) var(--radius) 0;
                             border-left:none; }
   .vseg button.on { color:var(--text); background:var(--panel2);
                     border-color:rgba(255,255,255,.22); }
   .vseg button:disabled { opacity:.45; cursor:default; color:var(--dim); }
-  /* Over the Tavern view: the same control in the tavern's own colours, with
-     the design's selection amber for the active half (§7: amber is selection).
-     The class rides the NAV row, because that is where the control lives now. */
-  #tabs.tavern #live-viewer-row .vseg button {
-    background:var(--tpanel); color:var(--tmute); border-color:var(--tline);
-    padding:6px 14px; min-height:44px; }
-  #tabs.tavern #live-viewer-row .vseg button:hover { color:var(--ttext); }
-  #tabs.tavern #live-viewer-row .vseg button.on {
-    background:var(--tsel); color:var(--tonsel); border-color:var(--tsel); }
   /* An id beats the UA's [hidden] rule, so hiding this has to be said. */
   #settle-mode[hidden] { display:none; }
-  /* The Tavern palette (REPLAY_VIEWER_DESIGN.md §6), SCOPED to .tavern so the
-     classic viewer and the live overlay keep their own tokens untouched.
-     Gold is attack only; --tsel is the selection accent. Contrast per §7:
-     --thp on --tcard is ~4.5:1 at 15px bold — revisit with real art. */
+  /* The Tavern palette (REPLAY_VIEWER_DESIGN.md §6), SCOPED to `.tavern` so
+     `meta/`'s own pages and the standalone review keep the shell tokens. Both
+     of this page's views carry it now (2026-10-13): the live view and the
+     review. Gold is attack only; --tsel is the selection accent. Contrast per
+     §7: --thp on --tcard is ~4.5:1 at 15px bold — revisit with real art. */
   .tavern { --tbg:#17110d; --tpanel:#231913; --tcard:#33261d; --tline:#5a4332;
             --ttext:#f1e6d2; --tmute:#b09c84; --tsel:#e0a43a;
             --tonbuff:#10140f;   /* text on a --tbuff fill */
@@ -824,8 +689,9 @@ _HTML = r"""<!doctype html>
             background:var(--tbg); color:var(--ttext); border-radius:var(--radius);
             padding:10px 12px; }
   /* §8: "Visible focus ring (2px --sel, with offset) on all controls". Scoped to
-     .tavern, so it reaches both Tavern viewers and leaves the classic pages with
-     the browser's own ring. The 44px minimum targets are per control, below. */
+     .tavern, so it reaches both of this page's Tavern views and leaves the shell
+     (the nav, the sharing control, the Settle Up header) with the browser's own
+     ring. The 44px minimum targets are per control, below. */
   .tavern :focus-visible { outline:2px solid var(--tsel); outline-offset:2px; }
   .tavern .ts-head { font:600 13px "Segoe UI", system-ui; margin-bottom:8px; }
   .tavern .ts-head .tm { color:var(--tmute); font-weight:400; font-size:12px; }
@@ -1478,8 +1344,6 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-fine { max-width:620px; margin:8px auto 0; }
   .turn { background:var(--panel); border:1px solid var(--border);
           border-radius:var(--radius); padding:10px 12px; margin-bottom:10px; }
-  .turn.s-sticky { position:sticky; top:42px; z-index:9;
-                   box-shadow:var(--shadow); }
   .turn.collapsed > *:not(.thead) { display:none; }
   .turn .thead { display:flex; gap:14px; align-items:baseline;
                  border-bottom:1px solid var(--gridline);
@@ -1506,65 +1370,56 @@ _HTML = r"""<!doctype html>
   .tbtn.on { color:var(--text); background:var(--panel2);
              border-color:rgba(255,255,255,.22); }
   .turn .tturn { font-weight:700; text-transform:uppercase; font-size:12px; }
-  .turn .tmeta { color:var(--dim); font-size:12px; }
   .turn .comp { margin-left:auto; color:var(--gold); font-size:12px; }
   .brow { display:grid; grid-template-columns:86px 1fr; gap:10px;
           padding:2px 0; font-size:13px; }
   .brow .blbl { color:var(--dim); text-transform:uppercase; font-size:11px;
                 padding-top:2px; }
-  .brow .them { color:var(--text-2); }
   .brow-tiles { display:flex; flex-wrap:wrap; gap:6px; }
-  .grw { color:var(--good); }
   .turn .note, .turn .q { font-size:12px; padding-top:4px; }
   .turn .note { color:var(--dim); }
   .turn .q { color:var(--warn); }
-  .turn .phase { border-top:1px dashed var(--gridline); margin-top:8px;
-                 padding-top:8px; font-size:13px; color:var(--text-2); }
-  .turn .phase .pacted { color:var(--text); font-weight:600; }
-  .turn .phase .pacted .pout { color:var(--dim); font-weight:400;
-                               font-size:12px; }
-  .turn .phase details.coach { margin-top:4px; }
-  .turn .phase details.coach summary { cursor:pointer; color:var(--dim);
-                                       font-size:12px; }
-  .turn .phase details.coach summary:hover { color:var(--text-2); }
-  .turn .phase .pplan { color:var(--text); margin-top:4px; }
-  .turn .phase .v { font-weight:600; }
-  .turn .phase .v-taken { color:var(--good); }
-  .turn .phase .v-ignored { color:var(--bad); }
-  .turn .phase .v-none, .turn .phase .v-ungraded, .turn .phase .v-pass {
-    color:var(--dim); font-weight:400; }
-  .turn .phase .pout { color:var(--dim); font-size:12px; }
+  /* (THE CLASSIC REVIEW'S PHASE ROWS lived here — `.turn .phase` with its
+     `pacted` "You: bought…" line, its `pout` outcome, its folded `details.coach`
+     ("coaching — taken") and the `v`/`v-taken`/`v-ignored`/`v-none`/`v-ungraded`
+     /`v-pass` verdict vocabulary, plus the `s-sticky` turn header, the `tmeta`
+     numbers, the `grw` growth span and the opponent row's `them` colour. The
+     classic reviewer and `phaseRow` went on 2026-10-13; the verdict vocabulary
+     is not lost — `settle_up._verdict` still produces it, the standalone
+     `/review` page prints it, and the rail's Plan summary carries it here.) */
 </style>
 </head>
 <body>
 <div id="wrap">
-<div id="statebar">Waiting for the coach…</div>
+<!-- NO STATE STRIP (2026-10-13). `#statebar` was the classic live page's stat
+     tile row, and the Tavern view has its own status bar (`lvStatus`, inside
+     `#live-tavern`). With one renderer left, nothing filled the strip, which
+     left a rounded empty bar above the card — the thing fix list round 2 item 7
+     hid it for. The element, its nine CSS rules and every line that touched it
+     are gone rather than left hiding on every render: a live rule for something
+     nothing writes to is how a removed control comes back. -->
 <div id="freshness"></div>
 <nav id="tabs">
 <button class="tab on" data-tab="live">Another Round</button>
 <button class="tab" data-tab="settle">Settle Up</button>
 <button id="share-toggle" hidden></button>
-<!-- The Live page's Classic | Tavern flag, right-aligned on the NAV row
-     (round-3 fix list item 7): it is a page-level choice, and the nav row is
-     where the page-level controls live. It HIDES itself while Settle Up is
-     open — that page has its own viewer toggle in its header, and two toggles
-     on screen at once is what moved this off the nav in the first place. -->
-<div id="live-viewer-row">
-<span id="live-viewer" class="vseg" title="Live page style — Tavern is the
-reference layout (LIVE_VIEW_DESIGN.md): the same facts, no verdicts">
-<button data-v="classic" class="on">Classic</button>
-<button data-v="tavern">Tavern</button>
-</span>
-</div>
+<!-- NO VIEWER FLAG (2026-10-13). This row carried the Live page's
+     `Classic | Tavern` toggle (round-3 fix list item 7) and the Settle Up
+     header carried its own. Tavern is the ONLY style now, so both controls,
+     both localStorage keys (`bl-live-viewer`, `bl-settle-viewer`) and the
+     branch each one drove are gone — a stale value in a player's browser is
+     read by nothing, which is what makes its absence harmless. -->
 </nav>
 <div id="app">
+<!-- The welcome and game-over card's slot. It kept the id of the classic page's
+     DECIDE pane because the card has always lived here and the id is what the
+     suite and the dev replay driver read; the REFERENCE pane that was its
+     sibling is gone with the classic page, and so is the second grid track (see
+     the `#app` rule). -->
 <section id="col-decide"></section>
-<section id="col-ref"></section>
-<!-- The Tavern Live view's own container (2026-10-09). It is separate from the
-     two classic panes on purpose: the Tavern renderer clears ITS container, so
-     switching back to Classic finds #col-decide and #col-ref still there. A
-     shared container meant the first toggle to Tavern destroyed the classic
-     panes and the way back threw - measured in a browser, not guessed. -->
+<!-- The live view's own container, kept separate from the card slot on purpose:
+     `renderLiveTavern` clears ITS container, so the card is never destroyed by
+     a frame — it is only hidden while the live view draws. -->
 <div id="live-tavern" hidden></div>
 </div>
 <section id="settle">
@@ -1576,13 +1431,11 @@ Step through replays the turn one action at a time">
 <button data-m="summary" class="on">Summary</button>
 <button data-m="step">Step through</button>
 </span>
-<span id="settle-viewer" class="vseg" title="Settle Up viewer style — Tavern is
-the single-turn design (REPLAY_VIEWER_DESIGN.md)">
-<button data-v="classic" class="on">Classic</button>
-<button data-v="tavern">Tavern</button>
-</span>
+<!-- NO REVIEWER FLAG (2026-10-13). This is where the `Classic | Tavern` segment
+     for the saved game sat. The review IS the Tavern layout now, so there is
+     nothing to choose and no `bl-settle-viewer` key anywhere in the page. -->
 <button id="settle-rebuild" title="Re-derive this saved game from its own
-source log — upgrades older saves to the current viewer's data (replays
+source log — upgrades older saves to this viewer's data (replays
 the game; the session log must still exist)">Rebuild</button>
 <button id="settle-folder" title="Open the folder the saved replays live in">Open folder</button>
 </div>
@@ -1765,12 +1618,6 @@ function hoverCard(elm, cid, name) {
   big.src = '/card/' + id + '.png';
 }
 function leaveCard() { tipCid = null; tip.hidden = true; }
-function box(title, body) {
-  const b = el('div', 'box');
-  b.appendChild(el('h3', null, title));
-  if (body) b.appendChild(body);
-  return b;
-}
 // Card ids upstream has NO art for at all (the /img and /card chains both
 // 404'd), fetched once from GET /artmiss: thumb() renders the placeholder
 // directly, so they stop paying a 404 round-trip per tile per rebuild. The
@@ -1828,9 +1675,7 @@ function tile(cid, name, sub, opts) {
   // under it (fix list round 1 item 2 / round 2 item 1 — the tile's own caption
   // is clamped to the card's width and read as a truncated second name).
   if (!opts.noname) {
-    const nm = el('div', 'tname', badgeName(cid, name));
-    if (opts.n > 1) nm.appendChild(el('span', 'xcount', '  ×' + opts.n));
-    t.appendChild(nm);
+    t.appendChild(el('div', 'tname', badgeName(cid, name)));
   }
   if (sub) {
     const s = el('div', 'tsub');
@@ -1852,132 +1697,20 @@ function statSub(m) {
   s.appendChild(el('span', 'stat-hp', String(m.health ?? '?')));
   return s;
 }
-// Comps panel: one playable comp as a clickable row. Clicking expands its
-// required cards (core, then addons) — owned faded, banned-this-game struck
-// out, missing fully opaque, same language as the Looking-for box; clicking
-// again collapses. The open set survives the rebuilds (a rebuild
-// drops the DOM but re-opens whatever was open). The collapsed row already
-// says how much of the core you own, so expanding is only for the detail.
-const _openComps = new Set();
-// Expanded bodies are cached keyed by slug + the exact rows (core/addons
-// with their owned/banned flags — those are compTiles' only inputs, and
-// keying on them is what keeps a just-bought card from still reading
-// "have"/"missing"). appendChild re-parents, so the <img>s persist across
-// the full-DOM rebuilds instead of being re-requested every tick.
-const _compBodyCache = new Map();
-function compBody(c) {
-  const key = c.slug + '|' + JSON.stringify([c.core, c.addons]);
-  let node = _compBodyCache.get(key);
-  if (!node) {
-    node = el('div', 'cbodyinner');
-    // The curated guidance that ships with the comp DB. Until 2026-10-02 it
-    // was read by nothing: an expanded row showed card chips only, so the
-    // written advice (and all 20 mined guides) never reached a player.
-    const g = el('div', 'cguidance');
-    if (c.difficulty) {
-      g.appendChild(el('div', 'cline', 'Difficulty: ' + c.difficulty));
-    }
-    if (c.when_to_commit) {
-      g.appendChild(el('div', 'cline', 'Commit when: ' + c.when_to_commit));
-    }
-    if (c.summary) g.appendChild(el('div', 'cline dim', c.summary));
-    (c.enablers || []).forEach(e => {
-      g.appendChild(el('div', 'cline dim', '· ' + e));
-    });
-    if (g.children.length) node.appendChild(g);
-    node.appendChild(compTiles(c));
-    // Prose and the full guide are fetched on first expand and the resulting
-    // node cached per slug (the body itself is cached across full-DOM
-    // rebuilds, so the fetched text survives the 3/s re-render).
-    const slot = el('div', 'cguideslot');
-    node.appendChild(slot);
-    if (c.has_guide) loadGuide(c.slug, slot);
-    if (_compBodyCache.size > 300) _compBodyCache.clear();
-    _compBodyCache.set(key, node);
-  }
-  return node;
-}
-const _guideCache = new Map();
-function loadGuide(slug, slot) {
-  const cached = _guideCache.get(slug);
-  if (cached) { slot.appendChild(cached); return; }
-  fetch(auth('/guide/' + slug)).then(r => r.ok ? r.json() : null).then(j => {
-    if (!j) return;
-    const wrap = el('div', 'cguidefull');
-    if (j.how_to_play) wrap.appendChild(el('div', 'cline', j.how_to_play));
-    if (!j.how_to_play && !j.markdown) {
-      // Say so rather than showing an empty box: this comp has no written
-      // guide yet, and the commit line above is all the curated advice.
-      wrap.appendChild(el('div', 'cline dim',
-        'No written guide for this comp yet — the commit line is the '
-        + 'curated advice.'));
-    }
-    if (j.markdown) {
-      wrap.appendChild(el('div', 'cline dim',
-        j.curated ? 'Full guide' : 'Full guide (mined from commentary)'));
-      wrap.appendChild(el('pre', 'cguidemd', j.markdown));
-    }
-    _guideCache.set(slug, wrap);
-    slot.appendChild(wrap);
-  }).catch(() => { /* offline: the commit line is still on screen */ });
-}
-function compTiles(c) {
-  const tiles = el('div', 'tiles');
-  [['core', 'core'], ['addons', 'addons']].forEach(([_label, key]) => {
-    (c[key] || []).forEach(x => {
-      const sub = x.banned ? 'banned' : (x.owned ? 'have' : null);
-      const cls = 'comprow ' + (x.banned ? 'bannedrow'
-                   : x.owned ? 'owned' : 'missing');
-      tiles.appendChild(tile(x.card, x.name, sub, {cls: cls}));
-    });
-  });
-  return tiles.children.length
-    ? tiles : el('div', 'none', 'no card list in the meta DB');
-}
-function compRow(c) {
-  const open = _openComps.has(c.slug);
-  // EVERY comp is listed, always (fix list round 4 item 1). The flag used to
-  // mean "tribe not confirmed yet" and the panel fed it the FILTERED list, so
-  // the comps of a banned tribe vanished and the list read as inverted. It is
-  // availability now: a row this game cannot build is marked and dimmed, never
-  // dropped.
-  const unavail = c.tribe_available === false;
-  const head = el('div', 'crowhead');
-  const arrow = el('span', 'carrow', open ? '▾' : '▸');
-  head.appendChild(arrow);
-  const core = c.core || [];
-  head.appendChild(el('span', 'cname', c.name));
-  head.appendChild(el('span', 'cstat',
-    core.length + ' core · '
-    + core.filter(x => x.owned).length + ' owned'
-    + (unavail ? ' · tribe not available' : '')));
-  const body = el('div', 'cbody');
-  // Collapsed rows build their tiles lazily (on first expand) so a 21-comp
-  // panel doesn't queue 100+ card fetches up front; an open row reuses the
-  // cached body (see _compBodyCache).
-  body.hidden = !open;
-  if (open) body.appendChild(compBody(c));
-  head.onclick = () => {
-    const nowOpen = !_openComps.has(c.slug);
-    if (nowOpen) _openComps.add(c.slug); else _openComps.delete(c.slug);
-    head.classList.toggle('open', nowOpen);
-    arrow.textContent = nowOpen ? '▾' : '▸';
-    body.hidden = !nowOpen;
-    if (nowOpen && !body.children.length) body.appendChild(compBody(c));
-  };
-  const wrap = el('div', 'crow' + (unavail ? ' unconf' : ''));
-  wrap.appendChild(head);
-  wrap.appendChild(body);
-  return wrap;
-}
+// (The classic live view's CLICK-TO-EXPAND COMPS PANEL lived here — `compRow`,
+// its lazily-built `compBody` behind `_compBodyCache`, the `compTiles` strip and
+// the `/guide/<slug>` fetch in `loadGuide`, plus the `_openComps` open-set. The
+// comps screen it fed went with the classic renderer on 2026-10-13; the Tavern
+// layout's own comps screen (`lvCompsBody`, `lvCompDetail`, `lvLoadGuide`) is
+// what renders the list now, and it shares none of this markup.)
 // (The step-kind chip map lived here: LV/PICK/BUY/SELL/ROLL/CAST/PLAY/HOLD/
 // SWAP/DISC, one per kind in value._STEP_KINDS. It went with the numbered plan
 // — the chips labelled instructions, and the live page does not render any
 // (2026-10-06, PIVOT.md). value._STEP_KINDS still exists: it is how the plan's
 // steps are typed for the review and the corpus.)
-// The two end-of-game POSTs, ONE place each (2026-10-09): the classic card and
-// the Tavern game-over card both offer them, and the 409 branch below is the
-// normal race rather than an error — the review replays the game twice
+// The two end-of-game POSTs, ONE place each (2026-10-09): the shell card and the
+// Tavern game-over card both offer them (they are the same two actions on two
+// cards), and the 409 branch below is the normal race rather than an error — the review replays the game twice
 // off-thread (~10 s) while the card appears the moment the game ends, so a
 // premature click has to stay retryable ("it failed to save my replay",
 // 2026-10-07). Two copies of that rule is how one of them loses it.
@@ -2012,34 +1745,27 @@ async function postSaveReplay(btn) {
     btn.disabled = false;
   }
 }
-//: Take the Tavern layout off screen. It has its own container, so this only
-//: clears that container and the class its renderer set — with neither present
-//: the classic page is exactly what it always was. A viewer that is no longer
-//: drawing must not leave its last frame behind: the first-run card is CLASSIC
-//: even in Tavern mode (§6.5 has the game-over card, and there is no design for
-//: a first run), and it used to draw behind a stale Tavern screen.
+//: Take the live view off screen. It has its own container, so this only clears
+//: that container and the class its renderer set; the card slot is left alone,
+//: because `render` and `renderWelcome` are the only things that write there and
+//: this is called one line before the card is drawn. A view that is no longer
+//: drawing must not leave its last frame behind: the first-run card has no live
+//: -view design (§6.5 has the game-over card), and it used to draw behind a
+//: stale one.
+//:
+//: It no longer unhides a state strip (2026-10-13): the strip was the classic
+//: renderer's, that renderer is gone, and "unhide what nothing fills" is how an
+//: empty rounded bar comes back.
 function lvClearTavern() {
   const lt = document.getElementById('live-tavern');
   if (lt) { lt.hidden = true; lt.innerHTML = ''; }
   document.getElementById('app').classList.remove('tavern-on');
-  // The classic strip is the classic renderer's, and it fills it right after
-  // this. It is UNHIDDEN here rather than there so the two viewers cannot both
-  // leave it hidden (fix list round 2 item 7 hides it while it is empty).
-  const bar = document.getElementById('statebar');
-  if (bar) bar.hidden = false;
 }
 function renderWelcome(a) {
   const decide = document.getElementById('col-decide');
-  const ref = document.getElementById('col-ref');
-  const statebar = document.getElementById('statebar');
   renderShareToggle(a.share);
   renderRelease(a.release);
   decide.innerHTML = '';
-  ref.innerHTML = '';
-  statebar.textContent = '';
-  // This card carries its own headline, so the strip is not just blank — an
-  // empty one is a rounded bar with nothing in it (fix list round 2 item 7).
-  statebar.hidden = true;
   const card = el('div', 'welcome');
   // `title` only exists on the end-of-game card ("Game over"); a first-run card
   // is headed by the product name.
@@ -2150,18 +1876,17 @@ function renderRelease(v) {
   tag.textContent = t.text;
 }
 // --- Live, Tavern layout (LIVE_VIEW_DESIGN.md, 2026-10-09) ------------------
-// The same payload the classic page draws, laid out as REFERENCE MATERIAL:
+// THE live page (2026-10-13). It was built beside the classic renderer and
+// chosen by a `Classic | Tavern` toggle; the maintainer removed the choice, so
+// this is the only renderer a live payload reaches and the classic one, its CSS
+// and its tests are gone. What the payload carries did NOT change with it:
 // facts, counts and statistics — never a verdict, a ranking or an imperative
 // (§1), and never a guessed number (§6.4). Every row appears only when its data
 // exists (§5), and a value that was not read is a dash.
 //
 // It is scoped to `.tavern.live`, so the Settle Up Tavern rules and these
 // cannot leak into each other: the two views share the TOKENS, not the
-// components. The classic renderer below is untouched — that is what the
-// toggle's Classic side means, exactly as it does for the review.
-let _liveViewer = 'classic';
-try { _liveViewer = localStorage.getItem('bl-live-viewer') || 'classic'; }
-catch (e) { /* private mode */ }
+// components. There is no viewer variable and no persisted choice.
 //: §4.1's tab row — `Shop | Comps | Lobby` — is GONE (fix list round 4 item 5,
 //: 2026-10-13). It existed because the screens were exclusive; in the
 //: three-column layout every one of them is on screen at once and everywhere
@@ -2175,8 +1900,9 @@ function lvOrdinal(p) {
     : ({1: 'st', 2: 'nd', 3: 'rd'}[p % 10] || 'th');
   return p + suf;
 }
-//: Unread is a dash in --mute, never a guess, and never the classic page's "?"
-//: (§6.4 — a "?" next to a number reads as part of the number).
+//: Unread is a dash in --mute, never a guess, and never a "?" (§6.4 — a "?"
+//: next to a number reads as part of the number). The classic strip's "?" for an
+//: unread gold/tier/HP went with the strip on 2026-10-13.
 function lvVal(v) { return v == null || v === '' ? '—' : String(v); }
 
 function lvPanel(title, body, withAge, note) {
@@ -2365,8 +2091,9 @@ function lvTribes(a) {
   return row;
 }
 //: §4.2 Facts tab. The numbers, and only the numbers: the classic strip's
-//: "FRAGILE — … a 14-hit ends it" and its "favored/behind" forecast are
-//: verdicts, and they are replaced here by the same values as rows.
+//: "FRAGILE — … a 14-hit ends it" and its "favored/behind" forecast were
+//: verdicts (the strip and that page are gone, 2026-10-13), and the same values
+//: are rows here.
 //: "Lethal at" is gone (fix list round 1 item 5 / round 2 item 6): it printed
 //: effective HP a second time under a second name.
 //: The BODY of the facts table (fix list round 4 item 5): `lvSection` wraps it,
@@ -2472,9 +2199,10 @@ function lvSlotLegend() {
   return row;
 }
 //: §4.4 counts a core card owned when it is on the board OR IN HAND. The
-//: payload's `owned` flag is the classic panel's board-only rule, so the Tavern
-//: count reads both — the design's own wording, and the board is not the only
-//: place a comp piece can be.
+//: payload's `owned` flag is the server's board-only rule (it was the classic
+//: panel's, and the flag itself is unchanged), so this count reads both — the
+//: design's own wording, and the board is not the only place a comp piece can
+//: be.
 function lvOwned(cards) {
   return (cards || []).filter(x => x && (x.owned || x.in_hand)).length;
 }
@@ -2720,9 +2448,10 @@ function lvCompStats(c) {
 }
 
 //: The comp guide, fetched on first expand and cached per slug. It is NOT the
-//: classic panel's `loadGuide` node: that one is built from the classic classes,
-//: and a node cached across the whole page would carry the wrong palette into
-//: this panel (the same reason the two viewers keep their own tiles).
+//: classic panel's `loadGuide` node (that helper, its `/guide/<slug>` fetch and
+//: its cache went with the classic renderer on 2026-10-13): a node cached across
+//: the whole page would carry the wrong palette into this panel, which is the
+//: same reason the live view and the review keep their own tiles.
 const _lvGuideCache = new Map();
 function lvLoadGuide(slug, slot) {
   const cached = _lvGuideCache.get(slug);
@@ -2952,9 +2681,11 @@ function lvPassed(a) {
   body.appendChild(wrap);
   return body;
 }
-//: THE NEXT OPPONENT'S NUMBER AND ITS AGE, built once so the Tavern panel and
-//: the classic Reference box cannot word the same facts differently (fix list
-//: round 4 item 4).
+//: THE NEXT OPPONENT'S NUMBER AND ITS AGE, built by ONE function so the panel
+//: and its section summary cannot word the same facts differently (fix list
+//: round 4 item 4). It was written for two boxes — this panel and the classic
+//: Reference box — and the classic box went on 2026-10-13; one builder is still
+//: what keeps the number and its age consistent.
 //:
 //: `opp_age` — not `opp_comp.turn` — is the "N rounds ago": it is the age of
 //: the record `opp_stats` came from (live_coach's `_opp_boards`, a board we
@@ -2971,17 +2702,18 @@ function oppStatsLine(a) {
   if (a.opp_lobby != null) return '~' + a.opp_lobby + ' lobby avg';
   return null;
 }
-function oppMixLine(a) {
-  const t = (a.opp_comp || {}).tribes || [];
-  return t.length ? t.map(m => m.n + ' ' + m.tribe).join(' · ') : null;
-}
+// (The classic Reference box's mix line lived here — the same "3 Beast · 2
+// Spell" the Tavern mix row prints. It went with the classic box on
+// 2026-10-13: `lvOpponent` reads `oc.tribes` straight from the payload, so the
+// formatter had one caller and that caller was the deleted page.)
 //: THE NEXT OPPONENT (fix list round 4 item 4): hero, the board they staged,
 //: what that board is worth, its tribe mix, and how long ago it was seen. Every
 //: row is a fact the analysis already carries — `opp_comp` for the board,
 //: `opp_stats`/`opp_lobby` for the number, `opp_age` for the age — and NOT the
 //: seat's handle (`opp_comp.name`), which stays where it already is on the
 //: Lobby tab: this is the panel a player screenshots. Nothing here says who is
-//: favoured — that is the classic page's job, and §1 bans it on this one.
+//: favoured: §1 bans a verdict on the live page, for every viewer now that there
+//: is one (2026-10-13).
 function lvOpponent(a) {
   const p = el('div');
   const oc = a.opp_comp;
@@ -3007,15 +2739,16 @@ function lvOpponent(a) {
 //: ("comp core", "off-comp filler"), which is a fact about membership.
 //: One tribe a lobby has banned reads "<Tribe> — out of play" here (fix list
 //: round 1 item 7 / round 2 item 5). The reason string itself ("banned tribe —
-//: can't grow") is the value pass's, shared with the classic page and pinned by
-//: its own test, so the tavern caption is built from DATA — the minion's tribe
-//: plus the flag the payload carries — rather than by rewriting that sentence.
+//: can't grow") is the value pass's, pinned by its own test and read by the
+//: review, so the caption is built from DATA — the minion's tribe plus the flag
+//: the payload carries — rather than by rewriting that sentence.
 function lvBoard(a) {
   const body = el('div');
   // ONE CARD PER MINION (round-3 item 1): `board_cards` is per entity, so two
-  // identical minions are two cards. It falls back to the classic Sell row
-  // (`sell_rank`, grouped by card — one row with ×N) for a payload recorded
-  // before that field existed.
+  // identical minions are two cards. It falls back to the grouped `sell_rank`
+  // row (one row with ×N — that grouping was the classic Sell box's, and it is
+  // still in the payload for the decision log and old records) for a payload
+  // recorded before that field existed.
   const rows = a.board_cards
     ? a.board_cards
     : (a.sell_rank || []).map(s => ({card: s.card, name: s.name, why: s.why,
@@ -3109,7 +2842,8 @@ function lvBars(dist) {
 //: §4.3's canonical pick screen. Options in the order the GAME offered them
 //: unless the player picks another order; each with its headline figure, its
 //: distance from the offered average, the distribution, and its stat rows.
-//: Nothing here reads the classic panel's fact STRING — the numbers come from
+//: Nothing here reads the option's fact STRING (the classic pick panel's prose
+//: — that panel is gone, 2026-10-13): the numbers come from
 //: `choice.option_stats`, which is also why the phrasing the design bans
 //: ("fits your board") cannot reach this screen.
 //: The BODY only (fix list round 4 item 5): `lvSection('Choose one', …)` wraps
@@ -3249,9 +2983,10 @@ function lvPickControls(ch, stats, redraw) {
   return bar;
 }
 //: §6.5: "Merge `Saved to the Settle Up tab automatically ✓` and the `Save
-//: every replay automatically` checkbox into ONE row." The classic card asks the
-//: question and reports the answer in two separate rows; here the checkbox and
-//: what it does sit together, and the Save button appears only while the answer
+//: every replay automatically` checkbox into ONE row." The SHELL card (the
+//: first-run/game-over card `renderWelcome` draws) asks the question and reports
+//: the answer in two separate rows; here the checkbox and what it does sit
+//: together, and the Save button appears only while the answer
 //: is off (offering a click that would write a second copy is not a fact, it is
 //: a way to make a mess).
 function lvSaveRow(a) {
@@ -3285,19 +3020,14 @@ function lvSaveRow(a) {
 function renderTavernGameOver(a) {
   const app = document.getElementById('app');
   const box = document.getElementById('live-tavern');
-  // The page chrome is the same in both viewers, and `render` returns before it
-  // reaches this branch: without these two the corner sharing control and the
-  // release stamp would keep whatever the last live payload left there.
+  // The page chrome, which `render`'s welcome branch returns before: without
+  // these two the corner sharing control and the release stamp would keep
+  // whatever the last live payload left there.
   renderShareToggle(a.share);
   renderRelease(a.release);
   app.classList.add('tavern-on');
   box.hidden = false;
   box.innerHTML = '';
-  // The classic strip is the other viewer's; this card has its own numbers, and
-  // leaving a stale one behind the card is how two disagreeing copies appear.
-  const bar = document.getElementById('statebar');
-  bar.innerHTML = '';
-  bar.hidden = true;
   const root = el('div', 'tavern live');
   const p = el('div', 'lv-pn lv-over');
   const go = a.game_over || {};
@@ -3313,8 +3043,8 @@ function renderTavernGameOver(a) {
   p.appendChild(lvSaveRow(a));
   if (a.status) p.appendChild(el('p', 'lv-note', a.status));
   // "Keep the sharing summary as small secondary text" (§6.5) — the same
-  // sentence the classic card shows, at 11px, because it is a standing fact
-  // rather than something this card is asking for.
+  // sentence the shell card shows, at 11px, because it is a standing fact rather
+  // than something this card is asking for.
   if (a.privacy) p.appendChild(el('p', 'lv-note lv-fine', a.privacy));
   root.appendChild(p);
   box.appendChild(root);
@@ -3511,19 +3241,13 @@ function lvBody(a) {
 function renderLiveTavern(a) {
   const app = document.getElementById('app');
   const box = document.getElementById('live-tavern');
-  // The classic panes are HIDDEN, not destroyed: `#live-tavern` is the tavern
-  // view's own container, so the classic renderer's sections survive a toggle
-  // and coming back to Classic works (2026-10-09 — the first version cleared
-  // `#app` and the way back threw).
+  // The card slot is HIDDEN, not destroyed: `#live-tavern` is this view's own
+  // container, so the card in `#col-decide` survives a live frame and a later
+  // welcome payload re-renders it in place (2026-10-09 — the first version
+  // cleared `#app` and the way back threw).
   app.classList.add('tavern-on');
   box.hidden = false;
   box.innerHTML = '';
-  // The tavern status bar carries these facts now, so the classic strip is
-  // cleared rather than left showing a second, differently-worded copy — and
-  // HIDDEN, because an empty strip is a rounded bar with nothing in it.
-  const bar = document.getElementById('statebar');
-  bar.innerHTML = '';
-  bar.hidden = true;
   const root = el('div', 'tavern live');
   // No game-over band here: that card arrives on its own payload (`welcome:
   // true`), which `render` sends to `renderTavernGameOver` instead of to this
@@ -3537,44 +3261,18 @@ function renderLiveTavern(a) {
   // in a moment later reads as a panel that lost something.
   tickReadAge();
 }
-function setLiveViewer(v) {
-  _liveViewer = v === 'tavern' ? 'tavern' : 'classic';
-  try { localStorage.setItem('bl-live-viewer', _liveViewer); }
-  catch (e) { /* private mode */ }
-  document.querySelectorAll('#live-viewer button').forEach(
-    b => { b.className = b.dataset.v === _liveViewer ? 'on' : ''; });
-  // The control sits on the nav row, so the NAV takes the tavern palette while
-  // the tavern view is the one on screen (it matches what it toggles).
-  const nav = document.getElementById('tabs');
-  if (nav) nav.classList.toggle('tavern', _liveViewer === 'tavern');
-  // Re-render from the payload already on screen: the poll would do it within
-  // 300ms, but a toggle that waits reads as a control that did nothing.
-  if (_lastParsed) render(_lastParsed);
-}
-
 function render(a) {
-  _lastParsed = a;   // the viewer toggle re-renders from this, not a refetch
   // The payload's own `generated` stamp is what the panel's read-age line
-  // counts from. set here as well as in poll() because the page can render a
-  // payload without polling it — the viewer toggle, and the tests' own driver,
-  // which call render() directly — and a read-age line that only ever appears
-  // on the poll path is a line that silently goes missing (round 4 item 3(b)).
+  // counts from. Set here as well as in poll() because the page can render a
+  // payload without polling it — the tests' own driver calls render() directly
+  // — and a read-age line that only ever appears on the poll path is a line
+  // that silently goes missing (round 4 item 3(b)).
   if (a.generated) _generated = a.generated;
   if (a.welcome) {
-    // The waiting card carries no tribe state, and neither may the client
-    // (fix list round 4 item 2): the local tap set belongs to the game that
-    // just ended, and it is dropped here rather than at the next game's first
-    // payload — otherwise the 5/5 set is held across the whole gap and drawn
-    // again the moment a payload arrives without a game number.
-    _inPlayPick.clear();
-    _inPlayPickGame = null;
-    _inPlayPickAt = 0;
-    // §6.5's game-over card is the ONE welcome payload the Tavern viewer draws;
-    // a first run has no Tavern design, so it keeps the classic card — and the
-    // Tavern layout is cleared first, or that card would appear behind a stale
-    // Tavern screen (the container kept its last frame and `tavern-on` still
-    // hid the panes).
-    if (_liveViewer === 'tavern' && a.game_over) {
+    // §6.5's game-over card, or the first-run card. The live view is cleared
+    // first, or a stale frame would sit behind the card (`tavern-on` still
+    // hides the card slot, and the container kept its last frame).
+    if (a.game_over) {
       renderTavernGameOver(a);
       return;
     }
@@ -3586,550 +3284,49 @@ function render(a) {
   // does not vanish the moment the first buy phase arrives (2026-10-07).
   renderShareToggle(a.share);
   renderRelease(a.release);
-  const app = document.getElementById('app');
-  const statebar = document.getElementById('statebar');
   // A rebuild discards the hovered element without a mouseleave — drop the
   // tooltip with the old frame so it can't outlive its card.
   leaveCard();
   CARDS = a.cards || {};
-  // value.py's constants, mirrored to the client (the JS used to hard-code
-  // its own copies — two definitions that could drift).
-  const TH = a.thresholds || {};
-  const decide = document.getElementById('col-decide');
-  const ref = document.getElementById('col-ref');
-  decide.innerHTML = '';
-  ref.innerHTML = '';
-  statebar.innerHTML = '';
-  // The classic renderer is the one that fills the strip, so it is the one that
-  // shows it again (the welcome and Tavern paths hide it, item 7 of the round-2
-  // fix list).
-  statebar.hidden = false;
-  if (!a || !a.board) { statebar.textContent = 'No game yet.'; return; }
-  // Pane grouping: DECIDE = the turn's decision (never scrolled away),
-  // REFERENCE = scout intel and shopping lists. The headers re-render with
-  // the panes (render() clears each section wholesale).
-  decide.appendChild(el('h2', 'pane-h', 'Decide'));
-  ref.appendChild(el('h2', 'pane-h', 'Reference'));
-  // Tribe-picker sync (see the state block near the bottom): a new game
-  // reseeds from the server; a settled manual set overwrites stale local
-  // taps (unless we tapped in the last 3s — the POST may still be in
-  // flight); while the player is mid-tapping during detection, local wins.
-  // The server's own copy of the set is `tribes_available` (2026-10-13): it is
-  // the five the player said ARE in the tavern, so seeding from `banned` would
-  // show the five this lobby cannot offer as the ones already set.
-  const gameNo = a.game_no ?? null;
-  if (gameNo !== _inPlayPickGame) {
-    _inPlayPickGame = gameNo;
-    _inPlayPick = new Set(a.bans_manual ? (a.tribes_available || []) : []);
-    _inPlayPickAt = 0;
-    _compBodyCache.clear();  // a new game invalidates every owned/banned flag
-  } else if (a.bans_manual && Date.now() - _inPlayPickAt > 3000) {
-    const srv = new Set(a.tribes_available || []);
-    if (srv.size !== _inPlayPick.size || [...srv].some(t => !_inPlayPick.has(t))) {
-      _inPlayPick = srv;
-    }
-  }
-  // Pre-warm the /card renders for everything on screen so hovers are
-  // instant (one-time per card: the server caches downloads in
-  // img_cache/card/, and misses are remembered server-side).
+  // THE CARD SLOT IS EMPTIED (2026-10-13). It holds the welcome or game-over
+  // card, and a live frame is not a card: `render` cleared it here before the
+  // old renderer drew the two panes into it, and with one renderer it is one
+  // line rather than a second page's worth of setup.
+  document.getElementById('col-decide').innerHTML = '';
+  // Pre-warm the /card renders for everything on screen so hovers are instant
+  // (one-time per card: the server caches downloads in img_cache/card/, and
+  // misses are remembered server-side).
   Object.keys(CARDS).forEach(cid => {
     if (!_warmed.has(cid)) {
       _warmed.add(cid);
       new Image().src = '/card/' + cid + '.png';
     }
   });
-
-  // Tavern Live (2026-10-09, LIVE_VIEW_DESIGN.md): the same payload in the
-  // reference layout. It branches HERE — after the shared setup above (the ban
-  // picker's sync, CARDS, the art pre-warm) and before the classic strip is
-  // built — so both viewers get that setup and exactly one draws the page.
-  if (_liveViewer === 'tavern') { renderLiveTavern(a); return; }
-  // Classic: the two panes are the page again. This only clears the tavern
-  // container and the class its renderer set — with neither present the classic
-  // page is exactly what it always was.
-  lvClearTavern();
-
-  // STATE STRIP — stat tiles (label over value), then the chip row.
-  // Hero name leads as the trust anchor; the numbers use tabular figures so
-  // they don't shift width as they tick.
-  function statTile(label, value, valCls) {
-    const t = el('span', 'tile');
-    t.appendChild(el('span', 'lbl', label));
-    t.appendChild(el('span', 'val' + (valCls ? ' ' + valCls : ''),
-                     String(value)));
-    return t;
-  }
-  statebar.appendChild(el('span', 'tile', a.hero || '?'));
-  statebar.appendChild(statTile('Gold', a.gold ?? '?', 'gold'));
-  statebar.appendChild(statTile('Tier', a.tier ?? '?'));
-  if (a.health != null) {
-    const fr = a.fragility || {};
-    const dying = (a.health + (a.armor || 0)) <= (TH.dying_hp || 12);
-    statebar.appendChild(statTile('HP',
-      a.health + (a.armor ? '+' + a.armor : ''),
-      dying ? 'bad' : (fr.band === 'fragile' ? 'warn' : null)));
-  }
-  const turns = (a.scenario || {}).turns;
-  if (turns) statebar.appendChild(statTile('Turn', turns));
-  if (a.current_place) {
-    // Live leaderboard standing (Plan 5 lever 1). Ordinal only — no lobby
-    // size exists in any payload, and inventing "of 8" would be wrong in
-    // Duos and after late-game deaths.
-    const p = a.current_place;
-    const suf = ([11, 12, 13].includes(p % 100))
-      ? 'th' : ({1: 'st', 2: 'nd', 3: 'rd'}[p % 10] || 'th');
-    // Same rule value.situation_line uses: from t8, 5th-or-worse is the
-    // "spike, not greed" zone.
-    statebar.appendChild(statTile('Place', p + suf,
-      (p >= 5 && turns >= 8) ? 'warn' : null));
-  }
-  if (a.scout) {
-    statebar.appendChild(el('span', 'lbl', a.scout));
-  }
-  if (a.forecast) {
-    // The next-fight verdict: the mark + the verdict word carry the state;
-    // the color reinforces (never the reverse).
-    const fav = a.forecast.startsWith('favored');
-    const behind = a.forecast.startsWith('behind');
-    const mark = fav ? '✓ ' : (behind ? '✕ ' : '');
-    const cls = fav ? 'good' : (behind ? 'bad' : null);
-    statebar.appendChild(el('span', cls, mark + a.forecast));
-  }
-  const triggers = (a.scenario || {});
-  const active = Object.entries(triggers)
-    .filter(([k, v]) => v && !k.endsWith('_total') && k !== 'turns');
-  active.forEach(([k, v]) => {
-    statebar.appendChild(el('span', 'lbl',
-      k.replace('play_', '') + ' ' + v));
-  });
-  if (a.banned && a.banned.length) {
-    statebar.appendChild(el('span', 'lbl', 'Banned:'));
-    a.banned.forEach(t => statebar.appendChild(el('span', 'banned', t)));
-  }
-  // Out of play (rotated by a patch): NOT banned this game — the pool cannot
-  // offer it in any lobby (Naga since 36.6.1). Its own labeled, struck-through
-  // state, so a rotated tribe never reads as a ban the player could undo.
-  if (a.out_of_pool && a.out_of_pool.length) {
-    statebar.appendChild(el('span', 'lbl', 'Out of play:'));
-    a.out_of_pool.forEach(t => statebar.appendChild(el('span', 'oop', t)));
-  }
-
-  // SITUATION — what is true right now. This pane was headed "Do this now"
-  // and carried the numbered plan; the plan is not in the payload any more
-  // (2026-10-06, PIVOT.md), so what is left is the state: where the build
-  // stands, how close this hero is to dying, what the offers cost, and — when
-  // one is pending — the options a pick is choosing between. A pending pick
-  // still leads, because it gates everything else on the screen.
-  const instr = el('div', 'box instructions');
-  instr.appendChild(el('h3', null, 'Situation'));
-  // The situation read: direction, strength, danger — the model's read of the
-  // game, in one line.
-  if (a.situation) instr.appendChild(el('div', 'situation', a.situation));
-  // DANGER — its own line, not clause three of a long row. The 2026-09-18 loss
-  // is the reason it exists: 14 HP, bled 10 in two of three fights, every level
-  // gate legal by construction, and the plan read as "the build is about to
-  // take off" — 8th place with 10 gold unspent. The number that decides the turn
-  // is not the HP but the NEXT HIT, so that is what this says.
-  if (a.fragility && a.fragility.band !== 'steady') {
-    const fr = a.fragility;
-    const dying = fr.band === 'dying';
-    const danger = el('div', 'danger ' + fr.band);
-    // Mark + word carry the state; color only reinforces it.
-    danger.appendChild(el('span', 'dmark', dying ? '■ ' : '▲ '));
-    danger.appendChild(el('span', null,
-      (dying ? 'DYING — ' : 'FRAGILE — ')
-      + fr.eff_health + ' effective HP'
-      + (fr.last_hit ? ', took ' + fr.last_hit + ' last fight' : '')
-      + ' — a ' + fr.eff_health + '-hit ends it'
-      + (fr.recent3 ? ' · bled ' + fr.recent3 + ' over the last 3 fights' : '')
-      + (fr.cap ? ' · damage cap ' + fr.cap : '')));
-    instr.appendChild(danger);
-  }
-  // The empty-shop gap (after a buy/roll the offers vanish from the log for
-  // a second or two before the game re-prints them) holds the last read —
-  // saying so makes the lag legible instead of looking like a freeze
-  // (2026-09-07 'the coach has seized up' report).
-  if ((!a.shop_rank || !a.shop_rank.length) && (a.board || []).length) {
-    instr.appendChild(el('div', 'none',
-      'reading the new shop… (this read is from your last action)'));
-  }
-  // A PENDING PICK — the options, and what is known about each. The "PICK X"
-  // line and the "if locked, pick Y" fallback are gone (2026-10-06, PIVOT.md):
-  // the hero pick is the most consequential decision of the game, and naming
-  // one was the plainest instruction the app produced. Each option's facts
-  // stay — they come from the reference DBs the rest of the page reads — and
-  // the choice is the player's.
-  //
-  // **IN THE GAME'S OWN ORDER, and the facts are statistics rather than a
-  // score (2026-10-07).** The server returns these rows score-ordered (row 0
-  // is the pick the review grades), so the order it arrives in is a MODEL
-  // OPINION, and rendering it would hand the player a ranking while the
-  // wording pretended otherwise. `order` is the option's position in the list
-  // the game showed, which is the order this panel uses — the same rule the
-  // tavern row has followed since 2026-10-06. The old sub-line printed the
-  // blended 0-10 score, an index nobody can read; the facts beside it now name
-  // the population statistics it was built from (pick rate, average placement,
-  // top-4 share) and what the option is relative to the comp on screen.
-  if (a.choice && a.choice.ranked && a.choice.ranked.length) {
-    const rows = a.choice.ranked.slice().sort((x, y) => (x[4] ?? 0) - (y[4] ?? 0));
-    instr.appendChild(el('div', 'none',
-      'Your pick — the options, and what is known about each:'));
-    const alts = el('div', 'tiles');
-    rows.forEach(([n, c, s, w]) => {
-      alts.appendChild(tile(c, n, w != null && w !== '' ? w : null));
-    });
-    instr.appendChild(alts);
-    // What each offered trinket actually does for this build (2026-10-02).
-    // The curated guides shipped in the DB and were rendered nowhere; here
-    // they answer the one question the pick panel raises and the stats
-    // cannot: what do I do with it once I take it.
-    const pickGuides = a.choice.guides || {};
-    rows.forEach(([n]) => {
-      if (!pickGuides[n]) return;
-      instr.appendChild(el('div', 'cline', n + ' — ' + pickGuides[n]));
-    });
-  }
-  // The numbered plan is NOT rendered here any more (2026-10-06, PIVOT.md).
-  // `value.top_move` still computes it, `decision_log` still records it, and
-  // the post-game review still reads it back — the live page is the one place
-  // it must not appear. It is not merely hidden: render_json() drops the keys
-  // (LIVE_VERDICT_KEYS), so there is nothing here to draw. The step-chip
-  // vocabulary went with it, and test_live_view.py fails if either returns.
-  // Level/roll reference: the button's real price. An analysis without a
-  // level_cost (never the live loop's case) shows no level line at all —
-  // tier+1 was the old wrong model, never a fallback price.
-  if (a.tier && a.tier < 6 && a.level_cost != null) {
-    const cost = a.level_cost;
-    instr.appendChild(el('div', 'footline',
-      a.gold !== null && a.gold >= cost
-        ? 'Level available: tier ' + a.tier + ' → ' + (a.tier + 1)
-          + ' for ' + cost + 'g'
-        : 'Level costs ' + cost + 'g — '
-          + Math.max(0, cost - (a.gold ?? 0)) + ' short'));
-  }
-  // Opponents' trinkets — read from the log (2026-09-08 ground truth): free
-  // scout intel the player cannot see in game.
-  // The Dark gifts line that used to sit here was REMOVED (2026-09-23, player
-  // call: "remove that list of Dark gifts on the coaching page. That is
-  // accomplishing nothing."). It listed gifts the player already owns, which the
-  // game itself shows on the board — real estate in the Decide column spent
-  // restating known state. The analysis still carries `dark_gifts` for telemetry
-  // and the corpus; only the overlay stopped rendering it.
-  if (a.opp_trinkets && a.opp_trinkets.length) {
-    instr.appendChild(el('div', 'footline',
-      'Their trinkets: ' + a.opp_trinkets.join(', ')));
-  }
-  decide.appendChild(instr);
-
-  // NEXT OPPONENT — the announced seat's last-known composition (phase 2,
-  // lobby.py): exact when their board staged, aged since. The subtitle
-  // names the round so a 3-round-old preview never reads current. Hand and
-  // shop are invisible to the log, so this is their BOARD, not everything
-  // they hold.
-  // Round 4 item 4 added the two facts that were missing here: what that board
-  // is worth, with how long ago that reading was taken (`opp_age`, the same
-  // number the Tavern panel and the facts rail use), and the board's tribe mix.
-  // Both are built by the ONE helper the Tavern panel calls, so the two views
-  // cannot drift into different wordings of the same numbers.
-  if (a.opp_comp && a.opp_comp.cards && a.opp_comp.cards.length) {
-    const oc = a.opp_comp;
-    const body = el('div');
-    const stats = oppStatsLine(a);
-    if (stats) body.appendChild(el('div', 'footline',
-      'Board stats ' + stats));
-    const mix = oppMixLine(a);
-    if (mix) body.appendChild(el('div', 'footline', 'Tribes ' + mix));
-    body.appendChild(el('div', 'footline',
-      (oc.hero_name || oc.hero || 'unknown hero')
-      + (oc.name ? ' · ' + oc.name : '')
-      + ' — as of round ' + oc.turn));
-    const tiles = el('div', 'tiles');
-    oc.cards.forEach(c => {
-      tiles.appendChild(tile(c.card, c.name,
-                             c.n > 1 ? '×' + c.n : null,
-                             {golden: c.golden}));
-    });
-    body.appendChild(tiles);
-    ref.appendChild(box('Next opponent', body));
-  }
-
-  // (The plan's buy card lived here, to glow the matching shop tile. The row
-  // is in the game's own order now and nothing is highlighted — 2026-10-06.)
-
-  // HAND — what is in it and what each card is worth. Casting from hand is
-  // free and a stuck minion plays for free (log ground truth), so the score
-  // here is a value read, not a price. The ACTION VERB the plan attaches to
-  // each row ("cast" / "play" / "hold") is gone from the payload — a verb is
-  // an instruction — so this box lists the hand; what to do with it is the
-  // player's (2026-10-06, PIVOT.md).
-  if (a.hand && a.hand.length) {
-    const tiles = el('div', 'tiles');
-    a.hand.forEach(s => {
-      tiles.appendChild(tile(s.card, s.name,
-                             s.score != null ? s.score.toFixed(0) : null,
-                             {golden: s.golden}));
-    });
-    decide.appendChild(box('Your hand', tiles));
-  }
-
-  // HAND ENGINE — a hand-charge kit (Bream Counter + Diremuck Forager is
-  // the known one): the charger grows IN HAND and the deployer summons it
-  // at start of combat. Each fact is a live check; the 2026-09-10 game
-  // died with both broken and nothing on screen said so. The checks state
-  // what is true; they used to carry the instruction ("play your chargers").
-  if (a.engine) {
-    const e = a.engine;
-    const body = el('div', 'engrow');
-    const bit = (text, cls) => body.appendChild(el('span', 'engbit' + (cls ? ' ' + cls : ''), text));
-    if (e.on_board) bit('✓ ' + e.deployer_name + ' on board', 'ok');
-    else bit('✗ ' + e.deployer_name + ' NOT on board', 'bad');
-    if (e.space) bit('✓ slot free', 'ok');
-    else bit('✗ board full — the summon needs a free slot', 'bad');
-    bit(e.charging + ' charging');
-    decide.appendChild(box('Hand engine', body));
-  }
-
-  // YOUR BOARD — every minion with its value number and its composition role
-  // (comp core, engine piece, filler...). One row, lowest first. This box used
-  // to be "Sell", split into "Safe to sell" and "Do not sell": both labels are
-  // verdicts, and the split is exactly the sort of "sell this one" the live
-  // path no longer gives (2026-10-06, PIVOT.md). The numbers and the roles are
-  // facts about your own board; what to do about them is the player's call.
-  const sellTiles = el('div', 'tiles');
-  (a.sell_rank || []).forEach(s => {
-    // Board minions only — a hand card can't be sold until it's played
-    // (player rule 2026-09-09), so render_json keeps hand entries out.
-    const sub = s.score.toFixed(0)
-      + (s.why ? ' · ' + s.why : '')
-      + (s.fuel ? ' · destroy-spell fuel' : '');
-    sellTiles.appendChild(tile(s.card, s.name, sub,
-                               {golden: s.golden, n: s.n}));
-  });
-  ref.appendChild(box('Your board', sellTiles.children.length
-    ? sellTiles : el('div', 'none', '—')));
-
-  // TARGET COMP — the comp the model reads this board as closest to, as
-  // horizontal tiles: missing pieces fully opaque, owned pieces faded. The
-  // wording used to be "what you're hunting" / "committing to X", which is a
-  // direction to build in; what is left is the comp's own contents and which
-  // of them you hold (2026-10-06, PIVOT.md). A PROVISIONAL comp (mined from our
-  // own games, no published comp exists for the tribe) is labelled here and in
-  // the comp-direction rows so the player can tell it apart at a glance.
-  if (a.target_comp) {
-    const ev = a.target_comp_evidence || {};
-    const body = el('div', 'target',
-      'closest comp: ' + a.target_comp
-      + (a.target_comp_provisional
-         ? '  [provisional' + (ev.games ? ' — ' + ev.games + ' of our games' : '')
-           + (ev.top4 != null ? ', top4 ' + ev.top4 : '') + ']'
-         : ''));
-    const tc = a.target_cards || {};
-    const list = el('div', 'tiles');
-    [['core', 'core'], ['addons', 'addons']].forEach(([_label, key]) => {
-      (tc[key] || []).forEach(c => {
-        // Banned-tribe piece of a hybrid comp (e.g. the Dragon in a naga
-        // comp): shown struck-out, never as a hunt target.
-        const sub = c.banned ? 'banned' : (c.owned ? 'have' : null);
-        const cls = 'comprow ' + (c.banned ? 'bannedrow'
-                     : c.owned ? 'owned' : 'missing');
-        list.appendChild(tile(c.card, c.name, sub, {cls: cls}));
-      });
-    });
-    body.appendChild(list);
-    // How to actually play the thing being committed to (2026-10-02). The
-    // written guidance for every comp shipped in meta/comps.json and was read
-    // by nothing, so a player was told which cards to hunt and never how the
-    // build works.
-    const g = a.target_comp_guide;
-    if (g && (g.how_to_play || g.when_to_commit)) {
-      const guide = el('div', 'cguidance');
-      if (g.difficulty) {
-        guide.appendChild(el('div', 'cline', 'Difficulty: ' + g.difficulty));
-      }
-      if (g.when_to_commit) {
-        guide.appendChild(el('div', 'cline', 'Commit when: ' + g.when_to_commit));
-      }
-      if (g.how_to_play) guide.appendChild(el('div', 'cline', g.how_to_play));
-      (g.enablers || []).forEach(e => {
-        guide.appendChild(el('div', 'cline dim', '· ' + e));
-      });
-      body.appendChild(guide);
-    }
-    // "Looking for (comp/pivot)" was a shopping list heading. The box is now
-    // the comp's contents, so the heading says whose contents they are.
-    ref.appendChild(box('Comp pieces', body));
-  }
-
-  // COMP DIRECTION — commit-readiness meter: how close each candidate comp
-  // is to the 2-core-hit commit threshold, BEFORE comp_target declares a
-  // target. The committed comp glows gold; pre-commit, the top candidate's
-  // missing core is shown as tiles (the cards that move the meter).
-  if (a.comp_progress && a.comp_progress.length) {
-    const body = el('div');
-    a.comp_progress.forEach(r => {
-      const row = el('div', 'mrow' + (r.name === a.target_comp ? ' locked' : ''));
-      // A real meter, not pips: the track is a light step of the same ramp
-      // so the state reads across the whole bar, and the fill's color is
-      // severity (gold = committed/ready, warn = one away). The text state
-      // beside it always carries the meaning — the meter never acts alone.
-      const n = Math.min(r.hits, 2);
-      const meter = el('span', 'meter'
-        + (r.name === a.target_comp || r.ready ? ' met'
-           : (r.tribe_hits || 0) >= 2 ? ' near' : ''));
-      const fill = el('span', 'fill');
-      fill.style.width = (n / 2 * 100) + '%';
-      meter.appendChild(fill);
-      row.appendChild(meter);
-      row.appendChild(el('span', 'mname',
-        r.name + (r.provisional ? ' [prov]' : '')));
-      row.appendChild(el('span', 'mstat',
-        (r.name === a.target_comp
-          // "pivoting — committed" / "committed" was a direction to keep
-          // going; target_state is out of the live payload (2026-10-06), so
-          // what is left is the same word the box above uses: which comp the
-          // model reads this board as closest to, and how far along it is.
-          ? 'closest comp'
-          : r.ready ? 'at the commit threshold'
-          : r.leaning ? 'leaning · openers on board'
-          : (r.tribe_hits || 0) >= 2
-            ? 'one core card away · tribe signal'
-            : 'one core card away')
-        + (r.hits > 2 ? ' (' + r.hits + ' hits)' : '')
-        + (r.leaning && r.lean_hits > 2 ? ' (' + r.lean_hits + ' openers)' : '')));
-      body.appendChild(row);
-    });
-    if (!a.target_comp && (a.comp_progress[0].needs || []).length) {
-      const t = el('div', 'tiles');
-      a.comp_progress[0].needs.forEach(c => t.appendChild(tile(c.card, c.name)));
-      body.appendChild(t);
-    }
-    ref.appendChild(box('Comp direction', body));
-  }
-
-  // LOBBY PRESSURE — tribe commitment across SEEN seats (phase 2): who is
-  // contesting what, for pivot/deny context. "of" counts only seats we've
-  // sighted; unseen seats are unknown, not empty — the label says "seen".
-  if (a.tribe_pressure && a.tribe_pressure.length) {
-    const body = el('div');
-    a.tribe_pressure.forEach(r => {
-      body.appendChild(el('div', 'footline',
-        r.tribe + ' — ' + r.seats + ' of ' + r.of + ' seen seats (2+ copies)'));
-    });
-    ref.appendChild(box('Lobby pressure', body));
-  }
-
-  // TAVERN — the offers as a horizontal card row, in the order the game
-  // shows them. Each card carries its price, its value score, whether it is a
-  // piece of the closest comp or a spell, and how many are left in the shared
-  // pool beyond OUR holdings (opponent holdings aren't subtracted yet, so that
-  // chip is a floor, not a lobby total — analysis/pool_availability.md).
-  //
-  // It used to be "Tavern (ranked)": sorted most-valuable-first by
-  // value.shop_ranking, with the plan's pick glowing gold and the slot
-  // arbiter's veto printed over it. The ordering and the glow ARE the
-  // recommendation — a tier score beside a card is a fact, a row ordered by
-  // it and one tile lit up is a verdict (2026-10-06, PIVOT.md) — so
-  // render_json re-sorts by live_coach's `shop_offers` (the log's own order)
-  // and buy_step_card / buy_step_swap_veto are not in the payload at all.
-  if (a.shop_rank && a.shop_rank.length) {
-    const body = el('div');
-    const tiles = el('div', 'tiles');
-    a.shop_rank.forEach(s => {
-      const sub = (s.price != null ? s.price + 'g · ' : '') + s.score.toFixed(0)
-        + (s.tag ? ' · ' + s.tag : '')
-        + (s.pool ? ' · ' + s.pool : '');
-      tiles.appendChild(tile(s.card, s.name, sub, {golden: s.golden}));
-    });
-    body.appendChild(tiles);
-    ref.appendChild(box('Tavern', body));
-  } else {
-    ref.appendChild(box('Tavern', el('div', 'none', 'offer not parsed yet')));
-  }
-
-  // PLAYABLE COMPS — the bottom panel: grouped by meta tier (S/A/B, the
-  // server pre-sorts), each comp a clickable row that expands into its
-  // required cards with owned/banned flags. Click again to collapse.
-  // This is the game-level list — what the tribe bans still allow — meant
-  // to be readable on turn 1. While the 5/5 ban set streams in (~turn 3-5)
-  // the panel lists EVERY comp (what this game might allow), dimming rows
-  // of not-yet-confirmed tribes; the header says so the full list doesn't
-  // read as "all tribes confirmed".
-  const compsBody = el('div');
-  if (a.tribes_detecting || a.bans_manual) {
-    // Tribe picker: at hero select the game's own minion-types panel lists the
-    // tribes IN the tavern this game, and the pool inference only converges
-    // minutes later — tapping those five here makes every downstream comp
-    // filter exact for the whole game (2026-09-19; the tribe list is provably
-    // not in any log).
-    // THE TAPS ARE THE IN-TAVERN FIVE (2026-10-13, the maintainer's call).
-    // Asking for "the 5 banned tribes" instead marked the complement available,
-    // so every comp row, every chip and every count was the inverse of the
-    // truth for a whole game (measured: session 2026-10-13_12_01_10, where all
-    // seven shop offers came from the tribes the app had marked unavailable).
-    const line = el('div', 'none', a.bans_manual
-      ? 'the 5 tribes in your tavern — tap to correct'
-      : 'tribes still resolving — ' + (a.tribes_seen || 0)
-        + '/5 tribes confirmed · dimmed comps may not be in this lobby · '
-        + 'tap the 5 tribes the tavern offers:');
-    compsBody.appendChild(line);
-    const chips = el('div', 'inplaychips');
-    // The reveal screen lists the CURRENT pool's tribes, so an out-of-play
-    // tribe (Naga since 36.6.1) is not on it and is not tappable here either.
-    const oopSet = new Set(a.out_of_pool || []);
-    (a.tribe_roster || []).filter(t => !oopSet.has(t)).forEach(t => {
-      const c = el('span', 'chip' + (_inPlayPick.has(t) ? ' picked' : ''), t);
-      c.onclick = () => {
-        if (_inPlayPick.has(t)) _inPlayPick.delete(t); else _inPlayPick.add(t);
-        _inPlayPickAt = Date.now();
-        c.classList.toggle('picked');
-        postInPlay([..._inPlayPick]);
-      };
-      chips.appendChild(c);
-    });
-    compsBody.appendChild(chips);
-  }
-  if (a.comps && a.comps.length) {
-    let lastTier = null;
-    a.comps.forEach(c => {
-      // A provisional (mined) comp has no published tier by definition: label
-      // the group "Provisional" instead of letting a null read as "Unranked",
-      // which would look like a real comp whose tier is merely unknown. A
-      // comp promoted out of the mined corpus (Aberrations - Deity Feed) has
-      // the same problem for the same reason, so it gets its own label rather
-      // than a tier nobody published (2026-10-02).
-      const tier = c.provisional ? 'prov'
-        : c.meta_tier ? c.meta_tier
-        : (c.tier_missing ? 'nopub' : '?');
-      if (tier !== lastTier) {
-        lastTier = tier;
-        compsBody.appendChild(el('div', 'cptier',
-          tier === '?' ? 'Unranked'
-            : tier === 'nopub'
-              ? 'No published tier (promoted from our own games)'
-            : tier === 'prov' ? 'Provisional (mined from our own games)'
-            : tier + ' tier'));
-      }
-      compsBody.appendChild(compRow(c));
-    });
-  } else if (!a.tribes_detecting) {
-    compsBody.appendChild(el('div', 'none', '—'));
-  }
-  ref.appendChild(box('Playable comps', compsBody));
+  // THE LIVE VIEW IS THE PAGE (2026-10-13). There is no viewer to branch on:
+  // every non-welcome payload draws the Tavern layout, which is the style
+  // LIVE_VIEW_DESIGN.md describes and the only one the maintainer kept. The
+  // classic live renderer — the state strip, the two panes, the classic comp
+  // tiles and pick panel, the classic tribe picker — was deleted with the
+  // toggle, so there is no second page for a payload shape to reach. A payload
+  // with no board (live.py never sends one: `_advise` builds it from the parsed
+  // board) reaches the Tavern panel's own waiting state rather than a special
+  // case here, which is what the `lvWaiting` sentence is for.
+  renderLiveTavern(a);
 }
-// Tribe-picker state, deliberately OUTSIDE render(): the app rebuilds every
-// poll second and would wipe in-progress taps. Per game: when the payload's
-// game_no changes, seed from the server (a fresh game clears the hand-set
-// tribes). Once tapping, local state wins for 3s so a poll can't flicker the
-// chip back before the POST lands; after that the server (via bans_manual) is
-// authoritative and self-heals any missed POST.
-let _inPlayPick = new Set(), _inPlayPickGame = null, _inPlayPickAt = 0;
+// The in-play picker's POST (2026-09-19; the taps are the IN-TAVERN five since
+// 2026-10-13). The route and its name are unchanged — the page and the server
+// ship together, and the per-run token already makes a stale tab's POST
+// impossible.
+//: The client no longer keeps a copy of the tapped set (2026-10-13). It existed
+//: for the classic picker, which drew from a local Set that had to survive a
+//: re-render and outrun a poll; the Tavern row (`lvTribes`) reads
+//: `tribes_available` from the payload every time, so the server is the single
+//: owner and a stale set cannot be held across a game boundary.
 function postInPlay(list) {
   fetch(auth('/bans'), {method: 'POST',
                   headers: {'Content-Type': 'application/json'},
                   // The body key says what the list IS (2026-10-13): the five
-                  // tribes the tavern offers. The route keeps its name — the
-                  // page and the server ship together, but a per-run token
-                  // already makes a stale tab's POST impossible.
+                  // tribes the tavern offers.
                   body: JSON.stringify({in_play: list})});
 }
 // 300ms: the live loop pushes up to ~3/s and the advice itself costs ~5ms —
@@ -4152,11 +3349,6 @@ function showTab(name) {
   document.getElementById('settle').className = live ? '' : 'on';
   document.querySelectorAll('#tabs .tab').forEach(b =>
     b.className = 'tab' + (b.dataset.tab === name ? ' on' : ''));
-  // The Live viewer flag is a LIVE-page control on the shared nav row
-  // (round-3 item 7), so it is only on screen while the live tab is: Settle Up
-  // has its own Classic | Tavern in its header.
-  const viewer = document.getElementById('live-viewer-row');
-  if (viewer) viewer.hidden = !live;
   try { localStorage.setItem('bl-tab', name); } catch (e) { /* private mode */ }
   if (!live) loadSettleList();
 }
@@ -4212,67 +3404,30 @@ async function loadSettleGame(id) {
     return;
   }
   if (!j.ok) { box.innerHTML = '<div class="s-empty">' + (j.error || 'Not found.') + '</div>'; return; }
-  renderSettleGame(j.rep || j);
+  renderTavernGame(j.rep || j);
 }
-// The viewer flag (2026-10-08): 'classic' is the shipped renderer, untouched;
-// 'tavern' is the REPLAY_VIEWER_DESIGN.md build (single turn + strip + warm
-// palette), grown behind this branch. The choice persists per browser.
-let _viewer = 'classic';
+// THE REVIEW IS THE TAVERN LAYOUT (2026-10-13). `renderSettleGame` was the
+// classic one — every timeline turn as its own card under a sticky header, the
+// final duel's phases attached to the last card, the model's plan and its
+// grading in a folded row per phase. It, its `_viewer` dispatcher and the
+// `bl-settle-viewer` key are gone; `renderTavernGame` below is what the saved
+// game dropdown reaches.
+//
+// The plan did NOT go with it. The review is where the model's verdict is
+// allowed to ship (PIVOT.md), and `tavernRail` carries every phase of the turn
+// — the plan text AND its grading — so the ledger's whole point (the model's
+// line beside what the player did) is still on screen.
 let _settleRep = null;
 let _tavernTurn = null;
-// Within Tavern: Summary (rail + card) or Step through (design §4.6). The
-// choice persists; a rep without steps forces Summary and the toggle says
-// why. _tavernStep/_tavernPlayTimer are the step-through's position and
-// autoplay handle.
+// Summary (rail + card) or Step through (design §4.6). The choice persists; a
+// rep without steps forces Summary and the toggle says why.
+// _tavernStep/_tavernPlayTimer are the step-through's position and autoplay
+// handle.
 let _tavernMode = 'summary';
 let _tavernStep = 0;
 let _tavernPlayTimer = null;
 try { _tavernMode = localStorage.getItem('bl-settle-mode') || 'summary'; }
 catch (e) { /* private mode */ }
-try { _viewer = localStorage.getItem('bl-settle-viewer') || 'classic'; }
-catch (e) { /* private mode */ }
-function renderSettleGame(rep) {
-  _settleRep = rep;   // remembered so the toggle can re-render without a refetch
-  if (_viewer === 'tavern') return renderTavernGame(rep);
-  hideSettleMode();   // the mode belongs to the Tavern viewer only
-  const box = document.getElementById('settle-game');
-  box.innerHTML = '';
-  const head = document.createElement('div');
-  head.className = 'turn s-sticky';   // stays put while the turns scroll
-  const t = rep.totals || {};
-  head.innerHTML = '<div class="thead"><span class="tturn">'
-    + (rep.hero || 'Saved game') + '</span><span class="tmeta">'
-    + (rep.placement != null ? 'finished ' + rep.placement : '')
-    + ' · ' + (t.taken ?? 0) + ' plans taken, ' + (t.ignored ?? 0)
-    + ' ignored · ' + (rep.created || '') + '</span></div>'
-    + (rep.caveat ? '<div class="note">' + rep.caveat + '</div>' : '');
-  box.appendChild(head);
-  const phases = rep.phases || [];
-  const turns = (rep.timeline || {}).turns || [];
-  const seen = new Set();
-  for (const r of turns) {
-    box.appendChild(settleTurnCard(r, phases.filter(p => p.turn === r.turn)));
-    if (r.turn != null) seen.add(r.turn);
-  }
-  // Phases whose turn has no timeline card (measured: the FINAL DUEL is
-  // turn 16 of a 15-turn timeline — the game ends without a shop, so no
-  // snapshots exist for it) belong to the story's last card, not a
-  // mystery "Turn ?".
-  const rest = phases.filter(p => !seen.has(p.turn));
-  if (rest.length && turns.length) {
-    const lastCard = box.lastChild;
-    const extra = document.createElement('div');
-    extra.className = 'brow';
-    extra.innerHTML = '<span class="blbl">End of game</span>'
-      + '<span>the final duel\'s phases, below</span>';
-    lastCard.appendChild(extra);
-    for (const p of rest) lastCard.appendChild(phaseRow(p));
-  } else if (rest.length) {
-    box.appendChild(settleTurnCard(
-      {turn: '?', gold: '—', stats: {}, spend: {}, commitment: {}, notes: []},
-      rest));
-  }
-}
 // One strip button's result marker (REPLAY_VIEWER_DESIGN.md §4.1), pure so
 // the suite can run it under node. The result is never color-only: the glyph
 // carries it. An unknown winner (the fight-unreadable family) and an unknown
@@ -4428,12 +3583,18 @@ function stripMark(winner, dmg) {
   if (winner === 'tie') return {ch: '=', cls: 'tie'};
   return {ch: '—', cls: ''};
 }
-// The Tavern viewer (REPLAY_VIEWER_DESIGN.md, build-order steps 1-2): the
-// warm palette, a turn strip with the result markers, ONE turn on screen at
-// a time. The turn itself is the classic card — same tabs, same notes, same
-// honesty — dropped into the palette-scoped root; the Summary rail and
-// Step-through from the design land here later.
+// The review (REPLAY_VIEWER_DESIGN.md): the warm palette, a turn strip with the
+// result markers, ONE turn on screen at a time, the Summary rail and the
+// Step-through. The turn itself is `settleTurnCard` — the shared card the
+// classic reviewer also used, which is why it kept its tabs, its notes and its
+// honesty; the classic reviewer is gone (2026-10-13) and this is the only
+// renderer the saved-game dropdown reaches.
 function renderTavernGame(rep) {
+  // The rep is remembered so the mode toggle and the keyboard can re-render
+  // without a refetch. (This was `renderSettleGame`'s job while a `_viewer`
+  // dispatcher sat in front of the two reviewers; the dispatcher is gone and
+  // this is the entry point every caller reaches.)
+  _settleRep = rep;
   const box = document.getElementById('settle-game');
   box.innerHTML = '';
   const root = document.createElement('div');
@@ -4477,7 +3638,7 @@ function renderTavernGame(rep) {
       stopTavernPlay();
       _tavernStep = 0;
       _tavernTurn = r.turn;
-      renderSettleGame(rep);
+      renderTavernGame(rep);
     };
     strip.appendChild(b);
   }
@@ -4487,19 +3648,14 @@ function renderTavernGame(rep) {
   if (row && effMode === 'step') {
     root.appendChild(renderTavernSteps(row));
   } else if (row) {
-    // Design §3: rail 330px left, the turn's card right. The card is THE
-    // settleTurnCard — same tabs, notes and honesty — with the tavern-only
-    // extras (rail, passed-through tray, Ended net tags, Battle face-off)
-    // gated on the flag. The face-off's HP line needs the NEXT turn's
-    // effective-HP reading, which only the caller has.
+    // Design §3: rail 330px left, the turn's card right. The face-off's HP line
+    // needs the NEXT turn's effective-HP reading, which only the caller has.
     //
-    // The model's plan rides the RAIL in this viewer (2026-10-09, player
-    // call), folded under a neutral label — the phase row's "coaching —
-    // not taken" summary read as advice, and its "You: bought… — next
-    // fight: −N HP" line duplicated the rail and the Result view. So the
-    // card gets NO phase rows here; every phase this turn (plus any
-    // final-duel phase with no shop of its own, which the classic viewer
-    // attaches to the last card) lands in the rail's Plan section, once.
+    // The model's plan rides the RAIL (2026-10-09, player call), folded under a
+    // neutral label with its grading on that label (2026-10-13). The card gets
+    // no phase rows: every phase this turn — plus any final-duel phase with no
+    // shop of its own, which the classic reviewer used to attach to the last
+    // card — lands in the rail's Plan section, once.
     const idx = turns.indexOf(row);
     const nextEff = idx >= 0 && turns[idx + 1] ? turns[idx + 1].eff : null;
     const seen = new Set(turns.map(r => r.turn));
@@ -4509,8 +3665,7 @@ function renderTavernGame(rep) {
     const wrap = document.createElement('div');
     wrap.className = 'twrap';
     wrap.appendChild(tavernRail(row, railPhases));
-    card = settleTurnCard(row, [], {tavern: true, hero: rep.hero,
-                                    nextEff: nextEff});
+    card = settleTurnCard(row, {hero: rep.hero, nextEff: nextEff});
     wrap.appendChild(card);
     root.appendChild(wrap);
   }
@@ -4641,12 +3796,18 @@ function tavernRail(r, phases) {
          + ') while keeping ' + (q.kept_filler_names || []).join(', '));
     rail.appendChild(d);
   }
-  // The model's plan, folded, under a neutral label. One copy: the phase
-  // rows that used to carry it (and the verdict word) are classic-only now.
+  // The model's plan, folded, under a neutral label — and its GRADING beside
+  // it on the summary line (2026-10-13). The grading used to ride the classic
+  // reviewer's phase row ("coaching — taken"), which the classic reviewer took
+  // with it; the review is where the model's verdict ships (PIVOT.md), so the
+  // label stays the neutral noun the rail has always used and the verdict is
+  // the fact appended to it. Without this the tab would show what the model
+  // wanted and never whether it was done, which is the ledger's whole point.
   for (const p of phases || []) {
     const det = document.createElement('details');
     det.className = 'rplan';
-    det.appendChild(el('summary', null, 'Plan'));
+    det.appendChild(el('summary', null,
+                       p.verdict ? 'Plan — ' + p.verdict : 'Plan'));
     det.appendChild(el('div', 'rplan-body',
                        p.plan || '(no plan recorded for this phase)'));
     rail.appendChild(det);
@@ -4667,7 +3828,7 @@ function stopTavernPlay() {
 function tavernStepNav(delta) {
   stopTavernPlay();
   _tavernStep = Math.max(0, _tavernStep + delta);
-  renderSettleGame(_settleRep);
+  renderTavernGame(_settleRep);
 }
 function tavernTogglePlay() {
   if (_tavernPlayTimer) {
@@ -4682,10 +3843,10 @@ function tavernTogglePlay() {
       } else {
         _tavernStep += 1;
       }
-      renderSettleGame(_settleRep);
+      renderTavernGame(_settleRep);
     }, 900);
   }
-  renderSettleGame(_settleRep);
+  renderTavernGame(_settleRep);
 }
 function renderTavernSteps(row) {
   const steps = row.steps || [];
@@ -4724,7 +3885,7 @@ function renderTavernSteps(row) {
     t.onclick = () => {
       stopTavernPlay();
       _tavernStep = i;
-      renderSettleGame(_settleRep);
+      renderTavernGame(_settleRep);
     };
     track.appendChild(t);
   });
@@ -4769,15 +3930,14 @@ function renderTavernSteps(row) {
 // structured (the server joins display names at serve time), the text the
 // standalone page uses when it is not. Art rides /img like everywhere else,
 // so tiles hover to the full card render for free.
-function boardTiles(list, tags, tav) {
+function boardTiles(list, tags) {
   const wrap = document.createElement('span');
   wrap.className = 'brow-tiles';
   for (const m of list || []) {
-    // Tavern tiles carry the two-color stat line (attack gold, health red);
-    // the classic tiles keep their plain "?/?-when-unknown" string — the
-    // viewer flag's contract leaves the shipped renderer alone.
-    const sub = tav ? statSub(m) : (m.atk ?? '?') + '/' + (m.health ?? '?');
-    const t = tile(m.card, m.name || m.card, sub, {golden: m.golden});
+    // The two-color stat line (attack gold, health red) — the classic
+    // renderer's plain "?/?-when-unknown" string went with the classic
+    // renderer (2026-10-13), and a value nobody read is a dash here instead.
+    const t = tile(m.card, m.name || m.card, statSub(m), {golden: m.golden});
     // Net-change tags (Tavern, design §4.4): NEW for a minion that is on the
     // Ended board but was not on the Opened one; otherwise the stat delta.
     // Keyed by entity id and only present when the rep carries eids — an
@@ -4799,14 +3959,16 @@ function boardTiles(list, tags, tav) {
   }
   return wrap;
 }
-function boardRow(lbl, list, text, cls, tags, stacked, tav) {
+function boardRow(lbl, list, text, tags) {
+  // The label is ABOVE the row (2026-10-09, player call), so `stacked` is not a
+  // choice any more; the classic side-by-side form with a colour class for the
+  // opponent's row went with the classic reviewer (2026-10-13).
   const d = document.createElement('div');
-  d.className = 'brow' + (stacked ? ' stacked' : '');
+  d.className = 'brow stacked';
   d.innerHTML = '<span class="blbl">' + lbl + '</span>';
-  if (list && list.length) d.appendChild(boardTiles(list, tags, tav));
+  if (list && list.length) d.appendChild(boardTiles(list, tags));
   else {
     const s = document.createElement('span');
-    if (cls) s.className = cls;
     s.textContent = text || '—';
     d.appendChild(s);
   }
@@ -4835,44 +3997,18 @@ function faceSide(label, meta, list, text, tint) {
   }
   return d;
 }
-// One advised phase, the way a player reads it (2026-10-07): what THEY did
-// first, the cost of it next to that, and the model's line folded away
-// underneath — there to open, never shouting.
-function phaseRow(p) {
-  const d = document.createElement('div');
-  d.className = 'phase';
-  const acted = document.createElement('div');
-  acted.className = 'pacted';
-  acted.textContent = 'You: ' + (p.acted || '(no actions recorded)');
-  d.appendChild(acted);
-  if (p.outcome != null || p.outcome_note) {
-    const out = document.createElement('span');
-    out.className = 'pout';
-    out.textContent = p.outcome != null
-      ? (' — next fight: ' + (p.outcome > 0 ? '+' : '') + p.outcome + ' HP')
-      : ' — ' + (p.outcome_note || '');
-    acted.appendChild(out);
-  }
-  const det = document.createElement('details');
-  det.className = 'coach';
-  const sum = document.createElement('summary');
-  sum.textContent = p.verdict ? ('coaching — ' + p.verdict) : 'coaching';
-  const plan = document.createElement('div');
-  plan.className = 'pplan';
-  plan.textContent = p.plan || '(no plan recorded for this phase)';
-  det.appendChild(sum);
-  det.appendChild(plan);
-  d.appendChild(det);
-  return d;
-}
-function settleTurnCard(r, phases, opts) {
-  // opts.tavern (2026-10-08) turns on the Tavern-only extras — the
-  // passed-through tray and the Ended board's net-change tags — without
-  // touching a single pixel of the classic rendering (the viewer flag's
-  // whole contract). Everything below reads `tav` once.
-  const tav = !!(opts && opts.tavern);
-  const s = r.stats || {}, sp = r.spend || {}, c = r.commitment || {};
-  const ev = r.shop_events || {};
+// (The classic reviewer's phase row lived here — "You: bought… — next fight:
+// −N HP" with the model's line folded under it, headed "coaching — taken".
+// 2026-10-13: it went with the classic reviewer, because the rail already
+// carries the actions as groups, the cost as chips, and the plan with its
+// grading on the Plan summary.)
+// One turn of a saved game, in the Tavern layout. It was the SHARED card of the
+// two reviewers — `opts.tavern` switched the tavern-only extras on for one of
+// them — and with the classic reviewer deleted (2026-10-13) there is one caller
+// and no flag: the extras ARE this card now. The model's plan is not here; the
+// rail carries it with its grading.
+function settleTurnCard(r, opts) {
+  const c = r.commitment || {};
   // No opening snapshot (the final turn family — the last turn of a game
   // whose log ends before the fight staged): nothing about this turn's
   // boards or growth is computable, and the old save renders a fake
@@ -4885,17 +4021,11 @@ function settleTurnCard(r, phases, opts) {
   card.className = 'turn';
   const head = document.createElement('div');
   head.className = 'thead clickable';
-  // The Tavern header is the turn and the comp target ONLY (2026-10-09,
-  // player call): its gold / board / growth / spent numbers are the rail's
-  // chips now, and a fact printed twice on one card is the duplication the
-  // rail exists to remove. The classic header keeps every number it had.
+  // The header is the turn and the comp target ONLY (2026-10-09, player call):
+  // its gold / board / growth / spent numbers are the rail's chips, and a fact
+  // printed twice on one card is the duplication the rail exists to remove.
   head.innerHTML = '<span class="caret">▾</span>'
     + '<span class="tturn">Turn ' + (r.turn ?? '?') + '</span>'
-    + (tav ? '' : '<span class="tmeta">' + (r.gold ?? '—') + 'g · board '
-       + (s.buy_end ?? '—') + ' stats'
-       + (s.growth != null ? ' <span class="grw">' + (s.growth > 0 ? '+' : '')
-          + s.growth + '</span>' : '')
-       + ' · spent ' + (sp.total ?? '—') + 'g</span>')
     + (c.target ? '<span class="comp">' + c.target + '</span>' : '');
   // Click the title bar to fold the card down to just that bar (2026-10-07):
   // a 15-turn game is a lot of scrolling, and the headline row is the index.
@@ -4944,74 +4074,45 @@ function settleTurnCard(r, phases, opts) {
   }
   card.appendChild(btns);
   card.appendChild(views);
-  const row = (lbl, text, cls) => {
-    const d = document.createElement('div');
-    d.className = 'brow';
-    d.innerHTML = '<span class="blbl">' + lbl + '</span><span'
-      + (cls ? ' class="' + cls + '"' : '') + '></span>';
-    d.lastChild.textContent = text || '—';
-    return d;
-  };
-  const sellFlags = document.createElement('div');
-  for (const q of r.sell_questions || []) {
-    const d = document.createElement('div');
-    d.className = q.rebuild ? 'note' : 'q';
-    d.textContent = q.rebuild
-      ? ('~ rebuilt the board: sold ' + q.sold_count + ' ('
-         + (q.sold_name || 'cards') + ' and others) — a repositioning, '
-         + 'not a one-for-one choice')
-      : ('? sold ' + (q.sold_name || 'a card') + ' (' + (q.role || '?')
-         + ') while keeping ' + (q.kept_filler_names || []).join(', ')
-         + ' — worth a look, not a verdict');
-    sellFlags.appendChild(d);
-  }
-  const phaseRows = document.createElement('div');
-  for (const p of phases) phaseRows.appendChild(phaseRow(p));
   // BATTLE — the fight after beginning-of-combat effects, both sides from
   // the same (peak) burst so the rows are honest relative to each other.
   // Opponent on top, mirroring the in-game combat view (2026-10-07).
-  if (opts && opts.tavern) {
-    // Design §4.5: the face-off — their board top, VS, yours below (your
-    // side tinted warm, theirs cool), the result panel at right. The boards
-    // are the same peak burst the classic rows use; the panel is the same
-    // outcome wording the Result view carries.
-    const wrap = document.createElement('div');
-    wrap.className = 'faceoff-wrap';
-    const fo = document.createElement('div');
-    fo.className = 'faceoff';
-    fo.appendChild(faceSide('Opponent', '', (r.combat_peak || {}).theirs,
-                            r.combat_theirs_text || '—', 'cool'));
-    fo.appendChild(el('div', 'vs', 'VS'));
-    fo.appendChild(faceSide(opts.hero || 'You',
-                            hpLine(r.eff, opts.nextEff),
-                            (r.combat_peak || {}).ours,
-                            r.combat_ours_text || '(no board read)', 'warm'));
-    wrap.appendChild(fo);
-    const left = minionsLeft(r.winner, r.battle_end, r.theirs_survivors);
-    const panel = document.createElement('div');
-    panel.className = 'fresult';
-    panel.appendChild(el('div', 'fout ' +
-      (r.winner === 'us' ? 'won' : r.winner === 'them' ? 'lost'
-       : r.winner === 'tie' ? 'tie' : 'unk'), outcomeText(r.winner)));
-    const line = (k, v) => {
-      const d = document.createElement('div');
-      d.innerHTML = '<span class="fk">' + k + '</span>';
-      d.appendChild(el('span', 'fv', v));
-      return d;
-    };
-    panel.appendChild(line('Minions left',
-      left == null ? '—' : String(left)));
-    panel.appendChild(line('HP taken', r.damage_taken == null ? '—'
-      : r.damage_taken > 0 ? String(r.damage_taken)
-      : r.damage_taken === 0 ? '0' : '−' + (-r.damage_taken) + ' (gained)'));
-    wrap.appendChild(panel);
-    bodies.battle.appendChild(wrap);
-  } else {
-    bodies.battle.appendChild(boardRow('Opponent brought',
-      (r.combat_peak || {}).theirs, r.combat_theirs_text, 'them'));
-    bodies.battle.appendChild(boardRow('You brought',
-      (r.combat_peak || {}).ours, r.combat_ours_text || '(no board read)'));
-  }
+  // Design §4.5: the face-off — their board top, VS, yours below (your side
+  // tinted warm, theirs cool), the result panel at right. Both boards are the
+  // same peak burst the rows use; the panel carries the outcome wording the
+  // Result view carries. The classic reviewer's two stacked "brought" rows went
+  // with it (2026-10-13).
+  const wrap = document.createElement('div');
+  wrap.className = 'faceoff-wrap';
+  const fo = document.createElement('div');
+  fo.className = 'faceoff';
+  fo.appendChild(faceSide('Opponent', '', (r.combat_peak || {}).theirs,
+                          r.combat_theirs_text || '—', 'cool'));
+  fo.appendChild(el('div', 'vs', 'VS'));
+  fo.appendChild(faceSide(opts.hero || 'You',
+                          hpLine(r.eff, opts.nextEff),
+                          (r.combat_peak || {}).ours,
+                          r.combat_ours_text || '(no board read)', 'warm'));
+  wrap.appendChild(fo);
+  const left = minionsLeft(r.winner, r.battle_end, r.theirs_survivors);
+  const panel = document.createElement('div');
+  panel.className = 'fresult';
+  panel.appendChild(el('div', 'fout ' +
+    (r.winner === 'us' ? 'won' : r.winner === 'them' ? 'lost'
+     : r.winner === 'tie' ? 'tie' : 'unk'), outcomeText(r.winner)));
+  const line = (k, v) => {
+    const d = document.createElement('div');
+    d.innerHTML = '<span class="fk">' + k + '</span>';
+    d.appendChild(el('span', 'fv', v));
+    return d;
+  };
+  panel.appendChild(line('Minions left',
+    left == null ? '—' : String(left)));
+  panel.appendChild(line('HP taken', r.damage_taken == null ? '—'
+    : r.damage_taken > 0 ? String(r.damage_taken)
+    : r.damage_taken === 0 ? '0' : '−' + (-r.damage_taken) + ' (gained)'));
+  wrap.appendChild(panel);
+  bodies.battle.appendChild(wrap);
   for (const n of r.notes || []) {
     const d = document.createElement('div');
     d.className = 'note';
@@ -5019,16 +4120,15 @@ function settleTurnCard(r, phases, opts) {
     bodies.battle.appendChild(d);
   }
   // SHOP — open to close, with the turn's events and the action list. The board
-  // labels sit ABOVE their rows in Tavern (`tav`): a board is a full-width row
-  // of cards, and a label beside it only took width from them (2026-10-09).
+  // labels sit ABOVE their rows: a board is a full-width row of cards, and a
+  // label beside it only took width from them (2026-10-09).
   bodies.shop.appendChild(r.turn === 1
-    ? boardRow('Opened with', null, 'New game — nothing came before',
-               null, null, tav)
+    ? boardRow('Opened with', null, 'New game — nothing came before')
     : noSnapshot
       ? boardRow('Opened with', null,
-                 'No opening board recorded for this turn.', null, null, tav)
+                 'No opening board recorded for this turn.')
       : boardRow('Opened with', r.buy_start,
-                 '(no shop snapshot — a skipped turn?)', null, null, tav));
+                 '(no shop snapshot — a skipped turn?)'));
   // The fight's summoned leftovers are removed from this board before it is
   // drawn (turn_review._opening_board), and the removal is SAID rather than
   // silently shortening the row: "the minions you opened with" is a fact the
@@ -5048,57 +4148,34 @@ function settleTurnCard(r, phases, opts) {
   // keeps its Ended row: that board was read.
   if (!noSnapshot || (r.buy_end || []).length) {
     bodies.shop.appendChild(boardRow('Ended with', r.buy_end, r.buy_end_text,
-      null, tav ? boardDelta(r.buy_start, r.buy_end) : null, tav));
+      boardDelta(r.buy_start, r.buy_end)));
   }
-  if (tav) {
-    // Passed through (design §4.4): minions bought AND sold this phase —
-    // they never touch either board, so this tray is the only place their
-    // card art appears. Ghost styling, hidden when there are none.
-    // ONE GHOST PER EVENT (round-3 item 1's audit of the same dedupe): this
-    // used to walk an id-keyed map, so a phase that bought and sold the same
-    // minion twice drew one ghost.
-    const flipped = passedThrough((r.took || {}).bought, (r.took || {}).sold);
-    if (flipped.length) {
-      const tray = document.createElement('div');
-      tray.className = 'brow stacked';
-      tray.innerHTML = '<span class="blbl">Passed through</span>';
-      const wrap = document.createElement('span');
-      wrap.className = 'brow-tiles';
-      for (const m of flipped) {
-        // A passed-through minion carries no stats in the took lists, so
-        // statSub answers null and the ghost draws its name alone — the
-        // "?/?" this tray used to print was a question, not a stat
-        // (2026-10-09, player call).
-        wrap.appendChild(tile(m.card, m.name || m.card, statSub(m),
-                              {cls: 'ghost'}));
-      }
-      tray.appendChild(wrap);
-      bodies.shop.appendChild(tray);
+  // Passed through (design §4.4): minions bought AND sold this phase — they
+  // never touch either board, so this tray is the only place their card art
+  // appears. Ghost styling, hidden when there are none. ONE GHOST PER EVENT
+  // (round-3 item 1's audit of the same dedupe): this used to walk an id-keyed
+  // map, so a phase that bought and sold the same minion twice drew one ghost.
+  const flipped = passedThrough((r.took || {}).bought, (r.took || {}).sold);
+  if (flipped.length) {
+    const tray = document.createElement('div');
+    tray.className = 'brow stacked';
+    tray.innerHTML = '<span class="blbl">Passed through</span>';
+    const wrap = document.createElement('span');
+    wrap.className = 'brow-tiles';
+    for (const m of flipped) {
+      // A passed-through minion carries no stats in the took lists, so statSub
+      // answers null and the ghost draws its name alone — the "?/?" this tray
+      // used to print was a question, not a stat (2026-10-09, player call).
+      wrap.appendChild(tile(m.card, m.name || m.card, statSub(m),
+                            {cls: 'ghost'}));
     }
+    tray.appendChild(wrap);
+    bodies.shop.appendChild(tray);
   }
-  // THE TURN line and the worth-a-look flags are CLASSIC-only (2026-10-09,
-  // player call). In Tavern the rail already carries the flags, and the line's
-  // numbers live in the rail's chips — the same facts printed twice, in two
-  // vocabularies, is the duplication the rail exists to remove.
-  if (!tav) {
-    const evLine = document.createElement('div');
-    evLine.className = 'brow';
-    const evBits = [];
-    if (ev.played != null) evBits.push('played ' + ev.played + ' card'
-                                       + (ev.played === 1 ? '' : 's'));
-    if (sp.total != null) evBits.push('spent ' + sp.total + 'g');
-    if (s.growth != null) evBits.push('value ' + (s.growth >= 0 ? '+' : '')
-                                      + s.growth);
-    if (ev.tier_up) evBits.push('LEVELED UP');
-    if (ev.hero_power) evBits.push('hero power');
-    if ((ev.trinkets || []).length) evBits.push('trinket: '
-                                                + ev.trinkets.join(', '));
-    evLine.innerHTML = '<span class="blbl">The turn</span><span></span>';
-    evLine.lastChild.textContent = evBits.join(' · ') || '—';
-    bodies.shop.appendChild(evLine);
-    bodies.shop.appendChild(sellFlags);
-  }
-  bodies.shop.appendChild(phaseRows);
+  // (THE TURN line and the worth-a-look flags were here. The line's numbers are
+  // the rail's chips, and the rail carries the flags — printing them twice, in
+  // two vocabularies, is the duplication the rail exists to remove. The classic
+  // reviewer was the second printer and it is gone, 2026-10-13.)
   // RESULT — combat ends when one board dies, so the winner comes from the
   // fight, and exactly one side holds survivors (both on a tie).
   const w = r.winner;
@@ -5113,11 +4190,10 @@ function settleTurnCard(r, phases, opts) {
   bodies.aftermath.appendChild(resLine);
   bodies.aftermath.appendChild(boardRow('You survived with',
     w === 'them' ? [] : r.battle_end,
-    w === 'them' ? '— none' : r.battle_end_text, null, null, tav));
+    w === 'them' ? '— none' : r.battle_end_text));
   bodies.aftermath.appendChild(boardRow('They survived with',
     w === 'them' ? r.theirs_survivors : [],
-    w === 'them' ? '' : (w === 'tie' ? '— none — a tie' : '— none'),
-    null, null, tav));
+    w === 'them' ? '' : (w === 'tie' ? '— none — a tie' : '— none')));
   // Same removal as the Shop view's opening board — this row IS that board, one
   // turn later — so it is disclosed in the same breath (2026-10-07).
   if (r.battle_end_removed) {
@@ -5144,27 +4220,13 @@ let _tab = 'live';
 try { _tab = localStorage.getItem('bl-tab') || 'live'; } catch (e) {}
 showTab(_tab);
 document.getElementById('settle-select').onchange = e => loadSettleGame(e.target.value);
-// The Settle Up viewer flag (2026-10-08). Classic stays the default: the new
-// design is being built behind the Tavern branch and is not done yet.
-function setSettleViewer(v) {
-  _viewer = v === 'tavern' ? 'tavern' : 'classic';
-  try { localStorage.setItem('bl-settle-viewer', _viewer); }
-  catch (e) { /* private mode */ }
-  document.querySelectorAll('#settle-viewer button').forEach(
-    b => { b.className = b.dataset.v === _viewer ? 'on' : ''; });
-  if (_settleRep) renderSettleGame(_settleRep);
-}
-document.querySelectorAll('#settle-viewer button').forEach(b => {
-  b.onclick = () => setSettleViewer(b.dataset.v);
-  b.className = b.dataset.v === _viewer ? 'on' : '';
-});
-// The Live viewer flag (2026-10-09, LIVE_VIEW_DESIGN.md). Classic is the
-// shipped renderer and stays the default; the choice persists per browser under
-// its own key, exactly like the Settle Up flag above.
-document.querySelectorAll('#live-viewer button').forEach(b => {
-  b.onclick = () => setLiveViewer(b.dataset.v);
-  b.className = b.dataset.v === _liveViewer ? 'on' : '';
-});
+// NO VIEWER SWITCHES (2026-10-13). The Settle Up header carried a
+// `Classic | Tavern` segment and the live nav row carried its own; each wrote a
+// key (`bl-settle-viewer`, `bl-live-viewer`) and redrew from the payload on
+// screen. Tavern is the only style, so both, their keys, `setSettleViewer`,
+// `setLiveViewer` and the `_viewer`/`_liveViewer` variables are gone. Nothing
+// reads either key, so a player who had chosen Classic simply sees the one
+// renderer that exists.
 // The Summary | Step through toggle in the Settle Up header (2026-10-09). It
 // sits next to the game dropdown, so it is markup rather than something the
 // renderer builds; the renderer only says which mode is on and whether Step
@@ -5182,10 +4244,6 @@ function refreshSettleMode(mode, hasSteps) {
       : '';
   });
 }
-function hideSettleMode() {
-  const seg = document.getElementById('settle-mode');
-  if (seg) seg.hidden = true;
-}
 document.querySelectorAll('#settle-mode button').forEach(b => {
   b.onclick = () => {
     if (b.disabled) return;
@@ -5193,18 +4251,15 @@ document.querySelectorAll('#settle-mode button').forEach(b => {
     _tavernMode = b.dataset.m === 'step' ? 'step' : 'summary';
     try { localStorage.setItem('bl-settle-mode', _tavernMode); }
     catch (e) { /* private mode */ }
-    if (_settleRep) renderSettleGame(_settleRep);
+    if (_settleRep) renderTavernGame(_settleRep);
   };
 });
-// Keyboard (design §5), Tavern viewer only — Classic is untouched. Left and
-// Right walk turns (Summary) or steps (Step-through); Shift+Left/Right walks
-// turns while stepping; Space plays/pauses; Home and End jump to the ends.
-// Ignored while typing, and only on the Settle Up tab.
+// Keyboard (design §5): Left and Right walk turns (Summary) or steps
+// (Step-through); Shift+Left/Right walks turns while stepping; Space
+// plays/pauses; Home and End jump to the ends. Ignored while typing, and only
+// on the Settle Up tab.
 document.addEventListener('keydown', e => {
-  if (_viewer !== 'tavern'
-      || document.getElementById('settle').className !== 'on') {
-    return;
-  }
+  if (document.getElementById('settle').className !== 'on') return;
   const tag = (e.target.tagName || '').toUpperCase();
   if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
   const turns = ((_settleRep || {}).timeline || {}).turns || [];
@@ -5217,14 +4272,14 @@ document.addEventListener('keydown', e => {
     if (stepping && !e.shiftKey) {
       stopTavernPlay();
       _tavernStep = Math.max(0, _tavernStep + d);
-      renderSettleGame(_settleRep);
+      renderTavernGame(_settleRep);
     } else {
       const ni = Math.min(turns.length - 1, Math.max(0, idx + d));
       if (ni !== idx) {
         stopTavernPlay();
         _tavernStep = 0;
         _tavernTurn = turns[ni].turn;
-        renderSettleGame(_settleRep);
+        renderTavernGame(_settleRep);
       }
     }
   } else if (e.key === ' ' && stepping) {
@@ -5235,7 +4290,7 @@ document.addEventListener('keydown', e => {
     stopTavernPlay();
     _tavernTurn = turns[e.key === 'Home' ? 0 : turns.length - 1].turn;
     _tavernStep = e.key === 'End' ? 1e9 : 0;
-    renderSettleGame(_settleRep);
+    renderTavernGame(_settleRep);
   }
 });
 // The saved replays are plain JSON files; this just points Explorer at them.
@@ -6196,7 +5251,7 @@ def render_json(analysis):
         # one: the Tavern board caption reads "<Tribe> — out of play" instead of
         # the value pass's "banned tribe — can't grow" (fix list round 1 item 7),
         # and it is built from these two facts rather than by rewriting the
-        # shared string the classic page and `test_hand_engine` both pin.
+        # shared string `test_hand_engine` pins and the review reads.
         # `normalize` is the same canonicalizer `sell_reason` compared with, so a
         # board minion logged as BEAST reads "Beast" and not the raw tag.
         g["tribe"] = _canon_tribe(board_minion.get("tribe"))
@@ -6314,8 +5369,10 @@ def render_json(analysis):
         # this field existed) filters NOTHING: the rows are still the rows.
         if _turn_now is None or r.get("turn") == _turn_now]
     # THE BOARD AS ENTITIES TOO (round-3 item 1). `sell_rank` is grouped BY CARD
-    # for the classic Sell box ("Fauna Whisperer ×2", one row, the instance you
-    # would sell first) — and the Tavern's board row drew from it, so two
+    # for the payload's grouped Sell row ("Fauna Whisperer ×2", one row, the
+    # instance you would sell first — the classic box that drew it is gone, and
+    # the grouping stays because `board_cards` below is derived from it and
+    # `test_live_view` pins it) — and the Tavern's board row drew from it, so two
     # identical minions on the board rendered one card. This is one row per
     # minion, in board order, carrying the same per-card facts.
     _why = {g["card"]: g for g in sell}

@@ -31,10 +31,11 @@ def _root_block(css):
 
 
 def _tavern_token_blocks(css):
-    """The Tavern palette's token rules (REPLAY_VIEWER_DESIGN.md §6, scoped
-    on purpose so the classic viewer keeps its own tokens): rules whose
-    SELECTOR is exactly `.tavern` — not the `.tavern .turn` rules that
-    consume the tokens."""
+    """The Tavern palette's token rules (REPLAY_VIEWER_DESIGN.md §6, scoped on
+    purpose so the page's shell keeps the tokens in `:root`): rules whose
+    SELECTOR is exactly `.tavern` — not the `.tavern .turn` rules that consume
+    the tokens. Both of this page's views carry the scope, so the split is now
+    between the views and the chrome, not between two renderers."""
     out = []
     for m in re.finditer(r"(?:^|[}\n])([^{}\n]*\.tavern)\s*\{([^{}]*)\}", css):
         if m.group(1).strip().endswith(".tavern"):

@@ -135,9 +135,11 @@ BAND = (
     "</div>")
 
 #: Where the band goes: the nav row's close tag. The band lands OUTSIDE every
-#: container the page's renderers clear (`#app`, `#col-decide`, `#col-ref`,
-#: `#settle`) and outside the `.tavern.live` subtree the verdict scan reads, so
-#: no frame, viewer toggle or tab switch can wipe it, and no scan can trip on it.
+#: container the page's renderers clear (`#app`, the card slot `#col-decide`,
+#: the live view's `#live-tavern`, `#settle`) and outside the `.tavern.live`
+#: subtree the verdict scan reads, so no frame or tab switch can wipe it, and no
+#: scan can trip on it. (`#col-ref`, the classic page's second pane, was in this
+#: list until it was deleted with that renderer on 2026-10-13.)
 BAND_ANCHOR = "</nav>"
 
 #: The two anchors are CHECKED even when only one is used, because the check is

@@ -1,8 +1,13 @@
-"""The Settle Up viewer flag (2026-10-08): a styling toggle that keeps the
-shipped Classic renderer as the default while the REPLAY_VIEWER_DESIGN.md
-build grows behind the Tavern branch. The flag is the contract under test:
-Classic must be the default and untouched, the choice must persist, and the
-Tavern branch must reuse the real card renderer rather than fork it.
+"""The Settle Up review's one layout.
+
+REVERSED 2026-10-13. This file was "the Settle Up viewer flag (2026-10-08): a
+styling toggle that keeps the shipped Classic renderer as the default while the
+REPLAY_VIEWER_DESIGN.md build grows behind the Tavern branch" — the flag, its
+`bl-settle-viewer` key and its `_viewer` default WERE the contract under test.
+The maintainer made the Tavern style the only one and deleted the classic
+reviewer rather than leaving it unreachable, so the contract is now the absence
+of that choice plus the part that must not be lost with it: the review is where
+the model's plan and its GRADING ship, and `tavernRail` carries both.
 """
 import json
 import os
@@ -24,62 +29,97 @@ def _function(name):
     return m.group(0) if m else None
 
 
-class TestTheFlag(unittest.TestCase):
+class TestThereIsNoReviewerChoice(unittest.TestCase):
+    """REVERSED 2026-10-13 from `TestTheFlag`.
 
-    def test_the_toggle_is_in_the_settle_header(self):
-        self.assertIn('id="settle-viewer"', coach_ui._HTML)
-        head = coach_ui._HTML[coach_ui._HTML.index('id="settle-viewer"'):]
-        self.assertIn('data-v="classic"', head)
-        self.assertIn('data-v="tavern"', head)
-        # Classic is the shipped default, in the markup itself, so the page
-        # reads right even before the script runs.
-        self.assertRegex(head[:200], r'data-v="classic" class="on"')
+    Every test in that class was about the flag itself — the control, its key,
+    "Classic is the default", the branch and the classic renderer the branch
+    protected. The flag, the branch and the classic renderer are gone, and the
+    absence is what is asserted now: this is the shape a later branch would have
+    to break to bring the choice back.
+    """
 
-    def test_the_choice_persists_under_its_own_key(self):
-        self.assertIn("localStorage.getItem('bl-settle-viewer')",
-                      coach_ui._HTML)
-        self.assertIn("localStorage.setItem('bl-settle-viewer'",
-                      coach_ui._HTML)
+    def _code(self):
+        """The page's CODE, with its comments removed.
 
-    def test_classic_is_the_default(self):
-        self.assertIn("let _viewer = 'classic';", coach_ui._HTML)
+        The page explains what it removed and names the identifiers it removed
+        ("`bl-settle-viewer` ... are gone"), so an absence check on raw text
+        fails on the explanation rather than on a regression.
+        """
+        import re
+        body = re.sub(r"/\*.*?\*/", "", coach_ui._HTML, flags=re.S)
+        body = re.sub(r"<!--.*?-->", "", body, flags=re.S)
+        return re.sub(r"//[^\n]*", "", body)
 
-    def test_render_settle_game_branches_and_remembers_the_rep(self):
-        src = _function("renderSettleGame")
-        self.assertIsNotNone(src)
-        self.assertIn("if (_viewer === 'tavern') return renderTavernGame(rep);",
-                      src, "the branch is the whole flag")
-        self.assertLess(src.index("_settleRep = rep"),
-                        src.index("if (_viewer"),
-                        "the rep is remembered BEFORE the branch, or toggling "
-                        "on a loaded game would blank it")
+    def test_the_toggle_is_gone_from_the_settle_header(self):
+        code = self._code()
+        for dead in ('id="settle-viewer"', 'data-v="classic"', 'data-v="tavern"'):
+            self.assertNotIn(dead, code,
+                             "the Classic | Tavern control is back in the "
+                             "Settle Up header")
+        # The header's ONE control left is the mode toggle.
+        self.assertIn('id="settle-mode"', code)
 
-    def test_the_classic_renderer_is_unchanged(self):
-        """The shipped path keeps its shape: one card per timeline turn, the
-        sticky header, and the final-duel phases attached to the last card."""
-        src = _function("renderSettleGame")
-        self.assertIn("settleTurnCard(r, phases.filter(p => p.turn === r.turn))",
-                      src)
-        self.assertIn("className = 'turn s-sticky'", src)
-        self.assertIn("for (const p of rest) lastCard.appendChild(phaseRow(p));",
-                      src)
+    def test_the_choice_persists_nowhere(self):
+        for dead in ("bl-settle-viewer", "bl-live-viewer"):
+            self.assertNotIn(dead, self._code(),
+                             "a viewer key outlived the control that wrote it")
 
-    def test_tavern_reuses_the_real_card_renderer(self):
-        """The Tavern branch must not fork the card logic: one turn on screen
-        is THE settleTurnCard, notes and honesty included. It gets no phase
-        rows since 2026-10-09 — the model's plan rides the rail there (a
-        neutral "Plan", not "coaching — not taken") — but the card itself is
-        still the shared renderer."""
+    def test_there_is_no_viewer_variable_and_no_dispatcher(self):
+        code = self._code()
+        for dead in ("let _viewer", "_viewer ===", "function renderSettleGame",
+                     "function setSettleViewer", "if (_viewer",
+                     "hideSettleMode"):
+            self.assertNotIn(dead, code, f"{dead} is back")
+
+    def test_the_saved_game_reaches_the_review_renderer(self):
+        """The dispatcher is gone, so this is unconditional: the dropdown's
+        fetch goes straight to `renderTavernGame`."""
+        src = _function("loadSettleGame")
+        self.assertIn("renderTavernGame(j.rep || j);", src)
+        self.assertNotIn("renderSettleGame", src)
+
+    def test_the_review_renderer_remembers_the_rep(self):
+        """Reversed from `test_render_settle_game_branches_and_remembers_the_rep`,
+        which pinned that the rep was remembered BEFORE the viewer branch. There
+        is no branch; what matters is unchanged — the mode toggle and the
+        keyboard re-render from this rep rather than refetching the game."""
         src = _function("renderTavernGame")
         self.assertIsNotNone(src, "renderTavernGame is missing")
-        self.assertIn("settleTurnCard(row, [],", src)
+        self.assertIn("_settleRep = rep;", src)
+        self.assertLess(src.index("_settleRep = rep;"),
+                        src.index("refreshSettleMode"),
+                        "the rep has to be remembered before anything reads it")
+
+    def test_the_classic_reviewer_is_gone_and_not_merely_unchosen(self):
+        """Reversed from `test_the_classic_renderer_is_unchanged`, which pinned
+        the shipped path's shape — one card per timeline turn, the sticky
+        header, the final-duel phases attached to the last card. None of it can
+        be reached now, so all of it is an absence, together with the phase row
+        that carried the model's line on that page."""
+        code = self._code()
+        for dead in ("s-sticky", "turn .phase", "phases.filter(p => p.turn === r.turn)",
+                     "phaseRow", "lastCard.appendChild"):
+            self.assertNotIn(dead, code, f"{dead} survived the classic reviewer")
+
+    def test_the_card_renderer_is_the_only_one(self):
+        """`settleTurnCard` is still the real card — not forked — and with the
+        classic reviewer gone it has no `opts.tavern` flag left: one caller, and
+        the tavern-only extras are simply what it renders. The model's plan rides
+        the rail, which carries its grading on the Plan summary."""
+        src = _function("renderTavernGame")
+        self.assertIsNotNone(src, "renderTavernGame is missing")
+        self.assertIn("settleTurnCard(row, {hero: rep.hero,", src)
         self.assertIn("tavernRail(row, railPhases)", src)
         self.assertIn("className = 'tavern'", src)
         self.assertIn("stripMark(r.winner, r.damage_taken)", src)
+        card = _function("settleTurnCard")
+        self.assertNotIn("opts.tavern", card)
+        self.assertIn("'Plan — ' + p.verdict", _function("tavernRail"))
 
     def test_tavern_tokens_are_scoped_not_global(self):
-        """The Tavern palette lives on .tavern; the classic viewer and the
-        live overlay keep their own tokens."""
+        """The Tavern palette lives on `.tavern`; the shell and the standalone
+        review pages keep the tokens in `:root`."""
         self.assertRegex(coach_ui._HTML, r"\.tavern \{[^}]*--tbg:#17110d")
         for root_rule in re.findall(r":root \{[^}]*\}", coach_ui._HTML):
             self.assertNotIn("--tbg", root_rule,
@@ -143,18 +183,19 @@ class TestTheRailData(unittest.TestCase):
         self.assertEqual(out["timeline"]["turns"][0]["took"]["bought"],
                          [{"card": "BG31_815", "name": "Dune Dweller"}])
 
-    def test_the_tray_and_tags_are_tavern_gated(self):
-        """The viewer flag's contract: the shared card renderer's extras —
-        the passed-through tray and the Ended net tags — sit behind
-        opts.tavern, and the classic path never sets it."""
+    def test_the_tray_and_tags_are_unconditional_now(self):
+        """REVERSED 2026-10-13 from `test_the_tray_and_tags_are_tavern_gated`,
+        which pinned the passed-through tray and the Ended net tags behind
+        `opts.tavern` because the shared card also served the classic reviewer
+        (which never set it). That reviewer is gone, so the extras are simply
+        what the one card renders, and the flag itself is gone with it.
+        """
         src = _function("settleTurnCard")
         self.assertIsNotNone(src)
-        self.assertIn("if (opts && opts.tavern)", src)
+        self.assertNotIn("opts.tavern", src, "the gate is back with one caller")
         self.assertIn("Passed through", src)
         self.assertIn("boardDelta(r.buy_start, r.buy_end)", src)
-        # The only opts the classic path passes is none at all.
-        self.assertNotIn("settleTurnCard(r, phases.filter(p => p.turn === r.turn),",
-                         _function("renderSettleGame"))
+        self.assertIn("faceSide(", src, "the Battle face-off is the one view")
 
 
 class TestTheRailHelpers(unittest.TestCase):

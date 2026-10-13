@@ -1,4 +1,4 @@
-"""The Tavern viewer, RUN in a real browser instead of read as source.
+"""The Tavern review, RUN in a real browser instead of read as source.
 
 `test_settle_viewer` pins the redesign by reading `coach_ui.py`: `assertIn` on a
 function's text, plus `node` runs of the pure helpers. That is worth having, and
@@ -9,8 +9,10 @@ the same shape of gap that once let a syntax error live in this page.
 
 So this module does the only thing that counts: it serves the REAL page
 (`coach_ui._page_html()` — its own `<style>`, its own `<script>`), runs a rep
-through the REAL serve-time join (`_name_timeline_boards`), renders it with the
-real `renderSettleGame`, and reads the resulting DOM back. The facts asserted are
+through the REAL serve-time join (`_name_timeline_boards`), renders it with
+`renderTavernGame` — the only review renderer since the classic one was deleted
+on 2026-10-13 — and reads the resulting DOM back. (The driver's `_viewer` line
+and the `viewer=` shot argument went with the flag they set.) The facts asserted are
 the ones a player would see: how many turns are on screen, which rail groups are
 open, whether the `NEW` tag and the stat delta landed, the letters on the step
 track, the caption's words, the measured card sizes.
@@ -95,8 +97,9 @@ def _rep():
                  "spell_ids": [{"card": "BG31_700", "name": "Tavern Spell"},
                                {"card": "BG31_701", "name": "Second Spell"}]},
         "sell_questions": [
-            # A rebuild note, which the Tavern viewer must show ONCE (the rail
-            # carries it; the card's own copy is classic-only as of 2026-10-09).
+            # A rebuild note, which the review must show ONCE (the rail carries
+            # it; the card's own copy went with the classic reviewer, 2026-10-09,
+            # and the rail is now the only place it appears).
             {"rebuild": True, "sold_count": 2, "sold_name": "Filler"},
             {"sold_name": "Decoy Conjurer", "role": "filler",
              "kept_filler_names": ["Buy 1", "Buy 2"]}],
@@ -174,7 +177,7 @@ def _named_single():
 
 #: The driver. Everything it reports lands in `#out` as `name.key=value`
 #: records, which `browser.fields()` reads back. It is defensive on purpose:
-#: `renderSettleGame` missing, or one shot blowing up, must each come back as a
+#: `renderTavernGame` missing, or one shot blowing up, must each come back as a
 #: REPORTED error rather than as a mysterious absence of facts.
 _DRIVER = r"""
 <pre id="out">pending</pre>
@@ -228,6 +231,13 @@ _DRIVER = r"""
     o.mode = [...document.querySelectorAll('#settle-mode button')]
       .map(b => b.textContent + (b.disabled ? ':off' : '')).join('|');
     o.modehidden = document.getElementById('settle-mode').hidden ? 1 : 0;
+    // The header's segment controls, and the two REMOVED viewer flags by id.
+    // Both are counts with a control beside them: `vsegs` is 1 (the mode
+    // toggle), so `viewerflags` being 0 is a measurement rather than a selector
+    // that matches nothing.
+    o.vsegs = document.querySelectorAll('.s-head .vseg').length;
+    o.viewerflags = document.querySelectorAll('#settle-viewer, #live-viewer, '
+      + '#live-viewer-row').length;
     o.track = q('.steptrack .stick').length;
     o.letters = [...q('.steptrack .stick')].map(b => b.textContent).join('');
     o.titles = [...q('.steptrack .stick')].map(b => b.title).join('|');
@@ -331,7 +341,8 @@ _DRIVER = r"""
                              'stepminions', 'stepghosts', 'steptiles',
                              'affected', 'labelabove', 'stackrows', 'theturn',
                              'rebuildnotes', 'modehidden', 'capin', 'railw',
-                             'capsize', 'ghostsub', 'legendfs', 'ended']);
+                             'capsize', 'ghostsub', 'legendfs', 'ended',
+                             'vsegs', 'viewerflags']);
     for (const k of Object.keys(o)) {
       const v = o[k];
       rec(name + '.' + k, NUMERIC.has(k) ? '#' + Number(v)
@@ -339,15 +350,14 @@ _DRIVER = r"""
     }
   }
   function shot(s) {
-    if (s.viewer) _viewer = s.viewer;
     if (s.mode) _tavernMode = s.mode;
     _tavernTurn = (s.turn === undefined ? null : s.turn);
     _tavernStep = s.step || 0;
-    renderSettleGame(s.rep);
+    renderTavernGame(s.rep);
     facts(s.name);
   }
-  if (typeof renderSettleGame !== 'function') {
-    rec('fatal', 'renderSettleGame is not defined - the page script did not run');
+  if (typeof renderTavernGame !== 'function') {
+    rec('fatal', 'renderTavernGame is not defined - the page script did not run');
   } else {
     // The Settle Up tab FIRST. The viewer lives inside `#settle`, and the page
     // opens on the live tab with that section hidden — so every offsetWidth in
@@ -356,7 +366,6 @@ _DRIVER = r"""
     // The facts are collected synchronously, so the async settle-list fetch
     // that `showTab` kicks off cannot clobber them afterwards.
     showTab('settle');
-    _viewer = 'tavern';
     for (const s of SHOTS) {
       try {
         shot(s);
@@ -377,9 +386,11 @@ def _page(shots):
     return coach_ui._page_html().replace("</body>", driver + "</body>")
 
 
-def _shot(name, rep, mode=None, turn=None, step=0, viewer=None):
-    return {"name": name, "rep": rep, "mode": mode, "turn": turn, "step": step,
-            "viewer": viewer}
+def _shot(name, rep, mode=None, turn=None, step=0):
+    # NO `viewer` (2026-10-13): it set `_viewer` before rendering, and the
+    # `Classic | Tavern` flag it set is gone. A dead parameter is how a shot
+    # silently stops testing what its name says.
+    return {"name": name, "rep": rep, "mode": mode, "turn": turn, "step": step}
 
 
 def _render(shots, size=browser.WIDE):
@@ -451,11 +462,7 @@ class TestTheTavernSummaryInABrowser(_Rendered):
                 # The final-turn family (2026-10-09): no opening snapshot, no
                 # reading — the old build drew "board 0 stats −1020", a "value
                 # −1020" chip and "Ended with —" out of the missing baseline.
-                _shot("nofinal", _named(), mode="summary", turn=3),
-                # Classic, for the two things Tavern must not have changed: the
-                # mode toggle is Tavern-only, and the classic renderer keeps its
-                # own "The turn" line.
-                _shot("cl", _named(), viewer="classic")]
+                _shot("nofinal", _named(), mode="summary", turn=3)]
 
     def test_one_turn_at_a_time_with_a_strip_button_for_the_rest(self):
         self.assertEqual(self.got["t1.strip"], 3, "one strip button per turn")
@@ -508,16 +515,23 @@ class TestTheTavernSummaryInABrowser(_Rendered):
         self.assertEqual(self.got["t1.groupstate"], "open|closed|open|open")
 
     def test_the_turns_own_line_is_gone_and_its_numbers_are_chips(self):
-        """Item 4 (2026-10-09): the card's "The turn" line is classic-only, and
-        what it said reaches the player as chips — the same facts printed twice
-        in two vocabularies was the duplication the rail exists to remove."""
+        """Item 4 (2026-10-09): the card's "The turn" line was the classic
+        reviewer's, and what it said reaches the player as chips — the same facts
+        printed twice in two vocabularies was the duplication the rail exists to
+        remove.
+
+        The `cl` shot this used to compare against (three turn cards, each with
+        its own line) is gone: it rendered the classic reviewer, which no longer
+        exists. What is asserted is unchanged — the line is NOT on this card, and
+        its numbers ARE in the chips — plus the count that makes the absence a
+        measurement: one card, so a `theturn` of 0 is the whole page.
+        """
+        self.assertEqual(self.got["t1.cards"], 1)
         self.assertEqual(self.got["t1.theturn"], 0,
-                         "the classic 'The turn' line is back in Tavern")
+                         "the classic 'The turn' line is back on the card")
         for chip in ("2 cards played", "14g spent", "value +5"):
             self.assertIn(chip, self.got["t1.chips"],
                           "the line's numbers did not move into the chips")
-        self.assertEqual(self.got["cl.theturn"], 3,
-                         "Classic keeps its own line — one per turn card")
 
     def test_a_count_of_one_is_worded_as_one(self):
         """The chips are player-facing (§4.3), and a turn really does hold one
@@ -633,12 +647,25 @@ class TestTheTavernSummaryInABrowser(_Rendered):
         self.assertEqual(self.got["t1.modehidden"], 0,
                          "the mode toggle is not showing for the Tavern viewer")
 
-    def test_the_mode_toggle_is_tavern_only(self):
-        """Item 8 moved it into the Settle Up header next to the game dropdown;
-        the classic renderer has no mode, so it must not carry the control."""
-        self.assertEqual(self.got["cl.modehidden"], 1,
-                         "the Summary | Step through toggle shows in Classic")
-        self.assertEqual(self.got["cl.rail"], 0, "classic has no rail")
+    def test_the_mode_toggle_is_the_only_viewer_control_left(self):
+        """REVERSED 2026-10-13 from `test_the_mode_toggle_is_tavern_only`, which
+        asserted the control was hidden for the CLASSIC shot ("that renderer has
+        no mode") and that the classic shot had no rail.
+
+        There is one reviewer, so the toggle shows for every saved game — and the
+        claim worth keeping is the one that reversal creates: it is the ONLY
+        segment control in the header. `vsegs` is the control (1), so the 0 in
+        `viewerflags` is a measurement rather than a selector that matches
+        nothing.
+        """
+        self.assertEqual(self.got["t1.modehidden"], 0,
+                         "the mode toggle does not show")
+        self.assertEqual(self.got["t1.vsegs"], 1,
+                         "the header no longer carries exactly one segment "
+                         "control, so the zero below proves nothing")
+        self.assertEqual(self.got["t1.viewerflags"], 0,
+                         "a Classic | Tavern control is back in the header")
+        self.assertEqual(self.got["t1.rail"], 1, "the rail is gone")
 
     def test_the_art_fills_the_card_frame(self):
         """Item 5 (2026-10-09): ONE card component — the art fills the card's

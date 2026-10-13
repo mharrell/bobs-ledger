@@ -6,6 +6,18 @@ is shown only after the fact, in the review, where the decision it describes
 can no longer be acted on. `render_json` is the ONE place the page's view is
 built, so it is the one place the split has to hold.
 
+**REVERSED 2026-10-13, and STRONGER for it.** The live page had two renderers
+behind a `Classic | Tavern` toggle, and half of this file's pins were phrased
+against that pair — the review of the day that read them put it as "the classic
+page shows the model's read, the Tavern one must not". The maintainer removed
+the choice and the classic renderer was DELETED, so there is one live page and
+it shows no verdict AT ALL: every pin below is now unconditional, and the pins
+that used to be conditional on the viewer (which renderer the payload reaches,
+which page may carry the model's words) are assertions about the ONE page. The
+review is still the opposite by design — it is where the verdict ships — which
+is why `LIVE_VERDICT_KEYS` and the review's own grading tests both still have to
+hold together.
+
 Why this file is worth its length: the pivot is only real if it cannot quietly
 revert. Deleting the plan from the page while leaving `top_move` in the payload
 would pass every other test in this suite while shipping the same advice with a
@@ -208,9 +220,12 @@ class TestTavernIsNotRanked(unittest.TestCase):
         self.assertEqual([s["eid"] for s in out["shop_rank"]], [None, None, None])
 
     def test_the_board_row_is_one_card_per_minion(self):
-        """The same dedupe lived in the board row: it drew the classic Sell row,
-        which groups BY CARD ("×2"). `board_cards` is one entry per board
-        minion, so two copies of one minion are two cards."""
+        """The same dedupe lived in the board row: it drew the grouped
+        `sell_rank` row, which is BY CARD ("×2"). `board_cards` is one entry per
+        board minion, so two copies of one minion are two cards. The grouped row
+        stays in the payload — `board_cards` is derived from it, and old records
+        and the corpus read `sell_rank` — but no page renders it since the
+        classic Sell box was deleted (2026-10-13)."""
         a = _analysis(board=[{"card": "BG36_116", "atk": 5, "health": 5,
                               "tribe": "BEAST"},
                              {"card": "BG36_116", "atk": 9, "health": 9,
@@ -220,7 +235,8 @@ class TestTavernIsNotRanked(unittest.TestCase):
         self.assertEqual([r["atk"] for r in out["board_cards"]], [5, 9],
                          "two identical minions are one entity each")
         self.assertEqual(len(out["sell_rank"]), 1,
-                         "the classic Sell row still groups by card")
+                         "the grouped Sell row (no page renders it; the corpus "
+                         "and `board_cards` read it) still groups by card")
         self.assertEqual(out["sell_rank"][0]["n"], 2)
 
 

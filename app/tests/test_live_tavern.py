@@ -1,16 +1,24 @@
-"""The Live viewer flag, and the rule the Tavern layout is built on.
+"""The Live page's one layout, and the rule it is built on.
 
 Live ships STATE (`PIVOT.md`, 2026-10-06) and `LIVE_VIEW_DESIGN.md` §1 draws the
 line one notch tighter: the Live page is *reference material*, so it shows facts,
 counts and statistics — never a verdict, a ranking or an imperative, and never a
-guessed number. The classic page still carries the model's read of the game in
-words ("favored — 51 vs ~40", "FRAGILE — a 14-hit ends it"); the Tavern layout
-replaces those with the same values as rows.
+guessed number.
 
-This file pins the parts a browser cannot see (the flag, the branch, the classic
-path's shape). The rendered text — including the verdict-language scan, which is
-the real control for §1 — is measured in `test_live_browser.py`, because a
-source assertion cannot see what reaches the screen.
+**REVERSED 2026-10-13.** This file was "the Live viewer flag, and the rule the
+Tavern layout is built on": it pinned a `Classic | Tavern` toggle, its
+`bl-live-viewer` key and the branch that chose between two renderers, and the
+verdict rule could only be asserted OF THE TAVERN ONE — the classic page was
+allowed the model's read in words ("favored — 51 vs ~40", "FRAGILE — a 14-hit
+ends it"). The maintainer made Tavern the only style and the classic renderer was
+deleted rather than left unreachable, so the rule is now UNCONDITIONAL: there is
+one live page and it shows no verdict at all. What is pinned below is that shape
+— no control, no key, no branch, no second renderer — instead of the flag.
+
+This file pins the parts a browser cannot see. The rendered text — including the
+verdict-language scan, which is the real control for §1 — is measured in
+`test_live_browser.py`, because a source assertion cannot see what reaches the
+screen.
 """
 import os
 import re
@@ -29,74 +37,116 @@ def _function(name):
     return m.group(0) if m else None
 
 
-class TestTheFlag(unittest.TestCase):
-    """One toggle, one persisted key, Classic still the default."""
+def _without_comments(html=None):
+    """The page with its comments removed.
 
-    def test_the_toggle_is_in_the_tab_row(self):
-        """ONE Classic | Tavern toggle per page (2026-10-09, player call): the
-        live flag moved out of the top nav — where it looked global and rode
-        along to the Settle Up tab beside that tab's own toggle, unthemed
-        there — and heads the LIVE page, the same place the Settle Up flag
-        sits in its header."""
-        self.assertIn('id="live-viewer"', coach_ui._HTML)
-        self.assertIn('<div id="live-viewer-row">', coach_ui._HTML)
-        self.assertNotIn('#tabs #live-viewer', coach_ui._HTML,
-                         "the flag is back in the shared nav — two toggles "
-                         "again")
-        nav = coach_ui._HTML[coach_ui._HTML.index('id="live-viewer"'):]
-        self.assertIn('data-v="classic"', nav)
-        self.assertIn('data-v="tavern"', nav)
-        # Classic is the shipped renderer, so the markup itself says so before
-        # any script runs — the same rule the Settle Up flag follows.
-        self.assertRegex(nav[:200], r'data-v="classic" class="on"')
+    Every absence check below reads this rather than the raw string: the page's
+    own source EXPLAINS what was removed and names what it removed ("the
+    `_viewer`/`_liveViewer` variables are gone"), so a check on raw text fails on
+    the explanation instead of on a regression. Only `/* */` blocks, `<!-- -->`
+    blocks and `//` comments are removed, so live code is never removed with
+    them — the stripping errs toward searching too much, never too little.
+    """
+    body = html if html is not None else coach_ui._HTML
+    body = re.sub(r"/\*.*?\*/", "", body, flags=re.S)
+    body = re.sub(r"<!--.*?-->", "", body, flags=re.S)
+    return re.sub(r"//[^\n]*", "", body)
 
-    def test_the_choice_persists_under_its_own_key(self):
-        self.assertIn("localStorage.getItem('bl-live-viewer')", coach_ui._HTML)
-        self.assertIn("localStorage.setItem('bl-live-viewer'", coach_ui._HTML)
-        self.assertIn("let _liveViewer = 'classic';", coach_ui._HTML)
 
-    def test_both_buttons_are_wired(self):
-        self.assertIn("document.querySelectorAll('#live-viewer button')",
-                      coach_ui._HTML)
-        self.assertIsNotNone(_function("setLiveViewer"))
+class TestThereIsNoViewerChoice(unittest.TestCase):
+    """REVERSED 2026-10-13 from `TestTheFlag`.
 
-    def test_toggling_redraws_the_payload_already_on_screen(self):
-        """A toggle that waits up to 300ms for the next poll reads as a control
-        that did nothing."""
-        src = _function("setLiveViewer")
-        self.assertIn("render(_lastParsed)", src)
-        self.assertIn("_lastParsed = a;", _function("render"))
+    That class pinned the Live page's `Classic | Tavern` toggle, its
+    `bl-live-viewer` key and "Classic is the default" — the contract of a choice
+    that was about to be exercised. The maintainer decided the Tavern style is
+    the only one, so there is no control, no key and no default left to assert;
+    and the honest replacement is NOT a deletion, because "there is no viewer
+    choice" is exactly the claim a later branch would break by adding the toggle
+    back. These fail if the choice returns, and they fail if a stale
+    `bl-live-viewer` value in a player's browser ever has something to read it.
+    """
+
+    def test_the_control_is_gone_from_the_markup(self):
+        html = coach_ui._HTML
+        for dead in ('id="live-viewer"', 'id="live-viewer-row"',
+                     'data-v="classic"', 'data-v="tavern"'):
+            self.assertNotIn(dead, html,
+                             "the Classic | Tavern toggle is back on the page")
+
+    def test_neither_key_survives_with_a_reader(self):
+        code = _without_comments()
+        for dead in ("bl-live-viewer", "bl-settle-viewer"):
+            self.assertNotIn(dead, code,
+                             "a viewer key outlived the control that wrote it")
+
+    def test_there_is_no_viewer_variable_and_no_setter(self):
+        code = _without_comments()
+        for dead in ("_liveViewer", "_viewer", "setLiveViewer",
+                     "setSettleViewer", "renderSettleGame", "hideSettleMode"):
+            self.assertNotIn(dead, code, f"{dead} is back — there is one style")
+
+    def test_a_live_payload_reaches_the_tavern_renderer(self):
+        """Unconditional now: the payload that used to consult the flag draws
+        the Tavern view, and nothing else draws a page."""
+        src = _function("render")
+        self.assertIsNotNone(src)
+        self.assertEqual(src.count("renderLiveTavern(a);"), 1)
+        self.assertNotIn("if (_liveViewer", src)
 
 
 class TestTheBranch(unittest.TestCase):
-    """The tavern path is a branch, not a rewrite: Classic keeps its shape."""
+    """REVERSED 2026-10-13 from "the tavern path is a branch, not a rewrite".
 
-    def test_the_tavern_branch_sits_after_the_shared_setup(self):
-        """The LIVE payload's branch, which is its own route: the game-over card
-        is branched earlier, on the welcome payload, because that payload has no
-        board for the setup below to work on."""
+    There is no branch any more: the classic renderer was DELETED, not left
+    unreachable, so these assert the shape the deletion was supposed to leave —
+    one renderer, reached unconditionally, with the classic page's entry points
+    and helpers gone from the file rather than dark.
+    """
+
+    def test_the_payload_draws_the_view_with_no_branch(self):
+        """REVERSED from `test_the_tavern_branch_sits_after_the_shared_setup`,
+        which pinned `if (_liveViewer === 'tavern') { renderLiveTavern(a); return; }`
+        and the shared setup above it. The setup is still there — CARDS and the
+        art pre-warm are what make hovers instant — and the page is now drawn
+        once, for every live payload.
+        """
         src = _function("render")
-        branch = "if (_liveViewer === 'tavern') { renderLiveTavern(a); return; }"
-        self.assertIn(branch, src)
-        # After the tribe picker's sync and the art pre-warm (both views need
-        # them) and before the classic strip is built (only one draws).
-        self.assertLess(src.index("_warmed.add(cid)"), src.index(branch))
-        self.assertLess(src.index(branch), src.index("STATE STRIP"))
+        self.assertLess(src.index("_warmed.add(cid)"),
+                        src.index("renderLiveTavern(a);"))
+        self.assertNotIn("if (_liveViewer", src)
+        self.assertEqual(src.count("renderLiveTavern("), 1)
+        # The classic page's own first two lines were its pane headers.
+        self.assertNotIn("pane-h", src)
 
-    def test_the_classic_renderer_is_untouched(self):
+    def test_the_classic_renderer_is_gone_and_not_merely_unchosen(self):
+        """REVERSED 2026-10-13 from `test_the_classic_renderer_is_untouched`.
+
+        That test asserted four anchors of the classic live page were STILL
+        PRESENT ("the classic live page changed shape"), because a toggle could
+        still reach it and the shipped renderer had to be protected. The
+        maintainer chose "delete it, tests included" instead, so every one of
+        those anchors is an ABSENCE now — and so are the helpers and entry
+        points that only that page could reach.
+        """
         src = _function("render")
         for anchor in ("decide.appendChild(el('h2', 'pane-h', 'Decide'))",
                        "ref.appendChild(el('h2', 'pane-h', 'Reference'))",
                        "statebar.appendChild(statTile('Gold'",
                        "statebar.appendChild(el('span', 'tile', a.hero || '?'))"):
-            self.assertIn(anchor, src, "the classic live page changed shape")
+            self.assertNotIn(anchor, src, "the classic live page came back")
+        code = _without_comments()
+        for gone in ("function statTile", "function compRow", "function compBody",
+                     "function compTiles", "function loadGuide", "function box(",
+                     "function setLiveViewer", "function renderSettleGame",
+                     "function phaseRow", "_compBodyCache", "_openComps"):
+            self.assertNotIn(gone, code, f"{gone} survived the deletion")
 
-    def test_the_tavern_view_is_a_separate_renderer(self):
+    def test_the_view_is_one_renderer_scoped_to_the_tavern_palette(self):
         src = _function("renderLiveTavern")
         self.assertIsNotNone(src, "renderLiveTavern is missing")
         self.assertIn("el('div', 'tavern live')", src,
-                      "the tavern view has to be scoped to .tavern.live, or the "
-                      "Settle Up Tavern rules and these leak into each other")
+                      "the view has to be scoped to .tavern.live, or the Settle "
+                      "Up rules and the live view's leak into each other")
         for part in ("lvStatus", "lvTribes", "lvBody"):
             self.assertIn(part, src)
         # The sections themselves (fix list round 4 item 5): the renderer builds
@@ -131,9 +181,11 @@ class TestTheBranch(unittest.TestCase):
 class TestTheDesignsLanguageRules(unittest.TestCase):
     """The source-level half of §1 (the rendered half is in the browser file).
 
-    These are the strings the design names as verdicts to remove. The classic
-    renderer is allowed to keep them — it is the shipped page — so this scans the
-    TAVERN functions only.
+    These are the strings the design names as verdicts to remove. The scope is
+    the LIVE view's functions: since 2026-10-13 that is the whole live page (the
+    classic renderer that used to be allowed them is gone), but NOT the review,
+    which shares this file and is where the model's verdict is supposed to
+    ship — `settleTurnCard` and `tavernRail` are deliberately not in TAVERN.
     """
 
     TAVERN = ("lvStatus", "lvTribes", "lvFacts", "lvCompsBrowse", "lvCompsBody",
@@ -526,15 +578,22 @@ class TestTheRoundsFourthList(unittest.TestCase):
         self.assertIn("a.opp_age", line)
         self.assertIn("lobby avg", line)
         self.assertIn("oppStatsLine(a)",
-                      (self.code.split("// NEXT OPPONENT")[1])[:2000])
+                      (self.code.split("//: THE NEXT OPPONENT")[1])[:2500])
 
-    def test_the_classic_opponent_box_gained_the_same_two_facts(self):
-        """The classic Reference pane is the shipped page, so its box keeps its
-        shape and gains the mix and the number-with-its-age."""
-        classic = self.code.split("// NEXT OPPONENT")[1][:2000]
-        self.assertIn("oppStatsLine(a)", classic)
-        self.assertIn("oppMixLine(a)", classic)
-        self.assertIn("as of round ", classic)
+    def test_the_opponent_panel_is_the_only_one_left(self):
+        """REVERSED 2026-10-13 from
+        `test_the_classic_opponent_box_gained_the_same_two_facts`, which pinned
+        the classic Reference pane's copy of the mix and the number-with-age.
+        That pane is gone, so the constraint it satisfied — two boxes wording the
+        same facts identically — is satisfied by there being one box: the mix
+        formatter the classic box called (`oppMixLine`) is gone too, and the panel
+        reads the payload's own `oc.tribes`.
+        """
+        self.assertNotIn("function oppMixLine", self.code)
+        panel = self.code.split("function lvOpponent")[1][:2000]
+        self.assertIn("oppStatsLine(a)", panel)
+        self.assertIn("oc.tribes", panel)
+        self.assertIn("'round ' + oc.turn", panel)
 
 
 class TestTheGameOverCard(unittest.TestCase):
@@ -547,16 +606,26 @@ class TestTheGameOverCard(unittest.TestCase):
     this pins the route and the merge.
     """
 
-    def test_the_welcome_branch_consults_the_viewer(self):
+    def test_the_welcome_branch_routes_on_the_card_not_a_viewer(self):
+        """REVERSED 2026-10-13 from `test_the_welcome_branch_consults_the_viewer`.
+
+        The welcome payload has no board, so the branch used to need the viewer
+        flag to know WHICH game-over card to draw — and the Tavern one was
+        unreachable in a real session until that branch consulted it. There is
+        one card now, so the only question left is whether the payload carries
+        one; a first run gets the shell card, and `lvClearTavern` still runs for
+        it, or it draws behind a stale Tavern frame.
+        """
         src = _function("render")
-        self.assertIn("if (_liveViewer === 'tavern' && a.game_over)", src)
+        self.assertIn("if (a.game_over) {", src)
+        self.assertNotIn("_liveViewer", src)
         self.assertLess(src.index("renderTavernGameOver(a)"),
                         src.index("renderWelcome(a)"),
                         "the game-over payload has to be routed before the "
-                        "classic welcome card claims it")
+                        "first-run card claims it")
         self.assertIn("lvClearTavern();", src,
-                      "a first-run card must clear the Tavern layout, or it "
-                      "draws behind a stale Tavern screen")
+                      "a first-run card must clear the live view, or it draws "
+                      "behind a stale frame")
 
     def test_the_card_owns_its_own_entry_point(self):
         src = _function("renderTavernGameOver")
@@ -592,13 +661,17 @@ class TestTheGameOverCard(unittest.TestCase):
         self.assertIn("postSaveReplay(save);", classic)
         self.assertIn("postAutoSave(cb,", classic)
 
-    def test_the_tavern_layout_is_cleared_from_one_place(self):
-        """`lvClearTavern` is the single reset: the classic path and the
-        first-run card both need it, and a viewer that is not drawing must not
-        leave its last frame on screen."""
-        self.assertEqual(coach_ui._HTML.count("lvClearTavern"), 3,
-                         "defined once, called from the classic path and from "
-                         "the welcome branch")
+    def test_the_live_view_is_cleared_from_one_place(self):
+        """`lvClearTavern` is the single reset: a view that is no longer drawing
+        must not leave its last frame on screen, and the first-run card has no
+        design of its own so it is drawn over the shell.
+
+        REVERSED 2026-10-13 from a count of THREE (the definition, the classic
+        path and the welcome branch): the classic path was the other caller and
+        it is gone, so the count is two.
+        """
+        self.assertEqual(coach_ui._HTML.count("lvClearTavern"), 2,
+                         "defined once, called from the welcome branch")
 
 
 class TestTheFixListRounds(unittest.TestCase):
@@ -612,14 +685,25 @@ class TestTheFixListRounds(unittest.TestCase):
 
     def test_live_fills_the_window(self):
         """Round 1 item 1. `#app` is a grid above 1200x900 and a flex COLUMN at or
-        below it, so the fix has to cover both: one grid column, and a width that
-        does not depend on `flex-basis` being a width (measured before the fix:
-        815px of a 1384px window)."""
+        below it, so the fix has to cover both: a width that does not depend on
+        `flex-basis` being a width (measured before the fix: 815px of a 1384px
+        window).
+
+        REVERSED 2026-10-13: the fix used to be a `grid-template-columns`
+        override on `#app.tavern-on` — the shell was two columns for the classic
+        page's two panes, and the view had to be collapsed into one. The shell is
+        ONE column at the base rule now (the second pane went with the classic
+        page), so the override had nothing left to override and the surviving half
+        is the width, which is what holds in the flex branch too.
+        """
         html = coach_ui._HTML
-        self.assertIn("#app.tavern-on { grid-template-columns:minmax(0,1fr);",
+        self.assertIn("#app { display:grid; grid-template-columns:minmax(0,1fr);",
                       html)
-        self.assertIn("#app.tavern-on #live-tavern { grid-column:1 / -1; "
-                      "width:100%;", html)
+        self.assertIn("#app.tavern-on #live-tavern { width:100%; min-width:0; }",
+                      html)
+        self.assertNotIn("#app.tavern-on { grid-template-columns", html,
+                         "the one-column override is back with nothing to "
+                         "override — the base rule is one column")
 
     def test_the_breakpoints_are_the_ones_asked_for(self):
         """Round 2 item 9: main + 340px rail at >=1200px, stacked 700-1200, and a
@@ -635,32 +719,46 @@ class TestTheFixListRounds(unittest.TestCase):
         self.assertIn(".tavern.live .lv-main { display:grid; "
                       "grid-template-columns:minmax(0,1fr);", html)
 
-    def test_the_classic_tavern_toggle_is_themed(self):
-        """Round 1 item 9 / round 2 item 8. `.vseg` described the ACTIVE state and
-        the radii only, so the buttons were whatever the browser draws. Round 3
-        item 7 moved the control onto the NAV row, so the tavern palette rides
-        the nav's own class."""
+    def test_the_segment_control_is_themed(self):
+        """Round 1 item 9 / round 2 item 8: `.vseg` described the ACTIVE state and
+        the radii only, so the buttons were whatever the browser draws.
+
+        REVERSED 2026-10-13 from `test_the_classic_tavern_toggle_is_themed`. The
+        one segment control left is the Settle Up header's `Summary | Step
+        through`, and the tavern-palette rules that rode the nav row went with
+        the live flag: the nav is a SIBLING of `#app`, so a `.tavern` rule could
+        never reach it — those rules were only ever about the deleted control,
+        which is why they are absences now.
+        """
         html = coach_ui._HTML
         block = re.search(r"\.vseg button \{([^}]*)\}", html)
         self.assertIsNotNone(block)
         for prop in ("background:var(--panel)", "border:1px solid var(--border)",
                      "padding:6px 12px"):
             self.assertIn(prop, block.group(1))
-        self.assertIn("#tabs.tavern #live-viewer-row .vseg button", html)
-        self.assertIn("background:var(--tsel); color:var(--tonsel);", html)
+        self.assertIn('id="settle-mode" class="vseg"', html)
+        code = _without_comments(html)
+        self.assertNotIn("#tabs.tavern #live-viewer-row .vseg button", code)
+        self.assertNotIn("#live-viewer-row", code)
 
-    def test_the_live_viewer_toggle_lives_on_the_nav_row(self):
-        """Round 3 item 7: right-aligned on the nav row, and hidden while Settle
-        Up is the open tab (that page has its own toggle in its header)."""
+    def test_the_nav_row_carries_no_control_for_the_live_view(self):
+        """REVERSED 2026-10-13 from
+        `test_the_live_viewer_toggle_lives_on_the_nav_row`, which pinned the
+        right-aligned flag, the `showTab` line that hid it on the Settle Up tab
+        and the line in `setLiveViewer` that themed the nav from it. All three
+        were the toggle; with the toggle gone the nav row carries the two tabs
+        and the sharing control, and nothing about the live view's style."""
         html = coach_ui._HTML
         nav = html[html.index('<nav id="tabs">'):html.index("</nav>")]
-        self.assertIn('id="live-viewer-row"', nav,
-                      "the live viewer flag is not on the nav row")
-        self.assertIn("#live-viewer-row { display:flex; align-items:center; "
-                      "margin-left:auto; }", html)
-        self.assertIn("viewer.hidden = !live;", _function("showTab"))
-        self.assertIn("nav.classList.toggle('tavern'",
-                      _function("setLiveViewer"))
+        # The CODE, not the comments: the page's own notes name the removed
+        # `#live-viewer-row` and the two keys on purpose, so a raw search fails
+        # on the explanation rather than on a regression.
+        self.assertNotIn("live-viewer", _without_comments(nav))
+        code = _without_comments(html)
+        self.assertNotIn("live-viewer", code)
+        self.assertNotIn("viewer.hidden", _function("showTab"))
+        self.assertNotIn("classList.toggle('tavern'", code,
+                         "the nav theming came back with no control to theme")
 
 
 class TestTheEntityRows(unittest.TestCase):
@@ -837,13 +935,17 @@ class TestTheShippedCompsDb(unittest.TestCase):
         self.assertIn("Waiting for the next shop to open", _function("lvStatus"))
         self.assertIn("Reading the shop", _function("lvWaiting"))
 
-    def test_the_empty_state_strip_is_hidden_where_it_is_empty(self):
-        """Round 2 item 7."""
-        html = coach_ui._HTML
-        self.assertIn("#statebar[hidden] { display:none; }", html)
-        self.assertIn("statebar.hidden = true", _function("renderWelcome"))
-        self.assertIn("bar.hidden = true", _function("renderLiveTavern"))
-        self.assertIn("bar.hidden = false", _function("lvClearTavern"))
+    def test_there_is_no_state_strip_at_all(self):
+        """REVERSED 2026-10-13 from `test_the_empty_state_strip_is_hidden_where_it_is_empty`
+        (round 2 item 7), which hid a strip the classic renderer filled. The
+        classic renderer is gone, so nothing filled it either — the fix-list
+        workaround (hide what nothing writes to) is replaced by the element,
+        its rules and its writers not existing.
+        """
+        code = _without_comments()
+        self.assertNotIn("statebar", code,
+                         "the strip is back — with one renderer nothing can "
+                         "fill it but the Tavern view's own status bar")
 
     def test_one_art_treatment_and_a_tag_for_what_a_card_is(self):
         """Round 2 item 3."""
@@ -948,11 +1050,12 @@ class TestTheWaitingStateHoldsNoTribeState(unittest.TestCase):
     """Fix list round 4 item 2, on the client half.
 
     The server drops the finished game's ban set where the game ends
-    (`test_game_over_state`), and the page must not keep its own copy either:
-    `_inPlayPick` is the local tap set, and it used to survive the whole
-    between-games gap, re-seeding only when the NEXT game's payload arrived with
-    a game number. The welcome branch now clears it, so the waiting state cannot
-    draw a tribe set even if a payload later arrives without one.
+    (`test_game_over_state`). REVERSED 2026-10-13: the client used to keep its
+    own copy for the classic picker (`_inPlayPick`), and the welcome branch had
+    to clear it so the 5/5 set of a finished game could not be drawn across the
+    between-games gap. The client copy is gone — the Tavern tribe row reads
+    `tribes_available` from the payload every render — so the state has ONE
+    owner and the bug the clearing fixed is not reachable at all.
     """
 
     def _render_src(self):
@@ -960,12 +1063,16 @@ class TestTheWaitingStateHoldsNoTribeState(unittest.TestCase):
         start = src.index("function render(a) {")
         return src[start:start + 1200]
 
-    def test_the_welcome_branch_drops_the_local_tap_set(self):
-        body = self._render_src()
-        self.assertIn("if (a.welcome) {", body)
-        for line in ("_inPlayPick.clear();", "_inPlayPickGame = null;",
-                     "_inPlayPickAt = 0;"):
-            self.assertIn(line, body, "the waiting state can keep a stale set")
+    def test_no_client_copy_of_the_tap_set_exists(self):
+        """The reversed half: `_inPlayPick` and its two companions are gone, so
+        there is nothing for a welcome payload to leave behind."""
+        code = _without_comments()
+        for dead in ("_inPlayPick", "_inPlayPickGame", "_inPlayPickAt"):
+            self.assertNotIn(dead, code,
+                             "a client copy of the tribe set came back — the "
+                             "payload is the only owner")
+        self.assertIn("postInPlay", code,
+                      "the tap still has to reach /bans")
 
     def test_the_welcome_card_still_carries_no_tribe_field(self):
         """The other half of the same claim: there is nothing to draw from."""

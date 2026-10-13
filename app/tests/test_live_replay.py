@@ -552,10 +552,12 @@ class TestTheBand(unittest.TestCase):
     def test_the_band_lands_after_the_nav_and_before_the_panes(self):
         """Placement is the claim: outside everything `render()` clears.
 
-        `render()` clears `#col-decide` / `#col-ref` (and the tavern container)
-        on every frame, and `showTab` toggles `#app` — so a band inside any of
-        those would vanish on the first step or tab switch, which is exactly
-        when it is needed.
+        `render()` clears the card slot (`#col-decide`) and the live view's own
+        container on every frame, and `showTab` toggles `#app` — so a band
+        inside any of those would vanish on the first step or tab switch, which
+        is exactly when it is needed. (The classic REFERENCE pane `#col-ref` was
+        the third container when this test was written; it went with the classic
+        renderer on 2026-10-13, and the anchor it asserted is unchanged.)
         """
         html = live_replay.install_band(coach_ui._HTML)
         band_at = html.index('id="replay-band"')
@@ -639,7 +641,11 @@ class TestTheBandInABrowser(unittest.TestCase):
   rec.push('bandtop=' + num(band ? Math.round(band.getBoundingClientRect().top) : -1));
   rec.push('navtop=' + num(Math.round(
     document.getElementById('tabs').getBoundingClientRect().top)));
-  rec.push('classicpane=' + num(document.getElementById('col-decide').children.length));
+  // REVERSED 2026-10-13: this read `col-decide`'s child count as "the classic
+  // panes still draw under the band". There are no classic panes — what has to
+  // be on screen is the tavern view (the field below), and the card slot has to
+  // be EMPTY, because a live frame is not a card.
+  rec.push('cardslotkids=' + num(document.getElementById('col-decide').children.length));
   rec.push('tavern=' + num(document.querySelector('.tavern.live') ? 1 : 0));
   rec.push('share=' + num(document.getElementById('share-toggle') ? 1 : 0));
   document.getElementById('out').textContent = rec.join(' ;; ');
@@ -674,13 +680,23 @@ class TestTheBandInABrowser(unittest.TestCase):
 
     def test_the_page_still_renders_under_it(self):
         """The band must not cost the page anything: this is a dev aid on the
-        real overlay, not a replacement page."""
+        real overlay, not a replacement page.
+
+        REVERSED 2026-10-13 from `assertGreater(got['classicpane'], 0)` ("the
+        classic panes still draw under the band"). The classic panes do not
+        exist; what the apparatus is for is unchanged — the LIVE view is what a
+        dev must see under the band — so the tavern root is asserted present and
+        the card slot is asserted EMPTY, which is the other half of "a live frame
+        is not a welcome card".
+        """
         try:
             got = self._fields(self._payload())
         except browser.BrowserUnavailable as exc:
             self.skipTest(str(exc))
-        self.assertGreater(got["classicpane"], 0,
-                           "the classic panes still draw under the band")
+        self.assertEqual(got["tavern"], 1,
+                         "the live view does not draw under the band")
+        self.assertEqual(got["cardslotkids"], 0,
+                         "a card is in the slot on a live frame")
         self.assertEqual(got["share"], 1, "the corner controls still draw")
 
 

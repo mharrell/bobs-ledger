@@ -1,7 +1,7 @@
 """render_json payload contract for the overlay's Phase-1 perf work:
-thresholds come from value.py's constants (the JS no longer hard-codes its
-own copies), the dead buy_label is gone, and the fuel gate keys on the
-same threshold the sell split uses."""
+thresholds come from value.py's constants (the JS used to hard-code its own
+copies), the dead buy_label is gone, and the fuel gate keys on the same
+threshold the sell split uses."""
 import json
 import os
 import sys
@@ -29,6 +29,15 @@ def _base_analysis():
 
 class TestThresholdsPayload(unittest.TestCase):
     def test_thresholds_match_value_constants(self):
+        """The constant the JS used to copy is shipped as a payload key.
+
+        Nothing on the page READS it since 2026-10-13: `#statebar`'s tile row was
+        the one reader (`TH.dying_hp` coloured the dying HP), and it went with the
+        classic renderer. The key still ships — it is analysis data that rides the
+        envelope, and dropping it is a separate decision the maintainer has — so
+        what this pins is that it would be RIGHT if a reader came back, not that
+        anything reads it. `test_live_view.test_state_fields_survive` owns the
+        other end (the key is still in the payload)."""
         out = coach_ui.render_json(_base_analysis())
         self.assertEqual(out["thresholds"]["dying_hp"], DYING_HEALTH)
 
