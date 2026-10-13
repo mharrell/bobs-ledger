@@ -2403,7 +2403,7 @@ class TestWhatTheShopKeepsSaying(_Rendered):
 
         NOT the seat's handle: `opp_comp.name` is the opponent's BattleTag and
         it already rides the Lobby tab. This panel is the one that ends up in a
-        screenshot, and CLAUDE.md's rule is to keep the handle out of those.
+        screenshot, and the rule for those is to keep the handle out.
         """
         got = self.got
         self.assertEqual(

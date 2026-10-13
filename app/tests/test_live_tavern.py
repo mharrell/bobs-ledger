@@ -510,8 +510,8 @@ class TestTheRoundsFourthList(unittest.TestCase):
     def test_the_opponent_panel_is_built_from_the_analysis_and_says_no_verdict(self):
         """Item 4: hero, board, number, age, mix — and NOT the seat's handle,
         which stays on the Lobby tab because this panel is the one that ends up
-        in a screenshot (CLAUDE.md's screenshot rule says to eyeball exactly
-        this field)."""
+        in a screenshot, and the repo's rule for those is to eyeball exactly
+        this field before one ships (no gate reads a picture)."""
         src = _function("lvOpponent") or ""
         for anchor in ("oc.hero_name", "oppStatsLine(a)", "oc.turn",
                        "oc.tribes", "oc.cards"):
