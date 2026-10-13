@@ -411,6 +411,37 @@ class TestTheRoundsFourthList(unittest.TestCase):
         # §5's data rule and item 3's "never empty without a state".
         self.assertIn("Nothing rolled past yet this turn.", src)
 
+    def test_the_panel_carries_its_own_read_age(self):
+        """Item 3(b): the age belongs on the panel, not only in the window's
+        freshness strip — and it ticks, because the payload does not change
+        while the player is thinking."""
+        self.assertIn("tickReadAge();", _function("tickFreshness") or "")
+        self.assertIn("tickReadAge();", _function("renderLiveTavern") or "")
+        self.assertIn("read just now", _function("lvAgeText") or "")
+        self.assertIn("lvReadAge()", _function("lvPanel") or "")
+        self.assertIn("lvReadAge()", _function("lvWaiting") or "",
+                      "the empty shop is the panel where the age matters most")
+        self.assertIn("document.getElementById('lv-read')",
+                      _function("tickReadAge") or "")
+
+    def test_the_mix_is_counted_per_offer_where_the_cards_are_known(self):
+        """§5's data rule: a card neither DB carries contributes NOTHING rather
+        than a guessed tribe, and a spell is its own row so the counts add up
+        to the cards on screen."""
+        import test_live_browser as tlb
+        out = coach_ui.render_json(tlb._comps_analysis(
+            shop_offers=["BG31_815", "BG31_815"],
+            shop_entities=[{"eid": 1, "card": "BG31_815"},
+                           {"eid": 2, "card": "BG31_815"}]))
+        self.assertEqual(out["shop_mix"], [{"tribe": "Elemental", "n": 2}])
+        out2 = coach_ui.render_json(tlb._comps_analysis(
+            shop_offers=["BG31_815", "BG31_880"],
+            shop_entities=[{"eid": 1, "card": "BG31_815"},
+                           {"eid": 2, "card": "BG31_880"}]))
+        self.assertEqual(out2["shop_mix"], [{"tribe": "Elemental", "n": 1},
+                                            {"tribe": "Spell", "n": 1}],
+                         "a tavern spell is counted, not dropped")
+
 class TestTheGameOverCard(unittest.TestCase):
     """§6.5, and the route that had to exist for it.
 

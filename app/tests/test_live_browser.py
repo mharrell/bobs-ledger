@@ -484,6 +484,11 @@ _DRIVER = r"""
     o.passedcaps = [...q('.lv-passed .lv-cap')].map(c => c.textContent)
       .join('|');
     o.passednote = txt(one('.lv-passed .lv-note'));
+    // How long ago the panel was read, ON the panel (item 3(b)).
+    o.readage = txt(document.getElementById('lv-read'));
+    // The tribe composition of the shop, and of the opponent's board.
+    o.mixlbl = [...q('.lv-mix .lv-lbl')].map(d => d.textContent).join('|');
+    o.mixchips = [...q('.lv-mixchip')].map(d => d.textContent).join('|');
     for (const k of Object.keys(o))
       rec(name + '.' + k, ['tavern', 'cards', 'skel', 'pick', 'classic',
                            'taverncards', 'pickbars', 'compslots', 'slotsmiss',
@@ -1545,6 +1550,26 @@ class TestWhatTheShopKeepsSaying(_Rendered):
         got = self.got
         self.assertEqual(got["none.passedcards"], 0)
         self.assertEqual(got["none.passednote"], "Nothing rolled past yet this turn.")
+
+    def test_the_panel_says_how_long_ago_it_was_read(self):
+        """Item 3(b): the fact belongs on the panel the player is reading, not
+        only in the strip above the card. The payload's own `generated` stamp is
+        what it counts from, so a fixture rendered a moment ago reads "just
+        now" — and the same line exists on the empty shop, which is the panel
+        where a player most needs it."""
+        self.assertEqual(self.got["t.readage"], "read just now")
+        self.assertEqual(self.got["noshop.readage"], "read just now")
+
+    def test_the_tavern_mix_counts_the_offers_one_by_one(self):
+        """Item 3(b): the tribe composition of the shop, counted per OFFER — two
+        copies of one Elemental are two Elementals — with a tavern spell counted
+        as a Spell rather than dropped, so the counts add up to the cards drawn
+        in the row above."""
+        got = self.got
+        self.assertIn("Tavern mix", got["t.mixlbl"])
+        self.assertIn("1 Spell", got["t.mixchips"])
+        self.assertIn("2 Elemental", got["dup.mixchips"],
+                      "the duplicate offer is not counted as two")
 
     def test_the_empty_shop_keeps_the_reason_it_is_empty(self):
         """Item 3: never an empty panel without a state. `lvWaiting` says what

@@ -443,6 +443,73 @@ class MonitorSmokeTest(unittest.TestCase):
         self.assertIn(_NEXT_SESSION_DIR + "#1", ids)
         self.assertNotIn(_SESSION_DIR + "#1", ids)
 
+    def test_a_quiet_shop_is_reread_without_recording_anything(self):
+        """Fix list round 4 item 3, the half a browser cannot show.
+
+        The monitor advises on every decision-state CHANGE and says nothing in
+        between, so an open shop that the player is thinking about keeps the
+        payload it was first given: measured on the 2026-10-08 07:45 game, 11 of
+        the 12 turns with a shop had at least one stretch longer than 8 s with no
+        state change while it was open — and the page calls the advice old after
+        8 s, so the NORMAL state of a live shop was "Read from Ns ago".
+
+        So there is a short periodic re-read now — and it must be `record=False`:
+        the decision state is IDENTICAL, and a decision-log record per silent tick
+        is exactly the corpus inflation the fingerprint dedup was added to stop
+        (2026-10-02: 295 records for 58 analyses in one session, which the beta
+        corpus then shipped). This is asserted as a COUNT, because that is the
+        only way the difference shows: more pushes than records.
+        """
+        log = self._session(_SESSION_DIR, ended=False)
+        self._patch(live, "find_active_log", lambda: log)
+        pushes, recorded = [], []
+        clock = {"t": 0.0}
+        self._patch(live.coach_ui, "update_analysis",
+                    lambda a: pushes.append(a))
+        self._patch(live.decision_log, "record",
+                    lambda *a, **k: recorded.append(a))
+        # A line the parser reads and the decision state does not: the log always
+        # grows, and the monitor's advise block sits inside `if chunk:`.
+        quiet = [f"{GS}TAG_CHANGE Entity=[entityName=idle id=999 zone=PLAY] "
+                 f"tag=TURN_START value=1"]
+        seen = {"n": 0}
+
+        def fake_sleep(_seconds):
+            seen["n"] += 1
+            clock["t"] += 1.0          # the shop stays open for 12 fake seconds
+            step = GROWTH[seen["n"] - 1] if seen["n"] <= len(GROWTH) else quiet
+            with open(log, "a", encoding="utf-8") as f:
+                for line in step:
+                    f.write(line + "\n")
+            if seen["n"] > 12:
+                raise KeyboardInterrupt
+
+        with mock.patch.object(live.time, "sleep", fake_sleep), \
+                mock.patch.object(live.time, "monotonic",
+                                  lambda: clock["t"]), \
+                contextlib.redirect_stdout(self.out):
+            live.monitor(log, 0.01)
+
+        self.assertNothingSwallowed()
+        self.assertTrue(recorded, "no advisory was recorded at all, so this "
+                                  "proves nothing about the re-read")
+        self.assertGreater(
+            len(pushes), len(recorded),
+            "the quiet-shop re-read never pushed — the panel is left on a stale "
+            "frame until the next state change")
+
+    def test_the_reread_cannot_record(self):
+        """The source half of the same claim, because the count above passes on
+        any extra push: the re-read call site has to SAY `record=False`."""
+        src = open(os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "live.py"), encoding="utf-8").read()
+        self.assertIn("elif time.monotonic() - last_push >= SHOP_REREAD_SECONDS:",
+                      src)
+        tail = src.split("elif time.monotonic() - last_push >= "
+                         "SHOP_REREAD_SECONDS:")[1][:500]
+        self.assertIn("record=False", tail,
+                      "the periodic re-read is recording every silent tick")
+
     def test_the_monitor_survives_a_log_it_cannot_open(self):
         """A missing log is a startup error, not a swallowed tick.
 

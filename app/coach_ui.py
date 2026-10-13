@@ -1069,6 +1069,19 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-tier.out { color:var(--tloss); }
   .tavern.live .lv-crow.unavail { opacity:.55; }
   .tavern.live .lv-lbl { color:var(--tmute); font-size:12px; margin:0 0 6px; }
+  /* The read's age, ON the panel (fix list round 4 item 3(b)): the same
+     --tmute as the other secondary lines, one line under the heading. */
+  .tavern.live .lv-read { color:var(--tmute); font-size:11px;
+                          margin:-4px 0 8px; }
+  /* Tavern mix / their mix (fix list round 4 items 3(b) and 4): the label and
+     its counts on one wrapping line, chips like the tribe row's but inert —
+     nothing here is tappable, so they carry no cursor. */
+  .tavern.live .lv-mix { display:flex; flex-wrap:wrap; gap:6px;
+                         align-items:center; margin:10px 0 0; }
+  .tavern.live .lv-mix .lv-lbl { margin:0 4px 0 0; }
+  .tavern.live .lv-mixchip { padding:3px 9px; border-radius:12px;
+                             background:var(--tcard); border:1px solid var(--tline);
+                             font-size:11px; color:var(--ttext); }
   /* The rolled-past row (fix list round 4 item 3(c)): the shop's own row
      treatment, under its own label, separated from the offers above it by a
      rule so a card that is GONE cannot be read as one still on offer. */
@@ -1554,6 +1567,11 @@ function tickFreshness() {
   const line = freshnessLine(age, silent, _keyRefused);
   node.className = line.alarm ? 'on' : (line.text ? 'info' : '');
   node.textContent = line.text;
+  // ...and the same age on the Tavern panel itself (fix list round 4 item
+  // 3(b)). It rides this ticker rather than render(): the payload does not
+  // change while the player is thinking, so a panel-only reading would stay
+  // frozen at whatever it said when the panel was built.
+  tickReadAge();
 }
 setInterval(tickFreshness, 1000);
 function el(tag, cls, text) {
@@ -2034,9 +2052,14 @@ function lvOrdinal(p) {
 //: (§6.4 — a "?" next to a number reads as part of the number).
 function lvVal(v) { return v == null || v === '' ? '—' : String(v); }
 
-function lvPanel(title, body) {
+function lvPanel(title, body, withAge) {
   const p = el('div', 'lv-pn');
-  p.appendChild(el('h3', null, title));
+  const h = el('h3', null, title);
+  // The read's age rides the PANEL (fix list round 4 item 3(b)), under the
+  // heading rather than inside it: the heading is the panel's name and several
+  // tests read it verbatim.
+  p.appendChild(h);
+  if (withAge) p.appendChild(lvReadAge());
   p.appendChild(body);
   return p;
 }
@@ -2100,6 +2123,10 @@ function lvStatus(a) {
 function lvWaiting(a) {
   const p = el('div', 'lv-pn');
   p.appendChild(el('h3', null, 'Shop'));
+  // The EMPTY shop says how old the read is too (fix list round 4 item 3):
+  // the panel with nothing in it is exactly the one where a player wonders
+  // whether the coach is stuck or the shop simply has not opened.
+  p.appendChild(lvReadAge());
   p.appendChild(el('p', 'lv-note', 'Reading the shop. This updates when your '
                                    + 'next shop opens.'));
   if (a.status) p.appendChild(el('p', 'lv-inline', a.status));
@@ -2667,9 +2694,49 @@ function lvShop(a) {
                             s.tag === 'spell' ? {kind: 'Spell'} : null));
   });
   body.appendChild(wrap);
+  body.appendChild(lvMix(a));
   body.appendChild(lvPassed(a));
   return body;
-}//: WHAT WAS ROLLED PAST THIS TURN (fix list round 4 item 3(c)). Every offer
+}
+//: The tribe composition of the shop (fix list round 4 item 3(b)): "3 Beast ·
+//: 2 Spell", counted per OFFER by the server so it matches the row above it to
+//: the card. A shop with no mix (nothing parsed) draws nothing here — the
+//: waiting sentence above already says why the panel is empty.
+//: The same row carries the NEXT OPPONENT's mix (item 4): one component, two
+//: callers, so the two can never disagree about how a mix is counted.
+function lvMixRow(label, mixed) {
+  if (!(mixed || []).length) return null;
+  const row = el('div', 'lv-mix');
+  row.appendChild(el('span', 'lv-lbl', label));
+  mixed.forEach(m => row.appendChild(el('span', 'lv-mixchip',
+                                        m.n + ' ' + m.tribe)));
+  return row;
+}
+function lvMix(a) { return lvMixRow('Tavern mix', a.shop_mix) || el('div'); }
+//: HOW LONG AGO THE SHOP WAS READ, on the panel itself (fix list round 4 item
+//: 3(b)). The window's `#freshness` strip already says this once the advice is
+//: 8s old, but that strip is about the ADVICE and sits above the card; the
+//: question "is this shop current?" is asked while looking at the panel. It
+//: ticks with the freshness ticker, because the payload does not change while
+//: the player thinks and a number frozen at "read just now" would be a lie.
+function lvReadAge() {
+  const s = el('div', 'lv-read');
+  s.id = 'lv-read';
+  return s;
+}
+function lvAgeText(sec) {
+  if (sec == null) return '';
+  if (sec < 1) return 'read just now';
+  if (sec < 60) return 'read ' + Math.round(sec) + 's ago';
+  return 'read ' + Math.floor(sec / 60) + ' min ago';
+}
+function tickReadAge() {
+  const n = document.getElementById('lv-read');
+  if (!n) return;
+  n.textContent = lvAgeText(_generated == null ? null
+                                               : Date.now() / 1000 - _generated);
+}
+//: WHAT WAS ROLLED PAST THIS TURN (fix list round 4 item 3(c)). Every offer
 //: that left the shop while it was open, one card per OFFER ENTITY — two
 //: copies of one minion were two cards on screen and are two cards here. The
 //: payload carries this turn's rows in the order they left, and the display
@@ -3068,7 +3135,7 @@ function renderLiveTavern(a) {
     // its own screen instead of drawing four skeleton bars.
     const shop = a.shop_rank || [];
     left.appendChild(shop.length
-      ? lvPanel('Tavern', lvShop(a))
+      ? lvPanel('Tavern', lvShop(a), true)
       : lvWaiting(a));
     left.appendChild(lvPanel('Board and hand', lvBoardHand(a)));
   }
@@ -3078,6 +3145,10 @@ function renderLiveTavern(a) {
   main.appendChild(rail);
   root.appendChild(main);
   box.appendChild(root);
+  // Fill the panel's read-age line NOW rather than waiting up to a second for
+  // the freshness ticker: a panel that renders with an empty line and fills it
+  // in a moment later reads as a panel that lost something.
+  tickReadAge();
 }
 function setLiveViewer(v) {
   _liveViewer = v === 'tavern' ? 'tavern' : 'classic';
@@ -3096,6 +3167,12 @@ function setLiveViewer(v) {
 
 function render(a) {
   _lastParsed = a;   // the viewer toggle re-renders from this, not a refetch
+  // The payload's own `generated` stamp is what the panel's read-age line
+  // counts from. set here as well as in poll() because the page can render a
+  // payload without polling it — the viewer toggle, and the tests' own driver,
+  // which call render() directly — and a read-age line that only ever appears
+  // on the poll path is a line that silently goes missing (round 4 item 3(b)).
+  if (a.generated) _generated = a.generated;
   if (a.welcome) {
     // The waiting card carries no tribe state, and neither may the client
     // (fix list round 4 item 2): the local tap set belongs to the game that
@@ -5527,6 +5604,40 @@ def _canon_tribe(raw):
     return value.normalize(raw) or raw
 
 
+def _tribe_mix(mrows, srows, cards):
+    """Counts per tribe over a list of card ids (fix list round 4 items 3(b)
+    and 4), biggest first.
+
+    Built here rather than in the page because the card -> tribe map is the
+    meta DB's, and the payload already has the DB rows in hand (`_meta_rows`);
+    shipping a second copy of 339 minions to the browser to count five cards
+    would be the same data twice.
+
+    A compound tribe ("Demon/Naga") keeps the DB's own string — it is a fact
+    about that minion, and picking one half would be a guess. A tribe-less
+    minion (23 of the shipped 339) counts as "No tribe", not as nothing: the
+    counts then add up to the number of cards on screen, which is what makes
+    the row readable. A tavern SPELL counts as "Spell" for the same reason. A
+    card neither DB carries contributes nothing at all — `?` is not a tribe.
+
+    Biggest-first is a COUNT order and not a value ranking: §4.3/§4.4 ban the
+    page from ranking for the player, and a composition whose largest slice is
+    buried is a table nobody can read.
+    """
+    counts = {}
+    for cid in cards:
+        base = cid[:-2] if isinstance(cid, str) and cid.endswith("_G") else cid
+        rec = mrows.get(base)
+        if rec is not None:
+            name = _canon_tribe(rec.get("tribe")) or "No tribe"
+        elif base in srows:
+            name = "Spell"
+        else:
+            continue
+        counts[name] = counts.get(name, 0) + 1
+    return [{"tribe": t, "n": n}
+            for t, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+
 
 #: A comp with fewer games than this in our own corpus is flagged `low sample`#: rather than hidden (LIVE_VIEW_DESIGN.md §5/§11). It is a GAMES count because
 #: that is what the corpus records — a threshold invented from a percentage would
@@ -6049,6 +6160,13 @@ def render_json(analysis):
     ids.update(row[1] for row in (choice.get("ranked") or [])
                if len(row) > 1 and row[1])
     mrows, srows, trows = _meta_rows()
+    # TAVERN MIX (fix list round 4 item 3(b)): the tribe composition of the
+    # shop the player is looking at. Counted over the OFFERS, one per offer, so
+    # two copies of one minion count twice — that IS the shop's composition.
+    # A shop nobody has parsed yet yields an empty list, and the page says
+    # nothing rather than drawing a row of zeroes.
+    a["shop_mix"] = _tribe_mix(mrows, srows,
+                               [r["card"] for r in a["shop_rank"]])
     cards = {}
     for cid in sorted(ids):
         base = cid[:-2] if cid.endswith("_G") else cid

@@ -335,6 +335,37 @@ def _catch_up(f, coach):
     return f.tell()
 
 
+#: How long an UNCHANGED shop may sit before it is read again (2026-10-12, fix
+#: list round 4 item 3). The monitor re-advises on every decision-state change
+#: and says nothing in between, which is right for the CONSOLE and wrong for the
+#: panel: the payload carries `generated`, the page ages it, and after 8 seconds
+#: (`coach_ui`'s STALE_AFTER) the strip above the card says "Read from Ns ago —
+#: it updates when your next shop opens" while the player is looking at a shop
+#: that IS current.
+#:
+#: MEASURED, because "does a mid-phase roll already refresh it" has two answers
+#: and the useful one is the quiet case. Emulating the tick loop on the real
+#: clock of the 2026-10-08 07:45 game (245k lines, 12 turns with a shop): 11 of
+#: those 12 turns had at least one stretch longer than 8 s with NO state change
+#: while the shop was open — 27 such gaps, the longest 48.3 s (turn 7), with
+#: 41.9 s and 39.4 s in turn 10. So the stale-shop reading was the NORMAL state
+#: of a live shop, not an edge case: a roll does re-advise, and a player who is
+#: thinking (or typing in chat) does not.
+#:
+#: 5 s is below that 8 s threshold on purpose, with room for a missed tick. The
+#: cost of the re-read is one `analyze()` — measured on the last buy phase of
+#: the 2026-10-12 07:28 game (330k lines): median 7 ms, max 8 ms, and 9-10 ms
+#: through `render_json` — so a 5 s cadence is ~0.2% of one core.
+#:
+#: `record=False` is the whole reason this is a re-READ and not an advisory:
+#: nothing about the decision changed, and a decision-log record per silent
+#: tick is exactly the corpus inflation the state fingerprint was added to stop
+#: (2026-10-02: 295 records for 58 analyses in one session, which the beta
+#: corpus then shipped). It refreshes the payload — `_advise` pushes to
+#: coach_ui before the fingerprint gate — and prints nothing.
+SHOP_REREAD_SECONDS = 5.0
+
+
 def monitor(path, poll=1.0):
     """Tail the log; advise on every decision-state change during a buy phase.
 
@@ -382,6 +413,10 @@ def monitor(path, poll=1.0):
         pass
     in_action = False
     last_state = None
+    # When the frame on screen was last pushed, for the periodic re-read below.
+    # 0.0, not `now`: attaching to a log mid-shop should re-read that shop once
+    # rather than wait for the timer.
+    last_push = 0.0
     next_log_check = 0.0  # session discovery throttled to ~5s (was every tick)
     meta_checked_lines = 0  # only retry the hero parse when new lines arrived
     pick_pending = False    # a Choose-1 panel was pushed and is still open
@@ -423,6 +458,7 @@ def monitor(path, poll=1.0):
                 _LAST_GAME = _game_state(coach)
                 in_action = False
                 last_state = None
+                last_push = 0.0   # a switched session is a new frame entirely
                 meta_checked_lines = 0
                 pick_pending = False
                 last_err = None
@@ -466,6 +502,10 @@ def monitor(path, poll=1.0):
                                 elif is_gs and "tag=STEP value=MAIN_END" in line:
                                     in_action = False  # combat ends the buy phase
                                     last_state = None  # force a fresh advisory next phase
+                                    # ...and the re-read timer with it: the shop
+                                    # this phase showed is closed, so the next
+                                    # open one is a new frame to read.
+                                    last_push = 0.0
                             except Exception as e:  # noqa: BLE001
                                 if str(e) != last_err:
                                     print(f"  (line skipped: {e})", flush=True)
@@ -503,6 +543,20 @@ def monitor(path, poll=1.0):
                                          game_no=coach.game_no)
                             if ok:
                                 last_state = state
+                                last_push = time.monotonic()
+                        elif time.monotonic() - last_push >= SHOP_REREAD_SECONDS:
+                            # The shop is open and NOTHING has changed for
+                            # SHOP_REREAD_SECONDS: re-read it anyway, so the
+                            # panel's own "read Ns ago" line (and the page's
+                            # freshness strip) cannot describe a current shop as
+                            # stale. `record=False` — the decision state is
+                            # identical, so this is a refresh of the frame, not
+                            # a new advisory, and recording it would inflate the
+                            # corpus (see SHOP_REREAD_SECONDS above).
+                            if _advise(coach, log_path=path,
+                                       log_offset=last_offset,
+                                       game_no=coach.game_no, record=False):
+                                last_push = time.monotonic()
                 # A pending pick is advised on EVERY tick — quiet log included.
                 # While a pick screen waits, the friendly player's own log stops
                 # writing, so gating advice on new data left between-rounds picks
