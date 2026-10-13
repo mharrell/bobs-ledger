@@ -1069,6 +1069,12 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-tier.out { color:var(--tloss); }
   .tavern.live .lv-crow.unavail { opacity:.55; }
   .tavern.live .lv-lbl { color:var(--tmute); font-size:12px; margin:0 0 6px; }
+  /* The rolled-past row (fix list round 4 item 3(c)): the shop's own row
+     treatment, under its own label, separated from the offers above it by a
+     rule so a card that is GONE cannot be read as one still on offer. */
+  .tavern.live .lv-passed { margin:12px 0 0; padding-top:10px;
+                            border-top:1px solid var(--tline); }
+  .tavern.live .lv-passed .lv-lbl { margin:0 0 8px; }
   .tavern.live .lv-note { color:var(--tmute); font-size:11px; margin:8px 0 0; }
   .tavern.live .lv-empty { color:var(--tmute); font-size:12px; padding:4px 0; }
   .tavern.live .lv-tabs { display:flex; gap:0; margin:0 0 10px; }
@@ -2637,6 +2643,9 @@ function lvLobby(a) {
 }
 //: The tavern row (§4.2): game order, price and pool left. The tier is not in
 //: this payload, so that part of the caption is omitted rather than guessed.
+//: Under it, what LEFT the shop this turn (fix list round 4 item 3(c)) and the
+//: mix of tribes on offer (item 3(b)). One panel, one heading, and neither
+//: section is ever left as a blank box: a section with nothing in it says so.
 function lvShop(a) {
   const body = el('div');
   const rows = a.shop_rank || [];
@@ -2655,6 +2664,34 @@ function lvShop(a) {
     if (s.price != null) bits.push(s.price + 'g');
     if (s.pool) bits.push(s.pool);
     wrap.appendChild(lvCard(s.card, s.name, bits.join(' · ') || '—',
+                            s.tag === 'spell' ? {kind: 'Spell'} : null));
+  });
+  body.appendChild(wrap);
+  body.appendChild(lvPassed(a));
+  return body;
+}//: WHAT WAS ROLLED PAST THIS TURN (fix list round 4 item 3(c)). Every offer
+//: that left the shop while it was open, one card per OFFER ENTITY — two
+//: copies of one minion were two cards on screen and are two cards here. The
+//: payload carries this turn's rows in the order they left, and the display
+//: runs BACKWARDS from that: the generation the player just rolled away from
+//: is the one they are looking for, and a heavy roll turn can leave 40 cards
+//: behind it (measured 2026-10-12 on the 2026-10-12 game, turn 13). Nothing
+//: here is keyed by card id — the whole point of the item is that the same id
+//: can appear twice in one row.
+function lvPassed(a) {
+  const body = el('div', 'lv-passed');
+  const rows = a.shop_passed || [];
+  body.appendChild(el('div', 'lv-lbl',
+    'Rolled past this turn · ' + rows.length));
+  if (!rows.length) {
+    // A section with nothing in it still says so, in the page's own sentence
+    // vocabulary: a blank gap reads as "not parsed" (fix list round 4 item 3).
+    body.appendChild(el('p', 'lv-note', 'Nothing rolled past yet this turn.'));
+    return body;
+  }
+  const wrap = el('div', 'lv-row');
+  rows.slice().reverse().forEach(s => {
+    wrap.appendChild(lvCard(s.card, s.name, s.pool || '—',
                             s.tag === 'spell' ? {kind: 'Spell'} : null));
   });
   body.appendChild(wrap);
@@ -5490,6 +5527,7 @@ def _canon_tribe(raw):
     return value.normalize(raw) or raw
 
 
+
 #: A comp with fewer games than this in our own corpus is flagged `low sample`#: rather than hidden (LIVE_VIEW_DESIGN.md §5/§11). It is a GAMES count because
 #: that is what the corpus records — a threshold invented from a percentage would
 #: be a number nobody measured, and the scraped tables carry no sample size at
@@ -5724,6 +5762,30 @@ def render_json(analysis):
                                 "deploys hand" if c.rstrip("_G") in deployers
                                 else None))
                       for c, e in _offers]
+    # THE OFFERS THAT LEFT THE SHOP THIS TURN (fix list round 4 item 3(c)):
+    # `live_coach.shop_passed` is the per-GAME record — one entry per OFFER
+    # ENTITY in the order they left, each stamped with the buy phase it left in
+    # — and the panel is per TURN, so the payload carries this turn's rows and
+    # the analysis keeps the rest for the record. One row per ENTITY again: two
+    # copies of one minion that were both rolled past are two rows (measured on
+    # the 2026-10-10 21:04 game: 14 turns in it rolled past two copies of one
+    # card, and turn 11 three copies of BG36_730).
+    #
+    # No `price`: the card can no longer be bought, and printing what it would
+    # have cost invites reading the row as buyable. The POOL chip stays — it is
+    # a property of the CARD, and "is another copy still out there" is the
+    # question this row exists to answer.
+    _turn_now = analysis.get("turn")
+    a["shop_passed"] = [
+        dict(r, name=names.get(r.get("card"), r.get("card")),
+             pool=(pool.chip(r.get("card"), held) if held is not None else None),
+             tag=("spell" if r.get("card") in spells else
+                  "core" if r.get("card") in core else
+                  "addon" if r.get("card") in addons else None))
+        for r in (analysis.get("shop_passed") or [])
+        # A record without a turn (a hand-built fixture, or one written before
+        # this field existed) filters NOTHING: the rows are still the rows.
+        if _turn_now is None or r.get("turn") == _turn_now]
     # THE BOARD AS ENTITIES TOO (round-3 item 1). `sell_rank` is grouped BY CARD
     # for the classic Sell box ("Fauna Whisperer ×2", one row, the instance you
     # would sell first) — and the Tavern's board row drew from it, so two
@@ -5966,6 +6028,10 @@ def render_json(analysis):
     ids.update(g["card"] for g in sell)
     ids.update(s["card"] for s in analysis.get("hand", []))
     ids.update(r["card"] for r in a["shop_rank"])
+    # The rolled-past row draws cards too, and a card absent from `cards` gets
+    # no tier badge and no card text on hover (round 4 item 3(c)). Golden ids
+    # resolve to their base like every other reader.
+    ids.update(r["card"] for r in a["shop_passed"] if r.get("card"))
     ids.update(c["card"] for key in ("core", "addons")
                for c in (tc.get(key) or []))
     # The comps panel's shopping lists ride the same tooltip metadata.

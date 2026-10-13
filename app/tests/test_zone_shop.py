@@ -162,5 +162,120 @@ class TestZoneShop(unittest.TestCase):
         self.assertEqual(c._shop_seen["BG32_821"], 1)
 
 
+class TestWhatWasRolledPast(unittest.TestCase):
+    """Fix list round 4 item 3(c): the tavern lists, per turn, the offers that
+    were ROLLED PAST — keyed by OFFER ENTITY, so two copies of one minion are
+    two entries.
+
+    The card-keyed duplicate collapse is exactly what this item exists to
+    undo, and it cannot be undone through a card id: `_shop_seen` (cid -> turn)
+    is the hunt's evidence and keeps its shape; the offers that left are their
+    own list, one row per entity id.
+
+    Real games produce this, measured 2026-10-12 over three saved logs: the
+    2026-10-10 21:04 game rolled past two copies of one minion in 14 separate
+    turns (and THREE copies of BG36_730 in turn 11).
+    """
+
+    def _coach(self):
+        c = LiveCoach()
+        c.friendly = 7
+        return c
+
+    def test_two_copies_of_one_card_rolled_past_are_two_entries(self):
+        """The fixture's two copies arrive the way the game delivers them — as
+        two entities with two entity ids (an options block cannot carry the
+        same card id twice; the zone layer can, and does)."""
+        c = self._coach()
+        c.feed(GS + "Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        # the phase's shop: one River Skipper from the options block (eid 100)
+        for line in opt_block(1, [("River Skipper", "BG33_140", 15)]):
+            c.feed(line)
+        # ...and a second copy of the SAME minion as its own entity
+        for line in _created(200, "BG33_140", "River Skipper"):
+            c.feed(line)
+        c.feed(GS + "TAG_CHANGE Entity=200 tag=HAS_DRAG_TO_BUY value=1")
+        self.assertCountEqual(c.tavern_offers(), ["BG33_140", "BG33_140"])
+        # Two ENTITIES, not one row: the zone layer's own order is the order
+        # offers were committed, so only the SET is asserted here.
+        self.assertCountEqual([o["eid"] for o in c.shop_offer_entities],
+                              [100, 200])
+        # the roll: both copies leave in the same generation
+        c.feed("x BlockType=PLAY Entity=[entityName=Refresh "
+               "cardId=TB_BaconShop_8p_Reroll_Button player=7] Target=")
+        for eid in (100, 200):
+            c.feed(GS + f"TAG_CHANGE Entity=[entityName=River Skipper "
+                        f"id={eid} zone=PLAY zonePos=1 cardId=BG33_140 "
+                        f"player=15] tag=ZONE value=REMOVEDFROMGAME")
+        self.assertEqual([o["eid"] for o in c.shop_passed], [100, 200],
+                         "two copies of one minion must be two entries — a "
+                         "card-keyed record can only ever hold one")
+        self.assertEqual([o["card"] for o in c.shop_passed],
+                         ["BG33_140", "BG33_140"])
+        self.assertEqual([o["turn"] for o in c.shop_passed], [1, 1])
+        # ...and the sightings dict is untouched by any of it.
+        self.assertEqual(c._shop_seen, {"BG33_140": 1})
+
+    def test_a_bought_offer_is_not_rolled_past(self):
+        """A buy takes an offer out of the shop the same way a roll does. The
+        player did not pass on it — they bought it — so it must not appear in
+        a row whose whole meaning is "offers you left behind"."""
+        c = self._coach()
+        c.feed(GS + "Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        for line in opt_block(1, [("River Skipper", "BG33_140", 15),
+                                  ("Tusked Camper", "BG33_886", 15)]):
+            c.feed(line)
+        c.feed("x BlockType=PLAY Entity=[entityName=Drag To Buy id=120 "
+               "cardId=TB_BaconShop_DragBuy player=7] "
+               "Target=[entityName=River Skipper id=100 zone=PLAY zonePos=1 "
+               "cardId=BG33_140 player=15] SubOption=-1")
+        self.assertEqual(c.tavern_offers(), ["BG33_886"])
+        self.assertEqual(c.shop_passed, [],
+                         "the bought offer was listed as passed over")
+
+    def test_a_new_turn_does_not_blame_the_last_turns_leftovers(self):
+        """Measured 2026-10-08 (245k lines, 15 buy phases): the phase-start
+        wipe clears the previous turn's unsold offers, and the turn counter has
+        ALREADY advanced when it does — 132 of 212 naive departures came from
+        there, all stamped with the new turn. Those are the tavern closing, not
+        a roll, so the wipe clears the comparison snapshot too."""
+        c = self._coach()
+        c.feed(GS + "Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        for line in opt_block(1, [("River Skipper", "BG33_140", 15)]):
+            c.feed(line)
+        for line in (["x tag=STEP value=MAIN_END"]
+                     + [GS + "Entity=GameEntity tag=STEP value=MAIN_ACTION"]
+                     + opt_block(2, [("Frozen Offer", "BG23_007", 15)])):
+            c.feed(line)
+        self.assertEqual(c.tavern_offers(), ["BG23_007"])
+        self.assertEqual(c.shop_passed, [],
+                         "the previous turn's unsold offer was recorded as "
+                         "rolled past in the new turn")
+
+    def test_the_analysis_carries_the_offers_that_left(self):
+        """The page cannot render what the analysis does not carry, and a NEW
+        GAME must not open the panel on the LAST game's rolls: the list is
+        per-game state like everything else in `_GAME_DEFAULTS`.
+
+        (The analysis dict itself is read through `render_json` in
+        `test_live_tavern`/`test_live_browser`; `analyze()` needs the meta DBs
+        and a parsed hero, which this fixture has no business faking.)
+        """
+        c = self._coach()
+        c.feed(GS + "Entity=GameEntity tag=STEP value=MAIN_ACTION")
+        for line in opt_block(1, [("River Skipper", "BG33_140", 15)]):
+            c.feed(line)
+        c.feed("x BlockType=PLAY Entity=[entityName=Refresh "
+               "cardId=TB_BaconShop_8p_Reroll_Button player=7] Target=")
+        c.feed(GS + "TAG_CHANGE Entity=[entityName=River Skipper id=100 "
+                    "zone=PLAY zonePos=1 cardId=BG33_140 player=15] "
+                    "tag=ZONE value=REMOVEDFROMGAME")
+        self.assertEqual([(r["eid"], r["card"]) for r in c.shop_passed],
+                         [(100, "BG33_140")])
+        self.assertEqual(c.shop_passed[0]["turn"], c.actions.turn)
+        c.feed(GS + "CREATE_GAME")
+        self.assertEqual(c.shop_passed, [])
+
+
 if __name__ == "__main__":
     unittest.main()

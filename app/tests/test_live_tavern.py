@@ -119,7 +119,14 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
               "lvCompSortRows", "lvSlot", "lvSlotCap", "lvSlots", "lvSlotLegend",
               "lvOwned", "lvLobby", "lvShop", "lvBoard", "lvHand", "lvBoardHand",
               "lvWaiting", "lvPick", "lvPickControls", "lvTabs", "renderLiveTavern",
-              "lvCard", "lvKV", "lvPanel", "lvEmptyRow", "lvVal")
+              "lvCard", "lvKV", "lvPanel", "lvEmptyRow", "lvVal",
+              # Fix list round 4 items 3 and 4: the rolled-past row, the panel's
+              # read age, the tavern/opponent mix and the next-opponent panel.
+              # They are in this tuple because the scan below is the control for
+              # §1, and a function it does not know about is a screen it does
+              # not check.
+              "lvPassed", "lvMix", "lvMixRow", "lvReadAge", "lvAgeText",
+              "lvOpponent", "oppStatsLine", "oppMixLine")
 
     def _tavern_source(self):
         return "\n".join(filter(None, (_function(n) for n in self.TAVERN)))
@@ -329,6 +336,80 @@ class TestTheCompScreensAtSource(unittest.TestCase):
         self.assertIn("_liveComp = null;", src,
                       "switching tabs has to drop the open comp detail")
 
+
+class TestTheRoundsFourthList(unittest.TestCase):
+    """Fix list round 4, items 3 and 4, at the source.
+
+    Item 3(c) is the one this class exists for: the tavern lists, per turn, the
+    offers that were ROLLED PAST, keyed by OFFER ENTITY — two copies of one
+    minion are two entries, which no card-keyed record can express. The rendered
+    half of each claim is measured in `test_live_browser`
+    (`TestWhatTheShopKeepsSaying`); these are the parts a browser cannot see.
+    """
+
+    def setUp(self):
+        import live_coach  # noqa: F401  (the circular-import primer)
+        self.code = open(os.path.join(HERE, "coach_ui.py"),
+                         encoding="utf-8").read()
+        self.producer = open(os.path.join(HERE, "live_coach.py"),
+                             encoding="utf-8").read()
+
+    def test_the_producer_records_an_offer_ENTITY_leaving_the_shop(self):
+        """One entry per offer entity, and the hunt's card-keyed evidence left
+        exactly as it was: `_shop_seen` feeds `value._hunt_check` and is not
+        this feature's business."""
+        src = self.producer
+        self.assertIn("self.shop_passed.append({", src)
+        self.assertIn('"eid": _eid, "card": _cid', src)
+        self.assertIn('"shop_passed": list(self.shop_passed),', src)
+        # The sightings dict keeps its shape and its one writer.
+        self.assertIn('self._shop_seen[cid] = self.actions.turn', src)
+
+    def test_a_bought_offer_is_not_recorded_as_passed(self):
+        """Both ways an offer is TAKEN — the Drag To Buy target and the ZONE=HAND
+        write that follows it — mark it, and the recorder skips it."""
+        src = self.producer
+        self.assertEqual(src.count("self._shop_taken_eids.add("), 2)
+        self.assertIn("if _eid in _new_eids or _eid in self._shop_taken_eids:",
+                      src)
+
+    def test_the_tavern_closing_is_not_a_roll(self):
+        """Measured on the 2026-10-08 07:45 game: the phase-start wipe clears
+        the previous turn's UNSOLD offers, and the turn counter has already
+        advanced when it does — 132 of 212 naive departures were that, stamped
+        with the new turn. The wipe clears the comparison snapshot so the diff
+        reads "nothing left", and the recorder only runs inside an open shop."""
+        src = self.producer
+        self.assertIn("self._shop_prev = {}", src)
+        self.assertIn('if self._phase == "buy":', src)
+
+    def test_the_report_still_names_the_new_analysis_field(self):
+        """`session_report.SPEC` has teeth in both directions: a new analysis key
+        the report neither ships nor drops REFUSES the send."""
+        import session_report
+        self.assertIn("shop_passed", session_report.DROPPED_FROM_ANALYSIS)
+        self.assertTrue(any("shop_passed[]" in s
+                            for s in session_report.DROPPED_ON_PURPOSE))
+
+    def test_the_rolled_past_payload_row_keeps_the_entity_id(self):
+        """The page cannot draw two cards without two entity ids, and the key is
+        this turn's rows only — the analysis keeps the whole game."""
+        import test_live_browser as tlb
+        out = coach_ui.render_json(tlb._comps_analysis(
+            turn=9, shop_passed=[{"eid": 11, "card": "BG31_815", "turn": 9},
+                                 {"eid": 12, "card": "BG31_815", "turn": 9},
+                                 {"eid": 13, "card": "BG31_815", "turn": 8}]))
+        self.assertEqual([r["eid"] for r in out["shop_passed"]], [11, 12])
+
+    def test_the_row_is_built_from_the_entity_list_and_never_keyed_by_card(self):
+        src = _function("lvPassed") or ""
+        self.assertIn("a.shop_passed", src)
+        self.assertIn("s.card", src)
+        for bad in ("shop_eids", "\.get(s\.card", "names[s.card]"):
+            self.assertNotIn(bad, src,
+                             "the rolled-past row keys something by card id")
+        # §5's data rule and item 3's "never empty without a state".
+        self.assertIn("Nothing rolled past yet this turn.", src)
 
 class TestTheGameOverCard(unittest.TestCase):
     """§6.5, and the route that had to exist for it.

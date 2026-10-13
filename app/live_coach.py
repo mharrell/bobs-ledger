@@ -439,6 +439,15 @@ _GAME_DEFAULTS = {
     "shop_cards": list,
     "shop_eids": dict,       # shop card id -> offer entity id (exact pricing)
     "shop_offer_entities": list,  # [{eid, card}] per OFFER, in log order
+    # Offers that LEFT the shop this game, one entry per OFFER ENTITY, stamped
+    # with the buy phase they left in — the tavern's "rolled past this turn"
+    # row (fix list round 4 item 3(c)). Per GAME and not per turn because the
+    # panel reads it by turn and the review may want the whole game later; the
+    # per-turn bucket is the `turn` stamp, so nothing else has to be remembered
+    # to answer "what did I roll past in this turn".
+    "shop_passed": list,     # [{"eid", "card", "turn"}] in departure order
+    "_shop_prev": dict,      # eid -> card of the last committed offer list
+    "_shop_taken_eids": set,  # offers the PLAYER took out of the shop (bought)
     "_sticky_target": None,  # last shown comp, for sticky same-tribe direction
     "_pending_shop": list,   # offers buffered for the open options block
     "_pending_is_shop": False,  # the open block carries a tavern button
@@ -629,12 +638,28 @@ class LiveCoach:
                 self._zone_shop = {}
                 self._zone_shop_p = {}
                 self._zone_gone = set()
+                # The turn's bought-offer marks die with the turn. Every one of
+                # them was already off the table, so nothing downstream of this
+                # asks again — and a set that only grows is a leak with a
+                # misleading name.
+                self._shop_taken_eids = set()
+                # The tavern CLOSING is not a roll (see the departure block in
+                # _zone_commit): this wipe clears the previous turn's unsold
+                # offers, and the turn counter has already advanced, so without
+                # this the whole of last turn's shop would be recorded as
+                # "rolled past" in the new one. Measured on the 2026-10-08 game:
+                # 132 of 212 recorded departures came from here.
+                self._shop_prev = {}
             elif "Refresh" not in line:
                 # Drag To Buy: drop the bought offer now (its ZONE HAND write
-                # follows in the same block and would prune it anyway).
+                # follows in the same block and would prune it anyway). It is
+                # marked TAKEN, not passed: the player bought this one, so it
+                # must not land in the tavern's "rolled past" row (round 4
+                # item 3(c)).
                 mt = re.search(r"Target=\[[^\]]*?id=(\d+)", line)
                 if mt:
                     self._zone_gone.add(int(mt.group(1)))
+                    self._shop_taken_eids.add(int(mt.group(1)))
                     self._zone_shop.pop(int(mt.group(1)), None)
                     self._zone_shop_p.pop(int(mt.group(1)), None)
             self._zone_commit()
@@ -673,6 +698,11 @@ class LiveCoach:
                 # eid yet — the phase's options block may still be unflushed
                 # and would otherwise re-add the dead offer at commit.
                 self._zone_gone.add(eid)
+                if val == "HAND":
+                    # The offer went into the player's HAND: it was bought.
+                    # Same rule as the Drag To Buy target — taken, not passed
+                    # (round 4 item 3(c)).
+                    self._shop_taken_eids.add(eid)
                 if eid in self._zone_shop:
                     del self._zone_shop[eid]
                     del self._zone_shop_p[eid]
@@ -1228,6 +1258,41 @@ class LiveCoach:
             for eid, cid in self._zone_shop.items()
             if self.friendly is None
             or self._zone_shop_p.get(eid) != self.friendly]
+        # ROLLED PAST (fix list round 4 item 3(c), 2026-10-12): an offer in the
+        # table at the last commit that is not in it now LEFT the shop.
+        # Recorded by OFFER ENTITY and never by card id: two copies of one
+        # minion are two departures with two entity ids, which is the whole
+        # point of the item and the one thing a card-keyed dict cannot hold.
+        # (`self._shop_seen` above stays exactly as it was — it is the hunt's
+        # card-keyed evidence, and `_shop_seen_eids` exists to feed it.)
+        #
+        # WHAT COUNTS, measured on the 2026-10-08 07:45 game (245k lines, 12
+        # turns with a shop) rather than assumed. Only a departure seen while
+        # the shop is OPEN counts, and that is not the shape the log hands you:
+        #   * of the 133 departures that game produced, 69 are recorded — the
+        #     re-rolls, a whole generation at a time, 3 to 17 per turn;
+        #   * 49 arrive AFTER the buy-phase MAIN_END, when the tavern closes
+        #     for combat. Nobody rolled past those;
+        #   * 15 are offers the player BOUGHT (`_shop_taken_eids`: the Drag To
+        #     Buy target, or the ZONE=HAND write that follows it). A row
+        #     claiming the player passed on their own purchase is a lie about
+        #     what they did.
+        # The fourth way is the phase-start wipe of the zone table, which clears
+        # the previous turn's UNSOLD offers: 4 to 6 offers were still in the
+        # table at the start of every turn of that game, and they would be
+        # stamped with the NEW turn, because the turn counter advances before
+        # the wipe. That is why the wipe clears `_shop_prev` too — the diff then
+        # reads "nothing left" there instead of blaming the new turn for the old
+        # turn's leftovers.
+        if self._phase == "buy":
+            _new_eids = {o["eid"] for o in self.shop_offer_entities}
+            for _eid, _cid in self._shop_prev.items():
+                if _eid in _new_eids or _eid in self._shop_taken_eids:
+                    continue
+                self.shop_passed.append({"eid": _eid, "card": _cid,
+                                         "turn": self.actions.turn})
+        self._shop_prev = {o["eid"]: o["card"]
+                           for o in self.shop_offer_entities}
         # The shop table exists: a pending MAIN_ACTION was a real buy phase.
         # This is the promotion point — the first moment the log has PROVEN
         # a shop (combat's step pairs never fill the table; see feed()).
@@ -1711,6 +1776,15 @@ class LiveCoach:
             # hunt's recency evidence (value._hunt_check) — a missing core
             # the shop isn't producing is not a plan.
             "shop_seen": dict(self._shop_seen),
+            # The offers that LEFT the shop, one entry per OFFER ENTITY in the
+            # order they left, each stamped with the buy phase it left in (fix
+            # list round 4 item 3(c)) — the tavern's "rolled past this turn"
+            # row. A flat list and not a {turn: [...]} dict on purpose: the
+            # decision log serializes this verbatim, a dict keyed by an int
+            # turn comes back with STRING keys, and every other shop key
+            # (`shop_offers`, `shop_entities`) is a flat list in log order, so
+            # one shape means one reader. The panel filters by `turn`.
+            "shop_passed": list(self.shop_passed),
             "tier": tier,
             "turn": turn,
             "gold": gold,

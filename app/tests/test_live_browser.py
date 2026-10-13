@@ -475,6 +475,15 @@ _DRIVER = r"""
     // EVERY word the view puts on screen, for the §1 scan. The panel headers
     // and the status labels are in here too — a verdict can hide in a label.
     o.alltext = root ? root.textContent.replace(/\s+/g, ' ').trim() : '';
+    // --- fix list round 4 items 3 and 4 -----------------------------------
+    // The offers that LEFT the shop this turn: one card per OFFER ENTITY.
+    o.passedlbl = txt(one('.lv-passed .lv-lbl'));
+    o.passedcards = q('.lv-passed .lv-card').length;
+    o.passednames = [...q('.lv-passed .tname')].map(n => n.textContent)
+      .join('|');
+    o.passedcaps = [...q('.lv-passed .lv-cap')].map(c => c.textContent)
+      .join('|');
+    o.passednote = txt(one('.lv-passed .lv-note'));
     for (const k of Object.keys(o))
       rec(name + '.' + k, ['tavern', 'cards', 'skel', 'pick', 'classic',
                            'taverncards', 'pickbars', 'compslots', 'slotsmiss',
@@ -487,7 +496,7 @@ _DRIVER = r"""
                            'picknameh', 'pickcardw', 'statebarhidden', 'cols',
                            'avgcells', 'hasavg', 'unconfirmed', 'ctlrows',
                            'toggleinnav', 'togglehidden', 'shopcards',
-                           'boardcards']
+                           'boardcards', 'passedcards']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
@@ -604,6 +613,48 @@ def _choice_payload():
         "guides": {}})
 
 
+#: What the shop ROLLED PAST (fix list round 4 item 3(c)): a tavern spell, then
+#: TWO copies of one minion — two OFFER ENTITIES with two entity ids, which is
+#: the item's whole premise and the one thing a card-keyed record cannot hold.
+#: The ids are taken from the shipped DBs rather than written down, so a tier
+#: refresh cannot silently turn a tribe assertion into a tautology (an unknown
+#: id resolves to no tribe, and "0 Elemental" would pass where "2 Elemental"
+#: was meant — the same trap the pool-chip test documents).
+def _real_minion(tribe):
+    import meta
+    return next(m["id"] for m in meta.minions() if m.get("tribe") == tribe)
+
+
+def _real_tavern_spell():
+    import value
+    return next(iter(value._load_spell_db()))
+
+
+_SPELL = _real_tavern_spell()
+_ELEM = _real_minion("Elemental")
+ROLL_FIRST = {"eid": 101, "card": _SPELL, "turn": 9}
+ROLL_SECOND = {"eid": 102, "card": _ELEM, "turn": 9}
+ROLL_THIRD = {"eid": 103, "card": _ELEM, "turn": 9}
+
+#: One turn's shop after a roll: the two copies of the Elemental and the spell
+#: are what is on offer now, and all three of them are ALSO what left during
+#: this turn (a rolled-away generation and the current one are the same shape to
+#: this panel).
+ROLLED = dict(turn=9,
+              shop_passed=[ROLL_FIRST, ROLL_SECOND, ROLL_THIRD],
+              shop_entities=[{"eid": ROLL_FIRST["eid"], "card": _SPELL},
+                             {"eid": ROLL_SECOND["eid"], "card": _ELEM},
+                             {"eid": ROLL_THIRD["eid"], "card": _ELEM}],
+              shop_offers=[_SPELL, _ELEM, _ELEM])
+
+#: Two rows in the analysis, one per turn: the panel takes THIS turn's only, so
+#: the count in its own label is one and not two.
+ROLLED_LAST_TURN = dict(ROLLED, shop_passed=[{"eid": 73, "card": _ELEM,
+                                              "turn": 8},
+                                             {"eid": 74, "card": _ELEM,
+                                              "turn": 9}])
+
+
 def _render(shots, size=browser.WIDE):
     if browser.browser() is None:
         raise unittest.SkipTest("no Chromium browser on this machine, so the "
@@ -692,7 +743,9 @@ class TestTheTavernLiveInABrowser(_Rendered):
     def test_the_tab_row_selects_the_screen_and_opens_on_shop(self):
         """§4.1's second tab row: `Shop | Comps | Lobby`. The facts table is not
         one of them — it is the rail beside every screen (§4.2 lists it there),
-        so it is never hidden and never says anything twice."""
+        so it is never hidden and never says anything twice.
+
+        """
         self.assertEqual(self.got["t.tabs"], "Shop|Comps|Lobby")
         self.assertEqual(self.got["t.tabon"], "Shop")
         self.assertEqual(self.got["t.panels"], "Tavern|Board and hand|Facts")
@@ -1407,6 +1460,98 @@ class TestTheCompsScreens(_Rendered):
         self.assertNotIn("Elementals|3 of 3 owned|3.83|low",
                          got["browse.comprows"])
         self.assertEqual(got["browse.lowsamp"], "low sample")
+
+
+class TestWhatTheShopKeepsSaying(_Rendered):
+    """Fix list round 4 items 3 and 4, on the rendered page.
+
+    3(c) the offers that were ROLLED PAST, per turn, keyed by OFFER ENTITY — so
+    two copies of one minion are two cards, which is the item's whole point.
+    3(b) "read Ns ago" ON the tavern panel, and the tavern mix of what is on
+    offer. 4 the announced next opponent, facts only.
+    """
+
+    @classmethod
+    def shots(cls):
+        return [_shot("t", _payload()),
+                _shot("dup", _payload(**ROLLED)),
+                _shot("last", _payload(**ROLLED_LAST_TURN)),
+                _shot("none", _payload(shop_passed=[])),
+                _shot("noshop", _payload(shop_rank=[], shop_passed=[]))]
+
+    def test_a_minion_two_copies_were_rolled_past_render_as_two_cards(self):
+        """The payload keeps both ENTITY ids and the page draws both cards.
+
+        A card-keyed record can only ever hold one of them: this is the duplicate
+        collapse the item exists to undo, one panel over from where round 3
+        undid it for the tavern row itself. The row is drawn NEWEST FIRST (the
+        generation the player just rolled away from is the one they are looking
+        for, and a heavy roll turn leaves 40 cards behind it), which is why the
+        spell that left first renders last.
+        """
+        rep = _payload(**ROLLED)
+        self.assertEqual([r["eid"] for r in rep["shop_passed"]],
+                         [ROLL_FIRST["eid"], ROLL_SECOND["eid"],
+                          ROLL_THIRD["eid"]],
+                         "the payload lost an offer entity")
+        got = self.got
+        self.assertEqual(got["dup.passedcards"], 3,
+                         "two copies of one minion did not draw two cards")
+        names = got["dup.passednames"].split("|")
+        self.assertEqual(len(names), 3)
+        self.assertEqual(names[0], names[1],
+                         "the two copies are not the same card")
+        self.assertNotEqual(names[1], names[2],
+                            "the spell is not the minion")
+        # ...and the count in the section's own label is the count of CARDS.
+        self.assertIn("3", got["dup.passedlbl"])
+
+    def test_the_rolled_past_row_is_a_caption_per_card_and_not_a_price_list(self):
+        """The pool chip is a property of the CARD and stays; the PRICE goes,
+        because this card can no longer be bought and a price on it invites
+        reading the row as an offer."""
+        caps = self.got["dup.passedcaps"].split("|")
+        self.assertEqual(len(caps), 3)
+        self.assertIn("pool left", caps[0])
+        self.assertEqual(caps[1], caps[0],
+                         "the two copies of one card disagree about the pool")
+        self.assertEqual(caps[2], "—",
+                         "a tavern spell has no pool figure, and a guess would "
+                         "be worse than a dash")
+        for cap in caps:
+            self.assertIsNone(re.match(r"^\d+\s*g\b", cap),
+                              f"the rolled-past row carries a price: {cap!r}")
+
+    def test_only_this_turns_rolls_are_on_the_panel(self):
+        """The analysis keeps the WHOLE game (`shop_passed` is per-game state
+        with a turn stamp); the panel is per turn, and last turn's roll must not
+        be counted in this one's label.
+
+        The fixture carries one row per turn on purpose: a payload that kept
+        everything would draw TWO cards here and say 2.
+        """
+        rep = _payload(**ROLLED_LAST_TURN)
+        self.assertEqual([r["eid"] for r in rep["shop_passed"]], [74],
+                         "the turn filter is gone from render_json")
+        got = self.got
+        self.assertEqual(got["last.passedcards"], 1,
+                         "last turn's roll is on this turn's panel")
+        self.assertIn("1", got["last.passedlbl"])
+
+    def test_a_shop_with_nothing_rolled_past_says_so_rather_than_going_blank(self):
+        """Fix list round 4 item 3: a panel that is empty without a state reads
+        as a panel that is broken, which is exactly what the maintainer asked to
+        stop happening."""
+        got = self.got
+        self.assertEqual(got["none.passedcards"], 0)
+        self.assertEqual(got["none.passednote"], "Nothing rolled past yet this turn.")
+
+    def test_the_empty_shop_keeps_the_reason_it_is_empty(self):
+        """Item 3: never an empty panel without a state. `lvWaiting` says what
+        the page is waiting for AND how old the read is."""
+        got = self.got
+        self.assertIn("Reading the shop", got["noshop.notes"])
+        self.assertEqual(got["noshop.passedlbl"], "")
 
 
 class TestTheGameOverCard(_Rendered):
