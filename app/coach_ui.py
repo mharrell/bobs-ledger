@@ -1456,9 +1456,6 @@ function auth(u) {
     + "token=" + encodeURIComponent(BL_TOKEN);
 }
 let _lastPayload = null;
-//: The last payload the page RENDERED, so the viewer toggle can redraw from it
-//: instead of waiting up to 300ms for the next poll (2026-10-09).
-let _lastParsed = null;
 let _etag = null;
 let _pollBusy = false;
 //: Epoch seconds of the advice currently on screen, and how old it may get
