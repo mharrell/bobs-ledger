@@ -718,5 +718,37 @@ class TestTheOptionsStatistics(unittest.TestCase):
         self.assertEqual(st["tribe"], cards[cid]["tribe"])
 
 
+class TestTheWaitingStateHoldsNoTribeState(unittest.TestCase):
+    """Fix list round 4 item 2, on the client half.
+
+    The server drops the finished game's ban set where the game ends
+    (`test_game_over_state`), and the page must not keep its own copy either:
+    `_banPick` is the local tap set, and it used to survive the whole
+    between-games gap, re-seeding only when the NEXT game's payload arrived with
+    a game number. The welcome branch now clears it, so the waiting state cannot
+    draw a tribe set even if a payload later arrives without one.
+    """
+
+    def _render_src(self):
+        src = coach_ui._HTML
+        start = src.index("function render(a) {")
+        return src[start:start + 1200]
+
+    def test_the_welcome_branch_drops_the_local_tap_set(self):
+        body = self._render_src()
+        self.assertIn("if (a.welcome) {", body)
+        for line in ("_banPick.clear();", "_banPickGame = null;",
+                     "_banPickAt = 0;"):
+            self.assertIn(line, body, "the waiting state can keep a stale set")
+
+    def test_the_welcome_card_still_carries_no_tribe_field(self):
+        """The other half of the same claim: there is nothing to draw from."""
+        card = __import__("json").loads(coach_ui.welcome_payload(
+            game_over={"placement": 2, "turn": 11}))
+        for key in ("banned", "tribe_roster", "tribes_available",
+                    "tribes_seen"):
+            self.assertNotIn(key, card)
+
+
 if __name__ == "__main__":
     unittest.main()

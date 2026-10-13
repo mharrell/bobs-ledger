@@ -3040,6 +3040,14 @@ function setLiveViewer(v) {
 function render(a) {
   _lastParsed = a;   // the viewer toggle re-renders from this, not a refetch
   if (a.welcome) {
+    // The waiting card carries no tribe state, and neither may the client
+    // (fix list round 4 item 2): the local tap set belongs to the game that
+    // just ended, and it is dropped here rather than at the next game's first
+    // payload — otherwise the 5/5 set is held across the whole gap and drawn
+    // again the moment a payload arrives without a game number.
+    _banPick.clear();
+    _banPickGame = null;
+    _banPickAt = 0;
     // §6.5's game-over card is the ONE welcome payload the Tavern viewer draws;
     // a first run has no Tavern design, so it keeps the classic card — and the
     // Tavern layout is cleared first, or that card would appear behind a stale
@@ -5050,6 +5058,14 @@ def show_game_over(analysis=None, placement=None, turn=None):
         _state.analysis = None
         _state.payload = welcome_payload(game_over=game_over)
         _state.etag = hashlib.sha1(_state.payload).hexdigest()
+        # The game's own 5/5 ban set dies with the game (fix list round 4 item
+        # 2). It used to survive until the NEXT game's CREATE_GAME cleared it,
+        # which is long enough for the waiting state to be showing a set that
+        # belongs to a game that is over — and the family ban differs per game,
+        # so between games there is no correct set to show. The welcome payload
+        # carries no tribe field at all, so this is the state agreeing with what
+        # is on screen rather than a fix for a visible chip.
+        _state.manual_bans = None
 
 
 def set_review(html_text, label=None, rep=None):
