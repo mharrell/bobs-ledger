@@ -713,16 +713,16 @@ _HTML = r"""<!doctype html>
   #app.tavern-on #live-tavern { grid-column:1 / -1; width:100%;
                                 min-width:0; }
   #app.tavern-on > #col-decide, #app.tavern-on > #col-ref { display:none; }
-  /* FROM 1180px THE TAVERN VIEW TAKES THE WHOLE WINDOW (fix list round 4 item 5,
+  /* IN TAVERN MODE THE VIEW TAKES THE WHOLE WINDOW (fix list round 4 item 5,
      2026-10-13). The tavern is not two panes, so the shell's two-column grid has
-     nothing to put in its second column — and its 340px of rail came straight
-     off the layout this view now measures. The two numbers meet exactly: the
-     three-column rule below asks for 1180px OF THE BOX, and 1180px of WINDOW is
-     the smallest window that can give it, because the box is the window minus
-     the page's 14px of padding each side (measured: a 1500x1000 window gives the
-     box 1432px with this rule and gave it 1132px without, which is three
-     squeezed columns against three usable ones). Below 1180px the shell is a
-     flex column anyway, where this rule has nothing to override. */
+     nothing to put in its second column — and its 340px of rail came straight off
+     the layout this view measures. This rule only has anything to override in the
+     GRID branch of `#app` (width >=1200px AND height >=900px); below that the
+     shell is a flex column already. MEASURED at a 1500x1000 window, where the
+     branch is the grid: with this rule the box is 1432px, and without it 1132px
+     — three squeezed columns against three usable ones. The three-column layout
+     itself is a WINDOW rule and asks for 1800px, above which `#wrap`'s 1600px cap
+     means the box is 1572px whatever the window is. */
   @media (min-width: 1180px) {
     #app.tavern-on { grid-template-columns:minmax(0,1fr); }
   }
@@ -1035,26 +1035,34 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-st b.miss { color:var(--tmute); font-weight:400; }
   /* Gold is the currency colour, which is --atk's other job (§4.2/§7). */
   .tavern.live .lv-st.gold b:not(.miss) { color:var(--tatk); }
-  /* THE LAYOUT IS BY WIDTH, AND IT IS MEASURED ON THIS BOX (fix list round 4
-     item 5, 2026-10-13). Three modes, decided by a CONTAINER query rather than a
-     window one:
-       * >=1180px of this box: THREE COLUMNS — Tavern + board | Comps |
+  /* THE LAYOUT IS BY WINDOW WIDTH (fix list round 4 item 5, corrected
+     2026-10-13 on the maintainer's own call: "if the window is ~1920 wide, then
+     three columns. Otherwise collapse it"). Two modes:
+       * >=1800px of WINDOW: THREE COLUMNS — Tavern + board | Comps |
          Facts + opponent + lobby, and no tabs, because every screen is visible;
-       * 700-1179px: one column of collapsed sections with a one-line summary in
-         each header, and the Facts table pinned above them;
-       * <700px: the same accordion, single column (the pick grid goes
-         single-column under 700 too — @media, because a grid's track count is
-         not a container-query thing here).
-     WHY A CONTAINER AND NOT `@media`: the box this governs is the window MINUS
-     the shell — 14px of padding each side, a scrollbar when the page is taller
-     than the window, and the 340px rail above 1200x900 where `#app` is a
-     two-column grid. MEASURED 2026-10-13: at a 1250x900 window the box is 1175px
-     (the accordion) and at 1400x900 it is 1325px (three columns), while a 1500px
-     window gives it 1432px with the shell in one branch and 1132px in the other.
-     A window breakpoint cannot express that: the window that is "wide enough"
-     depends on which branch of the shell is live AND on whether the page has
-     scrolled. */
-  .tavern.live .lv-body { container-type:inline-size; }
+       * below that: one column of collapsible sections with a one-line summary
+         in each header, and the Facts table pinned above them (the section
+         headers and the facts strip are the same rules at 1700px as at 900px).
+     WHY A WINDOW RULE AND NOT THE BOX's, which is what this rule asked FIRST
+     (at 1180px of box, i.e. a ~1250px window): the container's width cannot
+     answer "is this a big desktop window". `#wrap` caps the PAGE at 1600px, so
+     MEASURED 2026-10-13 at 1920x1080 the tavern box is 1572px — and a 1700px
+     window gives it 1572px too, because the cap is reached before the window is.
+     Past ~1640px of window the box stops growing, so a container query makes
+     "1920" indistinguishable from "1700" and puts the columns on for both.
+     1800, not 1920: a maximized window on a 1920x1080 screen measures 1904px of
+     VIEWPORT (measured in the harness), so a literal 1920 would never fire on
+     the machine this was asked for. 1800 fires there, and does not fire at 1600.
+     THE BOX IS STILL MEASURED, which is why 1800 is safe rather than assumed —
+     and the measurement corrects the first version's arithmetic, which claimed a
+     short window left the box only 1432px: MEASURED 2026-10-13 in the harness,
+     the box is 1572px at 1920x1080, at 1850x800 (viewport 1834, the narrowest
+     window this rule gives the columns) AND at 1700x1080 (viewport 1684, which is
+     the accordion) — every one of them is the `#wrap` cap, so the columns are
+     always 622|622|300 wide. The accordion's widest box is 1525px at a 1600x1080
+     window. Since the comps panel's two tier columns already fit in the 499px the
+     old single-column layout gave them, 622 is generous, not tight. */
+  .tavern.live .lv-body { min-width:0; }
   .tavern.live .lv-main { display:grid; grid-template-columns:minmax(0,1fr);
                           gap:14px; align-items:start; }
   /* Both arrangements are in the DOM and exactly one is displayed. The
@@ -1068,15 +1076,17 @@ _HTML = r"""<!doctype html>
   @media (min-width: 1200px) {
     .tavern.live .lv-main { grid-template-columns:minmax(0,1fr) 340px; }
   }
-  @container (min-width: 1180px) {
-    /* THE THREE COLUMNS (fix list round 4 item 5). This rule is LAST, so it wins
-       by order over the media query above, which also matches above 1200x900 —
-       past 1180px of BOX width the 340px rail is not a track any more, because
-       column 3 IS the rail: the facts table, the announced opponent, the lobby.
-       Column 3 is 300px because that held the reference table at every width
-       measured; the two flexible columns split what is left. MEASURED
-       2026-10-13: 622/622/300 inside a 1572px box at 1920x1080, and 549/549/300
-       inside 1425px at a 1500x1000 window (see TestTheLayoutByWidth). */
+  @media (min-width: 1800px) {
+    /* THE THREE COLUMNS (fix list round 4 item 5, on the maintainer's own call
+       about the WINDOW). This rule is LAST, so it wins by order over the media
+       query above, which also matches above 1200x900 — past 1800px of window the
+       340px rail is not a track any more, because column 3 IS the rail: the facts
+       table, the announced opponent, the lobby. Column 3 is 300px because that
+       held the reference table at every width measured; the two flexible columns
+       split what is left. MEASURED 2026-10-13 in the harness: 622/622/300 inside a
+       1572px box at 1920x1080 (the widest this page gets — `#wrap` caps it at
+       1600px) and the SAME 622/622/300 at 1850x800, whose 1834px viewport is the
+       narrowest window this rule gives the columns. */
     .tavern.live .lv-layout-cols { display:grid;
       grid-template-columns:minmax(0,1fr) minmax(0,1fr) 300px; }
     .tavern.live .lv-layout-acc { display:none; }
@@ -1096,7 +1106,7 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-pn > h3 { margin:0 0 8px; font-size:12px; letter-spacing:.12em;
                              text-transform:uppercase; color:var(--tmute); }
   /* ---------------------------------------------------------------------
-     THE ACCORDION, 700-1180px of box width (fix list round 4 item 5,
+     THE ACCORDION, EVERY WINDOW UNDER 1800px (fix list round 4 item 5,
      2026-10-13). Every section is on the page at once, each header carries a
      ONE-LINE summary of what is under it, and the Facts table is a strip pinned
      above them.
@@ -1139,7 +1149,7 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-pin { position:sticky; top:0; z-index:3;
                          background:var(--tpanel); margin-bottom:12px; }
   .tavern.live .lv-pin > h3::before { content:none; }
-  @container (max-width: 1179.98px) {
+  @media (max-width: 1799.98px) {
     /* In the accordion the strip is one row of the stack, so it takes the full
        width of the column it sits in — a 300px reference table beside 800px of
        sections would read as a column that lost its column. */
@@ -2145,11 +2155,12 @@ let _liveViewer = 'classic';
 try { _liveViewer = localStorage.getItem('bl-live-viewer') || 'classic'; }
 catch (e) { /* private mode */ }
 //: §4.1's tab row — `Shop | Comps | Lobby` — is GONE (fix list round 4 item 5,
-//: 2026-10-13). It existed because the screens were exclusive; above 1180px of
-//: box width every one of them is on screen at once and below it they are all
-//: collapsed sections of one column, so there is nothing left for a tab row to
-//: select. The facts table was never one of its tabs, and it still is not: it is
-//: the pinned strip in the accordion and column 3 in the three-column layout.
+//: 2026-10-13). It existed because the screens were exclusive; in the
+//: three-column layout every one of them is on screen at once and everywhere
+//: else they are collapsed sections of one column, so there is nothing left for
+//: a tab row to select. The facts table was never one of its tabs, and it still
+//: is not: it is the pinned strip in the accordion and column 3 in the
+//: three-column layout.
 
 function lvOrdinal(p) {
   const suf = ([11, 12, 13].includes(p % 100)) ? 'th'
@@ -3299,12 +3310,13 @@ function renderTavernGameOver(a) {
 
 //: --------------------------------------------------------------------------
 //: FIX LIST ROUND 4 ITEM 5, the layout half (2026-10-13). The view is built
-//: from SECTIONS, and the width decides how they are arranged:
+//: from SECTIONS, and the WINDOW decides how they are arranged — the maintainer's
+//: own call: "if the window is ~1920 wide, then three columns. Otherwise collapse
+//: it" (the rule asks for 1800px of viewport, see the CSS block):
 //:
-//:   >=1180px of box  three columns, no tabs, every section on screen at once
-//:   700-1179px        one column, each section foldable, a one-line summary in
-//:                     every header, and the Facts table pinned above them
-//:   <700px            the same accordion in one column
+//:   >=1800px of viewport  three columns, no tabs, every section on screen at once
+//:   below that            one column, each section foldable, a one-line summary
+//:                         in every header, and the Facts table pinned above them
 //:
 //: `lvPanelBody(title, a)` is the ONE place a section's content is chosen, so a
 //: section cannot mean one thing in a column and another in the accordion.
@@ -3447,8 +3459,9 @@ function lvColumns(a) {
   three.appendChild(lvSection('Lobby', a, false));
   return [one, two, three];
 }
-//: The accordion (700-1179px of box): one column, the facts strip pinned at the
-//: top of it, then the same five sections in the order the player needs them.
+//: The accordion (every window under 1800px): one column, the facts strip pinned
+//: at the top of it, then the same five sections in the order the player needs
+//: them.
 function lvAccordion(a) {
   const col = el('div', 'lv-col');
   col.appendChild(lvSection('Facts', a, true));
@@ -3464,13 +3477,14 @@ function lvAccordion(a) {
   });
   return [col];
 }
-//: The body of the view, inside the container that decides the arrangement
-//: (`.lv-body` carries `container-type:inline-size`). BOTH arrangements are
-//: built and one of them is displayed by a container query: the width that
-//: matters is this box's, and JS cannot read a container query's answer without
-//: measuring a live layout, so the DOM holds both and CSS picks. `hidden` would
-//: be wrong here — the `@container` rule is what shows one, and an attribute
-//: would be a second mechanism saying the same thing.
+//: The body of the view, holding BOTH arrangements so exactly one can be shown.
+//: One of them is displayed by the `(min-width: 1800px)` media query — a WINDOW
+//: rule since 2026-10-13, on the maintainer's own call, because `#wrap` caps this
+//: page at 1600px and a box-width rule therefore cannot tell a 1920px window from
+//: a 1700px one (see the CSS block's comment). Building both and letting CSS
+//: choose is what keeps the two arrangements from disagreeing: `hidden` would be
+//: a second mechanism saying the same thing, and JS cannot read the window width
+//: at render time and stay right when the window is resized.
 function lvBody(a) {
   const wrap = el('div', 'lv-body');
   const cols = el('div', 'lv-main lv-layout-cols');

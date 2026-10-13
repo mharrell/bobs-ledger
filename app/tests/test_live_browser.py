@@ -266,6 +266,12 @@ _DRIVER = r"""
     o.tavern = root ? 1 : 0;
     o.arr = arr;
     o.bodyw = body ? Math.round(body.getBoundingClientRect().width) : 0;
+    // THE VIEWPORT, which is what the layout's window rule actually reads. A
+    // harness `size` is the browser WINDOW, and the viewport is ~16px narrower
+    // (measured: a 1920x1080 window here gives 1904). A test that pinned the
+    // arrangement at an exact window size would be asserting which side of a
+    // breakpoint the window chrome falls on; a test that reads this cannot be.
+    o.vw = window.innerWidth;
     o.hero = txt(rone('.lv-hero'));
     o.stats = all('.lv-st')
       .map(d => txt(d.querySelector('small')) + ':' + txt(d.querySelector('b')))
@@ -344,11 +350,15 @@ _DRIVER = r"""
       return [...scope.querySelectorAll('.lv-col')].map(c =>
         [...c.querySelectorAll('.lv-pn > h3')].map(title).join('+')).join('|');
     })();
-    // The first panel's own text, for claims about ONE panel rather than the
+    // The COMPS panel's own text, for claims about ONE panel rather than the
     // page: "Lobby tribes" belongs to the page's tribe row, and the comps panel
-    // must not have a second copy of it (round 3 item 4).
-    o.paneltext = (function () {
-      const p = one('.lv-pn');
+    // must not have a second copy of it (round 3 item 4). BY NAME since
+    // 2026-10-13: it read the first panel on the page, which stopped being the
+    // comps panel the moment the accordion put the pinned Facts strip first.
+    // `textContent` reads a SHUT section too (its children are display:none, not
+    // gone), which is what this claim needs — it is about what the panel holds.
+    o.compspaneltext = (function () {
+      const p = sectionPanel('Comps');
       return p ? p.textContent.replace(/\s+/g, ' ').trim() : '';
     })();
     // Label/value from the row's FIRST and LAST child: the comps row's label is
@@ -361,10 +371,15 @@ _DRIVER = r"""
     o.caps = [...q('.lv-cap')].map(c => c.textContent).join('|');
     o.cards = q('.lv-card').length;
     // Cards inside the TAVERN panel only, so "the shop is not parsed" is not
-    // confused with the board and hand rows, which are cards too.
-    const panes = q('.lv-pn');
-    o.taverncards = panes.length
-      ? panes[0].querySelectorAll('.lv-card').length : 0;
+    // confused with the board and hand rows, which are cards too. BY NAME since
+    // 2026-10-13 (round 4 item 5): `panes[0]` was the Tavern panel only while the
+    // shop was the FIRST panel on the page, and in the accordion the pinned Facts
+    // strip comes first — measured, "the first panel" became the facts table and
+    // two shop tests read 0 cards with the shop plainly rendered on screen (the
+    // same shape of stale read commit 62fb33d fixed in this file's comps driver).
+    const tavpanel = sectionPanel('Tavern');
+    o.taverncards = tavpanel
+      ? tavpanel.querySelectorAll('.lv-card').length : 0;
     o.skel = q('.lv-skel').length;
     o.empty = [...q('.lv-empty')].map(d => d.textContent).join('|');
     o.notes = [...q('.lv-note')].map(d => d.textContent).join('|');
@@ -599,12 +614,14 @@ _DRIVER = r"""
       const r = document.querySelector('#live-viewer-row');
       return r && r.hidden ? 1 : 0;
     })();
-    // One row per OFFER / per board minion (round 3 item 1). Scoped to the FIRST
-    // panel (the tavern), because the board and hand rows are cards too.
-    o.shopcards = panes.length
-      ? panes[0].querySelectorAll('.lv-card').length : 0;
-    o.shopkeys = panes.length
-      ? [...panes[0].querySelectorAll('.tname')].map(n => n.textContent).join('|')
+    // One row per OFFER / per board minion (round 3 item 1), scoped to the
+    // TAVERN section BY NAME (see `tavpanel` above), because the board and hand
+    // rows are cards too and the pinned Facts strip is the first panel in the
+    // accordion.
+    o.shopcards = tavpanel
+      ? tavpanel.querySelectorAll('.lv-card').length : 0;
+    o.shopkeys = tavpanel
+      ? [...tavpanel.querySelectorAll('.tname')].map(n => n.textContent).join('|')
       : '';
     o.boardcards = (function () {
       const halves = q('.lv-bh > div');
@@ -717,7 +734,7 @@ _DRIVER = r"""
                            'legendslots', 'cmpboxes', 'cmpchecked', 'cmpdisabled',
                            'missvals', 'bhhalf', 'renameless', 'tiletitles',
                            'noart', 'nagacount', 'pickcolw', 'pickctlvp',
-                           'picknameh', 'pickcardw', 'statebarhidden', 'cols',
+                           'picknameh', 'pickcardw', 'statebarhidden', 'cols', 'vw',
                            'avgcells', 'hasavg', 'crowrows', 'unavail', 'ctlrows',
                            'toggleinnav', 'togglehidden', 'shopcards',
                            'boardcards', 'passedcards', 'oppcards',
@@ -1042,17 +1059,25 @@ class TestTheTavernLiveInABrowser(_Rendered):
         """REVERSED 2026-10-13 (fix list round 4 item 5). This pinned §4.1's tab
         row — `Shop | Comps | Lobby`, in DOM order, with the Facts table beside
         every screen — because the screens were exclusive and the row is what
-        selected one. Above 1180px of box width every section is on screen at
-        once and below it they are all sections of one accordion, so there is
+        selected one. Both arrangements show every section at once, so there is
         nothing left for a tab row to select: a control that hides what is
         already visible is not a fact, it is a way to hide one. The `lv-tabs`
         class and its CSS went with it (see `test_live_tavern`).
 
-        What replaces it: the six sections, in DOM order, each with a heading —
-        and the tab row really gone, measured as an absence WITH a control, since
-        a count that can only ever be zero is not a measurement (the mistake
-        commit 62fb33d fixed in this very suite). The control is `panelcount`:
-        the selector that used to find the tabs still finds the panels.
+        What replaces it: the six sections, in the ARRANGEMENT's own DOM order,
+        each with a heading — and the tab row really gone, measured as an absence
+        WITH a control, since a count that can only ever be zero is not a
+        measurement (the mistake commit 62fb33d fixed in this very suite). The
+        control is `panelcount`: the selector that used to find the tabs still
+        finds the panels.
+
+        The order is asserted in BOTH arrangements because they differ on
+        purpose: the accordion pins Facts to the top of the stack (it is the
+        strip the rest scrolls under), while the three-column one puts it in
+        column 3. The harness's own 1400x900 window is an ACCORDION window since
+        the threshold became the maintainer's window rule (see
+        `TestTheLayoutByWidth`), so `t.panels` is the accordion's order and the
+        1920x1080 render below is the columns'.
         """
         for shot in ("t", "comps", "lobby"):
             self.assertEqual(self.got[shot + ".tabs"], 0,
@@ -1062,11 +1087,17 @@ class TestTheTavernLiveInABrowser(_Rendered):
                                     f"zero above is a selector that matches "
                                     f"nothing rather than a removed tab row")
         self.assertEqual(self.got["t.panels"],
-                         "Tavern|Board and hand|Comps|Facts|Next opponent|Lobby")
+                         "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
         # The comps and lobby shots are the SAME page (round 4 item 5): every
         # section is rendered, and `reveal` only scrolled to one of them.
         self.assertEqual(self.got["comps.panels"], self.got["t.panels"])
         self.assertEqual(self.got["lobby.panels"], self.got["t.panels"])
+        # The same six in the three-column arrangement: Tavern+board | Comps |
+        # Facts+opponent+lobby, so the pinned strip is last in DOM order there.
+        wide = _render([_shot("t", _payload())], size=(1920, 1080))
+        self.assertEqual(wide["t.arr"], "cols")
+        self.assertEqual(wide["t.panels"],
+                         "Tavern|Board and hand|Comps|Facts|Next opponent|Lobby")
         # §8: 44px minimum targets. The accordion header is the control that
         # replaced the tabs; it is measured in `TestTheAccordionLayout`, at the
         # width where the accordion is the arrangement on screen. What can be
@@ -1083,7 +1114,7 @@ class TestTheTavernLiveInABrowser(_Rendered):
 
         The rail half of this test moved to the layout tests (fix list round 4
         item 5, 2026-10-13): the view is no longer two columns of panels, it is
-        three columns above 1180px of box and an accordion below, so what
+        three columns at a big window and an accordion everywhere else, so what
         "beside it" means is measured in `TestTheLayoutByWidth` and
         `TestTheAccordionLayout`. What stays here is the claim that still holds
         in EVERY mode: the tavern container is the window."""
@@ -1314,32 +1345,39 @@ class TestTheTavernLiveInABrowser(_Rendered):
 
 
 class TestTheLayoutByWidth(_Rendered):
-    """Fix list round 4 item 5: three columns at a wide window, NO tabs.
+    """Fix list round 4 item 5: three columns at a big window, NO tabs anywhere.
 
-    The width that decides is the BOX's, not the window's, and the container query
-    cannot be read from JS — so each claim names the window it is about and
-    measures what the real sheet produced in it. The class's own shot is the
-    1400x900 default, whose box is 1325px, so it ALSO renders three columns: 1325
-    is past the 1180px the columns need, which is the answer "1400x900 is an
-    accordion window" would have got wrong.
+    The threshold is the WINDOW's since 2026-10-13, on the maintainer's own call
+    ("if the window is ~1920 wide, then three columns. Otherwise collapse it").
+    This class first pinned a CONTAINER threshold of 1180px of box, which is a
+    ~1250px window, and it was wrong for a reason worth keeping: `#wrap` caps the
+    PAGE at 1600px, so past ~1640px of window the box stops growing and the box
+    cannot tell a 1920px window from a 1700px one. The box is still MEASURED here,
+    because it is what has to fit the three columns.
+
+    Each claim names the window it is about and measures what the real sheet
+    produced in it. The class's own shot is the harness's 1400x900 window, whose
+    box is 1325px — an ACCORDION window now, which is the maintainer's rule.
     """
 
     @classmethod
     def shots(cls):
         return [_shot("w", _comps_payload())]
 
-    def test_the_default_window_is_already_three_columns(self):
-        """The harness's own 1400x900 window: box 1325px, columns 498.5/498.5/300.
-        Worth stating because it is just past the 1180px the columns need and
-        because `#app` is a flex COLUMN at that height, so the box is the whole
-        window minus the page's padding — a window-width rule would have called
-        this "inside 700-1500" and drawn an accordion over three columns that
-        fit."""
+    def test_the_default_window_is_an_accordion(self):
+        """REVERSED 2026-10-13: this asserted three columns at the harness's own
+        1400x900 window, which is what a 1180px-of-box threshold gave it. The
+        maintainer's rule is a window one and 1400 is not a big desktop window, so
+        the same window is now the accordion — and the box it produces (1325px) is
+        still measured here, because that number is exactly what used to decide
+        and no longer does."""
         got = self.got
         self.assertEqual(int(got["w.bodyw"]), 1325)
-        self.assertEqual(got["w.arr"], "cols")
-        self.assertEqual(got["w.colpanels"],
-                         "Tavern+Board and hand|Comps|Facts+Next opponent+Lobby")
+        self.assertEqual(got["w.arr"], "acc",
+                         f"a 1400x900 window is not in the accordion "
+                         f"(box {got['w.bodyw']}px)")
+        self.assertEqual(got["w.panels"],
+                         "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
 
     def test_three_columns_at_a_1920_window(self):
         """MEASURED 2026-10-13 at 1920x1080: three columns at 622/622/300 inside
@@ -1347,7 +1385,8 @@ class TestTheLayoutByWidth(_Rendered):
         at 1600px (a pre-existing rule of the shell), so this is as wide as the
         tavern view ever gets — which is why the numbers here and at a 3200px
         window are the same, and why "wider window" is not a layout this view has
-        to answer for."""
+        to answer for. A 1920x1080 window measures 1904px of VIEWPORT in this
+        harness, which is why the threshold is 1800 and not 1920 itself."""
         got = _render([_shot("w", _comps_payload())], size=(1920, 1080))
         self.assertEqual(got["w.arr"], "cols",
                          f"a 1920x1080 window is not in the three-column layout "
@@ -1378,57 +1417,96 @@ class TestTheLayoutByWidth(_Rendered):
                          "Tavern|Board and hand|Comps|Facts|Next opponent|Lobby")
 
     def test_a_shorter_window_still_gets_three_columns(self):
-        """The container query reads the BOX, and the box is the PAGE, which
-        `#wrap` caps at 1600px: measured, a 1920x900 window and a 1920x1080 one
-        both give it 1572px, because the 1600px cap is reached before the shell's
-        1200x900 grid branch can matter. So both branches of `#app` produce three
-        columns at this width, which is the claim — the layout does not flip when
-        the window gets shorter."""
+        """The rule reads the WINDOW, so the shell's branch does not move it:
+        measured, a 1920x900 window and a 1920x1080 one both give the box 1572px,
+        because the 1600px `#wrap` cap is reached before the shell's 1200x900 grid
+        branch can matter — and a 3200px window is capped the same. So every one
+        of these is three columns, which is the claim: the layout does not flip
+        when the window gets shorter or wider."""
         for size in ((1920, 900), (1920, 1080), (3200, 1200)):
             got = _render([_shot("s", _comps_payload())], size=size)
             self.assertEqual(got["s.arr"], "cols", f"not three columns at {size}")
             self.assertEqual(len(got["s.colw"].split("|")), 3, f"at {size}")
             self.assertEqual(got["s.colpanels"].count("|"), 2, f"at {size}")
 
-    def test_the_width_that_switches_the_layout_is_the_boxes(self):
-        """The threshold measured as a THRESHOLD, on one payload. The box is the
-        window minus the page's 14px of padding each side and minus the
-        scrollbar, so 1200x900 gives it 1125px (under the 1180 the columns need)
-        and 1400x900 gives it 1325px (over, and where the columns appear). The
-        MIDDLE window is the point of this test: 1250x900 gives the box 1175px —
-        five pixels short — while the WINDOW is 70px past 1180, which is exactly
-        the trap a window-width rule would have walked into, and the reason the
-        threshold is not the round number the design asked for. It also depends
-        on whether the page has scrolled (a scrollbar takes ~15px), which no
-        window breakpoint can know."""
-        narrow = _render([_shot("n", _comps_payload())], size=(1200, 900))
-        self.assertEqual(int(narrow["n.bodyw"]), 1125)
-        self.assertEqual(narrow["n.arr"], "acc",
-                         "a 1125px box got the three-column layout")
-        just = _render([_shot("j", _comps_payload())], size=(1250, 900))
-        self.assertLess(int(just["j.bodyw"]), 1180,
-                        "the 1250px window's box is not the one being measured")
-        self.assertEqual(just["j.arr"], "acc",
-                         "a box under 1180px got the columns")
-        over = _render([_shot("w", _comps_payload())], size=(1400, 900))
-        self.assertEqual(int(over["w.bodyw"]), 1325)
-        self.assertEqual(over["w.arr"], "cols",
-                         "a 1325px box did not get the columns")
+    def test_the_width_that_switches_the_layout_is_the_windows(self):
+        """REVERSED 2026-10-13: this test measured the threshold as the BOX's,
+        which is what the first version of item 5 implemented. It is the window's
+        now ("if the window is ~1920 wide, then three columns. Otherwise collapse
+        it"), and the box is kept in the test as the thing that NO LONGER decides —
+        which is the whole argument for the change.
+
+        WHAT THE RULE READS is the VIEWPORT, and a harness `size` is the browser
+        WINDOW, which is ~16px wider (measured: 1920x1080 here gives 1904px of
+        viewport). So the test reads `vw` and asserts the arrangement against THAT
+        number, rather than pinning which side of the breakpoint the window chrome
+        happens to fall on — which is exactly how this test failed its first run,
+        asserting a 1800px window was three columns when its viewport was 1784.
+
+        The proof that the box stopped deciding is a PAIR: 1700x1080 gives the box
+        ~1572px (the `#wrap` cap, the widest this page ever gets) and is an
+        accordion, while 1900x800 — the shell's short branch, where the 340px rail
+        still takes a track — gives it ~1532px and is three columns. A WIDER box in
+        the accordion than in the columns is not a contradiction under this rule;
+        under the box rule it was impossible.
+        """
+        for size in ((1799, 900), ((1800, 900)), (1850, 900), (1920, 1080)):
+            got = _render([_shot("m", _comps_payload())], size=size)
+            self.assertEqual(got["m.arr"],
+                             "cols" if int(got["m.vw"]) >= 1800 else "acc",
+                             f"at a {size} window (viewport {got['m.vw']}px) the "
+                             f"layout did not follow the viewport")
+        # THE MEASUREMENT THAT SAYS THE THRESHOLD CANNOT BE THE BOX: two windows
+        # far apart in size give this view the SAME box — 1572px, the `#wrap` cap,
+        # which any window past ~1640px reaches — and the rule still puts them in
+        # DIFFERENT arrangements. A container query answers "same box" with the
+        # same layout, so the first version of item 5 could not have implemented
+        # the maintainer's call at all; that is why this is a window rule now.
+        acc = _render([_shot("a", _comps_payload())], size=(1700, 1080))
+        cols = _render([_shot("c", _comps_payload())], size=(1920, 1080))
+        self.assertEqual(acc["a.arr"], "acc",
+                         f"a 1700x1080 window is not an accordion "
+                         f"(viewport {acc['a.vw']})")
+        self.assertLess(int(acc["a.vw"]), 1800)
+        self.assertEqual(cols["c.arr"], "cols",
+                         f"a 1920x1080 window is not three columns "
+                         f"(viewport {cols['c.vw']})")
+        self.assertEqual(int(acc["a.bodyw"]), int(cols["c.bodyw"]),
+                         f"these two windows do not share a box "
+                         f"({acc['a.bodyw']}px vs {cols['c.bodyw']}px), so this "
+                         f"pair does not show the box losing its say")
+        self.assertEqual(int(cols["c.bodyw"]), 1572)
+        # ...and every window that gets the columns is past the cap, so the three
+        # columns measure the same wherever they appear — including at the
+        # narrowest window a viewport rule can give them (1850 is the first
+        # harness size whose VIEWPORT clears 1800).
+        narrowest = _render([_shot("n", _comps_payload())], size=(1850, 800))
+        self.assertEqual(narrowest["n.arr"], "cols",
+                         f"a 1850x800 window (viewport {narrowest['n.vw']}) is not "
+                         f"three columns, so this is not the narrowest one")
+        self.assertEqual([int(v) for v in narrowest["n.colw"].split("|")],
+                         [622, 622, 300],
+                         f"the columns are not the full width at 1850x800: "
+                         f"{narrowest['n.colw']}")
 
 
 class TestTheAccordionLayout(_Rendered):
-    """Fix list round 4 item 5, the middle of the range: 700-1180px of box.
+    """Fix list round 4 item 5: every window under 1800px is the accordion.
 
     One column of foldable sections, a one-line summary in every header, and the
     Facts table PINNED above them. The pin is measured by scrolling: a strip whose
     offset does not move while the section above it does is pinned, and one
     number on its own cannot tell the two apart.
+
+    The same arrangement is what a 1400px window gets (`TestTheLayoutByWidth`),
+    which the maintainer's rule made explicit: the columns are for a ~1920px
+    desktop window and everything else collapses.
     """
 
     @classmethod
     def size(cls):
-        # 1100x900: the box measures 1025px, inside the accordion's range and
-        # under the 1180px the three columns need.
+        # 1100x900: the box measures 1025px — a small desktop window, and the
+        # width the pin and the summaries were measured at.
         return (1100, 900)
 
     @classmethod
@@ -1875,7 +1953,7 @@ class TestTheCompsScreens(_Rendered):
         self.assertEqual(got["browse.ctlchips"],
                          "Source tier|Overlap|Avg placement",
                          "the comps controls are not just the sort chips")
-        self.assertNotIn("Lobby tribes", got["browse.paneltext"],
+        self.assertNotIn("Lobby tribes", got["browse.compspaneltext"],
                          "the comps panel has its own tribe chip row again")
         self.assertGreater(got["browse.crowrows"], 0,
                            "the comps list rendered no rows at all, so the "

@@ -111,10 +111,11 @@ class TestTheBranch(unittest.TestCase):
         """REVERSED 2026-10-13 (fix list round 4 item 5) from
         `test_the_tab_row_is_the_screens_not_the_rail`, which pinned §4.1's
         `Shop | Comps | Lobby` row. The row selected between exclusive screens;
-        above 1180px of box width every section is on screen at once and below it
-        they are all sections of one accordion, so there is nothing left for it to
-        select — the row, its constant and its CSS are all gone, and the live rule
-        for a class nothing carries is how a removed control comes back."""
+        in the three-column layout every section is on screen at once and
+        everywhere else they are all sections of one accordion, so there is
+        nothing left for it to select — the row, its constant and its CSS are all
+        gone, and the live rule for a class nothing carries is how a removed
+        control comes back."""
         html = coach_ui._HTML
         self.assertNotIn("LIVE_TABS", html)
         self.assertNotIn("_liveTab", html)
