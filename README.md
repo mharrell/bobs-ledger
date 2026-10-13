@@ -108,21 +108,29 @@ The page's bottom-right corner names the release it was served by
 (`release: …`), in the same quiet gray as the tab row's sharing control, so a
 screenshot can say which version it came from.
 
-- **Left — where the game stands.** How strong your board is against the next
-  opponent and against the lobby, how close this hero is to dying and to what,
-  what is in your hand, and how charged a hand-engine is.
-- **Right — the reference.** Your board with each minion's value and its role,
-  the comp this board reads as closest to and which of its pieces you hold, how
-  close each candidate comp is to its commit threshold, who in the lobby is
-  contesting which tribe, and the tavern's offers with their prices and pool
-  counts — in the order the game shows them, not ranked.
+- **The status bar, at the top** — the hero, then gold, tier, health (with
+  armour, when you have any), turn and place. A number nobody has read is a
+  dash, never a guess.
+- **One row of lobby tribes under it.** Tap the five tribes the tavern is
+  offering this game — the same five the game's own minion-types panel shows you
+  at hero select — and every comp, chip and count on the page is then exact from
+  turn 1 instead of waiting minutes for the pool to reveal itself.
+- **The sections below it** are where the game stands and where the reference
+  is: the tavern's offers with your board and hand, how strong the board is
+  against the next opponent and against the lobby, how close this hero is to
+  dying and to what, the comps this lobby allows, and who is contesting which
+  tribe.
 
 Every card carries the same facts: its tier, its text on hover, and what it is
-worth. Nothing on the page names a move.
+worth. The tavern's offers keep the order the game shows them, not a ranking,
+and nothing on the page names a move.
 
 **When the game asks you to choose, the panel shows what is known about each
 option** — a hero pick, a trinket pick, a Discover — in the order the game
-offered them, and never in an order that means "take this one":
+offered them, and never in an order that means "take this one". Each option is
+its own column, with its headline figure, the placement distribution as eight
+bars, and controls for which rows you see and in what order they are listed —
+starting with the order the game offered them:
 
 - **A hero** — its power, spelled out, and how often the population picks it.
 - **A trinket** — how often it is picked, its average placement, and how often
@@ -137,15 +145,8 @@ Population numbers come from the curated meta DB — population statistics scrap
 from hsreplay.net, bundled with the app, and read offline. Nothing there is a
 recommendation, and no option is highlighted as the one to take.
 
-**Two ways to read the live game: Classic and Tavern.** A **Classic | Tavern**
-switch sits at the top of the Another Round page, and **Classic** is what is
-described above — the default, and the only thing you see until you change it. **Tavern** is the same
-information in the tavern's own dark palette: a status bar naming the hero with
-gold, tier, health, turn and place, and one row of lobby tribes. Tap the five
-tribes the tavern is offering this game — the same five the game's own
-minion-types panel shows you at hero select — and every comp, chip and count on
-the page is then exact from turn 1 instead of waiting minutes for the pool to
-reveal itself.
+The page is in the tavern's own dark palette: warm panels, amber for what you
+have selected, and the card art doing the talking.
 
 **The page rearranges itself as the window changes**, in two layouts, and there
 are no tabs at either of them — with everything on screen at once there is nothing
@@ -176,9 +177,8 @@ Every section is the same screenful of facts wherever it lands:
   what it was worth with how many rounds ago that was read, and their tribe mix.
 - **Facts** — effective health, what the last fight cost, what the last three
   cost, the per-combat damage cap, your board's stats against the last board
-  seen, and what levelling up costs. Those are the same facts the classic layout
-  carries, stated as numbers instead of as a read on the game — nothing on the
-  Tavern screen tells you what to do.
+  seen, and what levelling up costs. Numbers rather than a read on the game:
+  nothing on the page tells you what to do.
 - **Comps** — the comps this lobby allows, grouped under a sticky header per
   source tier (one column, or two once the room is there for both), each
   with its core cards as small slots showing the cards themselves, dimmed when you
@@ -192,13 +192,10 @@ Every section is the same screenful of facts wherever it lands:
 - **Lobby** — who among the seats you have seen is contesting which tribe, and the
   last board the next opponent staged, with their trinkets.
 
-When the game asks you to choose, the Tavern pick screen gives each option its
-headline figure, the placement distribution as eight bars, and controls for which
-rows you see and in what order they are listed — starting with the order the game
-offered them. The end-of-game card is centred, with the placement and round large,
-an **Open in Settle Up** button, and the save-every-replay answer on one line.
-
-Which viewer you use is remembered for next time.
+When the game asks you to choose, the pick screen replaces the tavern row — it is
+what you are doing at that moment. The end-of-game card is centred, with the
+placement and round large, an **Open in Settle Up** button, and the
+save-every-replay answer on one line.
 
 ## Upcoming features
 
@@ -261,12 +258,18 @@ instead, because that is what it is. Keep an eye out for `*` after a minion's
 stats: that one is golden.
 
 Each turn card opens on **Shop** — the board you opened with and the board you
-closed the shopping on, plus what the turn did (cards played, gold spent, board
-value gained, a level-up, a hero power, a trinket), and the model's line for that
-phase. **Battle** is your board and your opponent's, theirs on top, the way the
-game shows a fight. **Result** says who won — or says that the turn's fights ran
-together and the winner cannot be read, which is honest rather than a guess —
-what each side kept, and what the fight cost you in effective HP.
+closed the shopping on, with each minion's net change marked on the card itself
+(a green `+0/+3`) and a *passed through* tray for anything you bought and sold
+again in the same phase. **Battle** is the two boards facing each other, theirs on
+top, the way the game shows a fight, with the result beside them. **Result** says
+who won — or says that the turn's fights ran together and the winner cannot be
+read, which is honest rather than a guess — what each side kept, and what the
+fight cost you in effective HP.
+
+The turn's own numbers — gold at the open, cards played, gold spent, board value —
+are the chips on the **rail** down the side, which also groups what the turn did
+(buys, sells, plays, rolls, levelling up) with repeats collapsed and a count of
+each.
 
 A fight's summoned copies linger in the log past the end of the fight, so the
 board you opened with is shown without them: a board holds seven minions and no
@@ -278,15 +281,12 @@ under the board. The alternative was a nine-minion board you never had.
 <img src="docs/turn-battle.png" alt="The same turn on Battle: your opponent's board on top and yours below it, from the fight's opening burst" width="780">
 <img src="docs/turn-result.png" alt="The same turn on Result: who won the fight, what each side kept, and the effective HP it cost" width="780">
 
-**Then the phase-by-phase view, inside each turn's Shop view**, which is where
-the plan lives — your own line first, the model's folded behind it:
-
-- **You** — what the log says you did: bought, rolled, levelled up, sold. What
-  the fight after it cost you in effective HP sits on the same line; negative
-  means it hurt.
-- **coaching** (click to open) — the plan it would have played, e.g. "1. LEVEL
-  to tier 4 · 2. Buy Bronze Warden", headed by what it made of your line:
-  taken, not taken, or not graded.
+**The model's line is on the same rail**, one folded **Plan** entry per phase of
+the turn, and each entry is headed by what the model made of your line: taken,
+not taken, or not graded. That pairing — the model's plan beside what you
+actually did — is the whole point of the ledger, so the grading is on the heading
+where you see it before opening the entry. Click one open for the plan itself,
+e.g. "1. LEVEL to tier 4 · 2. Buy Bronze Warden".
 
 It also says how much of itself it *could not* judge. A plan that opens with a
 minion swap, or with a spell whose card it could not resolve, is reported as
@@ -304,25 +304,22 @@ The review also exists as a standalone page — the command above writes one
 with `--html`, and `/review` on the running coach serves the game that just
 ended.
 
-**Two ways to read a saved game: Classic and Tavern.** The header of the Settle
-Up tab carries a **Classic | Tavern** switch. **Classic** is what is described
-above, and it stays the default. **Tavern** reads the same game one turn at a
-time: a strip of turn buttons along the top, each marked with the result and the
-HP the fight cost, the turn itself large in the middle, and a rail down the side
-summarising what the turn cost and did — buys, sells, rolls and casts, with
-repeats collapsed and a count of each. A card you bought and sold back in the
-same phase never appears on either board, so it is shown as *passed through*
-instead of vanishing, and the turn's net effect on your board is marked on the
-minions themselves. Its **Battle** tab is the two boards facing each other the
-way the game shows a fight.
+**The Settle Up tab reads a saved game one turn at a time.** A strip of turn
+buttons runs along the top, each marked with the result and the HP the fight cost;
+the turn itself is large in the middle, with a rail down the side summarising what
+the turn cost and did — buys, sells, rolls and casts, with repeats collapsed and a
+count of each — and the model's plan, graded, where the rail puts it. A card you
+bought and sold back in the same phase never appears on either board, so it is
+shown as *passed through* instead of vanishing, and the turn's net effect on your
+board is marked on the minions themselves. Its **Battle** tab is the two boards
+facing each other the way the game shows a fight.
 
-Tavern also carries a **Summary | Step through** switch. Step through replays
+The header also carries a **Summary | Step through** switch. Step through replays
 the turn one action at a time — a tick per action, lettered by kind and coloured
 by it, with the board as it stood after that action, and the card you sold shown
 dimmed and tagged rather than simply missing. Left and Right walk turns, or
 steps while stepping; Shift with them walks turns while stepping; Space plays and
-pauses; Home and End jump to the ends. Both choices — viewer and mode — are
-remembered for next time.
+pauses; Home and End jump to the ends. The mode is remembered for next time.
 
 Step through needs a replay saved with its per-action boards, which arrived with
 this version: an older saved game opens it disabled and says so. **Rebuild** in
