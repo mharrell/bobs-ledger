@@ -148,17 +148,22 @@ correct.
 are no tabs at any of them — with everything on screen at once there is nothing
 for a tab row to select:
 
-- **A wide window (1500px and over) is three columns.** The tavern's offers with
-  your board and hand on the left, **Comps** in the middle, and the reference
-  material on the right: the **Facts** table, then the announced next opponent,
-  then the **Lobby**.
-- **A middle window (700 to 1500px) is one column of sections** you open and
-  close by clicking their headings, with the **Facts** table pinned above them so
-  it stays put while the rest scrolls. Every heading carries a one-line summary
+- **A wide window is three columns.** The tavern's offers with your board and
+  hand on the left, **Comps** in the middle, and the reference material on the
+  right: the **Facts** table, then the announced next opponent, then the
+  **Lobby**. A maximised window on a 1080p screen measures 622 / 622 / 300 here.
+- **A middling window (roughly 700 to 1250px) is one column of sections** you open
+  and close by clicking their headings, with the **Facts** table pinned above them
+  so it stays put while the rest scrolls. Every heading carries a one-line summary
   of what is under it — `3 offers`, `2 on board · 1 in hand`, `2 of 3 seen seats`
   — so a closed section still says what it holds. Which sections are open is
   remembered for next time.
 - **Under 700px** it is the same one column, narrower.
+
+The width that decides is the page's own, not the window's — the layout asks for
+1180px of usable width, which a window reaches around 1250px — which is why the
+first number above is a little under the 1500px an earlier draft of this list
+named.
 
 Every section is the same screenful of facts wherever it lands:
 

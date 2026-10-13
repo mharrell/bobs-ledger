@@ -1084,7 +1084,7 @@ class TestTheTavernLiveInABrowser(_Rendered):
         The rail half of this test moved to the layout tests (fix list round 4
         item 5, 2026-10-13): the view is no longer two columns of panels, it is
         three columns above 1180px of box and an accordion below, so what
-        "beside it" means is measured in `TestTheColumnLayout` and
+        "beside it" means is measured in `TestTheLayoutByWidth` and
         `TestTheAccordionLayout`. What stays here is the claim that still holds
         in EVERY mode: the tavern container is the window."""
         # BOTH branches of `#app`'s layout: the grid (a tall window) and the flex
@@ -1330,10 +1330,11 @@ class TestTheLayoutByWidth(_Rendered):
 
     def test_the_default_window_is_already_three_columns(self):
         """The harness's own 1400x900 window: box 1325px, columns 498.5/498.5/300.
-        Worth stating because `#app` is a flex COLUMN at that height, so the box is
-        the whole window minus the page's padding — a window-width rule would have
-        called this "inside 700-1500" and drawn an accordion over three columns
-        that fit."""
+        Worth stating because it is just past the 1180px the columns need and
+        because `#app` is a flex COLUMN at that height, so the box is the whole
+        window minus the page's padding — a window-width rule would have called
+        this "inside 700-1500" and drawn an accordion over three columns that
+        fit."""
         got = self.got
         self.assertEqual(int(got["w.bodyw"]), 1325)
         self.assertEqual(got["w.arr"], "cols")
@@ -1390,14 +1391,16 @@ class TestTheLayoutByWidth(_Rendered):
             self.assertEqual(got["s.colpanels"].count("|"), 2, f"at {size}")
 
     def test_the_width_that_switches_the_layout_is_the_boxes(self):
-        """The threshold measured as a THRESHOLD, on one payload: the box is the
-        window minus the page's 14px of padding each side, so 1200x900 gives it
-        1125px (under the 1180 the columns need) and 1250x900 gives it 1175px —
-        still under, because `#app` keeps its 340px rail until 1200x900 — and
-        1400x900 gives it 1325px, which is over. Three windows, two answers, and
-        the one that decides is the BOX's width: at 1250 the WINDOW is above 1180
-        and the box is not, which is the trap a window-width rule would have
-        walked into."""
+        """The threshold measured as a THRESHOLD, on one payload. The box is the
+        window minus the page's 14px of padding each side and minus the
+        scrollbar, so 1200x900 gives it 1125px (under the 1180 the columns need)
+        and 1400x900 gives it 1325px (over, and where the columns appear). The
+        MIDDLE window is the point of this test: 1250x900 gives the box 1175px —
+        five pixels short — while the WINDOW is 70px past 1180, which is exactly
+        the trap a window-width rule would have walked into, and the reason the
+        threshold is not the round number the design asked for. It also depends
+        on whether the page has scrolled (a scrollbar takes ~15px), which no
+        window breakpoint can know."""
         narrow = _render([_shot("n", _comps_payload())], size=(1200, 900))
         self.assertEqual(int(narrow["n.bodyw"]), 1125)
         self.assertEqual(narrow["n.arr"], "acc",

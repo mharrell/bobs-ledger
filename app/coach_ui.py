@@ -1046,16 +1046,14 @@ _HTML = r"""<!doctype html>
          single-column under 700 too — @media, because a grid's track count is
          not a container-query thing here).
      WHY A CONTAINER AND NOT `@media`: the box this governs is the window MINUS
-     the shell — 14px of padding each side at every width, and the 340px rail
-     above 1200x900, where `#app` is a two-column grid. Measured: at a 1500px
-     WINDOW this box has been 1132px and 1432px depending on the branch, which is
-     the widest and the narrowest it gets at the width the three columns are
-     asked for. A media query cannot express that, and the containers below carry
-     their widths in the tests. The ONE window breakpoint the design needs is the
-     >=1500px rule on the shell (`#app.tavern-on`, at the top of this sheet):
-     above it the box is wide enough for three columns and gets them, below it
-     the box is under 1180 no matter where the rail sits, so the accordion is the
-     only possible answer there. */
+     the shell — 14px of padding each side, a scrollbar when the page is taller
+     than the window, and the 340px rail above 1200x900 where `#app` is a
+     two-column grid. MEASURED 2026-10-13: at a 1250x900 window the box is 1175px
+     (the accordion) and at 1400x900 it is 1325px (three columns), while a 1500px
+     window gives it 1432px with the shell in one branch and 1132px in the other.
+     A window breakpoint cannot express that: the window that is "wide enough"
+     depends on which branch of the shell is live AND on whether the page has
+     scrolled. */
   .tavern.live .lv-body { container-type:inline-size; }
   .tavern.live .lv-main { display:grid; grid-template-columns:minmax(0,1fr);
                           gap:14px; align-items:start; }
@@ -1076,9 +1074,9 @@ _HTML = r"""<!doctype html>
        past 1180px of BOX width the 340px rail is not a track any more, because
        column 3 IS the rail: the facts table, the announced opponent, the lobby.
        Column 3 is 300px because that held the reference table at every width
-       measured; the two flexible columns split what is left. Measured
-       2026-10-13: 630/630/300 inside a 1588px box at 1920x1080, and
-       549/549/300 at a 1500x1000 window (see TestTheColumnLayout). */
+       measured; the two flexible columns split what is left. MEASURED
+       2026-10-13: 622/622/300 inside a 1572px box at 1920x1080, and 549/549/300
+       inside 1425px at a 1500x1000 window (see TestTheLayoutByWidth). */
     .tavern.live .lv-layout-cols { display:grid;
       grid-template-columns:minmax(0,1fr) minmax(0,1fr) 300px; }
     .tavern.live .lv-layout-acc { display:none; }
