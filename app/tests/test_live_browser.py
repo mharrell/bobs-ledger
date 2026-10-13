@@ -1149,17 +1149,24 @@ class TestTheCompsScreens(_Rendered):
             self.assertGreaterEqual(w, 520)
 
     def test_the_avg_column_is_hidden_until_the_corpus_has_data(self):
-        """Round 3 item 5: a column of dashes is a column of nothing."""
+        """Round 3 item 5, tightened by round 4 item 6: a column of dashes is a
+        column of nothing, and the decision is the WHOLE list's rather than one
+        tier group's — per group, the tracks changed as you scrolled."""
         got = self.got
         self.assertGreater(got["browse.avgcells"], 0,
                            "the fixture has corpus data, so the column is there")
         self.assertEqual(got["browse.hasavg"], got["browse.cols"])
+        # Six tracks with the avg column: checkbox | name | tier·tribe | strip |
+        # owned | avg (round 4 item 6 — the checkbox and the tier/tribe used to
+        # be inside the name cell, so nothing lined up down the column).
+        self.assertEqual(len(got["browse.cmptracks"].split()), 6,
+                         got["browse.cmptracks"])
         self.assertEqual(got["noavg.avgcells"], 0,
                          "a dash per row is printed where the corpus is empty")
         self.assertEqual(got["noavg.hasavg"], 0)
         self.assertIn("Elementals|3 of 3 owned", got["noavg.comprows"])
-        # Three tracks instead of four: the avg column is gone, not empty.
-        self.assertEqual(len(got["noavg.cmptracks"].split()), 3,
+        # Five tracks instead of six: the avg column is gone, not empty.
+        self.assertEqual(len(got["noavg.cmptracks"].split()), 5,
                          got["noavg.cmptracks"])
 
     def test_the_comps_panel_has_no_second_tribe_chip_row(self):
@@ -1182,11 +1189,14 @@ class TestTheCompsScreens(_Rendered):
         self.assertIn("BEAST", got["detecting.chips"])
 
     def test_a_comp_row_is_a_grid_with_the_strip_and_the_name_in_it(self):
-        """Round 3 item 2: `minmax(0,1fr) auto 64px 90px`, a nowrap 34x46 strip,
-        a name clamped to two lines, and nothing positioned over the name."""
+        """Round 3 item 2 gave the row its tracks; round 4 item 6 fixed what is
+        IN them: `22px | name | tier·tribe | strip | 64px | 90px`, one cell per
+        column in the same order on every row. The checkbox and the tier/tribe
+        used to live inside the name cell, so nothing lined up down the list."""
         got = self.got
         tracks = got["browse.cmptracks"].split()
-        self.assertEqual(len(tracks), 4, got["browse.cmptracks"])
+        self.assertEqual(len(tracks), 6, got["browse.cmptracks"])
+        self.assertEqual(tracks[0], "22px", "the checkbox column is first")
         self.assertIn("64px", tracks)
         self.assertIn("90px", tracks)
         self.assertEqual(got["browse.stripwrap"], "nowrap",

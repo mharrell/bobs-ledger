@@ -1187,22 +1187,31 @@ _HTML = r"""<!doctype html>
                                 letter-spacing:.12em; text-transform:uppercase;
                                 color:var(--tmute); }
   /* A comp row is a GRID with fixed columns (fix list round 1 item 6:
-     "consistent rows"; round 3 item 2 fixes the tracks): name | core slots |
-     owned 64 | avg 90. The avg track EXISTS only for a column whose comps have
-     corpus data (round 3 item 5) — a column of dashes was a column of nothing —
-     which is why the four-track rule hangs off `has-avg`. The compare checkbox
-     is IN FLOW beside the name: nothing is positioned over anything. */
+     "consistent rows"; round 3 item 2 added the tracks, round 4 item 6 fixed
+     their contents): checkbox 22 | name | tier·tribe | core slots | owned 64
+     [| avg 90]. The avg track EXISTS only when the WHOLE list has corpus data
+     (round 3 item 5 for the "column of dashes" half, round 4 item 6 for the
+     list-wide half) — so it is a property of `lv-cols`, not of one tier group.
+     The compare checkbox is IN FLOW in its own cell: nothing is positioned over
+     anything. */
   .tavern.live .lv-crow { display:grid;
-                          grid-template-columns:minmax(0,1fr) auto 64px;
+                          grid-template-columns:22px minmax(0,1fr) auto auto 64px;
                           gap:10px; align-items:center; padding:7px 0;
                           border-bottom:1px solid var(--tline); font-size:12px; }
+  /* SIX TRACKS WITH THE AVG COLUMN, FIVE WITHOUT (fix list round 4 item 6):
+     checkbox | name | tier·tribe | strip | owned [| avg]. The avg track is
+     decided for the WHOLE list (`lv-cols.has-avg`), so every row in every tier
+     group has the same columns. */
   .tavern.live .lv-ctier.has-avg .lv-crow {
-    grid-template-columns:minmax(0,1fr) auto 64px 90px; }
+    grid-template-columns:22px minmax(0,1fr) auto auto 64px 90px; }
   @media (max-width: 699.98px) {
     .tavern.live .lv-crow,
     .tavern.live .lv-ctier.has-avg .lv-crow {
-      grid-template-columns:minmax(0,1fr) auto; }
+      grid-template-columns:22px minmax(0,1fr) auto; }
   }
+  .tavern.live .lv-meta { display:flex; flex-wrap:wrap; gap:6px;
+                          align-items:center; }
+  .tavern.live .lv-meta .lv-tier { margin-left:0; }
   .tavern.live .lv-cname { min-width:0; display:flex;
                            flex-wrap:wrap; gap:6px; align-items:center; }
   .tavern.live .lv-cname .lv-copen { min-width:0; }
@@ -2293,26 +2302,34 @@ function lvCompRow(a, c, anyAvg) {
   lbl.htmlFor = cb.id;
   lbl.className = 'lv-cmplbl';
   lbl.textContent = 'compare';
+  // ONE CELL PER COLUMN, SAME ORDER ON EVERY ROW (fix list round 4 item 6):
+  // checkbox | name | tier·tribe | strip | owned, and the avg cell only when
+  // the whole list has data. The checkbox used to sit INSIDE the name cell and
+  // the tier/tribe inside it too, so the track a value landed in depended on
+  // the row's own content and nothing lined up down the column.
   const cell = el('span', 'lv-cmpcell');
   cell.appendChild(cb);
   cell.appendChild(lbl);
+  row.appendChild(cell);
   const name = el('span', 'lv-cname');
-  name.appendChild(cell);
   const open = el('b', 'lv-copen', c.name || c.slug);
   open.title = 'Open the comp';
   open.onclick = () => { _liveComp = c.slug; renderLiveTavern(a); };
   name.appendChild(open);
-  name.appendChild(el('i', 'lv-tier', c.meta_tier ? c.meta_tier + ' tier'
-                          : (c.provisional ? 'provisional' : 'no published tier')));
+  row.appendChild(name);
+  const meta = el('span', 'lv-meta');
+  meta.appendChild(el('i', 'lv-tier', c.meta_tier ? c.meta_tier + ' tier'
+                          : (c.provisional ? 'provisional'
+                                           : 'no published tier')));
   // The tribe cell carries the availability mark, so the reason a row is dimmed
   // is on the row rather than carried by opacity alone (§8).
-  name.appendChild(el('i', 'lv-tier' + (unavail ? ' out' : ' avail'),
+  meta.appendChild(el('i', 'lv-tier' + (unavail ? ' out' : ' avail'),
                       lvCompTribe(c)
                       + (unavail ? ' · not available' : '')));
   if (st && st.low_sample) {
-    name.appendChild(el('span', 'lv-chip lowsamp', 'low sample'));
+    meta.appendChild(el('span', 'lv-chip lowsamp', 'low sample'));
   }
-  row.appendChild(name);
+  row.appendChild(meta);
   row.appendChild(lvSlots(core));
   row.appendChild(el('b', 'lv-owned',
                      lvOwned(core) + ' of ' + core.length + ' owned'));
@@ -2398,17 +2415,20 @@ function lvCompsBrowse(a) {
     g.rows.push(c);
   });
   const cols = el('div', 'lv-cols');
+  // THE AVG COLUMN IS DECIDED FOR THE WHOLE LIST, not per tier group (fix list
+  // round 4 item 6). Per group, one tier could carry the column and another not,
+  // so the row's tracks changed as you scrolled — the opposite of "same order on
+  // every row". It is hidden unless SOME comp in the list has a corpus average,
+  // and then every column carries the track, including the rows that show a dash.
+  const hasAvg = inplay.some(c => (c.stats || {}).avg_place != null);
+  if (hasAvg) cols.classList.add('has-avg');
   groups.forEach(g => {
     const sorted = lvCompSortRows(g.rows.slice());
     const col = el('div', 'lv-ctier');
-    // The avg column exists only where the corpus has something to put in it
-    // (round 3 item 5): a column of "—" told the player nothing and took 90px
-    // from the name.
-    const anyAvg = sorted.some(c => (c.stats || {}).avg_place != null);
-    if (anyAvg) col.classList.add('has-avg');
+    if (hasAvg) col.classList.add('has-avg');
     col.appendChild(el('h4', null, g.label + ' · ' + sorted.length));
     const show = _liveCompMore.has(g.key) ? sorted : sorted.slice(0, LIVE_COMP_ROWS);
-    show.forEach(c => col.appendChild(lvCompRow(a, c, anyAvg)));
+    show.forEach(c => col.appendChild(lvCompRow(a, c, hasAvg)));
     if (sorted.length > show.length) {
       const more = el('button', 'lv-more',
                       '+ ' + (sorted.length - show.length) + ' more');
