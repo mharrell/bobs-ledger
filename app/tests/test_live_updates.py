@@ -1576,6 +1576,60 @@ class TestGameStateTable(unittest.TestCase):
                              f"{name} diverges after _reset()")
 
 
+class TestThePickPayloadIsNotInverted(unittest.TestCase):
+    """`live._advise_pick` builds its OWN payload, and the classic page reads the
+    tribe state off it during the pick: the strip prints its "Banned:" row from
+    `a.banned` and the picker seeds from `tribes_available`.
+
+    It carried `"banned": list(manual)` — the taps themselves — which was
+    correct while the taps were stored as the banned set and became a lie the
+    page would act on the moment that flipped (2026-10-13): during the hero pick
+    the strip named the five tribes the lobby actually offers. Pinned at the
+    payload, because that is the interface between the two.
+    """
+
+    TAPS = ["Beast", "Demon", "Quilboar", "Undead", "Aberration"]
+
+    def setUp(self):
+        import live
+        self.live = live
+        self._saved = live._last_state
+        live._last_state = None
+        self.coach = mock.Mock()
+        self.coach.choice = {"ctype": "hero", "source": "Choose One",
+                             "options": [("Galakrond", "BG36_HERO_01")],
+                             "picked": None}
+        self.coach._bans_ready = True
+        self.ranked = [("Galakrond", "BG36_HERO_01", 4.9, "a reason")]
+
+    def tearDown(self):
+        import coach_ui
+        coach_ui.store_manual_in_play([])
+        self.live._last_state = self._saved
+
+    def test_the_payload_calls_the_taps_in_play_and_derives_banned(self):
+        import coach_ui
+        import decision_log
+        from tribes import DISPLAY_TRIBES
+        pushed = {}
+        coach_ui.store_manual_in_play(self.TAPS)
+        with mock.patch.object(self.live, "rank_choices",
+                               return_value=self.ranked), \
+                mock.patch.object(self.live.coach_ui, "update_analysis",
+                                  side_effect=lambda a: pushed.update(a)), \
+                mock.patch.object(decision_log, "record"):
+            self.live._advise_pick(self.coach, log_path="P.log",
+                                   log_offset=1, game_no=1)
+        self.assertEqual(pushed["tribes_available"], sorted(self.TAPS),
+                         "the pick payload does not say what is in the tavern")
+        self.assertEqual(set(pushed["banned"]),
+                         {"Dragon", "Elemental", "Mech", "Murloc", "Pirate"})
+        self.assertTrue(pushed["bans_manual"])
+        self.assertEqual(pushed["out_of_pool"], ["Naga"],
+                         "the picker's chips need the rotated tribe to filter it")
+        self.assertEqual(pushed["tribe_roster"], list(DISPLAY_TRIBES))
+
+
 class TestPickDedup(unittest.TestCase):
     """An unchanged pending pick must be advised once, not once per tick.
 
