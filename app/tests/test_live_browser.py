@@ -55,10 +55,17 @@ def _analysis(**over):
         # round 1 item 4 / round 2 item 4), and one of the shop rows is a real
         # tavern spell so the Spell tag has something to tag.
         "shop_rank": [("BG31_820", 32), ("BG31_880", 18), ("BG31_831", 12)],
-        "tribe_roster": ["BEAST", "ELEMENTAL", "MECH", "UNDEAD", "PIRATE",
-                         "NAGA"],
+        # The tribe state, in the DIRECTION 2026-10-13 fixed: the five the
+        # player taps ARE the tribes in the tavern, `tribes_available` is what
+        # the row marks amber, and `banned` is the derived complement within
+        # this patch's pool (Naga is out of play, so it is in neither list).
+        # The fixture's own casing (uppercase, as the log tags tribes) is kept:
+        # the point here is the marking, not the canon.
+        "tribe_roster": ["BEAST", "DEMON", "ELEMENTAL", "MECH", "UNDEAD",
+                         "PIRATE", "NAGA"],
         "out_of_pool": ["NAGA"],
-        "banned": ["BEAST", "MECH"], "bans_manual": True, "tribes_seen": 5,
+        "tribes_available": ["BEAST", "ELEMENTAL", "MECH", "PIRATE", "UNDEAD"],
+        "banned": ["DEMON"], "bans_manual": True, "tribes_seen": 5,
         "tribe_pressure": [{"tribe": "Beast", "seats": 2, "of": 3}],
         "game_comps": {"elementals": {
             "name": "Elementals", "meta_tier": "S", "tribe": "ELEMENTAL",
@@ -1028,6 +1035,10 @@ class TestTheTavernLiveInABrowser(_Rendered):
                          "Gold:7|Tier:3|HP:26+4|Turn:9|Place:3rd")
 
     def test_the_tribe_row_is_one_row_and_out_of_play_is_struck_not_banned(self):
+        """The row's label and the fact that an out-of-play tribe is its own
+        state rather than a ban the player could undo. The row is one row of
+        every in-pool tribe, with the five in the tavern marked (see
+        `test_a_tribe_out_of_play_appears_once_and_the_chips_are_marked`)."""
         self.assertIn("BEAST", self.got["t.chips"])
         self.assertIn("PIRATE", self.got["t.chips"])
         self.assertEqual(self.got["t.outchips"], "NAGA",
@@ -1041,16 +1052,26 @@ class TestTheTavernLiveInABrowser(_Rendered):
 
     def test_a_tribe_out_of_play_appears_once_and_the_chips_are_marked(self):
         """Fix list round 1 item 3. The roster is every tribe the game has, so
-        Naga is in it AND in `out_of_pool`: iterating both printed it twice. And
-        the set state has to be visible at a glance — amber outline when the
-        tribe is banned, dimmed when it is in play."""
+        Naga is in it AND in `out_of_pool`: iterating both printed it twice.
+
+        REVERSED 2026-10-13. This pinned "amber outline when the tribe is
+        banned, dimmed when it is in play" — the direction the payoff session
+        (2026-10-13_12_01_10) proved wrong: the five the player taps are the
+        tribes in the tavern, so the set the page seeds from is
+        `tribes_available` and `banned` is its complement. The read is the same
+        three states with the meanings swapped: the tapped five are `active`
+        (BEAST, PIRATE among them), the tribe this game cannot offer — and that
+        the player did not tap — is `dim` (DEMON), and the rotated one is `out`.
+        """
         got = self.got
         self.assertEqual(got["t.nagacount"], 1,
                          "the out-of-play tribe is listed twice")
         self.assertIn("BEAST:active", got["t.chipcls"],
-                      "a banned tribe is not marked as set")
-        self.assertIn("PIRATE:dim", got["t.chipcls"],
-                      "an in-play tribe is not marked as unset")
+                      "a tribe the player set as in the tavern is not marked")
+        self.assertIn("PIRATE:active", got["t.chipcls"],
+                      "a tribe the player set as in the tavern is not marked")
+        self.assertIn("DEMON:dim", got["t.chipcls"],
+                      "the tribe this game cannot offer is not dimmed")
         self.assertIn("NAGA:out", got["t.chipcls"])
         self.assertEqual(got["t.chipcls"].count(":?"), 0,
                          "a chip with no state class at all")

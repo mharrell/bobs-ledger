@@ -21,10 +21,11 @@ import sys
 import threading
 import time
 
+from bans import out_of_pool_tribes
 from choices import choice_kind, rank_choices
 from coach import describe
 from config import HS_DIR, HS_HOME_SOURCE, HS_LOG_GLOB, HS_LOG_GLOBS, launcher
-from live_coach import LiveCoach
+from live_coach import LiveCoach, _banned
 from tribes import DISPLAY_TRIBES
 import coach_ui
 import decision_log
@@ -246,8 +247,26 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None,
     # choice stays the player's. The old code also had a "no data" branch that
     # printed "your call" — with the verdict gone, the two cases differ only in
     # whether the scores exist, which the lines themselves show.
+    # The two tribe keys carry the SAME meanings they do in the analyzed
+    # payload, from the same owner (2026-10-13). `tribes_available` is what the
+    # player tapped — the five that ARE in the tavern — and `banned` is their
+    # complement, derived by live_coach._banned rather than re-derived here, so
+    # the two pages and the two payload shapes cannot drift apart. This used to
+    # put the taps themselves in `banned`, which is the inversion the flip
+    # removed: on this page it drew the classic strip's "Banned:" row over the
+    # five tribes the lobby actually offers.
+    # Out-of-play tribes come from the registry, the same owner
+    # `_refresh_bans` uses when it refreshes them: the picker's chips filter
+    # them out (a rotated tribe is not on the game's own minion-types panel),
+    # and `_banned` must not call one of them banned. Asked here rather than off
+    # the coach because this payload is built before the coach has refreshed
+    # anything.
+    oop = sorted(out_of_pool_tribes())
     base = {"hero": None, "tier": None, "gold": None, "board": [],
-            "banned": list(manual), "sell_rank": [], "shop_rank": [],
+            "banned": _banned(manual, oop),
+            "tribes_available": sorted(manual),
+            "out_of_pool": oop,
+            "sell_rank": [], "shop_rank": [],
             "scenario": {}, "target_cards": None, "comps": [],
             # The coach's ban state may not exist yet this early (comps load
             # only once the hero parses) — force the detecting flag so the
@@ -489,9 +508,9 @@ def monitor(path, poll=1.0):
                                     # A new game: the previous game's panel
                                     # must never survive into this one. The
                                     # welcome screen shows until the first
-                                    # live buy phase; the manual bans wipe
-                                    # too (the 5/5 family ban differs per
-                                    # game).
+                                    # live buy phase; the hand-set in-tavern
+                                    # tribes wipe too (the 5/5 tribe set
+                                    # differs per game).
                                     coach_ui.clear_analysis()
                                 # Only GameState STEP lines delimit the buy
                                 # phase — the PowerTaskList copies arrive after

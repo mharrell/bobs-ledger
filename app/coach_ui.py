@@ -451,15 +451,23 @@ _HTML = r"""<!doctype html>
      play" never reads as "Naga was banned this game". */
   #statebar .oop { color:var(--warn); font-weight:400; font-size:12px;
                    text-decoration:line-through; }
-  /* Ban picker (2026-09-19): tap the 5 banned tribes from the reveal
-     screen — the log never carries the ban list, the inference takes
-     minutes, a manual set is exact from turn 1. */
+  /* Tribe picker (2026-09-19): at hero select the game's own minion-types
+     panel lists the tribes IN the tavern this game, and tapping those five
+     makes the bans exact from turn 1 while the pool inference takes minutes.
+     The taps ARE the in-tavern five (2026-10-13, was the five banned) — the
+     old direction marked the tapped five as banned, which inverted every comp
+     row, chip and count for a whole game. */
   .inplaychips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
   .inplaychips .chip { border:1px solid var(--border); border-radius:12px;
                     padding:2px 10px; font-size:12px; cursor:pointer;
                     color:var(--dim); user-select:none; }
-  .inplaychips .chip.picked { border-color:var(--bad); color:var(--bad);
-                           text-decoration:line-through; }
+  /* Picked = "you have said this one is in the tavern" — an affirmative mark
+     now (2026-10-13). It was red with a line-through, which is how this page
+     draws "banned": the chip said the opposite of what the tap meant, in the
+     same visual language, which is the bug that survived a year of looking at
+     this picker. */
+  .inplaychips .chip.picked { border-color:var(--good); color:var(--text);
+                              background:var(--panel2); }
   /* Two panes on a wide window: DECIDE (the turn's decision — never
      needs scrolling, sticky) and REFERENCE (scout intel + shopping
      lists, scrolls). Under 1200px — or a very short window, where a
@@ -2306,12 +2314,16 @@ function lvWaiting(a) {
 //: §4.2's ONE tribe row. Out-of-play tribes are struck through and never read
 //: as a ban the player could undo; tapping any chip corrects the set, which is
 //: what makes every comp filter downstream exact.
-//: AVAILABILITY IS THE MARK (fix list round 4 item 1). It used to be the other
-//: way round — in manual mode the amber chip was the BANNED tribe — so a row
-//: that read as "these five are confirmed" actually meant "these five are
-//: banned", and the comps list looked inverted. A chip now says what the game
-//: can still offer (`tribes_available`, computed with the bans); a tapped ban
-//: is the amber one, on top of that.
+//: AVAILABILITY IS THE MARK (fix list round 4 item 1). A chip says what the
+//: game can still offer (`tribes_available`, computed with the bans).
+//: ONE MEANING PER COLOUR (2026-10-13): amber (`active`) is "you have set this
+//: one", green (`avail`) is "the pool says it is in play", struck (`out`) is
+//: "rotated out by a patch", dim is "not in your five". The tapped set is
+//: `tribes_available` — the five in the tavern — NOT `banned`: seeding `picked`
+//: from `banned` marked the complement amber, so the row read "these five are
+//: in" over the five this lobby cannot offer, which is the inverted reading the
+//: player reported (measured: every offer in session 2026-10-13_12_01_10 came
+//: from the amber chips).
 //: A tribe that is out of play appears ONCE — it is in the roster AND in
 //: `out_of_pool`, so iterating both printed Naga twice.
 function lvTribes(a) {
@@ -2321,7 +2333,7 @@ function lvTribes(a) {
     : 'Lobby tribes · ' + (a.tribes_seen || 0) + '/5 confirmed'));
   const oop = new Set(a.out_of_pool || []);
   const avail = new Set(a.tribes_available || []);
-  const picked = new Set(a.bans_manual ? (a.banned || []) : []);
+  const picked = new Set(a.bans_manual ? (a.tribes_available || []) : []);
   (a.tribe_roster || []).filter(t => !oop.has(t)).forEach(t => {
     const on = picked.has(t);
     // An absent `tribes_available` (an older payload) leaves every chip dim,
@@ -2329,8 +2341,8 @@ function lvTribes(a) {
     const can = avail.has(t);
     const chip = el('span',
                     'lv-chip ' + (on ? 'active' : (can ? 'avail' : 'dim')), t);
-    chip.title = on ? 'Banned in this game — tap to clear'
-                    : (can ? 'In play — tap to ban'
+    chip.title = on ? 'In the tavern — tap to clear'
+                    : (can ? 'In play — tap to say it is in the tavern'
                            : 'Not in this game — tap if that is wrong');
     chip.onclick = () => {
       if (picked.has(t)) picked.delete(t);
@@ -3598,18 +3610,21 @@ function render(a) {
   // the panes (render() clears each section wholesale).
   decide.appendChild(el('h2', 'pane-h', 'Decide'));
   ref.appendChild(el('h2', 'pane-h', 'Reference'));
-  // Ban-picker sync (see the state block near the bottom): a new game
+  // Tribe-picker sync (see the state block near the bottom): a new game
   // reseeds from the server; a settled manual set overwrites stale local
   // taps (unless we tapped in the last 3s — the POST may still be in
   // flight); while the player is mid-tapping during detection, local wins.
+  // The server's own copy of the set is `tribes_available` (2026-10-13): it is
+  // the five the player said ARE in the tavern, so seeding from `banned` would
+  // show the five this lobby cannot offer as the ones already set.
   const gameNo = a.game_no ?? null;
   if (gameNo !== _inPlayPickGame) {
     _inPlayPickGame = gameNo;
-    _inPlayPick = new Set(a.bans_manual ? (a.banned || []) : []);
+    _inPlayPick = new Set(a.bans_manual ? (a.tribes_available || []) : []);
     _inPlayPickAt = 0;
     _compBodyCache.clear();  // a new game invalidates every owned/banned flag
   } else if (a.bans_manual && Date.now() - _inPlayPickAt > 3000) {
-    const srv = new Set(a.banned || []);
+    const srv = new Set(a.tribes_available || []);
     if (srv.size !== _inPlayPick.size || [...srv].some(t => !_inPlayPick.has(t))) {
       _inPlayPick = srv;
     }
@@ -4041,15 +4056,21 @@ function render(a) {
   // read as "all tribes confirmed".
   const compsBody = el('div');
   if (a.tribes_detecting || a.bans_manual) {
-    // Ban picker: the reveal screen shows the 5 banned tribes at t0 and
-    // the pool inference only converges minutes later — tapping them here
-    // makes every downstream comp filter exact for the whole game
-    // (2026-09-19; the ban list is provably not in any log).
+    // Tribe picker: at hero select the game's own minion-types panel lists the
+    // tribes IN the tavern this game, and the pool inference only converges
+    // minutes later — tapping those five here makes every downstream comp
+    // filter exact for the whole game (2026-09-19; the tribe list is provably
+    // not in any log).
+    // THE TAPS ARE THE IN-TAVERN FIVE (2026-10-13, the maintainer's call).
+    // Asking for "the 5 banned tribes" instead marked the complement available,
+    // so every comp row, every chip and every count was the inverse of the
+    // truth for a whole game (measured: session 2026-10-13_12_01_10, where all
+    // seven shop offers came from the tribes the app had marked unavailable).
     const line = el('div', 'none', a.bans_manual
-      ? 'bans set by you — tap to correct'
-      : 'bans still resolving — ' + (a.tribes_seen || 0)
-        + '/5 tribes confirmed · dimmed comps could still be banned · '
-        + 'tap the 5 banned tribes to set them now:');
+      ? 'the 5 tribes in your tavern — tap to correct'
+      : 'tribes still resolving — ' + (a.tribes_seen || 0)
+        + '/5 tribes confirmed · dimmed comps may not be in this lobby · '
+        + 'tap the 5 tribes the tavern offers:');
     compsBody.appendChild(line);
     const chips = el('div', 'inplaychips');
     // The reveal screen lists the CURRENT pool's tribes, so an out-of-play
@@ -4095,11 +4116,11 @@ function render(a) {
   }
   ref.appendChild(box('Playable comps', compsBody));
 }
-// Ban-picker state, deliberately OUTSIDE render(): the app rebuilds every
+// Tribe-picker state, deliberately OUTSIDE render(): the app rebuilds every
 // poll second and would wipe in-progress taps. Per game: when the payload's
-// game_no changes, seed from the server (a fresh game clears manual bans).
-// Once tapping, local state wins for 3s so a poll can't flicker the chip
-// back before the POST lands; after that the server (via bans_manual) is
+// game_no changes, seed from the server (a fresh game clears the hand-set
+// tribes). Once tapping, local state wins for 3s so a poll can't flicker the
+// chip back before the POST lands; after that the server (via bans_manual) is
 // authoritative and self-heals any missed POST.
 let _inPlayPick = new Set(), _inPlayPickGame = null, _inPlayPickAt = 0;
 function postInPlay(list) {
@@ -6954,8 +6975,8 @@ class _Handler(BaseHTTPRequestHandler):
             return
         if self.path.rstrip("/") == "/clear":
             # The page's Clear button: blank the overlay but keep the
-            # player's manual bans (mid-game, a wipe should not throw away
-            # a deliberate 5-tap ban set).
+            # player's hand-set in-tavern tribes (mid-game, a wipe should not
+            # throw away a deliberate 5-tap set).
             clear_analysis(keep_bans=True)
             self._send(200, "application/json", b'{"ok": true}')
             return

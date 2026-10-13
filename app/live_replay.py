@@ -607,7 +607,7 @@ def _describe_step(key, result):
         return (f"moment {result['spec']} (line {result['at']:,}) — round "
                 f"{result.get('round')} — pushed")
     if key == "w":
-        return "welcome card — pushed (the manual ban set went with it)"
+        return "welcome card — pushed (the hand-set in-tavern tribes went too)"
     return "pushed"
 
 

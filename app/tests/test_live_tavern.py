@@ -78,7 +78,7 @@ class TestTheBranch(unittest.TestCase):
         src = _function("render")
         branch = "if (_liveViewer === 'tavern') { renderLiveTavern(a); return; }"
         self.assertIn(branch, src)
-        # After the ban picker's sync and the art pre-warm (both views need
+        # After the tribe picker's sync and the art pre-warm (both views need
         # them) and before the classic strip is built (only one draws).
         self.assertLess(src.index("_warmed.add(cid)"), src.index(branch))
         self.assertLess(src.index(branch), src.index("STATE STRIP"))
@@ -773,16 +773,35 @@ class TestTheShippedCompsDb(unittest.TestCase):
         """Round 1 item 3: the roster contains every tribe, `out_of_pool` names
         the rotated ones, and iterating both printed Naga twice.
 
-        Round 4 item 1 moved the chip's meaning: AVAILABLE is the mark now
-        (`avail`), a tapped ban is `active` on top of it, and a tribe this game
-        cannot offer is `dim` — the row used to mark only the banned ones, which
-        read as the opposite of what it meant.
+        Round 4 item 1 moved the chip's meaning: AVAILABLE is the mark (`avail`),
+        a tribe this game cannot offer is `dim`, and a tribe whose chip the
+        player has set is `active` on top of that.
+
+        REVERSED 2026-10-13: what the player has set is the five IN THE TAVERN,
+        so the seed is `tribes_available` — the old line was
+        `new Set(a.bans_manual ? (a.banned || []) : [])`, which marked the
+        complement amber. Measured on the released install (session
+        2026-10-13_12_01_10, 181 records): every one of that game's shop offers
+        came from the tribes the amber chips named, i.e. the row read "these
+        five are in" over the five the lobby could not offer. Both halves are
+        pinned here, the class rule and the seed, because the seed was the half
+        no test read.
         """
         src = _function("lvTribes")
         self.assertIn(".filter(t => !oop.has(t))", src)
         self.assertIn("'lv-chip ' + (on ? 'active' : (can ? 'avail' : 'dim'))",
                       src)
         self.assertIn("a.tribes_available", src)
+        self.assertIn("const picked = new Set(a.bans_manual ? "
+                      "(a.tribes_available || []) : []);", src)
+        self.assertNotIn("? (a.banned || [])", src,
+                         "the row seeds its amber set from the banned list "
+                         "again — the direction 2026-10-13 fixed")
+        # The tooltips say the direction in words too: a tapped chip is in the
+        # tavern, a green one is what the pool can offer, and neither is a ban.
+        self.assertIn("'In the tavern — tap to clear'", src)
+        self.assertIn("'In play — tap to say it is in the tavern'", src)
+        self.assertNotIn("tap to ban", src)
 
     def test_the_comps_slots_carry_art_and_a_legend(self):
         """Round 1 item 6."""
