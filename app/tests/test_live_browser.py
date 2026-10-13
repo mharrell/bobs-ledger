@@ -124,6 +124,24 @@ def _comps_analysis(**over):
     return a
 
 
+def _comps_with_an_unavailable_tribe():
+    """The comps fixture with ONE row marked unavailable, as the POSITIVE
+    control for the dimmed-row read (2026-10-13).
+
+    `_tribe_available: False` is exactly what round 4 item 1 hands the page for
+    a comp whose tribe this lobby cannot offer, and `render_json` passes it on
+    as `tribe_available`, which is what `lvCompRow` turns into the row's
+    `unavail` class. Without this shot the `unavail` read could only ever be 0 —
+    and a count that cannot rise is not a measurement, which is how the read it
+    replaced (a text match on a note item 1 renamed) went dead unnoticed.
+    Elementals, not Nagas: the A tier is capped at six rows and the browse shot
+    renders Nagas behind the "+ N more" control.
+    """
+    comps = {k: dict(v) for k, v in _comps_analysis()["game_comps"].items()}
+    comps["elementals"] = dict(comps["elementals"], _tribe_available=False)
+    return _comps_payload(game_comps=comps)
+
+
 def _comps_payload(corpus=None, **over):
     """The comps payload, with the corpus reader replaced by `_CORPUS` — or by
     whatever a test hands in: `{}` is "the corpus has never seen these comps",
@@ -391,9 +409,17 @@ _DRIVER = r"""
     o.avgcells = q('.lv-ap').length;
     o.hasavg = q('.lv-ctier.has-avg').length;
     o.hnote = [...q('.lv-hnote')].map(n => n.textContent).join('|');
-    o.unconfirmed = q('.lv-crow .lv-tier').length
-      ? [...q('.lv-crow .lv-tier')].filter(t => /unconfirmed/.test(t.textContent)).length
-      : 0;
+    // A COMP ROW IS DIMMED ONLY WHEN ITS TRIBE IS NOT AVAILABLE. This read used
+    // to count the per-row "· tribe unconfirmed" note — and round 4 item 1
+    // RENAMED that note to "· not available" (marking availability instead of
+    // dropping comps by tribe), so the filter matched nothing and the two
+    // assertions below passed on a count that could only ever be 0. That is the
+    // failure mode this harness exists to avoid, so the read is re-pointed at
+    // the class the dimming actually carries, and `crowrows` is its control: a
+    // renamed class would zero the count again, and a zero that CANNOT be
+    // non-zero is not a measurement.
+    o.crowrows = q('.lv-crow').length;
+    o.unavail = q('.lv-crow.unavail').length;
     o.ctlchips = [...q('.lv-ctl .lv-chip')].map(c => c.textContent).join('|');
     o.ctlrows = q('.lv-ctl').length;
     // The compare control's own theming, and where the toggle lives.
@@ -522,7 +548,7 @@ _DRIVER = r"""
                            'missvals', 'bhhalf', 'renameless', 'tiletitles',
                            'noart', 'nagacount', 'pickcolw', 'pickctlvp',
                            'picknameh', 'pickcardw', 'statebarhidden', 'cols',
-                           'avgcells', 'hasavg', 'unconfirmed', 'ctlrows',
+                           'avgcells', 'hasavg', 'crowrows', 'unavail', 'ctlrows',
                            'toggleinnav', 'togglehidden', 'shopcards',
                            'boardcards', 'passedcards', 'oppcards']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
@@ -1181,6 +1207,8 @@ class TestTheCompsScreens(_Rendered):
                 _shot("noavg", _comps_payload(corpus={}), tab="comps"),
                 _shot("detecting", _comps_payload(tribes_detecting=True),
                       tab="comps"),
+                _shot("unavailshot", _comps_with_an_unavailable_tribe(),
+                      tab="comps"),
                 _shot("detail", base, tab="comps",
                       clicks=[_open("Elementals")]),
                 _shot("back", base, tab="comps",
@@ -1261,19 +1289,44 @@ class TestTheCompsScreens(_Rendered):
     def test_the_comps_panel_has_no_second_tribe_chip_row(self):
         """Round 3 item 4: the page has ONE tribe row, above the tabs, and the
         comps panel had a copy of it. The not-confirmed state is said once, in
-        the panel header, instead of on every row."""
+        the panel header, instead of on every row.
+
+        Round 4 item 1 then reworded the per-row note to "· not available"
+        (available comps are marked, not dropped), which killed this test's
+        driver read: it counted rows matching /unconfirmed/, so it read 0 for
+        every fixture and both assertions below passed vacuously. The read is
+        the row's own `unavail` class now, with `crowrows` proving the list
+        rendered — an assertion on a count that cannot be non-zero is not a
+        test. The positive side (a row IS dimmed, and says why) is
+        `test_live_tavern.TestTheCompsSayWhichTribesAreAvailable`, which
+        asserts the class and the note together.
+        """
         got = self.got
         self.assertEqual(got["browse.ctlchips"],
                          "Source tier|Overlap|Avg placement",
                          "the comps controls are not just the sort chips")
         self.assertNotIn("Lobby tribes", got["browse.paneltext"],
                          "the comps panel has its own tribe chip row again")
-        self.assertEqual(got["browse.unconfirmed"], 0,
-                         "a row still carries the unconfirmed note")
+        self.assertGreater(got["browse.crowrows"], 0,
+                           "the comps list rendered no rows at all, so the "
+                           "dimmed-row read below proves nothing")
+        self.assertEqual(got["browse.unavail"], 0,
+                         "a comp row is dimmed although every tribe in it is "
+                         "available")
         # The harness strips values, so the leading space of the header note is
         # not part of what comes back.
         self.assertEqual(got["detecting.hnote"], "· tribes not confirmed yet")
-        self.assertEqual(got["detecting.unconfirmed"], 0)
+        self.assertGreater(got["detecting.crowrows"], 0)
+        self.assertEqual(got["detecting.unavail"], 0,
+                         "an unconfirmed tribe with fewer than five confirmed "
+                         "is AVAILABLE (round 4 item 1), so no row dims here")
+        # The POSITIVE control: one comp whose tribe this lobby cannot offer is
+        # dimmed, and the read sees it. Without this the two zeros above are a
+        # count that cannot be anything else.
+        self.assertEqual(got["unavailshot.unavail"], 1,
+                         "the dimmed-row read cannot see the class the renderer "
+                         "adds — the zeros above prove nothing")
+        self.assertIn("Elementals", got["unavailshot.comprows"])
         # ...and one chip row for the tribes, on the page itself.
         self.assertIn("BEAST", got["detecting.chips"])
 
@@ -1586,12 +1639,23 @@ class TestWhatTheShopKeepsSaying(_Rendered):
 
     def test_the_panel_says_how_long_ago_it_was_read(self):
         """Item 3(b): the fact belongs on the panel the player is reading, not
-        only in the strip above the card. The payload's own `generated` stamp is
-        what it counts from, so a fixture rendered a moment ago reads "just
-        now" — and the same line exists on the empty shop, which is the panel
-        where a player most needs it."""
-        self.assertEqual(self.got["t.readage"], "read just now")
-        self.assertEqual(self.got["noshop.readage"], "read just now")
+        only in the strip above the card — and the same line exists on the empty
+        shop, which is the panel where a player most needs it.
+
+        The SHAPE is what a browser can honestly assert. The page counts from
+        the payload's own `generated` stamp against the browser's clock, so a
+        shot that takes more than a second to render and read says "read 1s
+        ago": this test pinned the literal "read just now" and adding a sixth
+        shot to this class broke it exactly that way (measured 2026-10-13 — the
+        assertion was a race, not a contract). The vocabulary itself ("just
+        now", the minute rollover, the ticker that keeps it moving) is pinned at
+        the source in `test_live_tavern`'s
+        `test_the_panel_carries_its_own_read_age`.
+        """
+        for panel in ("t", "noshop"):
+            self.assertRegex(self.got[panel + ".readage"],
+                             r"^read (just now|\d+s ago|\d+ min ago)$",
+                             panel + " has no read-age line on its panel")
 
     def test_the_tavern_mix_counts_the_offers_one_by_one(self):
         """Item 3(b): the tribe composition of the shop, counted per OFFER — two

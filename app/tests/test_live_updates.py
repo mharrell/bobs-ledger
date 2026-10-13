@@ -991,7 +991,19 @@ class TestBanGate(unittest.TestCase):
         # behaviour this change deliberately did NOT touch.
         self.assertEqual(set(c.playable), {"beasts-x", "mechs-y", "mixed-m"})
 
+    def test_complete_ban_set_locks(self):
+        """Five confirmed tribes close the inference window and lock `allowed`
+        to exactly them: the 5/5 gate is the whole basis of the ban inference,
+        so the BOOKKEEPING has to survive it, not just the comp list.
 
+        RESTORED 2026-10-13. The round-4 item-1 edit destroyed this method's
+        `def` line and left its body glued to the end of
+        `test_five_confirmed_marks_those_tribes_and_mixed_and_drops_nothing`.
+        Every assertion kept running and kept passing, so the only symptom was a
+        LOST NAME: one fewer test in the count, and a failure here reported
+        under the wrong test. Found by diffing the round's own work for removed
+        `def` lines; the body below is byte-identical to what it was.
+        """
         from unittest import mock
         from live_coach import LiveCoach
         c = LiveCoach()

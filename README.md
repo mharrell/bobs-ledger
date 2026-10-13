@@ -148,14 +148,14 @@ the **Facts** table always beside it.
 - **Shop** — the tavern's offers, your board and your hand as rows of cards with
   a one-line caption under each, the mix of tribes on offer, how long ago the
   shop was read, and the offers that left the shop during this turn (one card
-  per offer, so two copies of the same minion are two cards). In the rail, the
-  **Facts**: effective health, what the last fight cost, what the last three
-  cost, the per-combat damage cap, your board's stats against the last board
-  seen, and what levelling up costs. Under those rows sits the announced **next
-  opponent** — their hero, the board they last staged, what it was worth with
-  how many rounds ago that was read, and their tribe mix. Those are the same
-  facts the classic layout carries, stated as numbers instead of as a read on
-  the game — nothing on the Tavern screen tells you what to do.
+  per offer, so two copies of the same minion are two cards). Beneath those rows
+  sits the announced **next opponent** — their hero, the board they last staged,
+  what it was worth with how many rounds ago that was read, and their tribe mix.
+  Beside them the rail carries the **Facts**: effective health, what the last
+  fight cost, what the last three cost, the per-combat damage cap, your board's
+  stats against the last board seen, and what levelling up costs. Those are the
+  same facts the classic layout carries, stated as numbers instead of as a read
+  on the game — nothing on the Tavern screen tells you what to do.
 - **Comps** — the comps this lobby allows, grouped under a sticky header per
   source tier (one column, or two once the window is wide enough for both), each
   with its core cards as small slots showing the cards themselves, dimmed when you
