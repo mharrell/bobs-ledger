@@ -428,6 +428,21 @@ _DRIVER = r"""
     o.tribelbl = txt(rone('.lv-tribes .lv-lbl'));
     o.opplabel = txt(one('.lv-opp'));
     o.classic = document.getElementById('col-decide').children.length;
+    // The CLASSIC tribe picker — the page that ASKS for the five (2026-10-13).
+    // `.inplaychips` exists only there (the tavern's row is `.lv-tribes`), and
+    // the line asking for the set is the div right above it. Read from the real
+    // render because the words ARE the bug this fixes: the old line asked for
+    // the five BANNED tribes, so a player following it produced the complement
+    // on purpose.
+    const picker = document.querySelector('.inplaychips');
+    o.pickline = picker ? txt(picker.previousElementSibling) : '';
+    o.pickchips = picker
+      ? [...picker.children].map(c => c.textContent).join('|') : '';
+    o.pickpicked = picker
+      ? [...picker.children].filter(c => c.classList.contains('picked'))
+          .map(c => c.textContent).join('|')
+      : '';
+    o.pickcount = picker ? picker.children.length : 0;
     // --- the fix lists' own facts (rounds 1 and 2, 2026-10-09) ------------
     // 1. Live fills the window: the tavern container against the viewport, and
     //    where the sections actually sit. Measured on the ROOT:
@@ -745,7 +760,7 @@ _DRIVER = r"""
                            'avgcells', 'hasavg', 'crowrows', 'unavail', 'ctlrows',
                            'toggleinnav', 'togglehidden', 'shopcards',
                            'boardcards', 'passedcards', 'oppcards',
-                           'tabs', 'panelcount', 'accs', 'bodyw']
+                           'tabs', 'panelcount', 'accs', 'bodyw', 'pickcount']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
@@ -1024,7 +1039,11 @@ class TestTheTavernLiveInABrowser(_Rendered):
                                           board_stats=None, opp_stats=None,
                                           opp_lobby=None)),
                 _shot("noshop", _payload(shop_rank=[])),
-                _shot("classic", _payload(), viewer="classic")]
+                # A game number, so the picker's own seed runs: the client only
+                # reseeds its tap set when the game changes, and `game_no` null
+                # is where it starts (see the sync in `_render`, read by
+                # `test_the_classic_picker_asks_for_the_five_in_the_tavern`).
+                _shot("classic", _payload(game_no=7), viewer="classic")]
 
     def test_the_status_bar_is_the_hero_and_six_numbers(self):
         self.assertEqual(self.got["t.tavern"], 1)
@@ -1033,6 +1052,29 @@ class TestTheTavernLiveInABrowser(_Rendered):
         # design's spec — the text itself stays as written.
         self.assertEqual(self.got["t.stats"],
                          "Gold:7|Tier:3|HP:26+4|Turn:9|Place:3rd")
+
+    def test_the_classic_picker_asks_for_the_five_in_the_tavern(self):
+        """The page that ASKS for the set (2026-10-13), read off the render.
+
+        A browser read rather than a source grep, because the WORDS are the bug:
+        the line used to read "tap the 5 banned tribes to set them now", so a
+        player who followed the instruction produced the complement on purpose
+        and the app then marked the wrong five. The chips are the in-pool roster
+        (the out-of-play tribe is not on the game's own panel either), and the
+        seeded taps are `tribes_available` — the five in the tavern — so the page
+        opens on the same answer the server holds.
+        """
+        got = self.got
+        self.assertIn("the 5 tribes in your tavern", got["classic.pickline"])
+        self.assertNotIn("ban", got["classic.pickline"].lower(),
+                         "the picker asks for the banned set again — a player "
+                         "following it produces the complement")
+        # 7 roster entries minus the out-of-play NAGA, which is not tappable.
+        self.assertEqual(got["classic.pickcount"], 6)
+        self.assertNotIn("NAGA", got["classic.pickchips"])
+        self.assertEqual(sorted(got["classic.pickpicked"].split("|")),
+                         ["BEAST", "ELEMENTAL", "MECH", "PIRATE", "UNDEAD"],
+                         "the picker did not open on the player's five")
 
     def test_the_tribe_row_is_one_row_and_out_of_play_is_struck_not_banned(self):
         """The row's label and the fact that an out-of-play tribe is its own
