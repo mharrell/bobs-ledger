@@ -141,8 +141,11 @@ recommendation, and no option is highlighted as the one to take.
 switch sits at the top of the Another Round page, and **Classic** is what is
 described above — the default, and the only thing you see until you change it. **Tavern** is the same
 information in the tavern's own dark palette: a status bar naming the hero with
-gold, tier, health, turn and place, and one row of lobby tribes you can tap to
-correct.
+gold, tier, health, turn and place, and one row of lobby tribes. Tap the five
+tribes the tavern is offering this game — the same five the game's own
+minion-types panel shows you at hero select — and every comp, chip and count on
+the page is then exact from turn 1 instead of waiting minutes for the pool to
+reveal itself.
 
 **The page rearranges itself as the window changes**, in two layouts, and there
 are no tabs at either of them — with everything on screen at once there is nothing
