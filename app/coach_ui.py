@@ -713,6 +713,19 @@ _HTML = r"""<!doctype html>
   #app.tavern-on #live-tavern { grid-column:1 / -1; width:100%;
                                 min-width:0; }
   #app.tavern-on > #col-decide, #app.tavern-on > #col-ref { display:none; }
+  /* FROM 1180px THE TAVERN VIEW TAKES THE WHOLE WINDOW (fix list round 4 item 5,
+     2026-10-13). The tavern is not two panes, so the shell's two-column grid has
+     nothing to put in its second column — and its 340px of rail came straight
+     off the layout this view now measures. The two numbers meet exactly: the
+     three-column rule below asks for 1180px OF THE BOX, and 1180px of WINDOW is
+     the smallest window that can give it, because the box is the window minus
+     the page's 14px of padding each side (measured: a 1500x1000 window gives the
+     box 1432px with this rule and gave it 1132px without, which is three
+     squeezed columns against three usable ones). Below 1180px the shell is a
+     flex column anyway, where this rule has nothing to override. */
+  @media (min-width: 1180px) {
+    #app.tavern-on { grid-template-columns:minmax(0,1fr); }
+  }
   /* An EMPTY state strip is a rounded bar with nothing in it, and the welcome
      and game-over cards leave it empty by design (2026-10-09, fix list round 2
      item 7). It is hidden rather than blanked. */
@@ -1022,14 +1035,53 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-st b.miss { color:var(--tmute); font-weight:400; }
   /* Gold is the currency colour, which is --atk's other job (§4.2/§7). */
   .tavern.live .lv-st.gold b:not(.miss) { color:var(--tatk); }
-  /* The two columns of the Live page (fix list round 2 item 9): main + a 340px
-     rail at >=1200px, STACKED from 700 to 1200, and a single-column pick grid
-     under 700. The rail used to drop out at 900px, which left a 1000px window
-     with a rail that could have fitted. */
+  /* THE LAYOUT IS BY WIDTH, AND IT IS MEASURED ON THIS BOX (fix list round 4
+     item 5, 2026-10-13). Three modes, decided by a CONTAINER query rather than a
+     window one:
+       * >=1180px of this box: THREE COLUMNS — Tavern + board | Comps |
+         Facts + opponent + lobby, and no tabs, because every screen is visible;
+       * 700-1179px: one column of collapsed sections with a one-line summary in
+         each header, and the Facts table pinned above them;
+       * <700px: the same accordion, single column (the pick grid goes
+         single-column under 700 too — @media, because a grid's track count is
+         not a container-query thing here).
+     WHY A CONTAINER AND NOT `@media`: the box this governs is the window MINUS
+     the shell — 14px of padding each side at every width, and the 340px rail
+     above 1200x900, where `#app` is a two-column grid. Measured: at a 1500px
+     WINDOW this box has been 1132px and 1432px depending on the branch, which is
+     the widest and the narrowest it gets at the width the three columns are
+     asked for. A media query cannot express that, and the containers below carry
+     their widths in the tests. The ONE window breakpoint the design needs is the
+     >=1500px rule on the shell (`#app.tavern-on`, at the top of this sheet):
+     above it the box is wide enough for three columns and gets them, below it
+     the box is under 1180 no matter where the rail sits, so the accordion is the
+     only possible answer there. */
+  .tavern.live .lv-body { container-type:inline-size; }
   .tavern.live .lv-main { display:grid; grid-template-columns:minmax(0,1fr);
                           gap:14px; align-items:start; }
+  /* Both arrangements are in the DOM and exactly one is displayed. The
+     displayed one is ALWAYS a grid, so `grid-template-columns` below never
+     applies to the hidden one — a hidden element is not laid out at all. */
+  .tavern.live .lv-layout-cols { display:none; }
+  .tavern.live .lv-layout-acc { display:grid; }
+  /* The rail keeps the facts table only while the box is too narrow for three
+     columns (fix list round 2 item 9's 340px rail). It used to drop out at
+     900px, which left a 1000px window with a rail that could have fitted. */
   @media (min-width: 1200px) {
     .tavern.live .lv-main { grid-template-columns:minmax(0,1fr) 340px; }
+  }
+  @container (min-width: 1180px) {
+    /* THE THREE COLUMNS (fix list round 4 item 5). This rule is LAST, so it wins
+       by order over the media query above, which also matches above 1200x900 —
+       past 1180px of BOX width the 340px rail is not a track any more, because
+       column 3 IS the rail: the facts table, the announced opponent, the lobby.
+       Column 3 is 300px because that held the reference table at every width
+       measured; the two flexible columns split what is left. Measured
+       2026-10-13: 630/630/300 inside a 1588px box at 1920x1080, and
+       549/549/300 at a 1500x1000 window (see TestTheColumnLayout). */
+    .tavern.live .lv-layout-cols { display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr) 300px; }
+    .tavern.live .lv-layout-acc { display:none; }
   }
   /* Shop screen (fix list round 1 item 4 / round 2 item 4): the taverner's row
      on top, then ONE panel holding the board and the hand side by side. */
@@ -1045,6 +1097,57 @@ _HTML = r"""<!doctype html>
                         margin:0 0 12px; }
   .tavern.live .lv-pn > h3 { margin:0 0 8px; font-size:12px; letter-spacing:.12em;
                              text-transform:uppercase; color:var(--tmute); }
+  /* ---------------------------------------------------------------------
+     THE ACCORDION, 700-1180px of box width (fix list round 4 item 5,
+     2026-10-13). Every section is on the page at once, each header carries a
+     ONE-LINE summary of what is under it, and the Facts table is a strip pinned
+     above them.
+
+     WHY THE SUMMARY IS IN THE HEADER AND NOT A SECOND ELEMENT: the header is
+     the click target and the only thing visible while a section is shut, so a
+     line under it would either be hidden with the body or sit outside the
+     control. The `<h3>` holds the title TEXT NODE first and the line in a
+     `<span class="lv-sum">`, which is what keeps `.lv-pn > h3` reading exactly
+     the panel names it always read — several tests pin those verbatim.
+
+     A `<details>`/`<summary>` pair would have given the toggle for free, but
+     then the SAME panel would be a details in one mode and a div in the other,
+     and the open state would be the browser's rather than the page's — which is
+     the one thing item 5 cannot delegate: the shop is re-read every 5 seconds
+     and re-renders the whole view, so the state has to be read back from
+     storage on every render (see `lvCollapsed`). */
+  .tavern.live .lv-pn.shut > *:not(h3) { display:none; }
+  .tavern.live .lv-pn.shut > h3 { margin-bottom:0; }
+  .tavern.live .lv-acc > h3 { cursor:pointer; display:flex; align-items:baseline;
+                              gap:10px; flex-wrap:wrap;
+                              padding:12px 0; min-height:44px; }
+  .tavern.live .lv-acc > h3::before { content:'▸'; font-size:11px;
+                                      color:var(--tmute); }
+  .tavern.live .lv-acc:not(.shut) > h3::before { content:'▾'; }
+  .tavern.live .lv-acc > h3:hover { color:var(--ttext); }
+  .tavern.live .lv-acc > h3:focus-visible { outline:2px solid var(--tsel);
+                                            outline-offset:2px; }
+  /* The one-line summary is a FACT, and the typography says so: the title keeps
+     the uppercase muted label treatment, the line is sentence case in --ttext. */
+  .tavern.live .lv-sum { text-transform:none; letter-spacing:0; font-size:11px;
+                         color:var(--ttext); font-weight:400; }
+  /* THE PINNED FACTS STRIP. Sticky, not fixed: the page scrolls as a whole
+     (there is no scrolling pane on this view), so a fixed strip would sit over
+     whatever scrolled under it while a sticky one stops at the top of the
+     scroller and stays there. Measured at 1100x900: the strip's top stays 84px
+     while the tavern panel above it moves 0 -> -300px (see
+     `TestTheAccordionLayout`). `top:0` and an opaque background, because a
+     transparent sticky strip is text with rows sliding through it. */
+  .tavern.live .lv-pin { position:sticky; top:0; z-index:3;
+                         background:var(--tpanel); margin-bottom:12px; }
+  .tavern.live .lv-pin > h3::before { content:none; }
+  @container (max-width: 1179.98px) {
+    /* In the accordion the strip is one row of the stack, so it takes the full
+       width of the column it sits in — a 300px reference table beside 800px of
+       sections would read as a column that lost its column. */
+    .tavern.live .lv-pin { width:100%; }
+    .tavern.live .lv-pin .lv-kv { display:inline-flex; width:100%; }
+  }
   /* The one place the not-confirmed-yet state is said (round 3 item 4). */
   .tavern.live .lv-hnote { text-transform:none; letter-spacing:0;
                            font-size:11px; color:var(--tmute); }
@@ -1090,17 +1193,9 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-passed .lv-lbl { margin:0 0 8px; }
   .tavern.live .lv-note { color:var(--tmute); font-size:11px; margin:8px 0 0; }
   .tavern.live .lv-empty { color:var(--tmute); font-size:12px; padding:4px 0; }
-  .tavern.live .lv-tabs { display:flex; gap:0; margin:0 0 10px; }
-  .tavern.live .lv-tabs button { background:var(--tpanel); color:var(--tmute);
-                                 border:1px solid var(--tline); padding:6px 12px;
-                                 min-height:44px;
-                                 font:600 12px "Segoe UI", system-ui;
-                                 cursor:pointer; }
-  .tavern.live .lv-tabs button:first-child { border-radius:8px 0 0 8px; }
-  .tavern.live .lv-tabs button:last-child { border-radius:0 8px 8px 0;
-                                            border-left:none; }
-  .tavern.live .lv-tabs button.on { background:var(--tsel); color:var(--tonsel);
-                                    border-color:var(--tsel); }
+  /* The tab row's own rules went with the tab row (fix list round 4 item 5):
+     `.lv-tabs` has no element to style at any width now, and a live rule for a
+     class nothing carries is how a removed control comes back by accident. */
   .tavern.live .lv-tribes { display:flex; flex-wrap:wrap; gap:6px;
                             align-items:center; margin:0 0 12px; }
   .tavern.live .lv-chip { padding:5px 11px; border-radius:14px;
@@ -1135,6 +1230,14 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-pickctl { display:flex; flex-wrap:nowrap; gap:12px;
                              align-items:center; margin:0 0 10px;
                              overflow-x:auto; }
+  /* The chips do NOT shrink (round 4 item 5, measured 2026-10-13): the row is
+     `nowrap`, and once the comps column narrowed the pick panel to 469px the
+     chips were squeezed instead — 79px of row, which is the row plus a
+     horizontal scrollbar, i.e. the page answering "too narrow" by wrapping one
+     chip's text onto a second line. `flex:none` keeps each chip its own width and
+     lets the row scroll sideways, which is what `overflow-x:auto` is for. */
+  .tavern.live .lv-pickctl .lv-chip,
+  .tavern.live .lv-pickctl .lv-lbl { flex:none; }
   .tavern.live .lv-chip.on { border-color:var(--tsel); color:var(--ttext); }
   .tavern.live .lv-chip.off { opacity:.45; cursor:default; }
   /* >=200px columns (fix list round 1 item 2), capped near the design's own
@@ -1192,10 +1295,19 @@ _HTML = r"""<!doctype html>
      can hold 520px. NEVER three: `max-width:calc(50% - 9px)` is what caps it —
      a third column would have to be narrower than half, so it wraps instead,
      however wide the window gets. (A viewport media query cannot express this:
-     the main column is the window MINUS the 340px rail above 1200px.) */
+     the column is the window MINUS the rail, and since round 4 item 5 the comps
+     panel is one of THREE columns.) */
   .tavern.live .lv-cols { display:flex; flex-wrap:wrap; gap:18px;
                           align-items:flex-start; }
-  .tavern.live .lv-ctier { flex:0 1 520px; min-width:520px;
+  /* `min(520px, 100%)` is the round 4 item 5 floor, and it is a FIX rather than
+     a tweak: the three-column layout hands the comps panel a 499px column at
+     1400x900, and a flat `min-width:520px` then made the column WIDER than its
+     box — measured in the real browser, both tier columns laid out at the same
+     x (520px each, overlapping) because flex can only wrap an item that fits.
+     With the floor capped at the box, the column is 499 and the tier column is
+     499: the "two only when each holds 520" rule is what decides, as it always
+     did. */
+  .tavern.live .lv-ctier { flex:0 1 520px; min-width:min(520px, 100%);
                            max-width:calc(50% - 9px); min-height:0; }
   /* A lone tier takes the whole width rather than half of it. */
   .tavern.live .lv-ctier:only-child { max-width:100%; }
@@ -2034,14 +2146,12 @@ function renderRelease(v) {
 let _liveViewer = 'classic';
 try { _liveViewer = localStorage.getItem('bl-live-viewer') || 'classic'; }
 catch (e) { /* private mode */ }
-//: Which rail tab is open. Session-only: the design persists the pick screen's
-//: own order/stats choices (§4.3), not this.
-//: §4.1's second tab row — `Shop | Comps | Lobby` — is the SCREEN selector, so
-//: the facts table is not one of its tabs: it lives in the rail beside every
-//: screen (§4.2 puts the facts table in the rail, and reference material is
-//: worth more visible than hidden). Session-only, like the comp view state.
-let _liveTab = 'shop';
-const LIVE_TABS = [['shop', 'Shop'], ['comps', 'Comps'], ['lobby', 'Lobby']];
+//: §4.1's tab row — `Shop | Comps | Lobby` — is GONE (fix list round 4 item 5,
+//: 2026-10-13). It existed because the screens were exclusive; above 1180px of
+//: box width every one of them is on screen at once and below it they are all
+//: collapsed sections of one column, so there is nothing left for a tab row to
+//: select. The facts table was never one of its tabs, and it still is not: it is
+//: the pinned strip in the accordion and column 3 in the three-column layout.
 
 function lvOrdinal(p) {
   const suf = ([11, 12, 13].includes(p % 100)) ? 'th'
@@ -2052,9 +2162,12 @@ function lvOrdinal(p) {
 //: (§6.4 — a "?" next to a number reads as part of the number).
 function lvVal(v) { return v == null || v === '' ? '—' : String(v); }
 
-function lvPanel(title, body, withAge) {
+function lvPanel(title, body, withAge, note) {
   const p = el('div', 'lv-pn');
   const h = el('h3', null, title);
+  // The panel's own besides-the-name note (`lv-hnote`), e.g. the not-confirmed
+  // state the comps list says once (round 3 item 4).
+  if (note) h.appendChild(el('span', 'lv-hnote', ' · ' + note));
   // The read's age rides the PANEL (fix list round 4 item 3(b)), under the
   // heading rather than inside it: the heading is the panel's name and several
   // tests read it verbatim.
@@ -2062,6 +2175,55 @@ function lvPanel(title, body, withAge) {
   if (withAge) p.appendChild(lvReadAge());
   p.appendChild(body);
   return p;
+}
+//: --- The layout's own state (fix list round 4 item 5, 2026-10-13) -----------
+//: For each section, ONE record of what the player last chose: `+name` open,
+//: `-name` shut, and a name with nothing stored at all. It is persisted in
+//: localStorage under the page's own convention (`bl-…`, read in a try/catch —
+//: private mode throws on both halves of the pair).
+//:
+//: A NAME, not an index or a bit: the sections are built in a different order in
+//: each mode, and an index would open a different section after a resize.
+//:
+//: READ BACK ON EVERY RENDER, deliberately un-memoised. The shop is re-read every
+//: 5 seconds and re-rendering the whole view is exactly how a section would pop
+//: open or shut under the player's hands, so the state has to be re-applied from
+//: storage each time — and an in-memory copy is not the same thing. Measured
+//: 2026-10-13: with the value cached in a module variable, a toggle that had been
+//: written but not yet re-read (or a storage that changed underneath the page)
+//: rendered the OLD state, which is the failure this whole mechanism exists to
+//: prevent.
+function _lvStored() {
+  let raw = null;
+  try { raw = localStorage.getItem('bl-lv-open'); }
+  catch (e) { /* private mode */ }
+  // Parsed defensively: only a `+name`/`-name` token is kept, so a garbage or
+  // half-written value costs the player their open/closed state and never the
+  // page. The store is re-written from this on the next toggle, which is also
+  // what keeps an unparseable value from living on forever.
+  const out = [];
+  String(raw || '').split(',').forEach(tok => {
+    const t = tok.trim();
+    if (t.length > 1 && (t[0] === '+' || t[0] === '-')) out.push(t);
+  });
+  return out;
+}
+//: The mode a section falls back to with nothing stored. The screens the player
+//: is reading the game through are open — the shop and the board it buys for,
+//: and the pick when the game is asking; the three they consult are shut,
+//: because five open sections is a stack five screens tall.
+const LIVE_OPEN_BY_DEFAULT = {Tavern: true, 'Board and hand': true,
+                              'Choose one': true};
+function lvCollapsed(name) {
+  const stored = _lvStored();
+  const tok = stored.find(t => t.slice(1) === name);
+  return tok ? tok[0] === '-' : !LIVE_OPEN_BY_DEFAULT[name];
+}
+function lvSetCollapsed(name, shut) {
+  const stored = _lvStored().filter(t => t.slice(1) !== name);
+  stored.push((shut ? '-' : '+') + name);
+  try { localStorage.setItem('bl-lv-open', stored.join(',')); }
+  catch (e) { /* private mode */ }
 }
 //: One label/value row (§5): label in --mute, value in --text.
 function lvKV(label, value) {
@@ -2186,9 +2348,10 @@ function lvTribes(a) {
 //: verdicts, and they are replaced here by the same values as rows.
 //: "Lethal at" is gone (fix list round 1 item 5 / round 2 item 6): it printed
 //: effective HP a second time under a second name.
+//: The BODY of the facts table (fix list round 4 item 5): `lvSection` wraps it,
+//: so there is one `.lv-pn` per section. The heading is the wrapper's.
 function lvFacts(a) {
-  const p = el('div', 'lv-pn');
-  p.appendChild(el('h3', null, 'Facts'));
+  const p = el('div');
   const fr = a.fragility || {};
   if (fr.eff_health != null) p.appendChild(lvKV('Effective HP', fr.eff_health));
   if (fr.last_hit != null) p.appendChild(lvKV('Took last fight', fr.last_hit));
@@ -2404,15 +2567,13 @@ function lvCompSortRows(rows) {
 //: row above the tabs, and a second set of the same chips inside this panel was
 //: the duplicate. The "not confirmed yet" state is said ONCE, in the panel header
 //: (and no longer per row).
-function lvCompsBrowse(a) {
-  const p = el('div', 'lv-pn');
-  const head = el('h3', null, 'Comps');
-  if (a.tribes_detecting) {
-    // Said ONCE, here (round 3 item 4) — it used to ride every row, which made
-    // the whole list look tentative instead of one state of the game.
-    head.appendChild(el('span', 'lv-hnote', ' · tribes not confirmed yet'));
-  }
-  p.appendChild(head);
+//:
+//: It returns the panel's BODY, not a panel (fix list round 4 item 5): every
+//: section is wrapped by `lvSection` now, and a second `.lv-pn` inside one would
+//: be a panel within a panel — two headers for one screen, and a driver read of
+//: `.lv-pn > h3` would count the panel twice.
+function lvCompsBody(a) {
+  const p = el('div');
   const all = a.comps || [];
   if (!all.length) {
     p.appendChild(lvEmptyRow('No comps read yet — they appear once the bans '
@@ -2487,6 +2648,12 @@ function lvCompsBrowse(a) {
   if (picked.length >= 2) p.appendChild(lvCompCompare(picked));
   return p;
 }
+//: The Browse screen as a TABLE, which is how the source tests and the section
+//: header both want it: the list under a `Comps` heading, and the
+//: not-confirmed-yet state said once in that heading.
+function lvCompsBrowse(a) {
+  return lvPanel('Comps', lvCompsBody(a), false, lvCompsNote(a));
+}
 
 //: §5's headline stat + distribution + rows for one comp. The headline is the
 //: average placement (the one number this project's corpus can put beside a
@@ -2555,10 +2722,10 @@ function lvLoadGuide(slug, slot) {
 
 //: §4.4 Detail: the header chips, the core row at 88x120 with a caption per
 //: card, the flex row at 76x100, the statistics beside them, and the guide
-//: collapsed by default.
+//: collapsed by default. The BODY only (fix list round 4 item 5): `lvSection`
+//: wraps it, so there is one `.lv-pn` per section and one header per screen.
 function lvCompDetail(a, c) {
-  const p = el('div', 'lv-pn');
-  p.appendChild(el('h3', null, 'Comps'));
+  const p = el('div');
   const head = el('div', 'lv-cdhead');
   const back = el('button', 'lv-back', '◀ Comps');
   back.onclick = () => { _liveComp = null; renderLiveTavern(a); };
@@ -2632,15 +2799,15 @@ function lvCompCompare(picked) {
 function lvCompsScreen(a) {
   const open = _liveComp
     ? (a.comps || []).find(c => c.slug === _liveComp) : null;
-  return open ? lvCompDetail(a, open) : lvCompsBrowse(a);
+  return open ? lvCompDetail(a, open) : lvCompsBody(a);
 }
 
 //: §4.2 Lobby tab: what the seats we have SEEN are committed to, and the last
 //: board the next opponent staged. "of N seen seats" — an unseen seat is
-//: unknown, not empty.
-function lvLobby(a) {
-  const p = el('div', 'lv-pn');
-  p.appendChild(el('h3', null, 'Lobby'));
+//: unknown, not empty. The BODY only (fix list round 4 item 5): `lvSection`
+//: wraps it, so the lobby is one panel with one header in both arrangements.
+function lvLobbyBody(a) {
+  const p = el('div');
   const rows = a.tribe_pressure || [];
   if (rows.length) {
     rows.forEach(r => {
@@ -2720,9 +2887,11 @@ function lvMix(a) { return lvMixRow('Tavern mix', a.shop_mix) || el('div'); }
 //: ticks with the freshness ticker, because the payload does not change while
 //: the player thinks and a number frozen at "read just now" would be a lie.
 function lvReadAge() {
-  const s = el('div', 'lv-read');
-  s.id = 'lv-read';
-  return s;
+  // A CLASS, not an id: the arrangement puts the Tavern panel in the first
+  // column AND in the accordion, so there are two of these lines in the DOM and
+  // a duplicated id is a broken document — `getElementById` would pick one of
+  // them by position and the other would sit empty forever.
+  return el('div', 'lv-read');
 }
 function lvAgeText(sec) {
   if (sec == null) return '';
@@ -2731,10 +2900,8 @@ function lvAgeText(sec) {
   return 'read ' + Math.floor(sec / 60) + ' min ago';
 }
 function tickReadAge() {
-  const n = document.getElementById('lv-read');
-  if (!n) return;
-  n.textContent = lvAgeText(_generated == null ? null
-                                               : Date.now() / 1000 - _generated);
+  const text = lvAgeText(_generated == null ? null : Date.now() / 1000 - _generated);
+  document.querySelectorAll('.lv-read').forEach(n => { n.textContent = text; });
 }
 //: WHAT WAS ROLLED PAST THIS TURN (fix list round 4 item 3(c)). Every offer
 //: that left the shop while it was open, one card per OFFER ENTITY — two
@@ -2795,8 +2962,7 @@ function oppMixLine(a) {
 //: Lobby tab: this is the panel a player screenshots. Nothing here says who is
 //: favoured — that is the classic page's job, and §1 bans it on this one.
 function lvOpponent(a) {
-  const p = el('div', 'lv-pn');
-  p.appendChild(el('h3', null, 'Next opponent'));
+  const p = el('div');
   const oc = a.opp_comp;
   if (!oc || !(oc.cards || []).length) {
     p.appendChild(lvEmptyRow('No opponent board seen yet.'));
@@ -2925,6 +3091,9 @@ function lvBars(dist) {
 //: Nothing here reads the classic panel's fact STRING — the numbers come from
 //: `choice.option_stats`, which is also why the phrasing the design bans
 //: ("fits your board") cannot reach this screen.
+//: The BODY only (fix list round 4 item 5): `lvSection('Choose one', …)` wraps
+//: it, so there is one `.lv-pn` and one heading per section — a screen inside a
+//: panel inside a panel is two headings for one thing.
 function lvPick(a) {
   const ch = a.choice;
   const stats = ch.option_stats || {};
@@ -3003,7 +3172,7 @@ function lvPick(a) {
                                            r[0] + ' — ' + guides[r[0]])));
     body.appendChild(det);
   }
-  return lvPanel('Choose one', body);
+  return body;
 }
 //: The type tabs (auto-selected: only the choice on screen has data), the
 //: Stats-shown toggles, and the Order control.
@@ -3130,6 +3299,191 @@ function renderTavernGameOver(a) {
   box.appendChild(root);
 }
 
+//: --------------------------------------------------------------------------
+//: FIX LIST ROUND 4 ITEM 5, the layout half (2026-10-13). The view is built
+//: from SECTIONS, and the width decides how they are arranged:
+//:
+//:   >=1180px of box  three columns, no tabs, every section on screen at once
+//:   700-1179px        one column, each section foldable, a one-line summary in
+//:                     every header, and the Facts table pinned above them
+//:   <700px            the same accordion in one column
+//:
+//: `lvPanelBody(title, a)` is the ONE place a section's content is chosen, so a
+//: section cannot mean one thing in a column and another in the accordion.
+function lvPanelBody(title, a) {
+  if (title === 'Choose one') return lvPick(a);
+  if (title === 'Tavern') {
+    // The taverner's row: a shop nobody has read yet says so on its own panel
+    // instead of drawing four skeleton bars (fix list round 2 item 2).
+    return (a.shop_rank || []).length ? lvShop(a) : lvWaiting(a);
+  }
+  if (title === 'Board and hand') return lvBoardHand(a);
+  if (title === 'Comps') return lvCompsScreen(a);
+  if (title === 'Next opponent') return lvOpponent(a);
+  if (title === 'Lobby') return lvLobbyBody(a);
+  return lvFacts(a);
+}
+//: Is a pick on screen? §4.3: while the game is asking, choosing is what the
+//: player is doing, so the pick screen REPLACES the tavern row rather than
+//: sitting beside it — the same rule the tab row used to apply, applied to both
+//: arrangements through one predicate so they cannot disagree.
+function lvPicking(a) {
+  return !!(a.choice && a.choice.ranked && a.choice.ranked.length);
+}
+//: The one state a section says in its header rather than its body: whether the
+//: lobby's tribes are confirmed yet. Said once, in the header, and nowhere else
+//: (round 3 item 4).
+function lvCompsNote(a) {
+  return a.tribes_detecting ? 'tribes not confirmed yet' : null;
+}
+//: THE ONE-LINE SUMMARY (item 5): a count and its noun, which is what fits on a
+//: header line and is the same kind of fact every panel below already carries.
+//: Deliberately NOT a judgement and not a second reading of the section — §1
+//: is about words on the screen, and a header line is exactly where a verdict
+//: would sneak in. Every string here is a count, a name the payload already
+//: printed, or a dash.
+function lvSectionLine(title, a) {
+  const n = (xs) => (xs || []).length;
+  if (title === 'Choose one') {
+    // The source the game names ("Lesser Trinket"), and how many options are on
+    // offer — two counts, no ranking. The server's rows arrive score-ordered
+    // (§4.3) and nothing here may read that order.
+    const ch = a.choice || {};
+    const k = n(ch.ranked);
+    return (ch.source ? ch.source + ' · ' : '')
+         + k + (k === 1 ? ' option' : ' options');
+  }
+  if (title === 'Tavern') {
+    const shop = n(a.shop_rank);
+    return shop ? shop + (shop === 1 ? ' offer' : ' offers')
+                : 'nothing read yet';
+  }
+  if (title === 'Board and hand') {
+    return n(a.board_cards || a.sell_rank) + ' on board · '
+         + n(a.hand) + ' in hand';
+  }
+  if (title === 'Comps') {
+    const comps = a.comps || [];
+    const can = comps.filter(c => c.tribe_available !== false).length;
+    return comps.length ? can + ' of ' + comps.length + ' available'
+                        : 'nothing read yet';
+  }
+  if (title === 'Next opponent') {
+    const oc = a.opp_comp || {};
+    return oc.hero_name || oc.hero || 'no board seen';
+  }
+  if (title === 'Lobby') {
+    const rows = a.tribe_pressure || [];
+    return rows.length
+      ? rows.reduce((s, r) => s + (r.seats || 0), 0) + ' of ' +
+        rows.reduce((s, r) => s + (r.of || 0), 0) + ' seen seats'
+      : 'no seats sighted yet';
+  }
+  return '';
+}
+//: One section: the panel, with a clickable header that carries the summary
+//: line, and — in `acc` mode — the player's stored open/closed state applied at
+//: build time. The state is applied from `lvCollapsed` on EVERY render, which is
+//: the whole point: the shop is re-read every 5 seconds
+//: (`live.SHOP_REREAD_SECONDS`) and the page re-renders whenever the payload
+//: string changes, so a class set only by the click handler would be wiped
+//: every 5 seconds and the section would pop shut under the player's hands.
+function lvSection(title, a, acc) {
+  const note = title === 'Comps' ? lvCompsNote(a) : null;
+  const p = lvPanel(title, lvPanelBody(title, a), title === 'Tavern', note);
+  const line = lvSectionLine(title, a);
+  if (line) p.querySelector('h3').appendChild(el('span', 'lv-sum', line));
+  if (!acc) return p;
+  p.classList.add('lv-acc');
+  if (title === 'Facts') {
+    // FACTS IS NOT FOLDABLE AND IS PINNED (item 5): it is the strip the rest of
+    // the page scrolls under, so it keeps no caret and no open/closed state.
+    p.classList.add('lv-pin');
+    return p;
+  }
+  if (lvCollapsed(title)) p.classList.add('shut');
+  const h = p.querySelector('h3');
+  // A role and a tabindex, because this is a real control on a div: the header
+  // has to be reachable and operable from the keyboard (Enter/Space), the same
+  // bargain the buttons it replaced already kept.
+  h.setAttribute('role', 'button');
+  h.setAttribute('tabindex', '0');
+  h.setAttribute('aria-expanded', p.classList.contains('shut') ? 'false' : 'true');
+  const flip = () => {
+    const shut = p.classList.toggle('shut');
+    h.setAttribute('aria-expanded', shut ? 'false' : 'true');
+    lvSetCollapsed(title, shut);
+  };
+  h.onclick = flip;
+  h.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
+  };
+  return p;
+}
+//: The three-column arrangement: the two screens the player reads the game
+//: through on the left, Comps in the middle, and the reference material on the
+//: right — facts, then the announced opponent, then the lobby. NO TABS: every
+//: section is on screen, so a tab row would be a control that hides what is
+//: already visible. The pick screen takes the first column for the same reason
+//: it took the whole main column before — choosing is what the player is doing.
+//: The columns are FLAT CHILDREN of the arrangement, so "which column is this
+//: panel in" is a `>` away and no column is a container of another.
+function lvColumns(a) {
+  const one = el('div', 'lv-col');
+  if (lvPicking(a)) {
+    one.appendChild(lvSection('Choose one', a, false));
+  } else {
+    one.appendChild(lvSection('Tavern', a, false));
+    one.appendChild(lvSection('Board and hand', a, false));
+  }
+  const two = el('div', 'lv-col');
+  two.appendChild(lvSection('Comps', a, false));
+  const three = el('div', 'lv-col');
+  // The facts rail of the two-column layout, kept in the place it had: the
+  // announced opponent is NOT moved up into the wide column (fix list round 4
+  // item 4 measured that panel's row at 941x156 in a 971px column against
+  // 310x464 stacked at a rail's width), and in this arrangement the wide column
+  // is the first one — so the opponent stays under the board.
+  three.appendChild(lvSection('Facts', a, false));
+  three.appendChild(lvSection('Next opponent', a, false));
+  three.appendChild(lvSection('Lobby', a, false));
+  return [one, two, three];
+}
+//: The accordion (700-1179px of box): one column, the facts strip pinned at the
+//: top of it, then the same five sections in the order the player needs them.
+function lvAccordion(a) {
+  const col = el('div', 'lv-col');
+  col.appendChild(lvSection('Facts', a, true));
+  // The pick screen REPLACES the tavern row while the game is asking (§4.3),
+  // through the same `lvPicking` predicate the columns use — two arrangements
+  // that disagreed about whether the shop is on screen would be one payload
+  // rendered two ways.
+  const titles = lvPicking(a)
+    ? ['Choose one', 'Board and hand', 'Comps', 'Next opponent', 'Lobby']
+    : ['Tavern', 'Board and hand', 'Comps', 'Next opponent', 'Lobby'];
+  titles.forEach(t => {
+    col.appendChild(lvSection(t, a, true));
+  });
+  return [col];
+}
+//: The body of the view, inside the container that decides the arrangement
+//: (`.lv-body` carries `container-type:inline-size`). BOTH arrangements are
+//: built and one of them is displayed by a container query: the width that
+//: matters is this box's, and JS cannot read a container query's answer without
+//: measuring a live layout, so the DOM holds both and CSS picks. `hidden` would
+//: be wrong here — the `@container` rule is what shows one, and an attribute
+//: would be a second mechanism saying the same thing.
+function lvBody(a) {
+  const wrap = el('div', 'lv-body');
+  const cols = el('div', 'lv-main lv-layout-cols');
+  lvColumns(a).forEach(c => cols.appendChild(c));
+  const acc = el('div', 'lv-main lv-layout-acc');
+  lvAccordion(a).forEach(c => acc.appendChild(c));
+  wrap.appendChild(cols);
+  wrap.appendChild(acc);
+  return wrap;
+}
+
 function renderLiveTavern(a) {
   const app = document.getElementById('app');
   const box = document.getElementById('live-tavern');
@@ -3152,58 +3506,7 @@ function renderLiveTavern(a) {
   // renderer — a live payload with a board never carries one.
   root.appendChild(lvStatus(a));
   root.appendChild(lvTribes(a));
-  // §4.1's tab row, above the two columns: it selects the screen, and the facts
-  // rail is beside every screen rather than one of the tabs.
-  const tabs = el('div', 'lv-tabs');
-  LIVE_TABS.forEach(([key, label]) => {
-    const b = el('button', _liveTab === key ? 'on' : null, label);
-    b.onclick = () => {
-      _liveTab = key;
-      // Leaving the tab drops the open Detail: a comp screen you come back to
-      // is the list, which is also what the Comp tab being clicked again means.
-      _liveComp = null;
-      renderLiveTavern(a);
-    };
-    tabs.appendChild(b);
-  });
-  root.appendChild(tabs);
-  const main = el('div', 'lv-main');
-  const left = el('div', 'lv-col');
-  if (_liveTab === 'comps') {
-    // §4.4 lives in the MAIN column: its two tier columns, mini-card slots and
-    // compare columns need the width, and a 340px rail is the compact form the
-    // design's §4.2 keeps for the Facts table.
-    left.appendChild(lvCompsScreen(a));
-  } else if (_liveTab === 'lobby') {
-    left.appendChild(lvLobby(a));
-  } else if (a.choice && a.choice.ranked && a.choice.ranked.length) {
-    // The pick screen replaces the shop view while a choice is on screen
-    // (§4.1) — and it is the whole left column, because choosing is what the
-    // player is doing.
-    left.appendChild(lvPick(a));
-  } else {
-    // The taverner's row on top, then board and hand in ONE panel (fix list
-    // round 1 item 4 / round 2 item 4). A shop nobody has read yet says so on
-    // its own screen instead of drawing four skeleton bars.
-    const shop = a.shop_rank || [];
-    left.appendChild(shop.length
-      ? lvPanel('Tavern', lvShop(a), true)
-      : lvWaiting(a));
-    left.appendChild(lvPanel('Board and hand', lvBoardHand(a)));
-    // The announced next opponent, in the main column rather than the 340px
-    // rail: the panel carries their last-seen BOARD, and MEASURED in the real
-    // browser (2026-10-12, seven cards) that row is 941x156 — ONE row inside
-    // the 971px main column, 895x152 at a 984px window — against 310x464,
-    // three stacked rows, at the rail's width (fix list round 4 item 4). The
-    // rail keeps the facts table; this is the panel a player glances at before
-    // the fight.
-    left.appendChild(lvOpponent(a));
-  }
-  main.appendChild(left);
-  const rail = el('div', 'lv-rail');
-  rail.appendChild(lvFacts(a));
-  main.appendChild(rail);
-  root.appendChild(main);
+  root.appendChild(lvBody(a));
   box.appendChild(root);
   // Fill the panel's read-age line NOW rather than waiting up to a second for
   // the freshness ticker: a panel that renders with an empty line and fills it
