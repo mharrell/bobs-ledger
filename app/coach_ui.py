@@ -2764,6 +2764,58 @@ function lvPassed(a) {
   body.appendChild(wrap);
   return body;
 }
+//: THE NEXT OPPONENT'S NUMBER AND ITS AGE, built once so the Tavern panel and
+//: the classic Reference box cannot word the same facts differently (fix list
+//: round 4 item 4).
+//:
+//: `opp_age` — not `opp_comp.turn` — is the "N rounds ago": it is the age of
+//: the record `opp_stats` came from (live_coach's `_opp_boards`, a board we
+//: FOUGHT), while `opp_comp.turn` is the buy-phase sighting the seat's staged
+//: BOARD came from. Two records, two facts, so the panel labels each: the age
+//: rides the number it belongs to, and the board says which round it is from.
+//: `opp_lobby` is the median of the lobby's recent fights and says so.
+function oppStatsLine(a) {
+  if (a.opp_stats != null) {
+    return a.opp_stats + (a.opp_age
+      ? ' (seen ' + a.opp_age + ' round' + (a.opp_age === 1 ? '' : 's')
+        + ' ago)' : '');
+  }
+  if (a.opp_lobby != null) return '~' + a.opp_lobby + ' lobby avg';
+  return null;
+}
+function oppMixLine(a) {
+  const t = (a.opp_comp || {}).tribes || [];
+  return t.length ? t.map(m => m.n + ' ' + m.tribe).join(' · ') : null;
+}
+//: THE NEXT OPPONENT (fix list round 4 item 4): hero, the board they staged,
+//: what that board is worth, its tribe mix, and how long ago it was seen. Every
+//: row is a fact the analysis already carries — `opp_comp` for the board,
+//: `opp_stats`/`opp_lobby` for the number, `opp_age` for the age — and NOT the
+//: seat's handle (`opp_comp.name`), which stays where it already is on the
+//: Lobby tab: this is the panel a player screenshots. Nothing here says who is
+//: favoured — that is the classic page's job, and §1 bans it on this one.
+function lvOpponent(a) {
+  const p = el('div', 'lv-pn');
+  p.appendChild(el('h3', null, 'Next opponent'));
+  const oc = a.opp_comp;
+  if (!oc || !(oc.cards || []).length) {
+    p.appendChild(lvEmptyRow('No opponent board seen yet.'));
+    return p;
+  }
+  p.appendChild(lvKV('Hero', oc.hero_name || oc.hero || null));
+  p.appendChild(lvKV('Their board stats', oppStatsLine(a)));
+  p.appendChild(lvKV('Last seen', oc.turn ? 'round ' + oc.turn : null));
+  const mix = lvMixRow('Their mix', oc.tribes);
+  if (mix) p.appendChild(mix);
+  const wrap = el('div', 'lv-row');
+  oc.cards.forEach(c => {
+    wrap.appendChild(lvCard(c.card, c.name || c.card,
+                            (c.n > 1 ? '×' + c.n : '') + (c.golden ? ' ★' : ''),
+                            c.n > 1 ? {badge: '×' + c.n} : null));
+  });
+  p.appendChild(wrap);
+  return p;
+}
 //: §4.2 board row: the caption is the comp role the value pass already names
 //: ("comp core", "off-comp filler"), which is a fact about membership.
 //: One tribe a lobby has banned reads "<Tribe> — out of play" here (fix list
@@ -3138,6 +3190,14 @@ function renderLiveTavern(a) {
       ? lvPanel('Tavern', lvShop(a), true)
       : lvWaiting(a));
     left.appendChild(lvPanel('Board and hand', lvBoardHand(a)));
+    // The announced next opponent, in the main column rather than the 340px
+    // rail: the panel carries their last-seen BOARD, and MEASURED in the real
+    // browser (2026-10-12, seven cards) that row is 941x156 — ONE row inside
+    // the 971px main column, 895x152 at a 984px window — against 310x464,
+    // three stacked rows, at the rail's width (fix list round 4 item 4). The
+    // rail keeps the facts table; this is the panel a player glances at before
+    // the fight.
+    left.appendChild(lvOpponent(a));
   }
   main.appendChild(left);
   const rail = el('div', 'lv-rail');
@@ -3436,9 +3496,19 @@ function render(a) {
   // names the round so a 3-round-old preview never reads current. Hand and
   // shop are invisible to the log, so this is their BOARD, not everything
   // they hold.
+  // Round 4 item 4 added the two facts that were missing here: what that board
+  // is worth, with how long ago that reading was taken (`opp_age`, the same
+  // number the Tavern panel and the facts rail use), and the board's tribe mix.
+  // Both are built by the ONE helper the Tavern panel calls, so the two views
+  // cannot drift into different wordings of the same numbers.
   if (a.opp_comp && a.opp_comp.cards && a.opp_comp.cards.length) {
     const oc = a.opp_comp;
     const body = el('div');
+    const stats = oppStatsLine(a);
+    if (stats) body.appendChild(el('div', 'footline',
+      'Board stats ' + stats));
+    const mix = oppMixLine(a);
+    if (mix) body.appendChild(el('div', 'footline', 'Tribes ' + mix));
     body.appendChild(el('div', 'footline',
       (oc.hero_name || oc.hero || 'unknown hero')
       + (oc.name ? ' · ' + oc.name : '')
@@ -5924,7 +5994,14 @@ def render_json(analysis):
                   "golden": c in (oc.get("goldens") or [])}
                  for c, n in sorted(oc["cards"].items(),
                                     key=lambda kv: (-kv[1], kv[0]))]
-        a["opp_comp"] = dict(oc, cards=cards)
+        # The seat's tribe MIX rides the composition (fix list round 4 item 4):
+        # the same helper the tavern's own shop uses, over the board's cards
+        # repeated by their count, so "2 Beasts" means two minions rather than
+        # two distinct cards.
+        _occards = [c for c, n in oc["cards"].items() for _ in range(n)]
+        _omrows, _osrows, _ = _meta_rows()
+        a["opp_comp"] = dict(oc, cards=cards,
+                             tribes=_tribe_mix(_omrows, _osrows, _occards))
     # Pre-commit "leads" tagging (comp meter): with no target committed yet,
     # shop cards that are unowned core of the leading candidate get a "leads
     # <tribe>" tag — that's the card the meter is waiting on. Once a target
@@ -6139,10 +6216,12 @@ def render_json(analysis):
     ids.update(g["card"] for g in sell)
     ids.update(s["card"] for s in analysis.get("hand", []))
     ids.update(r["card"] for r in a["shop_rank"])
-    # The rolled-past row draws cards too, and a card absent from `cards` gets
-    # no tier badge and no card text on hover (round 4 item 3(c)). Golden ids
-    # resolve to their base like every other reader.
+    # The rolled-past row and the next-opponent panel draw cards too, and a card
+    # absent from `cards` gets no tier badge and no card text on hover (round 4
+    # items 3(c)/4). Golden ids resolve to their base like every other reader.
     ids.update(r["card"] for r in a["shop_passed"] if r.get("card"))
+    ids.update(c["card"] for c in ((a.get("opp_comp") or {}).get("cards") or [])
+               if c.get("card"))
     ids.update(c["card"] for key in ("core", "addons")
                for c in (tc.get(key) or []))
     # The comps panel's shopping lists ride the same tooltip metadata.

@@ -476,6 +476,10 @@ _DRIVER = r"""
     // and the status labels are in here too — a verdict can hide in a label.
     o.alltext = root ? root.textContent.replace(/\s+/g, ' ').trim() : '';
     // --- fix list round 4 items 3 and 4 -----------------------------------
+    // A panel BY ITS HEADING, so "the next opponent's rows" cannot be answered
+    // by some other panel's rows (the fixtures carry several .lv-kv tables).
+    const pn = title => [...q('.lv-pn')]
+      .find(p => txt(p.querySelector('h3')) === title);
     // The offers that LEFT the shop this turn: one card per OFFER ENTITY.
     o.passedlbl = txt(one('.lv-passed .lv-lbl'));
     o.passedcards = q('.lv-passed .lv-card').length;
@@ -489,6 +493,25 @@ _DRIVER = r"""
     // The tribe composition of the shop, and of the opponent's board.
     o.mixlbl = [...q('.lv-mix .lv-lbl')].map(d => d.textContent).join('|');
     o.mixchips = [...q('.lv-mixchip')].map(d => d.textContent).join('|');
+    o.opprows = (function () {
+      const p = pn('Next opponent');
+      if (!p) return '';
+      return [...p.querySelectorAll('.lv-kv')]
+        .map(d => txt(d.children[0]) + '='
+                  + txt(d.children[d.children.length - 1])).join('|');
+    })();
+    o.opptext = (function () {
+      const p = pn('Next opponent');
+      return p ? p.textContent.replace(/\s+/g, ' ').trim() : '';
+    })();
+    o.oppcards = (function () {
+      const p = pn('Next opponent');
+      return p ? p.querySelectorAll('.lv-card').length : 0;
+    })();
+    o.oppempty = (function () {
+      const p = pn('Next opponent');
+      return p ? txt(p.querySelector('.lv-empty')) : '';
+    })();
     for (const k of Object.keys(o))
       rec(name + '.' + k, ['tavern', 'cards', 'skel', 'pick', 'classic',
                            'taverncards', 'pickbars', 'compslots', 'slotsmiss',
@@ -501,7 +524,7 @@ _DRIVER = r"""
                            'picknameh', 'pickcardw', 'statebarhidden', 'cols',
                            'avgcells', 'hasavg', 'unconfirmed', 'ctlrows',
                            'toggleinnav', 'togglehidden', 'shopcards',
-                           'boardcards', 'passedcards']
+                           'boardcards', 'passedcards', 'oppcards']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
@@ -750,10 +773,18 @@ class TestTheTavernLiveInABrowser(_Rendered):
         one of them — it is the rail beside every screen (§4.2 lists it there),
         so it is never hidden and never says anything twice.
 
+        The list is IN DOM ORDER and this pin is exact, which is the point: it
+        changed once, for fix list round 4 item 4, when the announced next
+        opponent got a panel of its own (`Next opponent`, in the main column
+        under Board and hand — the panel carries their last-seen BOARD, and a
+        row of 76px cards in the 340px rail wraps into a column of cards).
+        The Shop screen is the only one that grows it: the rail's Facts table
+        stays last, beside every screen.
         """
         self.assertEqual(self.got["t.tabs"], "Shop|Comps|Lobby")
         self.assertEqual(self.got["t.tabon"], "Shop")
-        self.assertEqual(self.got["t.panels"], "Tavern|Board and hand|Facts")
+        self.assertEqual(self.got["t.panels"],
+                         "Tavern|Board and hand|Next opponent|Facts")
         self.assertEqual(self.got["comps.panels"], "Comps|Facts")
         self.assertEqual(self.got["lobby.panels"], "Lobby|Facts")
         # §8: 44px minimum targets, measured rather than declared.
@@ -1482,6 +1513,8 @@ class TestWhatTheShopKeepsSaying(_Rendered):
                 _shot("dup", _payload(**ROLLED)),
                 _shot("last", _payload(**ROLLED_LAST_TURN)),
                 _shot("none", _payload(shop_passed=[])),
+                _shot("noopp", _payload(opp_comp=None, opp_stats=None,
+                                        opp_age=None)),
                 _shot("noshop", _payload(shop_rank=[], shop_passed=[]))]
 
     def test_a_minion_two_copies_were_rolled_past_render_as_two_cards(self):
@@ -1567,9 +1600,48 @@ class TestWhatTheShopKeepsSaying(_Rendered):
         in the row above."""
         got = self.got
         self.assertIn("Tavern mix", got["t.mixlbl"])
+        self.assertIn("1 Elemental", got["t.mixchips"])
         self.assertIn("1 Spell", got["t.mixchips"])
         self.assertIn("2 Elemental", got["dup.mixchips"],
                       "the duplicate offer is not counted as two")
+        self.assertIn("Their mix", got["t.mixlbl"])
+        self.assertIn("1 Elemental", got["t.mixchips"])
+
+    def test_the_next_opponent_panel_is_their_board_and_its_age(self):
+        """Item 4: hero, the board they staged, what it is worth with how long
+        ago that was read (`opp_age`), the round the board is from, and its mix.
+
+        NOT the seat's handle: `opp_comp.name` is the opponent's BattleTag and
+        it already rides the Lobby tab. This panel is the one that ends up in a
+        screenshot, and CLAUDE.md's rule is to keep the handle out of those.
+        """
+        got = self.got
+        self.assertEqual(
+            got["t.opprows"],
+            "Hero=Reno|Their board stats=19 (seen 1 round ago)|Last seen=round 8")
+        self.assertEqual(got["t.oppcards"], 1)
+        self.assertNotIn("SomeHandle", got["t.opptext"],
+                         "the opponent's handle reached the panel that gets "
+                         "screenshotted")
+        self.assertIn("1 Elemental", got["t.mixchips"])
+
+    def test_the_lobby_figure_is_labelled_as_one_on_the_opponent_panel_too(self):
+        """A stale exact figure is not shown as exact: with no fresh
+        `opp_stats` the panel falls back to the lobby median and SAYS so, the
+        same rule the facts rail follows for its own row.
+
+        `lobby_opp`, not `opp_lobby`: `render_json` DERIVES the latter from the
+        former, so setting `opp_lobby` in the fixture would prove nothing (the
+        same trap `test_the_lobby_figure_is_named_as_an_average` documents).
+        """
+        got = _render([_shot("lb", _payload(opp_stats=None, opp_age=None,
+                                            lobby_opp=59))])
+        self.assertIn("Their board stats=~59 lobby avg", got["lb.opprows"])
+
+    def test_a_game_whose_opponent_was_never_seen_says_so(self):
+        got = self.got
+        self.assertEqual(got["noopp.opprows"], "")
+        self.assertEqual(got["noopp.oppempty"], "No opponent board seen yet.")
 
     def test_the_empty_shop_keeps_the_reason_it_is_empty(self):
         """Item 3: never an empty panel without a state. `lvWaiting` says what

@@ -442,6 +442,36 @@ class TestTheRoundsFourthList(unittest.TestCase):
                                             {"tribe": "Spell", "n": 1}],
                          "a tavern spell is counted, not dropped")
 
+    def test_the_opponent_panel_is_built_from_the_analysis_and_says_no_verdict(self):
+        """Item 4: hero, board, number, age, mix — and NOT the seat's handle,
+        which stays on the Lobby tab because this panel is the one that ends up
+        in a screenshot (CLAUDE.md's screenshot rule says to eyeball exactly
+        this field)."""
+        src = _function("lvOpponent") or ""
+        for anchor in ("oc.hero_name", "oppStatsLine(a)", "oc.turn",
+                       "oc.tribes", "oc.cards"):
+            self.assertIn(anchor, src)
+        self.assertNotIn("oc.name", src,
+                         "the opponent's BattleTag reached the panel")
+        self.assertNotIn("favored", src)
+        # The number and its age come from ONE builder, so the Tavern panel and
+        # the classic Reference box cannot word the same facts differently.
+        line = _function("oppStatsLine") or ""
+        self.assertIn("a.opp_stats", line)
+        self.assertIn("a.opp_age", line)
+        self.assertIn("lobby avg", line)
+        self.assertIn("oppStatsLine(a)",
+                      (self.code.split("// NEXT OPPONENT")[1])[:2000])
+
+    def test_the_classic_opponent_box_gained_the_same_two_facts(self):
+        """The classic Reference pane is the shipped page, so its box keeps its
+        shape and gains the mix and the number-with-its-age."""
+        classic = self.code.split("// NEXT OPPONENT")[1][:2000]
+        self.assertIn("oppStatsLine(a)", classic)
+        self.assertIn("oppMixLine(a)", classic)
+        self.assertIn("as of round ", classic)
+
+
 class TestTheGameOverCard(unittest.TestCase):
     """§6.5, and the route that had to exist for it.
 
