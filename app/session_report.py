@@ -166,7 +166,8 @@ DROPPED_ON_PURPOSE = (
     "offset, fingerprint, board[], hand[], hand_plan[], shop_rank[], "
     "shop_offers[], shop_entities[], shop_seen[], game_comps, playable_comps, "
     "own_pool, "
-    "out_of_pool, "
+    "out_of_pool, tribes_available (the page's availability mark is derived "
+    "from the bans and out-of-play the report already carries), "
     "reach_sources, sell_rank, target_cards, dark_gifts, engine_recipes, "
     "lobby_opp, opp_pool, opp_trinkets, activations, baseline_opp",
 )
@@ -191,7 +192,7 @@ DROPPED_FROM_ANALYSIS = frozenset({
     "shop_costs", "shop_entities", "shop_offers", "shop_rank", "shop_seen",
     "target_cards",
     "target_comp_evidence", "target_state", "tier", "tribe_pressure",
-    "tribe_roster", "tribes_detecting", "turn",
+    "tribe_roster", "tribes_available", "tribes_detecting", "turn",
 })
 
 #: The envelope around the rows. Verified separately, because SPEC above

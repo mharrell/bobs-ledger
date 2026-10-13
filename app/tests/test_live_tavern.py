@@ -539,7 +539,7 @@ class TestTheShippedCompsDb(unittest.TestCase):
             self.assertTrue(row["name"], row)
             self.assertTrue(row["core"], f"{row['slug']} has no core cards")
             self.assertIsInstance(row["stats"], (dict, type(None)))
-            self.assertIn(row["tribe_confirmed"], (True, False))
+            self.assertIn(row["tribe_available"], (True, False))
 
     def test_every_comp_in_the_shipped_db_has_a_canonical_tribe(self):
         """`scrape_comps.py` never writes `tribe` — it is hand-added on every new
@@ -564,10 +564,18 @@ class TestTheShippedCompsDb(unittest.TestCase):
 
     def test_a_tribe_out_of_play_is_listed_once(self):
         """Round 1 item 3: the roster contains every tribe, `out_of_pool` names
-        the rotated ones, and iterating both printed Naga twice."""
+        the rotated ones, and iterating both printed Naga twice.
+
+        Round 4 item 1 moved the chip's meaning: AVAILABLE is the mark now
+        (`avail`), a tapped ban is `active` on top of it, and a tribe this game
+        cannot offer is `dim` — the row used to mark only the banned ones, which
+        read as the opposite of what it meant.
+        """
         src = _function("lvTribes")
         self.assertIn(".filter(t => !oop.has(t))", src)
-        self.assertIn("'lv-chip ' + (on ? 'active' : 'dim')", src)
+        self.assertIn("'lv-chip ' + (on ? 'active' : (can ? 'avail' : 'dim'))",
+                      src)
+        self.assertIn("a.tribes_available", src)
 
     def test_the_comps_slots_carry_art_and_a_legend(self):
         """Round 1 item 6."""

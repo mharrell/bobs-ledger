@@ -1004,6 +1004,50 @@ class LiveCoach:
         self._comps = meta.comps()
         self._refresh_bans()
 
+    def available_tribes(self):
+        """The tribes this game can still offer (fix list round 4 item 1).
+
+        `available = confirmed, plus the unconfirmed ones while fewer than five
+        are confirmed, minus out of play`. The middle clause is the point: an
+        UNCONFIRMED tribe is not a banned one — with fewer than five confirmed
+        the lobby may still be holding it — so it counts as reachable rather
+        than as ruled out. Once the 5/5 set lands, exactly those five are
+        available, and the rest are not.
+
+        Out of play is subtracted in both states: it is a PATCH-level fact
+        (`bans.out_of_pool_tribes`, Naga since 36.6.1), not something this
+        game's bans decide.
+        """
+        oop = {normalize(t) for t in (self.out_of_pool or ())}
+        if self._bans_ready and self.allowed:
+            return {normalize(t) for t in self.allowed} - oop
+        return {normalize(t) for t in DISPLAY_TRIBES} - oop
+
+    @staticmethod
+    def tribe_available(comp, available):
+        """Is this comp's tribe one the game can still offer?
+
+        MIXED IS ALWAYS AVAILABLE (no tribe to ban — the rule as given), and an
+        unknown tribe string fails OPEN, the same way `filter_comps_by_
+        available_tribes` treats an unknown card: a comp must never be marked
+        unreachable because a DB lacks a row. Compound races (the DB's
+        `ELEMENTAL/DEMON`) are available if EITHER half is.
+        """
+        tribe = comp.get("tribe")
+        if not tribe:
+            return True
+        norm = normalize(tribe)
+        if not norm:
+            return True
+        return bool(set(norm.split("/")) & set(available))
+
+    def comps_marked(self):
+        """The panel's list: every comp, with `_tribe_available` on each row."""
+        available = self.available_tribes()
+        return {slug: dict(comp,
+                           _tribe_available=self.tribe_available(comp, available))
+                for slug, comp in (self._comps or {}).items()}
+
     def _refresh_bans(self):
         """Family-ban info, retried until the pool reveal is complete.
 
@@ -1029,12 +1073,18 @@ class LiveCoach:
         yet sampled.
 
         The comps PANEL (`self.game_comps`) is a second, game-level list
-        (2026-09-11 ask): every comp stays listed until the bans land,
-        because the player reads it on turn 1 to see what this game might
-        allow — the evidence-only panel read as if the board picked the
-        list. Each row carries _tribe_confirmed (its tribe in the
-        confirmed set?) so the UI dims the could-still-be-banned ones
-        instead of hiding them.
+        (2026-09-11 ask), and since fix list round 4 item 1 it holds EVERY
+        comp, always, whatever the bans say. It answers "what could this lobby
+        build", so nothing is dropped for its tribe — a list that silently
+        removed the unavailable tribes' comps read as an inverted filter
+        (measured: five tribes available, only the other five's comps on
+        screen). Each row carries `_tribe_available` (see `comps_marked`), so
+        the UI MARKS what this game can still reach instead of hiding the rest.
+
+        `self.playable` is NOT that list and must not become it: it is the
+        engine's filtered set, and `comp_target` / `sell_recommendation` /
+        `shop_ranking` / `comp_progress` all read it, so widening it would
+        change the advice. Panel = every comp, marked. Engine = playable only.
 
         Three states (2026-09-22, patch 36.6.1): in play, banned THIS game, or
         out of play entirely. Only the second is "banned", so the ban universe
@@ -1073,7 +1123,7 @@ class LiveCoach:
                 self.tribes_detecting = False
                 self.playable = filter_comps_by_available_tribes(
                     self._comps, self._card_races, self.allowed)
-                self.game_comps = self.playable
+                self.game_comps = self.comps_marked()
             return
         if self.bans_manual:
             # Manual taps were cleared mid-game — reopen the detection
@@ -1122,7 +1172,7 @@ class LiveCoach:
         if self._bans_ready:
             self.playable = filter_comps_by_available_tribes(
                 self._comps, self._card_races, self.allowed)
-            self.game_comps = self.playable
+            self.game_comps = self.comps_marked()
         else:
             # Detection window. confirmed-set membership, not is_banned():
             # that fail-opens on an empty set, but here an empty set means
@@ -1141,11 +1191,10 @@ class LiveCoach:
 
             self.playable = {slug: comp for slug, comp in self._comps.items()
                              if window_ok(comp.get("tribe"))}
-            # The panel keeps the full game-level list; copies, because the
-            # meta comp dicts are shared and _tribe_confirmed is per-game.
-            self.game_comps = {
-                slug: dict(comp, _tribe_confirmed=window_ok(comp.get("tribe")))
-                for slug, comp in self._comps.items()}
+            # The panel keeps the FULL game-level list, marked — every comp,
+            # whatever its tribe, so the list can never read as "the other
+            # tribes were filtered out" (round 4 item 1).
+            self.game_comps = self.comps_marked()
 
     def ensure_meta(self):
         """Retry the hero parse from outside analyze().
@@ -1754,6 +1803,10 @@ class LiveCoach:
             # 36.6.1): never in `banned` (they are not banned THIS game, they
             # do not exist in this patch's pool), shown as their own state.
             "out_of_pool": list(self.out_of_pool),
+            # The tribes this game can still offer (round 4 item 1), so the page
+            # MARKS them instead of inferring the set from `banned` — one owner
+            # for the rule (`available_tribes`), computed where the bans are.
+            "tribes_available": sorted(self.available_tribes()),
             "playable_comps": self.playable,
             # The comps panel's list (game-level; playable_comps is the
             # advisory filter, evidence-only while the bans stream in).

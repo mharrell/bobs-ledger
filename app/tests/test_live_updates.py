@@ -879,23 +879,24 @@ class TestBanGate(unittest.TestCase):
         then. The advisory list (playable) therefore admits only comps
         whose tribe the pool has CONFIRMED — a seen pure tribe is
         definitely in this lobby; an unseen one might be banned. The
-        panel's game-level list (game_comps) keeps every comp, flagged by
-        tribe confirmation (2026-09-11: the panel must read as "what this
-        game might allow" on turn 1, not as board-derived)."""
+        panel's game-level list (game_comps) keeps every comp, marked for
+        availability — and while fewer than five tribes are confirmed the
+        unconfirmed ones are AVAILABLE, because an unconfirmed tribe is not
+        a banned one (fix list round 4 item 1)."""
         from unittest import mock
         from live_coach import LiveCoach
         c = LiveCoach()
         c._comps = {
             "beasts-x": {"name": "Beasts - X", "tribe": "Beast",
                          "core": ["BG30_111"]},
-            "nagas-y": {"name": "Nagas - Y", "tribe": "Naga",
-                        "core": ["BG23_318"]},
+            "dragons-y": {"name": "Dragons - Y", "tribe": "Dragon",
+                          "core": ["BG23_318"]},
         }
         c._card_races = {}
         c._seed = "1"
         c.cur_lines = ["x"]
         fake = [{"seed": "1", "allowed": ["Beast"], "banned": [
-            "Demon", "Dragon", "Elemental", "Mech", "Murloc", "Naga",
+            "Demon", "Elemental", "Mech", "Murloc", "Naga",
             "Pirate", "Quilboar", "Undead"]}]
         with mock.patch("live_coach.bans_from_log", return_value=fake):
             c._refresh_bans()
@@ -903,13 +904,15 @@ class TestBanGate(unittest.TestCase):
         self.assertNotIn("_blocked_core", c.playable["beasts-x"])
         self.assertTrue(c.tribes_detecting)
         self.assertEqual(c.tribes_seen, 1)
-        # The panel list stays game-level: everything listed, the confirmed
-        # tribe marked certain and the unseen one flagged for dimming.
-        self.assertEqual(set(c.game_comps), {"beasts-x", "nagas-y"})
-        self.assertTrue(c.game_comps["beasts-x"]["_tribe_confirmed"])
-        self.assertFalse(c.game_comps["nagas-y"]["_tribe_confirmed"])
+        # The panel list stays game-level: every comp listed, both marked
+        # available — one confirmed, one not yet ruled out. (Dragon, not Naga:
+        # Naga is out of play this patch, and out-of-play is never available
+        # whatever the bans say — its own test lives below.)
+        self.assertEqual(set(c.game_comps), {"beasts-x", "dragons-y"})
+        self.assertTrue(c.game_comps["beasts-x"]["_tribe_available"])
+        self.assertTrue(c.game_comps["dragons-y"]["_tribe_available"])
         # The meta dicts are shared — the per-game flag must be on a copy.
-        self.assertNotIn("_tribe_confirmed", c._comps["beasts-x"])
+        self.assertNotIn("_tribe_available", c._comps["beasts-x"])
 
     def test_detection_window_empty_confirmed_set_hides_all(self):
         """Early window (0/5 confirmed — with the 3-distinct-card gate this
@@ -918,7 +921,8 @@ class TestBanGate(unittest.TestCase):
         semantics here — the replay showed seen=0 -> n_playable=21 (banned
         tribes included) before this was made an explicit confirmed-set
         membership check. The PANEL list still shows every comp (turn-1
-        game-level view), each dimmed as unconfirmed."""
+        game-level view), and with nothing confirmed yet every in-play tribe
+        is still available."""
         from unittest import mock
         from live_coach import LiveCoach
         c = LiveCoach()
@@ -936,9 +940,58 @@ class TestBanGate(unittest.TestCase):
         self.assertTrue(c.tribes_detecting)
         self.assertEqual(c.tribes_seen, 0)
         self.assertEqual(set(c.game_comps), {"beasts-x"})
-        self.assertFalse(c.game_comps["beasts-x"]["_tribe_confirmed"])
+        self.assertTrue(c.game_comps["beasts-x"]["_tribe_available"])
 
-    def test_complete_ban_set_locks(self):
+    def test_five_confirmed_marks_those_tribes_and_mixed_and_drops_nothing(self):
+        """The reported bug, as a test (fix list round 4 item 1).
+
+        With the 5/5 set landed the panel showed the OTHER five tribes' comps,
+        because `game_comps` was assigned the engine's FILTERED list — so the
+        unavailable tribes' comps were the only ones that vanished and the list
+        read as an inverted filter. Now every comp is listed and availability is
+        marked. Naga is here as the third state: out of play this patch, so it
+        is never available even when a fixture's ban set mentions it.
+        """
+        from unittest import mock
+        from live_coach import LiveCoach
+        c = LiveCoach()
+        c._comps = {
+            "beasts-x": {"name": "Beasts - X", "tribe": "Beast", "core": []},
+            "mechs-y": {"name": "Mechs - Y", "tribe": "MECHANICAL", "core": []},
+            "demons-z": {"name": "Demons - Z", "tribe": "Demon", "core": []},
+            "nagas-n": {"name": "Nagas - N", "tribe": "Naga", "core": []},
+            "mixed-m": {"name": "Mixed - M", "tribe": None, "core": []},
+        }
+        c._card_races = {}
+        c._seed = "1"
+        c.cur_lines = ["x"]
+        allowed = ["Beast", "Mech", "Pirate", "Undead", "Aberration"]
+        fake = [{"seed": "1", "allowed": allowed,
+                 "banned": ["Demon", "Dragon", "Elemental", "Murloc",
+                            "Quilboar"],
+                 "out_of_pool": ["Naga"]}]
+        with mock.patch("live_coach.bans_from_log", return_value=fake):
+            c._refresh_bans()
+        self.assertTrue(c._bans_ready)
+        self.assertFalse(c.tribes_detecting)
+        # EVERY comp is listed — nothing is dropped for its tribe.
+        self.assertEqual(set(c.game_comps),
+                         {"beasts-x", "mechs-y", "demons-z", "nagas-n",
+                          "mixed-m"})
+        mark = {s: comp["_tribe_available"] for s, comp in c.game_comps.items()}
+        self.assertTrue(mark["beasts-x"])
+        self.assertTrue(mark["mechs-y"], "MECHANICAL is Mech, not a raw tag")
+        self.assertFalse(mark["demons-z"], "Demon is not one of the five")
+        self.assertFalse(mark["nagas-n"], "out of play is never available")
+        self.assertTrue(mark["mixed-m"], "Mixed has no tribe to ban")
+        # The rule itself, as the page's own list.
+        self.assertEqual(set(c.available_tribes()), set(allowed))
+        # And the ENGINE's set is its own: the unavailable-tribe comps are gone
+        # from it (Mixed survives — it has no tribe to filter on), which is the
+        # behaviour this change deliberately did NOT touch.
+        self.assertEqual(set(c.playable), {"beasts-x", "mechs-y", "mixed-m"})
+
+
         from unittest import mock
         from live_coach import LiveCoach
         c = LiveCoach()
@@ -1176,9 +1229,10 @@ class TestRenderJsonComps(unittest.TestCase):
     def test_game_comps_preferred_tribe_flag_rides(self):
         """The panel renders game_comps (the live coach's game-level list)
         over playable_comps (the evidence-only advisory filter), and the
-        detection-window dim flag rides the row: _tribe_confirmed=False ->
-        tribe_confirmed=False; absent -> True (post-resolution rows and
-        playable_comps fallbacks render certain)."""
+        availability mark rides the row: _tribe_available=False ->
+        tribe_available=False; absent -> True (post-resolution rows and
+        playable_comps fallbacks render available, because "no information"
+        must not render as "you cannot build this")."""
         from coach_ui import render_json
         analysis = {"board": [], "sell_rank": [], "shop_rank": [],
                     "playable_comps": {
@@ -1186,21 +1240,21 @@ class TestRenderJsonComps(unittest.TestCase):
                     "game_comps": {
                         "beasts-x": {"name": "Beasts - X", "meta_tier": "A",
                                      "core": ["BG30_111"], "addons": [],
-                                     "_tribe_confirmed": True},
+                                     "_tribe_available": True},
                         "nagas-y": {"name": "Nagas - Y", "meta_tier": "B",
                                     "core": ["BG23_318"], "addons": [],
-                                    "_tribe_confirmed": False}}}
+                                    "_tribe_available": False}}}
         a = render_json(analysis)
         self.assertEqual({c["slug"] for c in a["comps"]},
                          {"beasts-x", "nagas-y"})   # playable_comps ignored
         by_slug = {c["slug"]: c for c in a["comps"]}
-        self.assertTrue(by_slug["beasts-x"]["tribe_confirmed"])
-        self.assertFalse(by_slug["nagas-y"]["tribe_confirmed"])
-        # Post-resolution / fallback rows carry no flag -> certain.
+        self.assertTrue(by_slug["beasts-x"]["tribe_available"])
+        self.assertFalse(by_slug["nagas-y"]["tribe_available"])
+        # Post-resolution / fallback rows carry no flag -> available.
         plain = render_json({"board": [], "sell_rank": [], "shop_rank": [],
                              "playable_comps": {
                                  "x": {"name": "X", "core": []}}})
-        self.assertTrue(plain["comps"][0]["tribe_confirmed"])
+        self.assertTrue(plain["comps"][0]["tribe_available"])
 
     def test_tribes_detecting_rides_the_payload(self):
         """During the detection window the comps panel labels its

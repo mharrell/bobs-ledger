@@ -1062,6 +1062,12 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-kv b.miss { color:var(--tmute); font-weight:400; }
   .tavern.live .lv-tier { color:var(--tmute); font-style:normal;
                           font-size:11px; margin-left:6px; }
+  /* The availability mark on a comp row (round 4 item 1): the tribe cell says
+     whether this game can build the comp, next to the reason in words — the
+     dimmed row never carries the fact by opacity alone (§8). */
+  .tavern.live .lv-tier.avail { color:var(--tbuff); }
+  .tavern.live .lv-tier.out { color:var(--tloss); }
+  .tavern.live .lv-crow.unavail { opacity:.55; }
   .tavern.live .lv-lbl { color:var(--tmute); font-size:12px; margin:0 0 6px; }
   .tavern.live .lv-note { color:var(--tmute); font-size:11px; margin:8px 0 0; }
   .tavern.live .lv-empty { color:var(--tmute); font-size:12px; padding:4px 0; }
@@ -1088,6 +1094,13 @@ _HTML = r"""<!doctype html>
                                  color:var(--ttext); padding:4px 10px; }
   .tavern.live .lv-chip.dim { opacity:.5; }
   .tavern.live .lv-chip.dim:hover { opacity:.85; }
+  /* MARKED AVAILABLE (fix list round 4 item 1): the row used to mark only the
+     BANNED tribes (amber, manual mode) and read as "these five are in", which
+     is the opposite of what it meant. Availability is the positive mark now,
+     and it comes from the payload's own `tribes_available` — one owner for the
+     rule, computed where the bans land. */
+  .tavern.live .lv-chip.avail { border:1px solid var(--tbuff);
+                                color:var(--ttext); }
   /* Out of play is NOT a ban the player could undo (§4.2): struck through, and
      not clickable, so it can never read as one of the five. */
   .tavern.live .lv-chip.out { border-color:var(--tloss); color:var(--tmute);
@@ -1762,10 +1775,12 @@ function compTiles(c) {
 }
 function compRow(c) {
   const open = _openComps.has(c.slug);
-  // Inside the ban-detection window the panel lists EVERY comp; a row whose
-  // tribe the pool hasn't confirmed yet is dimmed and labeled — it could
-  // still be banned, and it stays until the 5/5 set lands.
-  const unconf = c.tribe_confirmed === false;
+  // EVERY comp is listed, always (fix list round 4 item 1). The flag used to
+  // mean "tribe not confirmed yet" and the panel fed it the FILTERED list, so
+  // the comps of a banned tribe vanished and the list read as inverted. It is
+  // availability now: a row this game cannot build is marked and dimmed, never
+  // dropped.
+  const unavail = c.tribe_available === false;
   const head = el('div', 'crowhead');
   const arrow = el('span', 'carrow', open ? '▾' : '▸');
   head.appendChild(arrow);
@@ -1774,7 +1789,7 @@ function compRow(c) {
   head.appendChild(el('span', 'cstat',
     core.length + ' core · '
     + core.filter(x => x.owned).length + ' owned'
-    + (unconf ? ' · tribe unconfirmed' : '')));
+    + (unavail ? ' · tribe not available' : '')));
   const body = el('div', 'cbody');
   // Collapsed rows build their tiles lazily (on first expand) so a 21-comp
   // panel doesn't queue 100+ card fetches up front; an open row reuses the
@@ -1789,7 +1804,7 @@ function compRow(c) {
     body.hidden = !nowOpen;
     if (nowOpen && !body.children.length) body.appendChild(compBody(c));
   };
-  const wrap = el('div', 'crow' + (unconf ? ' unconf' : ''));
+  const wrap = el('div', 'crow' + (unavail ? ' unconf' : ''));
   wrap.appendChild(head);
   wrap.appendChild(body);
   return wrap;
@@ -2078,8 +2093,13 @@ function lvWaiting(a) {
 //: §4.2's ONE tribe row. Out-of-play tribes are struck through and never read
 //: as a ban the player could undo; tapping any chip corrects the set, which is
 //: what makes every comp filter downstream exact.
-//: ACTIVE is an amber outline, INACTIVE is dimmed (fix list round 1 item 3), and
-//: a tribe that is out of play appears ONCE — it is in the roster AND in
+//: AVAILABILITY IS THE MARK (fix list round 4 item 1). It used to be the other
+//: way round — in manual mode the amber chip was the BANNED tribe — so a row
+//: that read as "these five are confirmed" actually meant "these five are
+//: banned", and the comps list looked inverted. A chip now says what the game
+//: can still offer (`tribes_available`, computed with the bans); a tapped ban
+//: is the amber one, on top of that.
+//: A tribe that is out of play appears ONCE — it is in the roster AND in
 //: `out_of_pool`, so iterating both printed Naga twice.
 function lvTribes(a) {
   const row = el('div', 'lv-tribes');
@@ -2087,12 +2107,18 @@ function lvTribes(a) {
     ? 'Lobby tribes · tap to correct'
     : 'Lobby tribes · ' + (a.tribes_seen || 0) + '/5 confirmed'));
   const oop = new Set(a.out_of_pool || []);
+  const avail = new Set(a.tribes_available || []);
   const picked = new Set(a.bans_manual ? (a.banned || []) : []);
   (a.tribe_roster || []).filter(t => !oop.has(t)).forEach(t => {
     const on = picked.has(t);
-    const chip = el('span', 'lv-chip ' + (on ? 'active' : 'dim'), t);
+    // An absent `tribes_available` (an older payload) leaves every chip dim,
+    // which is exactly how this row looked before — no invented mark.
+    const can = avail.has(t);
+    const chip = el('span',
+                    'lv-chip ' + (on ? 'active' : (can ? 'avail' : 'dim')), t);
     chip.title = on ? 'Banned in this game — tap to clear'
-                    : 'In play — tap to ban';
+                    : (can ? 'In play — tap to ban'
+                           : 'Not in this game — tap if that is wrong');
     chip.onclick = () => {
       if (picked.has(t)) picked.delete(t);
       else picked.add(t);
@@ -2237,6 +2263,10 @@ function lvCompRow(a, c, anyAvg) {
   const st = c.stats || null;
   const row = el('div', 'lv-crow');
   if (st && st.low_sample) row.classList.add('low');
+  // MARKED, NOT DROPPED (fix list round 4 item 1): the panel now lists every
+  // comp, so the ones this game cannot build say so on the row itself.
+  const unavail = c.tribe_available === false;
+  if (unavail) row.classList.add('unavail');
   const picked = _liveCompare.has(c.slug);
   const full = !picked && _liveCompare.size >= LIVE_COMPARE_MAX;
   // A CHECKBOX, not a chip (fix list round 1 item 6): "compare" is a selection
@@ -2274,7 +2304,11 @@ function lvCompRow(a, c, anyAvg) {
   name.appendChild(open);
   name.appendChild(el('i', 'lv-tier', c.meta_tier ? c.meta_tier + ' tier'
                           : (c.provisional ? 'provisional' : 'no published tier')));
-  name.appendChild(el('i', 'lv-tier', lvCompTribe(c)));
+  // The tribe cell carries the availability mark, so the reason a row is dimmed
+  // is on the row rather than carried by opacity alone (§8).
+  name.appendChild(el('i', 'lv-tier' + (unavail ? ' out' : ' avail'),
+                      lvCompTribe(c)
+                      + (unavail ? ' · not available' : '')));
   if (st && st.low_sample) {
     name.appendChild(el('span', 'lv-chip lowsamp', 'low sample'));
   }
@@ -5802,10 +5836,11 @@ def render_json(analysis):
             "when_to_commit": _plain_card_text(comp.get("when_to_commit")),
             "enablers": _enabler_lines(comp.get("common_enablers")),
             "has_guide": bool(comp.get("guide") or comp.get("how_to_play")),
-            # Tribe confirmed in this lobby? Absent (True) once the bans
-            # resolve; False only inside the detection window, where the
-            # panel dims the could-still-be-banned rows.
-            "tribe_confirmed": comp.get("_tribe_confirmed", True),
+            # Can this game still build this comp? (round 4 item 1.) True from
+            # `game_comps`' own mark; a fixture or an older record without the
+            # mark reads True, because "no information" must not render as
+            # "unavailable".
+            "tribe_available": comp.get("_tribe_available", True),
             "core": rows(comp.get("core")),
             "addons": rows(comp.get("addons")),
         })
