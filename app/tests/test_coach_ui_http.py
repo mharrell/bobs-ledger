@@ -151,12 +151,12 @@ class TestWelcomeAndClear(unittest.TestCase):
     def setUp(self):
         self._saved = (coach_ui._state.payload, coach_ui._state.etag,
                        coach_ui._state.analysis,
-                       coach_ui._state.manual_bans)
+                       coach_ui._state.manual_in_play)
 
     def tearDown(self):
         (coach_ui._state.payload, coach_ui._state.etag,
          coach_ui._state.analysis,
-         coach_ui._state.manual_bans) = self._saved
+         coach_ui._state.manual_in_play) = self._saved
 
     def test_clear_serves_the_welcome(self):
         import json
@@ -167,15 +167,15 @@ class TestWelcomeAndClear(unittest.TestCase):
         self.assertTrue(a["welcome"])
         self.assertEqual(a["product"], "Bob's Ledger")
 
-    def test_clear_button_keeps_manual_bans(self):
-        coach_ui.store_manual_bans(["Beast"])
+    def test_clear_button_keeps_manual_in_play(self):
+        coach_ui.store_manual_in_play(["Beast"])
         coach_ui.clear_analysis(keep_bans=True)
-        self.assertEqual(coach_ui.latest_manual_bans(), ["Beast"])
+        self.assertEqual(coach_ui.latest_manual_in_play(), ["Beast"])
 
-    def test_new_game_clear_wipes_manual_bans(self):
-        coach_ui.store_manual_bans(["Beast"])
+    def test_new_game_clear_wipes_manual_in_play(self):
+        coach_ui.store_manual_in_play(["Beast"])
         coach_ui.clear_analysis()
-        self.assertIsNone(coach_ui.latest_manual_bans())
+        self.assertIsNone(coach_ui.latest_manual_in_play())
 
 
 class TestServerPortConflict(unittest.TestCase):

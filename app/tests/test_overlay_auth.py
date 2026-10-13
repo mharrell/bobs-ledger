@@ -54,7 +54,7 @@ sys.path.insert(0, HERE)          # location-independent: no cwd or -t needed
 # if something already pulled live_coach in. The full suite gets that for free
 # (test_advice_worklist sorts earlier and imports outcome_audit); a single-file
 # run does not, which made `python -m unittest ... -p test_overlay_auth.py`
-# fail with "cannot import name 'latest_manual_bans'" — measured on main too,
+# fail with "cannot import name 'latest_manual_in_play'" — measured on main too,
 # so it is the package's shape rather than this file's. Listing it here is what
 # keeps this module runnable on its own.
 import live_coach  # noqa: F401,E402
@@ -211,11 +211,15 @@ class TestNoKeyNoData(_ServerCase):
         self.assertEqual(share.status(), "undecided",
                          "a keyless local process changed the consent answer")
 
-    def test_the_ban_list_cannot_be_written_without_the_key(self):
+    def test_the_in_play_list_cannot_be_written_without_the_key(self):
+        """RENAMED 2026-10-13 with the payload: the POST body key is `in_play`
+        (the five tribes the tavern offers), so the door being tested is the
+        one the page actually knocks on. A stale key would have made this a
+        test of a route nothing calls."""
         from unittest import mock
-        with mock.patch.object(coach_ui, "store_manual_bans") as store:
+        with mock.patch.object(coach_ui, "store_manual_in_play") as store:
             status, _body = self._call(
-                "/bans", "POST", json.dumps({"banned": ["Beast"]}).encode(),
+                "/bans", "POST", json.dumps({"in_play": ["Beast"]}).encode(),
                 {"Content-Type": "application/json"}, key=False)
         self.assertEqual(status, 403)
         self.assertFalse(store.called, "a keyless POST /bans was honoured")

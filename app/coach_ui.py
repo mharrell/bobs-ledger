@@ -454,11 +454,11 @@ _HTML = r"""<!doctype html>
   /* Ban picker (2026-09-19): tap the 5 banned tribes from the reveal
      screen — the log never carries the ban list, the inference takes
      minutes, a manual set is exact from turn 1. */
-  .banchips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
-  .banchips .chip { border:1px solid var(--border); border-radius:12px;
+  .inplaychips { display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .inplaychips .chip { border:1px solid var(--border); border-radius:12px;
                     padding:2px 10px; font-size:12px; cursor:pointer;
                     color:var(--dim); user-select:none; }
-  .banchips .chip.picked { border-color:var(--bad); color:var(--bad);
+  .inplaychips .chip.picked { border-color:var(--bad); color:var(--bad);
                            text-decoration:line-through; }
   /* Two panes on a wide window: DECIDE (the turn's decision — never
      needs scrolling, sticky) and REFERENCE (scout intel + shopping
@@ -2335,7 +2335,7 @@ function lvTribes(a) {
     chip.onclick = () => {
       if (picked.has(t)) picked.delete(t);
       else picked.add(t);
-      postBans([...picked]);
+      postInPlay([...picked]);
       chip.classList.toggle('active');
       chip.classList.toggle('dim');
     };
@@ -3554,9 +3554,9 @@ function render(a) {
     // just ended, and it is dropped here rather than at the next game's first
     // payload — otherwise the 5/5 set is held across the whole gap and drawn
     // again the moment a payload arrives without a game number.
-    _banPick.clear();
-    _banPickGame = null;
-    _banPickAt = 0;
+    _inPlayPick.clear();
+    _inPlayPickGame = null;
+    _inPlayPickAt = 0;
     // §6.5's game-over card is the ONE welcome payload the Tavern viewer draws;
     // a first run has no Tavern design, so it keeps the classic card — and the
     // Tavern layout is cleared first, or that card would appear behind a stale
@@ -3603,15 +3603,15 @@ function render(a) {
   // taps (unless we tapped in the last 3s — the POST may still be in
   // flight); while the player is mid-tapping during detection, local wins.
   const gameNo = a.game_no ?? null;
-  if (gameNo !== _banPickGame) {
-    _banPickGame = gameNo;
-    _banPick = new Set(a.bans_manual ? (a.banned || []) : []);
-    _banPickAt = 0;
+  if (gameNo !== _inPlayPickGame) {
+    _inPlayPickGame = gameNo;
+    _inPlayPick = new Set(a.bans_manual ? (a.banned || []) : []);
+    _inPlayPickAt = 0;
     _compBodyCache.clear();  // a new game invalidates every owned/banned flag
-  } else if (a.bans_manual && Date.now() - _banPickAt > 3000) {
+  } else if (a.bans_manual && Date.now() - _inPlayPickAt > 3000) {
     const srv = new Set(a.banned || []);
-    if (srv.size !== _banPick.size || [...srv].some(t => !_banPick.has(t))) {
-      _banPick = srv;
+    if (srv.size !== _inPlayPick.size || [...srv].some(t => !_inPlayPick.has(t))) {
+      _inPlayPick = srv;
     }
   }
   // Pre-warm the /card renders for everything on screen so hovers are
@@ -4051,17 +4051,17 @@ function render(a) {
         + '/5 tribes confirmed · dimmed comps could still be banned · '
         + 'tap the 5 banned tribes to set them now:');
     compsBody.appendChild(line);
-    const chips = el('div', 'banchips');
+    const chips = el('div', 'inplaychips');
     // The reveal screen lists the CURRENT pool's tribes, so an out-of-play
     // tribe (Naga since 36.6.1) is not on it and is not tappable here either.
     const oopSet = new Set(a.out_of_pool || []);
     (a.tribe_roster || []).filter(t => !oopSet.has(t)).forEach(t => {
-      const c = el('span', 'chip' + (_banPick.has(t) ? ' picked' : ''), t);
+      const c = el('span', 'chip' + (_inPlayPick.has(t) ? ' picked' : ''), t);
       c.onclick = () => {
-        if (_banPick.has(t)) _banPick.delete(t); else _banPick.add(t);
-        _banPickAt = Date.now();
+        if (_inPlayPick.has(t)) _inPlayPick.delete(t); else _inPlayPick.add(t);
+        _inPlayPickAt = Date.now();
         c.classList.toggle('picked');
-        postBans([..._banPick]);
+        postInPlay([..._inPlayPick]);
       };
       chips.appendChild(c);
     });
@@ -4101,11 +4101,15 @@ function render(a) {
 // Once tapping, local state wins for 3s so a poll can't flicker the chip
 // back before the POST lands; after that the server (via bans_manual) is
 // authoritative and self-heals any missed POST.
-let _banPick = new Set(), _banPickGame = null, _banPickAt = 0;
-function postBans(list) {
+let _inPlayPick = new Set(), _inPlayPickGame = null, _inPlayPickAt = 0;
+function postInPlay(list) {
   fetch(auth('/bans'), {method: 'POST',
                   headers: {'Content-Type': 'application/json'},
-                  body: JSON.stringify({banned: list})});
+                  // The body key says what the list IS (2026-10-13): the five
+                  // tribes the tavern offers. The route keeps its name — the
+                  // page and the server ship together, but a per-run token
+                  // already makes a stale tab's POST impossible.
+                  body: JSON.stringify({in_play: list})});
 }
 // 300ms: the live loop pushes up to ~3/s and the advice itself costs ~5ms —
 // the 1s browser poll was the perceived lag. Between pushes the server
@@ -5279,11 +5283,13 @@ class _State:
         # frame must teach, not render blank panels.
         self.payload = welcome_payload()
         self.etag = hashlib.sha1(self.payload).hexdigest()
-        # The player-set banned tribes (POST /bans), or None when not set.
-        # The ban reveal is on screen at t0 and the pool inference needs
-        # minutes to converge, so a 5-tap override at hero pick is the
-        # precise path (2026-09-19; the list itself is not in any log).
-        self.manual_bans = None
+        # The player's hand-picked IN-TAVERN tribes (POST /bans, body key
+        # `in_play`), or None when not set. The tribe panel is on screen at t0
+        # and the pool inference needs minutes to converge, so a 5-tap override
+        # at hero pick is the precise path (2026-09-19; the list itself is not in
+        # any log). The five tapped ARE the tribes the tavern offers — `banned`
+        # is the derived complement, never this list (2026-10-13).
+        self.manual_in_play = None
         # The finished game's review (settle_up.render_html), or None. Built
         # off-thread by live.py when a game ends, because it REPLAYS the game
         # and the monitor's tick has to keep answering the log (2026-10-06).
@@ -5530,17 +5536,17 @@ def clear_analysis(keep_bans=False):
     """Reset the overlay to the welcome state.
 
     Fired on a new game's CREATE_GAME — the previous game's panel must
-    never survive into the next one, and the manual bans wipe with it (the
-    5/5 family ban differs per game). The page's Clear button passes
-    keep_bans=True: mid-game, a wipe should blank the screen, not throw
-    away a deliberate 5-tap ban set.
+    never survive into the next one, and the hand-set in-tavern tribes wipe
+    with it (the 5/5 tribe set differs per game). The page's Clear button
+    passes keep_bans=True: mid-game, a wipe should blank the screen, not
+    throw away a deliberate 5-tap set.
     """
     with _state.lock:
         _state.analysis = None
         _state.payload = welcome_payload()
         _state.etag = hashlib.sha1(_state.payload).hexdigest()
         if not keep_bans:
-            _state.manual_bans = None
+            _state.manual_in_play = None
 
 
 def show_game_over(analysis=None, placement=None, turn=None):
@@ -5577,14 +5583,14 @@ def show_game_over(analysis=None, placement=None, turn=None):
         _state.analysis = None
         _state.payload = welcome_payload(game_over=game_over)
         _state.etag = hashlib.sha1(_state.payload).hexdigest()
-        # The game's own 5/5 ban set dies with the game (fix list round 4 item
+        # The game's own 5/5 tribe set dies with the game (fix list round 4 item
         # 2). It used to survive until the NEXT game's CREATE_GAME cleared it,
         # which is long enough for the waiting state to be showing a set that
-        # belongs to a game that is over — and the family ban differs per game,
+        # belongs to a game that is over — and the tribe set differs per game,
         # so between games there is no correct set to show. The welcome payload
         # carries no tribe field at all, so this is the state agreeing with what
         # is on screen rather than a fix for a visible chip.
-        _state.manual_bans = None
+        _state.manual_in_play = None
 
 
 def set_review(html_text, label=None, rep=None):
@@ -5824,25 +5830,29 @@ def _review_pending_page():
 </div></body></html>"""
 
 
-def store_manual_bans(tribes):
-    """Set the manual banned-tribe list; an empty list clears it.
+def store_manual_in_play(tribes):
+    """Set the player's hand-picked IN-TAVERN tribes; an empty list clears it.
 
-    Only canonical display names (tribes.DISPLAY_TRIBES) are accepted;
-    everything else is dropped. Returns the list that stuck (sorted).
+    RENAMED 2026-10-13 (was store_manual_bans). The value is the five tribes the
+    player tapped on the reveal screen — the tribes the tavern offers, and what
+    `banned` is DERIVED from — so the old name described the opposite set, which
+    is how the inverted reading survived this long. Only canonical display names
+    (tribes.DISPLAY_TRIBES) are accepted; everything else is dropped. Returns the
+    list that stuck (sorted).
     """
     from tribes import DISPLAY_TRIBES
     roster = set(DISPLAY_TRIBES)
     clean = sorted({t for t in (tribes or [])
                     if isinstance(t, str) and t in roster})
     with _state.lock:
-        _state.manual_bans = clean if clean else None
+        _state.manual_in_play = clean if clean else None
     return clean
 
 
-def latest_manual_bans():
-    """The manual banned tribes, or None when the player hasn't set any."""
+def latest_manual_in_play():
+    """The player's hand-picked in-tavern tribes, or None when unset."""
     with _state.lock:
-        return list(_state.manual_bans) if _state.manual_bans is not None \
+        return list(_state.manual_in_play) if _state.manual_in_play is not None \
             else None
 
 
@@ -6913,9 +6923,13 @@ class _Handler(BaseHTTPRequestHandler):
             except ValueError:
                 self._send(400, "application/json", b'{"error":"bad json"}')
                 return
-            banned = store_manual_bans(payload.get("banned"))
+            # The body key is `in_play` (RENAMED 2026-10-13, was `banned`): the
+            # list is the five tribes the tavern OFFERS, and the server derives
+            # the banned set from it. The echo key follows the body, so the two
+            # cannot drift apart again.
+            in_play = store_manual_in_play(payload.get("in_play"))
             self._send(200, "application/json",
-                       json.dumps({"ok": True, "banned": banned}).encode())
+                       json.dumps({"ok": True, "in_play": in_play}).encode())
             return
         if self.path.rstrip("/") == "/share":
             n = int(self.headers.get("Content-Length") or 0)

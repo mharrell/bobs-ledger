@@ -293,7 +293,7 @@ class TestThePickIsNotNamed(unittest.TestCase):
         live._last_state = None
         with mock.patch.object(live, "rank_choices", return_value=ranked), \
              mock.patch.object(live, "choice_kind", return_value="hero"), \
-             mock.patch.object(live.coach_ui, "latest_manual_bans",
+             mock.patch.object(live.coach_ui, "latest_manual_in_play",
                                return_value=[]), \
              mock.patch.object(live.coach_ui, "update_analysis",
                                side_effect=lambda a: pushed.update(a)), \

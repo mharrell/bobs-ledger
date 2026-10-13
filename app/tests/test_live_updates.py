@@ -1102,12 +1102,12 @@ class TestManualBans(unittest.TestCase):
 
     def tearDown(self):
         import coach_ui
-        coach_ui.store_manual_bans([])
+        coach_ui.store_manual_in_play([])
 
     def test_manual_set_is_authoritative(self):
         import coach_ui
         c = self._coach()
-        coach_ui.store_manual_bans(self.TEAMS)
+        coach_ui.store_manual_in_play(self.TEAMS)
         c._refresh_bans()
         self.assertTrue(c._bans_ready)
         self.assertTrue(c.bans_manual)
@@ -1134,7 +1134,7 @@ class TestManualBans(unittest.TestCase):
         c = self._coach()
         c.allowed = ["Beast", "Mech", "Murloc", "Naga", "Quilboar"]
         c._bans_ready = True
-        coach_ui.store_manual_bans(self.TEAMS)
+        coach_ui.store_manual_in_play(self.TEAMS)
         c._refresh_bans()
         self.assertTrue(c.bans_manual)
         self.assertEqual(c.allowed, ["Beast", "Mech", "Pirate", "Quilboar",
@@ -1143,10 +1143,10 @@ class TestManualBans(unittest.TestCase):
     def test_changing_the_taps_reapplies(self):
         import coach_ui
         c = self._coach()
-        coach_ui.store_manual_bans(self.TEAMS)
+        coach_ui.store_manual_in_play(self.TEAMS)
         c._refresh_bans()
         self.assertEqual(set(c.playable), {"beasts-x", "mechs-w"})  # Mech in
-        coach_ui.store_manual_bans(["Beast", "Murloc", "Pirate", "Quilboar",
+        coach_ui.store_manual_in_play(["Beast", "Murloc", "Pirate", "Quilboar",
                                     "Undead"])
         c._refresh_bans()
         self.assertEqual(c.allowed, ["Beast", "Murloc", "Pirate", "Quilboar",
@@ -1173,7 +1173,7 @@ class TestManualBans(unittest.TestCase):
         c = self._coach()
         c.friendly = 7          # the payload only exists once the hero parses
         c.hero_card = "BG30_HERO_100"
-        coach_ui.store_manual_bans(self.TEAMS)
+        coach_ui.store_manual_in_play(self.TEAMS)
         with mock.patch.object(LiveCoach, "_resolve_boards"), \
                 mock.patch.object(c.gs, "final_board", return_value=([], None)), \
                 mock.patch("live_coach.sell_recommendation", return_value=[]), \
@@ -1197,9 +1197,9 @@ class TestManualBans(unittest.TestCase):
     def test_clearing_reopens_detection(self):
         import coach_ui
         c = self._coach()
-        coach_ui.store_manual_bans(self.TEAMS)
+        coach_ui.store_manual_in_play(self.TEAMS)
         c._refresh_bans()
-        coach_ui.store_manual_bans([])
+        coach_ui.store_manual_in_play([])
         c._refresh_bans()
         self.assertFalse(c.bans_manual)
         self.assertFalse(c._bans_ready)
@@ -1208,18 +1208,18 @@ class TestManualBans(unittest.TestCase):
 
     def test_store_validates_against_the_roster(self):
         import coach_ui
-        self.assertEqual(coach_ui.store_manual_bans(
+        self.assertEqual(coach_ui.store_manual_in_play(
             ["Beast", "Weird", "", None, "Elemental"]), ["Beast", "Elemental"])
-        self.assertEqual(coach_ui.latest_manual_bans(), ["Beast", "Elemental"])
-        self.assertEqual(coach_ui.store_manual_bans([]), [])  # empty = clear
-        self.assertIsNone(coach_ui.latest_manual_bans())
+        self.assertEqual(coach_ui.latest_manual_in_play(), ["Beast", "Elemental"])
+        self.assertEqual(coach_ui.store_manual_in_play([]), [])  # empty = clear
+        self.assertIsNone(coach_ui.latest_manual_in_play())
 
     def test_reset_with_the_game(self):
         """bans_manual rides _GAME_DEFAULTS: a new game resets it (the tap
         was per-game; a stale manual set would poison the next lobby)."""
         import coach_ui
         c = self._coach()
-        coach_ui.store_manual_bans(self.TEAMS)
+        coach_ui.store_manual_in_play(self.TEAMS)
         c._refresh_bans()
         self.assertTrue(c.bans_manual)
         c._reset()
@@ -1464,7 +1464,7 @@ class TestPickDedup(unittest.TestCase):
             mock.patch.object(self.live, "rank_choices",
                               return_value=self.ranked),
             mock.patch.object(self.live.coach_ui, "update_analysis"),
-            mock.patch.object(self.live.coach_ui, "latest_manual_bans",
+            mock.patch.object(self.live.coach_ui, "latest_manual_in_play",
                               return_value=[]),
             mock.patch.object(self.live.decision_log, "record"),
         )

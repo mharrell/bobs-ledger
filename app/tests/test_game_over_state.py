@@ -50,7 +50,7 @@ class TestTheTwoStates(unittest.TestCase):
         game-over state would be felt by every test that runs after it.
         """
         before = (coach_ui._state.payload, coach_ui._state.etag,
-                  coach_ui._state.analysis, coach_ui._state.manual_bans)
+                  coach_ui._state.analysis, coach_ui._state.manual_in_play)
         self.addCleanup(self._restore, before)
         coach_ui.show_game_over(analysis, placement=placement, turn=turn)
         return json.loads(coach_ui._state.payload)
@@ -60,7 +60,7 @@ class TestTheTwoStates(unittest.TestCase):
         payload, etag, analysis, bans = before
         coach_ui._state.payload, coach_ui._state.etag = payload, etag
         coach_ui._state.analysis = analysis
-        coach_ui._state.manual_bans = bans
+        coach_ui._state.manual_in_play = bans
 
     def test_a_finished_game_drops_its_own_ban_set_and_shows_none(self):
         """Fix list round 4 item 2: the waiting state must carry no tribe state.
@@ -70,11 +70,11 @@ class TestTheTwoStates(unittest.TestCase):
         CREATE_GAME — which is where it used to happen, leaving the whole
         between-games gap holding a set that was already wrong.
         """
-        coach_ui.store_manual_bans(["Beast", "Mech", "Pirate", "Undead",
+        coach_ui.store_manual_in_play(["Beast", "Mech", "Pirate", "Undead",
                                     "Aberration"])
-        self.assertEqual(len(coach_ui.latest_manual_bans() or ()), 5)
+        self.assertEqual(len(coach_ui.latest_manual_in_play() or ()), 5)
         card = self._after_game_over({"current_place": 3})
-        self.assertIsNone(coach_ui.latest_manual_bans(),
+        self.assertIsNone(coach_ui.latest_manual_in_play(),
                           "the finished game's ban set is still held")
         # And the card itself cannot render one: no tribe field rides it.
         for key in ("banned", "tribe_roster", "tribes_available", "tribes_seen",

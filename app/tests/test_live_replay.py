@@ -48,7 +48,7 @@ from tests.test_shop_parsing import opt_block           # noqa: E402
 
 #: `live_coach` is imported above, before `coach_ui`, on purpose: coach_ui →
 #: settle_up → outcome_audit → live_coach → `from coach_ui import
-#: latest_manual_bans` is a cycle, so live_coach has to be in sys.modules first.
+#: latest_manual_in_play` is a cycle, so live_coach has to be in sys.modules first.
 #: Importing live_replay alone happens to do the same priming; keeping it here
 #: means this module cannot be broken by a reordering inside live_replay.
 

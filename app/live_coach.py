@@ -23,7 +23,7 @@ from bans import (bans_from_log, filter_comps_by_available_tribes,
 import meta
 import pool
 import lobby
-from coach_ui import latest_manual_bans
+from coach_ui import latest_manual_in_play
 from meta import hero_power as _hero_power_text
 from tribes import DISPLAY_TRIBES, matches, normalize
 from player_actions import (
@@ -1131,7 +1131,7 @@ class LiveCoach:
         # the reveal is exact at t0 while the pool inference needs minutes
         # (2026-09-19: minute 12/14 in the evening games). Applied once per
         # distinct list; clearing the taps falls back to the inference.
-        manual = latest_manual_bans()
+        manual = latest_manual_in_play()
         if manual:
             key = tuple(manual)
             if not (self.bans_manual and self._manual_key == key):

@@ -224,10 +224,11 @@ def _advise_pick(coach, log_path=None, log_offset=None, game_no=None,
     c = coach.choice
     if not c or c.get("picked") is not None or not c.get("options"):
         return
-    # The ban reveal is on screen EXACTLY during this pick, and the pool
+    # The tribe panel is on screen EXACTLY during this pick, and the pool
     # inference needs minutes — the picker must surface here (2026-09-19).
-    # The manual bans ride the dedup key so a tap re-pushes immediately.
-    manual = coach_ui.latest_manual_bans() or []
+    # The hand-set in-tavern tribes ride the dedup key so a tap re-pushes
+    # immediately.
+    manual = coach_ui.latest_manual_in_play() or []
     state = ("pick", c.get("source"), tuple(c["options"]), tuple(manual),
              getattr(coach, "_bans_ready", False))
     if state == _last_state:

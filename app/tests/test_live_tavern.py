@@ -930,7 +930,7 @@ class TestTheWaitingStateHoldsNoTribeState(unittest.TestCase):
 
     The server drops the finished game's ban set where the game ends
     (`test_game_over_state`), and the page must not keep its own copy either:
-    `_banPick` is the local tap set, and it used to survive the whole
+    `_inPlayPick` is the local tap set, and it used to survive the whole
     between-games gap, re-seeding only when the NEXT game's payload arrived with
     a game number. The welcome branch now clears it, so the waiting state cannot
     draw a tribe set even if a payload later arrives without one.
@@ -944,8 +944,8 @@ class TestTheWaitingStateHoldsNoTribeState(unittest.TestCase):
     def test_the_welcome_branch_drops_the_local_tap_set(self):
         body = self._render_src()
         self.assertIn("if (a.welcome) {", body)
-        for line in ("_banPick.clear();", "_banPickGame = null;",
-                     "_banPickAt = 0;"):
+        for line in ("_inPlayPick.clear();", "_inPlayPickGame = null;",
+                     "_inPlayPickAt = 0;"):
             self.assertIn(line, body, "the waiting state can keep a stale set")
 
     def test_the_welcome_card_still_carries_no_tribe_field(self):

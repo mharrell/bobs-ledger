@@ -91,7 +91,7 @@ import webbrowser
 
 # Import order matters, and it is not style. `coach_ui` pulls in settle_up →
 # outcome_audit → live_coach, and live_coach does `from coach_ui import
-# latest_manual_bans` — so live_coach has to be fully loaded BEFORE coach_ui
+# latest_manual_in_play` — so live_coach has to be fully loaded BEFORE coach_ui
 # starts loading, or that import runs against a half-built module. live.py
 # primes it the same way (its `from live_coach import LiveCoach` sits above
 # `import coach_ui`), and the suite's "running one module by hand" note records
@@ -819,20 +819,21 @@ def main(argv=None):
     _say(HELP)
     _say("(every step re-reads the game from the start, so a late phase takes "
          "seconds)")
-    last_bans = tuple(coach_ui.latest_manual_bans() or ())
+    last_picked = tuple(coach_ui.latest_manual_in_play() or ())
     due = 0.0
     try:
         while True:
             raw = _read_key(0.25)
             if raw is None:
-                # The live monitor re-advises the instant a ban chip lands. This
+                # The live monitor re-advises the instant a tribe chip lands. This
                 # tool cannot re-run a phase for free, so it says what to press
                 # rather than doing seconds of work behind the dev's back.
-                bans = tuple(coach_ui.latest_manual_bans() or ())
-                if bans != last_bans:
-                    last_bans = bans
-                    _say(f"manual bans changed ({len(bans)} set) — r re-pushes "
-                         f"this frame with them; every later frame picks them up")
+                picked = tuple(coach_ui.latest_manual_in_play() or ())
+                if picked != last_picked:
+                    last_picked = picked
+                    _say(f"in-tavern tribes changed ({len(picked)} set) — r "
+                         f"re-pushes this frame with them; every later frame "
+                         f"picks them up")
                 if opts["auto"] and time.time() >= due:
                     due = time.time() + opts["auto"]
                     nxt = (driver.phase_of() + 1
