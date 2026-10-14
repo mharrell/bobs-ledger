@@ -91,6 +91,66 @@ LIVE_VERDICT_KEYS = frozenset({
     "target_state",        # "pivot" / "committing" — a directive about direction
 })
 
+#: Fields the live page no longer reads, dropped from the payload with the
+#: classic renderer (tossed 2026-10-14; their last reader went 2026-10-13,
+#: bebfb4f).
+#:
+#: A SECOND LIST, DELIBERATELY NOT MERGED WITH THE ONE ABOVE. LIVE_VERDICT_KEYS
+#: is the pivot: the plan is computed, recorded, and shown only after the fact.
+#: These seven are one layer down and a different reason entirely — the live page
+#: had two renderers, the Classic one was deleted, and each of these was read by
+#: no line that is left. Merging them would put two unrelated meanings in one
+#: list, and then neither question could be audited: "is the model's plan off the
+#: page" (the pivot) is not the question "can any page code still read this"
+#: (dead payload weight).
+#:
+#: They kept shipping because the page's view is `dict(analysis)` plus this
+#: function's own derivations, and nothing had ever asked, key by key, which of
+#: those a page could still render. So the DERIVATIONS ALL STAY — dropping the
+#: key in render_json is the whole change, and keeping the producer is what lets
+#: `test_live_view` prove the absence is the DROP rather than a name that stopped
+#: existing anywhere.
+#:
+#:   thresholds        the dying-HP threshold coloured the classic strip's HP
+#:                     tile. render_json invented this key; the analysis never
+#:                     carried it, and value.DYING_HEALTH is untouched.
+#:   comp_progress     render_json derives the pre-commit "leads <tribe>" shop
+#:                     tag from it (above) and that derivation still reads the
+#:                     ANALYSIS. The analysis field is read by replay_review,
+#:                     turn_review, session_report's whitelist and value's own
+#:                     producer, so it stays — the review and the corpus are
+#:                     what it is FOR (PIVOT.md).
+#:   engine            render_json's own copy of value.hand_engine's answer, for
+#:                     the classic "Hand engine" row. Nothing else read it.
+#:   scout             the classic "you N stats · ~M theirs" strip. The seat and
+#:                     lobby SCOUT (live_coach._scout, lobby.LobbyScout) is a
+#:                     different thing with the same word in its name and is
+#:                     untouched, as are board_stats / opp_stats / opp_lobby —
+#:                     the numbers the Tavern Facts table reads.
+#:   shop_offers       render_json's own offer-ORDER fallback for `shop_rank`
+#:                     (above), and that derivation is its only reader anywhere.
+#:                     The analysis field stays BECAUSE of it: the page's row
+#:                     order comes from this list, so without the field every
+#:                     shop row would fall back to sorting by card id — the
+#:                     arbitrary-but-honest branch, which is not the game's
+#:                     order. session_report names it in DROPPED_FROM_ANALYSIS,
+#:                     so it is also one of the keys the report never sends.
+#:   target_cards      render_json's core/addon shop tags. The analysis field is
+#:                     read by value.py, turn_review and coach.py.
+#:   target_comp_guide render_json's target-comp guide box, and nothing else.
+#:
+#: test_live_view.py carries the pivot's three halves onto this set, with the
+#: control that matters: with the set emptied every one of the seven comes back.
+LIVE_UNREAD_KEYS = frozenset({
+    "thresholds",         # the classic strip's HP tile
+    "comp_progress",      # render_json's "leads <tribe>" tag (derived above)
+    "engine",             # the classic "Hand engine" row
+    "scout",              # the classic scout strip
+    "shop_offers",        # render_json's offer-order fallback for shop_rank
+    "target_cards",       # render_json's core/addon shop tags
+    "target_comp_guide",  # render_json's target-comp guide box
+})
+
 # On-demand card art: TWO kinds of image, so TWO sources (probed 2026-10-04,
 # per id class — see PORTRAIT_URLS/CARD_URLS below).
 #
@@ -485,8 +545,9 @@ _HTML = r"""<!doctype html>
   /* (The HAND ENGINE row (`engrow`/`engbit`) and the target-comp tile states
      (`comprow`/`missing`/`bannedrow`) lived here. Both were the classic live
      page's boxes — the engine checks and the "comp pieces" hunt list — and went
-     with it on 2026-10-13. `hand_engine` still computes the engine in the
-     analysis for telemetry and the corpus; it is the RENDERING that is gone.) */
+     with it on 2026-10-13. `hand_engine` still computes the engine and
+     `render_json` still builds the key; `LIVE_UNREAD_KEYS` is what keeps it off
+     the page (2026-10-14). It is the RENDERING that is gone.) */
   .gold { color:var(--gold); }
   .thumb { width:56px; height:56px; border-radius:5px; object-fit:cover; flex:none;
            cursor:zoom-in; transition:transform .12s ease-out; }
@@ -2393,12 +2454,6 @@ function lvCompsBody(a) {
                                  .filter(Boolean);
   if (picked.length >= 2) p.appendChild(lvCompCompare(picked));
   return p;
-}
-//: The Browse screen as a TABLE, which is how the source tests and the section
-//: header both want it: the list under a `Comps` heading, and the
-//: not-confirmed-yet state said once in that heading.
-function lvCompsBrowse(a) {
-  return lvPanel('Comps', lvCompsBody(a), false, lvCompsNote(a));
 }
 
 //: §5's headline stat + distribution + rows for one comp. The headline is the
@@ -5159,6 +5214,10 @@ def render_json(analysis):
     one (the explicit assignments that used to copy top_move's buy step are
     gone with it). The analysis itself is untouched — it is what
     `decision_log.record()` writes and what the review reads back.
+
+    It is ALSO where the keys no page reads stop (2026-10-14, see
+    LIVE_UNREAD_KEYS): those are dropped at the END rather than here, because
+    this function's own derivations read some of them.
     """
     names = _load_bg_names()
     a = dict(analysis)
@@ -5659,6 +5718,17 @@ def render_json(analysis):
         if entry:
             cards[base] = entry
     a["cards"] = cards
+    # THE SECOND DROP, AND IT GOES LAST (2026-10-14). LIVE_UNREAD_KEYS is its own
+    # list — not the pivot's, see it at the top of this file — and it is applied
+    # HERE, after every derivation above rather than beside the verdict drop. The
+    # reason is that this function reads back its own work: `a["comp_progress"]`
+    # is walked by the tooltip collector just above, `a["shop_rank"]` by the
+    # pre-commit "leads" tag, `a["sell_rank"]` by `board_cards`. Dropped at the
+    # top, the next derivation added here would silently read a key that is
+    # already gone — the failure shape `_canon_tribe` and the comp-meter crash
+    # both were.
+    for _k in LIVE_UNREAD_KEYS:
+        a.pop(_k, None)
     return a
 
 

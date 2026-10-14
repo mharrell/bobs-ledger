@@ -38,8 +38,12 @@ The split, precisely:
 | Hero/trinket/discover options with their own scores — no winner named           | Adherence and outcome, per advice class             |
 
 **The mechanism is one choke point.** `coach_ui.render_json()` is the only place
-the page's view is built, and it drops every key in `LIVE_VERDICT_KEYS`. The
-analysis keeps all of them: `decision_log.record()` writes it, and
+the page's view is built, and it drops two named sets of keys: `LIVE_VERDICT_KEYS`,
+which is the pivot (the model's read of the game never reaches the page), and
+`LIVE_UNREAD_KEYS` (2026-10-14), which is housekeeping — keys no page code reads
+any more after the Classic renderer went, dropped from the payload and kept
+everywhere else so the two reasons cannot be confused when either list is
+audited. The analysis keeps all of them: `decision_log.record()` writes it, and
 `replay_review` / `outcome_audit` / `fight_table` read it back. So the engine is
 untouched — `value.top_move` still computes the numbered plan on every buy
 phase — and only its destination changed. `test_live_view.py` asserts all three

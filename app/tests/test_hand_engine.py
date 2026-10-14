@@ -152,16 +152,26 @@ class TestShopWantsTheDeployer(unittest.TestCase):
         self.assertGreater(with_hand[DEPLOYER], without[DEPLOYER])
 
 
-class TestRenderCarriesEngineAndReasons(unittest.TestCase):
-    def test_render_json(self):
+class TestTheEngineIsNotShipped(unittest.TestCase):
+    """REVERSED 2026-10-14 from `TestRenderCarriesEngineAndReasons`.
+
+    `render_json` still BUILDS the engine (`value.hand_engine`, two lines above
+    the drop) and the payload no longer carries it: the classic "Hand engine" row
+    was its only page reader and it went with the classic renderer on 2026-10-13
+    (`bebfb4f`). The engine is one of `coach_ui.LIVE_UNREAD_KEYS` now, and
+    `test_live_view` holds that contract — including the positive control that
+    the derivation still runs, which is why this file can assert the absence
+    without pretending the producer is gone. What is left HERE is the other half
+    the class was named for: the Sell row's `why` still reaches the page.
+    """
+
+    def test_render_json_does_not_carry_the_engine(self):
         from coach_ui import render_json
         analysis = {"board": _board(7), "sell_rank": [(FILLER, 5.0)],
                     "shop_rank": [], "hand": [{"card": CHARGER}],
                     "playable_comps": {}, "banned": ["Demon"]}
         a = render_json(analysis)
-        self.assertTrue(a["engine"]["on_board"])
-        self.assertFalse(a["engine"]["space"])
-        self.assertEqual(a["engine"]["charging"], 1)
+        self.assertNotIn("engine", a)
         self.assertTrue(a["sell_rank"][0]["why"])
 
 

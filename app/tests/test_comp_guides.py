@@ -120,18 +120,36 @@ class TestPayloadCarriesGuidance(unittest.TestCase):
         self.assertTrue(row["tier_missing"])
         self.assertFalse(row["provisional"])
 
-    def test_target_comp_guide_rides_the_payload(self):
-        a = coach_ui.render_json(_analysis_for("aberrations-deity-feed"))
-        tg = a["target_comp_guide"]
-        self.assertEqual(tg["slug"], "aberrations-deity-feed")
-        self.assertTrue(tg["when_to_commit"])
-        self.assertTrue(tg["how_to_play"], "no guidance for the committed comp")
+    def test_the_target_comp_guide_key_is_gone(self):
+        """REVERSED 2026-10-14 from `test_target_comp_guide_rides_the_payload`.
 
-    def test_no_target_comp_is_none_not_an_empty_box(self):
-        analysis = _analysis_for("aberrations-deity-feed")
-        analysis["target_comp"] = None
-        a = coach_ui.render_json(analysis)
-        self.assertIsNone(a["target_comp_guide"])
+        The payload used to carry a second copy of the committed comp's guidance,
+        built by `render_json` for the classic page's target-comp box. That box
+        went with the classic renderer (2026-10-13, `bebfb4f`), so `target_comp_guide`
+        is one of `coach_ui.LIVE_UNREAD_KEYS` and no longer ships — its absence
+        here is a consequence of that drop, which `test_live_view` proves is the
+        drop and not a deletion.
+        """
+        a = coach_ui.render_json(_analysis_for("aberrations-deity-feed"))
+        self.assertNotIn("target_comp_guide", a,
+                         "nothing on the page reads it any more")
+
+    def test_the_guidance_is_still_reachable_for_the_target_comp(self):
+        """...and the guidance itself did NOT go with it. This is the assertion
+        the deleted payload key was standing in for, moved onto the things that
+        actually render: the comp's own row (the Comps screen's
+        summary/when_to_commit/enablers) and `comp_guide`, which is what
+        `/guide/<slug>` serves when a row is expanded. Aberrations - Deity Feed
+        has no curated `how_to_play` line, so its opening paragraph is the
+        fallback the payload used to carry — the case the old test was written
+        for and the one a dropped key could silently take with it."""
+        slug = "aberrations-deity-feed"
+        a = coach_ui.render_json(_analysis_for(slug))
+        row = next(r for r in a["comps"] if r["slug"] == slug)
+        self.assertTrue(row["when_to_commit"], "no guidance on the comp row")
+        self.assertTrue(row["has_guide"], "the row cannot offer a guide")
+        self.assertTrue(coach_ui.comp_guide(slug, _comps()[slug])["opening"],
+                        "the target comp's guide has no opening paragraph")
 
     def test_the_long_prose_is_not_in_the_polled_payload(self):
         """A guide is ~2 KB x 35 comps. It is fetched on expand, so the

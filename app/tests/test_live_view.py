@@ -18,24 +18,43 @@ review is still the opposite by design — it is where the verdict ships — whi
 is why `LIVE_VERDICT_KEYS` and the review's own grading tests both still have to
 hold together.
 
+**SECOND SET, 2026-10-14 (`LIVE_UNREAD_KEYS`).** Deleting half of this file's
+subject would have been the tidy move and the wrong one. The overlay had two
+renderers until 2026-10-13; when the Classic one went (`bebfb4f`), seven analysis
+keys lost their only page reader and kept shipping anyway — the payload is
+`dict(analysis)` plus `render_json`'s own derivations, and nothing had ever
+asked, key by key, which of those a page could still render. Those seven are a
+SECOND list, dropped at a second choke point, for a different reason, and this
+file extends all three halves to them. The difference between the two lists is
+the point: "is the model's plan off the page" is not the question "can any page
+code still read this".
+
 Why this file is worth its length: the pivot is only real if it cannot quietly
 revert. Deleting the plan from the page while leaving `top_move` in the payload
 would pass every other test in this suite while shipping the same advice with a
 different label. Three independent halves have to hold, and each is asserted
-here:
+here for BOTH dropped sets:
 
-  1. `LIVE_VERDICT_KEYS` is dropped from what the page receives;
+  1. `LIVE_VERDICT_KEYS` / `LIVE_UNREAD_KEYS` are dropped from what the page
+     receives;
   2. the ANALYSIS keeps every one of them — it is what the decision log writes
      and what the review reads back, so a "fix" that deletes the producer
      instead of the rendering would break the product's only real asset;
   3. the page does not READ any of them, and none of the directive wordings
      survive in the page source.
 
+Half 2 is honest about a wrinkle the second set brought with it: four of those
+seven (`thresholds`, `engine`, `scout`, `target_comp_guide`) are `render_json`'s
+own creations — `live_coach.analyze()` never produced them — so for those it
+pins that the analysis HANDED IN comes back whole, which is the copy-not-edit
+rule the decision log depends on.
+
 There is no `HEARTH_REAL_SESSION_TESTS` gate on any of this: it is pure
 function behaviour over a fixture, so it runs everywhere, including in a
 release zip with no logs on disk.
 """
 import os
+import re
 import sys
 import unittest
 from unittest import mock
@@ -44,7 +63,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 import coach_ui  # noqa: E402
-from coach_ui import LIVE_VERDICT_KEYS  # noqa: E402
+from coach_ui import LIVE_UNREAD_KEYS, LIVE_VERDICT_KEYS  # noqa: E402
 
 _HTML = coach_ui._HTML
 
@@ -55,10 +74,22 @@ def _without_comments(html):
     See TestTheDirectiveWordingsAreGone for why this exists rather than a
     plain substring search.
     """
-    import re
     body = re.sub(r"/\*.*?\*/", "", html, flags=re.S)
     return "\n".join(ln for ln in body.splitlines()
                      if not ln.strip().startswith("//"))
+
+
+def _page_reads(key):
+    """A regex matching PAGE CODE that reads `key` off an object.
+
+    `a.shop_offers` and `a['scout']` both count; a bare mention in prose does
+    not. The property form requires a character before the dot, so a CSS
+    selector (`.engine { … }`) is not read as an access — the page's stylesheet
+    lives in the same string as its script.
+    """
+    return re.compile(r"[\w$)\]]\s*\.\s*" + re.escape(key) + r"\b"
+                      r"|\[\s*['\"]" + re.escape(key) + r"['\"]\s*\]")
+
 
 #: Every verdict key, with a realistic value. The values matter: a key mapped
 #: to None could be "absent" for the wrong reason, so each carries the payload
@@ -80,17 +111,36 @@ _VERDICT_VALUES = {
     "target_state": "pivot",
 }
 
+#: The second dropped set, with a realistic value each (2026-10-14). The values
+#: matter for the same reason as above: a key mapped to None could be "absent"
+#: for the wrong reason. Three of these are `live_coach.analyze()` fields
+#: (`comp_progress`, `shop_offers`, `target_cards`); the other four are
+#: `render_json`'s own derivations, which is why they are shaped like the payload
+#: rows they end up as rather than like an analysis row.
+_UNREAD_VALUES = {
+    "thresholds": {"dying_hp": 12},
+    "comp_progress": [{"name": "Mechs - Y", "tribe": "MECHANICAL",
+                       "meta_tier": "S", "hits": 2, "ready": True,
+                       "needs": [], "tribe_hits": 2}],
+    "engine": {"on_board": True, "space": True, "charging": 0},
+    "scout": "you 120 stats · ~90 theirs",
+    "shop_offers": ["BG28_810", "BG36_116"],
+    "target_cards": {"core": [], "addons": []},
+    "target_comp_guide": {"slug": "mechs-y", "difficulty": "Easy",
+                          "when_to_commit": "commit by tier 4",
+                          "how_to_play": "shop for Mechs", "enablers": []},
+}
+
 #: The state the page is FOR. If the pivot ever removes the product instead of
-#: the verdict, these are what fails.
+#: the verdict, these are what fails. `scout` and `comp_progress` moved out of
+#: this dict on 2026-10-14 — the classic strip and the meter row were their last
+#: readers, so they are no longer state the page keeps.
 _STATE_VALUES = {
     "situation": "turning point — you lead the lobby",
     "board_stats": 120,
     "lobby_opp": 90,
-    "scout": "you 120 stats · ~90 theirs",
     "fragility": {"band": "steady", "eff_health": 30},
     "forecast": "favored",
-    "comp_progress": [{"name": "Mechs - Y", "hits": 2, "ready": True,
-                       "needs": []}],
 }
 
 
@@ -101,11 +151,10 @@ def _analysis(**over):
          "hand": [{"card": "BG36_114", "name": "X", "verb": "play",
                    "score": 4.0, "why": "a free body"}],
          "shop_rank": [("BG36_116", 9.0), ("BG28_810", 3.0)],
-         "shop_offers": ["BG28_810", "BG36_116"],
-         "comps": [], "comp_progress": [], "playable_comps": {},
-         "target_comp": "Mechs - Y", "target_cards": {"core": [], "addons": []},
-         "thresholds": {}}
+         "comps": [], "playable_comps": {},
+         "target_comp": "Mechs - Y"}
     a.update(_VERDICT_VALUES)
+    a.update(_UNREAD_VALUES)
     a.update(_STATE_VALUES)
     a.update(over)
     return a
@@ -139,31 +188,145 @@ class TestTheVerdictNeverReachesThePage(unittest.TestCase):
 
     def test_no_page_code_reads_a_dropped_key(self):
         """A JS line reading `a.top_move` would render nothing forever — the
-        exact silent failure the old KIND_CHIP drift guard existed to catch."""
-        reads = sorted(k for k in LIVE_VERDICT_KEYS if "a." + k in _HTML)
+        exact silent failure the old KIND_CHIP drift guard existed to catch.
+
+        Comments are stripped first, like every absence check on this page: its
+        own source EXPLAINS what was removed and names the keys it removed, so a
+        raw search fails on the explanation instead of on a regression.
+        """
+        body = _without_comments(_HTML)
+        reads = sorted(k for k in LIVE_VERDICT_KEYS if _page_reads(k).search(body))
         self.assertEqual(reads, [],
                          "the page still reads dropped fields: " + ", ".join(reads))
+
+    def test_the_read_search_itself_can_see_a_read(self):
+        """The control for the search above, not for the page: a regex that
+        matched nothing would pass every absence check in this file while
+        measuring nothing, which is the empty scan `62fb33d` repaired. Both
+        spellings a page could use are exercised, on a page that HAS the read.
+        """
+        planted = _without_comments(
+            "var t = a.top_move;\nvar s = a['buy_this'];\n"
+            "// a.hunt_targets is only named in this comment")
+        self.assertTrue(_page_reads("top_move").search(planted))
+        self.assertTrue(_page_reads("buy_this").search(planted))
+        # ...and a mention in a comment is not a read.
+        self.assertFalse(_page_reads("hunt_targets").search(planted))
+
+
+class TestTheKeysNoPageReadsAreNotShipped(unittest.TestCase):
+    """`LIVE_UNREAD_KEYS`, the second drop (2026-10-14) — NOT the pivot's.
+
+    Seven keys lost their only page reader when the Classic renderer was deleted
+    on 2026-10-13 (`bebfb4f`) and went on shipping: the payload is
+    `dict(analysis)` plus `render_json`'s own derivations, so a key with no
+    reader is invisible unless something asks. These assert the same three
+    halves as the pivot's class above, on the other choke point.
+    """
+
+    def test_no_unread_key_reaches_the_page(self):
+        out = coach_ui.render_json(_analysis())
+        leaked = sorted(k for k in LIVE_UNREAD_KEYS if k in out)
+        self.assertEqual(leaked, [],
+                         "keys no page reads are in the live payload: "
+                         + ", ".join(leaked))
+
+    def test_the_fixture_covers_the_whole_dropped_set(self):
+        """The guard that keeps the test above honest, as with the verdict set:
+        a key added to `LIVE_UNREAD_KEYS` without a fixture value would make the
+        absence assertion pass on a key nobody ever supplied."""
+        self.assertEqual(set(_UNREAD_VALUES), set(LIVE_UNREAD_KEYS))
+
+    def test_the_drop_is_what_removes_them(self):
+        """THE POSITIVE CONTROL, and what makes the assertion above a
+        measurement rather than a shape of the source.
+
+        With the drop set emptied, every one of the seven comes back in the same
+        payload: `render_json` still BUILDS each of them (the derivations are
+        deliberately untouched), so a key missing from the shipped payload is
+        missing because it was dropped and not because its name stopped existing
+        anywhere. Without this, "the key is absent" cannot be told apart from a
+        check that now searches for nothing — the failure `62fb33d` fixed in two
+        places, and the one a deletion-shaped "fix" to this task would create.
+        """
+        self.assertTrue(LIVE_UNREAD_KEYS)
+        with mock.patch.object(coach_ui, "LIVE_UNREAD_KEYS", frozenset()):
+            out = coach_ui.render_json(_analysis())
+        present = sorted(k for k in LIVE_UNREAD_KEYS if k in out)
+        self.assertEqual(present, sorted(LIVE_UNREAD_KEYS),
+                         "the drop set no longer causes the absence")
+        # The control is only meaningful while the OTHER drop still holds:
+        # emptying one list must not be a way to see the plan.
+        leaked = sorted(k for k in LIVE_VERDICT_KEYS if k in out)
+        self.assertEqual(leaked, [])
+
+    def test_the_analysis_keeps_them(self):
+        """The pivot's rule where it applies, and the copy-not-edit rule where it
+        does not.
+
+        Three of the seven are `live_coach.analyze()`'s own fields and must
+        survive: `comp_progress` is read back by `replay_review` and
+        `turn_review` and is named in `session_report`'s whitelist,
+        `target_cards` by `turn_review` and `value`'s planner, and
+        `shop_offers` by `render_json` itself. The other four (`thresholds`,
+        `engine`, `scout`, `target_comp_guide`) are `render_json`'s own creations
+        that the analysis never carried; for those this pins that the dict HANDED
+        IN is not stripped, which is what `live._advise` depends on when it hands
+        the same object to `decision_log.record()` one line later.
+        """
+        a = _analysis()
+        coach_ui.render_json(a)
+        missing = sorted(k for k in LIVE_UNREAD_KEYS if k not in a)
+        self.assertEqual(missing, [], "the analysis lost: " + ", ".join(missing))
+        self.assertEqual(a["shop_offers"], _UNREAD_VALUES["shop_offers"])
+        self.assertEqual(a["comp_progress"], _UNREAD_VALUES["comp_progress"])
+
+    def test_the_derivations_that_read_the_analysis_still_run(self):
+        """The drop is LAST for a reason: two of these keys are what OTHER
+        payload fields are derived from, so a drop at the top would take the
+        page's own state with it. `shop_offers` orders the tavern row and
+        `comp_progress` feeds the pre-commit "leads" tag — both are asserted
+        through their RESULT, on a fixture with no target comp committed."""
+        a = _analysis(target_comp=None, shop_entities=None,
+                      comp_progress=[{"name": "Mech - Y",
+                                      "needs": ["BG36_116"], "hits": 0,
+                                      "ready": False, "meta_tier": "S",
+                                      "tribe_hits": 0}])
+        out = coach_ui.render_json(a)
+        # `shop_offers` is the log's order, and the row follows it rather than
+        # the score order it arrived in.
+        self.assertEqual([r["card"] for r in out["shop_rank"]],
+                         ["BG28_810", "BG36_116"])
+        # ...and the unowned core card of the leading candidate carries the tag
+        # the deleted classic page's comp meter drew from `comp_progress`.
+        tags = {r["card"]: r["tag"] for r in out["shop_rank"]}
+        self.assertEqual(tags["BG36_116"], "leads Mech - Y")
+        self.assertNotEqual(tags["BG28_810"], "leads Mech - Y")
+
+    def test_no_page_code_reads_a_dropped_key(self):
+        """The third half, on the real page source, comments stripped — the
+        failure prevented is a JS line reading `a.thresholds` and rendering
+        nothing forever, five minutes after the payload stopped carrying it."""
+        body = _without_comments(_HTML)
+        reads = sorted(k for k in LIVE_UNREAD_KEYS if _page_reads(k).search(body))
+        self.assertEqual(reads, [],
+                         "the page still reads keys with no reader: "
+                         + ", ".join(reads))
 
 
 class TestTheStateStillShips(unittest.TestCase):
     def test_state_fields_survive(self):
+        """`scout`, `comp_progress` and `thresholds` were in this tuple until
+        2026-10-14: the classic strip and the comp meter were their last page
+        readers, so they are no longer state the page keeps and they moved to
+        `TestTheKeysNoPageReadsAreNotShipped`. What is left here is what the
+        page is FOR, which is why this list must keep failing if the pivot ever
+        removes the product instead of the verdict."""
         out = coach_ui.render_json(_analysis())
-        for key in ("board", "situation", "fragility", "scout", "forecast",
-                    "sell_rank", "shop_rank", "hand", "comp_progress",
-                    "thresholds", "generated"):
+        for key in ("board", "situation", "fragility", "forecast",
+                    "sell_rank", "shop_rank", "hand", "board_cards",
+                    "cards", "generated"):
             self.assertIn(key, out, f"{key} left the live payload")
-
-    def test_dying_hp_threshold_still_ships(self):
-        from value import DYING_HEALTH
-        self.assertEqual(coach_ui.render_json(_analysis())["thresholds"]["dying_hp"],
-                         DYING_HEALTH)
-
-    def test_sell_safe_below_is_gone(self):
-        """It only ever fed the "Safe to sell | Do not sell" split, which was
-        the verdict itself. An unused key is the `dark_gifts` trade again:
-        leaving it would keep shipping payload the page has no use for."""
-        self.assertNotIn("sell_safe_below",
-                         coach_ui.render_json(_analysis())["thresholds"])
 
 
 class TestTavernIsNotRanked(unittest.TestCase):

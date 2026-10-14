@@ -188,7 +188,7 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
     ship — `settleTurnCard` and `tavernRail` are deliberately not in TAVERN.
     """
 
-    TAVERN = ("lvStatus", "lvTribes", "lvFacts", "lvCompsBrowse", "lvCompsBody",
+    TAVERN = ("lvStatus", "lvTribes", "lvFacts", "lvCompsBody",
               "lvCompDetail", "lvCompCompare", "lvCompsScreen", "lvCompRow",
               "lvCompStats", "lvCompSortRows", "lvSlot", "lvSlotCap", "lvSlots",
               "lvSlotLegend", "lvOwned", "lvLobbyBody", "lvShop",
@@ -275,10 +275,29 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
         """The comps screens state where a tier comes from and that the sort is
         the player's, in words a scan for rank language can stay honest about.
         Comments are stripped: the source explains the rule and would otherwise
-        fail its own check."""
-        src = re.sub(r"//[^\n]*", "", "\n".join(
-            _function(n) or "" for n in ("lvCompsBrowse", "lvCompCompare",
-                                         "lvCompSortRows", "lvCompStats")))
+        fail its own check.
+
+        `lvCompsBrowse` was in this tuple until 2026-10-14, when it was deleted
+        as dead: it was a two-line wrapper (`lvPanel('Comps', lvCompsBody(a),
+        …)`) that predated the classic removal, `lvPanel`/`lvPanelBody` now wrap
+        the section itself, and nothing in the page or the suite called it. Its
+        subject is `lvCompsBody`, which is what the Comps screen actually
+        renders (`lvCompsScreen` calls it, and `lvCompDetail` instead when a row
+        is open) — and which was ALREADY in this scan, so the deletion takes no
+        coverage with it.
+        """
+        names = ("lvCompsBody", "lvCompCompare", "lvCompSortRows", "lvCompStats")
+        # POSITIVE CONTROL, for the reason 62fb33d documents twice over: a name
+        # that resolves to nothing contributes an empty string, and a scan whose
+        # functions were all renamed or deleted would pass the two absence
+        # checks below on "" — a measurement that cannot fail is not one. Each
+        # name has to RESOLVE, and the comps screen's own sort control has to be
+        # in the text this scans.
+        for n in names:
+            self.assertIsNotNone(_function(n),
+                                 f"{n} is gone — this scan is measuring nothing")
+        src = re.sub(r"//[^\n]*", "", "\n".join(_function(n) for n in names))
+        self.assertIn("Sort", src, "the comps screen's sort control is missing")
         self.assertNotIn("rank", src.lower())
         self.assertNotIn("best", src.lower())
 
