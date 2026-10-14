@@ -230,11 +230,6 @@ if [ "$CHECK_ONLY" = "1" ]; then
 	exit 0
 fi
 
-echo
-echo "Starting Bob's Ledger."
-echo "Leave this window open while you play; Ctrl+C here stops it."
-echo
-
 # The reporting flag is dropped before passing anything through: live.py
 # ignores unknown flags, so a stray one is a silent no-op rather than an
 # error. (macOS has no Desktop-shortcut step: a double-clickable file in
@@ -247,18 +242,47 @@ for arg in "$@"; do
 	esac
 done
 
-if [ "${#PASS[@]}" -gt 0 ]; then
-	"$PY" "$HERE/app/live.py" --open "${PASS[@]}"
-else
-	"$PY" "$HERE/app/live.py" --open
-fi
-code=$?
-
-if [ "$code" -ne 0 ]; then
+# STARTING IT AGAIN WITHOUT RE-OPENING THIS FILE (2026-10-13). The Windows
+# twin has to explain cmd's own "Terminate batch job (Y/N)?" question, because
+# answering it Y throws away the rest of the script and there is no way to ask
+# for a restart after that. Here there is no such question, so the loop below
+# is the whole feature: Ctrl+C stops the coach, the script carries on, and the
+# player is offered another run.
+#
+# The trap is what keeps THIS script alive when Ctrl+C lands: without it bash
+# may take the interrupt itself and exit, which is the behaviour being fixed.
+# The subshell resets the disposition (`trap - INT`) before exec, because a
+# child inherits an ignored SIGINT and would otherwise be unable to be stopped
+# - the trap exists to protect the wrapper, not to make the coach immortal.
+trap ':' INT
+while :; do
 	echo
-	echo "Something went wrong above - the message is the reason."
-	echo "Run with --check to see the environment this file found."
-fi
+	echo "Starting Bob's Ledger."
+	echo "Leave this window open while you play."
+	echo "To stop the coach, press Ctrl+C here - this window then offers to start"
+	echo "it again."
+	echo
+	if [ "${#PASS[@]}" -gt 0 ]; then
+		( trap - INT; exec "$PY" "$HERE/app/live.py" --open "${PASS[@]}" )
+	else
+		( trap - INT; exec "$PY" "$HERE/app/live.py" --open )
+	fi
+	code=$?
+
+	if [ "$code" -ne 0 ]; then
+		echo
+		echo "Something went wrong above - the message is the reason."
+		echo "Run with --check to see the environment this file found."
+	fi
+	echo
+	printf "Start Bob's Ledger again? [y/N] "
+	read -r answer || answer=""
+	case "$answer" in
+		[Yy]*) continue ;;
+		*) break ;;
+	esac
+done
+
 echo
 printf "Press Return to close."
 read -r _dummy || true

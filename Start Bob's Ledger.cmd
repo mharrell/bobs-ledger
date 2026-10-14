@@ -266,7 +266,20 @@ goto :end
 :run
 echo.
 echo Starting Bob's Ledger.
-echo Leave this window open while you play; Ctrl+C here stops it.
+echo.
+rem STARTING IT AGAIN WITHOUT RE-OPENING THIS FILE (2026-10-13). Stopping the
+rem coach is Ctrl+C, and cmd then asks its own question - "Terminate batch job
+rem (Y/N)?" - which is cmd asking whether to throw away the REST of this script.
+rem That question is why a restart prompt could not simply be put after the
+rem coach: answering Y there kills the script, so the prompt below never runs
+rem and the window closes. Answering N keeps the script alive; the coach is
+rem already gone (Ctrl+C stopped it), so execution lands on the prompt below and
+rem the player chooses. The banner says so where they will see it, because a
+rem keystroke nobody knows about is not an option.
+echo Leave this window open while you play.
+echo To stop the coach, press Ctrl+C here, then answer N to the
+echo ^(Y/N^)? question that follows - this window then offers to start it
+echo again. Answer Y instead and the window closes, as it used to.
 echo.
 set "PASS=%*"
 set "PASS=%PASS:--check=%"
@@ -277,7 +290,16 @@ rem silent-start failure by another door.
 if "%PASS%"=="=" set "PASS="
 %PY% "%~dp0app\live.py" --open %PASS%
 if errorlevel 1 goto :fail
-goto :end
+goto :again
+
+rem The prompt lives on its own label so the FAILURE path can reach it too: a
+rem coach that did not start is the case where a player most wants to try again
+rem after fixing what the message above named.
+:again
+echo.
+choice /c YN /n /m "Start Bob's Ledger again? [Y/N] "
+if errorlevel 2 goto :end
+goto :run
 
 :no_program
 echo This file has to run from inside the extracted folder.
@@ -293,6 +315,7 @@ goto :end
 echo.
 echo Something went wrong above - the message is the reason.
 echo Run with --check to see the environment this file found.
+goto :again
 :end
 echo.
 pause
