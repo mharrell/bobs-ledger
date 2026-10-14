@@ -1486,7 +1486,15 @@ class TestRenderJsonComps(unittest.TestCase):
         indices must be integers" once a candidate had unowned core —
         the live coach then retried forever ("coach skipped") and stalled.
         The collector must read the RENDERED rows, and the needs ids must
-        still land in the cards tooltip map."""
+        still land in the cards tooltip map.
+
+        The rendered rows themselves stopped SHIPPING on 2026-10-14
+        (`LIVE_UNREAD_KEYS`; the comp meter's own row was the classic page's and
+        went with it), so the assertion moved onto the two things that are still
+        observable from the payload: the render does not raise, and the needs ids
+        reached `cards` — which can only happen if the collector walked the
+        RENDERED rows, since nothing else in this analysis names BG23_318.
+        """
         from coach_ui import render_json
         analysis = {"board": [], "sell_rank": [], "shop_rank": [],
                     "target_comp": None,
@@ -1495,8 +1503,7 @@ class TestRenderJsonComps(unittest.TestCase):
                          "meta_tier": "S", "hits": 1, "ready": False,
                          "needs": ["BG23_318"], "tribe_hits": 1}]}
         a = render_json(analysis)  # used to raise TypeError
-        self.assertEqual(a["comp_progress"][0]["needs"][0]["card"],
-                         "BG23_318")
+        self.assertNotIn("comp_progress", a)
         self.assertIn("BG23_318", a["cards"])
 
     def test_sell_rank_groups_duplicates(self):

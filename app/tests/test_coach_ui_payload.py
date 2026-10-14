@@ -1,7 +1,14 @@
-"""render_json payload contract for the overlay's Phase-1 perf work:
-thresholds come from value.py's constants (the JS used to hard-code its own
-copies), the dead buy_label is gone, and the fuel gate keys on the same
-threshold the sell split uses."""
+"""render_json payload contract for the overlay's Phase-1 perf work: the plan's
+dead `buy_label` is gone, and the fuel gate keys on the same threshold the sell
+split used.
+
+REVERSED 2026-10-14: this file used to open by pinning that the payload's
+`thresholds` matched `value.py`'s constants, because the JS read `TH.dying_hp`
+to colour the classic strip's HP tile. That tile was the key's last reader and it
+went with the classic renderer (2026-10-13, `bebfb4f`), so no threshold ships at
+all now — the key is one of `coach_ui.LIVE_UNREAD_KEYS`, and `test_live_view.py`
+owns that contract, its three halves and its positive control.
+"""
 import json
 import os
 import sys
@@ -12,7 +19,7 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 import coach_ui  # noqa: E402
-from value import DYING_HEALTH, SELL_FILLER_SCORE  # noqa: E402
+from value import SELL_FILLER_SCORE  # noqa: E402
 
 
 def _base_analysis():
@@ -27,27 +34,31 @@ def _base_analysis():
     }
 
 
-class TestThresholdsPayload(unittest.TestCase):
-    def test_thresholds_match_value_constants(self):
-        """The constant the JS used to copy is shipped as a payload key.
-
-        Nothing on the page READS it since 2026-10-13: `#statebar`'s tile row was
-        the one reader (`TH.dying_hp` coloured the dying HP), and it went with the
-        classic renderer. The key still ships — it is analysis data that rides the
-        envelope, and dropping it is a separate decision the maintainer has — so
-        what this pins is that it would be RIGHT if a reader came back, not that
-        anything reads it. `test_live_view.test_state_fields_survive` owns the
-        other end (the key is still in the payload)."""
+class TestNoThresholdShips(unittest.TestCase):
+    def test_the_thresholds_key_is_gone_from_the_payload(self):
+        """REVERSED 2026-10-14 from `test_thresholds_match_value_constants`,
+        which pinned that the copy the JS used to hard-code arrived in the
+        payload and was RIGHT. It was right, and it was read by nothing once the
+        classic renderer was deleted — `TH.dying_hp` coloured its HP tile and
+        that tile is gone (2026-10-13, bebfb4f). `value.DYING_HEALTH` is
+        unchanged and still what value.py's own dying-health clauses compare
+        against; what went is the payload copy. The shipped value therefore has
+        no reader left to be wrong for, and the honest pin is its absence —
+        `test_live_view` holds the drop and proves it is the drop."""
         out = coach_ui.render_json(_base_analysis())
-        self.assertEqual(out["thresholds"]["dying_hp"], DYING_HEALTH)
+        self.assertNotIn("thresholds", out)
 
-    def test_the_sell_split_threshold_is_gone(self):
-        """It existed only to draw the "Safe to sell | Do not sell" split, and
-        that split WAS the verdict (2026-10-06, PIVOT.md). SELL_FILLER_SCORE is
-        still a value.py constant and still gates the destroy-spell fuel tag —
-        the payload just has no consumer for it now."""
-        self.assertNotIn("sell_safe_below",
-                         coach_ui.render_json(_base_analysis())["thresholds"])
+    def test_no_threshold_of_any_spelling_rides_the_payload(self):
+        """`sell_safe_below` went first, on its own (2026-10-06): it existed only
+        to draw the "Safe to sell | Do not sell" split, and that split WAS the
+        verdict (PIVOT.md). The dict that carried it is gone now, so the claim
+        is about the whole payload rather than about one dict — a threshold
+        re-added under a new name is the same mistake with a new spelling."""
+        out = coach_ui.render_json(_base_analysis())
+        strays = sorted(k for k in out
+                        if "threshold" in k or "sell_safe" in k)
+        self.assertEqual(strays, [], "threshold keys on the page: "
+                         + ", ".join(strays))
 
     def test_the_plan_is_not_in_the_payload(self):
         """Was `buy_label`; the whole plan went in the same direction, and
