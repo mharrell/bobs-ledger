@@ -2455,12 +2455,6 @@ function lvCompsBody(a) {
   if (picked.length >= 2) p.appendChild(lvCompCompare(picked));
   return p;
 }
-//: The Browse screen as a TABLE, which is how the source tests and the section
-//: header both want it: the list under a `Comps` heading, and the
-//: not-confirmed-yet state said once in that heading.
-function lvCompsBrowse(a) {
-  return lvPanel('Comps', lvCompsBody(a), false, lvCompsNote(a));
-}
 
 //: §5's headline stat + distribution + rows for one comp. The headline is the
 //: average placement (the one number this project's corpus can put beside a
