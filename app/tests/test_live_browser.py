@@ -131,24 +131,6 @@ def _comps_analysis(**over):
     return a
 
 
-def _comps_with_an_unavailable_tribe():
-    """The comps fixture with ONE row marked unavailable, as the POSITIVE
-    control for the dimmed-row read (2026-10-13).
-
-    `_tribe_available: False` is exactly what round 4 item 1 hands the page for
-    a comp whose tribe this lobby cannot offer, and `render_json` passes it on
-    as `tribe_available`, which is what `lvCompRow` turns into the row's
-    `unavail` class. Without this shot the `unavail` read could only ever be 0 —
-    and a count that cannot rise is not a measurement, which is how the read it
-    replaced (a text match on a note item 1 renamed) went dead unnoticed.
-    Elementals, not Nagas: the A tier is capped at six rows and the browse shot
-    renders Nagas behind the "+ N more" control.
-    """
-    comps = {k: dict(v) for k, v in _comps_analysis()["game_comps"].items()}
-    comps["elementals"] = dict(comps["elementals"], _tribe_available=False)
-    return _comps_payload(game_comps=comps)
-
-
 def _comps_payload(corpus=None, **over):
     """The comps payload, with the corpus reader replaced by `_CORPUS` — or by
     whatever a test hands in: `{}` is "the corpus has never seen these comps",
@@ -160,6 +142,95 @@ def _comps_payload(corpus=None, **over):
         return coach_ui.render_json(_comps_analysis(**over))
     finally:
         meta.corpus_stats = saved
+
+
+#: The lobby's five for the item-B fixtures. Deliberately NOT the fixture's own
+#: `tribes_available`: the point of these shots is what happens to a comp whose
+#: tribe the lobby has CONFIRMED and does not offer (Mech, here), which needs a
+#: five that leaves one of the fixture's tribes out.
+_FIVE_TRIBES = ["BEAST", "ELEMENTAL", "PIRATE", "UNDEAD", "DRAGON"]
+
+
+def _comps_marked(available=None, **over):
+    """The comps payload with `_tribe_available` set the way the PRODUCER sets it.
+
+    `live_coach.comps_marked` marks every row with
+    `LiveCoach.tribe_available(comp, available_tribes())`, and item B.1's main
+    list is exactly the rows that mark keeps. The static method is CALLED here
+    rather than re-implemented: a second copy of the rule would go stale the
+    moment the producer's changed, and this fixture would then be testing the
+    copy instead of the page.
+    """
+    import live_coach
+    names = available if available is not None else _analysis()["tribes_available"]
+    avail = {live_coach.normalize(t) for t in names}
+    if "game_comps" not in over:
+        over["game_comps"] = {
+            k: dict(v, _tribe_available=live_coach.LiveCoach.tribe_available(
+                v, avail))
+            for k, v in _comps_analysis()["game_comps"].items()}
+    return _comps_payload(**over)
+
+
+def _comps_after_bans(**over):
+    """THE DONE-WHEN CASE for item B.1: five tribes confirmed.
+
+    The fixture's comps then split three ways — Elemental and Beast are in this
+    lobby, Mech is BANNED this game, Naga is out of play this patch — and Mixed
+    (Menagerie) is always buildable. So the main list must be the confirmed
+    tribes plus Mixed, the Naga comp must be in the collapsed block, and the
+    note must count the rows that are in neither.
+    """
+    over.setdefault("tribes_available", list(_FIVE_TRIBES))
+    over.setdefault("tribes_seen", 5)
+    return _comps_marked(available=_FIVE_TRIBES, **over)
+
+
+def _comps_without_beast(**over):
+    """Five tribes confirmed, BEAST NOT among them.
+
+    The mirror of `_comps_after_bans`: the Beasts comp has to leave the main list,
+    which is the change the view-state re-cut exists for — a compare box ticked on
+    it would otherwise keep a Compare column alive for a comp the player can no
+    longer see.
+    """
+    five = [t for t in _FIVE_TRIBES if t != "BEAST"] + ["MECH"]
+    over.setdefault("tribes_available", list(five))
+    over.setdefault("tribes_seen", 5)
+    return _comps_marked(available=five, **over)
+
+
+def _comps_with_long_names(**over):
+    """The comps fixture with the real DB's long names in it.
+
+    Item B.2's row has to survive a name that does not fit one line: it clamps to
+    two, the tribe moves down with it, and the strip and the owned count stay in
+    their own tracks. The names are the shipped ones (`meta/comps.json`), so the
+    length is the length the page will really meet.
+    """
+    import meta
+    long_names = [c["name"] for c in meta.comps().values()
+                  if isinstance(c, dict) and len(c.get("name") or "") >= 22][:2]
+    comps = {k: dict(v) for k, v in _comps_analysis()["game_comps"].items()}
+    for i, name in enumerate(long_names):
+        comps["long%d" % i] = {"name": name, "meta_tier": "S", "tribe": "BEAST",
+                               "core": ["BG31_815", "BG31_820"],
+                               "addons": []}
+    return _comps_payload(game_comps=comps, **over)
+
+
+#: A FOUR-option hero pick: the shape the wide mock draws (one row of four), and#: the only kind whose options carry a SUBLINE — `choices.option_stats` reads the
+#: hero power by name. The options come from the SHIPPED hero DB, so the subline
+#: is real text rather than a fixture's idea of one, and the fourth has no data
+#: at all: that is the design's "No data" card (§6.2) with a card of its own.
+def _hero_pick_payload():
+    import meta
+    names = [h["name"] for h in meta.heroes()
+             if h.get("pick_rate") is not None and h.get("hero_power")]
+    ranked = [[n, "HERO%d" % i, 0.0, "", i] for i, n in enumerate(names[:3])]
+    ranked.append(["Nobody At All", "HERO_NONE", 0.0, "", 3])
+    return _payload(choice={"kind": "hero", "source": "Choose One",
+                            "ranked": ranked})
 
 
 def _game_over_payload(enabled=False, game_over=None, sent=None):
@@ -239,17 +310,35 @@ _DRIVER = r"""
   //: A panel by the TITLE in its heading (the text node — the one-line summary
   //: lives in a span beside it), inside the arrangement on screen. The
   //: end-of-game card has no arrangements, so a page-wide fallback covers it.
+  //:
+  //: THE FALLBACK IS FOR THE PICK STRIP (2026-10-14): `lvBody` puts the pick
+  //: screen ABOVE both arrangements, so it is in neither and a scope-only search
+  //: finds nothing. The order matters — the shown arrangement FIRST, then the
+  //: document — because a page-wide search would find the hidden arrangement's
+  //: "Comps" before the visible one.
   function sectionPanel(want) {
-    const scope = shownArrangement() || document;
-    return [...scope.querySelectorAll('.lv-pn')].find(x => {
-      const hd = x.querySelector('h3');
-      if (!hd) return false;
-      let t = '';
-      hd.childNodes.forEach(n => {
-        if (n.nodeType === 3) t += n.textContent;
+    const inRoot = root => {
+      if (!root) return null;
+      return [...root.querySelectorAll('.lv-pn')].find(x => {
+        const hd = x.querySelector('h3');
+        if (!hd) return false;
+        let t = '';
+        hd.childNodes.forEach(n => {
+          if (n.nodeType === 3) t += n.textContent;
+        });
+        return t.trim() === want;
       });
-      return t.trim() === want;
-    });
+    };
+    const scope = shownArrangement();
+    return inRoot(scope) || (scope ? inRoot(document) : null);
+  }
+  //: THE PICK STRIP, by name, from the ROOT (2026-10-14): it is a sibling of
+  //: both arrangements rather than a section of one, so every pick read has to
+  //: come from outside `scope`. It is built ONCE — `lvBody` appends it above
+  //: both — so there is no hidden copy to double-count, unlike the sections.
+  function pickStrip() {
+    const root = document.querySelector('.tavern.live');
+    return root ? root.querySelector('.lv-pickstrip') : null;
   }
   function facts(name) {
     const root = document.querySelector('.tavern.live');
@@ -394,22 +483,109 @@ _DRIVER = r"""
     o.skel = q('.lv-skel').length;
     o.empty = [...q('.lv-empty')].map(d => d.textContent).join('|');
     o.notes = [...q('.lv-note')].map(d => d.textContent).join('|');
-    o.pick = q('.lv-opt').length;
-    o.picknames = [...q('.lv-optname')].map(n => n.textContent).join('|');
-    o.pickhead = [...q('.lv-head b')].map(b => b.textContent).join('|');
-    o.pickvs = [...q('.lv-vs')].map(v => v.textContent).join('|');
-    o.pickbars = q('.lv-bar').length;
-    o.pickrows = [...q('.lv-opt .lv-kv')]
+    // --- THE PICK STRIP (item A, 2026-10-14): compact HORIZONTAL option
+    // cards, art on the left, name/subline/headline/rows on the right. Every
+    // read comes from the strip itself, which is outside `scope` (see
+    // `pickStrip`).
+    const pk = pickStrip();
+    const pq = s => pk ? pk.querySelectorAll(s) : [];
+    const pone = s => pk ? pk.querySelector(s) : null;
+    const pbox = s => {
+      const n = pone(s);
+      if (!n) return '';
+      const r = n.getBoundingClientRect();
+      return Math.round(r.width) + 'x' + Math.round(r.height);
+    };
+    o.pick = pq('.lv-optcard').length;
+    o.picknames = [...pq('.lv-pname')].map(txt).join('|');
+    o.picknameh = (function () {
+      const n = pone('.lv-pname');
+      return n ? Math.round(n.getBoundingClientRect().height) : 0;
+    })();
+    // The ONE line under the name: the hero power, or a discover's tier/tribe.
+    o.picksub = [...pq('.lv-psub')].map(txt).join('|');
+    o.picksubwrap = (function () {
+      const n = pone('.lv-psub');
+      return n ? getComputedStyle(n).whiteSpace : '';
+    })();
+    o.pickhead = [...pq('.lv-phead b')].map(txt).join('|');
+    o.picklbl = [...pq('.lv-phead small')].map(txt).join('|');
+    o.pickvs = [...pq('.lv-vs')].map(txt).join('|');
+    o.pickrows = [...pq('.lv-optcard .lv-kv')]
       .map(d => txt(d.children[0]) + '=' + txt(d.children[d.children.length - 1]))
       .join('|');
-    o.pickctl = [...q('.lv-pickctl .lv-chip')]
+    o.pickmore = [...pq('.lv-pmore')].map(txt).join('|');
+    o.picknodata = [...pq('.lv-pnodata')].map(txt).join('|');
+    o.picknodatatitle = (function () {
+      const n = pone('.lv-pnodata');
+      return n ? n.title : '';
+    })();
+    o.pickart = pbox('.lv-pickart');
+    o.pickartratio = (function () {
+      const n = pone('.lv-pickart');
+      if (!n) return '';
+      const r = n.getBoundingClientRect();
+      return r.width ? (r.height / r.width).toFixed(3) : '';
+    })();
+    o.pickcard = pbox('.lv-optcard');
+    // EVERY card the same height, and the row's own measure — the design's
+    // "fixed min-height so the grid does not jump".
+    o.pickcards = [...pq('.lv-optcard')]
+      .map(c => Math.round(c.getBoundingClientRect().height)).join('|');
+    o.pickcols = (function () {
+      const n = pone('.lv-pickgrid');
+      return n ? getComputedStyle(n).gridTemplateColumns : '';
+    })();
+    o.pickcolw = (function () {
+      const n = pone('.lv-optcard');
+      return n ? Math.round(n.getBoundingClientRect().width) : 0;
+    })();
+    o.pickcolx = [...pq('.lv-optcard')]
+      .map(c => Math.round(c.getBoundingClientRect().left)).join('|');
+    o.pickcoly = [...pq('.lv-optcard')]
+      .map(c => Math.round(c.getBoundingClientRect().top)).join('|');
+    // HOW MANY TIMES each option's name appears inside its own card: "the name
+    // appears once" is the item's own wording, and a `textContent` count is what
+    // it means. 1 for every card, or the name is on the screen twice.
+    o.picknamecount = [...pq('.lv-optcard')].map(c => {
+      const n = c.querySelector('.lv-pname');
+      const want = n ? n.textContent : '';
+      return want ? String(c.textContent.split(want).length - 1) : '0';
+    }).join('|');
+    o.pickartno = pq('.lv-pickart .tname').length;
+    o.picksrc = (function () {
+      const n = pone('.lv-source');
+      if (!n) return '';
+      const s = getComputedStyle(n);
+      return s.whiteSpace + ',' + s.overflow + ',' + s.textOverflow
+           + ',' + (n.title === n.textContent ? 'title' : 'no-title');
+    })();
+    o.picksrcgap = (function () {
+      const n = pone('.lv-source');
+      return n ? getComputedStyle(n).marginBottom : '';
+    })();
+    o.pickctl = [...pq('.lv-pickctl .lv-chip')]
       .map(c => c.textContent + (c.classList.contains('on') ? ':on' : ':off'))
       .join('|');
+    o.pickctlvp = (function () {
+      const n = pone('.lv-pickctl');
+      return n ? Math.round(n.getBoundingClientRect().height) : 0;
+    })();
     // The source line under the pick controls. Guarded: the comps Compare block
     // reuses `.lv-opts` for its columns and has no `.lv-pickctl` at all, so an
     // unguarded read threw on that screen and took the whole shot with it.
-    const pickctl = one('.lv-pickctl');
+    const pickctl = pone('.lv-pickctl');
     o.picknote = pickctl ? txt(pickctl.parentNode.querySelector('.lv-note')) : '';
+    // WHERE THE STRIP SITS, against the dashboard it must not evict: above it,
+    // and (for the "fits without scrolling" claim) entirely inside the window.
+    o.pickabove = (function () {
+      const arr = shownArrangement();
+      if (!pk || !arr) return 0;
+      return pk.getBoundingClientRect().top < arr.getBoundingClientRect().top
+        ? 1 : 0;
+    })();
+    o.pickbottom = pk ? Math.round(pk.getBoundingClientRect().bottom) : 0;
+    o.vh = window.innerHeight;
     o.gobtn = txt(one('.lv-gobtn'));
     o.overbig = txt(one('.lv-overbig'));
     // §6.5's merged save row: ONE row, and the checkbox has to be inside it —
@@ -468,7 +644,10 @@ _DRIVER = r"""
       .map(d => Math.round(d.getBoundingClientRect().top)).join('|');
     // 3. One art treatment, spell tags, names.
     o.kinds = [...q('.tile .tag-kind')].map(d => d.textContent).join('|');
-    o.renameless = q('.lv-opt .tname').length;
+    // The pick screen's own art is NOT a `.tile` any more (2026-10-14): it is
+    // `.lv-pickart`, which is what makes "one name and no caption" structural
+    // rather than a flag. `pickartno` above is the read that matters.
+    o.renameless = pq('.lv-optcard .tname').length;
     o.tiletitles = q('.tile[title]').length;
     o.tnamewrap = (function () {
       const n = one('.tavern .tile .tname') || one('.tile .tname');
@@ -482,35 +661,13 @@ _DRIVER = r"""
              : c.classList.contains('out') ? 'out' : '?')).join('|');
     o.nagacount = all('.lv-tribes .lv-chip')
       .filter(c => c.textContent === 'NAGA' || c.textContent === 'Naga').length;
-    // 5. The pick screen's own numbers and layout.
-    o.picklbl = [...q('.lv-head small')].map(d => d.textContent).join('|');
-    o.pickcolw = (function () {
-      const n = one('.lv-opt');
-      return n ? Math.round(n.getBoundingClientRect().width) : 0;
-    })();
-    o.pickctlvp = (function () {
-      const n = one('.lv-pickctl');
-      return n ? Math.round(n.getBoundingClientRect().height) : 0;
-    })();
-    // The COUNT above and the control line's own width: a row that is really one
-    // row is not as wide as its box, because the box is the panel.
-    o.pickctlw = (function () {
-      const n = one('.lv-pickctl');
-      return n ? Math.round(n.getBoundingClientRect().width) : 0;
-    })();
-    o.pickctlbox = (function () {
-      const n = one('.lv-pickctl');
-      if (!n || !n.parentNode) return 0;
-      return Math.round(n.parentNode.getBoundingClientRect().width);
-    })();
-    o.picknameh = (function () {
-      const n = one('.lv-optname');
-      return n ? Math.round(n.getBoundingClientRect().height) : 0;
-    })();
-    o.pickcardw = (function () {
-      const n = one('.lv-opt .tile');
-      return n ? Math.round(n.getBoundingClientRect().width) : 0;
-    })();
+    // (The pick screen's own numbers and layout — `picklbl`, `pickcolw`,
+    // `pickctlvp`, `pickctlw`, `pickctlbox`, `picknameh`, `pickcardw` — were
+    // read HERE, from the arrangement scope, until 2026-10-14. The pick strip is
+    // above both arrangements now, so all of them moved up to the `pk` block
+    // near `picknames`: one scope for one panel, and `pickctlw`/`pickctlbox`
+    // went with them as unreferenced — the "one row" claim they served is
+    // `pickctlvp`'s.)
     // (The Classic | Tavern toggle's three colour reads — `vsegbg`, `vsegon`,
     // `vsegpad` — were here and were already unreferenced; the control is gone,
     // so the reads would answer for a null and the fields went with them. The one
@@ -521,7 +678,11 @@ _DRIVER = r"""
     o.fine = [...q('.lv-fine')].map(d => d.textContent).join('|');
     // §4.4: the comp rows, their tier columns, the mini-card slots with the
     // size actually laid out, the controls, and the Detail/Compare shapes.
-    o.comprows = [...q('.lv-crow')].map(r => {
+    // SCOPED TO THE MAIN LIST since 2026-10-14 (item B.1): the out-of-play
+    // block's rows are `.lv-crow` too, and a page-wide read would fold them into
+    // "the list" the tier columns count — which is the whole distinction the
+    // item is about. `ooprows` below reads the other list by name.
+    o.comprows = [...q('.lv-cols .lv-crow')].map(r => {
       const n = r.querySelector('.lv-copen'), own = r.querySelector('.lv-owned'),
             ap = r.querySelector('.lv-ap');
       return txt(n) + '|' + txt(own) + '|' + txt(ap)
@@ -532,6 +693,9 @@ _DRIVER = r"""
     o.slotsmiss = q('.lv-slot.miss').length;
     o.slotshand = q('.lv-slot.hand').length;
     o.slotart = q('.lv-slot .thumb').length;
+    // "card name on hover" (item B.2): the slot's own title names the card and
+    // its state, so the thumbnail is never a picture with no way to read it.
+    o.slottitles = q('.lv-slot[title]').length;
     o.legend = [...q('.lv-legend .lv-leglbl')].map(d => d.textContent).join('|');
     o.legendslots = q('.lv-legend .lv-slot').length;
     o.cmpboxes = q('.lv-cmpbox').length;
@@ -589,20 +753,84 @@ _DRIVER = r"""
       const n = one('.lv-copen');
       return n ? getComputedStyle(n).textDecorationLine : '';
     })();
-    o.avgcells = q('.lv-ap').length;
+    o.avgcells = q('.lv-cols .lv-ap').length;
     o.hasavg = q('.lv-ctier.has-avg').length;
     o.hnote = [...q('.lv-hnote')].map(n => n.textContent).join('|');
-    // A COMP ROW IS DIMMED ONLY WHEN ITS TRIBE IS NOT AVAILABLE. This read used
-    // to count the per-row "· tribe unconfirmed" note — and round 4 item 1
-    // RENAMED that note to "· not available" (marking availability instead of
-    // dropping comps by tribe), so the filter matched nothing and the two
-    // assertions below passed on a count that could only ever be 0. That is the
-    // failure mode this harness exists to avoid, so the read is re-pointed at
-    // the class the dimming actually carries, and `crowrows` is its control: a
-    // renamed class would zero the count again, and a zero that CANNOT be
-    // non-zero is not a measurement.
-    o.crowrows = q('.lv-crow').length;
-    o.unavail = q('.lv-crow.unavail').length;
+    // --- item B (2026-10-14): the TWO lists, and the row's own parts. --------
+    // The out-of-play block: a collapsed `<details>`, dimmed, grouped by tribe,
+    // and with NO compare box on any of its rows.
+    o.ooprows = q('.lv-oop .lv-crow').length;
+    o.oopsum = txt(one('.lv-oopsum'));
+    o.oopopen = q('.lv-oop[open]').length;
+    o.ooptribes = [...q('.lv-oopgroup')].map(txt).join('|');
+    o.oopboxes = q('.lv-oop .lv-cmpbox').length;
+    o.oopnames = [...q('.lv-oop .lv-copen')].map(txt).join('|');
+    o.oopdim = (function () {
+      const r = one('.lv-oop .lv-crow');
+      return r ? getComputedStyle(r).opacity : '';
+    })();    // The row's own parts: the tribe under the name, in the row's text colour;
+    // the compare box with NO visible word; the tier chip only under an opt-in
+    // sort; an EMPTY avg cell rather than a dash.
+    o.tribetext = [...q('.lv-cols .lv-crowtribe')].map(txt).join('|');
+    o.tribecolor = (function () {
+      const t = one('.lv-crowtribe');
+      return t ? getComputedStyle(t).color : '';
+    })();
+    o.uncf = q('.lv-uncf').length;
+    o.tierchips = q('.lv-cols .lv-crow .lv-tier').length;
+    o.cmplbl = q('.lv-cmplbl').length;
+    o.cnametitles = q('.lv-cname[title]').length;
+    o.nametitle = (function () {
+      const n = one('.lv-cname');
+      return n ? n.title : '';
+    })();
+    // The accessible name the visible "compare" word used to carry (item B.2).
+    o.cboxlabel = (function () {
+      const b = one('.lv-cmpbox');
+      return b ? (b.getAttribute('aria-label') || '') : '';
+    })();
+    // The OWNED cell's colour, as the control for the tribe's: green is the
+    // owned colour on this screen and nothing else may wear it.
+    o.ownedcolor = (function () {
+      const b = one('.lv-owned');
+      return b ? getComputedStyle(b).color : '';
+    })();
+    o.apvals = [...q('.lv-cols .lv-ap')].map(txt).join('|');
+    o.apempty = [...q('.lv-cols .lv-ap')].filter(b => !b.textContent).length;
+    o.crowgap = (function () {
+      const r = one('.lv-crow');
+      return r ? getComputedStyle(r).gap : '';
+    })();
+    // THE ROW BOXES, in order: "comp rows don't overlap" is the item's own
+    // wording, and only a rectangle can answer it. `rowbox` is read back as text
+    // (left,top,right,bottom per row) because the harness's numeric fields are
+    // single ints.
+    o.crowboxes = [...q('.lv-cols .lv-crow')].map(r => {
+      const b = r.getBoundingClientRect();
+      return [Math.round(b.left), Math.round(b.top), Math.round(b.right),
+              Math.round(b.bottom)].join(',');
+    }).join(' ');
+    // How tall the NAME cell is, so "a long name wraps to two lines and the
+    // tribe moves down with it" is measured rather than assumed.
+    o.cnameh = (function () {
+      const n = one('.lv-cname');
+      return n ? Math.round(n.getBoundingClientRect().height) : 0;
+    })();
+    // The comp distribution bars still exist on the DETAIL screen — the pick
+    // card stopped drawing any (item A), so this is the control that the `lvBars`
+    // renderer is still reached at all.
+    o.compdistbars = q('.lv-cstat .lv-bar').length;
+    // A COMP ROW IS DIMMED ONLY WHEN IT IS IN THE OUT-OF-PLAY BLOCK. This read
+    // used to count the per-row "· tribe unconfirmed" note — and round 4 item 1
+    // RENAMED that note to "· not available", so the filter matched nothing and
+    // the assertions passed on a count that could only ever be 0. That is the
+    // failure mode this harness exists to avoid, so the read is the computed
+    // OPACITY the dimming actually is, and `oopdim` is its control: a renamed
+    // class would zero `maindim` again, and a zero that CANNOT be non-zero is
+    // not a measurement.
+    o.crowrows = q('.lv-cols .lv-crow').length;
+    o.maindim = [...q('.lv-cols .lv-crow')]
+      .filter(r => parseFloat(getComputedStyle(r).opacity) < 1).length;
     o.ctlchips = [...q('.lv-ctl .lv-chip')].map(c => c.textContent).join('|');
     o.ctlrows = q('.lv-ctl').length;
     // The compare control's own theming, and where the toggle lives.
@@ -731,18 +959,22 @@ _DRIVER = r"""
     })();
     for (const k of Object.keys(o))
       rec(name + '.' + k, ['tavern', 'cards', 'skel', 'pick',
-                           'taverncards', 'pickbars', 'compslots', 'slotsmiss',
+                           'taverncards', 'compslots', 'slotsmiss',
                            'slotshand', 'guideopen', 'panelw', 'saverows',
                            'checkboxin', 'tavernon', 'decidehidden',
                            'cardslotkids', 'tabh', 'tavernw', 'vpw', 'slotart',
                            'legendslots', 'cmpboxes', 'cmpchecked', 'cmpdisabled',
                            'missvals', 'bhhalf', 'renameless', 'tiletitles',
                            'noart', 'nagacount', 'pickcolw', 'pickctlvp',
-                           'picknameh', 'pickcardw', 'cols', 'vw',
-                           'avgcells', 'hasavg', 'crowrows', 'unavail', 'ctlrows',
+                           'picknameh', 'cols', 'vw', 'vh',
+                           'avgcells', 'hasavg', 'crowrows', 'maindim', 'ctlrows',
                            'navviewer', 'inplaychips', 'shopcards',
                            'boardcards', 'passedcards', 'oppcards',
-                           'tabs', 'panelcount', 'accs', 'bodyw']
+                           'tabs', 'panelcount', 'accs', 'bodyw',
+                           'pickabove', 'pickbottom', 'pickartno',
+                           'ooprows', 'oopopen', 'oopboxes', 'uncf',
+                           'tierchips', 'cmplbl', 'cnametitles', 'apempty',
+                           'compdistbars', 'cnameh', 'slottitles']
           .includes(k) ? '#' + Number(o[k]) : o[k]);
   }
   function clickCtl(sel, label, row) {
@@ -757,8 +989,15 @@ _DRIVER = r"""
         .find(x => txt(x.querySelector('.lv-copen')) === row);
       if (!scope) throw new Error('no comp row named ' + row);
     }
-    const node = [...scope.querySelectorAll(sel)]
-      .find(c => label === null || c.textContent === label);
+    const hits = [...scope.querySelectorAll(sel)]
+      .filter(c => label === null || c.textContent === label);
+    // A VISIBLE MATCH IS PREFERRED (2026-10-14). Both arrangements build the
+    // comps panel, so a page-wide search finds the HIDDEN arrangement's copy
+    // first — and clicking a summary inside a `display:none` subtree opened a
+    // block nobody could see, which read as "the control does not work". The
+    // fallback keeps every shot whose control is legitimately off-screen (the
+    // end-of-game card, a shut section's own header) working as before.
+    const node = hits.find(c => c.offsetParent) || hits[0];
     if (!node) throw new Error('no control labelled ' + label + ' in ' + sel);
     node.click();
   }
@@ -796,12 +1035,14 @@ _DRIVER = r"""
       (s.preclicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
     }
     render(s.rep);
-    if (s.click) clickCtl('.lv-pickctl .lv-chip', s.click);
-    (s.clicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
-    // A panel by its heading TITLE, inside the arrangement that is ON SCREEN
-    // (`sectionPanel` above): both arrangements are in the DOM and both build a
-    // section called "Comps", so a page-wide search finds the hidden one first
-    // and reports that the section is not foldable — measured 2026-10-13.
+    // `reveal` OPENS THE SECTION FIRST, THEN the shot's clicks land (2026-10-14).
+    // It used to run last, which was fine while every control a shot clicked was
+    // a div the renderer had already built — but a shut section is
+    // `display:none`, and both arrangements build a Comps panel, so a click on a
+    // control inside one had no way to tell the visible copy from the hidden one:
+    // the out-of-play summary that was clicked belonged to the hidden
+    // arrangement, the visible block stayed shut, and the shot read 0 (measured).
+    // Clicking what is on screen is also what a player does.
     if (s.reveal) {
       const p = sectionPanel(s.reveal);
       if (!p) throw new Error('no section titled ' + s.reveal);
@@ -811,6 +1052,8 @@ _DRIVER = r"""
       window.scrollTo(0, Math.max(0, p.getBoundingClientRect().top
                                      + window.scrollY - 8));
     }
+    if (s.click) clickCtl('.lv-pickctl .lv-chip', s.click);
+    (s.clicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
     // `toggle`: click a section's header, then RE-RENDER the same payload — which
     // is what the 5-second shop re-read does (`live.SHOP_REREAD_SECONDS`). The
     // section's state is persisted, so a render that did not re-apply it from
@@ -1609,9 +1852,13 @@ class TestTheAccordionLayout(_Rendered):
         # screen, and a header summary is exactly where a verdict would sneak in,
         # which is why `lvSectionLine` is in the source scan in `test_live_tavern`
         # as well.
+        # "N in this lobby" since 2026-10-14 (item B.1): the comps list is the
+        # comps this game can build, so the header counts THAT list. This fixture
+        # carries one comp, and it is the lobby's — the old wording was
+        # "1 of 1 available", which counted a list that no longer exists.
         self.assertEqual(
             got["flat.sums"],
-            "|3 offers|2 on board · 1 in hand|1 of 1 available|Reno"
+            "|3 offers|2 on board · 1 in hand|1 in this lobby|Reno"
             "|2 of 3 seen seats")
         # The strip carries no line of its own: it IS the facts, and its rows are
         # the summary.
@@ -1834,8 +2081,9 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         for banned in ("fits your board", "fits my comp direction",
                        "fits your comp direction"):
             self.assertNotIn(banned, text)
-        self.assertIn("Avg place=3.20", got["pick.pickrows"])
-        self.assertIn("Top 4=62%", got["pick.pickrows"])
+        # ONE DECIMAL EVERYWHERE (item A, 2026-10-14): the rows too.
+        self.assertIn("Avg place=3.2", got["pick.pickrows"])
+        self.assertIn("Top 4=62.0%", got["pick.pickrows"])
         # Game order again: Ann was offered first, so her 30.0% leads even though
         # Zed's 60.0% would win any ranking.
         self.assertEqual(got["pick.pickhead"], "30.0%|60.0%",
@@ -1845,57 +2093,171 @@ class TestTheViewCarriesNoVerdict(_Rendered):
                          "the headline figure says what it is")
         self.assertIn("+15.0 vs offered avg", got["pick.pickvs"],
                       "the distance from the offered average, stated")
-        self.assertEqual(got["pick.pickbars"], 8,
-                         "the distribution is eight bars, one per placement")
         # The offered average itself is on the source line: the ± figure has to
         # be relative to something the player can see.
         self.assertIn("Offered average: 45.0% picked", got["pick.picknote"])
 
+    def test_the_compact_card_is_art_left_and_content_right(self):
+        """Item A (2026-10-14): the option is a HORIZONTAL card — art on the
+        left at a 3/4 ratio, everything else stacked to its right — and its
+        min-height is what stops the grid jumping between payloads.
+
+        The art's HEIGHT is the clamped number; the width follows from the
+        ratio, so the assertion is the ratio rather than a pixel width (the
+        design's 72x96 is what the nominal window gives, and 14vh is what a
+        real one gives).
+        """
+        got = self.got
+        self.assertEqual(got["pick.pick"], 2, "both options are cards")
+        self.assertEqual(got["pick.pickartratio"], "1.333",
+                         f"the art is not 3/4: {got['pick.pickart']}")
+        # Art LEFT of the name: the art's box ends before the name's begins.
+        self.assertEqual(got["pick.pickabove"], 1,
+                         "the pick screen is not above the dashboard")
+        art_w, art_h = (int(v) for v in got["pick.pickart"].split("x"))
+        self.assertGreaterEqual(art_h, 64)
+        self.assertLessEqual(art_h, 128)
+        self.assertGreater(art_w, 0)
+        # The card is at least the design's floor, and every card is that tall
+        # or taller: a card with less data must not shrink its row.
+        self.assertGreaterEqual(int(got["pick.pickcard"].split("x")[1]), 144)
+        heights = [int(h) for h in got["pick.pickcards"].split("|")]
+        self.assertEqual(len(heights), 2)
+        self.assertTrue(all(h >= 144 for h in heights), got["pick.pickcards"])
+        # The name is one or two lines — bold 15px.
+        self.assertLessEqual(got["pick.picknameh"], 40)
+        # ONE line of headline: a wrapped one would be ~2x a single line.
+        self.assertEqual(got["pick.pickhead"].count("|"), 1,
+                         "the headline did not render once per option")
+
+    def test_the_option_grid_is_four_wide_then_two_then_one(self):
+        """Item A's layout by WIDTH: one row of four at >=1500px, two by two from
+        700 to 1500, one column under 700. Four options, so the counts are the
+        assertion at every size — and at >=1500 each column is at least 200px.
+        """
+        shots = [_shot("pick", _hero_pick_payload())]
+        wide = _render(shots, size=(1600, 900))
+        self.assertEqual(len(wide["pick.pickcolx"].split("|")), 4)
+        self.assertEqual(len(set(wide["pick.pickcolx"].split("|"))), 4,
+                         "the four options are not in four columns")
+        self.assertEqual(len(set(wide["pick.pickcoly"].split("|"))), 1,
+                         "the four options are not on ONE row")
+        for w in (int(v) for v in wide["pick.pickcolx"].split("|")):
+            self.assertGreaterEqual(w, 0)
+        self.assertGreaterEqual(wide["pick.pickcolw"], 200,
+                                "a wide column is under the design's 200px")
+        mid = _render(shots, size=(1100, 700))
+        self.assertEqual(len(set(mid["pick.pickcolx"].split("|"))), 2,
+                         "1100px is not a 2x2 grid")
+        self.assertEqual(len(set(mid["pick.pickcoly"].split("|"))), 2,
+                         "1100px is not a 2x2 grid")
+        narrow = _render(shots, size=(640, 700))
+        self.assertEqual(len(set(narrow["pick.pickcolx"].split("|"))), 1,
+                         "under 700px is not a single column")
+        # The design's own art size at that width.
+        self.assertEqual(narrow["pick.pickart"], "57x76",
+                         f"the narrow art is not 56x76-ish: "
+                         f"{narrow['pick.pickart']}")
+
+    def test_a_four_option_hero_pick_fits_a_1100x700_window(self):
+        """The done-when: a four-option HERO pick fits a 1100x700 window with no
+        scroll, each name appears once, and a card with no data says "No data"
+        on ONE line.
+
+        "No scroll" is measured, not inferred: the pick panel's own bottom is
+        inside the viewport, so all four options are on screen without scrolling
+        for them. The panel is above the dashboard, so what fits is the whole
+        pick screen, and the tavern/comps/facts stay below it.
+        """
+        got = _render([_shot("pick", _hero_pick_payload())], size=(1100, 700))
+        self.assertEqual(got["pick.pick"], 4, "the fixture is not four options")
+        self.assertEqual(got["pick.pickabove"], 1,
+                         "the pick screen is not above the dashboard panels")
+        self.assertLessEqual(got["pick.pickbottom"], got["pick.vh"],
+                             f"the pick panel runs past the fold: "
+                             f"{got['pick.pickbottom']} > {got['pick.vh']}")
+        # Every option's name appears exactly once inside its own card.
+        self.assertEqual(got["pick.picknamecount"], "1|1|1|1",
+                         f"a name is on screen twice: {got['pick.picknamecount']}")
+        self.assertEqual(got["pick.pickartno"], 0,
+                         "the art carries its own name caption again")
+        # The hero's subline is the hero POWER, on ONE line with the whole text
+        # on the hover (a trinket has no subline at all, which is why this is
+        # measured here and not on the trinket shot).
+        self.assertTrue(got["pick.picksub"], "no option rendered a subline")
+        self.assertEqual(got["pick.picksubwrap"], "nowrap")
+        self.assertEqual(got["pick.picknodata"], "No data")
+        self.assertIn("No data for this card on this patch yet.",
+                      got["pick.picknodatatitle"],
+                      "the patch detail is not on the hover")
+        self.assertIn("No data", got["pick.picknodata"])
+
+    def test_the_source_line_is_one_line_with_the_whole_text_on_hover(self):
+        """Item A: "Source line on one line with ellipsis (full text on hover),
+        12px gap before the cards"."""
+        got = self.got
+        self.assertIn("nowrap", got["pick.picksrc"])
+        self.assertIn("hidden", got["pick.picksrc"])
+        self.assertIn("ellipsis", got["pick.picksrc"])
+        self.assertIn("title", got["pick.picksrc"],
+                      "the truncated source line has no full-text hover")
+        self.assertEqual(got["pick.picksrcgap"], "12px")
+
     def test_the_pick_screen_names_each_option_once(self):
-        """Fix list round 1 item 2 / round 2 item 1: the tile's own caption is a
-        second, width-clamped copy of the name, and the headline used to repeat
-        the pick rate as a row as well."""
+        """Fix list round 1 item 2 / round 2 item 1, tightened by item A: the
+        art carries no caption at all now, so the name beside it is the only one
+        — and the card's own name is what the count is taken from."""
         got = self.got
         self.assertEqual(got["pick.renameless"], 0,
                          "the option's art still carries its own name caption")
         self.assertEqual(got["pick.picknames"], "Ann|Zed")
         self.assertNotIn("Picked in", got["pick.pickrows"],
                          "the pick rate is still repeated as a stat row")
-        self.assertGreaterEqual(got["pick.tiletitles"], 2,
-                                "the full name is not on the tile's title")
+        self.assertEqual(got["pick.picknamecount"], "1|1")
+        # The full name is on the card's own title, however the name clamps.
+        self.assertIn("Ann", got["pick.picknames"])
 
-    def test_the_pick_columns_and_the_controls_are_sized_as_asked(self):
-        """>=200px columns, a fixed-height name, the 130px art, and the controls
-        on one row (fix list round 1 item 2 / round 2 item 1)."""
+    def test_the_pick_controls_are_one_row_and_the_card_is_wide_enough(self):
+        """Item A's controls: Hero | Trinket | Discover, Stats shown and Order
+        on ONE row, and each option column at least 200px at >=1500."""
         got = self.got
         self.assertGreaterEqual(got["pick.pickcolw"], 200,
                                 "an option column is narrower than 200px")
-        self.assertGreaterEqual(got["pick.picknameh"], 30,
-                                "the name line is not tall enough to hold two "
-                                "lines at a fixed height")
-        self.assertEqual(got["pick.pickcardw"], 130)
         # One row of controls: a wrapped row would be ~2x a single button.
         self.assertLess(got["pick.pickctlvp"], 60)
+        # ...and all three groups are in it, so nothing was dropped: the three
+        # kinds, the Stats-shown set, and the Order set.
+        for label in ("Hero:", "Trinket:", "Discover:", "avg place:", "top 4:",
+                      "As offered:", "By picked %:"):
+            self.assertIn(label, got["pick.pickctl"],
+                          f"the pick row lost {label!r}")
 
     def test_a_stats_shown_toggle_removes_that_row(self):
         """§4.3: "Stats shown lets the player toggle which rows appear (also how
         new fields get added later)." """
         got = _render([_shot("pick", _choice_payload(), click="top 4")])
         self.assertNotIn("Top 4=", got["pick.pickrows"])
-        self.assertIn("Avg place=3.20", got["pick.pickrows"])
+        self.assertIn("Avg place=3.2", got["pick.pickrows"])
         self.assertIn("top 4:off", got["pick.pickctl"])
 
     def test_no_option_without_data_invents_a_row(self):
         """§6.2/§5: an option the DBs have nothing for says so, and shows no
-        rows — rather than a zero or a guess."""
+        rows — rather than a zero or a guess. Item A shortens the sentence to
+        "No data" and moves the patch detail to the hover, so the card keeps the
+        same height as every other one."""
         rep = _payload(choice={"kind": "hero", "source": "Choose One",
                                "ranked": [["Nobody", "BG31_999", 0.0, "", 0]],
                                "option_stats": {}, "guides": {}})
         got = _render([_shot("bare", rep)])
+        self.assertEqual(got["bare.picknodata"], "No data")
         self.assertIn("No data for this card on this patch yet.",
-                      got["bare.alltext"])
+                      got["bare.picknodatatitle"])
         self.assertEqual(got["bare.pickrows"], "")
-        self.assertEqual(got["bare.pickbars"], 0)
+        # The old sentence is NOT on the card: it was the line that wrapped.
+        self.assertNotIn("No data for this card on this patch yet.",
+                         got["bare.alltext"])
+        # Same height as a card with data — the design's "same card height".
+        self.assertGreaterEqual(int(got["bare.pickcard"].split("x")[1]), 144)
 
 
 class TestTheCompsScreens(_Rendered):
@@ -1916,10 +2278,28 @@ class TestTheCompsScreens(_Rendered):
                       clicks=[[".lv-ctl .lv-chip", "Overlap"]]),
                 _shot("more", base, reveal="Comps", clicks=[[".lv-more", "+ 1 more"]]),
                 _shot("noavg", _comps_payload(corpus={}), reveal="Comps"),
-                _shot("detecting", _comps_payload(tribes_detecting=True),
+                # The detection window, marked by the PRODUCER's own rule so the
+                # "unconfirmed" reads below are about the page and not the
+                # fixture (item B.1).
+                _shot("detecting", _comps_marked(tribes_detecting=True),
                       reveal="Comps"),
-                _shot("unavailshot", _comps_with_an_unavailable_tribe(),
-                      reveal="Comps"),
+                # Five tribes confirmed, and this fixture's comps split three
+                # ways by them: Mech is banned this game, Naga is out of play,
+                # Beast/Elemental/Mixed are in. THE DONE-WHEN SHOT.
+                _shot("banned", _comps_after_bans(), reveal="Comps"),
+                # The out-of-play block, shut and then opened for real.
+                _shot("oopsum", base, reveal="Comps"),
+                # Names the shipped DB really carries, at the width the comps
+                # column really gets: the row has to hold a two-line name.
+                _shot("longname", _comps_with_long_names(), reveal="Comps"),
+                _shot("oopopen", base, reveal="Comps",
+                      clicks=[[".lv-oopsum", "Out of play · 1"]]),
+                # THE RECOMPUTE: a tick on a comp that the NEXT payload takes out
+                # of the lobby. A stale tick would keep a Compare column alive for
+                # a row nobody can see (item B.1's "recompute on every tribe
+                # change").
+                _shot("recut", _comps_without_beast(), reveal="Comps",
+                      pre=base, preclicks=[_compare("Beasts")]),
                 _shot("detail", base, reveal="Comps",
                       clicks=[_open("Elementals")]),
                 _shot("back", base, reveal="Comps",
@@ -1935,9 +2315,11 @@ class TestTheCompsScreens(_Rendered):
     def test_browse_is_one_column_per_source_tier_with_a_cap(self):
         got = self.got
         self.assertEqual(got["browse.comptiers"], "S tier · 2|A tier · 7")
-        # The S column: both comps, the payload's tier-then-name order.
+        # The S column: both comps, the payload's tier-then-name order. The avg
+        # cell is EMPTY for a comp the corpus has never seen (item B.2: "no '—'
+        # on each row") — the column still exists, its value does not.
         self.assertTrue(got["browse.comprows"].startswith(
-            "Elementals|3 of 3 owned|3.83 ; Menagerie|1 of 2 owned|—"),
+            "Elementals|3 of 3 owned|3.83 ; Menagerie|1 of 2 owned|"),
             got["browse.comprows"])
         # ~6 rows per tier, then the count of what is left (round 3 item 3).
         self.assertEqual(got["browse.more"], "+ 1 more")
@@ -2005,27 +2387,33 @@ class TestTheCompsScreens(_Rendered):
         self.assertEqual(len(got["browse.cmptracks"].split()), 6,
                          got["browse.cmptracks"])
         self.assertEqual(got["noavg.avgcells"], 0,
-                         "a dash per row is printed where the corpus is empty")
+                         "a column of dashes is printed where the corpus is "
+                         "empty")
         self.assertEqual(got["noavg.hasavg"], 0)
         self.assertIn("Elementals|3 of 3 owned", got["noavg.comprows"])
         # Five tracks instead of six: the avg column is gone, not empty.
         self.assertEqual(len(got["noavg.cmptracks"].split()), 5,
                          got["noavg.cmptracks"])
+        # ...and where the column DOES exist, a row the corpus has never seen
+        # leaves its cell empty rather than printing a dash (item B.2).
+        self.assertGreaterEqual(got["browse.apempty"], 1,
+                                f"no row left its avg cell empty: "
+                                f"{got['browse.apvals']}")
+        self.assertNotIn("—", got["browse.apvals"])
 
     def test_the_comps_panel_has_no_second_tribe_chip_row(self):
         """Round 3 item 4: the page has ONE tribe row, above the tabs, and the
-        comps panel had a copy of it. The not-confirmed state is said once, in
-        the panel header, instead of on every row.
+        comps panel had a copy of it.
 
-        Round 4 item 1 then reworded the per-row note to "· not available"
-        (available comps are marked, not dropped), which killed this test's
-        driver read: it counted rows matching /unconfirmed/, so it read 0 for
-        every fixture and both assertions below passed vacuously. The read is
-        the row's own `unavail` class now, with `crowrows` proving the list
-        rendered — an assertion on a count that cannot be non-zero is not a
-        test. The positive side (a row IS dimmed, and says why) is
-        `test_live_tavern.TestTheCompsSayWhichTribesAreAvailable`, which
-        asserts the class and the note together.
+        Round 4 item 1 reworded the per-row note to "· not available" (available
+        comps are marked, not dropped), which killed the /unconfirmed/ read this
+        test used: it matched nothing and both assertions passed vacuously. Item
+        B.1 (2026-10-14) then changed WHAT is listed — the main list is the
+        comps this lobby offers, and the out-of-play ones moved to their own
+        collapsed block — so the `unavail` read moves with it: the MAIN list has
+        no dimmed row at all, and the block is where the dimmed rows live. The
+        block's read (`ooprows`) is the positive control: it proves the class is
+        still on the page for the count of zeros above to mean anything.
         """
         got = self.got
         self.assertEqual(got["browse.ctlchips"],
@@ -2036,23 +2424,22 @@ class TestTheCompsScreens(_Rendered):
         self.assertGreater(got["browse.crowrows"], 0,
                            "the comps list rendered no rows at all, so the "
                            "dimmed-row read below proves nothing")
-        self.assertEqual(got["browse.unavail"], 0,
-                         "a comp row is dimmed although every tribe in it is "
-                         "available")
+        self.assertEqual(got["browse.maindim"], 0,
+                         "a comp row in the main list is dimmed although every "
+                         "tribe in it is available")
         # The harness strips values, so the leading space of the header note is
         # not part of what comes back.
         self.assertEqual(got["detecting.hnote"], "· tribes not confirmed yet")
         self.assertGreater(got["detecting.crowrows"], 0)
-        self.assertEqual(got["detecting.unavail"], 0,
-                         "an unconfirmed tribe with fewer than five confirmed "
-                         "is AVAILABLE (round 4 item 1), so no row dims here")
-        # The POSITIVE control: one comp whose tribe this lobby cannot offer is
-        # dimmed, and the read sees it. Without this the two zeros above are a
-        # count that cannot be anything else.
-        self.assertEqual(got["unavailshot.unavail"], 1,
-                         "the dimmed-row read cannot see the class the renderer "
-                         "adds — the zeros above prove nothing")
-        self.assertIn("Elementals", got["unavailshot.comprows"])
+        self.assertEqual(got["detecting.maindim"], 0,
+                         "an unconfirmed tribe with fewer than five confirmed is "
+                         "AVAILABLE (item B.1), so no row dims here")
+        # The POSITIVE control: the out-of-play block's rows ARE dimmed, so the
+        # zero above is a measurement rather than a read that cannot rise.
+        self.assertGreaterEqual(got["browse.ooprows"], 1,
+                                "the out-of-play block rendered no rows, so the "
+                                "dimmed-row read proves nothing")
+        self.assertEqual(got["browse.oopdim"], "0.55")
         # ...and one chip row for the tribes, on the page itself.
         self.assertIn("BEAST", got["detecting.chips"])
 
@@ -2069,17 +2456,195 @@ class TestTheCompsScreens(_Rendered):
         self.assertIn("90px", tracks)
         self.assertEqual(got["browse.stripwrap"], "nowrap",
                          "the core strip still wraps")
-        self.assertEqual(got["browse.slotflex"], "0 0 auto",
-                         "a slot can still be squeezed by the strip")
+        # The slots SHRINK since 2026-10-14 (item B.2 measured it): six 40px
+        # slots plus the avg track do not fit a 499px comps panel, and
+        # `flex:none` pushes the row out of its own box instead of letting the
+        # strip give up width.
+        self.assertEqual(got["browse.slotflex"], "0 1 auto",
+                         "a slot cannot give up width when the row is full")
         self.assertEqual(got["browse.nameclamp"], "2",
                          "the comp name is not clamped to two lines")
-        self.assertEqual(got["browse.slotpx"], "34x46")
+        self.assertEqual(got["browse.slotpx"], "40x54")
         # The compare box sits at the START of the row, in flow: the name is to
         # its right, so nothing is over anything.
         withbox = _render([_shot("wb", _comps_payload(), reveal="Comps",
                                  clicks=[[".lv-cmpbox", None, "Beasts"]])])
         self.assertEqual(withbox["wb.cmpchecked"], 1)
         self.assertEqual(withbox["wb.rowcols"], "grid")
+
+    def test_a_comp_row_is_the_designs_four_parts(self):
+        """Item B.2: `[checkbox] [name, up to 2 lines, tribe on the second line]
+        [card strip] [N of M owned]`, the same on every row.
+
+        The compare control is a checkbox with a TOOLTIP and no visible word —
+        the word "compare" sat in the row and collided with the name — so this
+        reads the absence of the label element, the presence of the tooltip, and
+        the accessible name that replaced the label.
+        """
+        got = self.got
+        self.assertEqual(got["browse.cmplbl"], 0,
+                         "the word 'compare' is still in the row")
+        self.assertEqual(got["browse.cmpboxes"], got["browse.crowrows"],
+                         "a main-list row has no compare box")
+        self.assertEqual(got["browse.cboxlabel"], "Compare Elementals",
+                         "the checkbox has no accessible name")
+        # The tribe is on the line UNDER the name, in the row's own text colour.
+        self.assertIn("BEAST", got["browse.tribetext"])
+        self.assertEqual(got["browse.tribecolor"], got["browse.ownedcolor"],
+                         "the tribe is not in the row's normal text colour")
+        # The name column takes the space that is left, and the whole name is
+        # reachable however it clamps — the first row's, which is Elementals.
+        self.assertEqual(got["browse.nametitle"], "Elementals")
+        self.assertGreater(got["browse.cnametitles"], 0)
+        # NO per-row tier in the default sort: the tier column's own header says
+        # it. It comes back under the two opt-in sorts, where the header is no
+        # longer what you are reading.
+        self.assertEqual(got["browse.tierchips"], 0,
+                         "a row repeats the tier its column header states")
+        self.assertGreater(got["overlap.tierchips"], 0,
+                           "the opt-in sorts do not show the tier on the row")
+
+    def test_the_out_of_play_block_is_collapsed_grouped_and_uncomparable(self):
+        """Item B.1: comps for tribes KNOWN to be out of play move to a collapsed
+        "Out of play · N" block at the bottom — dimmed, grouped by tribe, and
+        with no compare checkbox.
+
+        Naga is rotated this patch, so the Nagas comp is the block's only row in
+        this fixture. The block is SHUT until it is asked for, and opening it
+        really does put the rows on screen (the click is what proves that).
+        """
+        got = self.got
+        self.assertEqual(got["oopsum.oopsum"], "Out of play · 1")
+        self.assertEqual(got["oopsum.oopopen"], 0, "the block starts open")
+        self.assertEqual(got["oopsum.ooprows"], 1)
+        self.assertNotIn("Nagas", got["oopsum.comprows"],
+                         "an out-of-play comp is in the main list")
+        self.assertEqual(got["oopsum.oopnames"], "Nagas")
+        # GROUPED BY TRIBE, and the group header is the tribe.
+        self.assertEqual(got["oopsum.ooptribes"], "NAGA")
+        # DIMMED, and with no compare box on any of its rows.
+        self.assertEqual(got["oopsum.oopdim"], "0.55")
+        self.assertEqual(got["oopsum.oopboxes"], 0,
+                         "an out-of-play comp offers a compare box")
+        # THE POSITIVE CONTROL for the "collapsed" half: the same payload with
+        # the summary clicked does show the row, so the count above is not a
+        # block that simply rendered nothing.
+        self.assertEqual(got["oopopen.oopopen"], 1)
+        self.assertEqual(got["oopopen.ooprows"], 1)
+
+    def test_five_confirmed_tribes_leave_only_those_tribes_in_the_list(self):
+        """THE DONE-WHEN for item B.1: with five tribes confirmed, the main list
+        shows only those tribes (plus Mixed), and the out-of-play comps are in
+        the collapsed block.
+
+        The fixture's comps split three ways under `<five>`: Elemental and Beast
+        are in this lobby, Mech is BANNED this game, Naga is out of play. So the
+        main list is Elementals + Menagerie (Mixed) + Beasts — three rows — and
+        the six Mech comps are in NEITHER list, which the note says out loud
+        rather than shortening the list in silence.
+        """
+        got = self.got
+        names = [r.split("|")[0] for r in got["banned.comprows"].split(" ; ")]
+        self.assertEqual(names, ["Elementals", "Menagerie", "Beasts"],
+                         f"the main list is not the confirmed tribes: {names}")
+        self.assertTrue(got["banned.comptiers"].startswith("S tier · 2"),
+                        got["banned.comptiers"])
+        # The main list header is the count of that list.
+        self.assertIn("3 in this lobby", got["banned.sums"])
+        # The out-of-play comp is in the block, not the list...
+        self.assertEqual(got["banned.ooprows"], 1)
+        self.assertEqual(got["banned.oopnames"], "Nagas")
+        # ...and the six that are in neither are counted in the note.
+        self.assertIn("6 comps for tribes this lobby does not offer are not "
+                      "listed.", got["banned.notes"])
+        self.assertNotIn("Aardvark", got["banned.comprows"])
+
+    def test_comp_rows_do_not_overlap_and_a_long_name_wraps(self):
+        """THE DONE-WHEN: "Comp rows don't overlap, and a long name wraps to two
+        lines."
+
+        Overlap is measured from the row RECTANGLES — two rows in one list must
+        not share a pixel of vertical space, and no row may reach past the right
+        edge of the panel it is in (the strip's slots shrank from 34px to 40px in
+        item B.2, and the six-card cores plus the avg track are what that width
+        has to fit). The long-name half uses the names the shipped DB carries,
+        because a fixture's short names would never wrap.
+        """
+        boxes = [[int(v) for v in b.split(",")]
+                 for b in self.got["browse.crowboxes"].split()]
+        self.assertGreater(len(boxes), 2, "the list rendered almost no rows")
+        for i in range(1, len(boxes)):
+            self.assertGreaterEqual(
+                boxes[i][1], boxes[i - 1][3],
+                f"row {i} starts ({boxes[i][1]}) inside row {i - 1} "
+                f"(ends {boxes[i - 1][3]})")
+        panel = int(self.got["browse.compsw"])
+        self.assertGreater(panel, 0)
+        for b in boxes:
+            self.assertLessEqual(b[2] - b[0], panel,
+                                 f"a row is wider than the panel: "
+                                 f"{b[2] - b[0]} > {panel}")
+        # A LONG NAME, in the shipped DB's own words.
+        long_rows = self.got["longname.comprows"].split(" ; ")
+        self.assertTrue(any(" - " in r for r in long_rows),
+                        f"the fixture has no long comp name: {long_rows[:3]}")
+        # Two lines of name, tribe under it: taller than one line (18px) and
+        # shorter than three (54px). The clamp is what keeps a third line out.
+        self.assertGreater(self.got["longname.cnameh"], 18)
+        self.assertLessEqual(self.got["longname.cnameh"], 40)
+        self.assertEqual(self.got["longname.nameclamp"], "2")
+        # ...and those rows still fit their panel, which is the pair of facts the
+        # done-when asks for together.
+        for b in ([int(v) for v in x.split(",")]
+                  for x in self.got["longname.crowboxes"].split()):
+            self.assertLessEqual(b[2] - b[0],
+                                 int(self.got["longname.compsw"]))
+
+    def test_a_tribe_change_recuts_the_view_state(self):
+        """Item B.1: "Recompute the list on every tribe change."
+
+        The rows are derived from the payload on every render, so that half is
+        automatic; the VIEW state that points into the list is not. The `recut`
+        shot ticks the Beasts row while BEAST is one of the five, then renders a
+        payload where it is not — and the tick has to be gone, because a slug that
+        has left the list would keep a Compare column alive for a comp nobody can
+        see.
+        """
+        got = self.got
+        self.assertNotIn("Beasts", got["recut.comprows"],
+                         "the fixture did not take Beasts out of the lobby")
+        self.assertGreater(got["recut.crowrows"], 0,
+                           "the recut payload rendered no rows at all")
+        self.assertEqual(got["recut.cmpchecked"], 0,
+                         "a compare box is still ticked for a comp that has left "
+                         "the list")
+
+    def test_an_unconfirmed_tribe_stays_in_the_list_marked(self):
+        """Item B.1: "Tribes that are unconfirmed (fewer than 5 confirmed) stay
+        in the main list with a small 'unconfirmed' marker."
+
+        The payload publishes the COUNT of confirmed tribes and the window flag,
+        not which ones — so while the window is open every tribe-bearing row is
+        marked, and the moment the five land the markers are gone. Both halves
+        are measured, because only the pair says the marker tracks the window
+        rather than being a permanent decoration.
+        """
+        got = self.got
+        # While the window is open every main-list row that HAS a tribe is
+        # marked; Mixed has no tribe to confirm, so it carries no marker. The
+        # tier cap means the fixture shows 8 of the 9 rows — the count comes from
+        # the rows that RENDERED, not from the payload.
+        tribes = got["detecting.tribetext"].split("|")
+        self.assertEqual(len(tribes), got["detecting.crowrows"])
+        with_tribe = [t for t in tribes if t != "Mixed"]
+        self.assertGreater(len(with_tribe), 0)
+        self.assertEqual(got["detecting.uncf"], len(with_tribe),
+                         f"the markers do not cover the tribe rows: {tribes}")
+        self.assertEqual(got["detecting.tribetext"].count("unconfirmed"),
+                         len(with_tribe))
+        # With five confirmed, the list is exact and nothing is marked.
+        self.assertEqual(got["banned.uncf"], 0)
+        self.assertNotIn("unconfirmed", got["banned.tribetext"])
 
     def test_the_compare_box_and_the_comp_name_are_themed(self):
         """Round 3 item 6: a themed checkbox, and names underlined on hover
@@ -2110,28 +2675,38 @@ class TestTheCompsScreens(_Rendered):
     def test_the_average_placement_sort_puts_the_best_average_first(self):
         """Opt-in, and stated as the player's choice — the screens never rank on
         their own. Aardvark averages 2.00, Beasts 4.00, and the comps nobody has
-        played sort last rather than at zero."""
+        played sort last rather than at zero (with an EMPTY avg cell, since item
+        B.2 dropped the per-row dash)."""
         got = _render([_shot("avg", _comps_payload(), reveal="Comps",
                              clicks=[[".lv-ctl .lv-chip", "Avg placement"]])])
         rows = got["avg.comprows"].split(" ; ")[2:]
         self.assertTrue(rows[0].startswith("Aardvark|0 of 1 owned|2.00"), rows[0])
         self.assertTrue(rows[1].startswith("Beasts|2 of 2 owned|4.00"), rows[1])
-        self.assertTrue(rows[2].endswith("|—"), rows[2])
+        self.assertTrue(rows[2].endswith("|"), rows[2])
+        self.assertEqual(rows[2].split("|")[2], "",
+                         f"a dash is back in the avg cell: {rows[2]}")
 
-    def test_the_out_of_play_comp_is_hidden_and_that_is_stated(self):
-        """§4.4: "Comps for out-of-play tribes are hidden." Naga is rotated this
-        patch, so the Nagas comp cannot be built at all — and the screen says one
-        is missing rather than silently shortening the list."""
+    def test_an_out_of_play_comp_is_not_in_the_main_list_at_all(self):
+        """Item B.1: an out-of-play tribe's comps leave the main list for their
+        own block, and the main list's count no longer claims them.
+
+        This replaces round 4 item 1's "marked, not dropped" pin for THIS case:
+        the row is still on the page — one block down, dimmed, under its tribe —
+        but it is not one of the comps the panel header counts as in the lobby.
+        """
         got = self.got
         self.assertNotIn("Nagas", got["browse.comprows"])
-        self.assertIn("1 comp hidden: their tribe is out of play this patch.",
-                      got["browse.notes"])
+        self.assertEqual(got["browse.oopnames"], "Nagas")
+        # Ten comps in the fixture, one of them Naga's, so nine are this
+        # lobby's — and the tier headers count the same nine (2 + 7).
+        self.assertIn("9 in this lobby", got["browse.sums"],
+                      "the main list header does not count the main list")
 
-    def test_the_core_slots_are_the_designs_34_by_46(self):
-        """§5 sizes the Browse slot at 34x46 and the Compare slot at 52x70. A
-        tile is 88-130px wide, so a slot that inherits the card rule would be
-        more than twice the specified size."""
-        self.assertEqual(self.got["browse.slotpx"], "34x46")
+    def test_the_core_slots_are_the_designs_40_by_54(self):
+        """Item B.2: "strip thumbnails ~40x54 at 75% opacity". The Compare slot
+        stays 52x70 (§5), and a tile is 88-130px wide, so a slot that inherited
+        the card rule would be more than twice the specified size."""
+        self.assertEqual(self.got["browse.slotpx"], "40x54")
         self.assertEqual(self.got["compare.cmpslotpx"], "52x70")
         # Owned, in-hand and missing are three states, and the missing one is
         # dashed rather than a smaller solid box.
@@ -2153,6 +2728,10 @@ class TestTheCompsScreens(_Rendered):
         # The in-hand slot is still distinguishable, and a missing one is dimmed
         # rather than hidden.
         self.assertGreaterEqual(got["browse.slotshand"], 1)
+        # EVERY slot names its card on the hover (item B.2) — the legend's four
+        # included, since the legend is the slot element itself.
+        self.assertEqual(got["browse.slottitles"], got["browse.compslots"],
+                         "a slot has no title, so its art cannot be read")
 
     def test_compare_is_a_checkbox_and_the_rows_are_a_grid(self):
         """Fix list round 1 item 6: "compare as a checkbox", and rows that line up
@@ -2215,12 +2794,20 @@ class TestTheCompsScreens(_Rendered):
 
     def test_detail_shows_the_statistics_and_a_collapsed_guide(self):
         """§4.4 Detail: "headline stat, distribution, stat rows, and
-        `Guide text ▸` collapsed by default." """
+        `Guide text ▸` collapsed by default."
+
+        The DISTRIBUTION is the only thing left reading `lvBars` (item A took
+        the eight bars off the pick card, which has no room for them), so this
+        asserts they render here — a renderer nothing reaches is a renderer that
+        quietly stops working.
+        """
         got = self.got
         self.assertEqual(got["detail.stathead"], "3.83")
         self.assertIn("Games=12", got["detail.statrows"])
         self.assertIn("Top 4=67%", got["detail.statrows"])
         self.assertIn("1st place=17%", got["detail.statrows"])
+        self.assertEqual(got["detail.compdistbars"], 8,
+                         "the comp detail's distribution is not eight bars")
         self.assertEqual(got["detail.guideopen"], 0, "the guide starts collapsed")
         self.assertEqual(got["detail.guidesum"], "Guide text")
         # §5: every stat block carries a source line — the dataset, and the

@@ -271,6 +271,39 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
                       "the options must sort by the game's own offer order")
         self.assertIn("Shown in the order offered", src)
 
+    def test_the_comps_view_is_recut_and_reset(self):
+        """Item B.1's second sentence: "Recompute the list on every tribe change
+        and reset it when a game ends."
+
+        The rows are derived from the payload, so the RECOMPUTE is about the view
+        state that points into the list — which groups are expanded and which
+        comps are ticked for Compare. It runs from `renderLiveTavern` (before the
+        body is built, so no frame draws a list that no longer exists), and a game
+        ending drops all of it. The rendered half is
+        `test_live_browser...test_a_tribe_change_recuts_the_view_state`; this is
+        the half a browser cannot see, because the reset happens on a payload with
+        no comps list on it.
+        """
+        body = _function("lvSyncCompsView") or ""
+        self.assertIn("_liveCompMore = new Set();", body)
+        self.assertIn("_liveCompare.delete", body)
+        self.assertIn("lvInLobby(a)", body)
+        live = _function("renderLiveTavern") or ""
+        self.assertIn("lvSyncCompsView(a);", live,
+                      "the tribe state is not re-cut before the body renders")
+        self.assertLess(live.index("lvSyncCompsView(a);"),
+                        live.index("lvBody(a)"),
+                        "the list is built before the view state is re-cut")
+        # A GAME OVER resets it, and `lvResetCompsView` is the one owner of that.
+        over = _function("renderTavernGameOver") or ""
+        self.assertIn("lvResetCompsView();", over)
+        reset = _function("lvResetCompsView") or ""
+        for piece in ("_liveComp = null;", "_liveCompSort = 'tier';",
+                      "_liveCompMore = new Set();", "_liveCompare = new Set();",
+                      "_lvTribeKey = null;"):
+            self.assertIn(piece, reset,
+                          f"the game-over reset no longer clears {piece}")
+
     def test_the_comps_screens_never_call_anything_a_ranking(self):
         """The comps screens state where a tier comes from and that the sort is
         the player's, in words a scan for rank language can stay honest about.
@@ -370,16 +403,24 @@ class TestTheCompScreensAtSource(unittest.TestCase):
                       src)
 
     def test_the_mini_card_slot_sizes_are_the_designs(self):
-        """§5: 34x46 in Browse, 52x70 in Compare, and a CARD at 88x120 / 76x100
-        in Detail. A tile is 88-124px wide, so a slot that inherited the card
-        rule would be more than twice the specified size — which is exactly the
-        failure mode the design's own §5 table exists to prevent."""
+        """§5: 52x70 in Compare, and a CARD at 88x120 / 76x100 in Detail. A tile
+        is 88-124px wide, so a slot that inherited the card rule would be more
+        than twice the specified size — which is exactly the failure mode the
+        design's own §5 table exists to prevent.
+
+        The BROWSE slot is 40x54 since 2026-10-14 (item B.2: "strip thumbnails
+        ~40x54 at 75% opacity"), so the pin moved with it rather than being
+        deleted: the size is still a declared number a rule can lose.
+        """
         html = coach_ui._HTML
-        self.assertIn("width:34px; height:46px", html)
+        self.assertIn("width:40px; height:54px", html)
         self.assertIn(".lv-cmpcol .lv-slot { width:52px; height:70px; }", html)
         self.assertIn(".lv-core { --tcardw:88px; }", html)
         self.assertIn(".lv-flexcards { --tcardw:76px;", html)
         self.assertIn("aspect-ratio:76/100;", html)
+        # ...and the not-owned art is DIMMED at 75%, not at the 35% that read as
+        # an empty box.
+        self.assertIn("opacity:.75; filter:grayscale(1);", html)
 
     def test_the_browse_cap_and_the_compare_limit_are_named_constants(self):
         self.assertIn("const LIVE_COMP_ROWS = 6;", coach_ui._HTML)
@@ -451,13 +492,26 @@ class TestTheCompScreensAtSource(unittest.TestCase):
         that reaches one is the header's own — in the accordion it is the only
         way (the section is `display:none` until it is opened), and in the
         three-column layout every section is visible, so the equivalent claim is
-        that the comps list is one click from its own Detail and back."""
+        that the comps list is one click from its own Detail and back.
+
+        RE-POINTED 2026-10-14: `lvPicking` moved OUT of `lvColumns` and into
+        `lvBody` (the pick screen is a full-width strip above both arrangements
+        now), so the predicate is asserted where it lives. The claim is the same
+        one — the pick replaces nothing, and every dashboard section is on the
+        page either way, which is why the Tavern section is in the COLUMNS
+        unconditionally rather than only when nothing is being picked.
+        """
         cols = _function("lvColumns") or ""
-        self.assertIn("lvPicking(a)", cols)
         for section in ("'Tavern'", "'Board and hand'", "'Comps'",
                         "'Next opponent'", "'Lobby'"):
             self.assertIn(section, cols,
                           f"the layout lost its {section} section")
+        body = _function("lvBody") or ""
+        self.assertIn("lvPicking(a)", body,
+                      "the pick strip has no predicate of its own")
+        self.assertIn("'Choose one'", body)
+        self.assertIn("lv-pickstrip", body,
+                      "the pick strip cannot be found by name")
         # The accordion header is a real control: clickable, keyboard-reachable,
         # and it carries the state it toggles.
         sec = _function("lvSection") or ""
@@ -934,13 +988,29 @@ class TestTheShippedCompsDb(unittest.TestCase):
         self.assertIn("'lv-cmpbox'", row)
 
     def test_the_pick_screen_shows_one_name_and_a_one_decimal_headline(self):
-        """Round 1 item 2 / round 2 item 1."""
+        """Round 1 item 2 / round 2 item 1, and the compact card's own shape
+        (2026-10-14).
+
+        The `{noname: true}` pin is GONE rather than renamed: the option art is
+        no longer a `tile()` at all, so "suppress the tile's own caption" is not
+        a thing the code can get wrong any more — `.lv-pickart` holds the image
+        and nothing else, and `.lv-pname` is the ONE name. What replaces it is
+        the pair of assertions that would catch the regression the old pin
+        guarded: the card builds no `.tname`, and the name is emitted once.
+        """
         src = _function("lvPick")
-        self.assertIn("{noname: true}", src)
+        self.assertNotIn("tile(", src,
+                         "the option art is a tile again, so it can carry a "
+                         "second, truncated name")
+        self.assertIn("el('span', 'lv-pickart')", src)
+        self.assertEqual(src.count("'lv-pname'"), 1,
+                         "the option's name is not emitted exactly once")
         self.assertIn("st.pick_rate.toFixed(1) + '%'", src)
         self.assertIn("'Picked'", src)
-        # The row that repeated it is gone from the stat rows; the ORDER still
-        # reads the stats, so "By picked %" survives.
+        # One decimal everywhere: the stat rows too.
+        self.assertIn("st.avg_placement.toFixed(1)", _function("lvStatRows"))
+        # The row that repeated the headline is gone from the stat rows; the
+        # ORDER still reads the stats, so "By picked %" survives.
         self.assertNotIn("'Picked in'", _function("lvStatRows"))
         self.assertIn("orderKeys.includes('pick_rate')",
                       _function("lvPickControls"))

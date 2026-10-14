@@ -127,19 +127,22 @@ and nothing on the page names a move.
 
 **When the game asks you to choose, the panel shows what is known about each
 option** — a hero pick, a trinket pick, a Discover — in the order the game
-offered them, and never in an order that means "take this one". Each option is
-its own column, with its headline figure, the placement distribution as eight
-bars, and controls for which rows you see and in what order they are listed —
-starting with the order the game offered them:
+offered them, and never in an order that means "take this one". The options are
+compact cards across the top of the page, the card art on the left and its facts
+beside it, so the tavern's offers, the comps and the facts table stay on screen
+underneath while you choose. Each card carries the option's name once, one muted
+line about what it is, its headline figure with the distance from the average
+option on offer, and up to two stat rows — plus controls for which rows you see
+and in what order the cards are listed, starting with the order the game offered
+them:
 
-- **A hero** — its power, spelled out, and how often the population picks it.
+- **A hero** — its power under the name, and how often the population picks it.
 - **A trinket** — how often it is picked, its average placement, and how often
   it finishes top 4, which is the part an average hides: a consistent 4th and a
   coin-flip between 1st and 8th average the same and are not the same trinket.
-  Under that, what the trinket actually does for the board and comp you have.
-- **A Discovered card** — whether it is a piece of the comp you are on and how
-  much of that comp you already hold ("core of Beasts - Tasty Lobstah, you have
-  1 of its 2"), or the fact that it is not one.
+- **A Discovered card** — its tier and tribe, and nothing else unless the meta
+  DBs have something: a card nobody has data for says `No data` rather than
+  showing a zero.
 
 Population numbers come from the curated meta DB — population statistics scraped
 from hsreplay.net, bundled with the app, and read offline. Nothing there is a
@@ -179,23 +182,26 @@ Every section is the same screenful of facts wherever it lands:
   cost, the per-combat damage cap, your board's stats against the last board
   seen, and what levelling up costs. Numbers rather than a read on the game:
   nothing on the page tells you what to do.
-- **Comps** — the comps this lobby allows, grouped under a sticky header per
-  source tier (one column, or two once the room is there for both), each
-  with its core cards as small slots showing the cards themselves, dimmed when you
-  do not own them, then how much of the core you hold and the average placement
-  your own played games have produced for it — marked **low sample** when that
-  count is small, and left out altogether while no comp in that tier has been
-  played. Sort by tier, overlap or average placement, open a comp for its core and
-  flex cards and its written guide, and tick up to three to compare them side by
-  side. Comps whose tribe is not in play this patch are hidden, and the count of
-  them is shown.
+- **Comps** — the comps this lobby offers, counted in the panel header
+  (`9 in this lobby`), grouped under a sticky header per source tier (one column,
+  or two once the room is there for both), each with its name and tribe, its core
+  cards as small slots showing the cards themselves, dimmed when you do not own
+  them, then how much of the core you hold and the average placement your own
+  played games have produced for it — marked **low sample** when that count is
+  small, and the column left out altogether while no comp has been played. Sort by
+  tier, overlap or average placement, open a comp for its core and flex cards and
+  its written guide, and tick up to three to compare them side by side. Comps for
+  tribes this patch has rotated out sit in a collapsed **Out of play** section at
+  the bottom, dimmed and gathered under their tribe; comps for tribes this lobby
+  does not offer are not listed, and the count of those is shown.
 - **Lobby** — who among the seats you have seen is contesting which tribe, and the
   last board the next opponent staged, with their trinkets.
 
-When the game asks you to choose, the pick screen replaces the tavern row — it is
-what you are doing at that moment. The end-of-game card is centred, with the
-placement and round large, an **Open in Settle Up** button, and the
-save-every-replay answer on one line.
+When the game asks you to choose, the pick screen sits above the dashboard — the
+tavern row, the comps list and the facts table stay on screen under it, because
+choosing is what you are doing and not what the page is for. The end-of-game card
+is centred, with the placement and round large, an **Open in Settle Up** button,
+and the save-every-replay answer on one line.
 
 ## Upcoming features
 

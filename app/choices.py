@@ -378,6 +378,36 @@ def _num(out, key, value):
         pass
 
 
+#: The scraped text DBs jam two VARIANTS of one line together with the second
+#: variant's own leading digit between them — measured on this checkout, 1 of
+#: 117 heroes ("On Turn 4, Discover two Hero Powers to replace this. (3 turns
+#: left!)3On Turn 4, ... (Done!)") and 1 of 246 trinkets. The pattern is
+#: deliberately narrow: a digit with NO whitespace on either side, wedged
+#: between closing punctuation and a capital or a bracket, so a number inside a
+#: sentence ("deal 3 damage", "every 3 turns") cannot be cut in half.
+_VARIANT_JOIN = re.compile(r"(?<=[)!.])\d(?=[A-Z(])")
+
+
+def _text(out, key, value):
+    """A plain-text field for the pick card's OWN line under the name.
+
+    Added 2026-10-14 with the compact pick card. The classic pick panel printed
+    the hero power inside a fact STRING (and that panel is gone, 2026-10-13),
+    so the hero power had no line of its own anywhere. A card shows this line
+    only when the DB has one — the same rule `_num` follows, so a missing field
+    drops the line instead of printing an empty one.
+
+    The variant join above is cut HERE because this is the first screen to give
+    the field a whole line: a second sentence would not fit the one line the
+    card sizes for it.
+    """
+    if not isinstance(value, str):
+        return
+    s = " ".join(_VARIANT_JOIN.split(value)[0].split())
+    if s:
+        out[key] = s
+
+
 def option_stats(kind, options):
     """Structured statistics per offered option, keyed by card id.
 
@@ -392,6 +422,14 @@ def option_stats(kind, options):
     when its data exists (§5). `kind` is the choice kind the log reported
     ("hero" / "trinket" / "discover"); a kind with no statistics contributes
     an empty mapping rather than a zero.
+
+    `sub` is the ONE line under the name on the compact pick card (2026-10-14).
+    It is the hero POWER for a hero — the DBs carry no per-hero armor, so the
+    design's "hero power/armor" has only one half to source — while for a
+    discover the card's own `tier`/`tribe` already ride the mapping, which is
+    what the renderer builds that line from. Trinkets get none: the design does
+    not name a line for them, and their `description` is a full sentence that
+    would not fit a compact card's 144px.
     """
     out = {}
     if kind == "hero":
@@ -400,6 +438,7 @@ def option_stats(kind, options):
             rec = db.get(name) or {}
             st = {}
             _num(st, "pick_rate", rec.get("pick_rate"))
+            _text(st, "sub", rec.get("hero_power"))
             if st:
                 out[cid] = st
     elif kind == "trinket":

@@ -1108,12 +1108,13 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-kv b.miss { color:var(--tmute); font-weight:400; }
   .tavern.live .lv-tier { color:var(--tmute); font-style:normal;
                           font-size:11px; margin-left:6px; }
-  /* The availability mark on a comp row (round 4 item 1): the tribe cell says
-     whether this game can build the comp, next to the reason in words — the
-     dimmed row never carries the fact by opacity alone (§8). */
-  .tavern.live .lv-tier.avail { color:var(--tbuff); }
-  .tavern.live .lv-tier.out { color:var(--tloss); }
-  .tavern.live .lv-crow.unavail { opacity:.55; }
+  /* THE ONE PLACE A COMP ROW IS DIMMED: the out-of-play block (item B.1), which
+     says in words why its rows are there and groups them by tribe (§8). It is
+     the BLOCK that dims them rather than a per-row `unavail` class the renderer
+     had to derive from `tribe_available`: a row is in this block because its
+     tribe is out of play, which is the same statement, and a payload without
+     the mark (an older record) still gets a dimmed block. */
+  .tavern.live .lv-oop .lv-crow { opacity:.55; }
   .tavern.live .lv-lbl { color:var(--tmute); font-size:12px; margin:0 0 6px; }
   /* The read's age, ON the panel (fix list round 4 item 3(b)): the same
      --tmute as the other secondary lines, one line under the heading. */
@@ -1167,11 +1168,12 @@ _HTML = r"""<!doctype html>
      2 (the player's call: they read as thick dash bars carrying nothing). The
      sentence beside them says the same thing, and the class is gone entirely so
      no rule can quietly bring the bars back. */
-  /* §4.3's pick screen: the controls row, the option columns (>=200px each, so
-     a narrow window gets fewer of them rather than a squashed one — fix list
-     round 1 item 2), the headline figure and §5's distribution bars. */
+  /* §4.3's pick screen, RE-CUT 2026-10-14 into compact HORIZONTAL cards. The
+     controls row, then the source line, then the options: art on the left,
+     content on the right. This screen has to fit a ~900px-tall window without
+     scrolling, so every number below is a budget rather than a taste. */
   .tavern.live .lv-pickctl { display:flex; flex-wrap:nowrap; gap:12px;
-                             align-items:center; margin:0 0 10px;
+                             align-items:center; margin:0 0 8px;
                              overflow-x:auto; }
   /* The chips do NOT shrink (round 4 item 5, measured 2026-10-13): the row is
      `nowrap`, and once the comps column narrowed the pick panel to 469px the
@@ -1183,10 +1185,92 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-pickctl .lv-lbl { flex:none; }
   .tavern.live .lv-chip.on { border-color:var(--tsel); color:var(--ttext); }
   .tavern.live .lv-chip.off { opacity:.45; cursor:default; }
-  /* >=200px columns (fix list round 1 item 2), capped near the design's own
-     column width so two options do not stretch to half the window each — the
-     CARD is 130px and a 660px column around it reads as a mistake. Centered,
-     because a pick screen with two options should look like two options. */
+  /* THE OPTION GRID, by WINDOW width: one row of four above 1500, two by two
+     from 700 to 1500, one column under 700. Fixed tracks rather than
+     `auto-fit`: a Lesser Trinket often offers TWO options, and auto-fit would
+     fit seven 200px tracks across a 1500px strip and draw both cards thin, in
+     the corner of it. Four tracks is the wide mock's own shape and it does not
+     change with the offer count.
+     The ROW gap is 8px rather than 10: MEASURED 2026-10-14 at 1100x700 (a 549px
+     viewport), the pick panel ends at 541px with the 2x2 grid — the design's
+     "fits a ~900px-tall window without scrolling" is about the tab-and-status
+     chrome above the panel as much as about the cards. */
+  .tavern.live .lv-pickgrid { display:grid; gap:8px 14px;
+                              grid-template-columns:1fr; }
+  @media (min-width: 700px) {
+    .tavern.live .lv-pickgrid {
+      grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 1500px) {
+    .tavern.live .lv-pickgrid {
+      grid-template-columns:repeat(4, minmax(200px, 1fr)); }
+  }
+  /* The source line: ONE line, ellipsised, with the whole sentence on the
+     hover — and a 12px gap before the cards it is the source FOR. */
+  .tavern.live .lv-source { white-space:nowrap; overflow:hidden;
+                            text-overflow:ellipsis; margin:0 0 12px; }
+  /* THE OPTION CARD: art left, content right, and a floor under its height so a
+     card carrying less data does not make its row shorter — the grid jumping
+     under the player's cursor as the payload is re-read is what that floor is
+     for.
+     THE FLOOR IS THE DESIGN'S 144px, AND IT GIVES ON A SHORT WINDOW: the art's
+     own clamp(64px, 14vh, 128px) exists so four options keep fitting a ~900px
+     window, and a flat 144px floor under a 77px art undoes exactly that —
+     MEASURED 2026-10-14 at 1100x700 (a 549px viewport): a 2x2 grid of 144px
+     cards put the pick panel's bottom at 580px, i.e. 31px past the fold, which
+     is the one thing the redesign is for. 48px is the card's own padding plus
+     the two lines the content needs beside the art. */
+  .tavern.live .lv-optcard { display:flex; gap:12px; align-items:flex-start;
+                             min-height:min(144px, calc(clamp(64px, 14vh, 128px) + 48px));
+                             padding:10px 12px;
+                             box-sizing:border-box; background:var(--tcard);
+                             border:1px solid var(--tline); border-radius:10px; }
+  /* The art is 72x96 at the nominal window (3/4), and the HEIGHT is what gives
+     on a short one — clamp(64px, 14vh, 128px) — with the width following from
+     the ratio so the art can never squash. Under 700px the card is alone in
+     its column and the design's own 56x76 applies. */
+  .tavern.live .lv-pickart { flex:none; height:clamp(64px, 14vh, 128px);
+                             aspect-ratio:3/4; border-radius:7px;
+                             overflow:hidden; background:var(--tcard); }
+  .tavern.live .lv-pickart .thumb { display:block; width:100%; height:100%;
+                                    object-fit:cover; border-radius:0; }
+  .tavern.live .lv-pickart .thumb.ph { display:flex; align-items:center;
+                                       justify-content:center; font-size:20px;
+                                       color:var(--tmute); }
+  @media (max-width: 699.98px) {
+    .tavern.live .lv-pickart { height:76px; }
+  }
+  .tavern.live .lv-optbody { flex:1 1 auto; min-width:0;
+                             display:flex; flex-direction:column; gap:3px; }
+  /* Bold 15px, at most two lines: a hero name is one or two words, and a third
+     line would push the numbers past the card's budget. */
+  .tavern.live .lv-pname { font-weight:700; font-size:15px; line-height:1.2;
+                           display:-webkit-box; -webkit-line-clamp:2;
+                           -webkit-box-orient:vertical; overflow:hidden; }
+  /* The ONE muted line: the hero power, or a discover's tier and tribe. One
+     line, with the whole text on the hover. */
+  .tavern.live .lv-psub { font-size:11px; color:var(--tmute);
+                          white-space:nowrap; overflow:hidden;
+                          text-overflow:ellipsis; }
+  /* ONE line: the figure, what it is, and the distance from the offered
+     average. `nowrap` because the design says one line, and ellipsised rather
+     than wrapped because a wrapped "+3.4 vs offered avg" reads as a second
+     stat under the first. */
+  .tavern.live .lv-phead { display:flex; align-items:baseline; gap:6px;
+                           margin:2px 0 1px; white-space:nowrap;
+                           overflow:hidden; text-overflow:ellipsis; }
+  .tavern.live .lv-phead b { font:700 18px "Segoe UI", system-ui; }
+  .tavern.live .lv-phead small { font-size:10px; letter-spacing:.1em;
+                                 text-transform:uppercase; color:var(--tmute); }
+  .tavern.live .lv-phead .lv-vs { font-size:11px; }
+  /* 13px rows with 5px of padding — two of them beside the headline are what
+     fits next to the art. */
+  .tavern.live .lv-optbody .lv-kv { font-size:13px; padding:5px 0; }
+  .tavern.live .lv-pmore, .tavern.live .lv-pnodata { margin:0; }
+  .tavern.live .lv-pnodata { color:var(--tmute); font-size:12px; }
+  /* §4.4's Compare block is the only reader of `.lv-opts`/`.lv-opt` now: the
+     pick screen draws `.lv-optcard` instead (2026-10-14), which is what lets
+     the two screens have different shapes without one restyling the other. */
   .tavern.live .lv-opts { display:grid; gap:16px; justify-content:center;
                           grid-template-columns:repeat(auto-fit,
                                                  minmax(200px, 340px)); }
@@ -1195,11 +1279,6 @@ _HTML = r"""<!doctype html>
   }
   .tavern.live .lv-opt { display:flex; flex-direction:column;
                          align-items:center; gap:12px; }
-  /* §5: a pick option's card is 130 wide. */
-  .tavern.live .lv-opt { --tcardw:130px; }
-  /* A FIXED-height name (fix list round 1 item 2): one line or two, the
-     headline and the bars below it always start at the same height, so the
-     options can be read across. */
   .tavern.live .lv-optname { font-weight:600; font-size:13px;
                              text-align:center; min-height:34px;
                              display:flex; align-items:center;
@@ -1212,7 +1291,9 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-vs { color:var(--tmute); font-size:12px; font-style:normal; }
   .tavern.live .lv-opt .lv-kv { width:100%; }
   /* §5's distribution: eight bars, ONE neutral colour (no good/bad shading),
-     a dashed divider between 4 and 5, labels below. */
+     a dashed divider between 4 and 5, labels below. The COMP detail screen is
+     the only reader since 2026-10-14 — a compact pick card has no room for
+     eight bars, and the design's own card list does not ask for them. */
   .tavern.live .lv-dist { display:flex; align-items:flex-end; gap:2px;
                           height:46px; margin:4px 0 0; }
   .tavern.live .lv-bar { display:flex; flex-direction:column;
@@ -1262,33 +1343,52 @@ _HTML = r"""<!doctype html>
                                 color:var(--tmute); }
   /* A comp row is a GRID with fixed columns (fix list round 1 item 6:
      "consistent rows"; round 3 item 2 added the tracks, round 4 item 6 fixed
-     their contents): checkbox 22 | name | tier·tribe | core slots | owned 64
-     [| avg 90]. The avg track EXISTS only when the WHOLE list has corpus data
-     (round 3 item 5 for the "column of dashes" half, round 4 item 6 for the
-     list-wide half) — so it is a property of `lv-cols`, not of one tier group.
-     The compare checkbox is IN FLOW in its own cell: nothing is positioned over
-     anything. */
+     their contents; item B.2 moved the tribe into the name cell): checkbox 22 |
+     name+tribe | marks | core slots | owned 64 [| avg 90]. The avg track EXISTS
+     only when the WHOLE list has corpus data (round 3 item 5 for the "column of
+     dashes" half, round 4 item 6 for the list-wide half, and the out-of-play
+     block shares the decision so both lists line up) — so it is a property of
+     `lv-cols`, not of one tier group. The compare checkbox is IN FLOW in its own
+     cell: nothing is positioned over anything. */
   .tavern.live .lv-crow { display:grid;
                           grid-template-columns:22px minmax(0,1fr) auto auto 64px;
                           gap:10px; align-items:center; padding:7px 0;
                           border-bottom:1px solid var(--tline); font-size:12px; }
   /* SIX TRACKS WITH THE AVG COLUMN, FIVE WITHOUT (fix list round 4 item 6):
-     checkbox | name | tier·tribe | strip | owned [| avg]. The avg track is
+     checkbox | name+tribe | marks | strip | owned [| avg]. The avg track is
      decided for the WHOLE list (`lv-cols.has-avg`), so every row in every tier
      group has the same columns. */
   .tavern.live .lv-ctier.has-avg .lv-crow {
     grid-template-columns:22px minmax(0,1fr) auto auto 64px 90px; }
+  /* THE OUT-OF-PLAY BLOCK'S ROWS have no Compare box, so the first track is the
+     name. Everything else is the same, which is what "the same on every row"
+     means — one row shape, one variant of it. */
+  .tavern.live .lv-oop .lv-crow {
+    grid-template-columns:minmax(0,1fr) auto auto 64px; }
+  .tavern.live .lv-oop.has-avg .lv-crow {
+    grid-template-columns:minmax(0,1fr) auto auto 64px 90px; }
   @media (max-width: 699.98px) {
     .tavern.live .lv-crow,
     .tavern.live .lv-ctier.has-avg .lv-crow {
       grid-template-columns:22px minmax(0,1fr) auto; }
+    .tavern.live .lv-oop .lv-crow,
+    .tavern.live .lv-oop.has-avg .lv-crow {
+      grid-template-columns:minmax(0,1fr) auto; }
   }
   .tavern.live .lv-meta { display:flex; flex-wrap:wrap; gap:6px;
                           align-items:center; }
   .tavern.live .lv-meta .lv-tier { margin-left:0; }
-  .tavern.live .lv-cname { min-width:0; display:flex;
-                           flex-wrap:wrap; gap:6px; align-items:center; }
+  /* [name / tribe]: the tribe is on the line UNDER the name (item B.2) — in
+     --ttext like every other word on the row, because green is the OWNED
+     colour here and nothing else. The whole cell carries the full name as its
+     title, so a name that clamps to two lines is still readable. */
+  .tavern.live .lv-cname { min-width:0; display:flex; flex-direction:column;
+                           align-items:flex-start; gap:1px; }
   .tavern.live .lv-cname .lv-copen { min-width:0; }
+  .tavern.live .lv-crowtribe { color:var(--ttext); font-size:11px;
+                               line-height:1.2; }
+  .tavern.live .lv-crowtribe .lv-uncf { color:var(--tmute);
+                                        font-style:normal; }
   /* Two lines at most, then it ellipses (round 3 item 2) — a comp name is two
      words and a hyphen, and a third line pushed the slots out of line. */
   .tavern.live .lv-copen { cursor:pointer; text-decoration:none;
@@ -1303,24 +1403,43 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-owned { color:var(--ttext); font-weight:600;
                            white-space:nowrap; }
   .tavern.live .lv-ap { font-weight:600; }
-  .tavern.live .lv-ap.miss { color:var(--tmute); font-weight:400; }
   .tavern.live .lv-chip.lowsamp { cursor:default; color:var(--tmute);
                                   font-size:11px; padding:2px 8px; }
-  /* The core-card strip is a single NOWRAP row of 34x46 slots (round 3 item 2):
-     wrapping turned a six-card core into a ragged two-line block that pushed
-     the owned count out of line with every other row. */
-  .tavern.live .lv-slots { display:flex; flex-wrap:nowrap; gap:3px; }
-  .tavern.live .lv-slot { display:inline-block; width:34px; height:46px;
-                          flex:none; border-radius:5px; background:var(--tcard);
+  /* THE OUT-OF-PLAY BLOCK (item B.1). A `<details>`: collapsed by default, the
+     count on its summary so a shut block still says how much is behind it, and
+     grouped by tribe inside. */
+  .tavern.live .lv-oop { margin:14px 0 0; border-top:1px solid var(--tline);
+                         padding-top:6px; }
+  .tavern.live .lv-oopsum { cursor:pointer; color:var(--tmute); font-size:12px;
+                            padding:4px 0; }
+  .tavern.live .lv-oopgroup { color:var(--tmute); font-size:11px;
+                              letter-spacing:.12em; text-transform:uppercase;
+                              padding:8px 0 2px; }
+  /* The core-card strip is a single NOWRAP row of 40x54 slots (round 3 item 2
+     for the nowrap, item B.2 for the size): wrapping turned a six-card core
+     into a ragged two-line block that pushed the owned count out of line. The
+     slots SHRINK (round 3 pinned `flex:none`, and that is REVERSED here on
+     measurement): six 40px slots are 255px, and with the avg track the fixed
+     part of a row is 481px against the 471px a 499px comps panel has inside
+     its padding — a `flex:none` strip pushes the row out of its own box. A
+     slot gives up width before the row does, and `object-fit:cover` crops the
+     art rather than squashing it. */
+  .tavern.live .lv-slots { display:flex; flex-wrap:nowrap; gap:3px;
+                           min-width:0; }
+  .tavern.live .lv-slot { display:inline-block; width:40px; height:54px;
+                          flex:0 1 auto; min-width:28px; border-radius:5px;
+                          background:var(--tcard);
                           border:2px solid var(--tbuff); box-sizing:border-box;
                           overflow:hidden; position:relative; }
   /* The core card's own art, size of the slot. Missing/banned are DIMMED rather
-     than hidden — the comp still says which cards it wants. */
+     than hidden — the comp still says which cards it wants — at 75% (item B.2:
+     the old 35% read as an empty box rather than as a card you do not own),
+     with the greyscale carrying the state the opacity alone would not. */
   .tavern.live .lv-slot .thumb { display:block; width:100%; height:100%;
                                  object-fit:cover; border-radius:0; }
   .tavern.live .lv-slot.miss { border:1px dashed var(--tline); }
   .tavern.live .lv-slot.miss .thumb, .tavern.live .lv-slot.banned .thumb {
-    opacity:.35; filter:grayscale(1); }
+    opacity:.75; filter:grayscale(1); }
   .tavern.live .lv-slot.banned { border:2px solid var(--tloss); }
   .tavern.live .lv-slot .thumb.ph { font-size:12px; color:var(--tmute);
                                     background:var(--tcard); }
@@ -1346,8 +1465,9 @@ _HTML = r"""<!doctype html>
                                            font-weight:700;
                                            color:var(--tonsel); }
   .tavern.live .lv-cmpbox:disabled { opacity:.45; cursor:default; }
-  .tavern.live .lv-cmplbl { color:var(--tmute); font-size:11px;
-                            cursor:pointer; }
+  /* (`.lv-cmplbl` — the visible "compare" word beside the box — went with item
+     B.2, 2026-10-14: it collided with the comp name, and the box's tooltip and
+     `aria-label` say what it is.) */
   .tavern.live .lv-more { background:var(--tpanel); color:var(--ttext);
                           border:1px solid var(--tline); border-radius:8px;
                           padding:5px 10px; margin-top:6px; min-height:44px;
@@ -2265,70 +2385,151 @@ function lvOwned(cards) {
   return (cards || []).filter(x => x && (x.owned || x.in_hand)).length;
 }
 
-//: §4.4 Browse, one row, in the grid round 3 item 2 fixes:
-//: `[compare] [Comp name + chips] [core-card slots] [N of M owned] [avg]`.
-//: `anyAvg` is false when the whole tier column has no corpus data, and then the
-//: last cell is not rendered at all (round 3 item 5): a column of dashes was a
+//: WHICH LIST DOES THIS COMP BELONG IN? (item B.1, 2026-10-14.) Three buckets,
+//: and the design names all three:
+//:   * a tribe KNOWN to be out of play — patch-rotated, `out_of_pool` (Naga
+//:     since 36.6.1) — goes to the collapsed "Out of play · N" block at the
+//:     bottom, dimmed and grouped by tribe;
+//:   * a tribe this lobby has CONFIRMED and does not offer is not in this
+//:     lobby, and a list headed "N in this lobby" cannot carry it: it is not
+//:     listed at all, and the count of what that costs is stated in the note
+//:     (silently shortening the list is what round 4 item 1 objected to);
+//:   * everything else STAYS, which is the whole point of the middle bucket's
+//:     opposite: while the 5/5 set is still streaming in, an unconfirmed tribe
+//:     is not a banned one (`live_coach.available_tribes` fails OPEN for
+//:     exactly that reason), so every tribe stays until the lobby rules it out.
+//: Out of play is asked FIRST: such a comp is also `tribe_available === false`,
+//: and the block it belongs in is the one that says WHY.
+function lvOutOfPlay(c, oop) {
+  return !!c.tribe && (oop || []).some(t => lvTribeHit(c.tribe, t));
+}
+function lvInLobby(a) {
+  const oop = a.out_of_pool || [];
+  return (a.comps || []).filter(c => !lvOutOfPlay(c, oop)
+                                     && c.tribe_available !== false);
+}
+function lvOutOfPlayComps(a) {
+  const oop = a.out_of_pool || [];
+  return (a.comps || []).filter(c => lvOutOfPlay(c, oop));
+}
+//: Is this row's tribe still UNCONFIRMED? The payload publishes the COUNT of
+//: confirmed tribes (`tribes_seen`) and the window flag (`tribes_detecting`),
+//: not WHICH ones the pool has confirmed so far, so while the window is open
+//: the honest mark is "this tribe is not confirmed yet" on every row that has a
+//: tribe — and it is the same statement for all of them, which is why the flag
+//: is the window's rather than a per-tribe guess. Mixed (no tribe) is never
+//: unconfirmed: there is no tribe to confirm.
+function lvCompUnconfirmed(c, a) {
+  return !!a.tribes_detecting && !!c.tribe;
+}
+//: THE LIST IS RECOMPUTED ON EVERY TRIBE CHANGE (item B.1). The ROWS are
+//: derived from the payload on every render, so that half is automatic; the two
+//: pieces of VIEW state that point INTO the list are not. `_liveCompMore` holds
+//: tier groups the player expanded, and `_liveCompare` holds ticked slugs — a
+//: slug that has left the main list would keep a Compare column alive for a
+//: comp the player can no longer see. Both are re-cut whenever the tribe state
+//: changes. `_liveComp` (the open Detail) is deliberately NOT touched here:
+//: closing the screen the player is reading under them is worse than a Detail
+//: for a comp that just left the list, and the Back link is right there.
+let _lvTribeKey = null;
+function lvSyncCompsView(a) {
+  const key = [a.game_no, a.bans_manual ? 'manual' : 'auto',
+               a.tribes_detecting ? 'detecting' : 'ready',
+               (a.tribes_available || []).join(','),
+               (a.out_of_pool || []).join(',')].join('|');
+  if (key === _lvTribeKey) return;
+  _lvTribeKey = key;
+  _liveCompMore = new Set();
+  const keep = new Set(lvInLobby(a).map(c => c.slug));
+  [..._liveCompare].forEach(s => { if (!keep.has(s)) _liveCompare.delete(s); });
+}
+//: A GAME ENDED: every view choice about the last game's list goes with it, so
+//: the next game starts from the design's defaults rather than from whatever
+//: was expanded, ticked or open when the last one finished.
+function lvResetCompsView() {
+  _lvTribeKey = null;
+  _liveComp = null;
+  _liveCompSort = 'tier';
+  _liveCompMore = new Set();
+  _liveCompare = new Set();
+}
+
+//: §4.4 Browse, one row, in the grid round 3 item 2 fixes and the layout item
+//: B.1 re-cut (2026-10-14):
+//: `[compare] [name / tribe] [core-card slots] [N of M owned] [avg]`.
+//: `bare` is the OUT-OF-PLAY variant: the same row without the Compare box —
+//: a comp nobody can build this patch has no business in a comparison.
+//: `anyAvg` is false when the whole list has no corpus data, and then the last
+//: cell is not rendered at all (round 3 item 5): a column of dashes was a
 //: column of nothing.
-function lvCompRow(a, c, anyAvg) {
+function lvCompRow(a, c, anyAvg, bare) {
   const core = c.core || [];
   const st = c.stats || null;
   const row = el('div', 'lv-crow');
   if (st && st.low_sample) row.classList.add('low');
-  // MARKED, NOT DROPPED (fix list round 4 item 1): the panel now lists every
-  // comp, so the ones this game cannot build say so on the row itself.
-  const unavail = c.tribe_available === false;
-  if (unavail) row.classList.add('unavail');
   const picked = _liveCompare.has(c.slug);
   const full = !picked && _liveCompare.size >= LIVE_COMPARE_MAX;
-  // A CHECKBOX, not a chip (fix list round 1 item 6): "compare" is a selection
-  // you make about up to three rows, and a checkbox is what that looks like. It
-  // is disabled (with the reason in its title) once three are ticked rather than
-  // silently doing nothing. It sits IN FLOW at the start of the row — nothing is
-  // positioned over the name (round 3 item 2).
-  const cb = document.createElement('input');
-  cb.type = 'checkbox';
-  cb.className = 'lv-cmpbox';
-  cb.id = 'lv-cmp-' + String(c.slug || 'x').replace(/[^A-Za-z0-9_-]/g, '');
-  cb.checked = picked;
-  cb.disabled = full;
-  cb.title = full
-    ? 'Compare holds up to ' + LIVE_COMPARE_MAX + ' comps — untick one to add '
-      + 'another.'
-    : 'Add this comp to the comparison';
-  cb.onchange = () => {
-    if (_liveCompare.has(c.slug)) _liveCompare.delete(c.slug);
-    else if (_liveCompare.size < LIVE_COMPARE_MAX) _liveCompare.add(c.slug);
-    renderLiveTavern(a);
-  };
-  const lbl = document.createElement('label');
-  lbl.htmlFor = cb.id;
-  lbl.className = 'lv-cmplbl';
-  lbl.textContent = 'compare';
-  // ONE CELL PER COLUMN, SAME ORDER ON EVERY ROW (fix list round 4 item 6):
-  // checkbox | name | tier·tribe | strip | owned, and the avg cell only when
-  // the whole list has data. The checkbox used to sit INSIDE the name cell and
-  // the tier/tribe inside it too, so the track a value landed in depended on
-  // the row's own content and nothing lined up down the column.
-  const cell = el('span', 'lv-cmpcell');
-  cell.appendChild(cb);
-  cell.appendChild(lbl);
-  row.appendChild(cell);
+  if (!bare) {
+    // A CHECKBOX, not a chip (fix list round 1 item 6): "compare" is a
+    // selection you make about up to three rows, and a checkbox is what that
+    // looks like. It is disabled (with the reason in its title) once three are
+    // ticked rather than silently doing nothing. It sits IN FLOW at the start
+    // of the row — nothing is positioned over the name (round 3 item 2).
+    // NO TEXT LABEL (item B.2, 2026-10-14): the word "compare" sat in the row
+    // and collided with the name, and a checkbox plus a tooltip is what the
+    // design asks for. The accessible name moves to `aria-label`, so the box is
+    // still announced as the comp it is for.
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'lv-cmpbox';
+    cb.id = 'lv-cmp-' + String(c.slug || 'x').replace(/[^A-Za-z0-9_-]/g, '');
+    cb.checked = picked;
+    cb.disabled = full;
+    cb.title = full
+      ? 'Compare holds up to ' + LIVE_COMPARE_MAX + ' comps — untick one to add '
+        + 'another.'
+      : 'Add this comp to the comparison';
+    cb.setAttribute('aria-label', 'Compare ' + (c.name || c.slug));
+    cb.onchange = () => {
+      if (_liveCompare.has(c.slug)) _liveCompare.delete(c.slug);
+      else if (_liveCompare.size < LIVE_COMPARE_MAX) _liveCompare.add(c.slug);
+      renderLiveTavern(a);
+    };
+    const cell = el('span', 'lv-cmpcell');
+    cell.appendChild(cb);
+    row.appendChild(cell);
+  }
+  // [name / tribe]: the name clamps to TWO lines and the tribe sits on the line
+  // under it, in the row's own text colour. Green is the OWNED colour on this
+  // screen and nothing else, so a tribe is never green.
   const name = el('span', 'lv-cname');
+  name.title = c.name || c.slug;          // the full name, however it clamps
   const open = el('b', 'lv-copen', c.name || c.slug);
   open.title = 'Open the comp';
   open.onclick = () => { _liveComp = c.slug; renderLiveTavern(a); };
   name.appendChild(open);
+  const tribe = el('span', 'lv-crowtribe', lvCompTribe(c));
+  // ...and the unconfirmed marker only on a MAIN-LIST row: an out-of-play row
+  // sits in a block that says its tribe is KNOWN to be out of play, which is the
+  // opposite of "not confirmed yet" (item B.1).
+  if (!bare && lvCompUnconfirmed(c, a)) {
+    tribe.appendChild(el('i', 'lv-uncf', ' · unconfirmed'));
+    tribe.title = 'The lobby has not confirmed its tribes yet (fewer than '
+                + 'five are in), so this tribe is not ruled out.';
+  }
+  name.appendChild(tribe);
   row.appendChild(name);
+  // The optional marks. The TIER is the tier column's own header, so a row
+  // repeats it only under the two opt-in sorts — where what you are reading is
+  // a re-ordered column and the header no longer tells you the tier of the row
+  // in front of you. The low-sample flag is about THIS row's numbers, so it
+  // stays either way.
   const meta = el('span', 'lv-meta');
-  meta.appendChild(el('i', 'lv-tier', c.meta_tier ? c.meta_tier + ' tier'
-                          : (c.provisional ? 'provisional'
-                                           : 'no published tier')));
-  // The tribe cell carries the availability mark, so the reason a row is dimmed
-  // is on the row rather than carried by opacity alone (§8).
-  meta.appendChild(el('i', 'lv-tier' + (unavail ? ' out' : ' avail'),
-                      lvCompTribe(c)
-                      + (unavail ? ' · not available' : '')));
+  if (_liveCompSort !== 'tier') {
+    meta.appendChild(el('i', 'lv-tier', c.meta_tier ? c.meta_tier + ' tier'
+                            : (c.provisional ? 'provisional'
+                                             : 'no published tier')));
+  }
   if (st && st.low_sample) {
     meta.appendChild(el('span', 'lv-chip lowsamp', 'low sample'));
   }
@@ -2337,9 +2538,10 @@ function lvCompRow(a, c, anyAvg) {
   row.appendChild(el('b', 'lv-owned',
                      lvOwned(core) + ' of ' + core.length + ' owned'));
   if (anyAvg) {
-    row.appendChild(el('b', 'lv-ap' + (st && st.avg_place != null ? '' : ' miss'),
-                       st && st.avg_place != null ? st.avg_place.toFixed(2)
-                                                  : '—'));
+    // A row the corpus has never seen leaves its cell EMPTY rather than
+    // printing a dash in a column that exists (item B.2: "no '—' on each row").
+    const ap = st && st.avg_place != null ? st.avg_place.toFixed(2) : '';
+    row.appendChild(el('b', 'lv-ap', ap));
   }
   return row;
 }
@@ -2367,13 +2569,19 @@ function lvCompSortRows(rows) {
 }
 
 //: §4.4 Browse: the sort control, one column per source tier with a sticky
-//: header, about six rows each with a `+ N more`, and Compare underneath once
-//: two comps are picked.
+//: header, about six rows each with a `+ N more`, the collapsed out-of-play
+//: block under them, and Compare underneath once two comps are picked.
+//:
+//: TWO LISTS SINCE 2026-10-14 (item B.1). The main list holds the comps this
+//: game can still build — the panel header says how many, "N in this lobby" —
+//: and the comps whose tribe is KNOWN to be out of play sit in a collapsed
+//: block at the bottom, dimmed and grouped by tribe. A tribe the lobby has
+//: confirmed and does not offer is in neither, and the note says how many rows
+//: that is (see `lvInLobby`).
 //:
 //: The tribe FILTER row is gone (round 3 item 4): the page already has one tribe
 //: row above the tabs, and a second set of the same chips inside this panel was
-//: the duplicate. The "not confirmed yet" state is said ONCE, in the panel header
-//: (and no longer per row).
+//: the duplicate.
 //:
 //: It returns the panel's BODY, not a panel (fix list round 4 item 5): every
 //: section is wrapped by `lvSection` now, and a second `.lv-pn` inside one would
@@ -2387,12 +2595,12 @@ function lvCompsBody(a) {
                              + 'resolve.'));
     return p;
   }
-  // §4.4: comps for out-of-play tribes are hidden — they cannot be built at all
-  // this patch, and a row that revealed one would be offering a comp nobody can
-  // play. Counted, because "some are hidden" is a fact worth stating.
-  const oop = a.out_of_pool || [];
-  const inplay = all.filter(c => !(c.tribe && oop.some(t => lvTribeHit(c.tribe, t))));
-  const hidden = all.length - inplay.length;
+  const inplay = lvInLobby(a);
+  const outplay = lvOutOfPlayComps(a);
+  // What is in neither list: comps of a tribe this lobby CONFIRMED and does not
+  // offer. Stated, never silently shortened — the list is short because the
+  // lobby is, and that is a fact about the game worth one clause.
+  const dropped = all.length - inplay.length - outplay.length;
   const ctl = el('div', 'lv-ctl');
   ctl.appendChild(el('span', 'lv-lbl', 'Sort'));
   [['tier', 'Source tier'], ['overlap', 'Overlap'],
@@ -2420,8 +2628,10 @@ function lvCompsBody(a) {
   // round 4 item 6). Per group, one tier could carry the column and another not,
   // so the row's tracks changed as you scrolled — the opposite of "same order on
   // every row". It is hidden unless SOME comp in the list has a corpus average,
-  // and then every column carries the track, including the rows that show a dash.
-  const hasAvg = inplay.some(c => (c.stats || {}).avg_place != null);
+  // and then every column carries the track, including the rows the corpus has
+  // never seen (which leave their cell EMPTY rather than printing a dash).
+  // The out-of-play block shares the decision, so its rows line up with these.
+  const hasAvg = all.some(c => (c.stats || {}).avg_place != null);
   if (hasAvg) cols.classList.add('has-avg');
   groups.forEach(g => {
     const sorted = lvCompSortRows(g.rows.slice());
@@ -2441,19 +2651,48 @@ function lvCompsBody(a) {
   p.appendChild(cols);
   // The slot colours get a LEGEND (fix list round 1 item 6), drawn from the slot
   // element itself so it cannot drift from the rows. The paragraph under it
-  // keeps the two facts the legend cannot show: where the numbers come from, and
-  // that some comps are not listed at all.
+  // keeps the facts the legend cannot show: where the numbers come from, and
+  // what is not in the list at all.
   p.appendChild(lvSlotLegend());
   p.appendChild(el('p', 'lv-note',
     'Slots are the comp\'s core cards, with their art dimmed when you do not '
     + 'own them. Average placement is this project\'s own game corpus — '
     + 'observational, not causal.'
-    + (hidden ? ' ' + hidden + ' comp' + (hidden === 1 ? '' : 's')
-                + ' hidden: their tribe is out of play this patch.' : '')));
+    + (dropped ? ' ' + dropped + ' comp' + (dropped === 1 ? '' : 's')
+                 + ' for tribes this lobby does not offer are not listed.' : '')));
+  if (outplay.length) p.appendChild(lvOutOfPlayBlock(a, outplay, hasAvg));
   const picked = [..._liveCompare].map(s => inplay.find(c => c.slug === s))
                                  .filter(Boolean);
   if (picked.length >= 2) p.appendChild(lvCompCompare(picked));
   return p;
+}
+
+//: THE OUT-OF-PLAY BLOCK (item B.1): the comps whose tribe is KNOWN to be out of
+//: play this patch, DIMMED, GROUPED BY TRIBE, and with NO Compare box — a comp
+//: nobody can build has no business being compared. A `<details>` because it is
+//: collapsed by default and "there is more here, on request" is exactly what the
+//: element means, with the count on the summary so a shut block still says how
+//: much is behind it. Hidden comps used to be counted in a sentence and not
+//: listed at all (round 4 item 1 marked them instead, and this is the third
+//: state: a tribe that is not banned but does not exist in this patch).
+function lvOutOfPlayBlock(a, comps, anyAvg) {
+  const det = document.createElement('details');
+  det.className = 'lv-oop' + (anyAvg ? ' has-avg' : '');
+  det.appendChild(el('summary', 'lv-oopsum', 'Out of play · ' + comps.length));
+  const tribes = [];
+  comps.forEach(c => {
+    const t = lvCompTribe(c);
+    let g = tribes.find(x => x.t === t);
+    if (!g) { g = {t: t, rows: []}; tribes.push(g); }
+    g.rows.push(c);
+  });
+  tribes.forEach(g => {
+    det.appendChild(el('div', 'lv-oopgroup', g.t));
+    const rows = el('div', 'lv-ooprows');
+    g.rows.forEach(c => rows.appendChild(lvCompRow(a, c, anyAvg, true)));
+    det.appendChild(rows);
+  });
+  return det;
 }
 
 //: §5's headline stat + distribution + rows for one comp. The headline is the
@@ -2855,24 +3094,42 @@ let _livePickOrder = 'offered';
 let _livePickHidden = new Set();
 const LIVE_ORDER_LABELS = {pick_rate: 'picked %', avg_placement: 'avg place'};
 
-//: The rows an option can show, in the design's order, each emitted only when
-//: its data exists (§5). The key doubles as the Stats-shown toggle.
-//: `pick_rate` is NOT one of them: it is the headline figure ("31% · Picked"),
+//: The rows an option can show, each emitted only when its data exists (§5) and
+//: each at ONE decimal (the compact card's own rule, 2026-10-14). The key
+//: doubles as the Stats-shown toggle.
+//: `pick_rate` is NOT one of them: it is the headline figure ("31.3% Picked"),
 //: and the row that repeated it ("Picked in 31% of games") was the duplicate the
 //: fix list names (round 2 item 1). It stays available as an ORDER, which reads
 //: the stats directly rather than through this list.
+//: `tier`/`tribe` are not rows either: they ARE a discover option's subline (see
+//: `lvOptSub`), and a card this size printing "Tier 4 · Beast" and then a Tier
+//: row and a Tribe row is the same duplication one line further down.
 function lvStatRows(st) {
   const rows = [];
   if (st.avg_placement != null) {
-    rows.push(['avg_placement', 'Avg place', st.avg_placement.toFixed(2)]);
+    rows.push(['avg_placement', 'Avg place', st.avg_placement.toFixed(1)]);
   }
-  if (st.top4 != null) rows.push(['top4', 'Top 4', st.top4.toFixed(0) + '%']);
-  if (st.tier != null) rows.push(['tier', 'Tier', 'T' + st.tier]);
-  if (st.tribe) rows.push(['tribe', 'Tribe', st.tribe]);
+  if (st.top4 != null) rows.push(['top4', 'Top 4', st.top4.toFixed(1) + '%']);
   return rows;
 }
 const LIVE_STAT_LABELS = {pick_rate: 'picked %', avg_placement: 'avg place',
-                          top4: 'top 4', tier: 'tier', tribe: 'tribe'};
+                          top4: 'top 4'};
+//: At most this many stat rows on one compact card; what is left over is
+//: counted on the line under them ("+ 2 more").
+const LIVE_PICK_ROWS = 2;
+
+//: The ONE muted line under an option's name (2026-10-14): the hero power for a
+//: hero (`choices.option_stats` sources it — the DBs hold no per-hero armor),
+//: "Tier 4 · Beast" for a discover, and nothing at all for a trinket, whose
+//: data is its population numbers. An empty string means "no line", never a
+//: dash: a card with no subline simply starts at its headline.
+function lvOptSub(st) {
+  if (st.sub) return st.sub;
+  const bits = [];
+  if (st.tier != null) bits.push('Tier ' + st.tier);
+  if (st.tribe) bits.push(st.tribe);
+  return bits.join(' · ');
+}
 
 //: §5's distribution: eight bars, placements 1 to 8, one neutral colour (no
 //: good/bad shading), a dashed divider between 4 and 5, labels below.
@@ -2891,13 +3148,23 @@ function lvBars(dist) {
   return wrap;
 }
 
-//: §4.3's canonical pick screen. Options in the order the GAME offered them
-//: unless the player picks another order; each with its headline figure, its
-//: distance from the offered average, the distribution, and its stat rows.
-//: Nothing here reads the option's fact STRING (the classic pick panel's prose
-//: — that panel is gone, 2026-10-13): the numbers come from
+//: §4.3's canonical pick screen, re-cut 2026-10-14 into COMPACT HORIZONTAL
+//: cards: the art on the LEFT at a fixed 3/4 ratio, and to its right the name,
+//: one muted line about the option, the headline figure with its distance from
+//: the offered average, and at most two stat rows. The screen has to fit a
+//: ~900px-tall window without scrolling, which is what "compact" buys: the old
+//: card was a 130px column with the art on top, a fixed-height name under it,
+//: the headline, EIGHT distribution bars and up to five rows — four options
+//: were a screenful on their own, and the answer to "which hero" was below the
+//: fold.
+//:
+//: Options in the order the GAME offered them unless the player picks another
+//: order; nothing here ranks and no badge says which option is better. Nothing
+//: here reads the option's fact STRING either (the classic pick panel's prose —
+//: that panel is gone, 2026-10-13): the numbers come from
 //: `choice.option_stats`, which is also why the phrasing the design bans
 //: ("fits your board") cannot reach this screen.
+//:
 //: The BODY only (fix list round 4 item 5): `lvSection('Choose one', …)` wraps
 //: it, so there is one `.lv-pn` and one heading per section — a screen inside a
 //: panel inside a panel is two headings for one thing.
@@ -2925,25 +3192,41 @@ function lvPick(a) {
                     .filter(v => v != null);
   const avg = rates.length
     ? rates.reduce((s, v) => s + v, 0) / rates.length : null;
-  body.appendChild(el('p', 'lv-note',
-    'Source: population statistics scraped from hsreplay.net, read from the '
-    + 'shipped meta DB · observational, not causal. '
+  // ONE line, ellipsised, with the whole sentence on the hover (§8: what a
+  // truncation hides has to be reachable somewhere).
+  const src = 'Source: population statistics scraped from hsreplay.net, read '
+    + 'from the shipped meta DB · observational, not causal. '
     + (avg == null ? 'Shown in the order offered.'
-                   : 'Offered average: ' + avg.toFixed(1) + '% picked.')));
-  const wide = rows.length <= 3;
-  const wrap = el('div', 'lv-opts' + (wide ? ' wide' : ''));
+                   : 'Offered average: ' + avg.toFixed(1) + '% picked.');
+  const note = el('p', 'lv-note lv-source', src);
+  note.title = src;
+  body.appendChild(note);
+  const wrap = el('div', 'lv-pickgrid');
   rows.forEach(([name, cid]) => {
     const st = stats[cid] || {};
-    const col = el('div', 'lv-opt');
-    // The art carries no caption of its own: the name under it is the ONE name
-    // (round 1 item 2), at a fixed height so the headline figures line up.
-    col.appendChild(tile(cid, name, null, {noname: true}));
-    col.appendChild(el('div', 'lv-optname', name));
+    const card = el('div', 'lv-optcard');
+    // The full name on the card as well as on its art: a name that clamps is
+    // still readable in full by hovering anywhere on the option.
+    card.title = name || '';
+    // The art carries NO caption of its own (round 1 item 2): the name beside
+    // it is the ONE name. Its size is the stylesheet's (72x96 nominal, height
+    // clamped on a short window), so the grid cannot jump.
+    const art = el('span', 'lv-pickart');
+    art.appendChild(thumb(cid, name));
+    card.appendChild(art);
+    const col = el('div', 'lv-optbody');
+    col.appendChild(el('div', 'lv-pname', name));
+    const sub = lvOptSub(st);
+    if (sub) {
+      const line = el('div', 'lv-psub', sub);
+      line.title = sub;
+      col.appendChild(line);
+    }
     if (st.pick_rate != null) {
-      // "31% · Picked", one decimal (round 1 item 2 / round 2 item 1). The
-      // label says what the number IS, and the row that used to repeat it is
-      // gone.
-      const head = el('div', 'lv-head');
+      // ONE line: the figure, what it is, and the distance from the offered
+      // average (round 1 item 2 / round 2 item 1). The row that used to repeat
+      // the figure is gone.
+      const head = el('div', 'lv-phead');
       head.appendChild(el('b', null, st.pick_rate.toFixed(1) + '%'));
       head.appendChild(el('small', null, 'Picked'));
       if (avg != null) {
@@ -2953,20 +3236,27 @@ function lvPick(a) {
       }
       col.appendChild(head);
     }
-    if (st.dist) col.appendChild(lvBars(st.dist));
+    // At most TWO rows, with the rest COUNTED on the line under them — the
+    // number of stats an option has is a fact, and so is the fact that two of
+    // them are not on screen.
     const shown = lvStatRows(st).filter(([k]) => !_livePickHidden.has(k));
-    shown.slice(0, 5).forEach(([_k, label, value]) => {
+    shown.slice(0, LIVE_PICK_ROWS).forEach(([_k, label, value]) => {
       col.appendChild(lvKV(label, value));
     });
-    if (shown.length > 5) {
-      col.appendChild(el('div', 'lv-note',
-                         '+ ' + (shown.length - 5) + ' more stats'));
+    if (shown.length > LIVE_PICK_ROWS) {
+      col.appendChild(el('div', 'lv-note lv-pmore',
+                         '+ ' + (shown.length - LIVE_PICK_ROWS) + ' more'));
     }
-    if (!lvStatRows(st).length) {
-      col.appendChild(el('div', 'lv-note',
-                         'No data for this card on this patch yet.'));
+    // §6.2: an option the DBs have nothing for says so, and says it on a card
+    // of the SAME height — the patch detail the long sentence used to print
+    // rides the hover, so the line stays as short as every other card's.
+    if (st.pick_rate == null && !sub && !lvStatRows(st).length) {
+      const nod = el('div', 'lv-pnodata', 'No data');
+      nod.title = 'No data for this card on this patch yet.';
+      col.appendChild(nod);
     }
-    wrap.appendChild(col);
+    card.appendChild(col);
+    wrap.appendChild(card);
   });
   body.appendChild(wrap);
   const guides = ch.guides || {};
@@ -3080,6 +3370,11 @@ function renderTavernGameOver(a) {
   app.classList.add('tavern-on');
   box.hidden = false;
   box.innerHTML = '';
+  // A GAME ENDED (item B.1): the comps view state — the open Detail, the sort,
+  // the expanded tier groups and the ticked compare boxes — belongs to the game
+  // that just finished, so it goes with it. The next game starts from the
+  // design's defaults.
+  lvResetCompsView();
   const root = el('div', 'tavern live');
   const p = el('div', 'lv-pn lv-over');
   const go = a.game_over || {};
@@ -3167,10 +3462,13 @@ function lvSectionLine(title, a) {
          + n(a.hand) + ' in hand';
   }
   if (title === 'Comps') {
+    // "N in this lobby" (item B.1, 2026-10-14): the main list holds the comps
+    // this game can still build, so the count that belongs on its header is
+    // that one. "12 of 16 available" described a list that no longer exists —
+    // the 16 included comps of tribes this lobby does not offer.
     const comps = a.comps || [];
-    const can = comps.filter(c => c.tribe_available !== false).length;
-    return comps.length ? can + ' of ' + comps.length + ' available'
-                        : 'nothing read yet';
+    if (!comps.length) return 'nothing read yet';
+    return lvInLobby(a).length + ' in this lobby';
   }
   if (title === 'Next opponent') {
     const oc = a.opp_comp || {};
@@ -3228,18 +3526,20 @@ function lvSection(title, a, acc) {
 //: through on the left, Comps in the middle, and the reference material on the
 //: right — facts, then the announced opponent, then the lobby. NO TABS: every
 //: section is on screen, so a tab row would be a control that hides what is
-//: already visible. The pick screen takes the first column for the same reason
-//: it took the whole main column before — choosing is what the player is doing.
-//: The columns are FLAT CHILDREN of the arrangement, so "which column is this
-//: panel in" is a `>` away and no column is a container of another.
+//: already visible. The columns are FLAT CHILDREN of the arrangement, so "which
+//: column is this panel in" is a `>` away and no column is a container of
+//: another.
+//:
+//: The pick screen is NOT in a column any more (2026-10-14): `lvBody` puts it
+//: ABOVE this arrangement, across the full width, because the design's wide mock
+//: is one row of four and four 200px options are 800px — which no single column
+//: of a three-column page has. The tavern row stays at the top of column one
+//: either way, so a pick no longer hides the shop (or the comps, or the facts)
+//: while it asks.
 function lvColumns(a) {
   const one = el('div', 'lv-col');
-  if (lvPicking(a)) {
-    one.appendChild(lvSection('Choose one', a, false));
-  } else {
-    one.appendChild(lvSection('Tavern', a, false));
-    one.appendChild(lvSection('Board and hand', a, false));
-  }
+  one.appendChild(lvSection('Tavern', a, false));
+  one.appendChild(lvSection('Board and hand', a, false));
   const two = el('div', 'lv-col');
   two.appendChild(lvSection('Comps', a, false));
   const three = el('div', 'lv-col');
@@ -3255,18 +3555,12 @@ function lvColumns(a) {
 }
 //: The accordion (every window under 1800px): one column, the facts strip pinned
 //: at the top of it, then the same five sections in the order the player needs
-//: them.
+//: them. The pick screen is above the whole arrangement (see `lvBody`), so it is
+//: not one of the titles here.
 function lvAccordion(a) {
   const col = el('div', 'lv-col');
   col.appendChild(lvSection('Facts', a, true));
-  // The pick screen REPLACES the tavern row while the game is asking (§4.3),
-  // through the same `lvPicking` predicate the columns use — two arrangements
-  // that disagreed about whether the shop is on screen would be one payload
-  // rendered two ways.
-  const titles = lvPicking(a)
-    ? ['Choose one', 'Board and hand', 'Comps', 'Next opponent', 'Lobby']
-    : ['Tavern', 'Board and hand', 'Comps', 'Next opponent', 'Lobby'];
-  titles.forEach(t => {
+  ['Tavern', 'Board and hand', 'Comps', 'Next opponent', 'Lobby'].forEach(t => {
     col.appendChild(lvSection(t, a, true));
   });
   return [col];
@@ -3281,6 +3575,22 @@ function lvAccordion(a) {
 //: at render time and stay right when the window is resized.
 function lvBody(a) {
   const wrap = el('div', 'lv-body');
+  // THE PICK STRIP, ABOVE THE DASHBOARD (2026-10-14). The design's wide mock is
+  // one row of four options, and the point of it is that choosing does not
+  // evict the rest of the page: the tavern row, the comps list and the facts
+  // table stay on screen under the pick. So the pick panel is a sibling of both
+  // arrangements, at their full width, rather than the first section of one of
+  // them — `lvPicking` is still the ONE predicate that decides whether it is
+  // there, so the two arrangements cannot disagree about it (`lvColumns` and
+  // `lvAccordion` no longer ask). The panel carries `lv-pickstrip` so a reader
+  // (and this suite's driver) can find the strip by name without having to know
+  // which arrangement is on screen — a page-wide search for `.lv-pn` would find
+  // the hidden arrangement's sections first.
+  if (lvPicking(a)) {
+    const pick = lvSection('Choose one', a, false);
+    pick.classList.add('lv-pickstrip');
+    wrap.appendChild(pick);
+  }
   const cols = el('div', 'lv-main lv-layout-cols');
   lvColumns(a).forEach(c => cols.appendChild(c));
   const acc = el('div', 'lv-main lv-layout-acc');
@@ -3300,6 +3610,11 @@ function renderLiveTavern(a) {
   app.classList.add('tavern-on');
   box.hidden = false;
   box.innerHTML = '';
+  // The comps list is re-cut when the game's tribe state changes, BEFORE the
+  // body is built — the body reads `_liveCompMore`/`_liveCompare` while it
+  // renders, so a stale set would draw one frame of a list that no longer
+  // exists (item B.1's "recompute on every tribe change").
+  lvSyncCompsView(a);
   const root = el('div', 'tavern live');
   // No game-over band here: that card arrives on its own payload (`welcome:
   // true`), which `render` sends to `renderTavernGameOver` instead of to this
