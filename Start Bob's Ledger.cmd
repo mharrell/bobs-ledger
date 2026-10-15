@@ -138,7 +138,8 @@ rem touches that single file and nothing else - keeping a backup first.
 if not errorlevel 1 goto :logging_done
 if "%CHECK%"=="1" goto :logging_off_report
 echo.
-echo Hearthstone's file logging is OFF, and the coach cannot advise without it.
+echo Hearthstone's logging is not set up for a full game: either file logging
+echo is OFF, or the 10 MB log size cap is still in place.
 echo.
 choice /c YN /n /m "Turn it on for me now? [Y/N] "
 if errorlevel 2 goto :logging_manual
@@ -164,7 +165,7 @@ goto :logging_done
 rem --check stops here rather than offering advice that opens Explorer: a report
 rem must not act, and this label is what keeps the closing sentence true.
 :logging_off_report
-echo Hearthstone's file logging: OFF - the coach cannot advise without it
+echo Hearthstone's logging: NOT ready - file logging is off, or the log size cap is still set
 echo   (run this file normally and say yes, and it will be turned on for you)
 goto :logging_done
 

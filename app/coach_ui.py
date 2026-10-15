@@ -4809,6 +4809,41 @@ def _game_over_line(game_over):
     return line
 
 
+#: Set when HEARTHSTONE'S OWN size cap ends the recording mid-game. The page has
+#: no other way to say "the coach can no longer see this game": without it the
+#: last shop frame simply stayed up — measured 2026-10-15, a turn-7 board sat
+#: there for 24 minutes with nothing but an ageing "read Ns ago" line, and the
+#: game's ending (with its review, replay and placement) was gone.
+#:
+#: A PAGE value, added in `welcome_payload` and never in an analysis, so it
+#: cannot reach `decision_log` and therefore cannot reach
+#: `session_report.SPEC` — the same rule `share_state` follows, for the same
+#: reason.
+_LOG_CAP_NOTICE = None
+
+
+def set_log_cap_notice(limit_kb=None):
+    """Put the cap on the card, in the player's words rather than ours."""
+    global _LOG_CAP_NOTICE
+    where = f"{limit_kb}KB" if limit_kb else "its size limit"
+    _LOG_CAP_NOTICE = (
+        f"Hearthstone capped its log file at {where} and stopped writing, so "
+        f"the rest of this game cannot be read — including how it ended. Run "
+        f"the launcher again and say yes and it will remove that cap for you, "
+        f"or put Log.FileSizeLimit.Int=-1 in client.config beside the game "
+        f"yourself, then restart Hearthstone.")
+
+
+def clear_log_cap_notice():
+    """A new session's log is not capped, so the card goes back to normal."""
+    global _LOG_CAP_NOTICE
+    _LOG_CAP_NOTICE = None
+
+
+def log_cap_notice():
+    return _LOG_CAP_NOTICE
+
+
 def _welcome_hint():
     """The first-run hint, led by the cause that can actually apply here.
 
@@ -4826,7 +4861,15 @@ def _welcome_hint():
     """
     logging_fix = (f"put this in {config.config_hint()} yourself "
                    f"(create the file if it is not there):")
-    if os.path.isdir(os.path.join(config.HS_DIR, "Logs")):
+    # `root_score` is what tells the two causes apart, and it has to be the
+    # score rather than "is there a Logs folder": a root holding the GAME
+    # (score 1) has simply never written a log, so the cause is file logging,
+    # not a game installed elsewhere. Measured on the first macOS install
+    # (2026-10-15): `/Applications/Hearthstone` holds `Hearthstone.app` and no
+    # `Logs/` until the game has been played once, so the very first thing a
+    # new Mac player read was the wrong cause — "the game is probably installed
+    # somewhere else", about a game sitting in the usual place.
+    if config.root_score(config.HS_DIR) >= 1:
         return ("Never seen a board read? Hearthstone only writes the log this "
                 f"reads when file logging is ON. Run {config.launcher()} again "
                 f"and say yes to let it turn that on for you — or {logging_fix}")
@@ -4969,6 +5012,15 @@ def welcome_payload(game_over=None):
         # shows.
         payload["steps"] = ("[Power]\nLogLevel=1\nFilePrinting=true\n"
                             "ConsolePrinting=false\nScreenshots=false")
+    if _LOG_CAP_NOTICE:
+        # Hearthstone's own size cap ended the recording. Say so on the card
+        # instead of leaving the last shop frame up: measured 2026-10-15, the
+        # page sat on a turn-7 board for 24 minutes with nothing but an ageing
+        # "read Ns ago" line, and the player had no way to tell that the game
+        # they were watching had already been cut off mid-fight.
+        payload["title"] = "The log stopped"
+        payload["status"] = _LOG_CAP_NOTICE
+        payload["hint"] = _LOG_CAP_NOTICE
     return json.dumps(payload).encode()
 
 

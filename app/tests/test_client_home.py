@@ -180,6 +180,29 @@ class TestResolutionOrder(unittest.TestCase):
         self.assertEqual(home, MISSING)
         self.assertIn("nothing else found", source)
 
+    def test_a_macos_install_in_the_usual_place_is_recognised(self):
+        """The user-visible half of the bundle marker.
+
+        With the game in the usual place, the source line has to say so. It
+        said "(nothing else found)" on the first macOS install (2026-10-15),
+        and `coach_ui._welcome_hint()` turns that into "the game is probably
+        installed somewhere else" — telling a player whose game is exactly
+        where it belongs to go looking for it.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            default = os.path.join(td, "Hearthstone")
+            os.makedirs(os.path.join(default, "Hearthstone.app"))
+            with mock.patch.object(config, "_registry_homes",
+                                   return_value=[]), \
+                 mock.patch.object(config, "_drive_homes", return_value=[]), \
+                 mock.patch.object(config, "remembered_home",
+                                   return_value=None), \
+                 mock.patch.object(config, "default_home",
+                                   return_value=default):
+                home, source = config.resolve_home(env={}, platform="darwin")
+        self.assertEqual(home, default)
+        self.assertEqual(source, "the usual place for this platform")
+
 
 class TestWhatCountsAsAClientRoot(unittest.TestCase):
     def test_logs_is_the_strongest_evidence(self):
@@ -198,6 +221,31 @@ class TestWhatCountsAsAClientRoot(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             self.assertEqual(config.root_score(_client_root(td, "fresh",
                                                             logs=False)), 1)
+
+    def test_the_macos_bundle_alone_still_counts(self):
+        """A Mac scores exactly the way a Windows install does.
+
+        Until 2026-10-15 the only marker was `Hearthstone.exe`, so a real macOS
+        client root — `/Applications/Hearthstone`, which holds
+        `Hearthstone.app` and no `Logs/` until the game has been played once —
+        scored 0 and was reported as "nothing of ours". That is precisely the
+        first-run case this score exists for: the player is told the game is
+        "probably installed somewhere else" while it sits in the usual place.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            root = os.path.join(td, "Hearthstone")
+            os.makedirs(os.path.join(root, "Hearthstone.app", "Contents",
+                                     "MacOS"))
+            self.assertEqual(config.root_score(root), 1)
+
+    def test_logs_still_outranks_the_macos_bundle(self):
+        """The bundle must not have replaced the strong evidence, only joined
+        it: a root the game has written to is still worth more than one that
+        merely exists."""
+        with tempfile.TemporaryDirectory() as td:
+            both = _client_root(td, "mac-both")
+            os.makedirs(os.path.join(both, "Hearthstone.app"))
+            self.assertEqual(config.root_score(both), 2)
 
     def test_a_folder_with_neither_scores_zero(self):
         with tempfile.TemporaryDirectory() as td:
@@ -263,9 +311,21 @@ class TestRememberingTheAnswer(unittest.TestCase):
         self.assertIn(root, text)
 
     def test_forget_goes_back_to_looking(self):
+        """`--forget` drops the answer and hands resolution back to the machine.
+
+        What it finds NEXT is therefore whatever the host has — and the exit
+        code is "is there a Logs folder at the resolved root". Left real, this
+        asserted the HOST's install rather than the forgetting: 0 on the machine
+        it was written on, 1 on every box without Hearthstone (measured on the
+        first macOS checkout, 2026-10-15). The machine-dependent sources are
+        pinned here so the test is about the answer being forgotten.
+        """
         root = _client_root(self._tmp.name)
         self._run("--set", root)
-        code, _text = self._run("--forget")
+        with mock.patch.object(config, "_registry_homes", return_value=[]), \
+             mock.patch.object(config, "_drive_homes", return_value=[]), \
+             mock.patch.object(config, "default_home", return_value=root):
+            code, _text = self._run("--forget")
         self.assertEqual(code, 0)
         self.assertIsNone(config.remembered_home())
 
@@ -359,14 +419,28 @@ class TestTheCommandLine(unittest.TestCase):
             self.assertFalse(os.path.exists(book))
 
     def test_discover_names_every_source_it_consulted(self):
+        """Every source that HAS an answer gets a row.
+
+        `--discover` summarises the sources it consulted, and one of them —
+        Windows' uninstall entry — is a row only when the registry actually has
+        Hearthstone's key. Asserting that row unconditionally asserted the HOST
+        rather than the report: it passes on a Windows box with the game
+        installed and fails on every macOS checkout, on Linux, and on a fresh
+        Windows box without Hearthstone (measured on the first macOS checkout,
+        2026-10-15). The condition below asks the same question the report does,
+        so the test still fails if a source that exists goes unreported.
+        """
         with tempfile.TemporaryDirectory() as td:
             root = _client_root(td, "with-logs")
             env = dict(os.environ, HEARTHSTONE_HOME_FILE=os.path.join(
                 td, "hs_home.json"), HEARTHSTONE_HOME=root)
             p = self._run(env, "--discover")
             self.assertEqual(p.returncode, 0, p.stderr)
-            for needle in ("HEARTHSTONE_HOME", "remembered", "uninstall entry",
-                           "platform default", "drive scan", root):
+            needles = ["HEARTHSTONE_HOME", "remembered", "platform default",
+                       "drive scan", root]
+            if config._registry_homes():
+                needles.append("uninstall entry")
+            for needle in needles:
                 self.assertIn(needle, p.stdout)
 
     def test_json_is_the_same_answer_in_a_parseable_shape(self):
@@ -407,17 +481,54 @@ class TestTheMessagesDoNotLie(unittest.TestCase):
                                             python="py", config_py="config.py"))
         self.assertIn('"py" "config.py" --set', text)
 
+    def test_the_advice_names_the_game_this_platform_has(self):
+        """The word after "holding" is the game's own name per platform.
+
+        Both console hints asked for "the folder holding Hearthstone.exe",
+        which on macOS is a file that does not exist and a folder that holds
+        `Hearthstone.app` — the one instruction the player is meant to act on,
+        naming the wrong thing (measured on the first macOS install,
+        2026-10-15). The overlay was already correct: it uses `config_hint()`
+        and `launcher()`, and this is the console's half of the same rule.
+        """
+        self.assertEqual(config.game_marker("darwin"), "Hearthstone.app")
+        self.assertEqual(config.game_marker("win32"), "Hearthstone.exe")
+
+    def test_no_console_hint_hardcodes_the_windows_executable(self):
+        """Checked on whichever platform the suite is running, so a Mac and a
+        Windows checkout each assert their own answer."""
+        marker = config.game_marker()
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            config._show(home=MISSING, source="test")
+        self.assertIn(f"holding {marker}", buf.getvalue())
+        self.assertIn(f"holding {marker}",
+                      "\n".join(live.no_log_advice(root="X", source="Y")))
+
     def test_the_overlay_hint_leads_with_the_cause_that_applies(self):
         """The card is what the player is looking at while nothing happens, so
         it may not name only the logging setting: with no log folder there,
-        that is not what is wrong."""
+        that is not what is wrong.
+
+        The third case is the fresh install, and it is the one that was wrong
+        until 2026-10-15: a root that holds the GAME and no `Logs/` yet has one
+        cause available — file logging — and the card used to lead with "the
+        game is probably installed somewhere else" about a game in the usual
+        place. On a Mac that is the state every player starts in, because
+        `/Applications/Hearthstone` has no `Logs/` until the game is played.
+        """
         with tempfile.TemporaryDirectory() as td:
             with mock.patch.object(config, "HS_DIR", _client_root(td, "ok")):
                 logged = coach_ui._welcome_hint()
+            with mock.patch.object(config, "HS_DIR",
+                                   _client_root(td, "game-only", logs=False)):
+                never_run = coach_ui._welcome_hint()
             with mock.patch.object(config, "HS_DIR", MISSING):
                 no_folder = coach_ui._welcome_hint()
         self.assertIn("file logging is ON", logged)
         self.assertNotIn("no Hearthstone log folder", logged)
+        self.assertIn("file logging is ON", never_run)
+        self.assertNotIn("no Hearthstone log folder", never_run)
         self.assertIn("no Hearthstone log folder", no_folder)
         self.assertNotIn("only writes the log this reads when file logging is "
                          "ON. Run", no_folder)

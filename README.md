@@ -14,8 +14,9 @@ for each turn is still worked out and written to your own disk, and you see it
 describes can no longer be acted on.
 
 **Windows only.** It reads the log file Hearthstone writes on your own PC and
-asks for no account. It does not modify the game — the one file it can change is
-Hearthstone's own logging setting, and only if you say yes to it (see
+asks for no account. It does not modify the game — the only files it can change
+are two of Hearthstone's own settings, its logging setting and its log-size cap,
+and only if you say yes to it (see
 [turning on logging](#turn-on-hearthstones-logging)).
 
 **[Install it](#install-it)** · **[Turn on logging](#turn-on-hearthstones-logging)** ·
@@ -55,6 +56,16 @@ asks — say yes and the step is done: it adds the two lines the coach needs to 
 settings file Hearthstone already has, leaves the rest of that file exactly as it
 was, and keeps a copy of the original first. (It will not do it while Hearthstone
 is running, because the game only reads that file when it starts.)
+
+**It also lifts Hearthstone's 10 MB log cap, in the same step.** Hearthstone
+closes a log file once it reaches its size limit — 10 MB by default — and
+everything after that point is never written. In a long session that loses the
+end of a game, and with it the review, the saved replay and the placement. The
+limit is one of the client's own settings (`Log.FileSizeLimit.Int`, default
+`10000`), so the app sets it to `-1` — the client's "no limit" — in
+`client.config` beside the game. Same care as above: that one line, every other
+line kept, the original backed up, and only when you say yes. The overlay now
+also says so on screen if a log ever does hit the cap.
 
 To do it by hand instead: by default Hearthstone does not write the file the
 coach reads.
@@ -448,7 +459,11 @@ Some facts, kept apart from that judgement:
   window you started it from prints the one-line command that fixes the second
   one for good.
 - **The page stops changing.** The overlay says how long ago the last read was
-  written, so you can tell a stale read from a live one.
+  written, so you can tell a stale read from a live one. If it instead says the
+  log stopped, Hearthstone hit its own size cap and closed the file — that is the
+  cap the launcher removes for you (see
+  [turning on logging](#turn-on-hearthstones-logging)); until you restart the
+  game with it removed, the rest of that session is not recorded.
 - **It says the page needs its access key.** The overlay listens only on your own
   machine, and the address the launcher opens carries a key minted fresh for that
   run — so a plain `http://127.0.0.1:8747/` you bookmarked yourself is refused
@@ -543,19 +558,23 @@ decision log and the review.
   a console.
 - **The macOS launcher's mirror of those rules.** `Start Bob's Ledger.command`
   has to be LF-only (one CR and bash dies on `$'\r'`), pure ASCII, and free of
-  bash-4 syntax: `/bin/bash` is still 3.2 on macOS. **It has never been run** —
-  no Mac has executed it and no shell here has even parsed it, so its first real
-  run is the test.
+  bash-4 syntax: `/bin/bash` is still 3.2 on macOS. **First run on a Mac,
+  2026-10-15:** it parses under `/bin/bash` 3.2.57, is LF-only and pure ASCII,
+  and `--check` runs end to end — Python found, `requests` present, the logging
+  offer reported and declined, and `config.py --show` reading the real install.
+  A double-click run has still not happened.
 - **The platform layer.** The client root, the `log.config` location and the
   "is Hearthstone running?" probe all branch on the platform in `config.py` and
-  `setup_logging.py`, and the log lookup asks for both known `Power.log` shapes
-  because which one macOS writes is still unverified.
+  `setup_logging.py`. The log lookup asks for both known `Power.log` shapes, and
+  that is now a fallback rather than a hedge: **measured 2026-10-15**, the macOS
+  client writes `Logs/Hearthstone_<date>_<time>/Power.log`, the same
+  session-directory shape Windows uses.
 - **The update join.** `VERSION` and `.update_state.json` are stamped into every
   release and are what let an installed copy learn that a newer one exists.
-- **The install promise.** Outside Hearthstone's own `log.config` — which the
-  launcher edits only when asked, keeping a backup — everything the coach writes
-  stays inside its own folder. Uninstalling is deleting one folder, and that has
-  to stay true.
+- **The install promise.** Outside Hearthstone's own `log.config` and the
+  `client.config` beside the game — both edited only when asked, each keeping a
+  backup — everything the coach writes stays inside its own folder. Uninstalling
+  is deleting one folder, and that has to stay true.
 
 ### Releasing
 

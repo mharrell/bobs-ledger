@@ -661,7 +661,11 @@ is a short list rather than a rewrite. What was platform-bound:
   and the log lookup. Windows writes `Logs/Hearthstone_<date>/Power.log`; the
   community reference documents a flat `Logs/Power.log` on macOS, and which
   one the client actually uses is **unverified**, so both patterns are asked
-  for.
+  for. **MEASURED 2026-10-15 on the first macOS install:** the Mac client
+  writes `Logs/Hearthstone_<date>_<time>/`, exactly like Windows (`config.py`
+  now records the measurement). The dual glob stays — the flat shape is the
+  fallback for an older or unusual build — but the session-dir pattern is the
+  one that matches on both platforms.
 - `setup_logging.config_dir`: `~/Library/Preferences/Blizzard/Hearthstone`,
   not `AppData`. The old code read `LOCALAPPDATA`, which is unset on a Mac, so
   it would have resolved to `~/Blizzard/Hearthstone` — a folder the game never
@@ -679,11 +683,48 @@ the bit after extracting, because `zipfile` does not restore permissions.
 `privacy_scan.TEXT_SUFFIXES` now covers `.cmd`, `.command` and `.bat`: the
 launchers were the most-copied files in the project and the least scanned.
 
-**Unverified, deliberately recorded:** no Mac has ever run any of this, and no
-shell on the packaging machine has even parsed the `.command`. The unit tests
-inject the platform, which covers the logic and the exact command lines — not
-macOS. Nothing should be announced as Mac support until a Mac completes an
-install and a game.
+**Unverified, deliberately recorded (2026-10-03):** no Mac has ever run any of
+this, and no shell on the packaging machine has even parsed the `.command`. The
+unit tests inject the platform, which covers the logic and the exact command
+lines — not macOS. Nothing should be announced as Mac support until a Mac
+completes an install and a game.
+
+**First macOS install and game, 2026-10-15 — what it settled.** The `.command`
+parses under `/bin/bash` 3.2.57, is LF-only and pure ASCII, and `--check` runs
+end to end (Python found, `requests` present, the logging offer reported and
+declined, `config.py --show` reading the real install). The client root
+resolves, `setup_logging` writes the real
+`~/Library/Preferences/Blizzard/Hearthstone/log.config`, and the client honours
+it. The overlay binds loopback, refuses an unkeyed request, and serves the
+keyed page and `/analysis`.
+
+Four defects were fixed on the way, each with a regression test: `root_score()`
+did not know `Hearthstone.app`, so a real Mac install scored 0 and was reported
+as "nothing of ours"; the console hints named `Hearthstone.exe`; the first-run
+card led with "the game is probably installed somewhere else" about a game in
+the usual place; and the monitor's tail had no truncation handling, so a log
+reused at the same path (which is what the flat macOS shape would be) was read
+from a stale byte offset and resumed mid-line.
+
+**The game itself, read live:** the coach attached to
+`Logs/Hearthstone_2026_10_15_14_31_52/Power.log`, resolved the hero
+(`BG30_HERO_304`, Marin the Manager), the tier, gold and turn, the board and the
+tavern's offers, pushed a real analysis to the page over HTTP — and leaked none
+of `LIVE_VERDICT_KEYS`. The pivot holds on macOS.
+
+**One thing a category file taught us.** Blizzard's logger creates a category's
+`.log` on its FIRST WRITE: minutes after the client was up and at the menu,
+`Logs/` held `Login`, `Offline`, `Spj`, `LuckyDraw`, `Downloader`,
+`ExceptionReporter` and `GameNetLogger` — with no `Power.log`, because the Power
+category had not logged anything yet. It appeared when a match began. So "no
+Power.log" at the menu is NOT evidence that logging is off, and a player
+following the README's first-run advice should be told to start a game before
+concluding anything; nothing on the page currently says that.
+
+**Still open on macOS:** the machine-dependent suite
+(`test_integration_real_log.py`) needs a FINISHED session log and skips while the
+game is running, so it has not yet parsed a real macOS log. That is the remaining
+check, and it needs only for the game to be closed.
 
 ### Network situation
 - hsreplay's minions/heroes/dark-gifts APIs are Cloudflare-protected (403) —

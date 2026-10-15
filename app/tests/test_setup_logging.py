@@ -82,6 +82,16 @@ def sections(text):
     return out
 
 
+#: The shape of a real `client.config`: flat `name=value`, one client config
+#: var per line, which is what the client's own `getvar`/`setvar` console
+#: commands read and write. The limit line is the client's DEFAULT, so this is
+#: exactly the file that closes a log at 10 MB.
+REAL_SHAPED_CLIENT = """Aurora.Version.String=1.2.3
+Log.FileSizeLimit.Int=10000
+ShowFakeBreakingNews=true
+"""
+
+
 class LoggingFixture(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -229,6 +239,127 @@ class TestApplying(LoggingFixture):
         self.assertIn("FilePrinting=true", "".join(now["Power"]))
 
 
+class TestTheLogSizeCap(unittest.TestCase):
+    """The 10 MB wall, and the client variable that removes it.
+
+    Hearthstone CLOSES a log once it reaches `Log.FileSizeLimit.Int` kilobytes,
+    and the default is 10000. Measured on macOS 2026-10-15: a Battlegrounds game
+    hit it, Power.log vanished from the client's open files, and the rest of the
+    game -- its ending, the review, the saved replay, the placement -- was lost
+    while the coach sat on a stale frame and said nothing. `-1` is the client's
+    own "no limit", so `client.config` beside the game gets the same careful
+    edit `log.config` gets: one key, everything else kept, original backed up.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.dir = self._tmp.name
+        self.path = os.path.join(self.dir, "client.config")
+        p = mock.patch.object(setup_logging, "hearthstone_running",
+                              lambda: False)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def write(self, text):
+        with open(self.path, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+
+    def read(self):
+        with open(self.path, encoding="utf-8", newline="") as f:
+            return f.read()
+
+    def backup(self):
+        with open(self.path + setup_logging.BACKUP_SUFFIX, encoding="utf-8",
+                  newline="") as f:
+            return f.read()
+
+    def test_no_file_is_missing(self):
+        self.assertEqual(setup_logging.read_client_state(self.path)[0],
+                         "missing")
+
+    def test_the_clients_own_default_reads_incomplete(self):
+        """10000KB is the documented default and the cap we measured, so a file
+        that still carries it is not 'ok'."""
+        self.write("Log.FileSizeLimit.Int=10000\n")
+        state, missing = setup_logging.read_client_state(self.path)
+        self.assertEqual(state, "incomplete")
+        self.assertEqual(missing, {"Log.FileSizeLimit.Int": "-1"})
+
+    def test_unlimited_reads_ok(self):
+        self.write("Log.FileSizeLimit.Int=-1\n")
+        self.assertEqual(setup_logging.read_client_state(self.path)[0], "ok")
+
+    def test_a_missing_file_is_created_with_the_one_variable(self):
+        state, changed, note = setup_logging.apply_client(self.path)
+        self.assertEqual((state, note), ("missing", "created"))
+        self.assertEqual(self.read(), "Log.FileSizeLimit.Int=-1\n")
+        self.assertTrue(changed)
+
+    def test_other_client_vars_survive_and_the_original_is_kept(self):
+        """A player may already carry another tool's client config vars, or an
+        event UID's. None of them are ours to drop."""
+        self.write(REAL_SHAPED_CLIENT)
+        state, changed, note = setup_logging.apply_client(self.path)
+        self.assertEqual(note, "backed-up")
+        out = self.read()
+        self.assertIn("Log.FileSizeLimit.Int=-1", out)
+        self.assertIn("Aurora.Version.String=1.2.3", out)
+        self.assertIn("ShowFakeBreakingNews=true", out)
+        self.assertEqual(self.backup(), REAL_SHAPED_CLIENT)
+
+    def test_the_backup_stays_the_original_across_runs(self):
+        self.write(REAL_SHAPED_CLIENT)
+        setup_logging.apply_client(self.path)
+        setup_logging.apply_client(self.path)
+        self.assertEqual(self.backup(), REAL_SHAPED_CLIENT)
+
+    def test_a_second_run_changes_nothing(self):
+        setup_logging.apply_client(self.path)
+        before = self.read()
+        state, changed, note = setup_logging.apply_client(self.path)
+        self.assertEqual((state, note), ("ok", "already-on"))
+        self.assertEqual(changed, [])
+        self.assertEqual(self.read(), before)
+
+    def test_it_refuses_while_hearthstone_is_running(self):
+        """The client reads this file at startup, so editing it under a live
+        game is the same broken promise `log.config` refuses to make."""
+        with mock.patch.object(setup_logging, "hearthstone_running",
+                               lambda: True):
+            state, changed, note = setup_logging.apply_client(self.path)
+        self.assertEqual(note, "hearthstone-running")
+        self.assertEqual(changed, [])
+        self.assertFalse(os.path.exists(self.path),
+                         "the client's config was edited under a live game")
+
+    def test_an_unwritable_game_folder_is_reported_not_raised(self):
+        """`client.config` lives in the GAME's folder.
+
+        On Windows that is under Program Files, which a standard user may not be
+        able to write. A raw PermissionError would surface as a traceback in the
+        middle of the launcher's first-run flow; the launcher already knows how to
+        turn a non-zero exit into advice, so the failure has to become a note.
+        """
+        ro = os.path.join(self.dir, "readonly")
+        os.makedirs(ro)
+        os.chmod(ro, 0o500)
+        self.addCleanup(os.chmod, ro, 0o700)
+        state, changed, note = setup_logging.apply_client(
+            os.path.join(ro, "client.config"))
+        self.assertTrue(note.startswith("not-writable"), note)
+        self.assertEqual(changed, [])
+
+    def test_crlf_is_preserved(self):
+        self.write("Aurora.Version.String=1.2.3\r\n"
+                   "Log.FileSizeLimit.Int=10000\r\n")
+        setup_logging.apply_client(self.path)
+        with open(self.path, "rb") as f:
+            raw = f.read()
+        self.assertEqual(raw, b"Aurora.Version.String=1.2.3\r\n"
+                              b"Log.FileSizeLimit.Int=-1\r\n")
+
+
 class TestTheCliContract(unittest.TestCase):
     """The launcher decides whether to ask by the exit code, so it is part of
     the interface."""
@@ -238,8 +369,10 @@ class TestTheCliContract(unittest.TestCase):
             with mock.patch.object(setup_logging, "hearthstone_running",
                                    lambda: False):
                 setup_logging.apply(os.path.join(td, "log.config"))
+                setup_logging.apply_client(os.path.join(td, "client.config"))
                 with mock.patch("sys.argv", ["setup_logging.py", "--check",
-                                             "--path", td]):
+                                             "--path", td,
+                                             "--client-path", td]):
                     with mock.patch("sys.stdout", new_callable=__import__("io").StringIO):
                         self.assertEqual(setup_logging.main(), 0)
 
@@ -247,10 +380,27 @@ class TestTheCliContract(unittest.TestCase):
         import io
         with tempfile.TemporaryDirectory() as td:
             with mock.patch("sys.argv", ["setup_logging.py", "--check",
-                                         "--path", td]):
+                                         "--path", td,
+                                         "--client-path", td]):
                 with mock.patch("sys.stdout", new_callable=io.StringIO) as out:
                     self.assertEqual(setup_logging.main(), 1)
         self.assertIn("file logging is OFF", out.getvalue())
+
+    def test_check_exits_one_when_only_the_cap_is_left(self):
+        """Logging on is no longer the whole answer: a session that hits the cap
+        still loses the end of the game, so the launcher has to keep asking."""
+        import io
+        with tempfile.TemporaryDirectory() as td:
+            with mock.patch.object(setup_logging, "hearthstone_running",
+                                   lambda: False):
+                setup_logging.apply(os.path.join(td, "log.config"))
+                with mock.patch("sys.argv", ["setup_logging.py", "--check",
+                                             "--path", td,
+                                             "--client-path", td]):
+                    with mock.patch("sys.stdout",
+                                    new_callable=io.StringIO) as out:
+                        self.assertEqual(setup_logging.main(), 1)
+            self.assertIn("log size cap STILL SET", out.getvalue())
 
     def test_apply_exits_one_when_hearthstone_is_running(self):
         import io
@@ -258,7 +408,8 @@ class TestTheCliContract(unittest.TestCase):
             with mock.patch.object(setup_logging, "hearthstone_running",
                                    lambda: True):
                 with mock.patch("sys.argv", ["setup_logging.py", "--apply",
-                                             "--path", td]):
+                                             "--path", td,
+                                             "--client-path", td]):
                     with mock.patch("sys.stdout", new_callable=io.StringIO) as out:
                         self.assertEqual(setup_logging.main(), 1)
         self.assertIn("Close Hearthstone", out.getvalue())

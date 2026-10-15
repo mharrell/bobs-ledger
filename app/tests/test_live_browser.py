@@ -372,6 +372,14 @@ _DRIVER = r"""
     // arrangement at an exact window size would be asserting which side of a
     // breakpoint the window chrome falls on; a test that reads this cannot be.
     o.vw = window.innerWidth;
+    // THE LAYOUT VIEWPORT: the width the page's boxes can actually occupy, with
+    // the scrollbar already excluded. `vw` above does NOT exclude it, and the
+    // distance between the two is the HOST's, not the page's — measured
+    // 2026-10-15, it is 31px on Windows (a 16px window-chrome inset plus a
+    // classic 15px scrollbar) and 0 on macOS, whose overlay scrollbars are free.
+    // A box width read against `vw` was therefore partly a measurement of the
+    // machine the suite happened to run on; read against this it is the page.
+    o.docw = document.documentElement.clientWidth;
     o.hero = txt(rone('.lv-hero'));
     o.stats = all('.lv-st')
       .map(d => txt(d.querySelector('small')) + ':' + txt(d.querySelector('b')))
@@ -1678,7 +1686,9 @@ class TestTheLayoutByWidth(_Rendered):
 
     Each claim names the window it is about and measures what the real sheet
     produced in it. The class's own shot is the harness's 1400x900 window, whose
-    box is 1325px — an ACCORDION window now, which is the maintainer's rule.
+    box is 1325px on the Windows box this was written on and 1356px on macOS —
+    an ACCORDION window at both, which is the maintainer's rule. The 31px is
+    chrome, not the page: see `test_the_default_window_is_an_accordion`.
     """
 
     @classmethod
@@ -1691,12 +1701,25 @@ class TestTheLayoutByWidth(_Rendered):
         maintainer's rule is a window one and 1400 is not a big desktop window, so
         the same window is now the accordion — and the box it produces (1325px) is
         still measured here, because that number is exactly what used to decide
-        and no longer does."""
+        and no longer does.
+
+        The box is asserted as `docw - 44` rather than as `1325`, because 1325 was
+        the HOST's number and this suite runs on more than one host since
+        2026-10-15. Measured on the first macOS checkout: the same window gives
+        1356px of box, and the 31px is entirely platform chrome —
+        `documentElement.clientWidth` (what the page's boxes can occupy) is
+        `window - 16 - 15` on Windows, a 16px window-chrome inset plus a classic
+        15px scrollbar, and `window - 0` on macOS, whose overlay scrollbars cost
+        nothing. The SHELL's own gutter, which is what this test is about, is 44px
+        on both: 1384-44 = 1325 there and 1400-44 = 1356 here, and the same holds
+        at 1100 (1069-44 = 1025 there, 1100-44 = 1056 here). Reading the box
+        against `vw` would still have been a claim about the host; `docw` cancels
+        the chrome and leaves the page."""
         got = self.got
-        self.assertEqual(int(got["w.bodyw"]), 1325)
+        self.assertEqual(int(got["w.bodyw"]), int(got["w.docw"]) - 44)
         self.assertEqual(got["w.arr"], "acc",
                          f"a 1400x900 window is not in the accordion "
-                         f"(box {got['w.bodyw']}px)")
+                         f"(box {got['w.bodyw']}px of {got['w.docw']}px)")
         self.assertEqual(got["w.panels"],
                          "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
 

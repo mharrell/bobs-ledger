@@ -105,6 +105,54 @@ CAVEAT = ("Observational, not causal: following the model is correlated with "
           "easy spots, so these numbers are a reason to LOOK at a phase, never "
           "proof the model was right.")
 
+#: Hearthstone's own words when it CLOSES a log at its size limit
+#: (`Log.FileSizeLimit.Int`, 10000KB by default — see setup_logging). The banner
+#: is the last thing the client writes, so only the FINAL game in such a log can
+#: be the one it cut — and that game has no recorded result: the placement its
+#: rows carry is the standing at the moment writing stopped, not where the
+#: player finished. A review that printed "finished 4" for it was stating a
+#: result the log never recorded (measured 2026-10-15).
+CAP_BANNER = "Truncating log, which has reached the size limit"
+
+
+#: What the client leaves after its cap banner when it actually STOPS: the
+#: banner, then the rule of `=` it draws around the truncation, then a blank
+#: line — measured on the macOS log. Anything more than that is the log carrying
+#: on after a survivable truncation (the behaviour reported on Windows).
+_CAP_TRAILER = "="
+
+
+def _log_outcome(lines, game_index, game_count):
+    """(ends_at_cap, result_recorded) for one game in a log.
+
+    The client prints its cap banner and then does one of two things: STOPS
+    (measured on macOS — a rule of `=` follows, and then nothing) or TRUNCATES
+    AND RESUMES (reported on Windows, where the same cap is survivable and
+    logging carries on). Only the first loses anything.
+
+    So this asks what comes AFTER the banner, not whether it was printed. Two
+    simpler rules were wrong, and both are worth naming: "the banner is present"
+    makes a Windows review claim a result was lost when the log went on to record
+    it perfectly well, and "the banner is within the last few lines" fails on a
+    log SHORT enough that the last few lines are the whole file.
+
+    And the banner is the last thing written, so only the final game can be the
+    one cut: an earlier game in the same session really did finish, and its
+    result really was written. Split out from `build` so the rule can be tested
+    without a Battlegrounds log to hand — the mistake it prevents is a claim, and
+    a claim needs no fixture.
+    """
+    index = None
+    for i, line in enumerate(lines):
+        if CAP_BANNER in line:
+            index = i
+    ends_at_cap = False
+    if index is not None:
+        after = [line.strip() for line in lines[index + 1:] if line.strip()]
+        ends_at_cap = (len(after) <= 1
+                       and all(set(line) <= {_CAP_TRAILER} for line in after))
+    return ends_at_cap, not (ends_at_cap and game_index == game_count)
+
 
 # ---------------------------------------------------------------- the reading
 
@@ -341,12 +389,19 @@ def build(log_path, game_index=1):
     head = rows[0] if rows else {}
     timeline, timeline_error = _timeline(log_path, game_index, names)
     log_name = os.path.basename(log_path)
+    # Did the log actually record how this game finished? If the client capped
+    # the file AND stopped there, the final game has no recorded result — its
+    # `placement` is a standing, not a result — and every renderer has to say so
+    # instead of printing "finished N".
+    ends_at_cap, result_recorded = _log_outcome(lines, game_index, len(bounds))
     return {
         "schema": SCHEMA,
         "created": datetime.datetime.now().isoformat(timespec="seconds"),
         "session": session,
         "log": log_name,
         "game": game_index,
+        "ends_at_cap": ends_at_cap,
+        "result_recorded": result_recorded,
         # The game's stable identity (replay_store.game_gid): what makes a
         # reprocessed game save over itself instead of beside itself. `created`
         # above is the wall clock of THIS build, and must never be the thing a
@@ -477,8 +532,14 @@ def _hp(n):
 def render_text(rep):
     """Bounded console output, in the house style: a few lines per phase."""
     out = []
-    out.append(f"Settle Up — {rep['hero'] or 'unknown hero'}"
-               f"{'  (finished ' + str(rep['placement']) + ')' if rep['placement'] else ''}")
+    if rep.get("result_recorded", True):
+        tail = (f"  (finished {rep['placement']})" if rep["placement"] else "")
+    else:
+        # Say what is true: the standing when the writing stopped, and WHY.
+        tail = (f"  (stood {rep['placement']} when the log stopped — the "
+                f"result was never recorded)" if rep["placement"] else
+                "  (the log stopped before the result was recorded)")
+    out.append(f"Settle Up — {rep['hero'] or 'unknown hero'}{tail}")
     out.append(f"{rep['log']} · game {rep['game']} · {rep['session']}")
     out.append("")
     if not rep["phases"]:
@@ -894,7 +955,21 @@ def render_html(rep):
     e = html.escape
     t = rep["totals"]
     c = t["counts"]
-    placement = f" · finished {e(str(rep['placement']))}" if rep["placement"] else ""
+    if rep.get("result_recorded", True):
+        placement = (f" · finished {e(str(rep['placement']))}"
+                     if rep["placement"] else "")
+        cut_note = ""
+    else:
+        placement = (f" · stood {e(str(rep['placement']))} when the log stopped"
+                     if rep["placement"] else "")
+        # Say it in the page, not only in the header: this game has no result,
+        # and the reason is the client's own log size cap — which the launcher
+        # removes (see setup_logging).
+        cut_note = ('<div class=caveat>The log stopped before this game '
+                    'recorded a result, so there is no placement here — only '
+                    'the standing when the writing stopped. Hearthstone closes '
+                    'a log at its size limit; run the launcher again and say '
+                    'yes to remove that cap.</div>')
     who = e(rep["hero"] or "unknown hero")
 
     rows = []
@@ -979,6 +1054,7 @@ def render_html(rep):
 </style></head><body><div class=wrap>
 <h1>Settle Up</h1>
 <div class=sub>{who}{placement} · {e(rep['log'])} game {e(str(rep['game']))} · {e(rep['session'])}</div>
+{cut_note}
 <div class=totals>
   <span><b>{c['phases']}</b> advised phases</span>
   <span><b>{c['taken']}</b> taken</span>

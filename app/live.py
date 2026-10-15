@@ -24,7 +24,8 @@ import time
 from bans import out_of_pool_tribes
 from choices import choice_kind, rank_choices
 from coach import describe
-from config import HS_DIR, HS_HOME_SOURCE, HS_LOG_GLOB, HS_LOG_GLOBS, launcher
+from config import (HS_DIR, HS_HOME_SOURCE, HS_LOG_GLOB, HS_LOG_GLOBS,
+                    game_marker, launcher)
 from live_coach import LiveCoach, _banned
 from tribes import DISPLAY_TRIBES
 import coach_ui
@@ -101,10 +102,68 @@ def no_log_advice(root=None, source=None, python=None, config_py=None):
         f"checked there)",
         "  If the game is installed somewhere else, tell the coach once:",
         f'    "{python or sys.executable}" "{config_py}" --set '
-        f'"<the folder holding Hearthstone.exe>"',
+        f'"<the folder holding {game_marker()}>"',
         f"  If it IS installed there, Hearthstone's file logging is off: run "
         f"{launcher()} again and say yes when it offers to turn that on.",
     ]
+
+
+#: Hearthstone's own words when it reaches its log size limit, taken from the
+#: client's message format (`Truncating log, which has reached the size limit of
+#: {0}KB`). The default limit is 10000KB.
+#:
+#: PRINTING THIS IS NOT THE PROBLEM, which is why it is not what gets warned
+#: about. The client prints it and then either stops (measured on macOS: the
+#: file ends there and the descriptor closes) or truncates and carries on
+#: (reported on Windows, where the same cap is survivable). Warning on the line
+#: itself would therefore cry wolf on Windows — the exact platform the
+#: maintainer has never seen this problem on. `CAP_STALL_SECONDS` below is what
+#: tells the two apart: the notice waits for the writing to actually stop.
+_LOG_CAPPED = "Truncating log, which has reached the size limit"
+
+#: How long the log has to stay silent after that banner before the coach says
+#: the recording has ended. A live shop writes constantly, so silence this long
+#: is not a pause — but it is short enough to speak while the player is still
+#: looking at the game.
+CAP_STALL_SECONDS = 20.0
+
+#: Once per session: a capped log stays capped, and repeating the warning on
+#: every tick would bury the advice it exists to give.
+_LOG_CAP_ANNOUNCED = False
+
+
+def _note_log_capped(line, path):
+    """Say, once and out loud, that the client capped the log and stopped.
+
+    Hearthstone closes a log file when it reaches `Log.FileSizeLimit.Int`
+    kilobytes and prints its own words for it. Nothing can be read past that
+    point, so the game's ending — and with it the review, the saved replay and
+    the placement — is simply gone. The coach cannot stop the client doing it,
+    but it can refuse to sit on a stale frame in silence: this is the one
+    moment where saying nothing is what cost the player their game (measured on
+    macOS 2026-10-15).
+
+    The number is taken from the message rather than assumed: the client
+    formats it, so a user who has already set their own limit sees their own.
+    """
+    global _LOG_CAP_ANNOUNCED
+    if _LOG_CAP_ANNOUNCED:
+        return
+    _LOG_CAP_ANNOUNCED = True
+    limit = ""
+    if "size limit of " in line:
+        limit = "".join(ch for ch in line.split("size limit of ", 1)[1]
+                        if ch.isdigit())
+    coach_ui.set_log_cap_notice(limit or None)
+    coach_ui.clear_analysis()
+    print(f"\n!! Hearthstone capped {path} at "
+          f"{limit + 'KB' if limit else 'its size limit'} and has stopped "
+          f"writing to it.\n"
+          f"   Nothing after this point is recorded: the end of this game, its "
+          f"review and its saved replay will be missing.\n"
+          f"   Bob's Ledger removes that cap — run the launcher again and say "
+          f"yes, or put Log.FileSizeLimit.Int=-1 in client.config beside the "
+          f"game — then restart Hearthstone.\n", flush=True)
 
 
 def warn_stale_meta(meta_dir=None):
@@ -402,7 +461,7 @@ def monitor(path, poll=1.0):
     # The exit backstop in main() reads this module global; without the
     # declaration these assignments would only rebind a local, and the exit path
     # would still see None and share an unfinished game.
-    global _LAST_GAME
+    global _LAST_GAME, _LOG_CAP_ANNOUNCED
     coach = LiveCoach()
     # The running process's git commit, printed so a monitor started before a
     # patch lands is identifiable — it keeps its OLD code until restarted
@@ -441,11 +500,35 @@ def monitor(path, poll=1.0):
     meta_checked_lines = 0  # only retry the hero parse when new lines arrived
     pick_pending = False    # a Choose-1 panel was pushed and is still open
     last_err = None         # the last _advise failure signature (dedup)
+    # The client's size cap (see _LOG_CAPPED): set while its banner has been seen
+    # but the writing has not yet been proved to have stopped for good.
+    cap_line = ""
+    cap_stalled_at = None
+    cap_stalled_offset = 0
     try:
         while True:
-            # A new session (Hearthstone_*/Power.log) may appear; switch to it.
-            # Re-globbing the Logs dir every 0.3s tick was pure overhead —
-            # a new session can only appear every few seconds.
+            # --- should we (re)attach? -------------------------------------
+            # Two things stop the log we are tailing from being the game we
+            # are coaching, and both need the SAME response: drop the parse,
+            # drop the panel, re-read from byte 0.
+            #
+            # 1. A NEW session file appeared. Windows writes
+            #    Logs/Hearthstone_<date>/Power.log — a fresh directory per
+            #    launch — so rotation hands us a new PATH.
+            # 2. The file we already hold is gone or SHORTER. macOS is
+            #    documented to write one flat Logs/Power.log, which the game
+            #    erases on every start: the same path, so (1) can never see it.
+            #    The old code seeked past the new end of the file, read
+            #    nothing, and — once the new game had grown past the old byte
+            #    offset — resumed MID-LINE, so the new game's opening (its
+            #    CREATE_GAME, the hero pick) was never read at all.
+            #    Reproduced on the first macOS install, 2026-10-15.
+            #
+            # Re-globbing the Logs dir every 0.3s tick was pure overhead — a
+            # new session can only appear every few seconds — so discovery
+            # stays on its own 5s clock. The size/identity check is a single
+            # stat and runs every tick: a restart is worth noticing promptly.
+            restart = None
             active = None
             if time.time() >= next_log_check:
                 next_log_check = time.time() + 5.0
@@ -453,8 +536,24 @@ def monitor(path, poll=1.0):
                     active = find_active_log()
                 except OSError:
                     active = None  # a removed/locked log must not kill the loop
-            if active and os.path.abspath(active) != os.path.abspath(path):
-                print(f"New session detected: {active}", flush=True)
+                if active and os.path.abspath(active) != os.path.abspath(path):
+                    restart = f"New session detected: {active}"
+            if restart is None:
+                # `last_offset` is bytes ALREADY consumed on this handle, so a
+                # file shorter than that has been reused; a different inode at
+                # the same path is the same event (a game that deletes and
+                # recreates the log rather than truncating it).
+                try:
+                    st = os.stat(path)
+                    if st.st_size < last_offset:
+                        restart = (f"Log restarted in place ({path} is now "
+                                   f"{st.st_size} bytes, was {last_offset})")
+                    elif st.st_ino != os.fstat(f.fileno()).st_ino:
+                        restart = f"Log replaced at the same path: {path}"
+                except OSError:
+                    pass
+            if restart:
+                print(restart, flush=True)
                 # The previous game is over: this is one of the two moments
                 # that is certain, the other being exit. Sharing here means a
                 # player who leaves the coach running for days still has
@@ -465,7 +564,8 @@ def monitor(path, poll=1.0):
                                 [a for a in sys.argv[1:] if a.startswith("--")],
                                 _game_state(coach))
                 f.close()
-                path = active
+                if active:
+                    path = active
                 f = open(path, "rb")
                 coach = LiveCoach()
                 last_offset = _catch_up(f, coach)
@@ -482,11 +582,19 @@ def monitor(path, poll=1.0):
                 meta_checked_lines = 0
                 pick_pending = False
                 last_err = None
+                # A NEW log is not the capped one: the card goes back to normal
+                # and the warning is armed again for this session.
+                _LOG_CAP_ANNOUNCED = False
+                coach_ui.clear_log_cap_notice()
+                cap_line = ""
+                cap_stalled_at = None
+                cap_stalled_offset = 0
 
             # Any parser hiccup is contained to the tick: an unprotected feed
             # failure here killed the whole monitor mid-game (the 2026-09-08
             # evening session went silent right after a trinket pick and the
             # player restarted the coach 4x).
+            cap_line_seen = False
             try:
                 f.seek(last_offset)
                 chunk = f.read()
@@ -512,6 +620,12 @@ def monitor(path, poll=1.0):
                                     # tribes wipe too (the 5/5 tribe set
                                     # differs per game).
                                     coach_ui.clear_analysis()
+                                if _LOG_CAPPED in line:
+                                    # Note it and say NOTHING yet: whether this
+                                    # costs the player anything depends on what
+                                    # the client does next (see _LOG_CAPPED).
+                                    cap_line = line
+                                    cap_line_seen = True
                                 # Only GameState STEP lines delimit the buy
                                 # phase — the PowerTaskList copies arrive after
                                 # MAIN_END and would re-arm mid-turn on a
@@ -614,6 +728,28 @@ def monitor(path, poll=1.0):
                     print(f"  (monitor tick failed: {e})", flush=True)
                     last_err = str(e)
                 last_state = None  # retry the whole state next tick
+
+            # --- did the client's size cap actually cost us the game? -------
+            # The banner alone does not say. On macOS the log went silent for
+            # good; on Windows the client truncates and carries on. So the
+            # question is asked of the CONSEQUENCE: is the file still growing?
+            if cap_line_seen:
+                cap_stalled_at = time.monotonic()
+                cap_stalled_offset = last_offset
+            if cap_stalled_at is not None:
+                if last_offset > cap_stalled_offset:
+                    # Writing resumed after the banner — the client truncated and
+                    # carried on, so nothing was lost. Stand down, and say so if
+                    # the notice had already gone up (a slow resume).
+                    if coach_ui.log_cap_notice():
+                        print("  (the log is being written again — nothing was "
+                              "lost; the client truncated it and carried on)",
+                              flush=True)
+                    coach_ui.clear_log_cap_notice()
+                    cap_stalled_at = None
+                elif time.monotonic() - cap_stalled_at >= CAP_STALL_SECONDS:
+                    _note_log_capped(cap_line, path)
+                    cap_stalled_at = None
 
             # A finished game's plan must not stay on screen looking like live
             # advice. The last buy phase ends well before the game does — 34 s of

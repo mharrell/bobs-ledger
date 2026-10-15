@@ -133,17 +133,25 @@ class TestApplyZip(unittest.TestCase):
     def test_nested_local_data_is_protected(self):
         """Every shipped path is nested under the repo folder, so a
         first-segment-only PROTECTED test never matched anything — the
-        guard was inert while it claimed to protect these dirs."""
+        guard was inert while it claimed to protect these dirs.
+
+        `saved_replays` is here because it was missing from PROTECTED while
+        present in the other two guards: the Settle Up tab's store is one JSON
+        per game a player chose to keep, and an update that wrote over it would
+        destroy the only copy (2026-10-15).
+        """
         data = self._zip({
             "value.py": "print('new')",
             "decision_logs/decision_mine.jsonl": "OVERWRITTEN",
             "corpus_out/pending.json.gz": "OVERWRITTEN",
             ".review_cache/c.json": "OVERWRITTEN",
+            "saved_replays/abc123.json": "OVERWRITTEN",
         })
         with tempfile.TemporaryDirectory() as td:
             for rel, body in (("decision_logs", "decision_mine.jsonl"),
                               ("corpus_out", "pending.json.gz"),
-                              (".review_cache", "c.json")):
+                              (".review_cache", "c.json"),
+                              ("saved_replays", "abc123.json")):
                 os.makedirs(os.path.join(td, *rel.split("/")))
                 with open(os.path.join(td, *rel.split("/"), body),
                           "w", encoding="utf-8") as f:
@@ -152,10 +160,21 @@ class TestApplyZip(unittest.TestCase):
             self.assertEqual(n, 1)          # value.py only
             for rel, body in (("decision_logs", "decision_mine.jsonl"),
                               ("corpus_out", "pending.json.gz"),
-                              (".review_cache", "c.json")):
+                              (".review_cache", "c.json"),
+                              ("saved_replays", "abc123.json")):
                 with open(os.path.join(td, *rel.split("/"), body),
                           encoding="utf-8") as f:
                     self.assertEqual(f.read(), "LOCAL DATA", rel)
+
+    def test_the_saved_replay_store_is_named_by_the_store_itself(self):
+        """The guard has to name the directory `replay_store` actually writes.
+
+        PROTECTED is a literal set, so renaming `replay_store.DIR_NAME` would
+        leave it guarding a folder that no longer exists — silently, and in the
+        direction of losing a player's saved games.
+        """
+        import replay_store
+        self.assertIn(replay_store.DIR_NAME, update.PROTECTED)
 
     @unittest.skipUnless(
         importlib.util.find_spec("publish_release") is not None,

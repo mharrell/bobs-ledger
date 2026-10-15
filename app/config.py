@@ -119,6 +119,12 @@ HOME_FILE = ".hs_home.json"
 #: Terminal on a double-click.
 LAUNCHERS = ("Start Bob's Ledger.cmd", "Start Bob's Ledger.command")
 
+#: What the game is called inside its own folder, per platform — the loose
+#: executable on Windows, the app bundle on macOS. Used for the *marker* that
+#: makes a folder a client root, and for the one line of advice that tells a
+#: player which folder `--set` wants.
+GAME_MARKERS = {"win32": "Hearthstone.exe", "darwin": "Hearthstone.app"}
+
 
 def app_dir():
     """The directory holding the code — one level below the install root."""
@@ -129,6 +135,19 @@ def default_home(platform=None):
     """The client root for `platform` (default: the one we are running on)."""
     return _DEFAULT_HOME.get(platform or sys.platform,
                              _DEFAULT_HOME["win32"])
+
+
+def game_marker(platform=None):
+    """What the game is called in its own folder on `platform`.
+
+    This exists so the one sentence that tells a player to point the coach at
+    their install can name the right thing. It used to be hardcoded as
+    "Hearthstone.exe" in three places, which sent a Mac user looking for a
+    Windows file in a folder that holds `Hearthstone.app` (measured on the
+    first macOS install, 2026-10-15).
+    """
+    return GAME_MARKERS.get(platform or sys.platform,
+                            GAME_MARKERS["win32"])
 
 
 def home_file():
@@ -182,16 +201,25 @@ def root_score(path):
     """How much a folder looks like the client root: 2, 1 or 0.
 
     2 — it holds `Logs/`, the folder the coach reads.
-    1 — it holds `Hearthstone.exe`, so it is the game, but the log folder is
-        not there yet (a game that has not been started since it was
+    1 — it holds the game itself (`Hearthstone.exe` on Windows,
+        `Hearthstone.app` on macOS), so it is the client root, but the log
+        folder is not there yet (a game that has not been started since it was
         installed).
     0 — neither: a folder that was moved away, or uninstalled.
+
+    The macOS bundle was missing from this test until 2026-10-15, and the cost
+    was exactly the first-run case it exists for: `/Applications/Hearthstone`
+    holds `Hearthstone.app` and no `Logs/` until the game has been played once,
+    so a fresh Mac install scored 0 and was reported as "nothing of ours" —
+    the coach then told a player whose game was in the usual place that it was
+    probably installed somewhere else.
     """
     if not path or not os.path.isdir(path):
         return 0
     if os.path.isdir(os.path.join(path, "Logs")):
         return 2
-    if os.path.isfile(os.path.join(path, "Hearthstone.exe")):
+    if any(os.path.exists(os.path.join(path, marker))
+           for marker in GAME_MARKERS.values()):
         return 1
     return 0
 
@@ -363,11 +391,17 @@ def evidence(env=None, platform=None):
 def log_globs(root=None, platform=None):
     """Both shapes a Power.log turns up in, session-dir shape first.
 
-    Windows writes `Logs/Hearthstone_<timestamp>/Power.log`. The macOS
-    reference documents a flat `Logs/Power.log`, and whether the Mac client
-    has since adopted session directories is unverified — so ask for both. On
-    Windows the flat pattern simply matches nothing, and on a Mac the
-    session-dir pattern does, whichever way round it turns out.
+    Windows writes `Logs/Hearthstone_<timestamp>/Power.log`. The community
+    reference documents a flat `Logs/Power.log` on macOS, and whether the Mac
+    client had adopted session directories was unverified — so both are asked
+    for, and that is still the right shape for this function.
+
+    **Measured on the first macOS install, 2026-10-15:** the Mac client writes
+    `Logs/Hearthstone_<date>_<time>/`, exactly like Windows — the local machine
+    produced one of those session directories alongside its other category logs.
+    So the session-dir pattern is the one that matches on macOS
+    too, and the flat pattern is the fallback for an older or unusual build. On
+    Windows the flat pattern simply matches nothing.
 
     `platform` is accepted for the sake of a pure signature; the shapes are
     the same two everywhere.
@@ -446,7 +480,7 @@ def _show(home=None, source=None):
         print("  no Logs folder there yet. If the game is installed "
               "somewhere else, tell the coach once:")
         print(f'    "{sys.executable}" "{os.path.join(app_dir(), "config.py")}"'
-              f' --set "<the folder holding Hearthstone.exe>"')
+              f' --set "<the folder holding {game_marker()}>"')
 
 
 def main(argv=None):
@@ -460,7 +494,7 @@ def main(argv=None):
                     help="every source consulted, with its verdict")
     ap.add_argument("--set", dest="set_home", metavar="DIR",
                     help="remember DIR as the client root: the folder that "
-                         "holds Hearthstone.exe")
+                         f"holds {game_marker()}")
     ap.add_argument("--forget", action="store_true",
                     help="forget the remembered root and go back to looking")
     ap.add_argument("--json", action="store_true")
@@ -473,7 +507,7 @@ def main(argv=None):
             print(f"not a folder: {home}", file=sys.stderr)
             return 2
         if root_score(home) == 0:
-            print(f"note: no Hearthstone.exe and no Logs folder in {home} — "
+            print(f"note: no {game_marker()} and no Logs folder in {home} — "
                   f"remembering it anyway, since a game that has never been "
                   f"started has neither yet", file=sys.stderr)
         try:

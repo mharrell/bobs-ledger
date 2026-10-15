@@ -94,6 +94,13 @@ PROTECTED = {"decision_logs", "corpus_out", ".review_cache", ".git",
              # the same class: a player who opted in must stay opted in.
              ".share_consent.json", "session_reports",
              ".save_all_replays.json",
+             # The Settle Up tab's store — one JSON per game the player chose
+             # to keep (`replay_store.DIR_NAME`). It shipped with the other two
+             # guards and without this one (2026-10-15), and it is the same
+             # class of per-user data as decision_logs/ above: ROADMAP.md names
+             # saved_replays explicitly and says all three guards belong in the
+             # commit that creates the directory.
+             "saved_replays",
              # Where THIS install was told Hearthstone lives (2026-10-06).
              # config.py --set writes it, config.py reads it at import, and no
              # release carries it — but a player whose game sits on another

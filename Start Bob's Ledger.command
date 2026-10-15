@@ -171,7 +171,8 @@ if "$PY" "$HERE/app/setup_logging.py" --check >/dev/null 2>&1; then
 	LOGGING_OK=1
 else
 	echo
-	echo "Hearthstone's file logging is OFF, and the coach cannot advise without it."
+	echo "Hearthstone's logging is not set up for a full game: either file logging"
+	echo "is OFF, or the 10 MB log size cap is still in place."
 	echo
 	if [ "$CHECK_ONLY" = "1" ]; then
 		# Report it, change nothing: --apply edits the game's own log.config,
@@ -219,9 +220,9 @@ if [ "$CHECK_ONLY" = "1" ]; then
 	echo
 	echo "--check only, nothing was started, nothing was written."
 	if [ "$LOGGING_OK" = "1" ]; then
-		echo "File logging: on"
+		echo "Logging: on, and the 10 MB log size cap is removed"
 	else
-		echo "File logging: OFF  (the coach cannot advise until it is on)"
+		echo "Logging: NOT ready (file logging off, or the log size cap still set)"
 	fi
 	echo "Next: double-click this file to start."
 	echo

@@ -626,5 +626,88 @@ class TestRebuild(unittest.TestCase):
                          [{"k": "buy"}])
 
 
+class TestACappedLogDoesNotClaimAResult(unittest.TestCase):
+    """Hearthstone closes a log at `Log.FileSizeLimit.Int` KB (10000 by default).
+
+    The banner is the client's last act, so the final game in such a log has no
+    recorded result — the placement its rows carry is the standing when writing
+    stopped. Measured on macOS 2026-10-15: the review printed "finished 4" for a
+    game the client had cut off mid-fight, which is the review asserting an
+    outcome the log does not contain.
+    """
+
+    BANNER = "Truncating log, which has reached the size limit of 10000KB"
+
+    def test_the_rule_only_affects_the_final_game(self):
+        """An earlier game in a capped session really did finish, and its result
+        really was written: it must keep its placement."""
+        lines = ["D CREATE_GAME", "D CREATE_GAME", self.BANNER]
+        self.assertEqual(settle_up._log_outcome(lines, 1, 2), (True, True))
+        self.assertEqual(settle_up._log_outcome(lines, 2, 2), (True, False))
+
+    def test_a_windows_style_truncate_and_resume_is_not_a_lost_result(self):
+        """The client prints the same banner where the cap is SURVIVABLE.
+
+        Reported on Windows: it truncates the log and carries on writing, so a
+        game that ends after the banner finished perfectly well. Keying on the
+        banner's presence would have made this review claim a lost result — the
+        same false claim in the other direction, on the one platform the
+        maintainer has never seen the problem on.
+        """
+        lines = ["D CREATE_GAME", self.BANNER,
+                 "D 15:00:00 GameState.DebugPrintPower() - CREATE_GAME",
+                 "D 15:20:00 tag=PLAYSTATE value=LOST"]
+        self.assertEqual(settle_up._log_outcome(lines, 1, 1), (False, True))
+        self.assertEqual(settle_up._log_outcome(lines, 2, 2), (False, True))
+
+    def test_the_measured_macos_tail_still_counts_as_a_cut(self):
+        """The real thing: the banner, the client's rule of `=`, a blank line.
+
+        This is the exact tail of the first capped macOS log (2026-10-15), kept
+        because it is the case a plausible-looking rule gets wrong — "the banner
+        is the last line" is false here, and a rule that insisted on it would
+        quietly stop reporting the very failure it was written for.
+        """
+        lines = ["D CREATE_GAME", self.BANNER, "=" * 66, ""]
+        self.assertEqual(settle_up._log_outcome(lines, 1, 1), (True, False))
+
+    def test_an_uncapped_log_is_untouched(self):
+        lines = ["D CREATE_GAME", "D tag=PLAYSTATE value=LOST"]
+        self.assertEqual(settle_up._log_outcome(lines, 1, 1), (False, True))
+
+    def _rep(self, recorded):
+        """The shape `build` produces, with the real totals so this test cannot
+        drift from the renderer's keys."""
+        return {"hero": "Marin the Manager", "placement": 4, "log": "Power.log",
+                "game": 1, "session": "Hearthstone_2026_01_01",
+                "created": "2026-10-15T15:10:03",
+                "result_recorded": recorded, "phases": [], "timeline": None,
+                "timeline_error": None,
+                "totals": settle_up._totals([], {}),
+                "caveat": settle_up.CAVEAT}
+
+    def test_the_console_says_stood_not_finished(self):
+        text = settle_up.render_text(self._rep(False))
+        self.assertIn("stood 4 when the log stopped", text)
+        self.assertNotIn("finished 4", text)
+
+    def test_the_html_says_stood_and_explains_why(self):
+        page = settle_up.render_html(self._rep(False))
+        page = page.decode() if isinstance(page, bytes) else page
+        self.assertIn("stood 4 when the log stopped", page)
+        self.assertNotIn("finished 4", page)
+        self.assertIn("no placement here", page)
+        self.assertIn("launcher", page,
+                      "the page must carry the fix, not just the symptom")
+
+    def test_a_recorded_result_still_reads_as_finished(self):
+        text = settle_up.render_text(self._rep(True))
+        self.assertIn("finished 4", text)
+        page = settle_up.render_html(self._rep(True))
+        page = page.decode() if isinstance(page, bytes) else page
+        self.assertIn("finished 4", page)
+        self.assertNotIn("no placement here", page)
+
+
 if __name__ == "__main__":
     unittest.main()
