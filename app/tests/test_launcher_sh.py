@@ -168,6 +168,52 @@ class TestGitPreservesTheLineEndings(unittest.TestCase):
         self.assertIn("*.cmd text eol=crlf", self._rules())
 
 
+class TestTheLauncherIsExecutable(unittest.TestCase):
+    """A `.command` needs its executable bit to be OPENED, and git is what
+    carries that bit into a clone.
+
+    Measured on the first macOS checkout, 2026-10-15: the file was tracked as
+    `100644`, so a double-click answered "you do not have appropriate access
+    privileges" while `bash "Start Bob's Ledger.command"` worked perfectly — the
+    shell reads a script, Finder has to EXECUTE it. The `.gitattributes` rules
+    above keep the bytes right through a checkout, and this is the other half:
+    the Mode is metadata, and nothing here had ever checked it.
+
+    The asymmetry that hid it: the RELEASE zip stamps the bit itself
+    (`publish_release._mark_executable`, 0o755 with create_system 3, because a
+    zip built on Windows has no Unix mode) and `update.apply_zip` re-applies it
+    after extracting. So every downloaded copy was fine and every CLONE was
+    broken, which is precisely the case a maintainer never sees.
+    """
+
+    @unittest.skipIf(sys.platform == "win32",
+                     "Windows has no executable bit on disk")
+    @unittest.skipUnless(os.path.exists(LAUNCHER), "no macOS launcher")
+    def test_the_file_on_disk_is_executable(self):
+        self.assertTrue(os.access(LAUNCHER, os.X_OK),
+                        "double-clicking the launcher would be refused; "
+                        "chmod +x it and record the mode with "
+                        "git update-index --chmod=+x")
+
+    def test_git_records_the_executable_mode(self):
+        """The working-tree bit alone is not enough: a developer can chmod
+        locally while every clone stays broken, which is how this was missed."""
+        import subprocess
+        try:
+            r = subprocess.run(["git", "ls-files", "-s", "--",
+                                os.path.basename(LAUNCHER)],
+                               cwd=ROOT, capture_output=True, text=True,
+                               timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            self.skipTest("no usable git here")
+        if r.returncode != 0 or not r.stdout.strip():
+            self.skipTest("not a git checkout, or the launcher is untracked")
+        mode = r.stdout.split()[0]
+        self.assertEqual(mode, "100755",
+                         f"git records {mode}: a fresh clone would hand macOS a "
+                         f"launcher nobody can double-click")
+
+
 @unittest.skipUnless(os.path.exists(LAUNCHER), "no macOS launcher")
 class TestInterruptedUpdateRecovery(unittest.TestCase):
     """The macOS twin of the Windows launcher's recovery step.
