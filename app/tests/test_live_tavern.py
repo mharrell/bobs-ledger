@@ -802,11 +802,21 @@ class TestTheFixListRounds(unittest.TestCase):
         the live flag: the nav is a SIBLING of `#app`, so a `.tavern` rule could
         never reach it — those rules were only ever about the deleted control,
         which is why they are absences now.
+
+        CHANGED 2026-10-15 (maintainer): "the formatting is inconsistent at the
+        top of each page … it should all be the more recent brown tavern style."
+        It was: the chrome (`#freshness`, `#tabs`, `.s-head`) sits outside both
+        views, so it kept the old cool shell tokens while everything under it was
+        brown. The palette reaches it now by putting `.tavern` ON those elements
+        rather than on a shared ancestor — on `#wrap` it also handed
+        `--tcardw`/`--tstepw` to containers that were `width:auto` without them,
+        and the page grew a scrollbar (the layout tests caught it: the 1400px
+        box went from 1356 to 1332, and back).
         """
         html = coach_ui._HTML
         block = re.search(r"\.vseg button \{([^}]*)\}", html)
         self.assertIsNotNone(block)
-        for prop in ("background:var(--panel)", "border:1px solid var(--border)",
+        for prop in ("background:var(--tpanel)", "border:1px solid var(--tline)",
                      "padding:6px 12px"):
             self.assertIn(prop, block.group(1))
         self.assertIn('id="settle-mode" class="vseg"', html)
@@ -814,15 +824,43 @@ class TestTheFixListRounds(unittest.TestCase):
         self.assertNotIn("#tabs.tavern #live-viewer-row .vseg button", code)
         self.assertNotIn("#live-viewer-row", code)
 
+    def test_the_chrome_wears_the_tavern_palette(self):
+        """The other half of the 2026-10-15 change: the top of the page.
+
+        The palette is scoped to `.tavern`, so the chrome has to CARRY it — and
+        each element has to carry it itself, because the token rule must keep its
+        exact `.tavern` selector for the token-discipline test to recognise it.
+        """
+        html = coach_ui._HTML
+        for el in ('<div id="freshness" class="tavern">',
+                   '<nav id="tabs" class="tavern">',
+                   '<div class="s-head tavern">'):
+            self.assertIn(el, html, f"{el} no longer carries the palette")
+
+        tabs = re.search(r"#tabs \.tab \{([^}]*)\}", html)
+        self.assertIsNotNone(tabs)
+        self.assertIn("background:var(--tpanel)", tabs.group(1))
+        self.assertIn("color:var(--tmute)", tabs.group(1))
+        head = re.search(r"\.s-head select \{([^}]*)\}", html)
+        self.assertIsNotNone(head)
+        self.assertIn("background:var(--tcard)", head.group(1))
+        self.assertIn("color:var(--ttext)", head.group(1))
+
     def test_the_nav_row_carries_no_control_for_the_live_view(self):
         """REVERSED 2026-10-13 from
         `test_the_live_viewer_toggle_lives_on_the_nav_row`, which pinned the
         right-aligned flag, the `showTab` line that hid it on the Settle Up tab
         and the line in `setLiveViewer` that themed the nav from it. All three
         were the toggle; with the toggle gone the nav row carries the two tabs
-        and the sharing control, and nothing about the live view's style."""
+        and the sharing control, and nothing about the live view's style.
+
+        CHANGED 2026-10-15: the nav now carries `class="tavern"` so the chrome
+        wears the palette (see `test_the_chrome_wears_the_tavern_palette`). This
+        test is about the JS TOGGLE, which is still what it refuses — a static
+        class on the element is not a control that needs something to theme.
+        """
         html = coach_ui._HTML
-        nav = html[html.index('<nav id="tabs">'):html.index("</nav>")]
+        nav = html[html.index('<nav id="tabs"'):html.index("</nav>")]
         # The CODE, not the comments: the page's own notes name the removed
         # `#live-viewer-row` and the two keys on purpose, so a raw search fails
         # on the explanation rather than on a regression.

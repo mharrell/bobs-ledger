@@ -630,32 +630,32 @@ _HTML = r"""<!doctype html>
   /* Old advice is NORMAL between buy phases (a median 81 s gap against the 8 s
      this first alarmed on), so it is stated plainly rather than warningly: the
      alarm colour is reserved for the coach having stopped answering at all. */
-  #freshness.info { display:block; color:var(--dim); font-weight:400; }
+  #freshness.info { display:block; color:var(--tmute); font-weight:400; }
   /* Tabs (2026-10-06): Another Round is the live overlay this page has
      always been; Settle Up is the saved-game browser. A tab is a plain
      toggle — the live poll keeps running either way, and switching never
      clears live state. */
   #tabs { display:flex; gap:4px; margin:2px 0 8px; }
-  #tabs .tab { background:var(--panel); color:var(--dim);
-               border:1px solid var(--border); border-radius:var(--radius);
+  #tabs .tab { background:var(--tpanel); color:var(--tmute);
+               border:1px solid var(--tline); border-radius:var(--radius);
                padding:5px 14px; font:600 13px "Segoe UI", system-ui;
                cursor:pointer; }
-  #tabs .tab:hover { color:var(--text-2); }
-  #tabs .tab.on { color:var(--text); background:var(--panel2);
-                  border-color:rgba(255,255,255,.22); }
+  #tabs .tab:hover { color:var(--ttext); }
+  #tabs .tab.on { color:var(--ttext); background:var(--tcard);
+                  border-color:var(--tsel); }
   /* The sharing control (2026-10-07): a quiet line at the right end of the tab
      row, not a button on a card. It has to be reachable for as long as sharing
      is ON — that is what keeps the answer reviewable and reversible — and the
      card it used to live on is only on screen at a game's start or end, so it
      was invisible for the whole game it was describing. Muted deliberately
-     (--dim, no border until hover): a control that decides whether data leaves
+     (--tmute, no border until hover): a control that decides whether data leaves
      the machine should be easy to find and hard to hit by accident. */
   #tabs #share-toggle { margin-left:8px; background:none;
-                        border:1px solid transparent; color:var(--dim);
+                        border:1px solid transparent; color:var(--tmute);
                         font:400 12px "Segoe UI", system-ui;
                         padding:4px 8px; cursor:pointer; opacity:.55; }
-  #tabs #share-toggle:hover { opacity:1; color:var(--text-2);
-                              border-color:var(--border); }
+  #tabs #share-toggle:hover { opacity:1; color:var(--ttext);
+                              border-color:var(--tline); }
   #tabs #share-toggle[hidden] { display:none; }
   /* (The Live viewer flag's row lived here — `#live-viewer-row`, right-aligned
      on this nav row since round-3 item 7, and hidden by `showTab` while Settle
@@ -688,15 +688,15 @@ _HTML = r"""<!doctype html>
   .s-head { display:flex; align-items:center; gap:10px; margin:0 0 10px;
             position:sticky; top:0; background:var(--bg); z-index:10;
             padding:6px 0; }
-  .s-head select { background:var(--panel2); color:var(--text);
-                   border:1px solid var(--border); border-radius:var(--radius);
+  .s-head select { background:var(--tcard); color:var(--ttext);
+                   border:1px solid var(--tline); border-radius:var(--radius);
                    padding:6px 8px; font:14px "Segoe UI", system-ui;
                    min-width:360px; }
-  .s-head button { background:var(--panel); color:var(--dim);
-                   border:1px solid var(--border); border-radius:var(--radius);
+  .s-head button { background:var(--tpanel); color:var(--tmute);
+                   border:1px solid var(--tline); border-radius:var(--radius);
                    padding:6px 12px; font:600 12px "Segoe UI", system-ui;
                    cursor:pointer; }
-  .s-head button:hover { color:var(--text-2); }
+  .s-head button:hover { color:var(--ttext); }
   /* The ONE segment control left in the Settle Up header (2026-10-09): Summary
       | Step through, next to the game dropdown. It was one of two — the other
       was `Classic | Tavern`, which picked the reviewer and went on 2026-10-13
@@ -704,25 +704,34 @@ _HTML = r"""<!doctype html>
      **The `.vseg` class is what styles the active button, and nothing carried
      it until 2026-10-09**: the JS set `class="on"` on a span with no class, so
      the shipped control gave NO visible sign of which half was active. */
+     It is themed here for the control's home in `.s-head`, whose own button
+     rule agrees with this. **The palette REACHES the header now** (2026-10-15):
+     the chrome elements that sit outside both views — `#freshness`, `#tabs`,
+     `.s-head` — carry `.tavern` themselves, so the top of the page wears the
+     same brown as the views under it. They did not before: this rule was written
+     when `.tavern` could not reach the nav, and a tavern override for the nav row
+     had been deleted with the live viewer flag, which left the top of the page on
+     the old cool shell tokens while everything below it was brown. Scoped to the
+     chrome rather than to `#wrap`: the containers were `width:auto` without the
+     palette's `--tcardw`/`--tstepw` and taking the whole page's tokens made it
+     scroll, which the layout tests caught (1356px box -> 1332). */
   /* The segment control itself (2026-10-09, fix list round 1 item 9 / round 2
      item 8: "theme the Classic | Tavern toggle"). `.vseg` only ever described
      the ACTIVE state and the radii — the buttons themselves were whatever the
      browser draws, which is why the toggle read as a white pill with grey text.
      It is themed here for the control's home in `.s-head`, whose own button
-     rule agrees with this. The tavern-palette override that rode the nav row
-     went with the live flag: `.tavern` cannot reach the nav (the nav is a
-     sibling of `#app`), so that rule was only ever about the deleted control. */
+     rule agrees with this. */
   .vseg { display:inline-flex; gap:0; }
-  .vseg button { background:var(--panel); color:var(--dim);
-                 border:1px solid var(--border); padding:6px 12px;
+  .vseg button { background:var(--tpanel); color:var(--tmute);
+                 border:1px solid var(--tline); padding:6px 12px;
                  font:600 12px "Segoe UI", system-ui; cursor:pointer; }
-  .vseg button:hover { color:var(--text-2); }
+  .vseg button:hover { color:var(--ttext); }
   .vseg button { border-radius:0; }
   .vseg button:first-child { border-radius:var(--radius) 0 0 var(--radius); }
   .vseg button:last-child { border-radius:0 var(--radius) var(--radius) 0;
                             border-left:none; }
-  .vseg button.on { color:var(--text); background:var(--panel2);
-                    border-color:rgba(255,255,255,.22); }
+  .vseg button.on { color:var(--ttext); background:var(--tcard);
+                    border-color:var(--tsel); }
   .vseg button:disabled { opacity:.45; cursor:default; color:var(--dim); }
   /* An id beats the UA's [hidden] rule, so hiding this has to be said. */
   #settle-mode[hidden] { display:none; }
@@ -1579,8 +1588,8 @@ _HTML = r"""<!doctype html>
      hid it for. The element, its nine CSS rules and every line that touched it
      are gone rather than left hiding on every render: a live rule for something
      nothing writes to is how a removed control comes back. -->
-<div id="freshness"></div>
-<nav id="tabs">
+<div id="freshness" class="tavern"></div>
+<nav id="tabs" class="tavern">
 <button class="tab on" data-tab="live">Another Round</button>
 <button class="tab" data-tab="settle">Settle Up</button>
 <button id="share-toggle" hidden></button>
@@ -1604,7 +1613,7 @@ _HTML = r"""<!doctype html>
 <div id="live-tavern" hidden></div>
 </div>
 <section id="settle">
-<div class="s-head">
+<div class="s-head tavern">
 <select id="settle-select"><option value="">Loading saved replays…</option></select>
 <span id="settle-mode" class="vseg" hidden
       title="How to read this game: Summary is the turn plus its action rail;
