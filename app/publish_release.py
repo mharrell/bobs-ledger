@@ -82,7 +82,13 @@ EXCLUDE_DIRS = {".git", ".claude", "decision_logs", "corpus_out",
                 "session_reports", "sessions_in",
                 # The Settle Up tab's store: one JSON per game the player
                 # chose to keep. Per-user data, same class as decision_logs.
-                "saved_replays"}
+                "saved_replays",
+                # A separate local project that happens to sit in this working
+                # tree. It is not part of Bob's Ledger and nothing in app/
+                # imports it, so the reproducibility gate is right to refuse a
+                # zip that carries it (2026-10-15). Named here rather than
+                # removed, so whoever works on it can keep it where it is.
+                "dsh-usage-monitor"}
 
 #: Paths that never ship, matched as prefixes from the repo root. Basename
 #: matching can't express these — "tests" would drop the test suite too.

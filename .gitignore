@@ -86,6 +86,12 @@ release_signing_key
 # decision_logs/ — basename pattern, for the sync.py --new reason above.
 saved_replays/
 
+# A separate local project living in this working tree (2026-10-15). It is not
+# part of Bob's Ledger, and the sync.py --new rule above is exactly how it would
+# end up committed here and then shipped to players: publish_release.py names it
+# for the same reason.
+dsh-usage-monitor/
+
 # Where fetch_sessions.py puts reports it pulls back from the collector. That is
 # OTHER PEOPLE'S data — the beta testers' decisions — landing in a git tree, and
 # this directory was neither ignored nor mentioned in publish_release's
