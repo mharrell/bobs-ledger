@@ -3078,21 +3078,32 @@ function lvBoard(a) {
   return body;
 }
 function lvHand(a) {
+  // ONE LINE, NO ART (2026-10-15, the maintainer's call: "people don't need to
+  // see what's in the tavern or in their hand — they can just look at the
+  // screen"). The hand is the clearest case of that: the game draws it
+  // full-size, with the real card text, and it cannot be stale. A row of tiles
+  // here spent the panel's width restating what is already on screen.
+  //
+  // What survives is the COUNT and the names, as text — enough to notice "did I
+  // lose a card", which is the question a stale read could actually answer
+  // wrongly. A tribe breakdown would be the better summary and the payload does
+  // not carry one; that is a separate change if it turns out to be wanted.
   const body = el('div');
   const rows = a.hand || [];
   if (!rows.length) {
     body.appendChild(el('p', 'lv-inline', 'empty'));
     return body;
   }
-  const wrap = el('div', 'lv-row');
-  rows.forEach(s => wrap.appendChild(lvCard(s.card, s.name, 'hand')));
-  body.appendChild(wrap);
+  body.appendChild(el('p', 'lv-inline',
+                      'hand ' + rows.length + ' · '
+                      + rows.map(s => s.name || s.card).join(', ')));
   return body;
 }
 //: The board and the hand, ONE panel with the two side by side (fix list round
 //: 2 item 4). Each half says "empty" inline rather than showing a sentence where
 //: a row of cards would be, so the panel does not change shape when the board is
-//: wiped.
+//: wiped. The HAND half is a sentence now whatever it holds (see `lvHand`); the
+//: board half is still cards, because its per-minion values are the product.
 function lvBoardHand(a) {
   const grid = el('div', 'lv-bh');
   [['Your board', lvBoard(a)], ['Your hand', lvHand(a)]].forEach(([label, body]) => {

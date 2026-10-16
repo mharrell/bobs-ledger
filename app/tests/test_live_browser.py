@@ -1552,7 +1552,11 @@ class TestTheTavernLiveInABrowser(_Rendered):
 
     def test_cards_carry_a_caption_below_them(self):
         self.assertTrue(self.got["t.caps"], "no captions rendered")
-        self.assertIn("hand", self.got["t.caps"], "the hand row is captioned")
+        # CHANGED 2026-10-15: the hand is ONE text line now, not card tiles
+        # (see `lvHand`) — the game draws your hand better than this page can,
+        # so the page only counts it.
+        self.assertNotIn("hand", self.got["t.caps"],
+                         "the hand is captioned again, so it is card tiles")
         self.assertIn("scaler", self.got["t.caps"],
                       "the board caption is the comp role, which is a fact "
                       "about membership")
