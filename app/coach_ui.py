@@ -1361,14 +1361,14 @@ _HTML = r"""<!doctype html>
   /* A comp row is a GRID with fixed columns (fix list round 1 item 6:
      "consistent rows"; round 3 item 2 added the tracks, round 4 item 6 fixed
      their contents; item B.2 moved the tribe into the name cell): checkbox 22 |
-     name+tribe | marks | core slots | owned 64 [| avg 90]. The avg track EXISTS
+     name+tribe | owned 64 | marks | core slots [| avg 64]. The avg track EXISTS
      only when the WHOLE list has corpus data (round 3 item 5 for the "column of
      dashes" half, round 4 item 6 for the list-wide half, and the out-of-play
      block shares the decision so both lists line up) — so it is a property of
      `lv-cols`, not of one tier group. The compare checkbox is IN FLOW in its own
      cell: nothing is positioned over anything. */
   .tavern.live .lv-crow { display:grid;
-                          grid-template-columns:22px minmax(0,1fr) auto auto 64px;
+                          grid-template-columns:22px minmax(0,1fr) 64px auto auto;
                           gap:10px; align-items:center; padding:7px 0;
                           border-bottom:1px solid var(--tline); font-size:12px; }
   /* SIX TRACKS WITH THE AVG COLUMN, FIVE WITHOUT (fix list round 4 item 6):
@@ -1376,14 +1376,14 @@ _HTML = r"""<!doctype html>
      decided for the WHOLE list (`lv-cols.has-avg`), so every row in every tier
      group has the same columns. */
   .tavern.live .lv-ctier.has-avg .lv-crow {
-    grid-template-columns:22px minmax(0,1fr) auto auto 64px 90px; }
+    grid-template-columns:22px minmax(0,1fr) 64px auto auto 64px; }
   /* THE OUT-OF-PLAY BLOCK'S ROWS have no Compare box, so the first track is the
      name. Everything else is the same, which is what "the same on every row"
      means — one row shape, one variant of it. */
   .tavern.live .lv-oop .lv-crow {
-    grid-template-columns:minmax(0,1fr) auto auto 64px; }
+    grid-template-columns:minmax(0,1fr) 64px auto auto; }
   .tavern.live .lv-oop.has-avg .lv-crow {
-    grid-template-columns:minmax(0,1fr) auto auto 64px 90px; }
+    grid-template-columns:minmax(0,1fr) 64px auto auto 64px; }
   @media (max-width: 699.98px) {
     .tavern.live .lv-crow,
     .tavern.live .lv-ctier.has-avg .lv-crow {
@@ -1441,10 +1441,10 @@ _HTML = r"""<!doctype html>
      its padding — a `flex:none` strip pushes the row out of its own box. A
      slot gives up width before the row does, and `object-fit:cover` crops the
      art rather than squashing it. */
-  .tavern.live .lv-slots { display:flex; flex-wrap:nowrap; gap:3px;
+  .tavern.live .lv-slots { display:flex; flex-wrap:nowrap; gap:2px;
                            min-width:0; }
-  .tavern.live .lv-slot { display:inline-block; width:40px; height:54px;
-                          flex:0 1 auto; min-width:28px; border-radius:5px;
+  .tavern.live .lv-slot { display:inline-block; width:34px; height:46px;
+                          flex:0 1 auto; min-width:24px; border-radius:5px;
                           background:var(--tcard);
                           border:2px solid var(--tbuff); box-sizing:border-box;
                           overflow:hidden; position:relative; }
@@ -2552,6 +2552,16 @@ function lvCompRow(a, c, anyAvg, bare) {
   }
   name.appendChild(tribe);
   row.appendChild(name);
+  // OWNERSHIP SITS NEXT TO THE NAME (2026-10-16). It was the fifth track — 64px
+  // at the far right of a 520px tier column — which put the count a long
+  // eye-travel from the comp it belongs to, and "can I build this" is the whole
+  // reason a row exists. MEASURED before the change: a FIVE-core comp spent
+  // 212px of the column on its core strip, and the name track — `minmax(0,1fr)`,
+  // the only track permitted to shrink — collapsed to ~82px and truncated
+  // ("Elementals - Living…"). With the strip at 34px a card and the avg column
+  // at 64px, that same row now gives the name ~142px, and the count is beside it.
+  row.appendChild(el('b', 'lv-owned',
+                     lvOwned(core) + ' of ' + core.length + ' owned'));
   // The optional marks. The TIER is the tier column's own header, so a row
   // repeats it only under the two opt-in sorts — where what you are reading is
   // a re-ordered column and the header no longer tells you the tier of the row
@@ -2568,8 +2578,6 @@ function lvCompRow(a, c, anyAvg, bare) {
   }
   row.appendChild(meta);
   row.appendChild(lvSlots(core));
-  row.appendChild(el('b', 'lv-owned',
-                     lvOwned(core) + ' of ' + core.length + ' owned'));
   if (anyAvg) {
     // A row the corpus has never seen leaves its cell EMPTY rather than
     // printing a dash in a column that exists (item B.2: "no '—' on each row").

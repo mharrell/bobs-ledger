@@ -2475,7 +2475,7 @@ class TestTheCompsScreens(_Rendered):
 
     def test_a_comp_row_is_a_grid_with_the_strip_and_the_name_in_it(self):
         """Round 3 item 2 gave the row its tracks; round 4 item 6 fixed what is
-        IN them: `22px | name | tier·tribe | strip | 64px | 90px`, one cell per
+        IN them: `22px | name | owned 64 | marks | strip [| avg 64]`, one cell per
         column in the same order on every row. The checkbox and the tier/tribe
         used to live inside the name cell, so nothing lined up down the list."""
         got = self.got
@@ -2483,10 +2483,11 @@ class TestTheCompsScreens(_Rendered):
         self.assertEqual(len(tracks), 6, got["browse.cmptracks"])
         self.assertEqual(tracks[0], "22px", "the checkbox column is first")
         self.assertIn("64px", tracks)
-        self.assertIn("90px", tracks)
+        self.assertEqual(tracks[-1], "64px",
+                         "the avg column is last and no wider than the count")
         self.assertEqual(got["browse.stripwrap"], "nowrap",
                          "the core strip still wraps")
-        # The slots SHRINK since 2026-10-14 (item B.2 measured it): six 40px
+        # The slots SHRINK since 2026-10-14 (item B.2 measured it): six 34px
         # slots plus the avg track do not fit a 499px comps panel, and
         # `flex:none` pushes the row out of its own box instead of letting the
         # strip give up width.
@@ -2494,7 +2495,7 @@ class TestTheCompsScreens(_Rendered):
                          "a slot cannot give up width when the row is full")
         self.assertEqual(got["browse.nameclamp"], "2",
                          "the comp name is not clamped to two lines")
-        self.assertEqual(got["browse.slotpx"], "40x54")
+        self.assertEqual(got["browse.slotpx"], "34x46")
         # The compare box sits at the START of the row, in flow: the name is to
         # its right, so nothing is over anything.
         withbox = _render([_shot("wb", _comps_payload(), reveal="Comps",
@@ -2595,9 +2596,9 @@ class TestTheCompsScreens(_Rendered):
 
         Overlap is measured from the row RECTANGLES — two rows in one list must
         not share a pixel of vertical space, and no row may reach past the right
-        edge of the panel it is in (the strip's slots shrank from 34px to 40px in
-        item B.2, and the six-card cores plus the avg track are what that width
-        has to fit). The long-name half uses the names the shipped DB carries,
+        edge of the panel it is in (the strip's slots went 34px -> 40px in item
+        B.2 and back to 34px on 2026-10-16, which is what buys the comp NAME its
+        width; the six-card cores plus the avg track are what has to fit). The long-name half uses the names the shipped DB carries,
         because a fixture's short names would never wrap.
         """
         boxes = [[int(v) for v in b.split(",")]
@@ -2732,11 +2733,19 @@ class TestTheCompsScreens(_Rendered):
         self.assertIn("9 in this lobby", got["browse.sums"],
                       "the main list header does not count the main list")
 
-    def test_the_core_slots_are_the_designs_40_by_54(self):
-        """Item B.2: "strip thumbnails ~40x54 at 75% opacity". The Compare slot
-        stays 52x70 (§5), and a tile is 88-130px wide, so a slot that inherited
-        the card rule would be more than twice the specified size."""
-        self.assertEqual(self.got["browse.slotpx"], "40x54")
+    def test_the_core_slots_are_the_designs_34_by_46(self):
+        """Item B.2: "strip thumbnails ~40x54 at 75% opacity" — NARROWED to
+        34x46 on 2026-10-16, deliberately and against the nominal number.
+
+        MEASURED, which is why: a five-core comp spent 212px of its 520px tier
+        column on the strip alone, so the name track (`minmax(0,1fr)`, the only
+        one allowed to shrink) collapsed to ~82px and truncated — "Elementals -
+        Living…". At 34px a card the same row gives the name ~142px. The design
+        number was a nominal size, not a measured fit; this one is.
+
+        The Compare slot stays 52x70 (§5), and a tile is 88-130px wide, so a
+        slot that inherited the card rule would be more than twice the size."""
+        self.assertEqual(self.got["browse.slotpx"], "34x46")
         self.assertEqual(self.got["compare.cmpslotpx"], "52x70")
         # Owned, in-hand and missing are three states, and the missing one is
         # dashed rather than a smaller solid box.
