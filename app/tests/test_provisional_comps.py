@@ -291,7 +291,13 @@ class TestPruneKeepsProvisional(unittest.TestCase):
                    if isinstance(v, dict)}
         before = [k for k in comps if not k.startswith("_")]
         pruned, kept = scrape_comps.prune_unlisted(comps, keep_slugs=set())
-        self.assertEqual(kept, ["aberrations-deity-feed"])
+        # TWO comps are the source's never-owned: the promoted aberrations
+        # build, and the community Tarecgosa comp hand-added 2026-10-15 —
+        # its `source` names the post it came from, not this scraper, which
+        # is the same ownership rule that saves the other one.
+        self.assertEqual(sorted(kept),
+                         ["aberrations-deity-feed",
+                          "dragons-golden-tarecgosa"])
         self.assertIn("aberrations-deity-feed", comps)
         self.assertEqual(comps["_enable_note"], note, "the file note was touched")
         self.assertGreater(len(pruned), 1, "nothing scraped was pruned at all")
