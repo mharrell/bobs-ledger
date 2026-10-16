@@ -2154,6 +2154,18 @@ function _lvStored() {
 //: be more visible") — it is the direction rather than a reference table, and it
 //: is now the first section, so a shut one would be a header at the top of the
 //: page saying nothing.
+//:
+//: READ BY THE ACCORDION ONLY. `lvSection` returns before it ever consults
+//: `lvCollapsed` when its `acc` argument is false, so the three-column
+//: arrangement has no open/closed state at all and always renders every
+//: section's content — which is the point of that arrangement ("no tabs, because
+//: every screen is visible"). Nothing in this map can fold the wide layout.
+//:
+//: A correction worth keeping: the commit that added Comps here (95532b6) also
+//: claimed this default collapsed the wide layout's middle column to a bare
+//: header. IT DID NOT AND COULD NOT — there is no collapse path in that
+//: arrangement to reach. Measured at 1728x1070, `shut` is empty before and after;
+//: only the accordion changed, and only there is this map worth reasoning about.
 const LIVE_OPEN_BY_DEFAULT = {Comps: true, Tavern: true, 'Board and hand': true,
                               'Choose one': true};
 function lvCollapsed(name) {
