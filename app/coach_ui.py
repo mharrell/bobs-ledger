@@ -2148,9 +2148,13 @@ function _lvStored() {
 }
 //: The mode a section falls back to with nothing stored. The screens the player
 //: is reading the game through are open — the shop and the board it buys for,
-//: and the pick when the game is asking; the three they consult are shut,
-//: because five open sections is a stack five screens tall.
-const LIVE_OPEN_BY_DEFAULT = {Tavern: true, 'Board and hand': true,
+//: and the pick when the game is asking; the two they consult are shut, because
+//: five open sections is a stack five screens tall. COMPS JOINS THE OPEN SET
+//: (2026-10-15, the maintainer's call: "I just really want the Comps section to
+//: be more visible") — it is the direction rather than a reference table, and it
+//: is now the first section, so a shut one would be a header at the top of the
+//: page saying nothing.
+const LIVE_OPEN_BY_DEFAULT = {Comps: true, Tavern: true, 'Board and hand': true,
                               'Choose one': true};
 function lvCollapsed(name) {
   const stored = _lvStored();
@@ -3585,10 +3589,18 @@ function lvColumns(a) {
 //: at the top of it, then the same five sections in the order the player needs
 //: them. The pick screen is above the whole arrangement (see `lvBody`), so it is
 //: not one of the titles here.
+//:
+//: COMPS FIRST (2026-10-15, the maintainer's call: "I just really want the Comps
+//: section to be more visible"). It used to be FOURTH of five and shut by
+//: default, so reaching it meant scrolling past a tavern and a board the player
+//: can already see on screen, then clicking to reveal it. The tavern is the most
+//: redundant panel on this page — the same call that turned the hand into a line
+//: — so it does not keep the top slot ahead of the thing the page exists to say:
+//: what to build toward.
 function lvAccordion(a) {
   const col = el('div', 'lv-col');
   col.appendChild(lvSection('Facts', a, true));
-  ['Tavern', 'Board and hand', 'Comps', 'Next opponent', 'Lobby'].forEach(t => {
+  ['Comps', 'Tavern', 'Board and hand', 'Next opponent', 'Lobby'].forEach(t => {
     col.appendChild(lvSection(t, a, true));
   });
   return [col];

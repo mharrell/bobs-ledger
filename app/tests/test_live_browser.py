@@ -1403,7 +1403,7 @@ class TestTheTavernLiveInABrowser(_Rendered):
                                     f"zero above is a selector that matches "
                                     f"nothing rather than a removed tab row")
         self.assertEqual(self.got["t.panels"],
-                         "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
+                         "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
         # The comps and lobby shots are the SAME page (round 4 item 5): every
         # section is rendered, and `reveal` only scrolled to one of them.
         self.assertEqual(self.got["comps.panels"], self.got["t.panels"])
@@ -1725,7 +1725,7 @@ class TestTheLayoutByWidth(_Rendered):
                          f"a 1400x900 window is not in the accordion "
                          f"(box {got['w.bodyw']}px of {got['w.docw']}px)")
         self.assertEqual(got["w.panels"],
-                         "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
+                         "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
 
     def test_three_columns_at_a_1920_window(self):
         """MEASURED 2026-10-13 at 1920x1080: three columns at 622/622/300 inside
@@ -1875,7 +1875,7 @@ class TestTheAccordionLayout(_Rendered):
         got = self.got
         self.assertEqual(got["flat.arr"], "acc")
         self.assertEqual(got["flat.panels"],
-                         "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
+                         "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
         # One line per section, and every one is a COUNT and a noun — the same
         # kind of fact the panels below already carry. §1 is about words on the
         # screen, and a header summary is exactly where a verdict would sneak in,
@@ -1887,7 +1887,7 @@ class TestTheAccordionLayout(_Rendered):
         # "1 of 1 available", which counted a list that no longer exists.
         self.assertEqual(
             got["flat.sums"],
-            "|3 offers|2 on board · 1 in hand|1 in this lobby|Reno"
+            "|1 in this lobby|3 offers|2 on board · 1 in hand|Reno"
             "|2 of 3 seen seats")
         # The strip carries no line of its own: it IS the facts, and its rows are
         # the summary.
@@ -1933,7 +1933,7 @@ class TestTheAccordionLayout(_Rendered):
         """The three the player CONSULTS are shut — five open sections is a stack
         five screens tall — and the two they read the game through are open."""
         got = self.got
-        self.assertEqual(got["flat.shut"], "Comps|Next opponent|Lobby")
+        self.assertEqual(got["flat.shut"], "Next opponent|Lobby")
         self.assertNotIn("Tavern", got["flat.shut"])
         self.assertNotIn("Board and hand", got["flat.shut"])
 
@@ -1945,7 +1945,7 @@ class TestTheAccordionLayout(_Rendered):
         self.assertLess(int(got["n.bodyw"]), 700)
         self.assertEqual(got["n.arr"], "acc")
         self.assertEqual(got["n.panels"],
-                         "Facts|Tavern|Board and hand|Comps|Next opponent|Lobby")
+                         "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
         self.assertEqual(got["n.colw"], "",
                          "a 640px window rendered the three-column layout")
         lefts = {v.split(",")[0] for v in got["n.sectat"].split("|")}
@@ -1987,11 +1987,12 @@ class TestTheAccordionStateSurvivesARerender(_Rendered):
 
     def test_a_toggled_section_survives_the_next_render(self):
         got = self.got
-        # The click landed: Comps is shut by default, so the header's click opens
-        # it, and the driver reports the state AFTER re-rendering the same
-        # payload (what the 5s poll does, and the only thing that can pop a
-        # section open).
-        self.assertEqual(got["persist.shut"], "Next opponent|Lobby",
+        # The click landed: Comps is OPEN by default since 2026-10-15, so the
+        # header's click SHUTS it — the state has to stick either way, which is
+        # what this pins. The driver reports it AFTER re-rendering the same
+        # payload (what the 5s poll does, and the only thing that can reapply a
+        # section's open/closed state).
+        self.assertEqual(got["persist.shut"], "Comps|Next opponent|Lobby",
                          "clicking the Comps header did not stick across a "
                          "re-render — the open/closed state is not re-applied "
                          "from storage")
@@ -2019,7 +2020,7 @@ class TestTheAccordionStateSurvivesARerender(_Rendered):
         self.assertEqual(got["garbage.shut"], got["nothing.shut"],
                          f"a garbage value was partly believed: "
                          f"{got['garbage.shut']}")
-        self.assertEqual(got["nothing.shut"], "Comps|Next opponent|Lobby",
+        self.assertEqual(got["nothing.shut"], "Next opponent|Lobby",
                          "the defaults are not the two-open three-shut set")
 
     def test_the_summaries_carry_no_verdict(self):
