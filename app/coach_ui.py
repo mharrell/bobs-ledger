@@ -982,30 +982,38 @@ _HTML = r"""<!doctype html>
   /* THE LAYOUT IS BY WINDOW WIDTH (fix list round 4 item 5, corrected
      2026-10-13 on the maintainer's own call: "if the window is ~1920 wide, then
      three columns. Otherwise collapse it"). Two modes:
-       * >=1800px of WINDOW: THREE COLUMNS — Tavern + board | Comps |
+       * >=1650px of window: THREE COLUMNS — Tavern + board | Comps |
          Facts + opponent + lobby, and no tabs, because every screen is visible;
        * below that: one column of collapsible sections with a one-line summary
          in each header, and the Facts table pinned above them (the section
-         headers and the facts strip are the same rules at 1700px as at 900px).
+         headers and the facts strip are the same rules at 1600px as at 900px).
+     WHY 1650 AND NOT 1800 (lowered 2026-10-15, the maintainer's own MacBook):
+     on a 16" MacBook Pro a maximised window measures ~1728px of viewport, so the
+     1800 this rule asked for NEVER FIRED on the machine it was being read on.
+     1650 is the floor rather than a rounder smaller number: `#wrap` caps the PAGE
+     at 1600px, and MEASURED 2026-10-13 the tavern box reaches that cap at about
+     1640px of window. Below it the box is still growing, so firing earlier would
+     hand the columns less than the width they were measured at; at or above it
+     they get exactly 622|622|300.
      WHY A WINDOW RULE AND NOT THE BOX's, which is what this rule asked FIRST
      (at 1180px of box, i.e. a ~1250px window): the container's width cannot
      answer "is this a big desktop window". `#wrap` caps the PAGE at 1600px, so
-     MEASURED 2026-10-13 at 1920x1080 the tavern box is 1572px — and a 1700px
+     MEASURED 2026-10-13 at 1920x1080 the tavern box is 1572px — and a 1650px
      window gives it 1572px too, because the cap is reached before the window is.
      Past ~1640px of window the box stops growing, so a container query makes
-     "1920" indistinguishable from "1700" and puts the columns on for both.
-     1800, not 1920: a maximized window on a 1920x1080 screen measures 1904px of
-     VIEWPORT (measured in the harness), so a literal 1920 would never fire on
-     the machine this was asked for. 1800 fires there, and does not fire at 1600.
-     THE BOX IS STILL MEASURED, which is why 1800 is safe rather than assumed —
+     "1920" indistinguishable from "1650" and puts the columns on for both.
+     1800 was chosen because a maximized window on a 1920x1080 screen measures
+     1904px of VIEWPORT (measured in the harness), so a literal 1920 would never
+     fire there. It turned out to be too high for a laptop: 1650 fires on a
+     maximised 16" MacBook Pro and still does not fire at 1600.
+     THE BOX IS STILL MEASURED, which is why 1650 is safe rather than assumed —
      and the measurement corrects the first version's arithmetic, which claimed a
      short window left the box only 1432px: MEASURED 2026-10-13 in the harness,
-     the box is 1572px at 1920x1080, at 1850x800 (viewport 1834, the narrowest
-     window this rule gives the columns) AND at 1700x1080 (viewport 1684, which is
-     the accordion) — every one of them is the `#wrap` cap, so the columns are
-     always 622|622|300 wide. The accordion's widest box is 1525px at a 1600x1080
-     window. Since the comps panel's two tier columns already fit in the 499px the
-     old single-column layout gave them, 622 is generous, not tight. */
+     the box is 1572px at 1920x1080, at 1850x800, AND at 1700x1080 — every one of
+     them is the `#wrap` cap, so the columns are always 622|622|300 wide. The
+     accordion's widest box is 1525px at a 1600x1080 window. Since the comps
+     panel's two tier columns already fit in the 499px the old single-column
+     layout gave them, 622 is generous, not tight. */
   .tavern.live .lv-body { min-width:0; }
   .tavern.live .lv-main { display:grid; grid-template-columns:minmax(0,1fr);
                           gap:14px; align-items:start; }
@@ -1020,10 +1028,10 @@ _HTML = r"""<!doctype html>
   @media (min-width: 1200px) {
     .tavern.live .lv-main { grid-template-columns:minmax(0,1fr) 340px; }
   }
-  @media (min-width: 1800px) {
+  @media (min-width: 1650px) {
     /* THE THREE COLUMNS (fix list round 4 item 5, on the maintainer's own call
        about the WINDOW). This rule is LAST, so it wins by order over the media
-       query above, which also matches above 1200x900 — past 1800px of window the
+       query above, which also matches above 1200x900 — past 1650px of window the
        340px rail is not a track any more, because column 3 IS the rail: the facts
        table, the announced opponent, the lobby. Column 3 is 300px because that
        held the reference table at every width measured; the two flexible columns
@@ -1050,7 +1058,7 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-pn > h3 { margin:0 0 8px; font-size:12px; letter-spacing:.12em;
                              text-transform:uppercase; color:var(--tmute); }
   /* ---------------------------------------------------------------------
-     THE ACCORDION, EVERY WINDOW UNDER 1800px (fix list round 4 item 5,
+     THE ACCORDION, EVERY WINDOW UNDER 1650px (fix list round 4 item 5,
      2026-10-13). Every section is on the page at once, each header carries a
      ONE-LINE summary of what is under it, and the Facts table is a strip pinned
      above them.
@@ -3410,9 +3418,9 @@ function renderTavernGameOver(a) {
 //: FIX LIST ROUND 4 ITEM 5, the layout half (2026-10-13). The view is built
 //: from SECTIONS, and the WINDOW decides how they are arranged — the maintainer's
 //: own call: "if the window is ~1920 wide, then three columns. Otherwise collapse
-//: it" (the rule asks for 1800px of viewport, see the CSS block):
+//: it" (the rule asks for 1650px of viewport, see the CSS block):
 //:
-//:   >=1800px of viewport  three columns, no tabs, every section on screen at once
+//:   >=1650px of viewport  three columns, no tabs, every section on screen at once
 //:   below that            one column, each section foldable, a one-line summary
 //:                         in every header, and the Facts table pinned above them
 //:
@@ -3562,7 +3570,7 @@ function lvColumns(a) {
   three.appendChild(lvSection('Lobby', a, false));
   return [one, two, three];
 }
-//: The accordion (every window under 1800px): one column, the facts strip pinned
+//: The accordion (every window under 1650px): one column, the facts strip pinned
 //: at the top of it, then the same five sections in the order the player needs
 //: them. The pick screen is above the whole arrangement (see `lvBody`), so it is
 //: not one of the titles here.
@@ -3575,7 +3583,7 @@ function lvAccordion(a) {
   return [col];
 }
 //: The body of the view, holding BOTH arrangements so exactly one can be shown.
-//: One of them is displayed by the `(min-width: 1800px)` media query — a WINDOW
+//: One of them is displayed by the `(min-width: 1650px)` media query — a WINDOW
 //: rule since 2026-10-13, on the maintainer's own call, because `#wrap` caps this
 //: page at 1600px and a box-width rule therefore cannot tell a 1920px window from
 //: a 1700px one (see the CSS block's comment). Building both and letting CSS
