@@ -1062,7 +1062,8 @@ _HTML = r"""<!doctype html>
                         border-radius:12px; padding:12px 14px;
                         margin:0 0 12px; }
   .tavern.live .lv-pn > h3 { margin:0 0 8px; font-size:12px; letter-spacing:.12em;
-                             text-transform:uppercase; color:var(--tmute); }
+                             text-transform:uppercase; color:var(--tmute);
+                             display:flex; align-items:baseline; flex-wrap:wrap; }
   /* ---------------------------------------------------------------------
      THE ACCORDION, EVERY WINDOW UNDER 1650px (fix list round 4 item 5,
      2026-10-13). Every section is on the page at once, each header carries a
@@ -1117,9 +1118,61 @@ _HTML = r"""<!doctype html>
   /* The one place the not-confirmed-yet state is said (round 3 item 4). */
   .tavern.live .lv-hnote { text-transform:none; letter-spacing:0;
                            font-size:11px; color:var(--tmute); }
+  /* A CONTROL ON THE HEADING LINE (2026-10-16): the comps sort chips. The
+     heading's own type is uppercase and letter-spaced, so the control opts out of
+     both, and `margin-left:auto` puts it at the far end of the line — after the
+     summary — where it reads as belonging to the LIST rather than to the panel's
+     name. The extra specificity over `.lv-ctl` is deliberate: that rule sets its
+     own bottom margin and its own chip padding, and this has to win wherever the
+     two happen to sit relative to each other in the file. */
+  .tavern.live .lv-pn > h3 .lv-hctl { margin:0 0 0 auto; text-transform:none;
+                                      letter-spacing:0; }
+  .tavern.live .lv-pn > h3 .lv-hctl .lv-lbl { text-transform:none;
+                                              letter-spacing:0; font-size:11px; }
+  .tavern.live .lv-pn > h3 .lv-hctl .lv-chip { padding:2px 9px; font-size:11px; }
   .tavern.live .lv-row { display:flex; flex-wrap:wrap; gap:12px; }
   .tavern.live .lv-card { display:flex; flex-direction:column;
                           align-items:center; }
+  /* COMPACT OFFER ROWS (2026-10-16, the maintainer's call: "people don't need to
+     see what's in the tavern ... they can just look at the screen ... we can
+     definitely de-emphasize it quite a lot"). The tavern was a row of full card
+     tiles — the largest block of pixels on the page, restating cards the player
+     is already looking at, with the facts this page actually ADDS (price, pool
+     left) in 11px type underneath them. Now: a 34px thumbnail for recognition,
+     the name, then those facts, one offer per cell.
+
+     A GRID, not a stack, and that is the part worth measuring. MEASURED: five
+     offers as full tiles occupy one line of ~205px in the wide column (five 114px
+     tiles fit 622px), so a one-per-line stack would have been ~275px — TALLER
+     than what it replaced, while claiming to save space. `auto-fill` gives the
+     wide column two cells and the full-width accordion three, so five offers are
+     3 rows (~165px) and 2 rows (~110px) respectively. What the tavern costs in
+     pixels goes DOWN in both arrangements, which a stack would not have done.
+
+     SAME DOM, only direction and size: `.lv-card` > `.tile` + `.lv-cap` is what
+     `lvCard` built before, so every reader of those classes (this suite's driver
+     included) still finds them and the change stays reversible. The game's own
+     offer order is untouched — read row-major, offer three is still the third
+     card on screen. */
+  .tavern.live .lv-shoprow { display:grid; row-gap:0; column-gap:18px;
+                             grid-template-columns:repeat(auto-fill,
+                                                        minmax(240px, 1fr)); }
+  .tavern.live .lv-shoprow .lv-card { flex-direction:row; align-items:center;
+                                      gap:9px; width:100%; padding:4px 0;
+                                      border-bottom:1px solid var(--tline); }
+  .tavern.live .lv-shoprow .lv-card:last-child { border-bottom:none; }
+  .tavern.live .lv-shoprow .tile { width:auto; flex-direction:row;
+                                   align-items:center; gap:9px; }
+  .tavern.live .lv-shoprow .tile .thumb { width:34px; height:46px;
+                                          aspect-ratio:auto; flex:none; }
+  .tavern.live .lv-shoprow .tile .thumb.ph { aspect-ratio:auto; }
+  /* The name is the thing most worth width here, so it stops being a fixed
+     104px column and takes what it needs. */
+  .tavern.live .lv-shoprow .tile .tname { width:auto; }
+  /* The facts are the point of the panel, so they stop being 11px --tmute under
+     a picture and become 12px in the row's own text colour. */
+  .tavern.live .lv-shoprow .lv-cap { width:auto; margin-top:0; font-size:12px;
+                                     color:var(--ttext); }
   .tavern.live .lv-cap { display:block; width:var(--tcardw); margin-top:5px;
                          font-size:11px; color:var(--tmute);
                          text-align:center; }
@@ -2634,6 +2687,24 @@ function lvCompSortRows(rows) {
 //: section is wrapped by `lvSection` now, and a second `.lv-pn` inside one would
 //: be a panel within a panel — two headers for one screen, and a driver read of
 //: `.lv-pn > h3` would count the panel twice.
+//: The list's ORDER control. "Source tier" is the payload's own order; overlap
+//: and average placement are opt-in. It sits on the PANEL HEADING since
+//: 2026-10-16: it decides the order of the list under it, so it reads better
+//: beside that list's name than in a row of its own — and that row was a full
+//: line of chrome before the first comp, in the tallest panel on the page.
+//: `lv-ctl` stays on the container deliberately: it is the class every reader
+//: (and this suite's driver) already uses to find these chips.
+function lvCompsSort(a) {
+  const ctl = el('div', 'lv-ctl');
+  ctl.appendChild(el('span', 'lv-lbl', 'Sort'));
+  [['tier', 'Source tier'], ['overlap', 'Overlap'],
+   ['avg_place', 'Avg placement']].forEach(([v, label]) => {
+    const chip = el('span', 'lv-chip' + (_liveCompSort === v ? ' on' : ''), label);
+    chip.onclick = () => { _liveCompSort = v; renderLiveTavern(a); };
+    ctl.appendChild(chip);
+  });
+  return ctl;
+}
 function lvCompsBody(a) {
   const p = el('div');
   const all = a.comps || [];
@@ -2648,15 +2719,6 @@ function lvCompsBody(a) {
   // offer. Stated, never silently shortened — the list is short because the
   // lobby is, and that is a fact about the game worth one clause.
   const dropped = all.length - inplay.length - outplay.length;
-  const ctl = el('div', 'lv-ctl');
-  ctl.appendChild(el('span', 'lv-lbl', 'Sort'));
-  [['tier', 'Source tier'], ['overlap', 'Overlap'],
-   ['avg_place', 'Avg placement']].forEach(([v, label]) => {
-    const chip = el('span', 'lv-chip' + (_liveCompSort === v ? ' on' : ''), label);
-    chip.onclick = () => { _liveCompSort = v; renderLiveTavern(a); };
-    ctl.appendChild(chip);
-  });
-  p.appendChild(ctl);
   const rows = inplay;
   const groups = [];
   rows.forEach(c => {
@@ -2940,7 +3002,13 @@ function lvShop(a) {
       'Reading the shop. This updates when your next shop opens.'));
     return body;
   }
-  const wrap = el('div', 'lv-row');
+  // ONE LINE PER OFFER (2026-10-16) — the rules are `.lv-shoprow` in the CSS.
+  // The markup is deliberately UNCHANGED (`lvCard`, so `.lv-card`, `.tile` and
+  // `.lv-cap` all still exist): only the direction and the sizes moved, which is
+  // what keeps this reversible and keeps every existing reader working. The
+  // game's own offer order is untouched — that is what lets row three be
+  // matched to the third card on screen.
+  const wrap = el('div', 'lv-row lv-shoprow');
   rows.forEach(s => {
     const bits = [];
     if (s.price != null) bits.push(s.price + 'g');
@@ -3553,6 +3621,15 @@ function lvSection(title, a, acc) {
   const p = lvPanel(title, lvPanelBody(title, a), title === 'Tavern', note);
   const line = lvSectionLine(title, a);
   if (line) p.querySelector('h3').appendChild(el('span', 'lv-sum', line));
+  // THE COMPS SORT CONTROL RIDES ITS OWN HEADING (2026-10-16 — see
+  // `lvCompsSort`). Not while a comp is OPEN: that is a different screen with
+  // its own header and a Back control, and an order control for a list that is
+  // not on screen would be a control with nothing to act on.
+  if (title === 'Comps' && !_liveComp) {
+    const ctl = lvCompsSort(a);
+    ctl.classList.add('lv-hctl');
+    p.querySelector('h3').appendChild(ctl);
+  }
   if (!acc) return p;
   p.classList.add('lv-acc');
   if (title === 'Facts') {
