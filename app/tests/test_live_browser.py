@@ -2405,11 +2405,10 @@ class TestTheCompsScreens(_Rendered):
         self.assertEqual(wide["w.cols"], 2,
                          "the payload carries two tiers, so two columns render")
         xs = [int(x) for x in wide["w.ctierx"].split("|")]
-        self.assertEqual(len(set(xs)), 2,
-                         "two tier columns fit the widened panel, so they sit "
-                         "side by side — one x would mean the floor is still 520")
-        self.assertLessEqual(len(set(xs)), 2,
-                             "and never three: the max-width caps it at half")
+        self.assertEqual(len(set(xs)), 1,
+                         "ONE tier column per line since 2026-10-16: each entry "
+                         "takes the panel's full width, so a second x would mean "
+                         "the groups are laid out beside each other again")
     def test_the_avg_column_is_hidden_until_the_corpus_has_data(self):
         """Round 3 item 5, tightened by round 4 item 6: a column of dashes is a
         column of nothing, and the decision is the WHOLE list's rather than one
@@ -2503,7 +2502,7 @@ class TestTheCompsScreens(_Rendered):
                          "a slot cannot give up width when the row is full")
         self.assertEqual(got["browse.nameclamp"], "2",
                          "the comp name is not clamped to two lines")
-        self.assertEqual(got["browse.slotpx"], "34x46")
+        self.assertEqual(got["browse.slotpx"], "46x62")
         # The compare box sits at the START of the row, in flow: the name is to
         # its right, so nothing is over anything.
         withbox = _render([_shot("wb", _comps_payload(), reveal="Comps",
@@ -2748,19 +2747,23 @@ class TestTheCompsScreens(_Rendered):
         self.assertIn("9 in this lobby", got["browse.sums"],
                       "the main list header does not count the main list")
 
-    def test_the_core_slots_are_the_designs_34_by_46(self):
-        """Item B.2: "strip thumbnails ~40x54 at 75% opacity" — NARROWED to
-        34x46 on 2026-10-16, deliberately and against the nominal number.
+    def test_the_core_slots_are_the_designs_46_by_62(self):
+        """Item B.2 said "strip thumbnails ~40x54 at 75% opacity"; the size has
+        moved twice since, both times against the nominal number.
 
-        MEASURED, which is why: a five-core comp spent 212px of its 520px tier
-        column on the strip alone, so the name track (`minmax(0,1fr)`, the only
-        one allowed to shrink) collapsed to ~82px and truncated — "Elementals -
-        Living…". At 34px a card the same row gives the name ~142px. The design
-        number was a nominal size, not a measured fit; this one is.
+        DOWN to 34x46 on 2026-10-16, because a five-core comp spent 212px of its
+        520px tier column on the strip alone and the name track — the only one
+        allowed to shrink — collapsed to ~82px and truncated. UP to 46x62 the
+        same day, when the panel widened to 935px and the maintainer asked for
+        bigger entries, one per line: at 905px a row can afford 46px a card and
+        still give the name 629px, so the compromise the 34px size made is not
+        needed any more. Worth keeping the history visible: the design number was
+        nominal, and these two sizes were each measured against the layout they
+        sat in.
 
         The Compare slot stays 52x70 (§5), and a tile is 88-130px wide, so a
         slot that inherited the card rule would be more than twice the size."""
-        self.assertEqual(self.got["browse.slotpx"], "34x46")
+        self.assertEqual(self.got["browse.slotpx"], "46x62")
         self.assertEqual(self.got["compare.cmpslotpx"], "52x70")
         # Owned, in-hand and missing are three states, and the missing one is
         # dashed rather than a smaller solid box.

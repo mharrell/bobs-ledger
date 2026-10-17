@@ -1398,27 +1398,23 @@ _HTML = r"""<!doctype html>
                          align-items:center; margin:0 0 10px; }
   .tavern.live .lv-cols { display:flex; flex-wrap:wrap; gap:16px;
                           align-items:flex-start; }
-  /* The comps columns: the tier headers stick to the top of the page as it
-     scrolls (round 3 item 3), and the groups flow as many across as fit. NEVER
-     three: `max-width:calc(50% - 9px)` is what caps it — a third column would
-     have to be narrower than half, so it wraps instead, however wide the window
-     gets.
-     THE FLOOR MOVED 520 -> 440 (2026-10-16) for the two-column wide layout. The
-     comps panel is 935px there (it took the old facts column's room), and two
-     520px groups need 1058 — so the extra width bought nothing and sat empty.
-     At 440 two groups fit in that panel, and the row is 74px cheaper since the
-     owned count moved onto the tribe line, which is what keeps the NAME at
-     ~140px in a 444px group (it was 82px at the 520 floor's worst case before
-     the row was reworked).
-     `min(440px, 100%)` is still the round 4 item 5 fix, and still not a tweak:
-     a flat floor wider than the column makes flex lay items OVERLAP rather than
-     wrap — measured in the real browser at 1400x900, when the panel gave it
-     499px. Capping the floor at the box is what keeps one group per row when
-     there is only room for one. */
+  /* ONE TIER COLUMN, FULL WIDTH (2026-10-16, the maintainer's call after the
+     widened panel: "let's make each entry bigger. One per line"). It ran one
+     group per 440px column for a few hours, which was the right answer while the
+     panel was 622px and the width had to be bought from the row — but the panel
+     is 935px now, and two 440px columns spent that width on narrow rows instead
+     of on bigger ones.
+     The floor and the half-width cap both go with it. They existed to stop two
+     groups OVERLAPPING when a flat floor was wider than the column it sat in
+     (measured in the real browser at 1400x900, 499px of panel) — a risk that
+     cannot arise for a full-width group: `max-width:100%` is the box, and flex
+     wraps something that does not fit.
+     The tier headers still stick to the top of the page as it scrolls (round 3
+     item 3). */
   .tavern.live .lv-cols { display:flex; flex-wrap:wrap; gap:18px;
                           align-items:flex-start; }
-  .tavern.live .lv-ctier { flex:0 1 440px; min-width:min(440px, 100%);
-                           max-width:calc(50% - 9px); min-height:0; }
+  .tavern.live .lv-ctier { flex:1 1 100%; min-width:0; max-width:100%;
+                           min-height:0; }
   /* A lone tier takes the whole width rather than half of it. */
   .tavern.live .lv-ctier:only-child { max-width:100%; }
   .tavern.live .lv-ctier > h4 { position:sticky; top:0; z-index:2;
@@ -1438,8 +1434,8 @@ _HTML = r"""<!doctype html>
      cell: nothing is positioned over anything. */
   .tavern.live .lv-crow { display:grid;
                           grid-template-columns:22px minmax(0,1fr) auto auto;
-                          gap:10px; align-items:center; padding:7px 0;
-                          border-bottom:1px solid var(--tline); font-size:12px; }
+                          gap:12px; align-items:center; padding:10px 0;
+                          border-bottom:1px solid var(--tline); font-size:13px; }
   /* SIX TRACKS WITH THE AVG COLUMN, FIVE WITHOUT (fix list round 4 item 6):
      checkbox | name+tribe | marks | strip | owned [| avg]. The avg track is
      decided for the WHOLE list (`lv-cols.has-avg`), so every row in every tier
@@ -1471,8 +1467,8 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-cname { min-width:0; display:flex; flex-direction:column;
                            align-items:flex-start; gap:1px; }
   .tavern.live .lv-cname .lv-copen { min-width:0; }
-  .tavern.live .lv-crowtribe { color:var(--ttext); font-size:11px;
-                               line-height:1.2; }
+  .tavern.live .lv-crowtribe { color:var(--ttext); font-size:12px;
+                               line-height:1.25; }
   /* The tribe and the owned count share one line (2026-10-16). Its own wrapper
      rather than nesting the count in `.lv-crowtribe`, so the tribe's own text
      stays the tribe. */
@@ -1517,8 +1513,8 @@ _HTML = r"""<!doctype html>
      art rather than squashing it. */
   .tavern.live .lv-slots { display:flex; flex-wrap:nowrap; gap:2px;
                            min-width:0; }
-  .tavern.live .lv-slot { display:inline-block; width:34px; height:46px;
-                          flex:0 1 auto; min-width:24px; border-radius:5px;
+  .tavern.live .lv-slot { display:inline-block; width:46px; height:62px;
+                          flex:0 1 auto; min-width:32px; border-radius:6px;
                           background:var(--tcard);
                           border:2px solid var(--tbuff); box-sizing:border-box;
                           overflow:hidden; position:relative; }

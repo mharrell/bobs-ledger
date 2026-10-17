@@ -408,14 +408,15 @@ class TestTheCompScreensAtSource(unittest.TestCase):
         than twice the specified size — which is exactly the failure mode the
         design's own §5 table exists to prevent.
 
-        The BROWSE slot is 34x46 from 2026-10-16 (item B.2 put it at 40x54 on
-        2026-10-14; the comp NAME was truncating behind it, measured, so it
-        narrowed — see `test_the_core_slots_are_the_designs_34_by_46`). The pin
-        moves with it rather than being deleted: the size is still a declared
-        number a rule can lose.
+        The BROWSE slot is 46x62 from 2026-10-16 (item B.2 put it at 40x54 on
+        2026-10-14; it narrowed to 34x46 the same day when the comp NAME was
+        truncating behind it, and widened again to 46x62 when the comps panel did
+        — see `test_the_core_slots_are_the_designs_46_by_62`). The pin moves with
+        it rather than being deleted: the size is still a declared number a rule
+        can lose.
         """
         html = coach_ui._HTML
-        self.assertIn("width:34px; height:46px", html)
+        self.assertIn("width:46px; height:62px", html)
         self.assertIn(".lv-cmpcol .lv-slot { width:52px; height:70px; }", html)
         self.assertIn(".lv-core { --tcardw:88px; }", html)
         self.assertIn(".lv-flexcards { --tcardw:76px;", html)
