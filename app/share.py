@@ -36,9 +36,15 @@ import sys
 import urllib.error
 import urllib.request
 
-from config import HS_LOG_GLOB
+from config import HS_LOG_GLOB, trust_store
 import decision_log
 import session_report
+
+# macOS + a python.org build ship no CA bundle, so every https call here fails
+# with CERTIFICATE_VERIFY_FAILED until OpenSSL is pointed at one (MEASURED
+# 2026-10-16 — see `config.trust_store`). It has to run BEFORE the first
+# request, which is why it is at import and not inside a helper.
+trust_store()
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 CONSENT_PATH = os.path.join(_HERE, ".share_consent.json")

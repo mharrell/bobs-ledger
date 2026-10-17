@@ -131,6 +131,47 @@ def app_dir():
     return os.path.dirname(os.path.abspath(__file__))
 
 
+def trust_store():
+    """Make Python trust HTTPS, which a python.org macOS build does not.
+
+    MEASURED 2026-10-16 on the maintainer's Mac (Python 3.15 from python.org):
+    EVERY https call failed with
+
+        URLError: [SSL: CERTIFICATE_VERIFY_FAILED] unable to get local issuer
+        certificate
+
+    because that installer ships no CA bundle until its own "Install
+    Certificates.command" is run, and nothing here ever told OpenSSL where one
+    is. It was never a sharing bug: `share.py`, `update.py`, `fetch_art.py`,
+    `fetch_sessions.py`, `upload_corpus.py` and the overlay's own card art all
+    go through the same bare `urllib.request.urlopen`. Windows never showed it,
+    so it stayed invisible for the whole project until the first Mac run.
+
+    `certifi` is ALREADY installed — `requests` depends on it — so this costs
+    nothing and needs no download. It sets `SSL_CERT_FILE`, which OpenSSL
+    honours when it builds the default context that `urlopen` uses, so ONE call
+    here repairs every call site in the process, including ones written later.
+
+    An `SSL_CERT_FILE` that is already set WINS: a player who pointed Python at
+    their own bundle, or who ran the installer's command, is not overruled.
+
+    Returns the bundle in use, or None when there is none to offer — in which
+    case the failure is exactly the one above, with exactly that message.
+    """
+    current = os.environ.get("SSL_CERT_FILE")
+    if current:
+        return current
+    try:
+        import certifi
+    except ImportError:
+        return None
+    path = certifi.where()
+    if not path or not os.path.exists(path):
+        return None
+    os.environ["SSL_CERT_FILE"] = path
+    return path
+
+
 def default_home(platform=None):
     """The client root for `platform` (default: the one we are running on)."""
     return _DEFAULT_HOME.get(platform or sys.platform,

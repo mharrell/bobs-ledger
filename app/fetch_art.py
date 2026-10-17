@@ -39,7 +39,13 @@ import re
 import sys
 import urllib.request
 
-from config import HS_LOG_GLOB as LOG_GLOB
+from config import HS_LOG_GLOB as LOG_GLOB, trust_store
+
+# macOS + a python.org build ship no CA bundle, so every https call here fails
+# with CERTIFICATE_VERIFY_FAILED until OpenSSL is pointed at one (MEASURED
+# 2026-10-16 — see `config.trust_store`). It has to run BEFORE the first
+# request, which is why it is at import and not inside a helper.
+trust_store()
 from coach_ui import ART_CACHE as CACHE, PORTRAIT_URLS, RENDER_UA
 
 _HERE = os.path.dirname(os.path.abspath(__file__))

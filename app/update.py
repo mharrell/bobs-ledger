@@ -48,7 +48,13 @@ import urllib.request
 import zipfile
 
 import release_sig  # noqa: E402 - sits beside this file, with ed25519.py
-from config import LAUNCHERS  # noqa: E402 - config.py, beside this file
+from config import LAUNCHERS, trust_store  # noqa: E402 - config.py, beside this file
+
+# macOS + a python.org build ship no CA bundle, so every https call here fails
+# with CERTIFICATE_VERIFY_FAILED until OpenSSL is pointed at one (MEASURED
+# 2026-10-16 — see `config.trust_store`). It has to run BEFORE the first
+# request, which is why it is at import and not inside a helper.
+trust_store()
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 

@@ -23,6 +23,13 @@ import sys
 import urllib.error
 import urllib.request
 
+# macOS + a python.org build ship no CA bundle, so every https call here fails
+# with CERTIFICATE_VERIFY_FAILED until OpenSSL is pointed at one (MEASURED
+# 2026-10-16 — see `config.trust_store`). It has to run BEFORE the first
+# request, which is why it is at import and not inside a helper.
+from config import trust_store
+trust_store()
+
 DEFAULT_URL = "https://hearth-telemetry-collector.bobs-ledger.workers.dev"
 UA = "hearth-coach-telemetry/1.0"      # workers.dev 403s the python-urllib UA
 
