@@ -272,6 +272,23 @@ class TestTheTimelineInvariants(unittest.TestCase):
         self.assertEqual(rows[-1]["battle_end"], [])
         self.assertIn("final board not recoverable", rows[-1]["notes"])
 
+    def test_a_board_the_deciding_fight_emptied_says_nothing(self):
+        """MEASURED 2026-10-17 on the rebuilt 2026-10-16 Alexstrasza replay: the
+        last turn read winner=them, survivors 0v1, 14/14 step boards — and still
+        carried "final board not recoverable", because that note fired on ANY
+        empty final board. A board the deciding fight explains is not a board
+        that went missing, and the note contradicted the fight drawn above it."""
+        snaps = self._snaps(9, ("combat", [(OURS, "WIPED", 3, 3, False, []),
+                                           (THEIRS, "ENEMY", 5, 5, False, [])]),
+                                ("combat", [(THEIRS, "ENEMY", 5, 5, False, [])]))
+        rows = tr._turn_rows(snaps, {}, OURS, final_board=[], result="LOST")
+        row = rows[-1]
+        self.assertEqual(row["battle_end"], [], "we were wiped")
+        self.assertEqual(row["winner"], "them")
+        self.assertEqual([m["card"] for m in row["theirs_survivors"]], ["ENEMY"])
+        self.assertNotIn("final board not recoverable", row["notes"],
+                         "the deciding fight explains the empty board")
+
     def test_a_fight_that_stages_one_side_first_still_reads_both(self):
         """The 2026-10-09 report, turn 1 of the Forest Lord Cenarius game:
         the fight group's first burst held only the opponent's minion — our

@@ -780,7 +780,13 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
             if not buy_end:
                 notes.append("no buy-phase board snapshot (a skipped turn, or a "
                              "turn whose plays were all combat summons)")
-            if i + 1 == len(turns) and not battle_end:
+            if (i + 1 == len(turns) and not battle_end and not res_here):
+                # Only when the emptiness is UNEXPLAINED. A decisive fight that
+                # wiped the board ends with `battle_end` empty BY DEFINITION, so
+                # "not recoverable" contradicted the fight drawn directly above
+                # it — MEASURED 2026-10-17 on the rebuilt 2026-10-16 Alexstrasza
+                # replay: winner=them, survivors 0v1, 14/14 step boards, and
+                # this note on the last turn anyway.
                 notes.append("final board not recoverable")
         # Damage taken across THIS turn's fight, from the effective HP the
         # coach recorded at this turn and the next (armor is just extra
