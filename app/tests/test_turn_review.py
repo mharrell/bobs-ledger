@@ -785,5 +785,71 @@ class TestStepsFor(unittest.TestCase):
         self.assertEqual(tr._steps_for({}, [(0, 1)], [[]], 5, 0, 4), [])
 
 
+class TestWhichFightIsOurs(unittest.TestCase):
+    """WHICH fight of a turn is the player's own (2026-10-16).
+
+    `fights[-1]` is the wrong answer as soon as more than one fight is staged in a
+    turn, and at the END of a Battlegrounds game the tail of the log carries the
+    rest of the LOBBY's fights as well. MEASURED on the 2026-10-16 Alexstrasza
+    game's last turn, three groups in this order:
+
+        ours 2 / theirs 5 -> 0        their board drains
+        ours 2 -> 1 -> 0 / theirs 5   OUR board drains — the fight that ended it
+        ours 2 / theirs 5 -> 0        a later staging
+
+    `fights[-1]` took the third and reported that the player WON the fight they
+    lost. The game names the right one itself: the friendly player's PLAYSTATE
+    says which way it ended, so the group to read is the one that ends the way
+    the game says.
+    """
+
+    def setUp(self):
+        self.groups = [
+            [self.snap(2, 9), self.snap(2)],
+            [self.snap(2, 9), self.snap(9), self.snap(9)],
+            [self.snap(2, 9), self.snap(2)],
+        ]
+
+    @staticmethod
+    def snap(*players):
+        """One combat snapshot holding a minion per player id, 8-tuple shape."""
+        return {"phase": "combat",
+                "minions": [(p, "X", 1, 1, False, (), i, 0)
+                            for i, p in enumerate(players)]}
+
+    def test_a_loss_reads_the_fight_that_left_our_board_empty(self):
+        got = tr._decisive_group(self.groups, 2, "LOST")
+        self.assertIs(got, self.groups[1],
+                      "the loss must read the group whose last staging has no "
+                      "friendly minions, not the last group staged")
+
+    def test_a_win_reads_a_fight_that_left_theirs_empty(self):
+        got = tr._decisive_group(self.groups, 2, "WON")
+        self.assertEqual(got, self.groups[-1],
+                         "the last qualifying one, since several can qualify")
+
+    def test_without_a_result_the_last_group_is_used(self):
+        self.assertIs(tr._decisive_group(self.groups, 2, None), self.groups[2])
+
+    def test_no_fights_is_not_an_error(self):
+        self.assertEqual(tr._decisive_group([], 2, "LOST"), [])
+
+    def test_survivors_skip_the_empty_cleanup_staging(self):
+        """A BG log stages an empty board once the dead are cleared, so the
+        group's LAST snapshot is routinely empty for both sides. MEASURED on the
+        2026-10-16 game: the winning board read as "0 survivors" against a fight
+        the opponent plainly won."""
+        group = [self.snap(2, 9), self.snap(9), self.snap()]
+        self.assertEqual(len(tr._last_staged(group, 2, "theirs")), 1,
+                         "the winner's last board was skipped for the empty one")
+
+    def test_a_side_that_never_staged_has_no_board(self):
+        self.assertEqual(tr._last_staged([self.snap(9), self.snap()], 2, "ours"),
+                         [])
+
+    def test_no_group_has_no_survivors(self):
+        self.assertEqual(tr._last_staged([], 2, "theirs"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

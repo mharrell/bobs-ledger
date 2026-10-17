@@ -268,6 +268,31 @@ def _drive(chunk):
             # fires mid-shop, and the rest of the phase — often including
             # the very actions being stepped through — is still unfed.
             pending[turn] = (actual, lo, hi)
+    # FEED THE TAIL (2026-10-16). The loop above stops feeding at each phase's
+    # START, so whatever follows the LAST phase was never read. In a game the
+    # player loses that tail holds the final fight, and for the final turn it
+    # also holds every step's board — which is why Step through showed an empty
+    # box under "Your board after step 14 of 14". MEASURED on the 2026-10-16
+    # Alexstrasza game: 891 snapshots with the tail unfed, 991 with it.
+    #
+    # Bounded at the resolved end of the game, not at `n`: `board_state` stops
+    # snapshotting at the PowerTaskList copy of the loss, which lands after the
+    # fight resolves and before the end-of-game cleanup.
+    #
+    # THE GATE IS LIFTED FOR THIS PASS, and only this pass. `board_state` stops
+    # snapshotting the moment it sees the game's outcome — correct for the live
+    # path, where that is the end of the story, and wrong here, where the chunk
+    # is a finished log whose PowerTaskList copy of the loss comes 26 s and ~5,900
+    # lines after the GameState one. So the offline re-read lifts the flag, feeds
+    # until the RESOLVED verdict arrives (`game_result`), and puts it back.
+    gate = getattr(coach.gs, "_game_ended", False)
+    coach.gs._game_ended = False
+    while j < n:
+        feed(j)
+        j += 1
+        if getattr(coach.gs, "game_result", None) is not None:
+            break
+    coach.gs._game_ended = gate or getattr(coach.gs, "game_result", None) is not None
     for turn, (actual, lo, hi) in pending.items():
         info[turn]["steps"] = _steps_for(actual, markers, coach.gs.snapshots,
                                          header_friendly, lo,
@@ -458,6 +483,59 @@ def _fights(fight, friendly):
     return groups
 
 
+def _decisive_group(fights, friendly, result):
+    """WHICH of the turn's fights is the player's own. PURE.
+
+    `fights[-1]` is the wrong answer whenever more than one fight is staged in a
+    turn, and at the END of a Battlegrounds game the tail of the log carries the
+    rest of the LOBBY's fights too. MEASURED on the 2026-10-16 Alexstrasza game's
+    final turn: three groups, in this order -
+
+        ours 2 / theirs 5 -> 0     (their board drains)
+        ours 2 -> 1 -> 0 / theirs 5  (OUR board drains: the fight that ended it)
+        ours 2 / theirs 5 -> 0     (a later staging)
+
+    The old `fights[-1]` took the third and reported that the player WON the fight
+    they lost. The game itself names the right one: the friendly player's
+    `PLAYSTATE` says which way it ended, so the group to read is the one that
+    ends the way the game says it did. Falls back to the last group when there is
+    no result (every turn but the last).
+    """
+    if not fights:
+        return []
+    if not result or friendly is None:
+        return fights[-1]
+
+    def counts(group):
+        ms = (group[-1].get("minions") or []) if group else []
+        ours = sum(1 for m in ms if len(m) > 0 and m[0] == friendly)
+        theirs = sum(1 for m in ms if len(m) > 0 and m[0] not in (None, friendly))
+        return ours, theirs
+
+    for g in reversed(fights):
+        ours, theirs = counts(g)
+        if result == "LOST" and ours == 0:
+            return g          # the staging that left our board empty
+        if result == "WON" and ours > 0 and theirs == 0:
+            return g          # ... and theirs, when we won
+    return fights[-1]
+
+
+def _last_staged(group, friendly, side):
+    """The last board a side actually had on the field in one fight group. PURE.
+
+    NOT `group[-1]`: a BG log stages an empty board once the fight's dead are
+    cleared, so the group's final snapshot is routinely empty for BOTH sides —
+    MEASURED on the 2026-10-16 game, where the winning board came out as "0
+    survivors" against a fight the opponent plainly won.
+    """
+    for s in reversed(group or []):
+        board = _snap_board(s.get("minions") or [], friendly, side)
+        if board:
+            return board
+    return []
+
+
 def _burst_stats(snap):
     """Combined atk+health of every minion in one raw snapshot, both sides —
     the measure the Battle peak picks (post-procs, pre-deaths)."""
@@ -503,7 +581,8 @@ def _side_best(bursts, friendly, side):
     return board
 
 
-def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
+def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
+               result=None):
     """Assemble the per-turn rows from snapshots. PURE — no coach, no log.
 
     Split out of `timeline()` so the reconstruction's decisions are testable
@@ -544,13 +623,15 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
         # holds two fights (round fight, then the final duel), the decisive
         # one is the last — see _fights.
         fights = _fights(fight, friendly)
+        # The result is the final turn's own fact — no earlier turn ended a game.
+        res_here = result if i + 1 == len(turns) else None
         # Combat START = each side's own first staging inside the turn's LAST
         # fight — the first BURST is not enough, because a fight does not
         # stage both boards at once (see _side_first: the 2026-10-09 game's
         # opening burst held only the opponent's minion, and the old read
         # rendered "(no board read)" against a board the winner logic had
         # just scored).
-        group = fights[-1] if fights else []
+        group = _decisive_group(fights, friendly, res_here)
         ours_at_combat = _side_first(group, friendly, "ours")
         theirs_at_combat = _side_first(group, friendly, "theirs")
         # Battle PEAK = the fight's burst after beginning-of-combat effects
@@ -618,7 +699,7 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
         if fights and friendly is not None:
             seen_theirs = seen_ours = False
             prev_theirs_board = []
-            for s2 in fights[-1]:
+            for s2 in group:
                 ms2 = s2.get("minions") or []
                 tn = sum(1 for m in ms2 if len(m) > 0 and m[0] is not None
                          and m[0] != friendly)
@@ -642,6 +723,30 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None):
                     break
         # Exactly one side holds survivors after a fight — theirs only when
         # THEY won (their last staged board, combat-time stats).
+        # The game's own verdict wins over the board-count inference: a BG loss
+        # usually ends with minions still on the losing board (hero damage), so
+        # no board ever drains and the walk above cannot call it.
+        if res_here:
+            # THE GAME'S VERDICT WINS over the board-count inference, and both
+            # sides' survivors come from the DECISIVE fight itself. Two measured
+            # reasons:
+            #   * a BG loss usually ends with minions still on the losing board
+            #     (hero damage, not a board wipe), so no board ever drains and
+            #     the walk above cannot call it;
+            #   * `battle_end` above is read from the snapshot RING on the last
+            #     turn, and once the tail is fed that ring also holds the rest of
+            #     the lobby's staging — MEASURED: it reported two survivors for a
+            #     fight that wiped the board.
+            # The LOSER's board is empty — that is what losing meant here — and
+            # the WINNER's is the last board it actually had staged.
+            winner = "them" if res_here == "LOST" else "us"
+            if winner == "them":
+                battle_end = []
+                their_last = _last_staged(group, friendly, "theirs")
+            else:
+                battle_end = _last_staged(group, friendly, "ours")
+                their_last = []
+            battle_end_removed = 0
         theirs_survivors = their_last if winner == "them" else []
 
         entry = info.get(t) or {}
@@ -799,7 +904,8 @@ def timeline(log_path, game_index=1):
     if friendly is not None and hasattr(coach.gs, "final_board"):
         final_board = _struct_board(coach.gs.final_board(friendly)[0])
 
-    rows = _turn_rows(snaps, info, friendly, final_board, card_db=_load_card_db())
+    rows = _turn_rows(snaps, info, friendly, final_board, card_db=_load_card_db(),
+                      result=getattr(coach.gs, "game_result", None))
     for row in rows:
         # The Step-through's ordered actions with their boards (2026-10-08).
         # Turns the coach never analyzed carry no entry and degrade to [] —

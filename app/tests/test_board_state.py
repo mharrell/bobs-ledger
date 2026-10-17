@@ -502,5 +502,55 @@ class TestPlaySnapshotAfterPositionZero(unittest.TestCase):
         self.assertEqual(len(gs.snapshots), n)
 
 
+class TestTheVerdictIsRecorded(unittest.TestCase):
+    """The game's outcome, kept for the review (2026-10-16).
+
+    `_game_ended` stops snapshotting and stays exactly as it was: the LIVE path
+    has to end the game the moment it sees the outcome, and a fixture (or a log
+    tail) that only carries the GameState copy must still end it. What is new is
+    `game_result`, because the review's last turn cannot infer the outcome from
+    the boards — a Battlegrounds loss usually ends with minions still on the
+    losing board (the hero dies to damage), so no board ever drains and the
+    board-count inference cannot call it.
+    """
+
+    def _a_minion_in_play(self, gs, eid=101, player=2):
+        for line in creating(eid, "BG21_015") + tags(GS, eid, 10, 10,
+                                                     zone="PLAY", player=player,
+                                                     cid="BG21_015"):
+            gs.feed(line)
+
+    def _it_dies(self, gs, eid=101, prefix=PTL):
+        gs.feed(f"{prefix}    TAG_CHANGE Entity=[entityName=Tarecgosa id={eid} "
+                f"zone=PLAY zonePos=0 cardId=BG21_015 player=2] "
+                f"tag=ZONE value=REMOVEDFROMGAME")
+
+    def test_the_verdict_is_recorded_and_the_live_gate_still_stops(self):
+        gs = GameState()
+        self._a_minion_in_play(gs)
+        gs.feed(f"{GS}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=LOST")
+        self.assertEqual(gs.game_result, "LOST")
+        self.assertTrue(gs._game_ended,
+                        "the live path must still end the game on the first "
+                        "outcome it sees, or a fixture never ends it at all")
+        before = len(gs.snapshots)
+        self._it_dies(gs)
+        self.assertEqual(len(gs.snapshots), before,
+                         "snapshots continued past the outcome, so the "
+                         "end-of-game cleanup can pollute the final board")
+
+    def test_the_last_copy_wins(self):
+        """The PowerTaskList copy is printed last, so it is the resolved one."""
+        gs = GameState()
+        gs.feed(f"{GS}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=LOST")
+        gs.feed(f"{PTL}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=LOST")
+        self.assertEqual(gs.game_result, "LOST")
+        gs2 = GameState()
+        gs2.feed(f"{GS}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=LOST")
+        gs2.feed(f"{PTL}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=WON")
+        self.assertEqual(gs2.game_result, "WON",
+                         "the later copy must replace the earlier one")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -112,6 +112,7 @@ class GameState:
         self.current_entity = None
         self._controller_lock = {}  # eid -> the player it was moved away from
         self._game_ended = False  # set on PLAYSTATE=WON/LOST; stops snapshots
+        self.game_result = None   # "WON"/"LOST" from the PowerTaskList copy
         self._post_game = set()   # entity ids created after game end (re-created)
         # Cards that left a real tracked HAND via ZONE_POSITION=0 (the guard
         # below re-zones them SETASIDE). A real play follows as SETASIDE->PLAY
@@ -206,7 +207,35 @@ class GameState:
             elif tag == "PLAYSTATE" and value in ("WON", "LOST"):
                 # Game over: the end-of-game cleanup re-creates minions as
                 # enchantments for the leaderboard, so stop snapshotting here.
+                #
+                # ONLY THE POWER TASK LIST COPY COUNTS (2026-10-16). The log
+                # prints this outcome TWICE — once from the GameState stream and
+                # again from the PowerTaskList stream that resolves the damage —
+                # and at the end of a game the GameState copy arrives FIRST,
+                # while the final fight is still being resolved:
+                #
+                #   GS  MikeySCE LOST   file line 1,018,835
+                #   PTL MikeySCE LOST   file line 1,024,686
+                #
+                # MEASURED on the 2026-10-16 Alexstrasza game: the first of
+                # those is at chunk line 377,157 and the last seven ATTACK blocks
+                # of the game run to 381,694. Keying on the first copy stopped
+                # the snapshots before the final fight was parsed.
+                #
+                # In the PowerTaskList stream the fight resolves BEFORE its own
+                # LOST, so this keeps the last fight and still keeps the
+                # end-of-game cleanup out. A truncated log never sees this
+                # marker — and a log with no end has no cleanup.
                 self._game_ended = True
+                # WHICH WAY IT ENDED, kept for the review (2026-10-16). Last
+                # write wins, and the PowerTaskList copy is printed last, so this
+                # ends up the resolved verdict rather than the premature one.
+                # The review's last turn cannot infer it from the boards: a BG
+                # loss usually ends with minions still on the losing board (hero
+                # damage), and the tail of a BG log also carries the REST OF THE
+                # LOBBY's fights, so "the last fight staged" is not necessarily
+                # ours.
+                self.game_result = value
             return
 
         m = SHOW_ENTITY.search(line)
