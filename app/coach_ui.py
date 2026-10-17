@@ -1035,18 +1035,26 @@ _HTML = r"""<!doctype html>
     .tavern.live .lv-main { grid-template-columns:minmax(0,1fr) 340px; }
   }
   @media (min-width: 1650px) {
-    /* THE THREE COLUMNS (fix list round 4 item 5, on the maintainer's own call
-       about the WINDOW). This rule is LAST, so it wins by order over the media
-       query above, which also matches above 1200x900 — past 1650px of window the
-       340px rail is not a track any more, because column 3 IS the rail: the facts
-       table, the announced opponent, the lobby. Column 3 is 300px because that
-       held the reference table at every width measured; the two flexible columns
-       split what is left. MEASURED 2026-10-13 in the harness: 622/622/300 inside a
-       1572px box at 1920x1080 (the widest this page gets — `#wrap` caps it at
-       1600px) and the SAME 622/622/300 at 1850x800, whose 1834px viewport is the
-       narrowest window this rule gives the columns. */
+    /* TWO COLUMNS, AND COMPS TAKES THE ROOM THE REFERENCE COLUMN USED TO HOLD
+       (2026-10-16, the maintainer's call: "the COMPS section should take up as
+       much space as the Comps and Facts do together"). It was 1fr 1fr 300px —
+       622/622/300 in a 1572px box — and the screenshot that prompted this shows
+       the third column nearly EMPTY at the start of a game: Facts is eight short
+       rows, "Next opponent" says no board seen, "Lobby" says no seats sighted.
+       Meanwhile Comps is a list of twenty-odd rows in a 520px column with dead
+       space beside it.
+
+       So the reference panels move under the board (column one) and the comps
+       list gets column two, which is now `1.5fr` against column one's `1fr`:
+       MEASURED, that is 623px + 14px gap + 935px, and 935 is what 622 + 300 + the
+       gap came to — the request, exactly. The 1fr/1.5fr ratio is what holds that
+       split at every width instead of only at 1572px.
+
+       Facts under the board rather than somewhere new: they are reference for the
+       board the player is looking at, which is what the old rail argued for at
+       941x156 in a 971px column (fix list round 4 item 4). */
     .tavern.live .lv-layout-cols { display:grid;
-      grid-template-columns:minmax(0,1fr) minmax(0,1fr) 300px; }
+      grid-template-columns:minmax(0,1fr) minmax(0,1.5fr); }
     .tavern.live .lv-layout-acc { display:none; }
   }
   /* Shop screen (fix list round 1 item 4 / round 2 item 4): the taverner's row
@@ -1390,24 +1398,26 @@ _HTML = r"""<!doctype html>
                          align-items:center; margin:0 0 10px; }
   .tavern.live .lv-cols { display:flex; flex-wrap:wrap; gap:16px;
                           align-items:flex-start; }
-  /* The comps columns: ONE column by default, with the tier headers sticking to
-     the top of the page as it scrolls (round 3 item 3), and TWO only when each
-     can hold 520px. NEVER three: `max-width:calc(50% - 9px)` is what caps it —
-     a third column would have to be narrower than half, so it wraps instead,
-     however wide the window gets. (A viewport media query cannot express this:
-     the column is the window MINUS the rail, and since round 4 item 5 the comps
-     panel is one of THREE columns.) */
+  /* The comps columns: the tier headers stick to the top of the page as it
+     scrolls (round 3 item 3), and the groups flow as many across as fit. NEVER
+     three: `max-width:calc(50% - 9px)` is what caps it — a third column would
+     have to be narrower than half, so it wraps instead, however wide the window
+     gets.
+     THE FLOOR MOVED 520 -> 440 (2026-10-16) for the two-column wide layout. The
+     comps panel is 935px there (it took the old facts column's room), and two
+     520px groups need 1058 — so the extra width bought nothing and sat empty.
+     At 440 two groups fit in that panel, and the row is 74px cheaper since the
+     owned count moved onto the tribe line, which is what keeps the NAME at
+     ~140px in a 444px group (it was 82px at the 520 floor's worst case before
+     the row was reworked).
+     `min(440px, 100%)` is still the round 4 item 5 fix, and still not a tweak:
+     a flat floor wider than the column makes flex lay items OVERLAP rather than
+     wrap — measured in the real browser at 1400x900, when the panel gave it
+     499px. Capping the floor at the box is what keeps one group per row when
+     there is only room for one. */
   .tavern.live .lv-cols { display:flex; flex-wrap:wrap; gap:18px;
                           align-items:flex-start; }
-  /* `min(520px, 100%)` is the round 4 item 5 floor, and it is a FIX rather than
-     a tweak: the three-column layout hands the comps panel a 499px column at
-     1400x900, and a flat `min-width:520px` then made the column WIDER than its
-     box — measured in the real browser, both tier columns laid out at the same
-     x (520px each, overlapping) because flex can only wrap an item that fits.
-     With the floor capped at the box, the column is 499 and the tier column is
-     499: the "two only when each holds 520" rule is what decides, as it always
-     did. */
-  .tavern.live .lv-ctier { flex:0 1 520px; min-width:min(520px, 100%);
+  .tavern.live .lv-ctier { flex:0 1 440px; min-width:min(440px, 100%);
                            max-width:calc(50% - 9px); min-height:0; }
   /* A lone tier takes the whole width rather than half of it. */
   .tavern.live .lv-ctier:only-child { max-width:100%; }
@@ -1427,7 +1437,7 @@ _HTML = r"""<!doctype html>
      `lv-cols`, not of one tier group. The compare checkbox is IN FLOW in its own
      cell: nothing is positioned over anything. */
   .tavern.live .lv-crow { display:grid;
-                          grid-template-columns:22px minmax(0,1fr) 64px auto auto;
+                          grid-template-columns:22px minmax(0,1fr) auto auto;
                           gap:10px; align-items:center; padding:7px 0;
                           border-bottom:1px solid var(--tline); font-size:12px; }
   /* SIX TRACKS WITH THE AVG COLUMN, FIVE WITHOUT (fix list round 4 item 6):
@@ -1435,14 +1445,14 @@ _HTML = r"""<!doctype html>
      decided for the WHOLE list (`lv-cols.has-avg`), so every row in every tier
      group has the same columns. */
   .tavern.live .lv-ctier.has-avg .lv-crow {
-    grid-template-columns:22px minmax(0,1fr) 64px auto auto 64px; }
+    grid-template-columns:22px minmax(0,1fr) auto auto 64px; }
   /* THE OUT-OF-PLAY BLOCK'S ROWS have no Compare box, so the first track is the
      name. Everything else is the same, which is what "the same on every row"
      means — one row shape, one variant of it. */
   .tavern.live .lv-oop .lv-crow {
-    grid-template-columns:minmax(0,1fr) 64px auto auto; }
+    grid-template-columns:minmax(0,1fr) auto auto; }
   .tavern.live .lv-oop.has-avg .lv-crow {
-    grid-template-columns:minmax(0,1fr) 64px auto auto 64px; }
+    grid-template-columns:minmax(0,1fr) auto auto 64px; }
   @media (max-width: 699.98px) {
     .tavern.live .lv-crow,
     .tavern.live .lv-ctier.has-avg .lv-crow {
@@ -1463,6 +1473,11 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-cname .lv-copen { min-width:0; }
   .tavern.live .lv-crowtribe { color:var(--ttext); font-size:11px;
                                line-height:1.2; }
+  /* The tribe and the owned count share one line (2026-10-16). Its own wrapper
+     rather than nesting the count in `.lv-crowtribe`, so the tribe's own text
+     stays the tribe. */
+  .tavern.live .lv-crowtribeline { display:flex; align-items:baseline;
+                                   min-width:0; }
   .tavern.live .lv-crowtribe .lv-uncf { color:var(--tmute);
                                         font-style:normal; }
   /* Two lines at most, then it ellipses (round 3 item 2) — a comp name is two
@@ -2609,18 +2624,19 @@ function lvCompRow(a, c, anyAvg, bare) {
     tribe.title = 'The lobby has not confirmed its tribes yet (fewer than '
                 + 'five are in), so this tribe is not ruled out.';
   }
-  name.appendChild(tribe);
+  // THE COUNT RIDES THE TRIBE LINE, in a wrapper of its own (2026-10-16). It had
+  // a 64px track after the name, worth 74px with the gap — and 74px is precisely
+  // what a SECOND tier column needs, so the count moved up here and the panel's
+  // new width pays for itself. Deliberately NOT inside `.lv-crowtribe`: that
+  // element is the tribe's own text, and a reader (or this suite) asking for it
+  // should get "Demon" and not "Demon · 0 of 5 owned".
+  const tribeLine = el('span', 'lv-crowtribeline');
+  tribeLine.appendChild(tribe);
+  tribeLine.appendChild(el('i', 'lv-crowsep', ' · '));
+  tribeLine.appendChild(el('b', 'lv-owned',
+                           lvOwned(core) + ' of ' + core.length + ' owned'));
+  name.appendChild(tribeLine);
   row.appendChild(name);
-  // OWNERSHIP SITS NEXT TO THE NAME (2026-10-16). It was the fifth track — 64px
-  // at the far right of a 520px tier column — which put the count a long
-  // eye-travel from the comp it belongs to, and "can I build this" is the whole
-  // reason a row exists. MEASURED before the change: a FIVE-core comp spent
-  // 212px of the column on its core strip, and the name track — `minmax(0,1fr)`,
-  // the only track permitted to shrink — collapsed to ~82px and truncated
-  // ("Elementals - Living…"). With the strip at 34px a card and the avg column
-  // at 64px, that same row now gives the name ~142px, and the count is beside it.
-  row.appendChild(el('b', 'lv-owned',
-                     lvOwned(core) + ' of ' + core.length + ' owned'));
   // The optional marks. The TIER is the tier column's own header, so a row
   // repeats it only under the two opt-in sorts — where what you are reading is
   // a re-ordered column and the header no longer tells you the tier of the row
@@ -3675,18 +3691,16 @@ function lvColumns(a) {
   const one = el('div', 'lv-col');
   one.appendChild(lvSection('Tavern', a, false));
   one.appendChild(lvSection('Board and hand', a, false));
+  // The reference material, UNDER the board it describes (2026-10-16). The old
+  // third column was 300px of mostly-empty page at the start of a game, and the
+  // comps list was the thing short of room — so the rail moved in with the
+  // board, in the order the player reads it, and column two is comps alone.
+  one.appendChild(lvSection('Facts', a, false));
+  one.appendChild(lvSection('Next opponent', a, false));
+  one.appendChild(lvSection('Lobby', a, false));
   const two = el('div', 'lv-col');
   two.appendChild(lvSection('Comps', a, false));
-  const three = el('div', 'lv-col');
-  // The facts rail of the two-column layout, kept in the place it had: the
-  // announced opponent is NOT moved up into the wide column (fix list round 4
-  // item 4 measured that panel's row at 941x156 in a 971px column against
-  // 310x464 stacked at a rail's width), and in this arrangement the wide column
-  // is the first one — so the opponent stays under the board.
-  three.appendChild(lvSection('Facts', a, false));
-  three.appendChild(lvSection('Next opponent', a, false));
-  three.appendChild(lvSection('Lobby', a, false));
-  return [one, two, three];
+  return [one, two];
 }
 //: The accordion (every window under 1650px): one column, the facts strip pinned
 //: at the top of it, then the same five sections in the order the player needs

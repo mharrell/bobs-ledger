@@ -1389,8 +1389,8 @@ class TestTheTavernLiveInABrowser(_Rendered):
 
         The order is asserted in BOTH arrangements because they differ on
         purpose: the accordion pins Facts to the top of the stack (it is the
-        strip the rest scrolls under), while the three-column one puts it in
-        column 3. The harness's own 1400x900 window is an ACCORDION window since
+        strip the rest scrolls under), while the wide one puts it in column one
+        under the board — comps has a column to itself (2026-10-16). The harness's own 1400x900 window is an ACCORDION window since
         the threshold became the maintainer's window rule (see
         `TestTheLayoutByWidth`), so `t.panels` is the accordion's order and the
         1920x1080 render below is the columns'.
@@ -1413,7 +1413,7 @@ class TestTheTavernLiveInABrowser(_Rendered):
         wide = _render([_shot("t", _payload())], size=(1920, 1080))
         self.assertEqual(wide["t.arr"], "cols")
         self.assertEqual(wide["t.panels"],
-                         "Tavern|Board and hand|Comps|Facts|Next opponent|Lobby")
+                         "Tavern|Board and hand|Facts|Next opponent|Lobby|Comps")
         # §8: 44px minimum targets. The accordion header is the control that
         # replaced the tabs; it is measured in `TestTheAccordionLayout`, at the
         # width where the accordion is the arrangement on screen. What can be
@@ -1727,28 +1727,34 @@ class TestTheLayoutByWidth(_Rendered):
         self.assertEqual(got["w.panels"],
                          "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
 
-    def test_three_columns_at_a_1920_window(self):
-        """MEASURED 2026-10-13 at 1920x1080: three columns at 622/622/300 inside
-        a 1572px box. The box is 1572 and not 1592 because `#wrap` caps the PAGE
-        at 1600px (a pre-existing rule of the shell), so this is as wide as the
-        tavern view ever gets — which is why the numbers here and at a 3200px
-        window are the same, and why "wider window" is not a layout this view has
-        to answer for. A 1920x1080 window measures 1904px of VIEWPORT in this
-        harness, which is why the threshold is 1650 and not 1920 itself."""
+    def test_two_columns_at_a_1920_window(self):
+        """MEASURED 2026-10-16 at 1920x1080: TWO columns at 623/935 inside the
+        same 1572px box. REVERSED from `test_three_columns_at_a_1920_window`,
+        which pinned 622/622/300: the maintainer's call was "the COMPS section
+        should take up as much space as the Comps and Facts do together", so the
+        reference panels moved under the board and comps took the room — 935 is
+        what 622 + 300 + the 13px gap came to, so the widths alone say the ask
+        was met exactly.
+
+        The box is 1572 and not 1592 because `#wrap` caps the PAGE at 1600px, so
+        this is as wide as the tavern view ever gets — which is why the numbers
+        here and at a 3200px window are the same. A 1920x1080 window measures
+        1904px of VIEWPORT in this harness, which is why the threshold is 1650
+        and not 1920 itself."""
         got = _render([_shot("w", _comps_payload())], size=(1920, 1080))
         self.assertEqual(got["w.arr"], "cols",
                          f"a 1920x1080 window is not in the three-column layout "
                          f"(box {got['w.bodyw']}px)")
         widths = [int(v) for v in got["w.colw"].split("|")]
-        self.assertEqual(len(widths), 3, f"columns: {got['w.colw']}")
-        self.assertEqual(widths, [622, 622, 300])
+        self.assertEqual(len(widths), 2, f"columns: {got['w.colw']}")
+        self.assertEqual(widths, [623, 935])
         xs = [int(x) for x in got["w.colx"].split("|")]
-        self.assertEqual(len(set(xs)), 3, "the three columns are not side by side")
+        self.assertEqual(len(set(xs)), 2, "the two columns are not side by side")
         self.assertEqual(xs, sorted(xs), "the columns are out of order")
         # WHAT IS IN EACH ONE, in order: the two screens the player reads the
         # game through | Comps | the reference material.
         self.assertEqual(got["w.colpanels"],
-                         "Tavern+Board and hand|Comps|Facts+Next opponent+Lobby")
+                         "Tavern+Board and hand+Facts+Next opponent+Lobby|Comps")
 
     def test_the_tab_row_is_gone_at_that_width(self):
         """§4.1's `Shop | Comps | Lobby` row selected between exclusive screens;
@@ -1762,9 +1768,9 @@ class TestTheLayoutByWidth(_Rendered):
                          "the selector that counted the tabs found no SECTIONS "
                          "either, so the zero above is not a measurement")
         self.assertEqual(got["w.panels"],
-                         "Tavern|Board and hand|Comps|Facts|Next opponent|Lobby")
+                         "Tavern|Board and hand|Facts|Next opponent|Lobby|Comps")
 
-    def test_a_shorter_window_still_gets_three_columns(self):
+    def test_a_shorter_window_still_gets_two_columns(self):
         """The rule reads the WINDOW, so the shell's branch does not move it:
         measured, a 1920x900 window and a 1920x1080 one both give the box 1572px,
         because the 1600px `#wrap` cap is reached before the shell's 1200x900 grid
@@ -1773,9 +1779,9 @@ class TestTheLayoutByWidth(_Rendered):
         when the window gets shorter or wider."""
         for size in ((1920, 900), (1920, 1080), (3200, 1200)):
             got = _render([_shot("s", _comps_payload())], size=size)
-            self.assertEqual(got["s.arr"], "cols", f"not three columns at {size}")
-            self.assertEqual(len(got["s.colw"].split("|")), 3, f"at {size}")
-            self.assertEqual(got["s.colpanels"].count("|"), 2, f"at {size}")
+            self.assertEqual(got["s.arr"], "cols", f"not two columns at {size}")
+            self.assertEqual(len(got["s.colw"].split("|")), 2, f"at {size}")
+            self.assertEqual(got["s.colpanels"].count("|"), 1, f"at {size}")
 
     def test_the_width_that_switches_the_layout_is_the_windows(self):
         """REVERSED 2026-10-13: this test measured the threshold as the BOX's,
@@ -1835,7 +1841,7 @@ class TestTheLayoutByWidth(_Rendered):
                          f"a 1850x800 window (viewport {narrowest['n.vw']}) is not "
                          f"three columns, so this is not the narrowest one")
         self.assertEqual([int(v) for v in narrowest["n.colw"].split("|")],
-                         [622, 622, 300],
+                         [623, 935],
                          f"the columns are not the full width at 1850x800: "
                          f"{narrowest['n.colw']}")
 
@@ -2389,20 +2395,21 @@ class TestTheCompsScreens(_Rendered):
             self.assertLessEqual(w, box + 1,
                                  "a tier column is wider than the screen it is "
                                  "in — the flex floor is not capped at the box")
-        # Wider than any of it: the same is true at a 3200px window, where the
-        # comps panel is at its widest (622px) and still one column short of a
-        # pair — the control proving the stack above is not a narrow-window
-        # accident.
+        # AT ITS WIDEST the panel now fits a PAIR, which is what the widened
+        # comps column and the 440px floor are for (2026-10-16): two 520px groups
+        # needed 1058 and therefore stacked, so the extra width bought nothing.
         wide = _render([_shot("w", _comps_payload(), reveal="Comps")],
                        size=(3200, 1200))
-        self.assertGreater(int(wide["w.compsw"]), 600,
-                           "the fixture is not measuring a wide comps panel")
+        self.assertGreater(int(wide["w.compsw"]), 900,
+                           "the fixture is not measuring the widened comps panel")
         self.assertEqual(wide["w.cols"], 2,
                          "the payload carries two tiers, so two columns render")
         xs = [int(x) for x in wide["w.ctierx"].split("|")]
-        self.assertEqual(len(set(xs)), 1,
-                         "two 520px columns cannot fit a 622px panel, so they "
-                         "stack — a second x here would mean they overlap")
+        self.assertEqual(len(set(xs)), 2,
+                         "two tier columns fit the widened panel, so they sit "
+                         "side by side — one x would mean the floor is still 520")
+        self.assertLessEqual(len(set(xs)), 2,
+                             "and never three: the max-width caps it at half")
     def test_the_avg_column_is_hidden_until_the_corpus_has_data(self):
         """Round 3 item 5, tightened by round 4 item 6: a column of dashes is a
         column of nothing, and the decision is the WHOLE list's rather than one
@@ -2411,18 +2418,18 @@ class TestTheCompsScreens(_Rendered):
         self.assertGreater(got["browse.avgcells"], 0,
                            "the fixture has corpus data, so the column is there")
         self.assertEqual(got["browse.hasavg"], got["browse.cols"])
-        # Six tracks with the avg column: checkbox | name | tier·tribe | strip |
-        # owned | avg (round 4 item 6 — the checkbox and the tier/tribe used to
-        # be inside the name cell, so nothing lined up down the column).
-        self.assertEqual(len(got["browse.cmptracks"].split()), 6,
+        # FIVE tracks with the avg column since 2026-10-16: checkbox | name |
+        # marks | strip | avg. The owned track went when the count moved onto the
+        # tribe line, which is what lets two tier columns share the widened panel.
+        self.assertEqual(len(got["browse.cmptracks"].split()), 5,
                          got["browse.cmptracks"])
         self.assertEqual(got["noavg.avgcells"], 0,
                          "a column of dashes is printed where the corpus is "
                          "empty")
         self.assertEqual(got["noavg.hasavg"], 0)
         self.assertIn("Elementals|3 of 3 owned", got["noavg.comprows"])
-        # Five tracks instead of six: the avg column is gone, not empty.
-        self.assertEqual(len(got["noavg.cmptracks"].split()), 5,
+        # Four tracks instead of five: the avg column is gone, not empty.
+        self.assertEqual(len(got["noavg.cmptracks"].split()), 4,
                          got["noavg.cmptracks"])
         # ...and where the column DOES exist, a row the corpus has never seen
         # leaves its cell empty rather than printing a dash (item B.2).
@@ -2475,12 +2482,13 @@ class TestTheCompsScreens(_Rendered):
 
     def test_a_comp_row_is_a_grid_with_the_strip_and_the_name_in_it(self):
         """Round 3 item 2 gave the row its tracks; round 4 item 6 fixed what is
-        IN them: `22px | name | owned 64 | marks | strip [| avg 64]`, one cell per
-        column in the same order on every row. The checkbox and the tier/tribe
-        used to live inside the name cell, so nothing lined up down the list."""
+        IN them: `22px | name | marks | strip [| avg 64]`, one cell per column in
+        the same order on every row. The checkbox and the tier/tribe used to live
+        inside the name cell; the owned count did too until 2026-10-16, when it
+        went back onto the tribe line to buy the width two tier columns need."""
         got = self.got
         tracks = got["browse.cmptracks"].split()
-        self.assertEqual(len(tracks), 6, got["browse.cmptracks"])
+        self.assertEqual(len(tracks), 5, got["browse.cmptracks"])
         self.assertEqual(tracks[0], "22px", "the checkbox column is first")
         self.assertIn("64px", tracks)
         self.assertEqual(tracks[-1], "64px",
@@ -2604,11 +2612,18 @@ class TestTheCompsScreens(_Rendered):
         boxes = [[int(v) for v in b.split(",")]
                  for b in self.got["browse.crowboxes"].split()]
         self.assertGreater(len(boxes), 2, "the list rendered almost no rows")
-        for i in range(1, len(boxes)):
-            self.assertGreaterEqual(
-                boxes[i][1], boxes[i - 1][3],
-                f"row {i} starts ({boxes[i][1]}) inside row {i - 1} "
-                f"(ends {boxes[i - 1][3]})")
+        # TWO TIER COLUMNS SIDE BY SIDE since 2026-10-16, so "the next row starts
+        # below the last" is no longer the shape of this list — rows now run down
+        # one column and then down the next. What the done-when actually asks for
+        # is that no two rows overlap, and an intersection test says exactly that
+        # at any column count. Touching edges are not an overlap, which is why the
+        # comparisons are strict.
+        for i in range(len(boxes)):
+            for j in range(i + 1, len(boxes)):
+                a, b = boxes[i], boxes[j]
+                self.assertFalse(a[0] < b[2] and b[0] < a[2]
+                                 and a[1] < b[3] and b[1] < a[3],
+                                 f"rows {i} and {j} overlap: {a} / {b}")
         panel = int(self.got["browse.compsw"])
         self.assertGreater(panel, 0)
         for b in boxes:
