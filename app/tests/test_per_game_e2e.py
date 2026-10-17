@@ -16,6 +16,8 @@ where `set` aliases Set-Variable. It runs by default now and skips only for the
 honest reason, when no session on the machine has a decision log.
 """
 import glob
+import gzip
+import json
 import os
 import sys
 import tempfile
@@ -85,10 +87,21 @@ class TestOneReportPerGame(unittest.TestCase):
             self.assertEqual(len(files), len(self.games),
                              f"{len(files)} reports for {len(self.games)} games")
             for path in files:
-                size = os.path.getsize(path)
-                self.assertGreater(size, 500, f"{os.path.basename(path)} is "
-                                              f"{size} bytes - a stub, not a "
-                                              f"report")
+                # OPEN IT, do not weigh it (2026-10-16). This asserted > 500
+                # bytes and went red on the maintainer's own machine when the
+                # newest session's game was one the coach caught only THREE
+                # decisions of: a legitimate 481-byte report. MEASURED — the
+                # same code against a busier session wrote 892. A byte floor was
+                # only ever a proxy for "not a stub", and the size of a report
+                # is a fact about how much of the game was coached, not about
+                # whether the report is real. So the check is the content.
+                with gzip.open(path, "rt", encoding="utf-8") as fh:
+                    body = json.load(fh)
+                self.assertIn("schema", body,
+                              f"{os.path.basename(path)} has no schema")
+                self.assertTrue(body.get("advisories"),
+                                f"{os.path.basename(path)} carries no advisories "
+                                f"- a stub, not a report")
 
     def test_a_second_pass_posts_nothing(self):
         """The trigger, the backstop and this all share one code path, so a
