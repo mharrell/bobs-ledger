@@ -34,13 +34,30 @@ def _payload(**kw):
 
 class TestTheTwoStates(unittest.TestCase):
     def test_a_first_run_card_is_not_a_game_over_card(self):
-        card = _payload()
+        from unittest import mock
+        with mock.patch.object(coach_ui, "_has_history", return_value=False):
+            card = _payload()
         self.assertTrue(card["welcome"])
         self.assertNotIn("game_over", card)
         self.assertNotIn("title", card)
         # the first-run card is where the log.config block lives
         self.assertIn("steps", card)
         self.assertIn("hint", card)
+
+    def test_a_returning_player_gets_a_line_instead_of_the_intro(self):
+        """2026-10-17: "whenever I first start Bob's Ledger, this is what Another
+        Round looks like... get rid of the older redundant box." With games
+        behind them the intro is noise, so the idle payload is one line and
+        carries neither the tagline nor the log.config block."""
+        from unittest import mock
+        with mock.patch.object(coach_ui, "_has_history", return_value=True):
+            card = _payload()
+        self.assertTrue(card["welcome"], "it is still the welcome STATE")
+        self.assertTrue(card["compact"], "the page draws a line, not a card")
+        self.assertNotIn("hint", card)
+        self.assertNotIn("steps", card)
+        self.assertNotIn("tagline", card)
+        self.assertIn("Waiting for your next buy phase", card["status"])
 
     def _after_game_over(self, analysis=None, placement=None, turn=None):
         """Run the real entry point and read the card it published.

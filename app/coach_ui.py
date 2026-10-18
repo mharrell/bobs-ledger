@@ -663,6 +663,9 @@ _HTML = r"""<!doctype html>
   .none { color:var(--dim); font-style:italic; }
   /* Welcome (the deliberate empty state): teaches instead of faking.
      Shown on fresh boot, a new game's first tick, and after Clear. */
+  /* The idle line a returning player gets INSTEAD of the welcome card
+     (2026-10-17): one sentence, no box, no introduction to read again. */
+  .idle-line { margin-top:8vh; color:var(--text-2); font-size:14px; }
   .welcome { margin-top:8vh; padding:30px 34px; border:1px solid var(--dim);
              border-radius:12px; max-width:560px; }
   .welcome .w-title { margin:0 0 4px; font-size:26px; color:var(--gold); }
@@ -2119,6 +2122,14 @@ function renderWelcome(a) {
   renderShareToggle(a.share);
   renderRelease(a.release);
   decide.innerHTML = '';
+  // A player with games behind them does not need the introduction (2026-10-17):
+  // the idle state is one line saying the coach is waiting. The card itself is
+  // kept for a first run, where it is the only thing on screen and carries the
+  // log.config block.
+  if (a.compact) {
+    decide.appendChild(el('div', 'idle-line', a.status || ''));
+    return;
+  }
   const card = el('div', 'welcome');
   // `title` only exists on the end-of-game card ("Game over"); a first-run card
   // is headed by the product name.
@@ -5134,6 +5145,24 @@ def log_cap_notice():
     return _LOG_CAP_NOTICE
 
 
+def _has_history():
+    """Has this player ever had a game recorded?
+
+    A directory listing, not `replay_store.list()`: this runs on the idle poll
+    and parsing 14 replays three times a second would cost more than the card.
+
+    Why it matters (2026-10-17): "whenever I first start Bob's Ledger, this is
+    what Another Round looks like... get rid of the older redundant box." The
+    welcome card is the FIRST-RUN screen — the tagline, what is missing, and the
+    log.config block. A player with games behind them has read all of it, and
+    every idle start was showing it again.
+    """
+    try:
+        return any(n.endswith(".json") for n in os.listdir(replay_store.store_dir()))
+    except OSError:
+        return False
+
+
 def _welcome_hint():
     """The first-run hint, led by the cause that can actually apply here.
 
@@ -5296,6 +5325,11 @@ def welcome_payload(game_over=None):
         # games. (The /review standalone page remains reachable by URL for
         # the just-finished game; it lost its button when the tab landed —
         # 2026-10-07, "we just don't need it anymore".)
+    elif _has_history():
+        # Nothing to introduce: the page draws the status line and no card.
+        payload["compact"] = True
+        payload.pop("product", None)
+        payload.pop("tagline", None)
     else:
         payload["hint"] = _welcome_hint()
         # The block live.py's console message has always claimed this card

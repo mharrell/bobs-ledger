@@ -160,8 +160,16 @@ class TestWelcomeAndClear(unittest.TestCase):
 
     def test_clear_serves_the_welcome(self):
         import json
-        coach_ui.clear_analysis()
-        code, _h, body = coach_ui._analysis_response(None)
+        from unittest import mock
+        # The card is the FIRST-RUN screen; a player with saved games gets the
+        # one-line idle state instead (2026-10-17), so the case has to say which
+        # it means or it would pass on a fresh machine and fail on a used one.
+        # clear_analysis() BUILDS the payload this then serves, so the patch has
+        # to cover it too — patching only the read served a cached compact card
+        # with no product on it.
+        with mock.patch.object(coach_ui, "_has_history", return_value=False):
+            coach_ui.clear_analysis()
+            code, _h, body = coach_ui._analysis_response(None)
         self.assertEqual(code, 200)
         a = json.loads(body)
         self.assertTrue(a["welcome"])
@@ -239,7 +247,9 @@ class TestWelcomeCard(unittest.TestCase):
 
     def test_the_card_carries_the_log_config_block(self):
         import json as _json
-        payload = _json.loads(coach_ui.welcome_payload())
+        from unittest import mock
+        with mock.patch.object(coach_ui, "_has_history", return_value=False):
+            payload = _json.loads(coach_ui.welcome_payload())
         self.assertIn("log.config", payload["hint"])
         for line in ("[Power]", "LogLevel=1", "FilePrinting=true"):
             self.assertIn(line, payload["steps"])
