@@ -22,7 +22,9 @@ import live_coach  # noqa: F401,E402  (preload: coach_ui <-> live_coach is circu
 import coach_ui     # noqa: E402
 import browser      # noqa: E402
 
-VIEWPORTS = ((1728, 1000), (1512, 860), (1440, 780))
+#: The must-pass sizes (layout plan round 2): the maintainer's console,
+#: the 14-inch, and the 16-inch. 1290x700 is the tight one.
+VIEWPORTS = ((1290, 700), (1512, 860), (1728, 1000))
 
 
 def styles():
