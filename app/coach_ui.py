@@ -979,6 +979,24 @@ _HTML = r"""<!doctype html>
      the only signal. The mode toggle itself lives in the SETTLE HEADER next to
      the game dropdown (2026-10-09, player call), not over the boards. */
   .tavern .tstep { width:100%; }
+  /* THE STEP VIEW'S SIZES COME FROM THE WINDOW (2026-10-17 layout plan). Three
+     rows of cards have to fit one screen, so the BOARD card height is what is
+     left after everything that is not a card (controls, panel titles and
+     padding, the caption): ~540px. The two small rows are `--r` of it, so the
+     divisor is 1 + 2r. `--b` also never exceeds 219px — the size the board card
+     was before the tavern/hand rows (measured 166x219 at 1728x1000 with
+     analysis/measure_step_view.py), so a tall window does not inflate it.
+     Above 880px of window height `--r` is 0.5 (small row = half the board);
+     below, 0.4, because the same 540 leaves less room. */
+  .tavern .stepview {
+    --r: 0.5;
+    --b: clamp(130px, calc((100vh - 540px) / (1 + 2 * var(--r))), 219px);
+    --s: calc(var(--b) * var(--r));
+    display:flex; flex-direction:column; gap:10px;
+  }
+  @media (max-height: 880px) {
+    .tavern .stepview { --r: 0.4; }
+  }
   .tavern .stepnav { display:flex; gap:8px; align-items:center;
                      margin:0 0 8px; flex-wrap:wrap; }
   .tavern .snav { background:var(--tpanel); color:var(--ttext);
@@ -4495,7 +4513,7 @@ function renderTavernSteps(row) {
   }
   const st = steps[_tavernStep];
   const col = document.createElement('div');
-  col.className = 'tstep';
+  col.className = 'tstep stepview';
   const nav = document.createElement('div');
   nav.className = 'stepnav';
   const mk = (label, fn, dis) => {
