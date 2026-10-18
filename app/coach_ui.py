@@ -865,8 +865,6 @@ _HTML = r"""<!doctype html>
      (the nav, the sharing control, the Settle Up header) with the browser's own
      ring. The 44px minimum targets are per control, below. */
   .tavern :focus-visible { outline:2px solid var(--tsel); outline-offset:2px; }
-  .tavern .ts-head { font:600 13px "Segoe UI", system-ui; margin-bottom:8px; }
-  .tavern .ts-head .tm { color:var(--tmute); font-weight:400; font-size:12px; }
   .tavern .ts-caveat { color:var(--tmute); font-size:12px; margin:4px 0 10px; }
   .tstrip { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px; }
   .tavern .tbtn2 { min-width:44px; height:48px; padding:0 10px;
@@ -4317,13 +4315,16 @@ function renderTavernGame(rep) {
   const root = document.createElement('div');
   root.className = 'tavern';
   const t = rep.totals || {};
-  const head = document.createElement('div');
-  head.className = 'ts-head';
-  head.innerHTML = '<span>' + (rep.hero || 'Saved game') + '</span>'
-    + '<span class="tm"> '
-    + (rep.placement != null ? '· finished ' + rep.placement + ' ' : '')
-    + '· ' + (rep.created || '') + '</span>';
-  root.appendChild(head);
+  // NO SECOND HEADING (layout plan round 2, item 2). This line repeated the
+  // dropdown in the header, word for word — "Hero · finished N · timestamp" is
+  // exactly what `gameLabel()` builds there — and cost a row of height above the
+  // turn strip on every screen. It is a tooltip on the dropdown now, so the fact
+  // is still one hover away and the row is gone.
+  const settleLabel = (rep.hero || 'Saved game')
+    + (rep.placement != null ? ' · finished ' + rep.placement : '')
+    + ' · ' + (rep.created || '');
+  const sel = document.getElementById('settle-select');
+  if (sel) sel.title = settleLabel;
   const turns = (rep.timeline || {}).turns || [];
   const phases = rep.phases || [];
   const hasSteps = turns.some(r => (r.steps || []).length);

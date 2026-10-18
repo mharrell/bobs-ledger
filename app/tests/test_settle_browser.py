@@ -260,7 +260,11 @@ _DRIVER = r"""
     o.stepthumb = size(one('.stepboard .thumb'));
     o.stepghost = size(one('.stepboard .tile.ghost'));
     o.caveat = txt(one('.ts-caveat'));
-    o.head = txt(one('.ts-head'));
+    // The review heading is GONE (2026-10-18, layout plan round 2 item 2): it
+    // repeated the dropdown. The fact it carried is the dropdown's tooltip, so
+    // that is what `head` measures now.
+    const selEl = document.getElementById('settle-select');
+    o.head = (selEl && selEl.title) || '';
     // Layout facts (item 1 and item 8): the rail must sit LEFT of the boards,
     // and a board label must sit ABOVE its own row. Both are measured, because
     // both are stated as positions and a source assertion cannot see a wrap.
