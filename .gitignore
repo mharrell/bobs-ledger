@@ -156,3 +156,10 @@ telemetry/.wrangler/
 # embed absolute paths — never committed, never shipped (publish_release.py
 # excludes *.lnk too, since it walks the working tree rather than git).
 *.lnk
+
+# Card art cache: fetched on demand at runtime, reparsed per install, and
+# excluded from the release zip by publish_release.EXCLUDE_DIRS. The repo still
+# TRACKS a seed of 1221 files (they are in history and stay tracked); this stops
+# new ones arriving with a commit -- 302 were untracked in the working tree when
+# this was written (2026-10-17).
+img_cache/
