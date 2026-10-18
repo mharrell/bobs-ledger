@@ -126,3 +126,48 @@ skipped (no source log): 5
 - 2026-10-15_164554-run-na.json: source log is gone
 - 2026-10-15_211954-Ambassador-Faelin-8.json: source log is gone
 - 2026-10-15_214927-Sewerwock-3.json: source log is gone
+
+---
+
+## After the rebuild (2026-10-17 18:00)
+
+Done on the maintainer's instruction ("rebuild the stale replays and delete the two
+that are messed up"), through `settle_up.rebuild` — the same in-place path the
+Settle Up **Rebuild** button uses, which keeps the stored id and overwrites the
+game instead of stacking a `-2` beside it.
+
+**Deleted — two files that were never games:**
+
+| file | session recorded | content |
+| --- | --- | --- |
+| `2026-10-15_164548-run-na.json` | `Hearthstone_2026_01_01` | 1176 bytes, no hero, no turns |
+| `2026-10-15_164554-run-na.json` | `Power.log` | 1150 bytes, no hero, no turns |
+
+`Hearthstone_2026_01_01` is the synthetic session name `privacy_scan` uses, so both
+arrived from a test or tooling run rather than from play. The store went from 16
+files to 14.
+
+**Rebuilt — 11 of the 12 remaining**, all with `timeline_error=None`:
+
+- **Two placements corrected**, to the log's own `PLAYER_LEADERBOARD_PLACE`:
+  Professor Putricide 7 → **6** (friendly = player 5), Ambassador Faelin 7 → **8**
+  (friendly = player 7). The files had been built seconds after their game ended,
+  before the log's leaderboard lines were written.
+- The rest matched their earlier placement, hero and turn count, and picked up the
+  10-16 fixes: the final fight, the last turn's own buy board, and the removed
+  "final board not recoverable" note.
+- Spot-checked content, not just presence: Alexstrasza's last turn reads
+  `winner=them`, peak 2v5, survivors 0v1, 14/14 step boards and **no notes**;
+  Putricide's carries one *legitimate* note ("1 minion(s) were played after the
+  last buy-phase snapshot"), which is the `lag` disagree…ement the audit flagged.
+
+**Skipped — 3, source log pruned by Hearthstone:** Greybough (2026-10-15),
+Ambassador Faelin (2026-10-15 21:19), Sewerwock (2026-10-15 21:49). They keep the
+numbers they were built with; nothing can re-derive them, so they are the oldest
+thing in the store and permanently unauditable.
+
+**Open, cosmetic:** the two corrected files still carry the OLD place in their
+filename (`...-Professor-Putricide-7.json` holds place 6, `...-Ambassador-Faelin-7.json`
+holds 8). Settle Up lists the placement from the file's content, so the page is
+right; only the name is stale. Renaming would change the stored id, so it is left
+for a decision rather than done silently.
