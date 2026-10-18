@@ -3596,6 +3596,16 @@ function renderTavernGameOver(a) {
   app.classList.add('tavern-on');
   box.hidden = false;
   box.innerHTML = '';
+  // THE OLDER BOX IS A STALE FRAME, not a second render (2026-10-17). The
+  // dispatch calls this INSTEAD of `renderWelcome`, so nothing redraws the card
+  // slot — and the card that drew the "Bob's Ledger / waiting for your next buy
+  // phase" panel was the payload from BEFORE the game ended. MEASURED on the
+  // maintainer's first start after a game: that panel sat above this one and the
+  // two said the same thing ("waiting for your next buy phase" over "the coach
+  // is still running"). Clearing the slot is what the tavern's own reset already
+  // does for the other container, for the same reason.
+  const stale = document.getElementById('col-decide');
+  if (stale) stale.innerHTML = '';
   // A GAME ENDED (item B.1): the comps view state — the open Detail, the sort,
   // the expanded tier groups and the ticked compare boxes — belongs to the game
   // that just finished, so it goes with it. The next game starts from the

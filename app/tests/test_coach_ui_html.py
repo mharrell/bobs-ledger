@@ -124,6 +124,15 @@ class TestTheHoverCardCannotFlicker(unittest.TestCase):
                       "the tooltip can take the pointer, so it can flicker "
                       "against the tile it covers")
 
+    def test_the_game_over_card_clears_the_stale_first_run_card(self):
+        """The maintainer's first start after a game showed TWO boxes: "Bob's
+        Ledger / waiting for your next buy phase" above the game-over card, both
+        saying the coach is waiting. The game-over path is a different entry
+        point that returns before `renderWelcome`, so the older card was simply
+        never cleared — a stale frame, not a duplicate render (2026-10-17)."""
+        self.assertIn("const stale = document.getElementById('col-decide')", _HTML)
+        self.assertIn("if (stale) stale.innerHTML = '';", _HTML)
+
     def test_the_step_rows_are_mini_tiles(self):
         """The tavern and hand rows are 32px tiles, not the live 56px ones, so
         the BOARD stays the subject of the step (2026-10-17)."""
