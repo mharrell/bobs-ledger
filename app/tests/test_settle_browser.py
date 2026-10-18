@@ -813,19 +813,19 @@ class TestTheStepThroughInABrowser(_Rendered):
                          "the sell step must show the absence it created")
         self.assertEqual(self.got["s2.stepghosts"], 1)
 
-    def test_large_cards_and_prev_play_next(self):
-        """Item 2/5 (2026-10-09): step cards are at least the design's 130px
-        wide with the art filling that width, and the sold ghost stays
-        smaller than a card — the bug that made a sold card look like it was
-        still on the board."""
+    def test_board_cards_keep_their_rectangle_at_a_smaller_size(self):
+        """REPLACED 2026-10-18. Item 2/5 of 2026-10-09 asked for cards at least
+        130px wide; the maintainer's call now is the opposite — "I don't want them
+        to be square. Go back to the rectangle shape. Just scale down the size."
+        A width floor would forbid that, so the claim is the SHAPE: the art fills
+        the card's width and keeps the pool's portrait ratio, however small the
+        card gets."""
         tw, _th = self.got["s2.steptile"].split("x")
-        aw, _ah = self.got["s2.stepthumb"].split("x")
-        width = int(tw)
-        self.assertGreaterEqual(width, 130,
-                                f"step cards are under 130px: "
-                                f"{self.got['s2.steptile']}")
-        self.assertEqual(aw, tw,
+        aw, ah = (int(v) for v in self.got["s2.stepthumb"].split("x"))
+        self.assertEqual(aw, int(tw),
                          "the art does not fill the step card's width")
+        self.assertAlmostEqual(aw / ah, 88 / 116, delta=0.03,
+                               msg="the board art stopped being a rectangle")
         ghost = int(self.got["s2.stepghost"].split("x")[0])
         self.assertLess(ghost, width,
                         "the sold ghost is as big as a real card")

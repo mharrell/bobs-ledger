@@ -1054,14 +1054,15 @@ _HTML = r"""<!doctype html>
   .tavern .stepview .spanel-title { font-size:10px; letter-spacing:.09em;
                                     text-transform:uppercase;
                                     color:var(--tmute); }
-  /* SHORTER BOARD ART (2026-10-18, the maintainer's call: "make the images for
-     minions in the board section shorter"). The step view sized its board cards
-     with the pool's portrait ratio (88/116), so at 1290px wide each one stood
-     171px tall and the board panel alone was taller than the screen could give
-     it. Square art is not a crop compromise here: every cached portrait is
-     already 256x256, so this shows the whole picture and takes 41px off each
-     card. Tavern and hand cards keep their own smaller box. */
-  .tavern .stepview .spanel-board .tile .thumb { aspect-ratio: 1 / 1; }
+  /* SMALLER BOARD CARDS, SAME SHAPE (2026-10-18). The card keeps the pool's
+     portrait ratio (88/116) — a rectangle, as the maintainer asked — and gets
+     smaller by getting NARROWER, because the height follows the width. The step
+     view used to borrow `--tstepw` (clamp 130..190) which stood 171px tall at
+     1290px wide; this is the ordinary tile width, so the same card is 86px wide
+     and 113px tall there — 58px off the row, with no crop of the art at all.
+     A square box was tried first and rejected: it changed the SHAPE, and the
+     point was the size. */
+  .tavern .stepview .spanel-board .stepboard { --tcardw: clamp(86px, 6.6vw, 124px); }
   .tavern .stepview .spanel-cards { display:flex; gap:8px; flex-wrap:wrap;
                                     min-width:0; border:0; padding:0;
                                     background:none; min-height:0; }
