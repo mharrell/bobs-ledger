@@ -124,6 +124,16 @@ class TestTheHoverCardCannotFlicker(unittest.TestCase):
                       "the tooltip can take the pointer, so it can flicker "
                       "against the tile it covers")
 
+    def test_the_growth_chip_does_not_claim_to_be_a_value(self):
+        """The chip printed the board's stat growth under the label "value"
+        (2026-10-17). `turn_review.stats()` says in its own docstring that the
+        value function is a different question, and the review carries no value
+        figure at all — so the label was the whole bug."""
+        self.assertNotIn("chip('value ", _HTML,
+                         "the growth chip is claiming to be a value again")
+        self.assertIn("chip(ga != null", _HTML)
+        self.assertIn("'stats ' + signed(ga) + '/' + signed(gh)", _HTML)
+
     def test_the_text_box_waits_for_a_slow_render(self):
         self.assertIn("TIP_BOX_DELAY", _HTML)
         self.assertIn("tipBoxTimer = setTimeout", _HTML,

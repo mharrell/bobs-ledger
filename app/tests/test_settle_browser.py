@@ -39,6 +39,7 @@ no permission to launch it, and calling that a broken page is a red herring.
 import json
 import os
 import sys
+import re
 import unittest
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -85,7 +86,7 @@ def _rep():
         "buy_start": opened, "buy_end": ended,
         "buy_end_text": "Dune Dweller 5/5, Kooky Chemist 2/2, "
                         "Annoy-o-Module 4/8",
-        "stats": {"buy_end": 40, "growth": 5},
+        "stats": {"buy_end": 40, "growth": 5, "growth_atk": 3, "growth_hp": 2},
         "commitment": {"target": "Elementals"},
         "spend": {"total": 14, "rolls": 9},
         "shop_events": {"played": 2, "tier_up": True, "hero_power": False,
@@ -128,7 +129,7 @@ def _rep():
     turn2 = {
         "turn": 2, "gold": 7, "winner": "them", "damage_taken": 12, "eff": 18,
         "buy_start": ended, "buy_end": ended, "buy_end_text": "unchanged",
-        "stats": {"buy_end": 40, "growth": 0},
+        "stats": {"buy_end": 40, "growth": 0, "growth_atk": 0, "growth_hp": 0},
         "spend": {"total": 3, "rolls": 0},
         "shop_events": {},
         "took": {"bought": [{"card": "BG31_831", "name": "Annoy-o-Module"}],
@@ -529,9 +530,20 @@ class TestTheTavernSummaryInABrowser(_Rendered):
         self.assertEqual(self.got["t1.cards"], 1)
         self.assertEqual(self.got["t1.theturn"], 0,
                          "the classic 'The turn' line is back on the card")
-        for chip in ("2 cards played", "14g spent", "value +5"):
+        for chip in ("2 cards played", "14g spent"):
             self.assertIn(chip, self.got["t1.chips"],
                           "the line's numbers did not move into the chips")
+        # CHANGED 2026-10-17: this chip said "value +5" while printing the
+        # board's STAT growth, and the two are different questions — the review
+        # carries no value figure at all. It now reads "stats +a/+h", in the same
+        # pair and order the tiles use, and the pair has to add up to the same
+        # growth it replaced.
+        m = re.search(r"stats ([+-]?\d+)/([+-]?\d+)", self.got["t1.chips"])
+        self.assertIsNotNone(m, f"no stats chip in {self.got['t1.chips']!r}")
+        self.assertEqual(int(m.group(1)) + int(m.group(2)), 5,
+                         "the split does not add up to the growth it replaced")
+        self.assertNotIn("value +", self.got["t1.chips"],
+                         "the chip still claims to be a value")
 
     def test_a_count_of_one_is_worded_as_one(self):
         """The chips are player-facing (§4.3), and a turn really does hold one

@@ -160,6 +160,19 @@ def stats(board):
     return sum((m.get("atk") or 0) + (m.get("health") or 0) for m in board or [])
 
 
+def _split(board):
+    """The board's stat total split into (attack, health) — `stats()` in two parts.
+
+    The turn's chip used to print the combined number under the label "value",
+    which is a different question entirely (`stats()` says so itself, and `value.py`
+    has no per-turn figure in the review at all). Players read growth as the
+    "+2158/+1633" their OWN tiles show, so the summary says the same thing in the
+    same order: attack, then health.
+    """
+    return (sum((m.get("atk") or 0) for m in board or []),
+            sum((m.get("health") or 0) for m in board or []))
+
+
 def _steps_for(actual, markers, snapshots, friendly, offset, upper):
     """The ordered shop actions with the board as it stood right after each
     (the Step-through's data, 2026-10-08).
@@ -608,6 +621,7 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
     turns = sorted(set(snaps) | set(info))
     rows = []
     prev_stats = None
+    prev_split = None
     for i, t in enumerate(turns):
         snaps_t = snaps.get(t) or []
         buy = [s for s in snaps_t if s.get("phase") == "buy"]
@@ -762,6 +776,7 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
         a = entry.get("analysis") or {}
         actual = entry.get("actual") or {}
         bstats = stats(buy_end)
+        bstats_split = _split(buy_end)
         notes = []
         # The buy-phase snapshots LAG the real end of the buy phase: they fire
         # on each minion entering PLAY and on each leaving it, and a player
@@ -838,6 +853,12 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
                 # and measures a real −N. An unreadable turn says so instead.
                 "growth": None if (prev_stats is None or not buy)
                           else bstats - prev_stats,
+                # The same delta, in the two numbers a player can check against
+                # the tiles: "+2158/+1633" is attack/health growth.
+                "growth_atk": None if (prev_split is None or not buy)
+                              else bstats_split[0] - prev_split[0],
+                "growth_hp": None if (prev_split is None or not buy)
+                             else bstats_split[1] - prev_split[1],
                 "theirs": stats(theirs_at_combat),
                 "combat_ours": stats(ours_at_combat),
             },
@@ -876,6 +897,7 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
         # longer existed — the same fake number, one turn later.
         if buy:
             prev_stats = bstats
+            prev_split = bstats_split
     return rows
 
 

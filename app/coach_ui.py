@@ -4318,7 +4318,18 @@ function tavernRail(r, phases) {
   if (ev.played != null) chip(count(ev.played, 'card') + ' played');
   if (sp.total != null) chip(sp.total + 'g spent');
   if (!noSnapshot && stats.growth != null) {
-    chip('value ' + (stats.growth >= 0 ? '+' : '') + stats.growth);
+    // STATS, NOT VALUE (2026-10-17). The chip said "value" and printed the
+    // board's stat growth, and the two are different questions — `stats()` in
+    // turn_review says so itself, and the review carries no value figure at all.
+    // MEASURED: "it says that the value went up 19061. But the amount that the
+    // stats of the minions went up is a verry different number." It was one
+    // number pretending to be another. Split into attack/health, the same pair
+    // and the same order the tiles show, so a player can check it.
+    const signed = n => (n >= 0 ? '+' : '') + n;
+    const ga = stats.growth_atk, gh = stats.growth_hp;
+    chip(ga != null && gh != null
+      ? 'stats ' + signed(ga) + '/' + signed(gh)
+      : 'stats ' + signed(stats.growth));
   }
   if (ev.hero_power) chip('hero power');
   for (const tr of (ev.trinkets || [])) chip('trinket: ' + tr);
