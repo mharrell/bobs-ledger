@@ -204,6 +204,15 @@ def short_shot(url, path, w, h):
                         "--virtual-time-budget=4000",
                         f"--screenshot={path}", url],
                        capture_output=True, timeout=180)
+    # The capture is the WINDOW (w x h+143), not the viewport it was laid out
+    # for, so it carries a 143px band of nothing below the fold. Cropping to the
+    # viewport is what makes two runs comparable pixel for pixel.
+    if os.path.exists(path):
+        import shutil
+        import subprocess as sp
+        sips = shutil.which("sips")
+        if sips:
+            sp.run([sips, "-c", str(h), str(w), path], capture_output=True)
     return os.path.exists(path)
 
 
