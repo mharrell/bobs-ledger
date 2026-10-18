@@ -79,15 +79,20 @@ The page has two tabs: **Another Round**, the live view, and **Settle Up**, the 
 
 This is where you start, and it updates as you play. It opens as a page in your browser, not a second game window, so put it on another monitor or leave it behind the game.
 
-- **The status bar at the top** — the hero, then gold, tier, health (with armour when you have any), turn and place. A number that has not been read yet is a dash, never a guess.
+![Another Round at the first shop: the lobby tribes set, four tavern offers, and the comps this lobby can build](docs/screenshots/another-round-first-shop.png)
+
+*Another Round at the first shop: the five lobby tribes are set, the tavern's four offers are on the left, and the comps this lobby can build are already listed on the right.*
+
+- **The status bar at the top** — the hero, then gold, tier, health (with armour when you have any), turn and place. A number that has not been read yet is a dash, never a guess. The page's one read-age line at the very top says how old the current frame is.
 - **One row of lobby tribes under it.** Tap the five tribes the tavern is offering this game — the same five the game's own minion-types panel shows you at hero select — and every comp and count on the page is exact from turn 1.
 - **The sections below** show where the game stands:
-  - **Shop** — the tavern's offers, your board and your hand as rows of cards with a one-line caption under each, the mix of tribes on offer, how long ago the shop was read, and the offers that left the shop during this turn. Beneath those rows sits the announced **next opponent**: their hero, the board they last staged, what it was worth with how many rounds ago that was read, and their tribe mix.
-  - **Facts** — effective health, what the last fight cost, what the last three cost, the per-combat damage cap, your board's stats against the last board seen, and what levelling up costs.
+  - **Tavern** — the tavern's offers, the mix of tribes on offer, and the offers that left the shop during this turn.
+  - **Board and hand** — your board and your hand as rows of cards with a one-line caption under each; the hand is one line rather than card tiles. The panel is not shown when both are empty.
+  - **Facts** — effective health, what the last fight cost, what the last three cost, the per-combat damage cap, your board's stats against the last board seen, and what levelling up costs. The section is not shown until it has a value to print.
   - **Comps** — the comps this lobby offers, counted in the panel header, grouped by source tier. Each shows its name and tribe, its core cards, how much of the core you hold, and the average placement your own games have produced for it. Sort by tier, overlap or average placement; open a comp for its core and flex cards and its written guide; tick up to three to compare. Comps for rotated-out tribes sit in a collapsed **Out of play** section, and comps for tribes this lobby does not offer are not listed.
-  - **Lobby** — who among the seats you have seen is contesting which tribe, and the last board the next opponent staged, with their trinkets.
+  - **Next opponent** — their hero, the board they last staged, what it was worth with how many rounds ago that was read, and their tribe mix.
 - **When the game asks you to choose** (a hero, a trinket, a Discover), the panel shows what is known about each option, in the order the game offered them and never in an order that means "take this one". A hero card shows its power and how often the population picks it; a trinket shows how often it is picked, its average placement and how often it finishes top 4; a Discovered card shows its tier and tribe, or `No data` when there is none. Those population numbers come from a reference file bundled with the app, built from public statistics on hsreplay.net and read offline. Nothing there is a recommendation.
-- **The layout follows your window.** A big desktop window is three columns (shop and board, comps, reference). Every other window is one column of sections you open and close by clicking their headings, with the **Facts** table pinned above them; each heading carries a one-line summary of what is under it, and which sections are open is remembered.
+- **The layout follows your window.** A big desktop window is two columns: the shop's panels on the left and Comps on the right. Every other window is one column of sections you open and close by clicking their headings, with the **Facts** table pinned above them; each heading carries a one-line summary of what is under it (Facts speaks in its rows), and which sections are open is remembered.
 
 Every card carries the same facts: its tier, its text on hover, and what it is worth. The tavern's offers keep the order the game shows them, not a ranking. When a game ends, the card on screen shows the placement and round large, an **Open in Settle Up** button, and the save-every-replay answer on one line.
 
