@@ -215,10 +215,19 @@ def _steps_for(actual, markers, snapshots, friendly, offset, upper,
         # empty" (it never is).
         tavern = []
         if offers and count:
-            tavern = list(offers[count - 1] or [])
+            # A tavern holds at most seven offers; a longer read is the shop
+            # block caught mid-parse (it is rebuilt from a zone layer, so a
+            # snapshot can land inside it). MEASURED 2026-10-17 on the Thorim
+            # game: 16 steps read 8-12 "offers" — stale entries from the
+            # previous roll piled onto the current one. Treated as unknown, so
+            # the last good reading carries forward.
+            raw = list(offers[count - 1] or [])
+            tavern = raw if len(raw) <= 7 else []
             if not tavern:
                 for back in range(count - 2, -1, -1):
-                    if offers[back]:
+                    # The same seven-offer test: carrying a mid-parse read
+                    # forward would put the pile back on the screen.
+                    if offers[back] and len(offers[back]) <= 7:
                         tavern = list(offers[back])
                         break
         

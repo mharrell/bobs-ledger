@@ -204,7 +204,12 @@ def parse_actions(chunk, friendly, friendly_hero_card=None,
             # real cast. The cost is that a token minion that no DB lists
             # (Sellemental's BGS_115t) is still counted as one; narrowing THAT
             # needs a cardtype the log prints on a line of its own.
-            if cid not in _load_bg_minion_ids() and not cid.startswith("TB_BaconShop_DragBuy"):
+            # A golden minion carries "_G" and the minion set holds base ids, so
+            # "not a known minion" was true for every golden — a golden minion
+            # played from hand counted as a CAST. MEASURED 2026-10-17 on the
+            # Thorim game: BG33_885_G, BG30_123_G among the 88 casts.
+            base = cid[:-2] if cid.endswith("_G") else cid
+            if base not in _load_bg_minion_ids() and not cid.startswith("TB_BaconShop_DragBuy"):
                 turns[-1]["spells"] += 1
                 turns[-1]["spell_ids"].append(cid)
                 event("cast", cid, at)
