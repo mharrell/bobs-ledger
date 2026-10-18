@@ -91,6 +91,10 @@ This is where you start, and it updates as you play. It opens as a page in your 
 
 Every card carries the same facts: its tier, its text on hover, and what it is worth. The tavern's offers keep the order the game shows them, not a ranking. When a game ends, the card on screen shows the placement and round large, an **Open in Settle Up** button, and the save-every-replay answer on one line.
 
+![Another Round game-over card: placement and round, Open in Settle Up, and the save-every-replay answer on one line](docs/screenshots/another-round-game-over.webp)
+
+*Another Round's game-over card: the placement and round, the way into Settle Up, and the save answer on one line.*
+
 ### Settle Up
 
 When a game ends, the card offers **Save replay**. Saving keeps that game in the **Settle Up** tab: pick any saved game from the dropdown and the turn-by-turn view opens. The card also carries a **Save every replay automatically** checkbox — leave it ticked and each finished game is kept as its review builds. Saving is per game and yours alone; saved games stay on your machine.
