@@ -197,6 +197,13 @@ def parse_actions(chunk, friendly, friendly_hero_card=None,
             cid = m.group(1)
             # A spell cast: a PLAY on a card that isn't a minion and isn't the
             # buy button. (Hero powers are handled above and continue first.)
+            # "Not a known minion" is the cast test, and it has to stay coarse:
+            # generated spells are in no DB at all. Measured 2026-10-17 — Blood
+            # Gem (BG20_GEM) is not in meta/spells.json, meta/minions.json nor
+            # the card DB, so a "is it a known spell?" test would stop counting a
+            # real cast. The cost is that a token minion that no DB lists
+            # (Sellemental's BGS_115t) is still counted as one; narrowing THAT
+            # needs a cardtype the log prints on a line of its own.
             if cid not in _load_bg_minion_ids() and not cid.startswith("TB_BaconShop_DragBuy"):
                 turns[-1]["spells"] += 1
                 turns[-1]["spell_ids"].append(cid)
@@ -209,7 +216,7 @@ def parse_actions(chunk, friendly, friendly_hero_card=None,
                 m.group(1), int(m.group(2)), m.group(3),
                 m.group(4), m.group(5), int(m.group(6)),
             )
-            if not MINION_ONLY.match(cid):
+            if not MINION_ONLY.match(cid) or cid in _load_bg_spell_ids():
                 continue
             # The bracket's zone is the state BEFORE this write (the play
             # block's own lines all carry zone=HAND). The write itself —
@@ -283,6 +290,31 @@ def _load_bg_minion_ids():
     if _BG_MINION_IDS is None:
         _BG_MINION_IDS = {m.get("id") for m in meta.minions()}
     return _BG_MINION_IDS
+
+
+_BG_SPELL_IDS = None
+
+
+def _load_bg_spell_ids():
+    """Card ids of tavern SPELLS (meta/tavern_spells.json), cached.
+
+    A spell is not a minion and never sits on the board, but it transits PLAY on
+    its way to the graveyard — so the zone logic saw it "leave the board" and
+    called it a SOLD, and its HAND -> PLAY write called it a card PLAYED.
+    MEASURED 2026-10-17 (Reno Jackson, turn 9): five casts, and every one of them
+    also appeared in `sold` — "Armor Stash x2" in a SELLS list, which the player
+    rightly objected to: you cannot sell a spell.
+
+    Deliberately NOT used to decide what a cast is: Blood Gem (BG20_GEM) is a
+    generated spell that `meta/` has never listed, so "is it a known spell?"
+    would silently stop counting real casts. It is used where the answer only
+    needs to keep spells OUT of the board's zone logic — a spell is never on the
+    board, so a miss there costs a phantom sale of a spell, not a lost count.
+    """
+    global _BG_SPELL_IDS
+    if _BG_SPELL_IDS is None:
+        _BG_SPELL_IDS = {s.get("id") for s in meta.spells() if s.get("id")}
+    return _BG_SPELL_IDS
 
 
 def _load_bg_magnetic_ids():

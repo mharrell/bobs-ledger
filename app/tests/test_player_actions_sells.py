@@ -72,5 +72,35 @@ class TestMagneticPlaysAreNotSells(unittest.TestCase):
         self.assertEqual(turns[0]["sells"], ["BG_BOT_911"])
 
 
+CAST_BLOCK = GS + ("BLOCK_START BlockType=PLAY Entity=[entityName={n} id={i} "
+                   "zone=HAND zonePos=0 cardId={c} player=1]")
+
+
+class TestASpellIsCastAndNeverSold(unittest.TestCase):
+    """You cannot sell a spell (2026-10-17).
+
+    "Sells aren't being counted totally correctly. The Armor Stash x2 isn't
+    correct. You can't sell spells."
+
+    A spell transits HAND -> PLAY -> GRAVEYARD on its way to resolving, so the
+    zone logic read the exit as a SALE and the entry as a card PLAYED. MEASURED
+    on Reno Jackson's turn 9: all four casts also appeared in `sold`, and the
+    five "cards played" were mostly spells.
+    """
+
+    def test_a_cast_spell_is_not_sold_and_not_played(self):
+        cid = "BG28_500"                       # Armor Stash, a tavern spell
+        lines = [GS + STEP,
+                 BUY.format(n="Armor Stash", c=cid),
+                 CAST_BLOCK.format(n="Armor Stash", c=cid, i=9),
+                 HAND.format(n="Armor Stash", i=9, c=cid),
+                 PLAY.format(n="Armor Stash", i=9, c=cid),
+                 LEAVE.format(n="Armor Stash", i=9, c=cid, to="GRAVEYARD")]
+        turns = parse_actions(lines, friendly=1)
+        self.assertEqual(turns[0]["spells"], 1, "the cast was not counted")
+        self.assertEqual(turns[0]["sells"], [], "a spell cannot be sold")
+        self.assertEqual(turns[0]["plays"], [], "a spell is cast, not played")
+
+
 if __name__ == "__main__":
     unittest.main()
