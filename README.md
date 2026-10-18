@@ -79,9 +79,9 @@ The page has two tabs: **Another Round**, the live view, and **Settle Up**, the 
 
 This is where you start, and it updates as you play. It opens as a page in your browser, not a second game window, so put it on another monitor or leave it behind the game.
 
-![Another Round at the first shop: the lobby tribes set, four tavern offers, and the comps this lobby can build](docs/screenshots/another-round-first-shop.png)
+![Another Round at the first shop, before the five lobby tribes are confirmed](docs/screenshots/another-round-first-shop.png)
 
-*Another Round at the first shop: the five lobby tribes are set, the tavern's four offers are on the left, and the comps this lobby can build are already listed on the right.*
+*Another Round at the first shop, before the five lobby tribes are tapped: the tavern's offers and the facts are already read, and the comps are listed but dimmed until the tribe row is set.*
 
 - **The status bar at the top** — the hero, then gold, tier, health (with armour when you have any), turn and place. A number that has not been read yet is a dash, never a guess. The page's one read-age line at the very top says how old the current frame is.
 - **One row of lobby tribes under it.** Tap the five tribes the tavern is offering this game — the same five the game's own minion-types panel shows you at hero select — and every comp and count on the page is exact from turn 1.
