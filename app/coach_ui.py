@@ -725,6 +725,39 @@ _HTML = r"""<!doctype html>
                         padding:4px 8px; cursor:pointer; opacity:.55; }
   #tabs #share-toggle:hover { opacity:1; color:var(--ttext);
                               border-color:var(--tline); }
+
+  /* ONE HEADER ROW (layout plan round 2, item 1). Everything that identifies or
+     frames the saved game lives on the tabs' own row: the tab pair, the game
+     dropdown (the widest, so it takes the slack), the Summary/Step through pair,
+     the sharing control, and a "…" menu holding Rebuild and Open folder.
+     The settle-only parts are hidden while Another Round is on, which is why
+     `showTab` now also marks this row — a game dropdown over a live game would
+     be a control for a screen you are not looking at. */
+  #tabs { flex-wrap:nowrap; align-items:center; gap:8px; margin:2px 0 10px; }
+  #tabs #settle-select { flex:1 1 auto; min-width:0; max-width:520px;
+                         background:var(--tcard); color:var(--ttext);
+                         border:1px solid var(--tline); border-radius:8px;
+                         padding:6px 8px; font:600 13px "Segoe UI", system-ui; }
+  #tabs #settle-mode { flex:none; }
+  #tabs:not(.settle-on) #settle-select, #tabs:not(.settle-on) #settle-mode,
+  #tabs:not(.settle-on) .smenu { display:none; }
+  #tabs .smenu { flex:none; position:relative; margin-left:auto; }
+  #tabs .smenu > summary { list-style:none; cursor:pointer; user-select:none;
+                           background:var(--tpanel); color:var(--tmute);
+                           border:1px solid var(--tline); border-radius:8px;
+                           padding:5px 10px; font:700 14px "Segoe UI", system-ui; }
+  #tabs .smenu > summary::-webkit-details-marker { display:none; }
+  #tabs .smenu[open] > summary, #tabs .smenu > summary:hover {
+    color:var(--ttext); border-color:var(--tsel); }
+  #tabs .smenu-body { position:absolute; right:0; top:calc(100% + 4px); z-index:40;
+                      display:flex; flex-direction:column; gap:4px;
+                      background:var(--tpanel); border:1px solid var(--tline);
+                      border-radius:8px; padding:6px; min-width:150px; }
+  #tabs .smenu-body button { text-align:left; background:none;
+                             color:var(--tmute); border:0; border-radius:6px;
+                             padding:6px 8px; cursor:pointer;
+                             font:600 13px "Segoe UI", system-ui; }
+  #tabs .smenu-body button:hover { color:var(--ttext); background:var(--tcard); }
   #tabs #share-toggle[hidden] { display:none; }
   /* (The Live viewer flag's row lived here — `#live-viewer-row`, right-aligned
      on this nav row since round-3 item 7, and hidden by `showTab` while Settle
@@ -1771,7 +1804,34 @@ _HTML = r"""<!doctype html>
 <nav id="tabs" class="tavern">
 <button class="tab on" data-tab="live">Another Round</button>
 <button class="tab" data-tab="settle">Settle Up</button>
+<!-- ONE HEADER ROW (layout plan round 2, item 1). The saved-game controls were a
+     second row of their own (`.s-head`), above the turn strip and under this
+     one; they live here now, after the tabs, because the game you are reading
+     belongs beside the tab that shows it. The ids are unchanged — every handler
+     in the page binds by id, so this is a move rather than a rewrite. -->
+<select id="settle-select"><option value="">Loading saved replays…</option></select>
+<span id="settle-mode" class="vseg" hidden
+      title="How to read this game: Summary is the turn plus its action rail;
+Step through replays the turn one action at a time">
+<button data-m="summary" class="on">Summary</button>
+<button data-m="step">Step through</button>
+</span>
 <button id="share-toggle" hidden></button>
+<!-- The two housekeeping controls fold into one menu: neither is read at a
+     glance, and both were width the caption and the cards needed. Native
+     `<details>`, so nothing here needs a click handler to open or close. A
+     Classic/Tavern toggle does NOT belong in it — that control was removed on
+     2026-10-13 with its key, and a one-option switch is a control that cannot
+     act. -->
+<details id="settle-more" class="smenu">
+<summary title="Rebuild this saved game, or open the folder it lives in">⋯</summary>
+<div class="smenu-body">
+<button id="settle-rebuild" title="Re-derive this saved game from its own
+source log — upgrades older saves to this viewer's data (replays
+the game; the session log must still exist)">Rebuild</button>
+<button id="settle-folder" title="Open the folder the saved replays live in">Open folder</button>
+</div>
+</details>
 <!-- NO VIEWER FLAG (2026-10-13). This row carried the Live page's
      `Classic | Tavern` toggle (round-3 fix list item 7) and the Settle Up
      header carried its own. Tavern is the ONLY style now, so both controls,
@@ -1792,22 +1852,9 @@ _HTML = r"""<!doctype html>
 <div id="live-tavern" hidden></div>
 </div>
 <section id="settle">
-<div class="s-head tavern">
-<select id="settle-select"><option value="">Loading saved replays…</option></select>
-<span id="settle-mode" class="vseg" hidden
-      title="How to read this game: Summary is the turn plus its action rail;
-Step through replays the turn one action at a time">
-<button data-m="summary" class="on">Summary</button>
-<button data-m="step">Step through</button>
-</span>
-<!-- NO REVIEWER FLAG (2026-10-13). This is where the `Classic | Tavern` segment
-     for the saved game sat. The review IS the Tavern layout now, so there is
-     nothing to choose and no `bl-settle-viewer` key anywhere in the page. -->
-<button id="settle-rebuild" title="Re-derive this saved game from its own
-source log — upgrades older saves to this viewer's data (replays
-the game; the session log must still exist)">Rebuild</button>
-<button id="settle-folder" title="Open the folder the saved replays live in">Open folder</button>
-</div>
+<!-- NO `.s-head` (2026-10-18): its four controls moved into the one header row
+     above. The wrapper is deleted rather than left empty, because an empty flex
+     row with a margin is a gap nobody can explain. -->
 <div id="settle-game"><div class="s-empty">Pick a saved game to see it turn by turn.</div></div>
 </section>
 <div id="release-tag" hidden></div>
@@ -4016,6 +4063,9 @@ function showTab(name) {
   document.getElementById('settle').className = live ? '' : 'on';
   document.querySelectorAll('#tabs .tab').forEach(b =>
     b.className = 'tab' + (b.dataset.tab === name ? ' on' : ''));
+  // The one header row carries settle-only controls, so it has to know which
+  // tab is on (the settle-only parts are hidden by CSS, not by JS).
+  document.getElementById('tabs').classList.toggle('settle-on', !live);
   try { localStorage.setItem('bl-tab', name); } catch (e) { /* private mode */ }
   if (!live) loadSettleList();
 }

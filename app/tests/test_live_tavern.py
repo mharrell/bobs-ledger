@@ -836,9 +836,11 @@ class TestTheFixListRounds(unittest.TestCase):
         """
         html = coach_ui._HTML
         for el in ('<div id="freshness" class="tavern">',
-                   '<nav id="tabs" class="tavern">',
-                   '<div class="s-head tavern">'):
+                   '<nav id="tabs" class="tavern">'):
             self.assertIn(el, html, f"{el} no longer carries the palette")
+        # `.s-head` is gone (2026-10-18, layout plan round 2 item 1): its controls
+        # moved onto the tabs' row, which already carries `.tavern` — so the
+        # chrome is two elements now, not three, and both still carry it.
 
         tabs = re.search(r"#tabs \.tab \{([^}]*)\}", html)
         self.assertIsNotNone(tabs)

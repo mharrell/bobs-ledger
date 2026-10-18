@@ -236,7 +236,9 @@ _DRIVER = r"""
     // Both are counts with a control beside them: `vsegs` is 1 (the mode
     // toggle), so `viewerflags` being 0 is a measurement rather than a selector
     // that matches nothing.
-    o.vsegs = document.querySelectorAll('.s-head .vseg').length;
+    // `.s-head` is gone (2026-10-18): the saved-game controls live on the tabs'
+  // row, so the header's segment control is counted there. One is still one.
+  o.vsegs = document.querySelectorAll('#tabs .vseg').length;
     o.viewerflags = document.querySelectorAll('#settle-viewer, #live-viewer, '
       + '#live-viewer-row').length;
     o.track = q('.steptrack .stick').length;
