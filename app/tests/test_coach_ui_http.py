@@ -592,5 +592,58 @@ class TestTheGameOverCardOffersSave(unittest.TestCase):
         self.assertNotIn("review_url", coach_ui._HTML)
 
 
+class TestArtIsVersionedByTheCache(unittest.TestCase):
+    """The art URL has to change when the pictures do (2026-10-17).
+
+    Art is served with a week-long `max-age` because it is content-addressed by
+    card id — but the id does not pin the picture. 106 cached portraits turned
+    out to hold card RENDERS, and the repair was invisible until the browser's
+    cache expired, because `/img/<id>.png` never changed. A correct file behind a
+    week-long cache is a file nobody sees.
+    """
+
+    def test_the_epoch_moves_when_a_file_does(self):
+        with tempfile.TemporaryDirectory() as portraits, \
+                tempfile.TemporaryDirectory() as renders:
+            saved = (coach_ui.ART_CACHE, coach_ui.CARD_DIR,
+                     coach_ui._art_epoch_cache)
+            try:
+                coach_ui.ART_CACHE, coach_ui.CARD_DIR = portraits, renders
+                coach_ui._art_epoch_cache = (0.0, "0")
+                self.assertEqual(coach_ui.art_epoch(), "0",
+                                 "an empty cache must not invent an epoch")
+                path = os.path.join(portraits, "BGS_115.png")
+                with open(path, "wb") as fh:
+                    fh.write(b"x")
+                stamp = 1700000000
+                os.utime(path, (stamp, stamp))
+                coach_ui._art_epoch_cache = (0.0, "0")   # defeat the memo
+                self.assertEqual(coach_ui.art_epoch(), str(stamp),
+                                 "a changed file has to change the epoch")
+            finally:
+                (coach_ui.ART_CACHE, coach_ui.CARD_DIR,
+                 coach_ui._art_epoch_cache) = saved
+
+    def test_every_art_url_carries_it(self):
+        html = coach_ui._page_html()
+        self.assertNotIn("__ART_EPOCH__", html,
+                         "the placeholder shipped, so every art URL would be "
+                         "versioned with a literal and never bust the cache")
+        self.assertIn("const __ART_V = '", html)
+        self.assertIn("'/img/' + cid + '.png?v=' + __ART_V", html)
+
+    def test_the_handlers_ignore_the_version(self):
+        """`/img/<id>.png?v=123` and `/card/<id>.png?v=123` have to resolve to
+        the same file as the unversioned path, or every versioned URL 404s."""
+        import re
+        src = open(os.path.join(HERE, "coach_ui.py"), encoding="utf-8").read()
+        for route in ("img", "card"):
+            m = re.search(r're\.match\(r"\^/%s/\(\[A-Za-z0-9_\]\+\)\\\.png\$",'
+                          r'\s*self\.path\.split\("\?", 1\)\[0\]\)' % route, src)
+            self.assertIsNotNone(
+                m, f"the /{route}/ handler matches self.path including the query "
+                   f"string, so a versioned URL would not find its file")
+
+
 if __name__ == "__main__":
     unittest.main()

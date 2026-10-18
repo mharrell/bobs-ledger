@@ -279,6 +279,45 @@ def resolve_art_cache(install_dir, fallback=None):
 
 
 ART_CACHE, CARD_DIR, ART_CACHE_OK, ART_CACHE_SOURCE = resolve_art_cache(_HERE)
+_art_epoch_cache = (0.0, "0")    # (monotonic seconds, value) — see art_epoch()
+
+
+def art_epoch():
+    """A short token that changes whenever the art cache does.
+
+    Art is served with a WEEK-LONG max-age because it is content-addressed by
+    card id — and the id does not pin the picture. MEASURED 2026-10-17: 106
+    cached portraits turned out to hold card RENDERS, and the repair was invisible
+    for up to seven days because `/img/<id>.png` never changed and the browser
+    never asked again. A correct file behind a week-long cache is a file nobody
+    sees.
+
+    So the page versions every art URL with this token: a changed cache is a
+    changed URL, the browser fetches it once, and every load in between keeps the
+    hard cache. mtimes only — no image work — memoised for a second so a page load
+    and its assets do not each stat 1,200 files.
+    """
+    global _art_epoch_cache
+    import time as _time
+    now = _time.monotonic()
+    if now - _art_epoch_cache[0] < 1.0:
+        return _art_epoch_cache[1]
+    newest = 0.0
+    for d in (ART_CACHE, CARD_DIR):
+        try:
+            with os.scandir(d) as it:
+                for e in it:
+                    try:
+                        newest = max(newest, e.stat().st_mtime)
+                    except OSError:
+                        pass
+        except OSError:
+            pass                      # no cache dir yet: the epoch stays 0
+    value = str(int(newest))
+    _art_epoch_cache = (now, value)
+    return value
+
+
 if not ART_CACHE_OK:
     print(f"Note: cannot write the card art cache at {ART_CACHE}, nor a "
           f"per-user one.\n"
@@ -1712,6 +1751,10 @@ the game; the session log must still exist)">Rebuild</button>
 <div id="release-tag" hidden></div>
 </div>
 <script>
+//: Changes with the art cache, so a corrected picture gets a new URL (see
+//: art_epoch in the server). A week-long art cache is only safe when this is in
+//: the URL.
+const __ART_V = '__ART_EPOCH__';
 //: Per-run access key (2026-10-08 audit): the server mints one at startup and
 //: answers nothing without it, so a local process cannot read the live board
 //: (or the opponent's name in it) or flip the share consent. The server puts
@@ -1910,7 +1953,7 @@ function thumb(cid, name) {
   if (MISSES.has(cid)) return thumbPh(cid, name);
   const img = document.createElement('img');
   img.className = 'thumb canzoom';
-  img.src = '/img/' + cid + '.png';
+  img.src = '/img/' + cid + '.png?v=' + __ART_V;
   img.alt = '';
   img.onmouseenter = () => hoverCard(img, cid, name);
   img.onmouseleave = leaveCard;
@@ -6495,7 +6538,8 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(200, "application/json",
                        json.dumps({"misses": _active_misses()}).encode())
             return
-        m = re.match(r"^/img/([A-Za-z0-9_]+)\.png$", self.path)
+        m = re.match(r"^/img/([A-Za-z0-9_]+)\.png$",
+                     self.path.split("?", 1)[0])
         if m:
             cid = m.group(1)
             path = os.path.join(ART_CACHE, f"{cid}.png")
@@ -6540,7 +6584,8 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(404, "text/plain", b"no such guide",
                        headers={"Cache-Control": "no-store"})
             return
-        m = re.match(r"^/card/([A-Za-z0-9_]+)\.png$", self.path)
+        m = re.match(r"^/card/([A-Za-z0-9_]+)\.png$",
+                     self.path.split("?", 1)[0])
         if m:
             # The hover tooltip's full render (framed card WITH text),
             # cached in img_cache/card/. Golden ids resolve to the base
@@ -6704,7 +6749,8 @@ def _page_html():
     the literal `__BL_TOKEN__` would 403 on every poll with the overlay
     looking alive.
     """
-    return _HTML.replace("__BL_TOKEN__", server_token())
+    return (_HTML.replace("__BL_TOKEN__", server_token())
+            .replace("__ART_EPOCH__", art_epoch()))
 
 
 def _port_in_use(port, host="127.0.0.1", timeout=0.4):
