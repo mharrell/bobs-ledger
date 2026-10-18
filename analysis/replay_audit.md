@@ -159,7 +159,7 @@ files to 14.
 - Spot-checked content, not just presence: Alexstrasza's last turn reads
   `winner=them`, peak 2v5, survivors 0v1, 14/14 step boards and **no notes**;
   Putricide's carries one *legitimate* note ("1 minion(s) were played after the
-  last buy-phase snapshot"), which is the `lag` disagree…ement the audit flagged.
+  last buy-phase snapshot"), which is the `lag` disagreement the audit flagged.
 
 **Skipped — 3, source log pruned by Hearthstone:** Greybough (2026-10-15),
 Ambassador Faelin (2026-10-15 21:19), Sewerwock (2026-10-15 21:49). They keep the
