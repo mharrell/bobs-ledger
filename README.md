@@ -83,6 +83,10 @@ This is where you start, and it updates as you play. It opens as a page in your 
 
 *Another Round at the first shop, before the five lobby tribes are tapped: the tavern's offers and the facts are already read, and the comps are listed but dimmed until the tribe row is set.*
 
+![Another Round late in a game: six tavern offers, a full board and hand, and comps marking the core cards already owned](docs/screenshots/another-round-late-shop.webp)
+
+*Later in the game: the tavern's six offers, a full board and hand, and the comps list marking the core cards you already own.*
+
 - **The status bar at the top** — the hero, then gold, tier, health (with armour when you have any), turn and place. A number that has not been read yet is a dash, never a guess. The page's one read-age line at the very top says how old the current frame is.
 - **One row of lobby tribes under it.** Tap the five tribes the tavern is offering this game — the same five the game's own minion-types panel shows you at hero select — and every comp and count on the page is exact from turn 1.
 - **The sections below** show where the game stands:
