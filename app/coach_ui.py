@@ -613,7 +613,15 @@ _HTML = r"""<!doctype html>
      2026-10-06.) */
   /* Hover card: the full framed render (with text) near the tile, or — when
      upstream has no render for the card — a text box fed from the meta DB. */
-  #tip { position:fixed; z-index:50; max-width:300px; }
+  /* POINTER-EVENTS:NONE IS LOAD-BEARING (2026-10-17). The tip is placed just
+     under the tile and clamped up when there is no room below, so on a low row
+     it lands OVER the tile it describes. A tip that takes the pointer then
+     fights the tile: entering it fires the tile's mouseleave, which hides it,
+     which puts the pointer back on the tile, which fires mouseenter — a flicker
+     with no stable state. MEASURED: the maintainer's report, "it either doesn't
+     show up or blinked in and out", on the ENDED WITH row and not the row above
+     it, which is exactly the clamp's geometry. */
+  #tip { position:fixed; z-index:50; max-width:300px; pointer-events:none; }
   .tiprender { display:block; width:256px; border-radius:8px;
                box-shadow:0 8px 24px var(--shadow); }
   .tipbox { background:var(--panel2); border:1px solid var(--border);
@@ -1892,11 +1900,19 @@ tip.id = 'tip';
 tip.hidden = true;
 document.body.appendChild(tip);
 let tipCid = null;
+//: The text box is a FALLBACK for a slow render, not a first frame. Showing it
+//: eagerly meant every hover flashed a text box and then swapped it for the card
+//: render a moment later — a blink on every cached card, which is most of them.
+//: It now appears only if the render has not arrived within this long.
+let tipBoxTimer = null;
+const TIP_BOX_DELAY = 150;
 function hoverCard(elm, cid, name) {
   const meta = cardMeta(cid);
   const id = String(cid || '').replace(/_G$/, '');
   tipCid = id;
   let shown = false;
+  let boxShared = null;
+  if (tipBoxTimer) { clearTimeout(tipBoxTimer); tipBoxTimer = null; }
   const show = node => {
     if (tipCid !== id) return;  // a later hover superseded this one
     tip.innerHTML = '';
@@ -1910,22 +1926,38 @@ function hoverCard(elm, cid, name) {
     shown = true;
     elm.classList.remove('canzoom');  // tooltip replaces the portrait zoom
   };
-  // Text box first (instant, from the meta DB) when we have text.
+  // The text box, ready but NOT shown yet (see TIP_BOX_DELAY).
   if (meta.text) {
-    const box = el('div', 'tipbox');
-    box.appendChild(el('div', 'tipname', badgeName(cid, name)));
-    box.appendChild(el('div', 'tiptext', meta.text));
-    show(box);
+    boxShared = el('div', 'tipbox');
+    boxShared.appendChild(el('div', 'tipname', badgeName(cid, name)));
+    boxShared.appendChild(el('div', 'tiptext', meta.text));
+    tipBoxTimer = setTimeout(() => {
+      tipBoxTimer = null;
+      if (tipCid === id && !shown) show(boxShared);
+    }, TIP_BOX_DELAY);
   }
-  // The full render upgrades the tooltip when upstream has it; a 404 keeps
-  // the text box — or, with no text either, the old portrait zoom.
+  // The full render upgrades the tooltip when upstream has it; a slow or 404
+  // fetch falls back to the text box — or, with no text either, the portrait
+  // zoom the tile already carries.
   const big = new Image();
   big.className = 'tiprender';
-  big.onload = () => show(big);
-  big.onerror = () => { if (tipCid === id && !shown) tipCid = null; };
+  big.onload = () => {
+    if (tipBoxTimer) { clearTimeout(tipBoxTimer); tipBoxTimer = null; }
+    show(big);
+  };
+  big.onerror = () => {
+    if (tipBoxTimer) { clearTimeout(tipBoxTimer); tipBoxTimer = null; }
+    if (tipCid !== id || shown) return;
+    if (boxShared) show(boxShared);
+    else tipCid = null;
+  };
   big.src = '/card/' + id + '.png';
 }
-function leaveCard() { tipCid = null; tip.hidden = true; }
+function leaveCard() {
+  tipCid = null;
+  tip.hidden = true;
+  if (tipBoxTimer) { clearTimeout(tipBoxTimer); tipBoxTimer = null; }
+}
 // Card ids upstream has NO art for at all (the /img and /card chains both
 // 404'd), fetched once from GET /artmiss: thumb() renders the placeholder
 // directly, so they stop paying a 404 round-trip per tile per rebuild. The

@@ -19,6 +19,10 @@ import coach_ui  # noqa: E402
 _HTML = coach_ui._HTML
 
 
+def _CSS():
+    return _css()
+
+
 def _css():
     start = _HTML.index("<style>") + len("<style>")
     return _HTML[start:_HTML.index("</style>", start)]
@@ -93,6 +97,43 @@ class TestKindChipsAreGone(unittest.TestCase):
         kinds = {k for _prefix, k in _STEP_KINDS}
         self.assertIn("buy", kinds)
         self.assertIn("level", kinds)
+
+
+class TestTheHoverCardCannotFlicker(unittest.TestCase):
+    """The card tooltip must never take the pointer, and must not pop.
+
+    MEASURED 2026-10-17, the maintainer's report: "sometimes the mouseover card
+    display comes up perfect. sometimes it's blinky and weird... on Ended with it
+    either doesn't show up or blinked in and out." The tip is placed just under
+    the tile and clamped UP when there is no room below, so on a low row it lands
+    over the very tile it describes. Without `pointer-events:none` the tip then
+    fights that tile: entering it fires the tile's `mouseleave`, which hides the
+    tip, which puts the pointer back on the tile, which fires `mouseenter` — a
+    flicker with no stable state. It showed on the ENDED WITH row and not the row
+    above it because only the lower row hits the clamp.
+
+    The blink is separate: the text box used to be shown EAGERLY and then swapped
+    for the card render a moment later, so every cached card — most of them —
+    flashed a box first. It now waits for a slow render.
+    """
+
+    def test_the_tooltip_cannot_take_the_pointer(self):
+        rule = re.search(r"#tip \{([^}]*)\}", _CSS())
+        self.assertIsNotNone(rule, "the #tip rule is gone")
+        self.assertIn("pointer-events:none", rule.group(1).replace(" ", ""),
+                      "the tooltip can take the pointer, so it can flicker "
+                      "against the tile it covers")
+
+    def test_the_text_box_waits_for_a_slow_render(self):
+        self.assertIn("TIP_BOX_DELAY", _HTML)
+        self.assertIn("tipBoxTimer = setTimeout", _HTML,
+                      "the text box is shown eagerly again, so every cached card "
+                      "blinks box-then-render")
+        # Both exits have to clear the pending timer, or a later hover inherits
+        # a box for a card the pointer has left.
+        self.assertGreaterEqual(_HTML.count("clearTimeout(tipBoxTimer)"), 3,
+                                "the timer is not cleared on load, on error and "
+                                "on leave")
 
 
 if __name__ == "__main__":
