@@ -997,6 +997,26 @@ _HTML = r"""<!doctype html>
   @media (max-height: 880px) {
     .tavern .stepview { --r: 0.4; }
   }
+  /* THE THREE PANELS (layout plan step 3): Tavern above, Board, Hand below —
+     the order the game itself shows them. One panel style for all three, so the
+     step view stops being three different designs on one screen. Every rule here
+     is scoped to `.stepview` and uses a new class name; no shared rule changes.
+     `.spanel-cards` on the board's container cancels the border and padding it
+     used to carry as its own panel, so the panel is the only frame. */
+  .tavern .stepview .spanel { display:flex; flex-direction:column; gap:8px;
+                              padding:12px 14px; background:var(--tpanel);
+                              border:1px solid var(--tline); border-radius:10px; }
+  .tavern .stepview .spanel-title { font-size:10px; letter-spacing:.09em;
+                                    text-transform:uppercase;
+                                    color:var(--tmute); }
+  .tavern .stepview .spanel-cards { display:flex; gap:8px; flex-wrap:wrap;
+                                    min-width:0; border:0; padding:0;
+                                    background:none; min-height:0; }
+  .tavern .stepview .spanel-empty { color:var(--tmute); font-size:12px; }
+  /* One small card plus the title and padding, so the layout does not jump
+     between a step that has offers and one that has none. */
+  .tavern .stepview .spanel-tv, .tavern .stepview .spanel-hand {
+    min-height: calc(var(--s) + 48px); }
   .tavern .stepnav { display:flex; gap:8px; align-items:center;
                      margin:0 0 8px; flex-wrap:wrap; }
   .tavern .snav { background:var(--tpanel); color:var(--ttext);
@@ -4570,27 +4590,39 @@ function renderTavernSteps(row) {
   // stays the subject, and the tavern is dimmed for the same reason. Data is per
   // step; a replay written before this change simply has neither and the rows
   // do not appear.
-  const miniRow = (label, cards, note, dim) => {
-    const wrap = el('div', 'stepmini' + (dim ? ' dim' : ''));
-    wrap.appendChild(el('span', 'minilbl', label));
-    const row = el('div', 'minitiles');
+  // THREE PANELS, in the order the game shows them (layout plan step 3). The
+  // helper sentence each row used to print beside its label is the panel title's
+  // tooltip now, and a count is in the title, so the panels say what they are
+  // without a second line of prose.
+  const panel = (label, count, tidy, body, extra) => {
+    const sec = el('div', 'spanel' + (extra ? ' ' + extra : ''));
+    const head = el('div', 'spanel-title', label + ' · ' + count);
+    if (tidy) head.title = tidy;
+    sec.appendChild(head);
+    sec.appendChild(body);
+    return sec;
+  };
+  const cardsRow = (cards, subOf) => {
+    const row = el('div', 'spanel-cards');
     for (const c of cards) {
       const cid = (c && c.card) || c;
       const meta = cardMeta(cid);
       row.appendChild(tile(cid, (meta && meta.name) || cid,
-                           c && c.atk != null ? statSub(c) : '',
-                           {cls: 'mini'}));
+                           subOf ? subOf(c) : '', {cls: 'mini'}));
     }
-    wrap.appendChild(row);
-    if (note) wrap.appendChild(el('span', 'mininote', note));
-    return wrap;
+    return row;
   };
-  if (st && st.tavern && st.tavern.length) {
-    col.appendChild(miniRow('TAVERN', st.tavern.map(c => ({card: c})),
-                            'what the shop offered at this step', true));
-  }
+  const emptyLine = what => el('div', 'spanel-empty', what);
+  const plural = (n, one) => n + ' ' + one + (n === 1 ? '' : 's');
+  const tavern = (st && st.tavern) || [];
+  col.appendChild(panel('Tavern', plural(tavern.length, 'offer'),
+                        'what the shop offered at this step',
+                        tavern.length
+                          ? cardsRow(tavern.map(c => ({card: c})))
+                          : emptyLine('No offers read at this step'),
+                        'spanel-tv'));
   const boardWrap = document.createElement('div');
-  boardWrap.className = 'stepboard';
+  boardWrap.className = 'stepboard spanel-cards';
   const diff = stepDiff(st ? st.board : [], st ? st.k : null,
                         st ? st.card : null);
   for (const m of (st ? st.board : [])) {
@@ -4606,10 +4638,17 @@ function renderTavernSteps(row) {
     t.appendChild(el('span', 'tag-sold', 'SOLD'));
     boardWrap.appendChild(t);
   }
-  col.appendChild(boardWrap);
-  if (st && st.hand && st.hand.length) {
-    col.appendChild(miniRow('HAND', st.hand, 'what you held at this step', false));
-  }
+  const boardN = (st && st.board) ? st.board.length : 0;
+  col.appendChild(panel('Board', plural(boardN, 'minion'),
+                        'the board as it stood after this step', boardWrap,
+                        'spanel-board'));
+  const hand = (st && st.hand) || [];
+  col.appendChild(panel('Hand', plural(hand.length, 'card'),
+                        'what you held at this step',
+                        hand.length
+                          ? cardsRow(hand, c => c.atk != null ? statSub(c) : '')
+                          : emptyLine('Hand empty'),
+                        'spanel-hand'));
   return col;
 }
 // One board row of a turn card: card tiles when the stored board is

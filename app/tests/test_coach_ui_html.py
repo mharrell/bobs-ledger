@@ -70,6 +70,14 @@ class TestTokenDiscipline(unittest.TestCase):
         defined = set(re.findall(r"(--[a-z0-9-]+)\s*:", _root_block(css)))
         for block in _tavern_token_blocks(css):
             defined |= set(re.findall(r"(--[a-z0-9-]+)\s*:", block))
+        # A third kind of variable arrived with the step-through's layout
+        # (2026-10-17): `--r/--b/--s` are computed from `100vh` and a media
+        # query, so they belong to `.stepview` and CANNOT live in `:root`
+        # (where they would freeze at the first window size). A component-scoped
+        # variable defined on its own selector is still a definition; the guard's
+        # job is to catch a `var()` with NO definition anywhere, which it still
+        # does — measured by deleting one and watching this fail.
+        defined |= set(re.findall(r"(--[a-z0-9-]+)\s*:", css))
         referenced = set(re.findall(r"var\((--[a-z0-9-]+)", css))
         missing = sorted(referenced - defined)
         self.assertEqual(missing, [],
@@ -138,8 +146,15 @@ class TestTheHoverCardCannotFlicker(unittest.TestCase):
         the BOARD stays the subject of the step (2026-10-17)."""
         css = _CSS()
         self.assertIn(".tile.mini .thumb { width:32px", css)
-        self.assertIn("'TAVERN'", _HTML)
-        self.assertIn("'HAND'", _HTML)
+        # panel('Tavern', …) / panel('Hand', …) — the label is sentence case
+        # and the CSS uppercases it (layout plan step 3).
+        self.assertIn("panel('Tavern'", _HTML)
+        self.assertIn("panel('Hand'", _HTML)
+        # one panel style, three panels, in the order the game shows them
+        self.assertIn(".spanel {", css)
+        order = [_HTML.index("panel('Tavern'"), _HTML.index("panel('Board'"),
+                 _HTML.index("panel('Hand'")]
+        self.assertEqual(order, sorted(order), "panels are out of game order")
 
     def test_the_growth_chip_does_not_claim_to_be_a_value(self):
         """The chip printed the board's stat growth under the label "value"
