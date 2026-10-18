@@ -95,6 +95,10 @@ Every card carries the same facts: its tier, its text on hover, and what it is w
 
 When a game ends, the card offers **Save replay**. Saving keeps that game in the **Settle Up** tab: pick any saved game from the dropdown and the turn-by-turn view opens. The card also carries a **Save every replay automatically** checkbox — leave it ticked and each finished game is kept as its review builds. Saving is per game and yours alone; saved games stay on your machine.
 
+![Settle Up Summary view: the turn rail, the board you opened and closed with, and the plan read for the turn](docs/screenshots/settle-up-summary.webp)
+
+*Settle Up's **Summary** view: the turn rail, the board you opened and closed with, and the plan read for the turn.*
+
 A strip of turn buttons runs along the top, each marked with the result and the HP the fight cost. Each turn has three views:
 
 - **Shop** — the board you opened with and the board you closed the shopping on, with each minion's net change marked on the card, and a *passed through* tray for anything you bought and sold again in the same phase.
@@ -106,6 +110,10 @@ A rail down the side carries the turn's own numbers — gold at the open, cards 
 The summary prints how the phases you followed went against the phases you did not, and says plainly that this is **observational, not causal**, because following a line is easier in games you were already winning. It also warns you when the count leans on turns that opened with a spell. Read it as a reason to look at a turn, never as a score.
 
 A fight's summoned copies linger in the log past the end of the fight, so the board you opened with is shown without them; a turn where that happened says so under the board. The header carries a **Summary | Step through** switch: Step through replays the turn one action at a time, with a tick per action, the board as it stood after that action, and the card you sold shown dimmed and tagged. Left and Right walk turns, or steps while stepping; Shift with them walks turns while stepping; Space plays and pauses; Home and End jump to the ends. The mode is remembered. **Rebuild** in the header re-derives any saved game from its own log; an older saved game opens Step through disabled and says so.
+
+![Settle Up Step through view: the action tick row at Step 15, the board after the action, and the tavern and hand alongside](docs/screenshots/settle-up-step-through.webp)
+
+*Settle Up's **Step through** view: every action in the turn on one tick row, the board as it stood after Step 15, and the card just played highlighted.*
 
 ## The one question it asks you
 
