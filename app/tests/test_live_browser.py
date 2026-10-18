@@ -341,6 +341,8 @@ _DRIVER = r"""
     return root ? root.querySelector('.lv-pickstrip') : null;
   }
   function facts(name) {
+    // The freshness line is drawn by a 1s ticker; a dump happens before it.
+    try { tickFreshness(); } catch (e) { /* the card may have no node */ }
     const root = document.querySelector('.tavern.live');
     const body = root ? root.querySelector('.lv-body') : null;
     // The end-of-game CARD has no arrangements at all — one centred panel and its
@@ -381,6 +383,22 @@ _DRIVER = r"""
     // machine the suite happened to run on; read against this it is the page.
     o.docw = document.documentElement.clientWidth;
     o.hero = txt(rone('.lv-hero'));
+    o.statusbar = rq('.lv-status').length;
+    o.tribes = rq('.lv-tribes').length;
+    o.nestedpanels = root ? root.querySelectorAll('.lv-pn .lv-pn').length : 0;
+    o.collapsed = root ? root.querySelectorAll('.lv-collapsed').length : 0;
+    o.h3gap = (function () {
+      const h = root ? root.querySelector('.lv-pn > h3') : null;
+      return h ? getComputedStyle(h).gap : '';
+    })();
+    o.herosubtitle = (function () {
+      const n = root ? root.querySelector('.lv-psub-full') : null;
+      return n ? n.title : '';
+    })();
+    o.herosubmax = (function () {
+      const n = root ? root.querySelector('.lv-psub-full') : null;
+      return n ? getComputedStyle(n).maxHeight : '';
+    })();
     o.stats = all('.lv-st')
       .map(d => txt(d.querySelector('small')) + ':' + txt(d.querySelector('b')))
       .join('|');
@@ -587,7 +605,8 @@ _DRIVER = r"""
     // WHERE THE STRIP SITS, against the dashboard it must not evict: above it,
     // and (for the "fits without scrolling" claim) entirely inside the window.
     o.pickabove = (function () {
-      const arr = shownArrangement();
+      const arr = shownArrangement()
+        || (pk ? pk.parentNode.querySelector('.lv-collapsed') : null);
       if (!pk || !arr) return 0;
       return pk.getBoundingClientRect().top < arr.getBoundingClientRect().top
         ? 1 : 0;
@@ -943,6 +962,7 @@ _DRIVER = r"""
     // the id it used to be: the Tavern panel exists in both arrangements (item
     // 5), so an id would have been duplicated.
     o.readage = txt(one('.lv-read'));
+    o.freshness = txt(document.getElementById('freshness'));
     // The tribe composition of the shop, and of the opponent's board.
     o.mixlbl = [...q('.lv-mix .lv-lbl')].map(d => d.textContent).join('|');
     o.mixchips = [...q('.lv-mixchip')].map(d => d.textContent).join('|');
@@ -1286,7 +1306,6 @@ class TestTheTavernLiveInABrowser(_Rendered):
                 _shot("comps", _comps_payload(), reveal="Comps"),
                 _shot("nocomps", _comps_payload(game_comps={}, tribe_pressure=[]),
                       reveal="Comps"),
-                _shot("lobby", _payload(), reveal="Lobby"),
                 _shot("notread", _payload(fragility=None, level_cost=None,
                                           board_stats=None, opp_stats=None,
                                           opp_lobby=None)),
@@ -1395,7 +1414,7 @@ class TestTheTavernLiveInABrowser(_Rendered):
         `TestTheLayoutByWidth`), so `t.panels` is the accordion's order and the
         1920x1080 render below is the columns'.
         """
-        for shot in ("t", "comps", "lobby"):
+        for shot in ("t", "comps"):
             self.assertEqual(self.got[shot + ".tabs"], 0,
                              f"{shot} still carries a tab row")
             self.assertGreaterEqual(self.got[shot + ".panelcount"], 5,
@@ -1403,17 +1422,16 @@ class TestTheTavernLiveInABrowser(_Rendered):
                                     f"zero above is a selector that matches "
                                     f"nothing rather than a removed tab row")
         self.assertEqual(self.got["t.panels"],
-                         "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
-        # The comps and lobby shots are the SAME page (round 4 item 5): every
-        # section is rendered, and `reveal` only scrolled to one of them.
+                         "Facts|Comps|Tavern|Board and hand|Next opponent")
+        # The comps shot is the SAME page (round 4 item 5): every section is
+        # rendered, and `reveal` only scrolled to one of them.
         self.assertEqual(self.got["comps.panels"], self.got["t.panels"])
-        self.assertEqual(self.got["lobby.panels"], self.got["t.panels"])
         # The same six in the three-column arrangement: Tavern+board | Comps |
         # Facts+opponent+lobby, so the pinned strip is last in DOM order there.
         wide = _render([_shot("t", _payload())], size=(1920, 1080))
         self.assertEqual(wide["t.arr"], "cols")
         self.assertEqual(wide["t.panels"],
-                         "Tavern|Board and hand|Facts|Next opponent|Lobby|Comps")
+                         "Tavern|Board and hand|Facts|Next opponent|Comps")
         # §8: 44px minimum targets. The accordion header is the control that
         # replaced the tabs; it is measured in `TestTheAccordionLayout`, at the
         # width where the accordion is the arrangement on screen. What can be
@@ -1446,8 +1464,9 @@ class TestTheTavernLiveInABrowser(_Rendered):
         narrow = _render([_shot("n", _choice_payload())], size=(600, 900))
         self.assertGreater(narrow["n.pickcolw"], 400,
                            "the pick grid is not a single column under 700px")
-        self.assertEqual(narrow["n.arr"], "acc",
-                         "600px is inside the accordion's range")
+        # A pick page has no shop arrangement by design (2026-10-18): the
+        # cards are the page, so `arr` is empty rather than a hidden dashboard.
+        self.assertIn(narrow["n.arr"], ("", "card"))
         bhn = _render([_shot("b", _payload())], size=(600, 900))
         self.assertEqual(bhn["b.bhhalf"], 2)
         # The board and hand are STACKED at that width, not side by side: their
@@ -1471,48 +1490,41 @@ class TestTheTavernLiveInABrowser(_Rendered):
                          "the row that repeats effective HP is still there")
         self.assertIn("observational, not causal", self.got["t.notes"])
 
-    def test_the_lobby_figure_is_named_as_an_average(self):
-        """The estimate half of the same row: "~59 (lobby)" did not say WHAT
-        about the lobby was being compared. `lobby_opp` is the analysis field
-        the scout strip falls back to — `opp_lobby` is DERIVED from it in
-        `render_json`, so setting that directly proves nothing."""
-        got = _render([_shot("lb", _payload(opp_stats=None, lobby_opp=59))])
-        self.assertIn("Board stats — you vs lobby avg=14 vs ~59 lobby avg",
-                      got["lb.kv"])
-
     def test_a_value_nobody_read_is_a_dash(self):
-        """§6.4. The fixture drops the fragility block and the level cost, so
-        every row that depended on them is GONE rather than guessed, and the one
-        row that always exists says so with a dash."""
+        """§6.4 / 2026-10-18. The fixture drops the fragility block, the level
+        cost and the board stats, so there is no value at all: the Facts panel
+        is NOT rendered rather than a table of dashes."""
         self.assertNotIn("Effective HP", self.got["notread.kv"])
         self.assertNotIn("Level up", self.got["notread.kv"])
-        self.assertIn("Board stats — you vs lobby avg=—", self.got["notread.kv"])
+        self.assertNotIn("Board stats", self.got["notread.kv"],
+                         "a Facts panel of dashes was rendered")
+        self.assertNotIn("Board stats", self.got["notread.alltext"])
         self.assertNotIn("?", self.got["notread.alltext"])
 
-    def test_the_shop_before_it_parses_is_a_sentence_and_not_dash_bars(self):
-        """Fix list round 2 item 2: the design's §6.1 asked for four dashed
-        skeleton cards; the player's call replaces them, because they read as
-        thick dash bars carrying nothing."""
+    def test_between_shops_shows_the_last_snapshot_dimmed(self):
+        """2026-10-18: with no shop read, the page shows the last snapshot and
+        nothing else — no empty Tavern panel, no sentence pretending a shop is
+        being read, no dash bars."""
         got = self.got
         self.assertEqual(got["noshop.skel"], 0, "the dash bars are still drawn")
-        self.assertIn("Reading the shop. This updates when your next shop opens.",
-                      got["noshop.notes"])
+        self.assertIn("Last snapshot", got["noshop.alltext"])
+        self.assertNotIn("Reading the shop", got["noshop.alltext"])
         self.assertEqual(got["noshop.taverncards"], 0)
         self.assertGreaterEqual(got["t.taverncards"], 2,
                                 "a parsed shop renders its cards")
 
-    def test_the_waiting_state_dashes_the_numbers_and_names_the_slot(self):
-        """Fix list round 2 item 2: before the first shop of a game the status
-        bar shows muted dashes, and the hero slot says what the page is waiting
-        for instead of a dash with no noun."""
+    def test_a_game_with_no_read_has_no_status_bar_of_dashes(self):
+        """2026-10-18: a page with nothing read yet says so in one line. It
+        does not draw a six-slot status bar whose every value is a dash, and it
+        does not dress an empty moment as a shop."""
         got = _render([_shot("w", _payload(hero=None, gold=None, tier=None,
                                            health=None, scenario={},
-                                           current_place=None))])
-        self.assertEqual(got["w.hero"], "Waiting for the next shop to open")
-        self.assertIn("waiting", got["w.herocls"])
-        self.assertEqual(got["w.missvals"], 5, "every unread number is a dash")
-        self.assertEqual(got["w.stats"],
-                         "Gold:—|Tier:—|HP:—|Turn:—|Place:—")
+                                           current_place=None,
+                                           board=[], sell_rank=[], hand=[],
+                                           shop_rank=[], shop_passed=[]))])
+        self.assertEqual(got["w.hero"], "")
+        self.assertEqual(got["w.stats"], "")
+        self.assertIn("Waiting for the next shop to open", got["w.alltext"])
 
     def test_there_is_no_state_strip_at_all(self):
         """REVERSED 2026-10-13 from `test_the_empty_strip_at_the_top_is_hidden`
@@ -1544,11 +1556,14 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertEqual(got["t.bhhalf"], 2)
         self.assertGreaterEqual(got["t.cards"], 3)
 
-    def test_an_empty_board_or_hand_says_empty_inline(self):
-        # The board is a list of ENTITIES now (round 3 item 1), so an empty
-        # board is an empty `board` list — not an empty sell_rank.
+    def test_an_empty_board_or_hand_is_not_rendered(self):
+        # EMPTY PANELS ARE NOT RENDERED (2026-10-18): with no board and no hand
+        # the whole panel is absent, and no "0 on board · 0 in hand" summary is
+        # printed anywhere.
         got = _render([_shot("e", _payload(board=[], sell_rank=[], hand=[]))])
-        self.assertEqual(got["e.inline"], "empty|empty")
+        self.assertEqual(got["e.inline"], "")
+        self.assertNotIn("0 on board", got["e.sums"])
+        self.assertNotIn("0 in hand", got["e.sums"])
 
     def test_cards_carry_a_caption_below_them(self):
         self.assertTrue(self.got["t.caps"], "no captions rendered")
@@ -1573,17 +1588,6 @@ class TestTheTavernLiveInABrowser(_Rendered):
 
     def test_an_empty_comps_tab_says_why_rather_than_showing_nothing(self):
         self.assertIn("No comps read yet", self.got["nocomps.empty"])
-
-    def test_the_lobby_section_is_sightings_and_the_last_seen_board(self):
-        """REVERSED 2026-10-13 (fix list round 4 item 5) from `…_tab_is_…`: the
-        Lobby is not a screen a tab selects any more, it is a section of the
-        page (column 3 in the three-column layout, a foldable section in the
-        accordion). Its content is what this test is about, and that is
-        unchanged — including the seat's own handle, which `lvOpponent` leaves
-        out on purpose and this panel has always carried."""
-        got = self.got
-        self.assertIn("Beast=2 of 3 seen seats (2+ copies)", got["lobby.kv"])
-        self.assertIn("as of round 8", got["lobby.opplabel"])
 
     def test_a_spell_is_tagged_rather_than_framed_differently(self):
         """Round 2 item 3: one art treatment for every card, and the one kind that
@@ -1725,7 +1729,7 @@ class TestTheLayoutByWidth(_Rendered):
                          f"a 1400x900 window is not in the accordion "
                          f"(box {got['w.bodyw']}px of {got['w.docw']}px)")
         self.assertEqual(got["w.panels"],
-                         "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
+                         "Facts|Comps|Tavern|Board and hand|Next opponent")
 
     def test_two_columns_at_a_1920_window(self):
         """MEASURED 2026-10-16 at 1920x1080: TWO columns at 623/935 inside the
@@ -1754,7 +1758,7 @@ class TestTheLayoutByWidth(_Rendered):
         # WHAT IS IN EACH ONE, in order: the two screens the player reads the
         # game through | Comps | the reference material.
         self.assertEqual(got["w.colpanels"],
-                         "Tavern+Board and hand+Facts+Next opponent+Lobby|Comps")
+                         "Tavern+Board and hand+Facts+Next opponent|Comps")
 
     def test_the_tab_row_is_gone_at_that_width(self):
         """§4.1's `Shop | Comps | Lobby` row selected between exclusive screens;
@@ -1764,11 +1768,11 @@ class TestTheLayoutByWidth(_Rendered):
         mistake commit 62fb33d fixed in this same file)."""
         got = _render([_shot("w", _comps_payload())], size=(1920, 1080))
         self.assertEqual(got["w.tabs"], 0, "the tab row is still rendered")
-        self.assertEqual(got["w.panelcount"], 6,
+        self.assertEqual(got["w.panelcount"], 5,
                          "the selector that counted the tabs found no SECTIONS "
                          "either, so the zero above is not a measurement")
         self.assertEqual(got["w.panels"],
-                         "Tavern|Board and hand|Facts|Next opponent|Lobby|Comps")
+                         "Tavern|Board and hand|Facts|Next opponent|Comps")
 
     def test_a_shorter_window_still_gets_two_columns(self):
         """The rule reads the WINDOW, so the shell's branch does not move it:
@@ -1875,13 +1879,13 @@ class TestTheAccordionLayout(_Rendered):
                               for i in range(20)])
         return [_shot("a", big),
                 _shot("flat", _payload()),
-                _shot("shut", _payload(), open="-Comps,-Lobby")]
+                _shot("shut", _payload(), open="-Comps")]
 
     def test_one_column_with_a_summary_line_in_every_header(self):
         got = self.got
         self.assertEqual(got["flat.arr"], "acc")
         self.assertEqual(got["flat.panels"],
-                         "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
+                         "Facts|Comps|Tavern|Board and hand|Next opponent")
         # One line per section, and every one is a COUNT and a noun — the same
         # kind of fact the panels below already carry. §1 is about words on the
         # screen, and a header summary is exactly where a verdict would sneak in,
@@ -1893,8 +1897,7 @@ class TestTheAccordionLayout(_Rendered):
         # "1 of 1 available", which counted a list that no longer exists.
         self.assertEqual(
             got["flat.sums"],
-            "|1 in this lobby|3 offers|2 on board · 1 in hand|Reno"
-            "|2 of 3 seen seats")
+            "|1 in this lobby|3 offers|2 on board · 1 in hand|Reno")
         # The strip carries no line of its own: it IS the facts, and its rows are
         # the summary.
         self.assertEqual(got["flat.sums"].split("|")[0], "")
@@ -1939,7 +1942,7 @@ class TestTheAccordionLayout(_Rendered):
         """The three the player CONSULTS are shut — five open sections is a stack
         five screens tall — and the two they read the game through are open."""
         got = self.got
-        self.assertEqual(got["flat.shut"], "Next opponent|Lobby")
+        self.assertEqual(got["flat.shut"], "Next opponent")
         self.assertNotIn("Tavern", got["flat.shut"])
         self.assertNotIn("Board and hand", got["flat.shut"])
 
@@ -1951,7 +1954,7 @@ class TestTheAccordionLayout(_Rendered):
         self.assertLess(int(got["n.bodyw"]), 700)
         self.assertEqual(got["n.arr"], "acc")
         self.assertEqual(got["n.panels"],
-                         "Facts|Comps|Tavern|Board and hand|Next opponent|Lobby")
+                         "Facts|Comps|Tavern|Board and hand|Next opponent")
         self.assertEqual(got["n.colw"], "",
                          "a 640px window rendered the three-column layout")
         lefts = {v.split(",")[0] for v in got["n.sectat"].split("|")}
@@ -1984,7 +1987,7 @@ class TestTheAccordionStateSurvivesARerender(_Rendered):
     @classmethod
     def shots(cls):
         return [_shot("persist", _payload(), toggle="Comps"),
-                _shot("stored", _payload(), open="-Comps,-Lobby"),
+                _shot("stored", _payload(), open="-Comps"),
                 # The key is read in a try/catch and PARSED defensively: private
                 # mode, a half-written value and a value from an older version all
                 # have to render the page.
@@ -1998,11 +2001,11 @@ class TestTheAccordionStateSurvivesARerender(_Rendered):
         # what this pins. The driver reports it AFTER re-rendering the same
         # payload (what the 5s poll does, and the only thing that can reapply a
         # section's open/closed state).
-        self.assertEqual(got["persist.shut"], "Comps|Next opponent|Lobby",
+        self.assertEqual(got["persist.shut"], "Comps|Next opponent",
                          "clicking the Comps header did not stick across a "
                          "re-render — the open/closed state is not re-applied "
                          "from storage")
-        self.assertEqual(got["persist.panelcount"], 6,
+        self.assertEqual(got["persist.panelcount"], 5,
                          "the zero-ish shut list above is a page that rendered "
                          "nothing")
 
@@ -2011,7 +2014,7 @@ class TestTheAccordionStateSurvivesARerender(_Rendered):
         something: a stored `-Comps` has to come back SHUT, or "survives a
         re-render" would also be satisfied by a page that ignores storage."""
         got = self.got
-        self.assertEqual(got["stored.shut"], "Comps|Next opponent|Lobby",
+        self.assertEqual(got["stored.shut"], "Comps|Next opponent",
                          "a stored shut section rendered open (Next opponent is "
                          "shut by default, so it is the control)")
         self.assertNotIn("Tavern", got["stored.shut"],
@@ -2026,7 +2029,7 @@ class TestTheAccordionStateSurvivesARerender(_Rendered):
         self.assertEqual(got["garbage.shut"], got["nothing.shut"],
                          f"a garbage value was partly believed: "
                          f"{got['garbage.shut']}")
-        self.assertEqual(got["nothing.shut"], "Next opponent|Lobby",
+        self.assertEqual(got["nothing.shut"], "Next opponent",
                          "the defaults are not the two-open three-shut set")
 
     def test_the_summaries_carry_no_verdict(self):
@@ -2059,7 +2062,6 @@ class TestTheViewCarriesNoVerdict(_Rendered):
     @classmethod
     def shots(cls):
         return [_shot("t", _payload()),
-                _shot("lobby", _payload(), reveal="Lobby"),
                 _shot("comps", _comps_payload(), reveal="Comps"),
                 # §4.4's Detail and Compare are screens too, and the guide block
                 # is prose from the meta DB: if a verdict can reach this view,
@@ -2077,7 +2079,7 @@ class TestTheViewCarriesNoVerdict(_Rendered):
                 _shot("over", _game_over_payload())]
 
     def test_no_verdict_vocabulary_reaches_the_screen(self):
-        for name in ("t", "lobby", "comps", "detail", "compare", "pick", "over"):
+        for name in ("t", "comps", "detail", "compare", "pick", "over"):
             text = self.got[name + ".alltext"].lower()
             self.assertTrue(text, f"{name} rendered nothing to scan")
             for word in self.VERDICTS:
@@ -2122,16 +2124,18 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         self.assertIn("Top 4=62.0%", got["pick.pickrows"])
         # Game order again: Ann was offered first, so her 30.0% leads even though
         # Zed's 60.0% would win any ranking.
-        self.assertEqual(got["pick.pickhead"], "30.0%|60.0%",
-                         "the headline figures follow the option order, and carry "
-                         "one decimal (fix list round 1 item 2)")
-        self.assertEqual(got["pick.picklbl"], "Picked|Picked",
-                         "the headline figure says what it is")
-        self.assertIn("+15.0 vs offered avg", got["pick.pickvs"],
-                      "the distance from the offered average, stated")
-        # The offered average itself is on the source line: the ± figure has to
-        # be relative to something the player can see.
-        self.assertIn("Offered average: 45.0% picked", got["pick.picknote"])
+        self.assertEqual(got["pick.pickhead"],
+                         "Picked 30.0%|Picked 60.0%",
+                         "the headline figure follows the option order")
+        self.assertIn("when offered", got["pick.alltext"],
+                      "the headline does not say what the percentage measures")
+        # The offered-average delta is GONE (2026-10-18): its baseline was the
+        # average of the options on screen, not a property of the card.
+        self.assertEqual(got["pick.pickvs"], "",
+                         "the vs-offered-avg delta is still rendered")
+        self.assertNotIn("Offered average", got["pick.picknote"])
+        self.assertIn("Source: HSReplay population statistics · patch",
+                      got["pick.picknote"])
 
     def test_the_compact_card_is_art_left_and_content_right(self):
         """Item A (2026-10-14): the option is a HORIZONTAL card — art on the
@@ -2156,7 +2160,9 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         self.assertGreater(art_w, 0)
         # The card is at least the design's floor, and every card is that tall
         # or taller: a card with less data must not shrink its row.
-        self.assertGreaterEqual(int(got["pick.pickcard"].split("x")[1]), 144)
+        # A HERO card has no fixed floor (2026-10-18): its height is its own
+        # content, and the no-data card is shorter than the data cards.
+        self.assertGreaterEqual(int(got["pick.pickcard"].split("x")[1]), 100)
         heights = [int(h) for h in got["pick.pickcards"].split("|")]
         self.assertEqual(len(heights), 2)
         self.assertTrue(all(h >= 144 for h in heights), got["pick.pickcards"])
@@ -2207,8 +2213,8 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         """
         got = _render([_shot("pick", _hero_pick_payload())], size=(1100, 700))
         self.assertEqual(got["pick.pick"], 4, "the fixture is not four options")
-        self.assertEqual(got["pick.pickabove"], 1,
-                         "the pick screen is not above the dashboard panels")
+        self.assertEqual(got["pick.pickabove"], 0,
+                         "a hero pick rendered dashboard panels under the cards")
         self.assertLessEqual(got["pick.pickbottom"], got["pick.vh"],
                              f"the pick panel runs past the fold: "
                              f"{got['pick.pickbottom']} > {got['pick.vh']}")
@@ -2221,7 +2227,7 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         # on the hover (a trinket has no subline at all, which is why this is
         # measured here and not on the trinket shot).
         self.assertTrue(got["pick.picksub"], "no option rendered a subline")
-        self.assertEqual(got["pick.picksubwrap"], "nowrap")
+        self.assertEqual(got["pick.picksubwrap"], "normal")
         self.assertEqual(got["pick.picknodata"], "No data")
         self.assertIn("No data for this card on this patch yet.",
                       got["pick.picknodatatitle"],
@@ -2232,11 +2238,13 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         """Item A: "Source line on one line with ellipsis (full text on hover),
         12px gap before the cards"."""
         got = self.got
-        self.assertIn("nowrap", got["pick.picksrc"])
-        self.assertIn("hidden", got["pick.picksrc"])
-        self.assertIn("ellipsis", got["pick.picksrc"])
-        self.assertIn("title", got["pick.picksrc"],
-                      "the truncated source line has no full-text hover")
+        # Shorter and not obscured (2026-10-18): the attribution is visible in
+        # full, wraps if it must, and the hover carries the same sentence.
+        self.assertIn("normal", got["pick.picksrc"])
+        self.assertIn("visible", got["pick.picksrc"])
+        self.assertIn("patch", got["pick.picknote"])
+        self.assertNotIn("ellipsis", got["pick.picksrc"])
+        self.assertIn("title", got["pick.picksrc"])
         self.assertEqual(got["pick.picksrcgap"], "12px")
 
     def test_the_pick_screen_names_each_option_once(self):
@@ -2293,7 +2301,7 @@ class TestTheViewCarriesNoVerdict(_Rendered):
         self.assertNotIn("No data for this card on this patch yet.",
                          got["bare.alltext"])
         # Same height as a card with data — the design's "same card height".
-        self.assertGreaterEqual(int(got["bare.pickcard"].split("x")[1]), 144)
+        self.assertGreaterEqual(int(got["bare.pickcard"].split("x")[1]), 100)
 
 
 class TestTheCompsScreens(_Rendered):
@@ -3022,25 +3030,20 @@ class TestWhatTheShopKeepsSaying(_Rendered):
         self.assertEqual(got["none.passedcards"], 0)
         self.assertEqual(got["none.passednote"], "Nothing rolled past yet this turn.")
 
-    def test_the_panel_says_how_long_ago_it_was_read(self):
-        """Item 3(b): the fact belongs on the panel the player is reading, not
-        only in the strip above the card — and the same line exists on the empty
-        shop, which is the panel where a player most needs it.
-
-        The SHAPE is what a browser can honestly assert. The page counts from
-        the payload's own `generated` stamp against the browser's clock, so a
-        shot that takes more than a second to render and read says "read 1s
-        ago": this test pinned the literal "read just now" and adding a sixth
-        shot to this class broke it exactly that way (measured 2026-10-13 — the
-        assertion was a race, not a contract). The vocabulary itself ("just
-        now", the minute rollover, the ticker that keeps it moving) is pinned at
-        the source in `test_live_tavern`'s
-        `test_the_panel_carries_its_own_read_age`.
-        """
+    def test_the_page_has_one_read_age_and_no_panel_carries_its_own(self):
+        """2026-10-18: the shell's freshness line is the page's ONE read-age
+        timestamp. The Tavern and empty-shop panels used to repeat it."""
+        got = self.got
         for panel in ("t", "noshop"):
-            self.assertRegex(self.got[panel + ".readage"],
-                             r"^read (just now|\d+s ago|\d+ min ago)$",
-                             panel + " has no read-age line on its panel")
+            self.assertEqual(got[panel + ".readage"], "",
+                             panel + " still carries a panel read-age line")
+        import time
+        rep = _payload()
+        rep["generated"] = time.time() - 20
+        old = _render([_shot("old", rep)])
+        self.assertRegex(old["old.freshness"],
+                         r"(read \d+s ago|last read \d+s ago)",
+                         "the page-level read-age line is missing")
 
     def test_the_tavern_mix_counts_the_offers_one_by_one(self):
         """Item 3(b): the tribe composition of the shop, counted per OFFER — two
@@ -3087,16 +3090,19 @@ class TestWhatTheShopKeepsSaying(_Rendered):
                                             lobby_opp=59))])
         self.assertIn("Their board stats=~59 lobby avg", got["lb.opprows"])
 
-    def test_a_game_whose_opponent_was_never_seen_says_so(self):
+    def test_a_game_whose_opponent_was_never_seen_renders_no_panel(self):
+        """2026-10-18: an empty panel is not rendered, so the opponent panel is
+        absent rather than a box saying there is no board."""
         got = self.got
         self.assertEqual(got["noopp.opprows"], "")
-        self.assertEqual(got["noopp.oppempty"], "No opponent board seen yet.")
+        self.assertNotIn("Next opponent", got["noopp.alltext"])
 
-    def test_the_empty_shop_keeps_the_reason_it_is_empty(self):
-        """Item 3: never an empty panel without a state. `lvWaiting` says what
-        the page is waiting for AND how old the read is."""
+    def test_between_shops_is_the_last_snapshot_not_an_empty_shop(self):
+        """2026-10-18: with no shop read there is no Tavern panel and no
+        "Reading the shop" sentence; the last snapshot is the page."""
         got = self.got
-        self.assertIn("Reading the shop", got["noshop.notes"])
+        self.assertIn("Last snapshot", got["noshop.alltext"])
+        self.assertNotIn("Reading the shop", got["noshop.alltext"])
         self.assertEqual(got["noshop.passedlbl"], "")
 
 
@@ -3229,3 +3235,76 @@ class TestTheHarnessItself(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheMomentLayout(_Rendered):
+    """The page by MOMENT (2026-10-18): hero pick, shop, trinket/discover pick,
+    between shops. Every test here is about what is NOT rendered as much as
+    what is: the old page drew every panel at every moment."""
+
+    @classmethod
+    def shots(cls):
+        return [_shot("hero", _hero_pick_payload()),
+                _shot("shop", _payload()),
+                _shot("pick", _choice_payload()),
+                _shot("between", _payload(shop_rank=[], shop_passed=[]))]
+
+    def test_a_hero_pick_is_the_tribe_row_and_the_cards_only(self):
+        got = self.got
+        self.assertEqual(int(got["hero.statusbar"]), 0,
+                         "a hero pick still draws the status bar of dashes")
+        self.assertEqual(int(got["hero.tribes"]), 1,
+                         "the hero pick lost its tribe row")
+        self.assertEqual(got["hero.panels"], "Choose one")
+        self.assertEqual(int(got["hero.nestedpanels"]), 0)
+        self.assertNotIn("Gold", got["hero.alltext"])
+
+    def test_a_hero_card_carries_its_full_power_text(self):
+        got = self.got
+        self.assertEqual(got["hero.picksubwrap"], "normal",
+                         "the hero power is still a nowrap ellipsis")
+        self.assertTrue(got["hero.herosubtitle"],
+                        "the full power is not on the card's title")
+        self.assertIn(got["hero.picksub"].split("|")[0],
+                      got["hero.herosubtitle"])
+        self.assertNotEqual(got["hero.herosubmax"], "none",
+                            "the card has no four-line ceiling")
+
+    def test_the_shop_has_no_nested_shop_and_no_lobby(self):
+        got = self.got
+        self.assertEqual(int(got["shop.nestedpanels"]), 0,
+                         "a panel is nested inside another panel")
+        self.assertNotIn("Lobby", got["shop.panels"])
+        self.assertNotIn("Shop", got["shop.panels"].split("|"))
+
+    def test_a_pick_puts_its_cards_above_collapsed_shop_summaries(self):
+        got = self.got
+        self.assertEqual(got["pick.pickabove"], 1,
+                         "the pick cards are not above the shop summaries")
+        self.assertGreaterEqual(int(got["pick.collapsed"]), 1,
+                                "the shop panels are not collapsed")
+        self.assertEqual(int(got["pick.nestedpanels"]), 0)
+        # A collapsed panel is a header + summary only; the live body's own
+        # sections are not there to read.
+        self.assertNotIn("Your board", got["pick.alltext"])
+
+    def test_between_shops_is_one_dimmed_snapshot(self):
+        got = self.got
+        self.assertEqual(int(got["between.statusbar"]), 0)
+        self.assertEqual(got["between.panels"], "Last snapshot")
+        self.assertIn("Last snapshot", got["between.alltext"])
+
+    def test_the_header_title_and_summary_have_a_gap(self):
+        self.assertEqual(self.got["shop.h3gap"], "8px",
+                         "the title and summary still run together")
+
+    def test_the_page_has_one_read_age_and_it_is_not_on_a_panel(self):
+        for shot in ("hero", "shop", "pick", "between"):
+            self.assertEqual(self.got[shot + ".readage"], "",
+                             f"{shot} carries a panel read-age line")
+
+    def test_empty_facts_is_not_rendered(self):
+        got = _render([_shot("bare", _payload(
+            fragility=None, level_cost=None, board_stats=None,
+            opp_stats=None, opp_lobby=None, board=[], sell_rank=[]))])
+        self.assertNotIn("Facts", got["bare.panels"])

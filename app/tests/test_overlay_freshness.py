@@ -89,10 +89,10 @@ class TestTheFreshnessRule(unittest.TestCase):
         self.by_case = dict(zip(CASES, self.lines))
         self.refused = dict(zip(REFUSED, out["refused"]))
 
-    def test_fresh_advice_says_nothing(self):
+    def test_fresh_advice_still_says_how_old_it_is(self):
         line = self.by_case[(3, 0)]
         self.assertFalse(line["alarm"])
-        self.assertEqual(line["text"], "")
+        self.assertEqual(line["text"], "read 3s ago")
 
     def test_old_advice_is_stated_not_accused(self):
         """The measured false alarm: 90 seconds of combat is NORMAL."""
@@ -100,7 +100,8 @@ class TestTheFreshnessRule(unittest.TestCase):
         self.assertFalse(line["alarm"],
                          "a healthy coach mid-combat must not be reported as "
                          "frozen")
-        self.assertIn("next shop", line["text"])
+        self.assertIn("read", line["text"])
+        self.assertNotIn("next shop", line["text"])
 
     def test_only_a_silent_coach_alarms(self):
         """No answer at all is the one thing that means the coach is gone."""

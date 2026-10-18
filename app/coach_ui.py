@@ -1250,9 +1250,13 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-pn { background:var(--tpanel); border:1px solid var(--tline);
                         border-radius:12px; padding:12px 14px;
                         margin:0 0 12px; }
+  /* A GAP between the title and its one-line summary (2026-10-18): the
+     summary is appended to the heading, and with no gap "CHOOSE ONE" and
+     "4 options" ran together as one word. */
   .tavern.live .lv-pn > h3 { margin:0 0 8px; font-size:12px; letter-spacing:.12em;
                              text-transform:uppercase; color:var(--tmute);
-                             display:flex; align-items:baseline; flex-wrap:wrap; }
+                             display:flex; align-items:baseline; flex-wrap:wrap;
+                             gap:8px; }
   /* ---------------------------------------------------------------------
      THE ACCORDION, EVERY WINDOW UNDER 1650px (fix list round 4 item 5,
      2026-10-13). Every section is on the page at once, each header carries a
@@ -1381,10 +1385,6 @@ _HTML = r"""<!doctype html>
      the mark (an older record) still gets a dimmed block. */
   .tavern.live .lv-oop .lv-crow { opacity:.55; }
   .tavern.live .lv-lbl { color:var(--tmute); font-size:12px; margin:0 0 6px; }
-  /* The read's age, ON the panel (fix list round 4 item 3(b)): the same
-     --tmute as the other secondary lines, one line under the heading. */
-  .tavern.live .lv-read { color:var(--tmute); font-size:11px;
-                          margin:-4px 0 8px; }
   /* Tavern mix / their mix (fix list round 4 items 3(b) and 4): the label and
      its counts on one wrapping line, chips like the tribe row's but inert —
      nothing here is tappable, so they carry no cursor. */
@@ -1402,6 +1402,16 @@ _HTML = r"""<!doctype html>
   .tavern.live .lv-passed .lv-lbl { margin:0 0 8px; }
   .tavern.live .lv-note { color:var(--tmute); font-size:11px; margin:8px 0 0; }
   .tavern.live .lv-empty { color:var(--tmute); font-size:12px; padding:4px 0; }
+  /* Between shops: the last snapshot, dimmed, with the page's one read-age
+     line above it. Nothing here is a live reading. */
+  .tavern.live .lv-between { opacity:.58; }
+  .tavern.live .lv-between > h3 { color:var(--tmute); }
+  /* A pick's context: the shop panels as one-line summaries, no body. */
+  .tavern.live .lv-collapsed { background:var(--tpanel); border:1px solid var(--tline);
+                               border-radius:12px; padding:10px 14px;
+                               margin:0 0 8px; }
+  .tavern.live .lv-collapsed > h3 { margin:0; }
+  .tavern.live .lv-collapsed > *:not(h3) { display:none; }
   /* The tab row's own rules went with the tab row (fix list round 4 item 5):
      `.lv-tabs` has no element to style at any width now, and a live rule for a
      class nothing carries is how a removed control comes back by accident. */
@@ -1470,10 +1480,10 @@ _HTML = r"""<!doctype html>
     .tavern.live .lv-pickgrid {
       grid-template-columns:repeat(4, minmax(200px, 1fr)); }
   }
-  /* The source line: ONE line, ellipsised, with the whole sentence on the
-     hover — and a 12px gap before the cards it is the source FOR. */
-  .tavern.live .lv-source { white-space:nowrap; overflow:hidden;
-                            text-overflow:ellipsis; margin:0 0 12px; }
+  /* The source line: short, visible in full (it wraps if it must), with the
+     same sentence on the hover — and a 12px gap before the cards it is the
+     source FOR. The attribution is never truncated away (2026-10-18). */
+  .tavern.live .lv-source { white-space:normal; margin:0 0 12px; }
   /* THE OPTION CARD: art left, content right, and a floor under its height so a
      card carrying less data does not make its row shorter — the grid jumping
      under the player's cursor as the payload is re-read is what that floor is
@@ -1490,6 +1500,18 @@ _HTML = r"""<!doctype html>
                              padding:10px 12px;
                              box-sizing:border-box; background:var(--tcard);
                              border:1px solid var(--tline); border-radius:10px; }
+  /* A HERO CARD IS AS TALL AS ITS CONTENT (2026-10-18). The 144px floor was
+     for a row of four compact cards with two stat rows; a hero's full power
+     text needs whatever four lines take, so the floor gives way and each card
+     starts at the top of its grid cell instead of stretching to the tallest. */
+  .tavern.live .lv-pickgrid.lv-hero { align-items:start; }
+  .tavern.live .lv-optcard.lv-hero { min-height:0; height:auto; }
+  /* Up to FOUR lines of hero power, no ellipsis. The full text is on the
+     card's `title`; a fifth line would push the headline below the fold, so
+     it is clipped, not dotted. */
+  .tavern.live .lv-optcard.lv-hero .lv-psub { white-space:normal;
+    overflow:hidden; text-overflow:clip; line-height:1.25;
+    max-height:calc(4 * 1.25em); }
   /* The art is 72x96 at the nominal window (3/4), and the HEIGHT is what gives
      on a short one — clamp(64px, 14vh, 128px) — with the width following from
      the ratio so the art can never squash. Under 700px the card is alone in
@@ -1522,12 +1544,10 @@ _HTML = r"""<!doctype html>
      than wrapped because a wrapped "+3.4 vs offered avg" reads as a second
      stat under the first. */
   .tavern.live .lv-phead { display:flex; align-items:baseline; gap:6px;
-                           margin:2px 0 1px; white-space:nowrap;
-                           overflow:hidden; text-overflow:ellipsis; }
+                           flex-wrap:wrap; margin:2px 0 1px; }
   .tavern.live .lv-phead b { font:700 18px "Segoe UI", system-ui; }
-  .tavern.live .lv-phead small { font-size:10px; letter-spacing:.1em;
-                                 text-transform:uppercase; color:var(--tmute); }
-  .tavern.live .lv-phead .lv-vs { font-size:11px; }
+  .tavern.live .lv-phead .lv-when { font-size:11px; font-style:normal;
+                                    color:var(--tmute); }
   /* 13px rows with 5px of padding — two of them beside the headline are what
      fits next to the art. */
   .tavern.live .lv-optbody .lv-kv { font-size:13px; padding:5px 0; }
@@ -1944,7 +1964,8 @@ let _lastAnswer = 0;
 //: because no amount of waiting fixes it — each run mints a new key, so this
 //: is what a tab left open across a restart meets.
 let _keyRefused = false;
-const STALE_AFTER = 8;   // when to say how old the advice is
+const STALE_AFTER = 8;   // legacy threshold the freshness tests read;
+                         // the page line now states the age at every age
 const LOST_AFTER = 6;    // seconds with NO answer at all before it is the coach
 //: The whole decision the freshness line makes, as a pure function so the suite
 //: can run it under node instead of trusting the wording by eye. `alarm` is true
@@ -1964,10 +1985,11 @@ function freshnessLine(ageSec, silentSec, keyRefused) {
     return {alarm: true,
             text: 'Lost contact with the coach — last read ' + ago + ' ago'};
   }
-  if (ageSec < STALE_AFTER) return {alarm: false, text: ''};
-  return {alarm: false,
-          text: 'Read from ' + ago + ' ago — it updates when your next shop '
-                + 'opens'};
+  // ONE read-age line for the page (2026-10-18): it says the age at every
+  // age, rather than only once the advice is stale. The Tavern and empty-shop
+  // panels used to carry two more copies of the same fact.
+  if (ageSec < 1) return {alarm: false, text: 'read just now'};
+  return {alarm: false, text: 'read ' + ago + ' ago'};
 }
 async function poll() {
   if (_pollBusy) return;  // a slow response must not pile up ticks
@@ -2012,11 +2034,9 @@ function tickFreshness() {
   const line = freshnessLine(age, silent, _keyRefused);
   node.className = line.alarm ? 'on' : (line.text ? 'info' : '');
   node.textContent = line.text;
-  // ...and the same age on the Tavern panel itself (fix list round 4 item
-  // 3(b)). It rides this ticker rather than render(): the payload does not
-  // change while the player is thinking, so a panel-only reading would stay
-  // frozen at whatever it said when the panel was built.
-  tickReadAge();
+  // ONE read age for the page: the freshness line above. The Tavern and
+  // empty-shop panels used to draw their own, so a stale frame said it three
+  // times (2026-10-18).
 }
 setInterval(tickFreshness, 1000);
 function el(tag, cls, text) {
@@ -2406,17 +2426,13 @@ function lvOrdinal(p) {
 //: unread gold/tier/HP went with the strip on 2026-10-13.
 function lvVal(v) { return v == null || v === '' ? '—' : String(v); }
 
-function lvPanel(title, body, withAge, note) {
+function lvPanel(title, body, note) {
   const p = el('div', 'lv-pn');
   const h = el('h3', null, title);
   // The panel's own besides-the-name note (`lv-hnote`), e.g. the not-confirmed
   // state the comps list says once (round 3 item 4).
   if (note) h.appendChild(el('span', 'lv-hnote', ' · ' + note));
-  // The read's age rides the PANEL (fix list round 4 item 3(b)), under the
-  // heading rather than inside it: the heading is the panel's name and several
-  // tests read it verbatim.
   p.appendChild(h);
-  if (withAge) p.appendChild(lvReadAge());
   p.appendChild(body);
   return p;
 }
@@ -2537,18 +2553,13 @@ function lvStatus(a) {
                                               : null));
   return bar;
 }
-//: The waiting state (fix list round 2 item 2): the status bar with everything
-//: dashed, and one line saying what the page is waiting for. The design's §6.1
-//: asked for four dashed skeleton cards here; the player's call replaces them —
-//: they read as "thick dash bars" with no information in them, and the sentence
-//: says the same thing.
+//: A Tavern BODY for a shop that has not parsed. The MOMENT renderer no longer
+//: builds this panel (a turn with no shop is `lvBetween`), but the body stays a
+//: body — not a second panel inside the Tavern panel (2026-10-18).
 function lvWaiting(a) {
-  const p = el('div', 'lv-pn');
-  p.appendChild(el('h3', null, 'Shop'));
-  // The EMPTY shop says how old the read is too (fix list round 4 item 3):
-  // the panel with nothing in it is exactly the one where a player wonders
-  // whether the coach is stuck or the shop simply has not opened.
-  p.appendChild(lvReadAge());
+  // A BODY, not a panel inside the Tavern panel (2026-10-18). The nested SHOP
+  // box was a second heading and a second frame for one state.
+  const p = el('div');
   p.appendChild(el('p', 'lv-note', 'Reading the shop. This updates when your '
                                    + 'next shop opens.'));
   if (a.status) p.appendChild(el('p', 'lv-inline', a.status));
@@ -3284,29 +3295,6 @@ function lvMixRow(label, mixed) {
   return row;
 }
 function lvMix(a) { return lvMixRow('Tavern mix', a.shop_mix) || el('div'); }
-//: HOW LONG AGO THE SHOP WAS READ, on the panel itself (fix list round 4 item
-//: 3(b)). The window's `#freshness` strip already says this once the advice is
-//: 8s old, but that strip is about the ADVICE and sits above the card; the
-//: question "is this shop current?" is asked while looking at the panel. It
-//: ticks with the freshness ticker, because the payload does not change while
-//: the player thinks and a number frozen at "read just now" would be a lie.
-function lvReadAge() {
-  // A CLASS, not an id: the arrangement puts the Tavern panel in the first
-  // column AND in the accordion, so there are two of these lines in the DOM and
-  // a duplicated id is a broken document — `getElementById` would pick one of
-  // them by position and the other would sit empty forever.
-  return el('div', 'lv-read');
-}
-function lvAgeText(sec) {
-  if (sec == null) return '';
-  if (sec < 1) return 'read just now';
-  if (sec < 60) return 'read ' + Math.round(sec) + 's ago';
-  return 'read ' + Math.floor(sec / 60) + ' min ago';
-}
-function tickReadAge() {
-  const text = lvAgeText(_generated == null ? null : Date.now() / 1000 - _generated);
-  document.querySelectorAll('.lv-read').forEach(n => { n.textContent = text; });
-}
 //: WHAT WAS ROLLED PAST THIS TURN (fix list round 4 item 3(c)). Every offer
 //: that left the shop while it was open, one card per OFFER ENTITY — two
 //: copies of one minion were two cards on screen and are two cards here. The
@@ -3562,23 +3550,20 @@ function lvPick(a) {
   const body = el('div');
   const redraw = () => renderLiveTavern(a);
   body.appendChild(lvPickControls(ch, stats, redraw));
-  const rates = rows.map(r => (stats[r[1]] || {}).pick_rate)
-                    .filter(v => v != null);
-  const avg = rates.length
-    ? rates.reduce((s, v) => s + v, 0) / rates.length : null;
-  // ONE line, ellipsised, with the whole sentence on the hover (§8: what a
-  // truncation hides has to be reachable somewhere).
-  const src = 'Source: population statistics scraped from hsreplay.net, read '
-    + 'from the shipped meta DB · observational, not causal. '
-    + (avg == null ? 'Shown in the order offered.'
-                   : 'Offered average: ' + avg.toFixed(1) + '% picked.');
+  const isHero = ch.kind === 'hero';
+  // ONE visible source line, shortened (2026-10-18) — but never removed or
+  // hidden: the attribution is the condition for showing the numbers at all.
+  // The hover carries the same line, not a longer one that would obscure the
+  // visible text.
+  const src = 'Source: HSReplay population statistics'
+    + (a.patch ? ' · patch ' + a.patch : '');
   const note = el('p', 'lv-note lv-source', src);
   note.title = src;
   body.appendChild(note);
-  const wrap = el('div', 'lv-pickgrid');
+  const wrap = el('div', 'lv-pickgrid' + (isHero ? ' lv-hero' : ''));
   rows.forEach(([name, cid]) => {
     const st = stats[cid] || {};
-    const card = el('div', 'lv-optcard');
+    const card = el('div', 'lv-optcard' + (isHero ? ' lv-hero' : ''));
     // The full name on the card as well as on its art: a name that clamps is
     // still readable in full by hovering anywhere on the option.
     card.title = name || '';
@@ -3592,22 +3577,21 @@ function lvPick(a) {
     col.appendChild(el('div', 'lv-pname', name));
     const sub = lvOptSub(st);
     if (sub) {
-      const line = el('div', 'lv-psub', sub);
+      // A hero's power gets up to four wrapped lines and no ellipsis; the
+      // full text is on the title so the cut (if any) is recoverable. Every
+      // other kind keeps the one compact line.
+      const line = el('div', 'lv-psub' + (isHero ? ' lv-psub-full' : ''), sub);
       line.title = sub;
       col.appendChild(line);
     }
     if (st.pick_rate != null) {
-      // ONE line: the figure, what it is, and the distance from the offered
-      // average (round 1 item 2 / round 2 item 1). The row that used to repeat
-      // the figure is gone.
+      // "Picked X% when offered" (2026-10-18). The old card said "31.3% Picked"
+      // and then a "+3.4 vs offered avg" delta whose baseline was the average
+      // of the options on screen — a number about the card's company, not the
+      // card. Both are gone; the label now says what the figure measures.
       const head = el('div', 'lv-phead');
-      head.appendChild(el('b', null, st.pick_rate.toFixed(1) + '%'));
-      head.appendChild(el('small', null, 'Picked'));
-      if (avg != null) {
-        const d = st.pick_rate - avg;
-        head.appendChild(el('i', 'lv-vs',
-          (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(1) + ' vs offered avg'));
-      }
+      head.appendChild(el('b', null, 'Picked ' + st.pick_rate.toFixed(1) + '%'));
+      head.appendChild(el('i', 'lv-when', ' when offered'));
       col.appendChild(head);
     }
     // At most TWO rows, with the rest COUNTED on the line under them — the
@@ -3806,18 +3790,57 @@ function lvPanelBody(title, a) {
   if (title === 'Lobby') return lvLobbyBody(a);
   return lvFacts(a);
 }
-//: Is a pick on screen? §4.3: while the game is asking, choosing is what the
-//: player is doing, so the pick screen REPLACES the tavern row rather than
-//: sitting beside it — the same rule the tab row used to apply, applied to both
-//: arrangements through one predicate so they cannot disagree.
-function lvPicking(a) {
-  return !!(a.choice && a.choice.ranked && a.choice.ranked.length);
+//: THE MOMENT THE PAGE IS IN (2026-10-18). The live page used to draw every
+//: panel at every moment, which is why a hero pick showed a status bar of
+//: dashes and five empty panels. One predicate decides what the game is asking
+//: for, and the renderer builds only that moment:
+//:
+//:   hero    the hero pick: the tribe row and the pick cards, nothing else
+//:   pick    a trinket / discover pick: the cards, then the shop as summaries
+//:   shop    a buy phase: status, tavern, board/hand, comps, facts, opponent
+//:   between the shop has closed: the last snapshot, dimmed
+//:   empty   nothing read yet
+function lvMoment(a) {
+  const ch = a.choice || {};
+  if ((ch.ranked || []).length) return ch.kind === 'hero' ? 'hero' : 'pick';
+  if ((a.shop_rank || []).length) return 'shop';
+  if (lvHasBoardHand(a) || a.hero) return 'between';
+  return 'empty';
+}
+function lvHasShop(a) { return (a.shop_rank || []).length > 0; }
+function lvHasBoardHand(a) {
+  return ((a.board_cards || a.sell_rank || []).length > 0)
+      || ((a.hand || []).length > 0);
+}
+function lvHasOpponent(a) {
+  const oc = a.opp_comp;
+  return !!(oc && (oc.cards || []).length);
+}
+function lvFactsHasValue(a) {
+  const fr = a.fragility || {};
+  if (fr.eff_health != null || fr.last_hit != null || fr.recent3 != null
+      || fr.cap != null) return true;
+  return a.board_stats != null || a.level_cost != null;
+}
+//: An EMPTY PANEL IS NOT RENDERED (2026-10-18). Comps is the exception that
+//: proves the rule: it carries a legitimate empty state (the bans have not
+//: resolved), so it renders that ONE line rather than disappearing.
+function lvSectionVisible(title, a) {
+  if (title === 'Tavern') return lvHasShop(a);
+  if (title === 'Board and hand') return lvHasBoardHand(a);
+  if (title === 'Comps') return true;
+  if (title === 'Facts') return lvFactsHasValue(a);
+  if (title === 'Next opponent') return lvHasOpponent(a);
+  return false;
 }
 //: The one state a section says in its header rather than its body: whether the
 //: lobby's tribes are confirmed yet. Said once, in the header, and nowhere else
 //: (round 3 item 4).
 function lvCompsNote(a) {
-  return a.tribes_detecting ? 'tribes not confirmed yet' : null;
+  // Said only when there is a list it qualifies; an empty Comps gets ONE line
+  // in its body, not a header note plus a summary plus a body sentence.
+  return (a.tribes_detecting && (a.comps || []).length)
+    ? 'tribes not confirmed yet' : null;
 }
 //: THE ONE-LINE SUMMARY (item 5): a count and its noun, which is what fits on a
 //: header line and is the same kind of fact every panel below already carries.
@@ -3833,8 +3856,12 @@ function lvSectionLine(title, a) {
     // (§4.3) and nothing here may read that order.
     const ch = a.choice || {};
     const k = n(ch.ranked);
-    return (ch.source ? ch.source + ' · ' : '')
-         + k + (k === 1 ? ' option' : ' options');
+    // The hero pick's source is literally "Choose One", which repeats the
+    // panel title; do not say it twice (2026-10-18). A trinket's own source
+    // ("Lesser Trinket") is a fact and stays.
+    const src = (ch.source && ch.source.toLowerCase() !== 'choose one')
+      ? ch.source + ' · ' : '';
+    return src + k + (k === 1 ? ' option' : ' options');
   }
   if (title === 'Tavern') {
     const shop = n(a.shop_rank);
@@ -3842,21 +3869,29 @@ function lvSectionLine(title, a) {
                 : 'nothing read yet';
   }
   if (title === 'Board and hand') {
-    return n(a.board_cards || a.sell_rank) + ' on board · '
-         + n(a.hand) + ' in hand';
+    // NO COUNT TEXT WHEN EMPTY (2026-10-18): "0 on board · 0 in hand" is a
+    // sentence about a panel that should not be there. A non-empty half still
+    // gets its count; both empty returns nothing.
+    const bits = [];
+    const board = n(a.board_cards || a.sell_rank);
+    if (board) bits.push(board + ' on board');
+    if (n(a.hand)) bits.push(n(a.hand) + ' in hand');
+    return bits.join(' · ');
   }
   if (title === 'Comps') {
     // "N in this lobby" (item B.1, 2026-10-14): the main list holds the comps
     // this game can still build, so the count that belongs on its header is
     // that one. "12 of 16 available" described a list that no longer exists —
     // the 16 included comps of tribes this lobby does not offer.
+    // Empty returns nothing: the body's one line is the empty state now, not a
+    // second "nothing read yet" in the header (2026-10-18).
     const comps = a.comps || [];
-    if (!comps.length) return 'nothing read yet';
+    if (!comps.length) return '';
     return lvInLobby(a).length + ' in this lobby';
   }
   if (title === 'Next opponent') {
     const oc = a.opp_comp || {};
-    return oc.hero_name || oc.hero || 'no board seen';
+    return oc.hero_name || oc.hero || '';
   }
   if (title === 'Lobby') {
     const rows = a.tribe_pressure || [];
@@ -3876,7 +3911,7 @@ function lvSectionLine(title, a) {
 //: every 5 seconds and the section would pop shut under the player's hands.
 function lvSection(title, a, acc) {
   const note = title === 'Comps' ? lvCompsNote(a) : null;
-  const p = lvPanel(title, lvPanelBody(title, a), title === 'Tavern', note);
+  const p = lvPanel(title, lvPanelBody(title, a), note);
   const line = lvSectionLine(title, a);
   if (line) p.querySelector('h3').appendChild(el('span', 'lv-sum', line));
   // THE COMPS SORT CONTROL RIDES ITS OWN HEADING (2026-10-16 — see
@@ -3931,17 +3966,15 @@ function lvSection(title, a, acc) {
 //: while it asks.
 function lvColumns(a) {
   const one = el('div', 'lv-col');
-  one.appendChild(lvSection('Tavern', a, false));
-  one.appendChild(lvSection('Board and hand', a, false));
-  // The reference material, UNDER the board it describes (2026-10-16). The old
-  // third column was 300px of mostly-empty page at the start of a game, and the
-  // comps list was the thing short of room — so the rail moved in with the
-  // board, in the order the player reads it, and column two is comps alone.
-  one.appendChild(lvSection('Facts', a, false));
-  one.appendChild(lvSection('Next opponent', a, false));
-  one.appendChild(lvSection('Lobby', a, false));
+  // Only the panels this moment has data for (2026-10-18). Lobby is gone from
+  // the live page: the brief for the shop phase is status, tavern, board, hand,
+  // comps, facts, opponent — and the Lobby panel was a second copy of the
+  // opponent/seat facts.
+  ['Tavern', 'Board and hand', 'Facts', 'Next opponent'].forEach(t => {
+    if (lvSectionVisible(t, a)) one.appendChild(lvSection(t, a, false));
+  });
   const two = el('div', 'lv-col');
-  two.appendChild(lvSection('Comps', a, false));
+  if (lvSectionVisible('Comps', a)) two.appendChild(lvSection('Comps', a, false));
   return [one, two];
 }
 //: The accordion (every window under 1650px): one column, the facts strip pinned
@@ -3958,9 +3991,9 @@ function lvColumns(a) {
 //: what to build toward.
 function lvAccordion(a) {
   const col = el('div', 'lv-col');
-  col.appendChild(lvSection('Facts', a, true));
-  ['Comps', 'Tavern', 'Board and hand', 'Next opponent', 'Lobby'].forEach(t => {
-    col.appendChild(lvSection(t, a, true));
+  if (lvSectionVisible('Facts', a)) col.appendChild(lvSection('Facts', a, true));
+  ['Comps', 'Tavern', 'Board and hand', 'Next opponent'].forEach(t => {
+    if (lvSectionVisible(t, a)) col.appendChild(lvSection(t, a, true));
   });
   return [col];
 }
@@ -3974,22 +4007,6 @@ function lvAccordion(a) {
 //: at render time and stay right when the window is resized.
 function lvBody(a) {
   const wrap = el('div', 'lv-body');
-  // THE PICK STRIP, ABOVE THE DASHBOARD (2026-10-14). The design's wide mock is
-  // one row of four options, and the point of it is that choosing does not
-  // evict the rest of the page: the tavern row, the comps list and the facts
-  // table stay on screen under the pick. So the pick panel is a sibling of both
-  // arrangements, at their full width, rather than the first section of one of
-  // them — `lvPicking` is still the ONE predicate that decides whether it is
-  // there, so the two arrangements cannot disagree about it (`lvColumns` and
-  // `lvAccordion` no longer ask). The panel carries `lv-pickstrip` so a reader
-  // (and this suite's driver) can find the strip by name without having to know
-  // which arrangement is on screen — a page-wide search for `.lv-pn` would find
-  // the hidden arrangement's sections first.
-  if (lvPicking(a)) {
-    const pick = lvSection('Choose one', a, false);
-    pick.classList.add('lv-pickstrip');
-    wrap.appendChild(pick);
-  }
   const cols = el('div', 'lv-main lv-layout-cols');
   lvColumns(a).forEach(c => cols.appendChild(c));
   const acc = el('div', 'lv-main lv-layout-acc');
@@ -3997,6 +4014,45 @@ function lvBody(a) {
   wrap.appendChild(cols);
   wrap.appendChild(acc);
   return wrap;
+}
+//: The pick panel itself, at full width. It is a section like every other
+//: panel, so its title/summary pair behaves the same; `lv-pickstrip` is the
+//: reader's name for it in either arrangement.
+function lvPickPanel(a) {
+  const p = lvSection('Choose one', a, false);
+  p.classList.add('lv-pickstrip');
+  return p;
+}
+//: A trinket/discover pick's context: the shop panels as ONE-LINE summaries
+//: (2026-10-18). The bodies are not built at all — a summary line is the whole
+//: contract — and empty panels are omitted as everywhere else.
+function lvCollapsedSections(a) {
+  const wrap = el('div');
+  ['Tavern', 'Board and hand', 'Comps', 'Facts', 'Next opponent'].forEach(t => {
+    if (!lvSectionVisible(t, a)) return;
+    const p = lvPanel(t, el('div'), t === 'Comps' ? lvCompsNote(a) : null);
+    const line = lvSectionLine(t, a);
+    if (line) p.querySelector('h3').appendChild(el('span', 'lv-sum', line));
+    p.classList.add('lv-collapsed');
+    wrap.appendChild(p);
+  });
+  return wrap;
+}
+//: Between shops: the last snapshot, dimmed, with the page's one read-age line
+//: above it (2026-10-18). No status bar of stale numbers and no empty panels:
+//: the snapshot is the only fact still true.
+function lvBetween(a) {
+  const p = el('div', 'lv-pn lv-between');
+  p.appendChild(el('h3', null, 'Last snapshot'));
+  if (lvHasBoardHand(a)) p.appendChild(lvBoardHand(a));
+  else p.appendChild(el('p', 'lv-note', 'No snapshot read yet.'));
+  return p;
+}
+function lvEmptyMoment() {
+  const p = el('div', 'lv-pn');
+  p.appendChild(el('h3', null, 'Another Round'));
+  p.appendChild(el('p', 'lv-note', 'Waiting for the next shop to open.'));
+  return p;
 }
 
 function renderLiveTavern(a) {
@@ -4018,17 +4074,35 @@ function renderLiveTavern(a) {
   // No game-over band here: that card arrives on its own payload (`welcome:
   // true`), which `render` sends to `renderTavernGameOver` instead of to this
   // renderer — a live payload with a board never carries one.
-  root.appendChild(lvStatus(a));
-  root.appendChild(lvTribes(a));
-  root.appendChild(lvBody(a));
+  const moment = lvMoment(a);
+  if (moment === 'hero') {
+    // The hero pick is the tribe row and the cards — no status bar of dashes
+    // for a game that has not started, no shop panels for a shop that does not
+    // exist yet.
+    root.appendChild(lvTribes(a));
+    root.appendChild(lvPickPanel(a));
+  } else if (moment === 'pick') {
+    // The pick is what the player is doing; the shop is context. Cards first,
+    // then the shop panels as summaries, not a second reading of every panel.
+    root.appendChild(lvPickPanel(a));
+    root.appendChild(lvStatus(a));
+    root.appendChild(lvCollapsedSections(a));
+  } else if (moment === 'shop') {
+    root.appendChild(lvStatus(a));
+    // The tribe row stays as page chrome (it is the ban correction control, not
+    // one of the moment's panels); the brief's panel list is the set below it.
+    root.appendChild(lvTribes(a));
+    root.appendChild(lvBody(a));
+  } else if (moment === 'between') {
+    root.appendChild(lvBetween(a));
+  } else {
+    root.appendChild(lvEmptyMoment());
+  }
   box.appendChild(root);
-  // Fill the panel's read-age line NOW rather than waiting up to a second for
-  // the freshness ticker: a panel that renders with an empty line and fills it
-  // in a moment later reads as a panel that lost something.
-  tickReadAge();
 }
+
 function render(a) {
-  // The payload's own `generated` stamp is what the panel's read-age line
+  // The payload's own `generated` stamp is what the page's read-age line
   // counts from. Set here as well as in poll() because the page can render a
   // payload without polling it — the tests' own driver calls render() directly
   // — and a read-age line that only ever appears on the poll path is a line
@@ -5460,6 +5534,28 @@ def _release_stamp():
     return _release_cache
 
 
+_patch_cache = None
+
+
+def _patch_label():
+    """The patch label the meta roster was built from, for the pick source line.
+
+    `meta/pool_roster.json` is what the pool and the pick-rate tables are read
+    against; doctor.py reads the same field. Memoized like `_release_stamp`
+    because render_json runs on every push and the file cannot change under a
+    running process without a restart.
+    """
+    global _patch_cache
+    if _patch_cache is None:
+        try:
+            with open(os.path.join(_HERE, "meta", "pool_roster.json"),
+                      encoding="utf-8") as f:
+                _patch_cache = (json.load(f).get("patch") or "").strip()
+        except (OSError, ValueError):
+            _patch_cache = ""
+    return _patch_cache
+
+
 def welcome_payload(game_over=None):
     """The card the overlay shows when there is nothing to advise.
 
@@ -6133,6 +6229,10 @@ def render_json(analysis):
     # The release stamp rides with it (2026-10-07), for the same reason: a
     # screenshot should name the release without anyone digging for it.
     a["release"] = _release_stamp()
+    # The pick screen's source line names the patch the population tables were
+    # read against (item 8, 2026-10-18). A field on the page payload, never in
+    # the analysis.
+    a["patch"] = _patch_label() or None
     a["board"] = [dict(m, name=names.get(m["card"], m["card"])) for m in analysis["board"]]
     # Group duplicate board minions (Fauna Whisperer ×2 with different stats
     # used to show as two confusing rows); score = the instance you'd sell

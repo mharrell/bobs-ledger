@@ -174,8 +174,10 @@ class TestTheBranch(unittest.TestCase):
         self.assertNotIn(".tavern.live .lv-tabs", html)
         self.assertIn("has no element to style at any width now", html)
         # The tab row's successor: the section names, in one place.
-        self.assertIn("lvSection('Tavern'", _function("lvColumns"))
-        self.assertIn("lvSection('Facts'", _function("lvAccordion"))
+        cols = _function("lvColumns")
+        self.assertIn("'Tavern'", cols)
+        self.assertIn("lvSectionVisible", cols)
+        self.assertIn("'Facts'", _function("lvAccordion"))
 
 
 class TestTheDesignsLanguageRules(unittest.TestCase):
@@ -269,7 +271,8 @@ class TestTheDesignsLanguageRules(unittest.TestCase):
         src = _function("lvPick")
         self.assertIn(".sort((x, y) => (x[4] ?? 0) - (y[4] ?? 0))", src,
                       "the options must sort by the game's own offer order")
-        self.assertIn("Shown in the order offered", src)
+        self.assertIn("Source: HSReplay population statistics", src)
+        self.assertNotIn("Offered average", src)
 
     def test_the_comps_view_is_recut_and_reset(self):
         """Item B.1's second sentence: "Recompute the list on every tribe change
@@ -462,8 +465,10 @@ class TestTheCompScreensAtSource(unittest.TestCase):
         # One section per arrangement, and the facts table is one of them.
         cols = _function("lvColumns") or ""
         acc = _function("lvAccordion") or ""
-        self.assertEqual(cols.count("lvSection('Facts'"), 1)
-        self.assertEqual(acc.count("lvSection('Facts'"), 1)
+        self.assertIn("'Facts'", cols)
+        self.assertIn("'Facts'", acc)
+        self.assertIn("lvSectionVisible", cols)
+        self.assertIn("lvSectionVisible", acc)
         # `lvFacts` builds the TABLE, not a panel: a panel here would nest one
         # `.lv-pn` inside another and give the section two headings.
         self.assertNotIn("'lv-pn'", _function("lvFacts") or "")
@@ -506,15 +511,17 @@ class TestTheCompScreensAtSource(unittest.TestCase):
         """
         cols = _function("lvColumns") or ""
         for section in ("'Tavern'", "'Board and hand'", "'Comps'",
-                        "'Next opponent'", "'Lobby'"):
+                        "'Next opponent'"):
             self.assertIn(section, cols,
                           f"the layout lost its {section} section")
+        self.assertNotIn("'Lobby'", cols)
         body = _function("lvBody") or ""
-        self.assertIn("lvPicking(a)", body,
-                      "the pick strip has no predicate of its own")
-        self.assertIn("'Choose one'", body)
-        self.assertIn("lv-pickstrip", body,
-                      "the pick strip cannot be found by name")
+        self.assertNotIn("lvPicking(a)", body)
+        pick = _function("lvPickPanel") or ""
+        self.assertIn("'Choose one'", pick)
+        self.assertIn("lv-pickstrip", pick,
+                      "the pick panel cannot be found by name")
+        self.assertIn("lvCollapsedSections", _function("renderLiveTavern") or "")
         # The accordion header is a real control: clickable, keyboard-reachable,
         # and it carries the state it toggles.
         sec = _function("lvSection") or ""
@@ -599,23 +606,15 @@ class TestTheRoundsFourthList(unittest.TestCase):
         # §5's data rule and item 3's "never empty without a state".
         self.assertIn("Nothing rolled past yet this turn.", src)
 
-    def test_the_panel_carries_its_own_read_age(self):
-        """Item 3(b): the age belongs on the panel, not only in the window's
-        freshness strip — and it ticks, because the payload does not change
-        while the player is thinking."""
-        self.assertIn("tickReadAge();", _function("tickFreshness") or "")
-        self.assertIn("tickReadAge();", _function("renderLiveTavern") or "")
-        self.assertIn("read just now", _function("lvAgeText") or "")
-        self.assertIn("lvReadAge()", _function("lvPanel") or "")
-        self.assertIn("lvReadAge()", _function("lvWaiting") or "",
-                      "the empty shop is the panel where the age matters most")
-        # A CLASS, not an id (fix list round 4 item 5): the Tavern panel is built
-        # in BOTH arrangements, so an id would be duplicated in one document and
-        # `getElementById` would fill whichever came first, leaving the other
-        # line empty forever.
-        self.assertIn("querySelectorAll('.lv-read')",
-                      _function("tickReadAge") or "")
-        self.assertNotIn(".id = 'lv-read'", coach_ui._HTML)
+    def test_the_page_has_one_read_age_and_it_is_not_on_every_panel(self):
+        """2026-10-18: one read-age line for the page (the shell's freshness
+        strip). The Tavern panel and the nested empty-shop panel used to carry
+        two more, so a stale frame said "read 22s ago" three times."""
+        html = coach_ui._HTML
+        self.assertNotIn("lvReadAge()", html)
+        self.assertNotIn("tickReadAge", html)
+        self.assertNotIn("lv-read", html)
+        self.assertIn("function freshnessLine", html)
 
     def test_the_mix_is_counted_per_offer_where_the_cards_are_known(self):
         """§5's data rule: a card neither DB carries contributes NOTHING rather
@@ -1049,7 +1048,7 @@ class TestTheShippedCompsDb(unittest.TestCase):
         self.assertEqual(src.count("'lv-pname'"), 1,
                          "the option's name is not emitted exactly once")
         self.assertIn("st.pick_rate.toFixed(1) + '%'", src)
-        self.assertIn("'Picked'", src)
+        self.assertIn("'Picked '", src)
         # One decimal everywhere: the stat rows too.
         self.assertIn("st.avg_placement.toFixed(1)", _function("lvStatRows"))
         # The row that repeated the headline is gone from the stat rows; the

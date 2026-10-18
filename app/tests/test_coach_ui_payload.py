@@ -128,6 +128,16 @@ class TestSharingRidesEveryPayload(unittest.TestCase):
         welcome = json.loads(coach_ui.welcome_payload())["share"]
         self.assertEqual(live, welcome)
 
+    def test_the_live_payload_names_the_meta_patch(self):
+        """The pick source line names the patch (2026-10-18). It is a PAGE
+        field, attached in render_json like `share`/`release`, so it cannot
+        reach decision_log."""
+        a = _base_analysis()
+        out = coach_ui.render_json(a)
+        self.assertEqual(out.get("patch"), coach_ui._patch_label())
+        self.assertTrue(out.get("patch"), "the shipped meta roster has no patch")
+        self.assertNotIn("patch", a)
+
     def test_the_consent_key_is_not_an_analysis_field(self):
         """It is added in render_json, so it never reaches decision_log and
         never reaches session_report.SPEC — whose whitelist REFUSES any
