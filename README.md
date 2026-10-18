@@ -1,6 +1,10 @@
 # Bob's Ledger
 
-Bob's Ledger is a tracker for **Hearthstone Battlegrounds** on Windows and macOS. It reads the game's own `Power.log` text file from your disk and shows you the state of your game in a local web page: your board and what each minion is worth, the tavern's offers, the next opponent, the lobby, how close you are to dying, and which comps are available. A second page, **Settle Up**, reviews finished games. Everything runs on your own machine, and it asks for no account.
+Bob's Ledger is a tracker for **Hearthstone Battlegrounds** on Windows and macOS. It reads the game's own `Power.log` text file from your disk and shows you the state of your game in a local web page: your board and what each minion is worth, the tavern's offers, the next opponent, how close you are to dying, and which comps are available. A second page, **Settle Up**, reviews finished games. Everything runs on your own machine, and it asks for no account.
+
+![Bob's Ledger - Another Round, late in a game](docs/screenshots/another-round-banner.webp)
+
+*Another Round, late in a game: the tavern, the lobby tribes, and the comps this lobby can build.*
 
 ## What you need
 
