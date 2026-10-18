@@ -289,6 +289,10 @@ def _load_bg_minion_ids():
     global _BG_MINION_IDS
     if _BG_MINION_IDS is None:
         _BG_MINION_IDS = {m.get("id") for m in meta.minions()}
+        # Summoned tokens are minions too, and a token that no table listed was
+        # counted as a CAST (it is not a "known minion") AND sold as a minion —
+        # Sellemental's token appeared in both lists on 2026-10-17.
+        _BG_MINION_IDS |= {t.get("id") for t in meta.tokens() if t.get("id")}
     return _BG_MINION_IDS
 
 

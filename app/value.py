@@ -4084,6 +4084,11 @@ def _load_bg_names():
     """
     names = {m.get("id"): m.get("name") for m in meta.minions()}
     names.update({sid: s.get("name") for sid, s in _load_spell_db().items()})
+    # Summoned tokens are not draftable, so they live in their own table — but
+    # they DO reach the review (a sold token, a summoned board), and without a
+    # name the row printed the raw id: "BGS_115t" in a SELLS list (2026-10-17).
+    names.update({t.get("id"): t.get("name") for t in meta.tokens()
+                  if t.get("id") and t.get("name")})
     return names
 
 

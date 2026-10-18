@@ -58,6 +58,17 @@ def minions():
     return _items("minions.json")
 
 
+def tokens():
+    """Summoned minions (meta/tokens.json) — NEVER part of the pool.
+
+    A token is a real minion that is never in the tavern, so it must not be
+    draftable; `extend_pool.py` filters it out of `minions()` for that reason.
+    This table exists so the rest of the program can still NAME one and know it
+    is a minion. See parse_tokens.py for how it is built.
+    """
+    return _items("tokens.json")
+
+
 def spells():
     return _items("tavern_spells.json")
 
