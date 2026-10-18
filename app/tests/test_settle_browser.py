@@ -117,7 +117,8 @@ def _rep():
              "board": [_minion("BG31_815", "Dune Dweller", 3, 3, 9),
                        _minion("BG31_820", "Kooky Chemist", 2, 2, 11)],
              "tavern": ["BG31_815", "BG31_820"],
-             "hand": [{"card": "BG31_831", "atk": 4, "health": 8}]},
+             "hand": [{"card": "BG31_831", "atk": 4, "health": 8}],
+             "triple": "BG31_815"},
             # A LEVEL-UP targets no card: this is the step that used to outline
             # card 1, because it had no previous board to compare against and
             # every tile therefore looked new (2026-10-09).
@@ -276,6 +277,7 @@ _DRIVER = r"""
     o.handtile = size(one('.spanel-hand .tile'));
     o.handthumb = size(one('.spanel-hand .thumb'));
     o.caveat = txt(one('.ts-caveat'));
+    o.triple = txt(one('.scap-triple'));
     // The review heading is GONE (2026-10-18, layout plan round 2 item 2): it
     // repeated the dropdown. The fact it carried is the dropdown's tooltip, so
     // that is what `head` measures now.
@@ -769,7 +771,8 @@ class TestTheStepThroughInABrowser(_Rendered):
         titles = "|" + self.got["s0.titles"] + "|"
         self.assertIn("|Step 2: Leveled up|", titles,
                       f"the level-up tick's tooltip is missing: {titles}")
-        self.assertIn("|Step 1: Bought Dune Dweller|", titles)
+        self.assertIn("|Step 1: Bought Dune Dweller — completed a triple|",
+                      titles)
 
     def test_the_caption_is_large_and_labels_the_board(self):
         """Item 7 (2026-10-09): the action in plain words, at reading size, above
@@ -847,6 +850,12 @@ class TestTheStepThroughInABrowser(_Rendered):
                         "the sold ghost is as big as a real card")
         self.assertEqual(self.got["s0.nav"],
                          "\u25c0 Prev|\u25b6 Play|Next \u25b6")
+
+    def test_a_triple_step_says_what_shrank_the_board(self):
+        """The board in a triple's step is the AFTER-combine board (two copies
+        gone). The caption has to say why, or "Bought X" reads as two minions
+        vanishing (2026-10-18)."""
+        self.assertIn("completed a triple", self.got["s0.triple"])
 
     def test_the_context_rows_are_three_quarters_the_board(self):
         """2026-10-18 (the maintainer's call): Tavern and Hand follow the SAME

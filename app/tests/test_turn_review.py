@@ -923,6 +923,36 @@ class TestTheStepRowsCarryTheHandAndTheTavern(unittest.TestCase):
         self.assertEqual(steps[0]["hand"], [])
         self.assertEqual(steps[0]["tavern"], [])
 
+    def test_the_action_line_beats_the_stale_snapshot_rows(self):
+        """A bought SPELL never touches the board, so the snapshot ring does
+        not fire and its hand row is one action behind. The line-keyed capture
+        is the action's own hand (2026-10-18)."""
+        steps = self._steps(
+            hands=[[{"card": "OLD", "atk": None, "health": None,
+                     "type": "spell"}]],
+            offers=[["OLD-OFFER"]],
+            step_hands=[(0, [{"card": "NEW", "atk": None, "health": None,
+                              "type": "spell"}])],
+            step_offers=[(0, ["NEW-OFFER"])])
+        self.assertEqual([h["card"] for h in steps[0]["hand"]], ["NEW"])
+        self.assertEqual(steps[0]["tavern"], ["NEW-OFFER"])
+
+    def test_a_triple_rides_the_action_that_caused_it(self):
+        """The board in a triple's step is the AFTER-combine board (two copies
+        gone). The fact has to attach to the buy/play, not to whatever action
+        happens to follow the tag (measured T6: the tag lands after a cast)."""
+        actual = {
+            "events": [{"k": "buy", "card": "BG31_820", "at": 3},
+                       {"k": "play", "card": "BG31_815", "at": 7},
+                       {"k": "cast", "card": "BG28_601", "at": 9}],
+            "triple_events": [{"at": 8, "card": "BG31_815", "base": "42"}],
+        }
+        steps = tr._steps_for(actual, [(0, 1)], [[]], 5, 0, 12)
+        self.assertEqual(steps[1].get("triple"), "BG31_815")
+        self.assertNotIn("triple", steps[2],
+                         "the cast after the tag stole the triple")
+        self.assertEqual(steps[1].get("triples"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

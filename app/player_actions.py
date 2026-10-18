@@ -109,7 +109,12 @@ def parse_actions(chunk, friendly, friendly_hero_card=None,
              # `spell_ids` names them, which is what lets the review grade a
              # plan that leads with "Cast X" (2026-10-06). A count cannot
              # answer "did they cast the one it named".
-             "spells": 0, "spell_ids": []}
+             "spells": 0, "spell_ids": [],
+             # Where a triple completed and which action produced it, for the
+             # Step-through's "completed a triple" note. Kept OUT of `events`:
+             # a triple is not a separate player action (the buy/play already
+             # happened), it is what that action caused.
+             "triple_events": []}
         if collect_events:
             d["events"] = []
         return d
@@ -270,6 +275,11 @@ def parse_actions(chunk, friendly, friendly_hero_card=None,
             base = m.group(1)
             if base != "0" and base not in turns[-1]["triples"]:
                 turns[-1]["triples"].append(base)
+                # The card is the last buy/play: a triple is completed by the
+                # third copy, and the tag lands just after that action's line.
+                produced = (turns[-1]["plays"] or turns[-1]["buys"] or [None])[-1]
+                turns[-1]["triple_events"].append(
+                    {"at": at, "card": produced, "base": base})
 
     # Skip buying phases with no player actions. The user counts turns as buying
     # phases they acted in; a phase where they just passed (e.g. a no-gold turn)
@@ -298,6 +308,11 @@ def _load_bg_minion_ids():
         # counted as a CAST (it is not a "known minion") AND sold as a minion —
         # Sellemental's token appeared in both lists on 2026-10-17.
         _BG_MINION_IDS |= {t.get("id") for t in meta.tokens() if t.get("id")}
+        # Golden Tier-0 minions use TB_BaconUps_* ids (not <base>_G). Their
+        # ids are not in minions.json/tokens.json, so without this a PLAY of
+        # one counted as a spell cast and a later removal as a sale.
+        _BG_MINION_IDS |= {p.get("id") for p in meta.premium_minions()
+                           if p.get("id")}
     return _BG_MINION_IDS
 
 

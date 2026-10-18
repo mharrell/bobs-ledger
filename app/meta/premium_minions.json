@@ -1,0 +1,522 @@
+{
+ "TB_BaconUps_002": {
+  "id": "TB_BaconUps_002",
+  "name": "Mecharoo",
+  "base": "BOT_445"
+ },
+ "TB_BaconUps_002t": {
+  "id": "TB_BaconUps_002t",
+  "name": "Jo-E Bot",
+  "base": null
+ },
+ "TB_BaconUps_004": {
+  "id": "TB_BaconUps_004",
+  "name": "Kindly Grandmother",
+  "base": "BG_KAR_005"
+ },
+ "TB_BaconUps_004t": {
+  "id": "TB_BaconUps_004t",
+  "name": "Big Bad Wolf",
+  "base": "BG_KAR_005a"
+ },
+ "TB_BaconUps_006": {
+  "id": "TB_BaconUps_006",
+  "name": "Harvest Golem",
+  "base": "BG_EX1_556"
+ },
+ "TB_BaconUps_006t": {
+  "id": "TB_BaconUps_006t",
+  "name": "Damaged Golem",
+  "base": "BG_EX1_556t"
+ },
+ "TB_BaconUps_008": {
+  "id": "TB_BaconUps_008",
+  "name": "Murloc Warleader",
+  "base": "BG_EX1_507"
+ },
+ "TB_BaconUps_014": {
+  "id": "TB_BaconUps_014",
+  "name": "Selfless Hero",
+  "base": "BG_OG_221"
+ },
+ "TB_BaconUps_025": {
+  "id": "TB_BaconUps_025",
+  "name": "Spawn of N'Zoth",
+  "base": "BG_OG_256"
+ },
+ "TB_BaconUps_027": {
+  "id": "TB_BaconUps_027",
+  "name": "Rat Pack",
+  "base": "BG_CFM_316"
+ },
+ "TB_BaconUps_027t": {
+  "id": "TB_BaconUps_027t",
+  "name": "Rat",
+  "base": "BG_CFM_316t"
+ },
+ "TB_BaconUps_028": {
+  "id": "TB_BaconUps_028",
+  "name": "Kaboom Bot",
+  "base": "BG_BOT_606"
+ },
+ "TB_BaconUps_030": {
+  "id": "TB_BaconUps_030",
+  "name": "Imp Gang Boss",
+  "base": "BG_BRM_006"
+ },
+ "TB_BaconUps_030t": {
+  "id": "TB_BaconUps_030t",
+  "name": "Imp",
+  "base": "BG_BRM_006t"
+ },
+ "TB_BaconUps_032": {
+  "id": "TB_BaconUps_032",
+  "name": "Replicating Menace",
+  "base": "BG_BOT_312"
+ },
+ "TB_BaconUps_032t": {
+  "id": "TB_BaconUps_032t",
+  "name": "Microbot",
+  "base": "BG_BOT_312t"
+ },
+ "TB_BaconUps_034": {
+  "id": "TB_BaconUps_034",
+  "name": "Khadgar",
+  "base": "BG_DAL_575"
+ },
+ "TB_BaconUps_039": {
+  "id": "TB_BaconUps_039",
+  "name": "Mechano-Egg",
+  "base": "BOT_537"
+ },
+ "TB_BaconUps_039t": {
+  "id": "TB_BaconUps_039t",
+  "name": "Robosaur",
+  "base": "BOT_537t"
+ },
+ "TB_BaconUps_041": {
+  "id": "TB_BaconUps_041",
+  "name": "Security Rover",
+  "base": "BOT_218"
+ },
+ "TB_BaconUps_041t": {
+  "id": "TB_BaconUps_041t",
+  "name": "Guard Bot",
+  "base": null
+ },
+ "TB_BaconUps_042": {
+  "id": "TB_BaconUps_042",
+  "name": "The Beast",
+  "base": "EX1_577"
+ },
+ "TB_BaconUps_043": {
+  "id": "TB_BaconUps_043",
+  "name": "Scavenging Hyena",
+  "base": "BG_EX1_531"
+ },
+ "TB_BaconUps_044": {
+  "id": "TB_BaconUps_044",
+  "name": "Iron Sensei",
+  "base": "BG_GVG_027"
+ },
+ "TB_BaconUps_045": {
+  "id": "TB_BaconUps_045",
+  "name": "Brann Bronzebeard",
+  "base": "BG_LOE_077"
+ },
+ "TB_BaconUps_045t": {
+  "id": "TB_BaconUps_045t",
+  "name": "Brann Bronzebeard [Murloc/Dragon]",
+  "base": null
+ },
+ "TB_BaconUps_049": {
+  "id": "TB_BaconUps_049",
+  "name": "Savannah Highmane",
+  "base": "BG_EX1_534"
+ },
+ "TB_BaconUps_049t": {
+  "id": "TB_BaconUps_049t",
+  "name": "Hyena",
+  "base": "BG_EX1_534t"
+ },
+ "TB_BaconUps_057": {
+  "id": "TB_BaconUps_057",
+  "name": "Ghastcoiler",
+  "base": "BGS_008"
+ },
+ "TB_BaconUps_059": {
+  "id": "TB_BaconUps_059",
+  "name": "Voidlord",
+  "base": "BG_LOOT_368"
+ },
+ "TB_BaconUps_059t": {
+  "id": "TB_BaconUps_059t",
+  "name": "Voidwalker",
+  "base": "BG_CS2_065"
+ },
+ "TB_BaconUps_061": {
+  "id": "TB_BaconUps_061",
+  "name": "Rockpool Hunter",
+  "base": "BG_UNG_073"
+ },
+ "TB_BaconUps_062": {
+  "id": "TB_BaconUps_062",
+  "name": "Nathrezim Overseer",
+  "base": "BGS_001"
+ },
+ "TB_BaconUps_064": {
+  "id": "TB_BaconUps_064",
+  "name": "Coldlight Seer",
+  "base": "BG_EX1_103"
+ },
+ "TB_BaconUps_066": {
+  "id": "TB_BaconUps_066",
+  "name": "Metaltooth Leaper",
+  "base": "BG_GVG_048"
+ },
+ "TB_BaconUps_068": {
+  "id": "TB_BaconUps_068",
+  "name": "Houndmaster",
+  "base": "BG_DS1_070"
+ },
+ "TB_BaconUps_072": {
+  "id": "TB_BaconUps_072",
+  "name": "Strongshell Scavenger",
+  "base": "BG_ICC_807"
+ },
+ "TB_BaconUps_075": {
+  "id": "TB_BaconUps_075",
+  "name": "Soul Juggler",
+  "base": "BGS_002"
+ },
+ "TB_BaconUps_077": {
+  "id": "TB_BaconUps_077",
+  "name": "Pogo-Hopper",
+  "base": "BGS_028"
+ },
+ "TB_BaconUps_079": {
+  "id": "TB_BaconUps_079",
+  "name": "Wrath Weaver",
+  "base": "BGS_004"
+ },
+ "TB_BaconUps_082": {
+  "id": "TB_BaconUps_082",
+  "name": "Lightfang Enforcer",
+  "base": "BGS_009"
+ },
+ "TB_BaconUps_084": {
+  "id": "TB_BaconUps_084",
+  "name": "Gentle Megasaur",
+  "base": "BGS_031"
+ },
+ "TB_BaconUps_085": {
+  "id": "TB_BaconUps_085",
+  "name": "Goldrinn, the Great Wolf",
+  "base": "BGS_018"
+ },
+ "TB_BaconUps_086": {
+  "id": "TB_BaconUps_086",
+  "name": "Pack Leader",
+  "base": "BGS_017"
+ },
+ "TB_BaconUps_087": {
+  "id": "TB_BaconUps_087",
+  "name": "Kangor's Apprentice",
+  "base": "BGS_012"
+ },
+ "TB_BaconUps_089": {
+  "id": "TB_BaconUps_089",
+  "name": "Primalfin Lookout",
+  "base": "BGS_020"
+ },
+ "TB_BaconUps_090": {
+  "id": "TB_BaconUps_090",
+  "name": "Mama Bear",
+  "base": "BGS_021"
+ },
+ "TB_BaconUps_091": {
+  "id": "TB_BaconUps_091",
+  "name": "Zapp Slywick",
+  "base": "BGS_022"
+ },
+ "TB_BaconUps_093": {
+  "id": "TB_BaconUps_093",
+  "name": "Alleycat",
+  "base": "BG_CFM_315"
+ },
+ "TB_BaconUps_093t": {
+  "id": "TB_BaconUps_093t",
+  "name": "Tabbycat",
+  "base": "BG_CFM_315t"
+ },
+ "TB_BaconUps_094": {
+  "id": "TB_BaconUps_094",
+  "name": "Micro Machine",
+  "base": "BGS_027"
+ },
+ "TB_BaconUps_095": {
+  "id": "TB_BaconUps_095",
+  "name": "Shifter Zerus",
+  "base": "BGS_029"
+ },
+ "TB_BaconUps_099": {
+  "id": "TB_BaconUps_099",
+  "name": "Annoy-o-Module",
+  "base": "BG_BOT_911"
+ },
+ "TB_BaconUps_100": {
+  "id": "TB_BaconUps_100",
+  "name": "King Bagurgle",
+  "base": "BGS_030"
+ },
+ "TB_BaconUps_101": {
+  "id": "TB_BaconUps_101",
+  "name": "Floating Watcher",
+  "base": "BG_GVG_100"
+ },
+ "TB_BaconUps_106": {
+  "id": "TB_BaconUps_106",
+  "name": "Razorgore, the Untamed",
+  "base": "BGS_036"
+ },
+ "TB_BaconUps_108": {
+  "id": "TB_BaconUps_108",
+  "name": "Twilight Emissary",
+  "base": "BGS_038"
+ },
+ "TB_BaconUps_109": {
+  "id": "TB_BaconUps_109",
+  "name": "Kalecgos, Arcane Aspect",
+  "base": "BGS_041"
+ },
+ "TB_BaconUps_110": {
+  "id": "TB_BaconUps_110",
+  "name": "Murozond",
+  "base": "BGS_043"
+ },
+ "TB_BaconUps_112": {
+  "id": "TB_BaconUps_112",
+  "name": "Fiendish Servant",
+  "base": "YOD_026"
+ },
+ "TB_BaconUps_113": {
+  "id": "TB_BaconUps_113",
+  "name": "Imprisoner",
+  "base": "BGS_014"
+ },
+ "TB_BaconUps_116": {
+  "id": "TB_BaconUps_116",
+  "name": "Imp Mama",
+  "base": "BGS_044"
+ },
+ "TB_BaconUps_119": {
+  "id": "TB_BaconUps_119",
+  "name": "Soul Devourer",
+  "base": "BGS_059"
+ },
+ "TB_BaconUps_123": {
+  "id": "TB_BaconUps_123",
+  "name": "Deflect-o-Bot",
+  "base": "BGS_071"
+ },
+ "TB_BaconUps_125": {
+  "id": "TB_BaconUps_125",
+  "name": "Rabid Saurolisk",
+  "base": "BGS_075"
+ },
+ "TB_BaconUps_126": {
+  "id": "TB_BaconUps_126",
+  "name": "Deck Swabbie",
+  "base": "BGS_055"
+ },
+ "TB_BaconUps_127": {
+  "id": "TB_BaconUps_127",
+  "name": "Freedealing Gambler",
+  "base": "BGS_049"
+ },
+ "TB_BaconUps_130": {
+  "id": "TB_BaconUps_130",
+  "name": "Goldgrubber",
+  "base": "BGS_066"
+ },
+ "TB_BaconUps_133": {
+  "id": "TB_BaconUps_133",
+  "name": "Cap'n Hoggarr",
+  "base": "BGS_072"
+ },
+ "TB_BaconUps_135": {
+  "id": "TB_BaconUps_135",
+  "name": "Monstrous Macaw",
+  "base": "BGS_078"
+ },
+ "TB_BaconUps_136": {
+  "id": "TB_BaconUps_136",
+  "name": "Southsea Captain",
+  "base": "BG_NEW1_027"
+ },
+ "TB_BaconUps_138": {
+  "id": "TB_BaconUps_138",
+  "name": "Bloodsail Cannoneer",
+  "base": "BGS_053"
+ },
+ "TB_BaconUps_139": {
+  "id": "TB_BaconUps_139",
+  "name": "Ripsnarl Captain",
+  "base": "BGS_056"
+ },
+ "TB_BaconUps_140": {
+  "id": "TB_BaconUps_140",
+  "name": "Southsea Strongarm",
+  "base": "BGS_048"
+ },
+ "TB_BaconUps_141": {
+  "id": "TB_BaconUps_141",
+  "name": "Scallywag",
+  "base": "BGS_061"
+ },
+ "TB_BaconUps_141t": {
+  "id": "TB_BaconUps_141t",
+  "name": "Sky Pirate",
+  "base": "BGS_061t"
+ },
+ "TB_BaconUps_143": {
+  "id": "TB_BaconUps_143",
+  "name": "Salty Looter",
+  "base": "BGS_081"
+ },
+ "TB_BaconUps_144": {
+  "id": "TB_BaconUps_144",
+  "name": "Menagerie Mug",
+  "base": "BGS_082"
+ },
+ "TB_BaconUps_145": {
+  "id": "TB_BaconUps_145",
+  "name": "Menagerie Jug",
+  "base": "BGS_083"
+ },
+ "TB_BaconUps_149": {
+  "id": "TB_BaconUps_149",
+  "name": "Bronze Warden",
+  "base": "BGS_034"
+ },
+ "TB_BaconUps_151": {
+  "id": "TB_BaconUps_151",
+  "name": "Cave Hydra",
+  "base": "BG_LOOT_078"
+ },
+ "TB_BaconUps_152": {
+  "id": "TB_BaconUps_152",
+  "name": "Toxfin",
+  "base": "BG_DAL_077"
+ },
+ "TB_BaconUps_153": {
+  "id": "TB_BaconUps_153",
+  "name": "Foe Reaper 4000",
+  "base": "BG_GVG_113"
+ },
+ "TB_BaconUps_154": {
+  "id": "TB_BaconUps_154",
+  "name": "Nadina the Red",
+  "base": "BGS_040"
+ },
+ "TB_BaconUps_156": {
+  "id": "TB_BaconUps_156",
+  "name": "Sellemental",
+  "base": "BGS_115"
+ },
+ "TB_BaconUps_159": {
+  "id": "TB_BaconUps_159",
+  "name": "Crackling Cyclone",
+  "base": "BGS_119"
+ },
+ "TB_BaconUps_160": {
+  "id": "TB_BaconUps_160",
+  "name": "Party Elemental",
+  "base": "BGS_120"
+ },
+ "TB_BaconUps_162": {
+  "id": "TB_BaconUps_162",
+  "name": "Tavern Tempest",
+  "base": "BGS_123"
+ },
+ "TB_BaconUps_163": {
+  "id": "TB_BaconUps_163",
+  "name": "Lieutenant Garr",
+  "base": "BGS_124"
+ },
+ "TB_BaconUps_165": {
+  "id": "TB_BaconUps_165",
+  "name": "Gentle Djinni",
+  "base": "BGS_121"
+ },
+ "TB_BaconUps_166": {
+  "id": "TB_BaconUps_166",
+  "name": "Wildfire Elemental",
+  "base": "BGS_126"
+ },
+ "TB_BaconUps_167": {
+  "id": "TB_BaconUps_167",
+  "name": "Refreshing Anomaly",
+  "base": "BGS_116"
+ },
+ "TB_BaconUps_200": {
+  "id": "TB_BaconUps_200",
+  "name": "Lil' Rag",
+  "base": "BGS_100"
+ },
+ "TB_BaconUps_201": {
+  "id": "TB_BaconUps_201",
+  "name": "Nomi, Kitchen Nightmare",
+  "base": "BGS_104"
+ },
+ "TB_BaconUps_207": {
+  "id": "TB_BaconUps_207",
+  "name": "Majordomo Executus",
+  "base": "BGS_105"
+ },
+ "TB_BaconUps_250": {
+  "id": "TB_BaconUps_250",
+  "name": "Micro Mummy",
+  "base": "BG_ULD_217"
+ },
+ "TB_BaconUps_251": {
+  "id": "TB_BaconUps_251",
+  "name": "Deadly Spore",
+  "base": "BGS_131"
+ },
+ "TB_BaconUps_256": {
+  "id": "TB_BaconUps_256",
+  "name": "Warden of Old",
+  "base": "BGS_200"
+ },
+ "TB_BaconUps_258": {
+  "id": "TB_BaconUps_258",
+  "name": "Mythrax the Unraveler",
+  "base": "BGS_202"
+ },
+ "TB_BaconUps_302": {
+  "id": "TB_BaconUps_302",
+  "name": "Arm of the Empire",
+  "base": "BGS_110"
+ },
+ "TB_BaconUps_307": {
+  "id": "TB_BaconUps_307",
+  "name": "Fish of N'Zoth",
+  "base": "TB_BaconShop_HP_105t"
+ },
+ "TB_BaconUps_308": {
+  "id": "TB_BaconUps_308",
+  "name": "Argent Braggart",
+  "base": "BG_SCH_149"
+ },
+ "TB_BaconUps_309": {
+  "id": "TB_BaconUps_309",
+  "name": "Ring Matron",
+  "base": "BG_DMF_533"
+ },
+ "TB_BaconUps_309t": {
+  "id": "TB_BaconUps_309t",
+  "name": "Fiery Imp",
+  "base": "BG_DMF_533t"
+ }
+}

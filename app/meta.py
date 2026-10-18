@@ -69,6 +69,18 @@ def tokens():
     return _items("tokens.json")
 
 
+def premium_minions():
+    """Golden variants logged under their own `TB_BaconUps_*` ids.
+
+    Battlegrounds golden minions normally log as `<base>_G`, but the Tier-0
+    (triple-reward) minions log as `TB_BaconUps_<n>` — e.g. Crackling Cyclone's
+    golden is `TB_BaconUps_159`, not `BGS_119_G`. The map (id -> base id + name)
+    is generated from HearthstoneJSON once; without it the parser calls that
+    minion a spell and the review prints the raw id.
+    """
+    return _items("premium_minions.json")
+
+
 def spells():
     return _items("tavern_spells.json")
 

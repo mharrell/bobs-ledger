@@ -1033,7 +1033,10 @@ _HTML = r"""<!doctype html>
     --r: 0.5;
     --b: clamp(130px, calc((100vh - 540px) / (1 + 2 * var(--r))), 219px);
     --s: calc(var(--b) * var(--r));
-    display:flex; flex-direction:column; gap:10px;
+    /* 9, not 10 (2026-10-18): the six-offer/six-card step on the last replay
+       rounded to one pixel of scroll at 1764x957. The three gaps give back 3px
+       and the layout is visually identical. */
+    display:flex; flex-direction:column; gap:9px;
   }
   @media (max-height: 880px) {
     .tavern .stepview { --r: 0.4; }
@@ -1107,6 +1110,8 @@ _HTML = r"""<!doctype html>
                      margin:0 0 6px; }
   .tavern .stepcap .scap-what { color:var(--tmute); font-weight:400;
                                 font-size:13px; }
+  .tavern .stepcap .scap-triple { color:var(--tsel); font-weight:700;
+                                  font-size:13px; }
   .tavern .steptrack { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 4px; }
   .tavern .stick { width:38px; height:44px; border-radius:6px;
                    border:1px solid var(--tline); color:var(--tmute);
@@ -2023,9 +2028,14 @@ function el(tag, cls, text) {
 // Per-card display metadata from the payload ({tier, text}) — golden ids
 // resolve to their base id like the server's own cache does.
 let CARDS = {};
+//: The saved-game review has no live analysis payload, so it carries an
+//  id->name table of its own (`rep.names`); CARDS still wins when it has a
+//  richer row (tier + text).
+let NAMES = {};
 const _warmed = new Set();
 function cardMeta(cid) {
-  return CARDS[String(cid || '').replace(/_G$/, '')] || {};
+  const key = String(cid || '').replace(/_G$/, '');
+  return CARDS[key] || (NAMES[key] ? {name: NAMES[key]} : {});
 }
 // The tier badge in every name: "*1 Suspicious Prisoner guard". Cards the
 // meta DBs carry no tier for (heroes, trinkets) show bare names.
@@ -4286,6 +4296,14 @@ function stepWords(st) {
             sell: 'Sold hero power', buy: 'Bought hero power'}[st.k]
       || 'Used hero power';
   }
+  // The triple's own 0-cost spell is not a card the player cast; it is the
+  // discovery the triple paid for. "Cast Triple Reward" reads as an action
+  // the player took (2026-10-18).
+  if (name === 'Triple Reward') {
+    return {cast: 'Discovered a Triple Reward',
+            play: 'Discovered a Triple Reward'}[st.k]
+      || 'Triple Reward';
+  }
   return {roll: 'Rolled the tavern', level: 'Leveled up',
           buy: 'Bought ' + name, sell: 'Sold ' + name,
           play: 'Played ' + name, cast: 'Cast ' + name}[st.k] || '(action)';
@@ -4354,6 +4372,7 @@ function renderTavernGame(rep) {
   // dispatcher sat in front of the two reviewers; the dispatcher is gone and
   // this is the entry point every caller reaches.)
   _settleRep = rep;
+  NAMES = rep.names || {};
   const box = document.getElementById('settle-game');
   box.innerHTML = '';
   const root = document.createElement('div');
@@ -4666,7 +4685,8 @@ function renderTavernSteps(row) {
     const t = el('button', 'stick ' + stepKindClass(s.k)
                  + (i === _tavernStep ? ' sel' : ''));
     t.textContent = stepLetter(s.k);
-    t.title = 'Step ' + (i + 1) + ': ' + stepWords(s);
+    t.title = 'Step ' + (i + 1) + ': ' + stepWords(s)
+              + (s.triple ? ' — completed a triple' : '');
     t.onclick = () => {
       stopTavernPlay();
       _tavernStep = i;
@@ -4689,8 +4709,13 @@ function renderTavernSteps(row) {
                        + steps.length + ' — '));
     const what = stepWords(st);
     cap.appendChild(el('span', null, what));
+    if (st.triple) {
+      // The board in this step is the AFTER-combine board: two copies left it.
+      // Without this the step read as "Bought X" while two minions vanished.
+      cap.appendChild(el('span', 'scap-triple', ' — completed a triple'));
+    }
     cap.title = 'Step ' + (_tavernStep + 1) + ' of ' + steps.length
-                + ' — ' + what;
+                + ' — ' + what + (st.triple ? ' — completed a triple' : '');
   } else {
     cap.textContent = 'No step data for this turn';
   }
@@ -5649,7 +5674,15 @@ def _action_label(names, cid):
     back as themselves — is what `_acted`'s raw-id fallback relies on.
     """
     cid = str(cid or "")
-    if "HERO" in cid.upper() and re.search(r"p\d?$", cid):
+    if cid == "TB_BaconShop_Triples_01":
+        # The 0-cost spell the triple itself casts, not a card the player
+        # chose to cast: "Cast Triple Reward" read as an id (2026-10-18).
+        return "Triple Reward"
+    if cid.startswith("TB_BaconShop_HP_") or (
+            "HERO" in cid.upper() and re.search(r"p\d?$", cid)):
+        # Hero powers have no id->name row. `TB_BaconShop_HP_*` is the
+        # Battlegrounds power spelling (TB_BaconShop_HP_022 = Snicker-snack);
+        # `...HERO...p` is the per-hero spelling. Name the KIND, never the id.
         return "hero power"
     return value.display_name(names, cid)
 
@@ -5701,6 +5734,11 @@ def _name_timeline_boards(rep):
             st["cardName"] = _action_label(names, st.get("card"))
             for m in st.get("board") or []:
                 m["name"] = value.display_name(names, m.get("card"))
+    # The step-through's HAND and TAVERN tiles are built client-side from a
+    # card id (unlike a board minion, which carries a name), so they need the
+    # id->name table. Without it the page had no CARDS payload for a SAVED
+    # game and printed raw ids ("BG27_000") under both rows (2026-10-18).
+    out["names"] = {cid: name for cid, name in names.items() if cid and name}
     return out
 
 

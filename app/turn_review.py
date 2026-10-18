@@ -174,7 +174,7 @@ def _split(board):
 
 
 def _steps_for(actual, markers, snapshots, friendly, offset, upper,
-               hands=None, offers=None):
+               hands=None, offers=None, step_hands=None, step_offers=None):
     """The ordered shop actions with the board as it stood right after each
     (the Step-through's data, 2026-10-08).
 
@@ -209,6 +209,26 @@ def _steps_for(actual, markers, snapshots, friendly, offset, upper,
         if hands and count:
             hand = [{k: h.get(k) for k in ("card", "atk", "health", "type")}
                     for h in (hands[count - 1] or [])]
+        snap_hand = hand
+        # HAND/TAVERN at the ACTION's own line, not the snapshot ring's: a
+        # spell buy changes the hand with no board change, and the ring never
+        # fired (measured 2026-10-18, Sewerwock t3: the bought spell missing
+        # from the buy step's hand). The captures are keyed by log line.
+        if step_hands:
+            for line, h in step_hands:
+                if line < bound:
+                    hand = [{k: x.get(k) for k in
+                             ("card", "atk", "health", "type")} for x in h]
+                else:
+                    break
+            # A BUY always puts something in hand; an empty line-read there is
+            # a capture that landed before the card's HAND write (measured T1
+            # buy: the minion enters and is played within the same block, so no
+            # capture sits strictly between). The snapshot hand is the backup.
+            # For a play/cast an empty hand is the correct answer (the card
+            # left), which is why this only applies to buys.
+            if ev["k"] == "buy" and not hand and snap_hand:
+                hand = snap_hand
         # The shop block is read once per turn, so the FIRST snapshot of a turn
         # can land before it: carry the last known offers forward rather than
         # showing an empty tavern on step 1, which would read as "the shop was
@@ -230,9 +250,49 @@ def _steps_for(actual, markers, snapshots, friendly, offset, upper,
                     if offers[back] and len(offers[back]) <= 7:
                         tavern = list(offers[back])
                         break
+        if step_offers:
+            found = None
+            for line, offered in step_offers:
+                if line < bound:
+                    found = offered
+                else:
+                    break
+            if found is not None:
+                tavern = list(found) if len(found) <= 7 else []
         
-        steps.append({"k": ev["k"], "card": ev["card"], "board": board,
-                      "hand": hand, "tavern": tavern})
+        steps.append({"k": ev["k"], "card": ev["card"], "at": ev.get("at"),
+                      "board": board, "hand": hand, "tavern": tavern})
+    # A triple is not its own action: the third copy's buy/play already made a
+    # step, and the board in that step is the AFTER-combine board (two copies
+    # gone). Attach the fact to the action that caused it so the caption can
+    # say why the board shrank instead of leaving it as a mystery (2026-10-18).
+    from player_actions import _load_bg_minion_ids
+    minions = _load_bg_minion_ids()
+    for tev in (actual or {}).get("triple_events") or []:
+        # A triple is a MINION fact. The tag can land next to a spell cast
+        # (measured T7: Strike Oil's line carried it), and annotating the spell
+        # with "completed a triple" blamed the wrong action.
+        if tev.get("card") and tev["card"] not in minions:
+            continue
+        owner = None
+        # Prefer the step that PLAYED the card that tripled. The TRIPLE tag can
+        # land after a following cast (measured T6: the BGS_116 play's tag sat
+        # just after the Cloning Conch cast), and "last action before the tag"
+        # put the triple on the wrong step.
+        for st in steps:
+            if st.get("at") is None or st["at"] > tev.get("at"):
+                break
+            if tev.get("card") and st.get("card") == tev["card"]:
+                owner = st
+        if owner is None:
+            for st in steps:
+                if st.get("at") is not None and st["at"] <= tev.get("at"):
+                    owner = st
+                else:
+                    break
+        if owner is not None:
+            owner["triple"] = tev.get("card")
+            owner["triples"] = owner.get("triples", 0) + 1
     return steps
 
 
@@ -342,7 +402,9 @@ def _drive(chunk):
             actual, markers, coach.gs.snapshots, header_friendly, lo,
             hi if hi is not None else n,
             hands=getattr(coach.gs, "snap_hand", None),
-            offers=getattr(coach.gs, "snap_offers", None))
+            offers=getattr(coach.gs, "snap_offers", None),
+            step_hands=getattr(coach, "step_hands", None),
+            step_offers=getattr(coach, "step_offers", None))
     return coach, info, header_friendly
 
 
@@ -672,6 +734,16 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
         # have to come out of it — see _opening_board.
         buy_start, buy_start_removed = _opening_board(buy[0] if buy else None,
                                                      friendly)
+        # A shop phase with NO buy snapshot (a level-only turn) has no board
+        # read at all. The turn's first snapshot is the board that opened the
+        # shop; using it beats reporting an empty board while the minion that
+        # survived the last fight is still standing (measured 2026-10-18,
+        # Sewerwock t2: one Crackling Cyclone, every step showed none).
+        if not buy and snaps_t:
+            fallback, fallback_removed = _opening_board(snaps_t[0], friendly)
+            if fallback:
+                buy_start, buy_start_removed = fallback, fallback_removed
+                buy_end = list(fallback)
         # Combat START = the first snapshot of the turn's LAST fight. Several
         # bursts share a turn (turn 4 has four — deaths and buffs re-stage
         # continuously); the first burst of a FIGHT is where that fight
@@ -738,6 +810,12 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
         if nxt_buy:
             battle_end, battle_end_removed = _opening_board(nxt_buy[0],
                                                             friendly)
+        elif nxt:
+            # The next shop had no buy snapshot either. Its first snapshot is
+            # still the best read of what survived: if nothing moved, the
+            # first combat burst carries the opening board (and _opening_board
+            # strips the fight's leftovers).
+            battle_end, battle_end_removed = _opening_board(nxt[0], friendly)
         elif i + 1 == len(turns):
             battle_end, battle_end_removed = list(final_board or []), 0
         else:
@@ -808,6 +886,15 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
         entry = info.get(t) or {}
         a = entry.get("analysis") or {}
         actual = entry.get("actual") or {}
+        # The Step-through's board comes from the same snapshots. A turn with
+        # no buy snapshot had an empty step board even though the opening
+        # read above knows better; give those steps the opening board. No buy
+        # snapshot means no board-changing action, so it is the same board
+        # for every step in that turn.
+        if not buy and buy_start:
+            for st in entry.get("steps") or []:
+                if not st.get("board"):
+                    st["board"] = [dict(m) for m in buy_start]
         bstats = stats(buy_end)
         bstats_split = _split(buy_end)
         notes = []

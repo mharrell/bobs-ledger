@@ -4089,6 +4089,13 @@ def _load_bg_names():
     # name the row printed the raw id: "BGS_115t" in a SELLS list (2026-10-17).
     names.update({t.get("id"): t.get("name") for t in meta.tokens()
                   if t.get("id") and t.get("name")})
+    # Golden Tier-0 minions log under `TB_BaconUps_*`, not `<base>_G`; their
+    # base row is in the premium map (generated from HearthstoneJSON). Without
+    # this the review called Crackling Cyclone's golden a raw id (2026-10-18).
+    for p in meta.premium_minions():
+        base = names.get(p.get("base")) or p.get("name")
+        if p.get("id") and base:
+            names[p["id"]] = f"{base} (golden)"
     return names
 
 

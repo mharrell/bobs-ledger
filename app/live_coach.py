@@ -484,6 +484,15 @@ _GAME_DEFAULTS = {
     "_opp_boards": dict,     # player id -> {"stats", "n", "turn"} last-known
     "_lobby_stats": list,    # stats of every opponent board we fought
     "_snap_seen": 0,         # snapshots already buffered
+    # Step-through hand/tavern reads, keyed by LOG LINE (not snapshot): a buy
+    # or cast can change the hand without touching the board, and the snapshot
+    # ring only fires on board changes. Without these the hand row lagged a
+    # whole action ("bought a spell, hand shows empty"). See _capture_step_state.
+    "step_hands": list,      # [(line_no, hand), ...]
+    "step_offers": list,     # [(line_no, offers), ...]
+    "_last_hand": list,      # last captured hand, for change detection
+    "_last_offers": list,    # last captured offers
+    "_line_no": 0,           # 1-based line counter while feeding
     "_shop_seen": dict,      # shop minion cid -> turn last offered (hunt evidence)
     "_shop_seen_eids": set,  # offer entity ids already recorded in _shop_seen
     "_phase": "buy",         # buy phase vs combat window (GameState STEP)
@@ -546,6 +555,7 @@ class LiveCoach:
         self._scout.reset()
 
     def feed(self, line):
+        self._line_no += 1
         if _GAME_START.search(line):
             self._reset()
         # Phase tracking (GameState lines only — the PowerTaskList copies
@@ -772,6 +782,15 @@ class LiveCoach:
         self.gs.feed(line)
         self.actions.feed(line)
         self.cur_lines.append(line)
+        # A buy/cast/sell changes the HAND (and a buy changes the offers) on
+        # lines that need not touch the board, so the snapshot ring never sees
+        # them. Capture the step rows here, keyed by line; _steps_for reads the
+        # last one before each action. The zone/offers checks keep this off the
+        # ~1M lines that cannot change either row.
+        if ("tag=ZONE " in line or "tag=ZONE_POSITION" in line
+                or "DebugPrintOptions()" in line or "HAS_DRAG_TO_BUY" in line
+                or "FULL_ENTITY" in line or "SHOW_ENTITY" in line):
+            self._capture_step_state()
         # A turn boundary closes the previous combat. The pairing itself is
         # written when the buy phase closes (see the phase tracker above):
         # the fight belongs to the opponent announced while that buy phase
@@ -1259,6 +1278,32 @@ class LiveCoach:
         """
         self._ensure_meta()
 
+    def _capture_step_state(self):
+        """Record (line, hand, offers) when either context row changes.
+
+        The Step-through builds its hand and tavern rows from the SNAPSHOT
+        ring, which only fires on board changes. A bought SPELL never touches
+        the board, so on 2026-10-18 Sewerwock t3 the "Bought Recruit a Trainee"
+        step showed an empty hand and the following "Cast" showed the spell's
+        result: the hand row was one action behind. This list is independent of
+        the ring and indexed by the same log lines the action stream carries.
+        """
+        if self.friendly is None:
+            return
+        hand = self.gs.hand(self.friendly)
+        # NOT tavern_offers(): that flushes the pending shop block, which can
+        # call _zone_commit(), which calls this — recursion (hit on the first
+        # rebuild). The committed table is what the last zone commit knows.
+        offers = [c for p, c in self.shop_cards
+                  if self.friendly is None or p != self.friendly]
+        if hand == self._last_hand and offers == self._last_offers:
+            return
+        self._last_hand = hand
+        self._last_offers = offers
+        # 0-based, matching the action stream's `at` line indices.
+        self.step_hands.append((self._line_no - 1, hand))
+        self.step_offers.append((self._line_no - 1, offers))
+
     def _zone_commit(self):
         """Rebuild shop_cards from the zone layer — the single source of
         truth for the shop. Keeps it correct between mid-phase actions,
@@ -1326,6 +1371,7 @@ class LiveCoach:
             self._phase = "buy"
             self.actions.open_buy_phase()
         self._shop_filled = bool(self.shop_cards)
+        self._capture_step_state()
         # Shop sightings (hunt evidence for value._hunt_check): a NEW offer
         # eid is a shop generation showing this card. Recorded here, at feed
         # time — the replay harness builds a fresh coach per phase, so
