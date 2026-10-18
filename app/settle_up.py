@@ -311,7 +311,7 @@ def _removed_note(n):
             f"surviving board — a board holds 7")
 
 
-def _timeline(log_path, game_index, names):
+def _timeline(log_path, game_index, names, placement=None):
     """The per-turn board timeline, formatted for the report.
 
     Wrapped rather than allowed to raise: this is a SECOND full replay of the
@@ -322,7 +322,7 @@ def _timeline(log_path, game_index, names):
     """
     try:
         import turn_review
-        tl = turn_review.timeline(log_path, game_index)
+        tl = turn_review.timeline(log_path, game_index, placement=placement)
     except Exception as exc:  # noqa: BLE001
         return None, f"{type(exc).__name__}: {exc}"
     for row in tl["turns"]:
@@ -387,7 +387,8 @@ def build(log_path, game_index=1):
         })
 
     head = rows[0] if rows else {}
-    timeline, timeline_error = _timeline(log_path, game_index, names)
+    timeline, timeline_error = _timeline(log_path, game_index, names,
+                                         placement=head.get("placement"))
     log_name = os.path.basename(log_path)
     # Did the log actually record how this game finished? If the client capped
     # the file AND stopped there, the final game has no recorded result — its

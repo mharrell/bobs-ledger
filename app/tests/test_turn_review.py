@@ -289,6 +289,28 @@ class TestTheTimelineInvariants(unittest.TestCase):
         self.assertNotIn("final board not recoverable", row["notes"],
                          "the deciding fight explains the empty board")
 
+    def test_the_placement_beats_the_playstate_for_the_last_turn(self):
+        """A WINNER was told they lost the final fight (2026-10-17).
+
+        "I won this game. I got first place, as shown by the replay. However, the
+        last round says that I lost the battle." The PLAYSTATE lines name EVERY
+        player, and the tail's first one can be an OPPONENT's elimination, so
+        `game_result` is not necessarily the friendly player's. The placement is:
+        1st means the last fight was won, anything else means it was lost.
+        """
+        snaps = self._snaps(9, ("combat", [(OURS, "MINE", 5, 5, False, []),
+                                           (THEIRS, "THEIR", 6, 6, False, [])]),
+                                ("combat", [(OURS, "MINE", 5, 5, False, []),
+                                            (THEIRS, "THEIR", 5, 5, False, [])]))
+        won = tr._turn_rows(snaps, {}, OURS, final_board=[],
+                            result="LOST", placement=1)
+        self.assertEqual(won[-1]["winner"], "us",
+                         "the placement says first, so the last fight was won")
+        lost = tr._turn_rows(snaps, {}, OURS, final_board=[],
+                             result="WON", placement=3)
+        self.assertEqual(lost[-1]["winner"], "them",
+                         "the placement says third, so the last fight was lost")
+
     def test_a_fight_that_stages_one_side_first_still_reads_both(self):
         """The 2026-10-09 report, turn 1 of the Forest Lord Cenarius game:
         the fight group's first burst held only the opponent's minion — our

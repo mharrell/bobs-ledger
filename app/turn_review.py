@@ -582,7 +582,7 @@ def _side_best(bursts, friendly, side):
 
 
 def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
-               result=None):
+               result=None, placement=None):
     """Assemble the per-turn rows from snapshots. PURE — no coach, no log.
 
     Split out of `timeline()` so the reconstruction's decisions are testable
@@ -596,6 +596,15 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
     it would silently renumber every later turn against what the coach's
     phase rows — graded on the same numbers — say.
     """
+    # THE PLACEMENT IS THE VERDICT, when it is known (2026-10-17). `game_result`
+    # comes from the game's PLAYSTATE lines, and those name EVERY player: the
+    # first one the tail reaches can be an OPPONENT's elimination, so a player who
+    # WON the game could be reported as having lost the final fight ("I won this
+    # game. I got first place... however, the last round says that I lost the
+    # battle"). A placement of 1 means the last fight was won; any other placement
+    # means it was lost. The game says so itself, in the row the header parses.
+    if placement is not None:
+        result = "WON" if placement == 1 else "LOST"
     turns = sorted(set(snaps) | set(info))
     rows = []
     prev_stats = None
@@ -870,7 +879,7 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
     return rows
 
 
-def timeline(log_path, game_index=1):
+def timeline(log_path, game_index=1, placement=None):
     """The per-turn board timeline for one game. Pure reading — writes nothing.
 
     Returns {"turns": [...], "hero": ..., "placement": ..., "friendly": ...},
@@ -911,7 +920,8 @@ def timeline(log_path, game_index=1):
         final_board = _struct_board(coach.gs.final_board(friendly)[0])
 
     rows = _turn_rows(snaps, info, friendly, final_board, card_db=_load_card_db(),
-                      result=getattr(coach.gs, "game_result", None))
+                      result=getattr(coach.gs, "game_result", None),
+                      placement=placement)
     for row in rows:
         # The Step-through's ordered actions with their boards (2026-10-08).
         # Turns the coach never analyzed carry no entry and degrade to [] —
