@@ -581,6 +581,19 @@ _HTML = r"""<!doctype html>
   .tile .tname { font-size:12px; line-height:1.25; width:104px; overflow:hidden;
                  text-overflow:ellipsis; white-space:nowrap; }
   .tile .tsub { font-size:11px; color:var(--text-2); }
+  /* THE SMALL TILE (2026-10-17): the step-through's tavern and hand rows. The
+     live tile is 56px; these are 32px — the board keeps the live size, and the
+     two rows that only give context sit clearly below it. */
+  .tile.mini { width:64px; }
+  .tile.mini .thumb { width:32px; height:32px; border-radius:4px; }
+  .tile.mini .tname { font-size:10px; width:64px; line-height:1.15; }
+  .tile.mini .tsub { font-size:10px; }
+  .stepmini { display:flex; align-items:flex-start; gap:10px; margin:4px 0 2px; }
+  .stepmini.dim .minitiles { opacity:.72; }
+  .minilbl { font-size:10px; letter-spacing:.09em; color:var(--dim);
+             padding-top:5px; min-width:52px; }
+  .mininote { font-size:10px; color:var(--dim); padding-top:6px; }
+  .minitiles { display:flex; flex-wrap:wrap; gap:8px; }
   /* (`.tile.buynow` — the plan's pick glowing gold in the shop row — went with
      the ranking itself: one lit tile is the recommendation the live page no
      longer makes, 2026-10-06.) */
@@ -4512,6 +4525,31 @@ function renderTavernSteps(row) {
     cap.textContent = 'No step data for this turn';
   }
   col.appendChild(cap);
+  // THE TAVERN ABOVE AND THE HAND BELOW (2026-10-17, the maintainer's ask): the
+  // board alone cannot say what you were working with, or whether a roll went
+  // past something you may have wanted. Both rows are mini tiles so the BOARD
+  // stays the subject, and the tavern is dimmed for the same reason. Data is per
+  // step; a replay written before this change simply has neither and the rows
+  // do not appear.
+  const miniRow = (label, cards, note, dim) => {
+    const wrap = el('div', 'stepmini' + (dim ? ' dim' : ''));
+    wrap.appendChild(el('span', 'minilbl', label));
+    const row = el('div', 'minitiles');
+    for (const c of cards) {
+      const cid = (c && c.card) || c;
+      const meta = cardMeta(cid);
+      row.appendChild(tile(cid, (meta && meta.name) || cid,
+                           c && c.atk != null ? statSub(c) : '',
+                           {cls: 'mini'}));
+    }
+    wrap.appendChild(row);
+    if (note) wrap.appendChild(el('span', 'mininote', note));
+    return wrap;
+  };
+  if (st && st.tavern && st.tavern.length) {
+    col.appendChild(miniRow('TAVERN', st.tavern.map(c => ({card: c})),
+                            'what the shop offered at this step', true));
+  }
   const boardWrap = document.createElement('div');
   boardWrap.className = 'stepboard';
   const diff = stepDiff(st ? st.board : [], st ? st.k : null,
@@ -4530,6 +4568,9 @@ function renderTavernSteps(row) {
     boardWrap.appendChild(t);
   }
   col.appendChild(boardWrap);
+  if (st && st.hand && st.hand.length) {
+    col.appendChild(miniRow('HAND', st.hand, 'what you held at this step', false));
+  }
   return col;
 }
 // One board row of a turn card: card tiles when the stored board is

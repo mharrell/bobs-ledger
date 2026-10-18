@@ -109,6 +109,14 @@ class GameState:
         self.hero_meta = defaultdict(dict)  # hero card -> {tier, armor}
         self.hero_stat_log = []  # (card, tag, value) hero ARMOR/HEALTH writes
         self.snapshots = []     # board snapshots, one per minion entering PLAY
+        # HAND and TAVERN, index-aligned with `snapshots` (2026-10-17). The
+        # step-through shows what the player was working with — the hand below
+        # the board and the shop offers above it — and a board alone cannot say
+        # whether a card was in hand, or whether a roll went past something. The
+        # coach fills these beside each snapshot it ingests: the board comes from
+        # this parser, the offers only from the shop block the coach owns.
+        self.snap_hand = []     # [ [ {card, atk, health, ...}, ... ], ... ]
+        self.snap_offers = []   # [ [cardId, ...], ... ]
         self.current_entity = None
         self._controller_lock = {}  # eid -> the player it was moved away from
         self._game_ended = False  # set on PLAYSTATE=WON/LOST; stops snapshots

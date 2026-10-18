@@ -173,7 +173,8 @@ def _split(board):
             sum((m.get("health") or 0) for m in board or []))
 
 
-def _steps_for(actual, markers, snapshots, friendly, offset, upper):
+def _steps_for(actual, markers, snapshots, friendly, offset, upper,
+               hands=None, offers=None):
     """The ordered shop actions with the board as it stood right after each
     (the Step-through's data, 2026-10-08).
 
@@ -201,7 +202,28 @@ def _steps_for(actual, markers, snapshots, friendly, offset, upper):
                   ("card", "atk", "health", "golden", "eid")}
                  for m in (snapshots[count - 1] if count else [])
                  if m.get("player") == friendly]
-        steps.append({"k": ev["k"], "card": ev["card"], "board": board})
+        # The hand below the board and the tavern above it, as of the same
+        # snapshot the board comes from. Absent on a replay written before
+        # 2026-10-17 (and on any log the coach never saw), so both are optional.
+        hand = []
+        if hands and count:
+            hand = [{k: h.get(k) for k in ("card", "atk", "health", "type")}
+                    for h in (hands[count - 1] or [])]
+        # The shop block is read once per turn, so the FIRST snapshot of a turn
+        # can land before it: carry the last known offers forward rather than
+        # showing an empty tavern on step 1, which would read as "the shop was
+        # empty" (it never is).
+        tavern = []
+        if offers and count:
+            tavern = list(offers[count - 1] or [])
+            if not tavern:
+                for back in range(count - 2, -1, -1):
+                    if offers[back]:
+                        tavern = list(offers[back])
+                        break
+        
+        steps.append({"k": ev["k"], "card": ev["card"], "board": board,
+                      "hand": hand, "tavern": tavern})
     return steps
 
 
@@ -307,9 +329,11 @@ def _drive(chunk):
             break
     coach.gs._game_ended = gate or getattr(coach.gs, "game_result", None) is not None
     for turn, (actual, lo, hi) in pending.items():
-        info[turn]["steps"] = _steps_for(actual, markers, coach.gs.snapshots,
-                                         header_friendly, lo,
-                                         hi if hi is not None else n)
+        info[turn]["steps"] = _steps_for(
+            actual, markers, coach.gs.snapshots, header_friendly, lo,
+            hi if hi is not None else n,
+            hands=getattr(coach.gs, "snap_hand", None),
+            offers=getattr(coach.gs, "snap_offers", None))
     return coach, info, header_friendly
 
 

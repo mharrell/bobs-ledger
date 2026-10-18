@@ -890,5 +890,39 @@ class TestWhichFightIsOurs(unittest.TestCase):
         self.assertEqual(tr._last_staged([], 2, "theirs"), [])
 
 
+class TestTheStepRowsCarryTheHandAndTheTavern(unittest.TestCase):
+    """The step-through's tavern-above and hand-below rows (2026-10-17).
+
+    "the board alone cannot say what you were working with, or whether a roll
+    went past something you may have wanted." The board comes from this parser;
+    the hand and the offers are captured by the coach beside each snapshot, index
+    aligned, so `_steps_for` can read all three by the same count.
+    """
+
+    def _steps(self, **kw):
+        count = kw.pop("count", 1)
+        return tr._steps_for({"events": [{"k": "buy", "card": "X", "at": 0}]},
+                             [(0, count)], [[]] * count, 2, 0, 10, **kw)
+
+    def test_a_step_carries_the_hand_and_the_offers_of_its_snapshot(self):
+        steps = self._steps(
+            hands=[[{"card": "H1", "atk": 1, "health": 2, "type": "spell"}]],
+            offers=[["O1", "O2"]])
+        self.assertEqual(steps[0]["hand"],
+                         [{"card": "H1", "atk": 1, "health": 2, "type": "spell"}])
+        self.assertEqual(steps[0]["tavern"], ["O1", "O2"])
+
+    def test_an_empty_shop_carries_the_last_known_offers(self):
+        """The shop block is read once per turn, so step 1 can land before it.
+        An empty row there would read as "the shop was empty" — it never is."""
+        steps = self._steps(count=2, hands=[[], []], offers=[["O1"], []])
+        self.assertEqual(steps[0]["tavern"], ["O1"])
+
+    def test_a_replay_written_before_this_still_has_steps(self):
+        steps = self._steps()
+        self.assertEqual(steps[0]["hand"], [])
+        self.assertEqual(steps[0]["tavern"], [])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -858,6 +858,15 @@ class LiveCoach:
             new = self.gs.snapshots[self._snap_seen:]
             self._snap_seen = len(self.gs.snapshots)
             for snap in new:
+                # The step-through's other two rows (2026-10-17). Captured HERE
+                # because this is the one place that sees a snapshot the moment
+                # it is taken: the board from gs.snapshots, the hand from the
+                # zone layer, the offers from the shop block this coach owns.
+                # One entry per snapshot, so `turn_review` can index all three
+                # by the same count.
+                self.gs.snap_hand.append(self.gs.hand(self.friendly)
+                                         if self.friendly is not None else [])
+                self.gs.snap_offers.append(self.tavern_offers())
                 self._snap_by_turn.setdefault(self.actions.turn, []).append({
                     "phase": self._phase,
                     "minions": [

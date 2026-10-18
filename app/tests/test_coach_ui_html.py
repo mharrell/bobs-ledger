@@ -124,6 +124,14 @@ class TestTheHoverCardCannotFlicker(unittest.TestCase):
                       "the tooltip can take the pointer, so it can flicker "
                       "against the tile it covers")
 
+    def test_the_step_rows_are_mini_tiles(self):
+        """The tavern and hand rows are 32px tiles, not the live 56px ones, so
+        the BOARD stays the subject of the step (2026-10-17)."""
+        css = _CSS()
+        self.assertIn(".tile.mini .thumb { width:32px", css)
+        self.assertIn("'TAVERN'", _HTML)
+        self.assertIn("'HAND'", _HTML)
+
     def test_the_growth_chip_does_not_claim_to_be_a_value(self):
         """The chip printed the board's stat growth under the label "value"
         (2026-10-17). `turn_review.stats()` says in its own docstring that the
