@@ -865,7 +865,9 @@ _HTML = r"""<!doctype html>
      (the nav, the sharing control, the Settle Up header) with the browser's own
      ring. The 44px minimum targets are per control, below. */
   .tavern :focus-visible { outline:2px solid var(--tsel); outline-offset:2px; }
-  .tavern .ts-caveat { color:var(--tmute); font-size:12px; margin:4px 0 10px; }
+  /* The footnote's space is ABOVE it (2026-10-18): it sits at the bottom of the
+     page now, so a bottom margin would be a gap under the last thing on screen. */
+  .tavern .ts-caveat { color:var(--tmute); font-size:12px; margin:16px 0 0; }
   .tstrip { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 12px; }
   .tavern .tbtn2 { min-width:44px; height:48px; padding:0 10px;
                    border-radius:8px; border:1px solid var(--tline);
@@ -4358,11 +4360,16 @@ function renderTavernGame(rep) {
   // is unavailable rather than hiding it (an old save carries no per-action
   // boards).
   refreshSettleMode(effMode, hasSteps);
+  // THE NOTE LIVES AT THE BOTTOM OF THE PAGE (2026-10-18, the maintainer's call:
+  // "move it and the padding above it to the very bottom of the page"). It was a
+  // banner above the turn strip — the first thing under the header, pushing the
+  // thing the page is about down by a line and a half. It is built here and
+  // appended after the card, so it reads as a footnote where it belongs.
+  let caveat = null;
   if (rep.caveat) {
-    const cav = document.createElement('div');
-    cav.className = 'ts-caveat';
-    cav.textContent = rep.caveat;
-    root.appendChild(cav);
+    caveat = document.createElement('div');
+    caveat.className = 'ts-caveat';
+    caveat.textContent = rep.caveat;
   }
   if (!turns.some(r => r.turn === _tavernTurn)) {
     _tavernTurn = turns.length ? turns[0].turn : null;
@@ -4410,6 +4417,7 @@ function renderTavernGame(rep) {
     wrap.appendChild(card);
     root.appendChild(wrap);
   }
+  if (caveat) root.appendChild(caveat);   // the footnote, last
   box.appendChild(root);
 }
 // The Summary rail (design §4.3): what the turn cost and did, grouped and
