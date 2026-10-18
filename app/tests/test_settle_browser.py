@@ -827,7 +827,7 @@ class TestTheStepThroughInABrowser(_Rendered):
         self.assertAlmostEqual(aw / ah, 88 / 116, delta=0.03,
                                msg="the board art stopped being a rectangle")
         ghost = int(self.got["s2.stepghost"].split("x")[0])
-        self.assertLess(ghost, width,
+        self.assertLess(ghost, int(tw),
                         "the sold ghost is as big as a real card")
         self.assertEqual(self.got["s0.nav"],
                          "\u25c0 Prev|\u25b6 Play|Next \u25b6")
