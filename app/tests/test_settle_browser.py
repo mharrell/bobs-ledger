@@ -727,22 +727,27 @@ class TestTheStepThroughInABrowser(_Rendered):
     def test_the_track_has_one_lettered_tick_per_action(self):
         self.assertEqual(self.got["s0.track"], 4)
         self.assertEqual(self.got["s0.letters"], "BLSC")
-        self.assertIn("R roll", self.got["s0.legend"])
+        # THE LEGEND ROW IS GONE (layout plan round 2, item 4): every tick already
+        # names its own action in its tooltip, and the row cost the height this
+        # item exists to reclaim.
+        self.assertEqual(self.got["s0.legend"], "", "the legend row is back")
 
-    def test_the_legend_sits_directly_under_the_track(self):
-        """Item 7 (2026-10-09): the letters are explained where they are read."""
-        self.assertEqual(self.got["s0.legendaftertrack"], "yes",
-                         "something sits between the track and its legend")
+    def test_the_controls_and_the_caption_share_row_a(self):
+        """REPLACED 2026-10-18 (round 2, item 4). The old claim was that the
+        legend sat under the track; there is no legend now, and the claim worth
+        keeping is the one that replaced it: Prev/Play/Next and the caption are
+        on ONE row, above the track."""
+        self.assertEqual(self.got["s0.legend"], "", "a legend row came back")
+        self.assertIn(".tavern .stepview .steprow-a", coach_ui._HTML,
+                      "the controls and caption have no shared row")
 
-    def test_the_legend_is_readable(self):
-        """Item 6 (2026-10-09): "make the legend larger, with enough contrast"
-        — 11px in the muted token failed both. Read off the element, like the
-        stat colours: the rule has to WIN, not merely exist."""
-        self.assertGreaterEqual(self.got["s0.legendfs"], 12,
-                                f"the legend is still small: "
-                                f"{self.got['s0.legendfs']}px")
-        self.assertEqual(self.got["s0.legendcol"], "rgb(241, 230, 210)",
-                         "the legend is back in the muted token")
+    def test_the_ticks_are_short_and_flexible(self):
+        """REPLACED 2026-10-18 (round 2, item 4). The legend's size was this
+        test's subject and the legend is gone; what matters now is that the track
+        fits a 30-step turn on one line — flexible widths, 32px tall."""
+        css = coach_ui._HTML
+        self.assertIn("max-width:38px; height:32px", css)
+        self.assertIn(".tavern .stepview .steptrack { display:flex; flex-wrap:nowrap", css)
 
     def test_every_tick_carries_its_action_as_a_tooltip(self):
         titles = "|" + self.got["s0.titles"] + "|"
@@ -753,8 +758,11 @@ class TestTheStepThroughInABrowser(_Rendered):
     def test_the_caption_is_large_and_labels_the_board(self):
         """Item 7 (2026-10-09): the action in plain words, at reading size, above
         the board it labels. It used to be 13px muted text in the control row."""
+        # "Step N of M — <action>", one line (round 2 item 4): the words that
+        # named the board are the panel titles' job now, and the caption is the
+        # thing that has to fit beside three buttons.
         self.assertTrue(self.got["s0.cap"].startswith(
-            "Your board after step 1 of 4"), f"caption: {self.got['s0.cap']!r}")
+            "Step 1 of 4"), f"caption: {self.got['s0.cap']!r}")
         self.assertEqual(self.got["s0.capin"], 0,
                          "the caption is back inside the control row")
         self.assertGreaterEqual(self.got["s0.capsize"], 15,

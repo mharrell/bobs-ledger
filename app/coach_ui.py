@@ -1034,6 +1034,20 @@ _HTML = r"""<!doctype html>
      is scoped to `.stepview` and uses a new class name; no shared rule changes.
      `.spanel-cards` on the board's container cancels the border and padding it
      used to carry as its own panel, so the panel is the only frame. */
+  /* ROW A (controls + caption) and ROW B (the track) — layout plan round 2,
+     item 4. The ticks take the width evenly and shrink to fit a 30-step turn on
+     one line; 32px tall, because a tick is a target, not a heading. */
+  .tavern .stepview .steprow-a { display:flex; align-items:center; gap:10px;
+                                 min-width:0; }
+  .tavern .stepview .steprow-a .stepnav { flex:none; margin:0;
+                                          flex-wrap:nowrap; }
+  .tavern .stepview .steprow-a .stepcap { flex:1 1 auto; min-width:0; margin:0;
+                                          white-space:nowrap; overflow:hidden;
+                                          text-overflow:ellipsis; }
+  .tavern .stepview .steptrack { display:flex; flex-wrap:nowrap; gap:3px;
+                                 margin:0; }
+  .tavern .stepview .steptrack .stick { flex:1 1 0; min-width:14px;
+                                        max-width:38px; height:32px; }
   .tavern .stepview .spanel { display:flex; flex-direction:column; gap:8px;
                               padding:12px 14px; background:var(--tpanel);
                               border:1px solid var(--tline); border-radius:10px; }
@@ -4600,7 +4614,13 @@ function renderTavernSteps(row) {
   nav.appendChild(play);
   nav.appendChild(mk('Next ▶', () => tavernStepNav(1),
                      _tavernStep >= steps.length - 1));
-  col.appendChild(nav);
+  // ROW A holds the three controls AND the caption (layout plan round 2,
+  // item 4). They were two rows, each a full line high, above a third row for
+  // the track and a fourth for the legend — four rows of chrome over three rows
+  // of cards. The caption takes the space the buttons leave and ellipsises; its
+  // `title` carries the whole sentence.
+  const rowA = el('div', 'steprow-a');
+  rowA.appendChild(nav);
   // The track, then the legend DIRECTLY under it (2026-10-09, player call), so
   // the letters are explained where they are read. Every tick carries its
   // action as a hover tooltip.
@@ -4619,8 +4639,9 @@ function renderTavernSteps(row) {
     track.appendChild(t);
   });
   col.appendChild(track);
-  col.appendChild(el('div', 'slegend',
-    'R roll · B buy · S sell · L level up · P play · C cast'));
+
+  // NO LEGEND ROW (round 2 item 4): each tick's tooltip names its action.
+
   // The caption is the board's own label and the action in plain words, at
   // reading size (2026-10-09, player call). It was 13px muted text inside the
   // control row — the one line that says what you are looking at.
@@ -4628,13 +4649,18 @@ function renderTavernSteps(row) {
   cap.className = 'stepcap';
   if (steps.length) {
     cap.appendChild(el('span', 'scap-what',
-                       'Your board after step ' + (_tavernStep + 1) + ' of '
+                       'Step ' + (_tavernStep + 1) + ' of '
                        + steps.length + ' — '));
-    cap.appendChild(el('span', null, stepWords(st)));
+    const what = stepWords(st);
+    cap.appendChild(el('span', null, what));
+    cap.title = 'Step ' + (_tavernStep + 1) + ' of ' + steps.length
+                + ' — ' + what;
   } else {
     cap.textContent = 'No step data for this turn';
   }
-  col.appendChild(cap);
+  rowA.appendChild(cap);
+  col.appendChild(rowA);
+  col.appendChild(track);
   // THE TAVERN ABOVE AND THE HAND BELOW (2026-10-17, the maintainer's ask): the
   // board alone cannot say what you were working with, or whether a roll went
   // past something you may have wanted. Both rows are mini tiles so the BOARD
