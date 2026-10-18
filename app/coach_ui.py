@@ -55,6 +55,7 @@ import choices
 import config
 import replay_store
 import settle_up
+import art_trim
 
 # macOS + a python.org build ship no CA bundle, so every https call here fails
 # with CERTIFICATE_VERIFY_FAILED until OpenSSL is pointed at one (MEASURED
@@ -475,6 +476,13 @@ def _download(cid, dest_dir, urls, card):
             _remember_miss(cid, hard=False)
             return False
         try:
+            if not card:
+                # Portrait sources are a square canvas with the artwork
+                # letterboxed on WHITE (see art_trim). The 88:116 card frame
+                # cover-crops the box, not the picture, so a top/bottom band
+                # would still show. Tooltip renders (`card=True`) are framed,
+                # transparent and deliberately NOT trimmed.
+                data = art_trim.trim_png_bytes(data)
             with open(os.path.join(dest_dir, f"{cid}.png"), "wb") as f:
                 f.write(data)
         except OSError:
@@ -1056,15 +1064,26 @@ _HTML = r"""<!doctype html>
   .tavern .stepview .spanel-title { font-size:10px; letter-spacing:.09em;
                                     text-transform:uppercase;
                                     color:var(--tmute); }
-  /* SMALLER BOARD CARDS, SAME SHAPE (2026-10-18). The card keeps the pool's
-     portrait ratio (88/116) — a rectangle, as the maintainer asked — and gets
-     smaller by getting NARROWER, because the height follows the width. The step
-     view used to borrow `--tstepw` (clamp 130..190) which stood 171px tall at
-     1290px wide; this is the ordinary tile width, so the same card is 86px wide
-     and 113px tall there — 58px off the row, with no crop of the art at all.
-     A square box was tried first and rejected: it changed the SHAPE, and the
-     point was the size. */
-  .tavern .stepview .spanel-board .stepboard { --tcardw: clamp(86px, 6.6vw, 124px); }
+  /* CARD SIZES (2026-10-18, second pass). The BOARD keeps the ordinary tile
+     width and the pool's 88:116 frame — a rectangle, as the maintainer asked —
+     so every board card is identical. The two context rows, Tavern and Hand,
+     use the SAME frame rules at 75% linear size: at 1764px that is 87x115 vs
+     the board's 116x153. `.thumb` is width:100% + aspect-ratio:88/116, so
+     setting `--tcardw` on the row is the whole size change; the art, radius and
+     cover crop rules are untouched, and every card in a row stays identical.
+     Typography drops one step for the narrower cards so names do not wrap more
+     — the sizes `.tile.mini` always intended, which had lost the cascade to
+     `.tavern .tile` (same specificity, written earlier). Measured at
+     1764x957: page 1001px -> 919px, so the hand row and the footnote fit. */
+  .tavern .stepview { --bw: clamp(86px, 6.6vw, 124px); }
+  .tavern .stepview .spanel-board .stepboard { --tcardw: var(--bw); }
+  .tavern .stepview .spanel-tv .spanel-cards,
+  .tavern .stepview .spanel-hand .spanel-cards {
+    --tcardw: calc(var(--bw) * 0.75); }
+  .tavern .stepview .spanel-tv .tile .tname,
+  .tavern .stepview .spanel-hand .tile .tname { font-size:10px; }
+  .tavern .stepview .spanel-tv .tile .tsub,
+  .tavern .stepview .spanel-hand .tile .tsub { font-size:11px; }
   .tavern .stepview .spanel-cards { display:flex; gap:8px; flex-wrap:wrap;
                                     min-width:0; border:0; padding:0;
                                     background:none; min-height:0; }

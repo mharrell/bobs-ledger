@@ -41,6 +41,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
 from config import HS_DATA_DIR, HS_LOG_GLOB  # noqa: E402
+import art_trim  # noqa: E402
 
 CACHE = os.path.join(_HERE, "img_cache")
 
@@ -193,7 +194,12 @@ def extract(only_ids=None, write=True):
                     # 512px client textures quadruple the repo for nothing.
                     if max(img.size) > 256:
                         img = img.resize((256, 256))
-                    img.save(os.path.join(CACHE, f"{cid}.png"))
+                    path = os.path.join(CACHE, f"{cid}.png")
+                    img.save(path)
+                    # Client textures carry the same white canvas padding the
+                    # CDN's square portraits do (see art_trim); the on-demand
+                    # download path trims too, so both doors agree.
+                    art_trim.trim_file(path)
                 except Exception as e:  # noqa: BLE001
                     print(f"  (export failed for {cid}: {e})")
                     continue

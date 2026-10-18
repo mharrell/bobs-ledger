@@ -2,6 +2,7 @@
 so the browser's repeated image requests don't re-hammer upstream — and the
 two kinds of miss (upstream has none, upstream unreachable) kept apart."""
 import os
+import struct
 import sys
 import tempfile
 import time
@@ -12,9 +13,26 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
 
 from coach_ui import _art_lock, _art_miss, _fetch_render, _can_retry  # noqa: E402
+from coach_ui import _download  # noqa: E402
 import coach_ui  # noqa: E402
+import art_trim  # noqa: E402
 
 TEST_ID = "ZZZ_TEST_ART"
+
+
+def _banded_png(size=64, band=8, color_type=6):
+    """A portrait with 8px white edges, built without Pillow."""
+    bpp = {2: 3, 6: 4}[color_type]
+    white = bytes((255, 255, 255, 255))[:bpp]
+    art = bytes((10, 20, 30, 255))[:bpp]
+    rows = []
+    for y in range(size):
+        row = bytearray()
+        for x in range(size):
+            edge = y < band or y >= size - band or x < band or x >= size - band
+            row += white if edge else art
+        rows.append(row)
+    return art_trim._encode(size, size, color_type, rows)
 
 
 class TestArtFetch(unittest.TestCase):
@@ -62,6 +80,46 @@ class TestArtFetch(unittest.TestCase):
         self.assertTrue(_can_retry(TEST_ID))
         with open(os.path.join(HERE, "img_cache", f"{TEST_ID}.png"), "rb") as f:
             self.assertEqual(f.read(), b"PNGDATA")
+
+    def test_a_portrait_download_is_trimmed_before_caching(self):
+        """The white-band fix has to happen on the way IN, not only in the
+        one-off migration: a new card's art must not arrive padded."""
+        class Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return _banded_png()
+
+        with tempfile.TemporaryDirectory() as td:
+            with mock.patch("urllib.request.urlopen", return_value=Resp()):
+                self.assertTrue(_download(TEST_ID, td,
+                                          ("https://a/{}.png",), False))
+            with open(os.path.join(td, f"{TEST_ID}.png"), "rb") as f:
+                self.assertEqual(struct.unpack(">II", f.read()[16:24]), (44, 44))
+
+    def test_a_card_render_download_is_not_trimmed(self):
+        """Tooltip renders are framed cards on TRANSPARENT padding, not white;
+        cropping them would cut the frame. Only portraits are trimmed."""
+        class Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self):
+                return _banded_png()
+
+        with tempfile.TemporaryDirectory() as td:
+            with mock.patch("urllib.request.urlopen", return_value=Resp()):
+                self.assertTrue(_download(TEST_ID, td,
+                                          ("https://a/{}.png",), True))
+            with open(os.path.join(td, f"{TEST_ID}.png"), "rb") as f:
+                self.assertEqual(struct.unpack(">II", f.read()[16:24]), (64, 64))
 
 
 class TestMissHygiene(unittest.TestCase):

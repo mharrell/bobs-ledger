@@ -110,20 +110,30 @@ def _rep():
         "combat_ours_text": "Dune Dweller 5/5",
         "combat_theirs_text": "Their Guy 2/2",
         "theirs_survivors": [],
+        # The step's two context rows (2026-10-17). The SIZING test measures
+        # these against the board, so every step carries both.
         "steps": [
             {"k": "buy", "card": "BG31_815",
              "board": [_minion("BG31_815", "Dune Dweller", 3, 3, 9),
-                       _minion("BG31_820", "Kooky Chemist", 2, 2, 11)]},
+                       _minion("BG31_820", "Kooky Chemist", 2, 2, 11)],
+             "tavern": ["BG31_815", "BG31_820"],
+             "hand": [{"card": "BG31_831", "atk": 4, "health": 8}]},
             # A LEVEL-UP targets no card: this is the step that used to outline
             # card 1, because it had no previous board to compare against and
             # every tile therefore looked new (2026-10-09).
             {"k": "level", "card": None,
              "board": [_minion("BG31_815", "Dune Dweller", 3, 3, 9),
-                       _minion("BG31_820", "Kooky Chemist", 2, 2, 11)]},
+                       _minion("BG31_820", "Kooky Chemist", 2, 2, 11)],
+             "tavern": ["BG31_815", "BG31_820"],
+             "hand": [{"card": "BG31_831", "atk": 4, "health": 8}]},
             {"k": "sell", "card": "BG31_90F",
-             "board": [_minion("BG31_815", "Dune Dweller", 3, 3, 9)]},
+             "board": [_minion("BG31_815", "Dune Dweller", 3, 3, 9)],
+             "tavern": ["BG31_815", "BG31_820"],
+             "hand": [{"card": "BG31_831", "atk": 4, "health": 8}]},
             {"k": "cast", "card": "BG31_700",
-             "board": [_minion("BG31_815", "Dune Dweller", 5, 5, 9)]},
+             "board": [_minion("BG31_815", "Dune Dweller", 5, 5, 9)],
+             "tavern": ["BG31_815", "BG31_820"],
+             "hand": [{"card": "BG31_831", "atk": 4, "health": 8}]},
         ],
     }
     turn2 = {
@@ -259,6 +269,12 @@ _DRIVER = r"""
     o.steptile = size(one('.stepboard .tile'));
     o.stepthumb = size(one('.stepboard .thumb'));
     o.stepghost = size(one('.stepboard .tile.ghost'));
+    // The two context rows (2026-10-18): same 88:116 frame as the board, at
+    // 75% linear size. Measured from the DOM, not read off the stylesheet.
+    o.tvtile = size(one('.spanel-tv .tile'));
+    o.tvthumb = size(one('.spanel-tv .thumb'));
+    o.handtile = size(one('.spanel-hand .tile'));
+    o.handthumb = size(one('.spanel-hand .thumb'));
     o.caveat = txt(one('.ts-caveat'));
     // The review heading is GONE (2026-10-18, layout plan round 2 item 2): it
     // repeated the dropdown. The fact it carried is the dropdown's tooltip, so
@@ -831,6 +847,28 @@ class TestTheStepThroughInABrowser(_Rendered):
                         "the sold ghost is as big as a real card")
         self.assertEqual(self.got["s0.nav"],
                          "\u25c0 Prev|\u25b6 Play|Next \u25b6")
+
+    def test_the_context_rows_are_three_quarters_the_board(self):
+        """2026-10-18 (the maintainer's call): Tavern and Hand follow the SAME
+        frame rules as the board, at 75% linear size. The board is the unit, so
+        this measures the two against it rather than against a fixed px count:
+        at the harness's 1400px window the board is 92px and the small rows 69.
+
+        The old `.tile.mini` sizes (32px thumb) never applied — `.tavern .tile`
+        is written later with the same specificity — which is why all three rows
+        rendered the same size. This is the assertion that would have caught it.
+        """
+        bw, _bh = (int(v) for v in self.got["s0.steptile"].split("x"))
+        for tile, thumb in (("tvtile", "tvthumb"),
+                            ("handtile", "handthumb")):
+            tw, _th = (int(v) for v in self.got["s0." + tile].split("x"))
+            aw, ah = (int(v) for v in self.got["s0." + thumb].split("x"))
+            self.assertLess(tw, bw, f"{tile} is not smaller than the board")
+            self.assertAlmostEqual(tw / bw, 0.75, delta=0.02,
+                                   msg=f"{tile} is not 75% of the board")
+            self.assertEqual(aw, tw, f"{thumb} does not fill its card")
+            self.assertAlmostEqual(aw / ah, 88 / 116, delta=0.03,
+                                   msg=f"{thumb} stopped being the 88:116 frame")
 
     def test_the_rail_is_dropped_so_the_boards_can_grow(self):
         self.assertEqual(self.got["s0.rail"], 0,

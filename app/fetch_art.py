@@ -23,6 +23,11 @@ The UI falls back to name-only for the ids that have no art anywhere
 (UnityPy over the local game client, hearth_art_extract.py) drops into the
 same cache — img_cache/<cardId>.png is the only contract.
 
+Both doors run the bytes through art_trim first: the CDN's square art is
+letterboxed on a WHITE canvas, and the card's 88:116 `object-fit:cover` frame
+crops the box rather than the picture, so the padding has to be cropped from
+the file (see art_trim.py). Card renders are not trimmed.
+
 The id set: every id in meta/minions.json + meta/tavern_spells.json, plus
 hero and trinket ids observed in recent session logs (those DBs are
 name-keyed — log ids are the ground truth).
