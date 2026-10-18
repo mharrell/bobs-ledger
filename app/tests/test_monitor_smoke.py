@@ -38,6 +38,7 @@ sys.path.insert(0, HERE)          # location-independent: no cwd or -t needed
 import coach_ui        # noqa: E402
 import decision_log    # noqa: E402
 import live            # noqa: E402
+import hermetic_store    # noqa: E402
 import replay_store    # noqa: E402
 import session_report  # noqa: E402
 import share           # noqa: E402
@@ -154,6 +155,14 @@ def _advancing_clock(step=10.0):
         return state["t"]
 
     return now
+
+
+def setUpModule():
+    hermetic_store.begin()
+
+
+def tearDownModule():
+    hermetic_store.end()
 
 
 class _MonitorHarness(unittest.TestCase):

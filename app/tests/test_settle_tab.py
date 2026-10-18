@@ -16,6 +16,34 @@ import coach_ui  # noqa: E402
 import replay_store  # noqa: E402
 
 
+_REAL_STORE_DIR = None
+_STORE_TMP = None
+
+
+def setUpModule():
+    """Keep this module OUT of the player's saved games.
+
+    Its tests call `replay_store.save(...)` with no `root`, which writes to the
+    real `app/saved_replays/`. MEASURED 2026-10-17: on every suite run it left two
+    `run-na` entries in the maintainer's Settle Up list — with stable gids, the
+    same pair twice in one day — and they looked exactly like a save that had gone
+    wrong. They were this file's fixtures.
+    """
+    global _REAL_STORE_DIR, _STORE_TMP
+    _REAL_STORE_DIR = replay_store.store_dir
+    _STORE_TMP = tempfile.TemporaryDirectory()
+    replay_store.store_dir = lambda root=None: _STORE_TMP.name
+
+
+def tearDownModule():
+    global _REAL_STORE_DIR, _STORE_TMP
+    if _REAL_STORE_DIR is not None:
+        replay_store.store_dir = _REAL_STORE_DIR
+    if _STORE_TMP is not None:
+        _STORE_TMP.cleanup()
+    _REAL_STORE_DIR = _STORE_TMP = None
+
+
 def _board(card="BG_X_001"):
     return [{"card": card, "atk": 3, "health": 3, "golden": False,
              "keywords": []}]
