@@ -91,15 +91,17 @@ HERO_CARD = re.compile(r"^(?:BG\d+_HERO_\d+|TB_BaconShop_HERO_\d+)(?:_SKIN_\w+)?
 # regex) does the minion/spell split. Excludes enchantments (BGxx_NNNx) and
 # trinkets (BG30_Trinket_*). Golden ids (BGxx_NNN_G) ARE matched; callers
 # strip the _G where it matters. Heroes (HERO) match the set-code branch but
-# are filtered by the cardtype check.
+# are filtered by the cardtype check. `Giant` is a real mixed-case set code
+# (Timewarped Poet = BG34_Giant_314); the all-caps branch missed it, so its
+# board was silently one minion short (2026-10-18).
 #
 # `TB_BaconUps_*` is the golden spelling for Tier-0 minions (Crackling
 # Cyclone's golden is TB_BaconUps_159, NOT BGS_119_G; see meta/premium_minions).
 # Without it the zone layer never tracked that minion as a minion, and the
 # action parser called playing it a SPELL CAST and a later removal a SALE.
 MINION_ID = re.compile(
-    r"^(?:BG\d+_\d+|BG\d+_[A-Z]+_\d+|BGS_\d+|BG_[A-Z]+_\d+|BG\d+_GS\d+"
-    r"|TB_BaconUps_\d+t?)(_G)?$")
+    r"^(?:BG\d+_\d+|BG\d+_[A-Z]+_\d+|BG\d+_Giant_\d+|BGS_\d+"
+    r"|BG_[A-Z]+_\d+|BG\d+_GS\d+|TB_BaconUps_\d+t?)(_G)?$")
 
 # Log line timestamp, e.g. "D 21:41:45.4076558 ...".
 TIMESTAMP = re.compile(r"^D (\d+:\d+:\d+\.\d+)")

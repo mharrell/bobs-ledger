@@ -341,6 +341,22 @@ class TestPoolIdFamilies(unittest.TestCase):
         self.assertTrue(extend_pool._REPRINT_ID.match("BG_EX1_170"))
         self.assertTrue(extend_pool.MINION_ID.match("BG26_350"))
 
+    def test_the_mixed_case_giant_minion_is_recognized(self):
+        """Timewarped Poet is BG34_Giant_314, not the all-caps set-code shape.
+
+        It was dropped from every board snapshot and the final board (measured
+        2026-10-18 on the Ysera game), which made a seven-minion board read as
+        six. The regex is still narrow: trinkets/effects/triggers are not
+        minions.
+        """
+        import extract_game
+        self.assertTrue(extract_game.MINION_ID.match("BG34_Giant_314"))
+        self.assertTrue(extract_game.MINION_ID.match("BG34_Giant_314_G"))
+        for cid in ("BG30_MagicItem_301", "BG30_Trinket_1st",
+                    "BG36_MidGameEffect_000t", "BG36_Button_DarkGift"):
+            with self.subTest(cid=cid):
+                self.assertIsNone(extract_game.MINION_ID.match(cid))
+
     def test_tokens_buddies_and_machinery_are_not_reprints(self):
         import extend_pool
         for cid in ("BG19_010t", "BG28_603t", "BG30_MagicItem_442t",

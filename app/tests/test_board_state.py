@@ -274,6 +274,25 @@ class TestUpdatingForm(unittest.TestCase):
         self.assertEqual(gs.card.get(10), "BG33_886")
 
 
+class TestMixedCaseMinion(unittest.TestCase):
+    """Timewarped Poet is BG34_Giant_314: a minion whose set-code segment is
+    mixed-case, not the all-caps shape the regex was written for. It was
+    dropped from the final board and every snapshot (measured 2026-10-18 on the
+    Ysera game), so a full seven-minion board read as six."""
+
+    def test_the_timewarped_poet_is_on_the_board_and_in_the_snapshot(self):
+        gs = GameState()
+        for line in (creating(900, "BG34_Giant_314")
+                     + tags(GS + "    ", 900, 166, 149, player=1,
+                            cid="BG34_Giant_314")):
+            gs.feed(line)
+        board, _ = gs.board(1)
+        self.assertEqual([m["card"] for m in board], ["BG34_Giant_314"])
+        gs._record_snapshot()
+        self.assertEqual([m["card"] for m in gs.snapshots[-1]],
+                         ["BG34_Giant_314"])
+
+
 class TestGolden(unittest.TestCase):
     def test_golden_minion_is_a_board_minion(self):
         board = _board_for(
