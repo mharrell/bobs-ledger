@@ -39,7 +39,8 @@ from extract_game import split_game_chunks
 from fight_table import _board as _struct_board
 from live_coach import LiveCoach
 from outcome_audit import _phases, SETTLE
-from value import _buy_prices, _load_card_db
+from value import _buy_prices, _load_bg_names, _load_card_db
+import value
 
 
 def _snap_board(minions, friendly, side):
@@ -1021,6 +1022,30 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
     return rows
 
 
+def _log_names(gs):
+    """{card id: the name the LOG gave it}, for ids the shipped name DBs miss.
+
+    The review's boards, its step tiles and its action lists all name from
+    `value._load_bg_names()`, which cannot hold a rotated minion, a spell from
+    another set or a hero power (see `board_state.GameState.entity_names`).
+    MEASURED 2026-10-19: 498 of 23,991 card references in four real games printed
+    as raw ids for exactly that reason.
+
+    Only the MISSES are returned, on purpose: a card the DBs know keeps the DB's
+    name, because that is the one with the curated spelling and the "(golden)"
+    tag, and because a saved replay should not grow by every name it already had.
+    """
+    try:
+        known = _load_bg_names()
+    except Exception:  # noqa: BLE001 - a DB miss is not a reason to fail a review
+        known = {}
+    out = {}
+    for cid, name in (gs.entity_names() if gs is not None else {}).items():
+        if value.display_name(known, cid) == cid:
+            out[cid] = name
+    return out
+
+
 def timeline(log_path, game_index=1, placement=None):
     """The per-turn board timeline for one game. Pure reading — writes nothing.
 
@@ -1075,4 +1100,9 @@ def timeline(log_path, game_index=1, placement=None):
             "hero": first.get("hero"),
             "friendly": friendly,
             "phases_analyzed": len(info),
-            "turn_count": len(turns)}
+            "turn_count": len(turns),
+            # THE LOG'S OWN NAMES for the ids no DB can name (2026-10-19), kept
+            # with the timeline so a SAVED replay still names them: the log is
+            # not kept forever, and a review served next week has only what the
+            # rep carries.
+            "log_names": _log_names(getattr(coach, "gs", None))}

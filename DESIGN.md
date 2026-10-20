@@ -726,6 +726,36 @@ concluding anything; nothing on the page currently says that.
 game is running, so it has not yet parsed a real macOS log. That is the remaining
 check, and it needs only for the game to be closed.
 
+### Card names come from the log, not from a table (2026-10-19)
+
+The Settle Up review printed **card ids where names belong** — the Summary's
+board rows and the Step-through's tiles — for any card the bundled tables did not
+carry. They cannot carry everything: `meta/minions.json` is the CURRENT pool,
+`tavern_spells.json` the current tavern spells, `tokens.json` the tokens someone
+mined. A rotated minion discovered into a fight, another set's spell, a summoned
+token, a hero power or a triple reward has no row, so `value.display_name` handed
+the id back and the page drew it.
+
+MEASURED on that evening's four saved games (23,991 card references): **498** were
+ids nothing could name — `BG_GIL_681` (Nightmare Amalgam) 234, `BG31_360` (Arcane
+Behemoth) 74, `EBG_Spell_014` (Pointy Arrow) 48, `TB_BaconShop_Triples_01` 68.
+Every one of them had its name in the log, in the bracketed `entityName=` that
+`board_state` already parsed for trinkets and dark gifts and then dropped for
+everything else.
+
+The rule now, one owner per step: the DBs win where they have a row
+(`value.display_name`, the only place `(golden)` is spelled); the log's name
+fills the misses (`board_state.GameState.entity_names()` →
+`turn_review._log_names`, stored on the timeline as `log_names` so a SAVED review
+keeps them once the log rotates → `value.merge_log_names`); and a KIND is the last
+resort where only an id remains (`TB_BaconShop_Triples_*` → "Triple Reward",
+`TB_BaconShop_HP_*` / `...HERO...p` → "hero power"). After the fix, two rebuilt
+games measured **0** unnamed tiles of 2,006 and 2,117.
+
+A review saved before this carries no `log_names`, so it keeps its ids until
+**Rebuild** re-derives it from its log. That gap is deliberate: resolving names
+for an old save at serve time would replay the game on every page load.
+
 ### Network situation
 - hsreplay's minions/heroes/dark-gifts APIs are Cloudflare-protected (403) —
   those meta assets come from manual paste; the comps/trinkets pages are

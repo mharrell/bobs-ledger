@@ -5800,6 +5800,16 @@ def _name_timeline_boards(rep):
         names = _load_bg_names()
     except Exception:  # noqa: BLE001 - unnamed ids beat a dead endpoint
         return rep
+    # THE LOG'S OWN NAMES, measured while the game was replayed (2026-10-19).
+    # The DBs hold the CURRENT pool, so a rotated minion, another set's spell or
+    # a summoned token has no row and every surface here printed its id. The rep
+    # carries the names the log gave those cards; `value.merge_log_names` is the
+    # one rule (the DB wins where it has a row), and it is applied BEFORE anything
+    # is named, so the board rows, the step tiles, the action lists and the
+    # client-side hand/tavern table (built from `out["names"]` below) all see them.
+    _log = ((rep.get("timeline") or {}).get("log_names") or {})
+    if _log:
+        names = value.merge_log_names(names, _log)
     out = json.loads(json.dumps(rep))   # a deep copy, cheaply
     for row in (out.get("timeline") or {}).get("turns") or []:
         for board in (row.get("buy_end"), row.get("battle_end"),

@@ -625,6 +625,34 @@ class GameState:
             })
         return out
 
+    def entity_names(self):
+        """{card id: the name the GAME gave it}, from the bracket entityName.
+
+        THE NAME DBs ARE NOT COMPLETE, and cannot be: `meta/minions.json` holds
+        the current pool, `tavern_spells.json` the current tavern spells, and
+        `tokens.json` the tokens someone has mined. A rotated minion discovered
+        into a fight, a spell from another set, a hero power, a triple reward —
+        none of them has a row, so `value.display_name` hands the id back and the
+        review printed it. The log carries the answer itself: every bracketed
+        entity reads `[entityName=Nightmare Amalgam id=1312 zone=SETASIDE
+        cardId=BG_GIL_681 player=6]`.
+
+        MEASURED 2026-10-19 on that evening's four saved games (23,991 card
+        references): 498 were ids no DB could name — `BG_GIL_681` (Nightmare
+        Amalgam) 234, `BG31_360` (Arcane Behemoth) 74, `EBG_Spell_014` (Pointy
+        Arrow) 48, `TB_BaconShop_Triples_01` 68. Every one of them had its name in
+        the log, in this map.
+
+        One id, one name: the FIRST entity that carried one wins, so a shared id
+        cannot flip names between rows.
+        """
+        out = {}
+        for eid, name in self.ename.items():
+            cid = self.card.get(eid)
+            if cid and name:
+                out.setdefault(cid, name)
+        return out
+
     def hand(self, friendly_player):
         """Cards in ZONE=HAND (bought, not yet played/cast), friendly only.
 

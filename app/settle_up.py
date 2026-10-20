@@ -93,6 +93,7 @@ from extract_game import split_game_chunks
 import outcome_audit
 import replay_store
 from value import _load_bg_names
+import value
 
 #: Bumped when the report's shape changes, so an HTML file or a JSON dump can
 #: be told apart from one this code did not write.
@@ -325,6 +326,13 @@ def _timeline(log_path, game_index, names, placement=None):
         tl = turn_review.timeline(log_path, game_index, placement=placement)
     except Exception as exc:  # noqa: BLE001
         return None, f"{type(exc).__name__}: {exc}"
+    # THE LOG'S OWN NAMES for the ids no DB can name (2026-10-19), measured
+    # while the game was replayed. Merged before any string below is built, so
+    # the board text, the sell questions and the took lists all read it — and
+    # `value.merge_log_names` is the one rule (the DB wins where it has a row).
+    log_names = tl.get("log_names") or {}
+    if log_names:
+        names = value.merge_log_names(names, log_names)
     for row in tl["turns"]:
         row["buy_end_text"] = _fmt_board(row["buy_end"], names)
         row["combat_ours_text"] = _fmt_board(row["combat_start"]["ours"], names)

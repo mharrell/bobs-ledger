@@ -4128,6 +4128,33 @@ def display_name(names, cid):
     return cid
 
 
+def merge_log_names(names, log_names):
+    """The name map with the LOG's own names added, for the ids it cannot name.
+
+    THE DBs ARE THE CURRENT POOL (2026-10-19). `meta/minions.json` holds today's
+    minions, `tavern_spells.json` today's tavern spells, `tokens.json` the tokens
+    someone mined — so a rotated minion discovered into a fight, another set's
+    spell or a summoned token has no row anywhere, `display_name` hands the id
+    back, and the review printed `BG_GIL_681` where it meant Nightmare Amalgam.
+    MEASURED on four saved games: 498 of 23,991 card references.
+
+    The log names those cards in its own bracket (`entityName=`), and
+    `turn_review` records the ones the DB could not resolve. This merges them.
+
+    **THE DB WINS WHERE IT HAS A ROW.** The curated spelling is the one the rest
+    of the app agrees on, and it is the only place "(golden)" is spelled out —
+    so a log name is taken only for an id `display_name` cannot resolve. Called
+    at BUILD time (`settle_up._timeline`'s text rows) and at SERVE time
+    (`coach_ui._name_timeline_boards`), which is why it is one function.
+    """
+    out = dict(names or {})
+    for cid, name in (log_names or {}).items():
+        cid = str(cid or "")
+        if cid and name and display_name(out, cid) == cid:
+            out[cid] = name
+    return out
+
+
 def _has_card(board_minions, source, names):
     """True if any board minion is the named card (by name substring)."""
     return any(source.lower() in (names.get(m["card"]) or "").lower()

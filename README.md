@@ -131,6 +131,8 @@ The page footnote says plainly that this is **observational, not causal**: follo
 
 A fight's summoned copies linger in the log past the end of the fight, so the board you opened with is shown without them; a turn where that happened says so under the board. The header carries a **Summary | Step through** switch: Step through replays the turn one action at a time, with a tick per action, the board as it stood after that action, and a card you sold shown dimmed and tagged. Left and Right walk turns, or steps while stepping; Shift with them walks turns while stepping; Space plays and pauses while stepping; Home and End jump to the ends. The mode is remembered. The **⋯** menu has **Rebuild**, which re-derives any saved game from its own log; an older saved game opens Step through disabled, with a tooltip saying why.
 
+**Every card is named from the game's own log.** A minion the bundled reference tables have never heard of — a rotated minion discovered into a fight, a spell from another set, a summoned token — still shows its real name instead of a card id, in both views. Games saved before that naming existed pick it up when you **Rebuild** them.
+
 ![Settle Up Step through view: the action tick row at Step 15, the board after the action, and the tavern and hand alongside](docs/screenshots/settle-up-step-through.webp)
 
 *Settle Up's **Step through** view: every action in the turn on one tick row, the board as it stood after Step 15, and the card just played highlighted.*
