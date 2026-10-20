@@ -1169,8 +1169,12 @@ _HTML = r"""<!doctype html>
   /* THE LAYOUT IS BY WINDOW WIDTH (fix list round 4 item 5, corrected
      2026-10-13 on the maintainer's own call: "if the window is ~1920 wide, then
      three columns. Otherwise collapse it"). Two modes:
-       * >=1650px of window: THREE COLUMNS — Tavern + board | Comps |
-         Facts + opponent + lobby, and no tabs, because every screen is visible;
+       * >=1650px of window: TWO COLUMNS — Tavern + board | Comps, with the
+         reference panels (Facts, opponent, lobby) under the board in column one
+         and no tabs, because every screen is visible. It was THREE (1fr 1fr
+         300px) until 2026-10-16, when the maintainer moved the reference column
+         under the board so Comps could take its width: the rule further down is
+         the one that counts, and this map said "three" for three days after;
        * below that: one column of collapsible sections with a one-line summary
          in each header, and the Facts table pinned above them (the section
          headers and the facts strip are the same rules at 1600px as at 900px).

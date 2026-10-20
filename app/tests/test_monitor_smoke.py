@@ -597,6 +597,7 @@ class TestALogReusedAtTheSamePath(_MonitorHarness):
         """Run monitor() over `log`, then hand it back as `how` says."""
         real = live.LiveCoach
         made = []
+        self.ino_shift = 0
 
         def factory():
             coach = real()
@@ -622,9 +623,39 @@ class TestALogReusedAtTheSamePath(_MonitorHarness):
         with mock.patch.object(live, "LiveCoach", factory), \
                 mock.patch.object(live, "find_active_log", lambda: log), \
                 mock.patch.object(live.time, "sleep", fake_sleep), \
+                mock.patch.object(live.os, "stat", self._stat_with_shift(log)), \
                 contextlib.redirect_stdout(self.out):
             live.monitor(log, 0.01)
         return made
+
+    def _stat_with_shift(self, log):
+        """`os.stat`, with the log's inode shifted when a test asked for it.
+
+        WHY THIS EXISTS (2026-10-19, the Windows run): the "replaced" case used
+        to be made by `os.remove`ing the log and writing a fresh one, which is
+        what the game really does — and it works on POSIX, where an open file can
+        be unlinked. Windows refuses it (`WinError 32`, the monitor still holds
+        the file), so the test could only ever pass on a Mac.
+
+        Deleting is not the thing under test. The monitor decides on
+        `st.st_ino != os.fstat(f.fileno()).st_ino`, and that comparison is the
+        subject — so this hands the monitor a REAL `os.stat_result` with one
+        field moved, and every caller keeps every other field. The fixture still
+        appends, so the file is longer than what was consumed: the size test
+        cannot see it and the identity test is the only one that can.
+        """
+        real_stat = os.stat
+
+        def stat(path, *a, **kw):
+            st = real_stat(path, *a, **kw)
+            shift = getattr(self, "ino_shift", 0)
+            if shift and os.path.abspath(str(path)) == os.path.abspath(log):
+                fields = list(st)
+                fields[1] = fields[1] + shift      # 1 is st_ino on every platform
+                return os.stat_result(fields)
+            return st
+
+        return stat
 
     def _flat_log(self, ended=False):
         """One game at a flat path, with no session directory around it."""
@@ -659,14 +690,20 @@ class TestALogReusedAtTheSamePath(_MonitorHarness):
             f.write(_REUSED_MARKER + "\n")
 
     def _replace(self, log):
-        """The game deletes the log and makes a new one: a NEW inode.
+        """The game makes a new file at the same path: a NEW inode.
 
         Deliberately LONGER than what the monitor has already consumed, because
         that is the case the size test cannot see — without the identity test
         this one would tail on into the new file at a stale offset.
+
+        The new file is APPENDED to and the new INODE is simulated
+        (`_stat_with_shift`), because the delete half of the real behaviour is
+        POSIX-only: Windows will not unlink a file the monitor holds open, which
+        is why this test could never pass there. The branch under test is the
+        inode comparison, and both halves produce it.
         """
-        os.remove(log)
-        with open(log, "w", encoding="utf-8") as f:
+        self.ino_shift = 1
+        with open(log, "a", encoding="utf-8") as f:
             f.write("\n".join(_fixture(ended=False)) + "\n")
             f.write(_REUSED_MARKER + "\n")
             for i in range(200):

@@ -1801,14 +1801,12 @@ class TestTheLayoutByWidth(_Rendered):
         happens to fall on — which is exactly how this test failed its first run,
         asserting a 1800px window was three columns when its viewport was 1784.
 
-        The proof that the box stopped deciding is a PAIR: 1645x1080 gives the box
-        ~1572px (the `#wrap` cap, the widest this page ever gets) and is an
-        accordion — 1645 because the box is capped from about 1640 while the
-        viewport is still under the 1650 threshold, so this is the narrowest
-        window that keeps the box equal and the arrangement different. while 1900x800 — the shell's short branch, where the 340px rail
-        still takes a track — gives it ~1532px and is three columns. A WIDER box in
-        the accordion than in the columns is not a contradiction under this rule;
-        under the box rule it was impossible.
+        THE BOX-HALF WENT TO ITS OWN TEST (2026-10-19). The pair that proves the
+        box stopped deciding — an accordion at the `#wrap` cap against the
+        columns at the same cap — cannot be built on Windows at all, because the
+        cap arrives ~15px later there (see
+        `test_the_capped_box_is_not_what_decides_the_layout`). What stays here is
+        the rule itself: the arrangement follows the VIEWPORT, on every platform.
         """
         for size in ((1649, 900), ((1650, 900)), (1850, 900), (1920, 1080)):
             got = _render([_shot("m", _comps_payload())], size=size)
@@ -1816,12 +1814,40 @@ class TestTheLayoutByWidth(_Rendered):
                              "cols" if int(got["m.vw"]) >= 1650 else "acc",
                              f"at a {size} window (viewport {got['m.vw']}px) the "
                              f"layout did not follow the viewport")
-        # THE MEASUREMENT THAT SAYS THE THRESHOLD CANNOT BE THE BOX: two windows
-        # far apart in size give this view the SAME box — 1572px, the `#wrap` cap,
-        # which any window past ~1640px reaches — and the rule still puts them in
-        # DIFFERENT arrangements. A container query answers "same box" with the
-        # same layout, so the first version of item 5 could not have implemented
-        # the maintainer's call at all; that is why this is a window rule now.
+        # ...and every window that gets the columns is past the cap, so the two
+        # columns measure the same wherever they appear — including at the
+        # narrowest window a viewport rule can give them (1850 is the first
+        # harness size whose VIEWPORT clears 1650).
+        narrowest = _render([_shot("n", _comps_payload())], size=(1850, 800))
+        self.assertEqual(narrowest["n.arr"], "cols",
+                         f"a 1850x800 window (viewport {narrowest['n.vw']}) is not "
+                         f"two columns, so this is not the narrowest one")
+        self.assertEqual([int(v) for v in narrowest["n.colw"].split("|")],
+                         [623, 935],
+                         f"the columns are not the full width at 1850x800: "
+                         f"{narrowest['n.colw']}")
+
+    @unittest.skipUnless(sys.platform == "darwin",
+                         "the 1600px cap and the 1650px threshold never "
+                         "coincide off macOS: a classic scrollbar costs 15px of "
+                         "client width, so the cap is reached ~15px later")
+    def test_the_capped_box_is_not_what_decides_the_layout(self):
+        """THE MEASUREMENT THAT SAYS THE THRESHOLD CANNOT BE THE BOX: two windows
+        far apart in size give this view the SAME box and the rule still puts them
+        in DIFFERENT arrangements. A container query answers "same box" with the
+        same layout, so the first version of item 5 could not have implemented the
+        maintainer's call at all; that is why this is a window rule now.
+
+        WHY THIS IS A macOS TEST (2026-10-19, measured on the Windows run). The
+        pair needs a window that is BOTH under the 1650 threshold (accordion) AND
+        at the `#wrap` 1600px cap, and on Windows there is no such window: at
+        1645x1080 the viewport is 1629, the scrollbar leaves 1614px of client
+        width, and `#wrap` lands at **1598** — the columns at 1920 give 1600. Two
+        pixels apart, and the assertion below is what caught it. macOS draws
+        overlay scrollbars, so the same window reaches the cap and the pair
+        exists. The rest of the rule (the arrangement follows the viewport) is
+        measured on every platform, one test up.
+        """
         acc = _render([_shot("a", _comps_payload())], size=(1645, 1080))
         cols = _render([_shot("c", _comps_payload())], size=(1920, 1080))
         self.assertEqual(acc["a.arr"], "acc",
@@ -1829,25 +1855,13 @@ class TestTheLayoutByWidth(_Rendered):
                          f"(viewport {acc['a.vw']})")
         self.assertLess(int(acc["a.vw"]), 1650)
         self.assertEqual(cols["c.arr"], "cols",
-                         f"a 1920x1080 window is not three columns "
+                         f"a 1920x1080 window is not two columns "
                          f"(viewport {cols['c.vw']})")
         self.assertEqual(int(acc["a.bodyw"]), int(cols["c.bodyw"]),
                          f"these two windows do not share a box "
                          f"({acc['a.bodyw']}px vs {cols['c.bodyw']}px), so this "
                          f"pair does not show the box losing its say")
         self.assertEqual(int(cols["c.bodyw"]), 1572)
-        # ...and every window that gets the columns is past the cap, so the three
-        # columns measure the same wherever they appear — including at the
-        # narrowest window a viewport rule can give them (1850 is the first
-        # harness size whose VIEWPORT clears 1650).
-        narrowest = _render([_shot("n", _comps_payload())], size=(1850, 800))
-        self.assertEqual(narrowest["n.arr"], "cols",
-                         f"a 1850x800 window (viewport {narrowest['n.vw']}) is not "
-                         f"three columns, so this is not the narrowest one")
-        self.assertEqual([int(v) for v in narrowest["n.colw"].split("|")],
-                         [623, 935],
-                         f"the columns are not the full width at 1850x800: "
-                         f"{narrowest['n.colw']}")
 
 
 class TestTheAccordionLayout(_Rendered):

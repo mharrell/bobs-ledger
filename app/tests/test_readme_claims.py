@@ -126,27 +126,85 @@ class TestTheCodeCannotMakeThemFalse(unittest.TestCase):
 
 
 class TestTheScreenshotsMatchTheReadme(unittest.TestCase):
-    """DELETED 2026-10-15, along with `docs/` and the five shots in it.
+    """Both directions, for the set that replaced the deleted one.
 
-    The maintainer's call: "Let's remove the images as well, as they're out of
-    date. I'll get new ones eventually." This class was the thing that said so
-    itself — `test_every_picture_the_readme_shows_exists` carried the message
-    "if that is deliberate, delete docs/ and this test with it", because a rule
-    that demands a picture cannot survive a README that has none.
+    REINSTATED 2026-10-19. The class was deleted on 2026-10-15 with the pictures
+    ("Let's remove the images as well, as they're out of date. I'll get new ones
+    eventually") and its tombstone asserted the opposite of what is now true —
+    that `docs/` was gone and the README showed no picture. Three days later the
+    new set landed under `docs/screenshots/` and the README showed six of them,
+    which left that tombstone failing on EVERY platform while the pairing went
+    unchecked in both directions. A red test nobody reads is the same as no test,
+    so the check comes back rather than being skipped: this is the class CLAUDE.md
+    means when it says a picture is a claim nothing else checks.
 
-    What it checked is worth keeping in mind when the new set lands: every image
-    the README shows must exist, and every file in `docs/` must be shown by the
-    README. Four pre-pivot shots shipped in two releases before anyone noticed,
-    which is why the pairing was asserted in both directions at all. Re-add this
-    class with the new pictures; do not re-add the old ones.
+    Both directions, for the reason the original gave: four pre-pivot shots
+    shipped in two releases before anyone noticed, so "the README shows a picture
+    that is not there" and "a picture ships that nothing can reach" are both
+    failures, not just the first.
     """
 
-    def test_the_old_screenshot_check_is_gone_with_the_pictures(self):
-        self.assertFalse(os.path.isdir(os.path.join(ROOT, "docs")),
-                         "docs/ is back — re-add the image checks above it")
+    #: What counts as a picture in `docs/`. A new format has to be added here
+    #: deliberately, which is the point — the other direction walks the folder.
+    PICTURES = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+
+    def _shown(self):
         with open(README, encoding="utf-8") as fh:
             text = fh.read()
-        self.assertNotIn("<img", text, "the README shows a picture again")
+        # Markdown links only. An `<img>` tag would be a second way to show a
+        # picture that a markdown scan cannot see, so it is refused rather than
+        # silently ignored.
+        self.assertNotIn("<img", text,
+                         "the README shows a picture with an <img> tag; this "
+                         "check reads markdown image links")
+        return [os.path.normpath(p) for p in
+                re.findall(r"!\[[^\]]*\]\(([^)\s]+)", text)]
+
+    def _in_the_tree(self):
+        found = []
+        for base, _dirs, files in os.walk(os.path.join(ROOT, "docs")):
+            for name in files:
+                if name.lower().endswith(self.PICTURES):
+                    found.append(os.path.normpath(
+                        os.path.relpath(os.path.join(base, name), ROOT)))
+        return sorted(found)
+
+    def test_every_picture_the_readme_shows_exists(self):
+        shown = self._shown()
+        self.assertTrue(shown, "the README shows no picture at all")
+        for rel in shown:
+            self.assertTrue(
+                os.path.exists(os.path.join(ROOT, rel)),
+                f"the README shows {rel}, which is not in the tree")
+
+    def test_every_picture_in_the_tree_is_shown_by_the_readme(self):
+        shown = set(self._shown())
+        pictures = self._in_the_tree()
+        self.assertTrue(pictures, "docs/ holds no picture at all")
+        for rel in pictures:
+            self.assertIn(rel, shown,
+                          f"{rel} ships but no README line shows it — a picture "
+                          "no reader can reach is dead weight in a download")
+
+    def test_every_picture_is_one_of_the_two_pages(self):
+        """The set is named, so a stray screenshot cannot ride along unnoticed.
+
+        Deliberately NOT a count: the maintainer adds shots as screens change, and
+        a count would fail on the correct edit and pass on a wrong swap. What is
+        pinned is that every picture belongs to one of the two pages the product
+        has, and that no pre-pivot name (the ones the deleted set used) is back.
+        """
+        stale = {"save-replay", "turn-shop", "turn-battle", "turn-result",
+                 "settle-up"}
+        for rel in self._in_the_tree():
+            name = os.path.basename(rel)
+            self.assertTrue(
+                name.startswith(("another-round-", "settle-up-")),
+                f"{rel} is neither an Another Round nor a Settle Up shot")
+            stem = os.path.splitext(name)[0]
+            self.assertNotIn(stem, stale,
+                             f"{rel} is a pre-pivot shot that shipped in two "
+                             "releases before anyone noticed")
 
 
 if __name__ == "__main__":

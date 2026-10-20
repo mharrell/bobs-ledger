@@ -340,15 +340,31 @@ class TestTheLogSizeCap(unittest.TestCase):
         able to write. A raw PermissionError would surface as a traceback in the
         middle of the launcher's first-run flow; the launcher already knows how to
         turn a non-zero exit into advice, so the failure has to become a note.
+
+        THE REFUSAL IS SIMULATED, NOT chmod-ED (2026-10-19, the Windows run): the
+        first version made a directory read-only with `os.chmod(ro, 0o500)` and
+        expected the write to fail. That is POSIX semantics — Windows ignores mode
+        bits on directories, so the write succeeded ("created") and the test could
+        only ever pass on a Mac, on the one platform whose scenario it does not
+        describe. A refusing `open` reaches the same `except OSError` line on every
+        platform, and tests it harder: nothing here depends on the OS agreeing
+        that the folder is read-only.
         """
-        ro = os.path.join(self.dir, "readonly")
-        os.makedirs(ro)
-        os.chmod(ro, 0o500)
-        self.addCleanup(os.chmod, ro, 0o700)
-        state, changed, note = setup_logging.apply_client(
-            os.path.join(ro, "client.config"))
+        target = os.path.join(self.dir, "client.config")
+        real_open = open
+
+        def refused(path, mode="r", *a, **kw):
+            if os.path.abspath(str(path)) == os.path.abspath(target) \
+                    and "w" in mode:
+                raise PermissionError(13, "Access is denied")
+            return real_open(path, mode, *a, **kw)
+
+        with mock.patch("builtins.open", new=refused):
+            state, changed, note = setup_logging.apply_client(target)
         self.assertTrue(note.startswith("not-writable"), note)
         self.assertEqual(changed, [])
+        self.assertFalse(os.path.exists(target),
+                         "the refusing write created the file anyway")
 
     def test_crlf_is_preserved(self):
         self.write("Aurora.Version.String=1.2.3\r\n"
