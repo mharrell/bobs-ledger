@@ -1,4 +1,4 @@
-﻿"""Golden tests for board_state.py against hand-built Power.log excerpts.
+"""Golden tests for board_state.py against hand-built Power.log excerpts.
 
 Fixtures reproduce real-log quirks verified in the 2026-08-29 session log:
 - PowerTaskList re-describes created entities as `FULL_ENTITY - Updating [...]`;
@@ -544,10 +544,18 @@ class TestTheVerdictIsRecorded(unittest.TestCase):
                 f"zone=PLAY zonePos=0 cardId=BG21_015 player=2] "
                 f"tag=ZONE value=REMOVEDFROMGAME")
 
+    #: The account these PLAYSTATE lines name. A PLACEHOLDER, and the one
+    #: `sanitize_log` documents — 2026-10-19: a real BattleTag stood here, taken
+    #: from a real log while the test was written, and the privacy gate refused
+    #: the publish because it had reached `app/` and would have shipped in the
+    #: zip. The rule is CLAUDE.md's: use the documented placeholders, never a
+    #: real one, however harmless one's own handle feels in a fixture.
+    ACCOUNT = "SomeBody#1234"
+
     def test_the_verdict_is_recorded_and_the_live_gate_still_stops(self):
         gs = GameState()
         self._a_minion_in_play(gs)
-        gs.feed(f"{GS}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=LOST")
+        gs.feed(f"{GS}TAG_CHANGE Entity={self.ACCOUNT} tag=PLAYSTATE value=LOST")
         self.assertEqual(gs.game_result, "LOST")
         self.assertTrue(gs._game_ended,
                         "the live path must still end the game on the first "
@@ -561,12 +569,12 @@ class TestTheVerdictIsRecorded(unittest.TestCase):
     def test_the_last_copy_wins(self):
         """The PowerTaskList copy is printed last, so it is the resolved one."""
         gs = GameState()
-        gs.feed(f"{GS}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=LOST")
-        gs.feed(f"{PTL}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=LOST")
+        gs.feed(f"{GS}TAG_CHANGE Entity={self.ACCOUNT} tag=PLAYSTATE value=LOST")
+        gs.feed(f"{PTL}TAG_CHANGE Entity={self.ACCOUNT} tag=PLAYSTATE value=LOST")
         self.assertEqual(gs.game_result, "LOST")
         gs2 = GameState()
-        gs2.feed(f"{GS}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=LOST")
-        gs2.feed(f"{PTL}TAG_CHANGE Entity=MikeySCE#1712 tag=PLAYSTATE value=WON")
+        gs2.feed(f"{GS}TAG_CHANGE Entity={self.ACCOUNT} tag=PLAYSTATE value=LOST")
+        gs2.feed(f"{PTL}TAG_CHANGE Entity={self.ACCOUNT} tag=PLAYSTATE value=WON")
         self.assertEqual(gs2.game_result, "WON",
                          "the later copy must replace the earlier one")
 
