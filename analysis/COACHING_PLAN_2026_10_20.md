@@ -597,15 +597,63 @@ case), so those five are UNVERIFIED here and must be run before release.
 
 **Not built, deliberately:** the mockup's master `All 14 actions ▸ collapsed`
 (the box is a sibling, so the actions can gain their own master fold later
-without touching it); the Step-through callout and the turn/step marks (passes
-3-4).
+without touching it).
+
+---
+
+## 14. Pass 3 as built: the marks (2026-10-20, later still)
+
+**Turn strip.** A `≠` on the turns whose **phase lead** differed — not every turn
+that contained a difference. `coachDiffers(phase)` is the lead-kind row's state;
+`hunt-roll` maps to `roll`, and a phase led by pass/hold/discard/note has no row
+at all (`settle_up._verdict` cannot grade it either), so it never carries a mark.
+The mark is the **glyph**, not a dot: it is text, so it survives greyscale, and a
+visually-hidden "differs from the model" gives a screen reader the words without
+replacing the turn's own result in the accessible name. A SELECTED turn inverts
+the glyph (`--tonsel`), or `--tdiff` on `--tsel` would be invisible.
+
+**One filter, three surfaces.** `phasesForTurn(turns, phases, row)` is now the
+only place that answers "which phases does this turn own" — including the
+last-turn rule that pulls in phases whose turn is not in the timeline. The
+strip's mark, the rail's box and the step marks all call it; three copies of that
+filter is exactly the drift this project keeps paying for.
+
+**Step track.** A corner dot on a step whose choice was not what the plan named
+for that kind: a buy/cast/play step differs when its card is not one of the cards
+the plan named, a level/roll step when that row says the phase differed. Sell
+steps are never marked (the model's side has no id — `not_comparable`). The
+tick's tooltip and `aria-label` append "— differs from the model", and the
+caption carries the chip `differs from the model` — the same words the box uses,
+so a player learns one phrase, not two.
+
+**Evidence, per kind.** The line now speaks to the rows on screen: "we differed
+on 29 level-ups and 38 buys across your 18 saved games", at most two kinds, with
+"(and N more kinds)" when the phase compared more; an old save with no rows falls
+back to the total ("67 moves").
+
+**THE BROWSER RUNS IN THIS SANDBOX NOW** (the session's file policy moved to
+full access). That retires the pass-2 caveat above: the whole
+`test_settle_browser` module (46 tests) and all 8
+`TestTheCoachingBoxInABrowser` pins PASS, so the fold (`display:none`), the amber
+edge (`rgb(224, 164, 58)` off the computed style), the strip glyph and the step
+chip are MEASURED, not asserted from source. There is still no screenshot of the
+feature; re-shooting the docs set is a separate decision.
+
+**Tests added by this pass:** 6 node (the lead mark incl. the not-lead negative
+and the hunt-roll mapping, last-turn phase ownership, step flags, per-kind
+evidence), 2 source pins (both surfaces gated by `_coachOn`; the glyph plus its
+hidden words), 3 browser (off leaves no mark, the strip marks the differing lead,
+the step dot + caption chip).
+
+**Not built:** pass 4 — the Step-through tavern callout, the ghost tile for the
+model's card, and the solid/dashed outlines with `You bought` / `Model
+preferred`. That is the pass that touches `tile()`, which Live shares.
 
 ---
 
 ## Appendix A — the original draft, verbatim
 
-Preserved as it was handed over, so the next session can check the spec against
-what was actually asked rather than against a summary of it. **Where it
+Preserved as it was handed over, so the next session can check the spec againstwhat was actually asked rather than against a summary of it. **Where it
 conflicts with §2 or §3, the decisions and corrections win** — the four known
 conflicts are the default (item 2 vs item 6), the "shared summary" clause
 (switch item 4), the "no model text beyond counts" clause (coaching item 1), and

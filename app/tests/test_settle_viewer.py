@@ -29,6 +29,12 @@ def _function(name):
     return m.group(0) if m else None
 
 
+def _js_const(name):
+    """A top-level `const NAME = ...;` from the page (objects included)."""
+    m = re.search(rf"const {name} = .*?;", coach_ui._HTML, re.S)
+    return m.group(0) if m else None
+
+
 class TestThereIsNoReviewerChoice(unittest.TestCase):
     """REVERSED 2026-10-13 from `TestTheFlag`.
 
@@ -463,15 +469,19 @@ class TestTheCoachingComparison(unittest.TestCase):
             self.skipTest("node is not installed, so the page's script cannot "
                           "be executed")
         names = ("coachRows", "coachSummary", "coachName", "coachCell",
-                 "coachWhy", "coachEvidence")
+                 "coachWhy", "coachCount", "coachEvidence", "coachLeadRow",
+                 "coachDiffers", "phasesForTurn", "stepDiffFlags")
         sources = [_function(n) for n in names]
         for name, src in zip(names, sources):
+            self.assertIsNotNone(src, name + " is missing")
+        consts = [_js_const("COACH_PLURALS"), _js_const("COACH_LEAD_KIND")]
+        for name, src in zip(("COACH_PLURALS", "COACH_LEAD_KIND"), consts):
             self.assertIsNotNone(src, name + " is missing")
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         driver = os.path.join(self.tmp.name, "coach.js")
         with open(driver, "w", encoding="utf-8") as f:
-            f.write("\n".join(sources) + "\n"
+            f.write("\n".join(consts) + "\n" + "\n".join(sources) + "\n"
                     "const NAMES = {BG_A: 'Dune Dweller', BG_B: 'Kooky Chemist'};\n"
                     "function cardMeta(c) { return NAMES[c] ? {name: NAMES[c]} : {}; }\n"
                     "const rows = [\n"
@@ -487,6 +497,10 @@ class TestTheCoachingComparison(unittest.TestCase):
                     " {kind:'play', state:'not_comparable',\n"
                     "  model:{asked:true,cards:['BG_A']},\n"
                     "  player:{did:true,cards:['BG_B']}}];\n"
+                    "const turnz = [{turn:1},{turn:2}];\n"
+                    "const flipped = "
+                    "[{k:'buy',card:'BG_A'},{k:'buy',card:'BG_B'},{k:'level'},\n"
+                    " {k:'sell',card:'BG_B'},{k:'roll'}];\n"
                     "const out = {\n"
                     " rows: coachRows([{coach_diff: rows}, "
                     "{coach_diff: [{kind: 'cast'}]}]),\n"
@@ -497,7 +511,26 @@ class TestTheCoachingComparison(unittest.TestCase):
                     " why: [coachWhy(rows), coachWhy([{why: null}])],\n"
                     " ev: [coachEvidence({games:18, by_kind:{buy:38,level:29}}),"
                     " coachEvidence({games:1, by_kind:{buy:1}}),"
-                    " coachEvidence({games:18, by_kind:{}}), coachEvidence(null)]"
+                    " coachEvidence({games:18, by_kind:{}}), coachEvidence(null)],\n"
+                    " evkind: [coachEvidence({games:18, by_kind:{buy:38,level:29}},"
+                    " [{kind:'level'},{kind:'buy'}]),\n"
+                    "  coachEvidence({games:18, by_kind:{buy:1,level:3}},"
+                    " [{kind:'buy'}])],\n"
+                    " lead: [coachDiffers({lead:'buy', coach_diff:[{kind:'buy',"
+                    "state:'differs'}]}),\n"
+                    "  coachDiffers({lead:'level', coach_diff:[{kind:'buy',"
+                    "state:'differs'}]}),\n"
+                    "  coachDiffers({lead:'hunt-roll', coach_diff:[{kind:'roll',"
+                    "state:'same'}]}),\n"
+                    "  coachDiffers({lead:'pass', coach_diff:[{kind:'level',"
+                    "state:'differs'}]})],\n"
+                    " turnphases: phasesForTurn(turnz, [{turn:1},{turn:2},"
+                    "{turn:9}], turnz[1]).map(p => p.turn),\n"
+                    " stepflags: stepDiffFlags(flipped, [{coach_diff: [\n"
+                    "  {kind:'buy', state:'differs', model:{asked:true,"
+                    "cards:['BG_A']}},\n"
+                    "  {kind:'level', state:'differs', model:{asked:true,cards:[]}},\n"
+                    "  {kind:'roll', state:'same', model:{asked:true,cards:[]}}]}])"
                     "};\n"
                     "console.log(JSON.stringify(out));\n")
         proc = subprocess.run(["node", driver], capture_output=True, timeout=30)
@@ -536,6 +569,27 @@ class TestTheCoachingComparison(unittest.TestCase):
                          "we differed on 1 move across your 1 saved game")
         self.assertIsNone(self.out["ev"][2])   # no counts -> no claim
         self.assertIsNone(self.out["ev"][3])
+
+    def test_the_evidence_line_names_the_kinds_the_rows_show(self):
+        """A box with level and buy rows says "29 level-ups and 38 buys", not a
+        total: the line has to speak to what is on screen."""
+        self.assertEqual(self.out["evkind"][0],
+                         "we differed on 29 level-ups and 38 buys across your "
+                         "18 saved games")
+        self.assertEqual(self.out["evkind"][1],
+                         "we differed on 1 buy across your 18 saved games")
+
+    def test_the_strip_mark_follows_the_phase_lead_only(self):
+        """A difference in a kind the plan did NOT lead with is not a turn
+        where the plan differed (COACHING_PLAN §5.3)."""
+        self.assertEqual(self.out["lead"], [True, False, False, False])
+
+    def test_the_last_turn_owns_the_unmatched_phases(self):
+        self.assertEqual(self.out["turnphases"], [2, 9])
+
+    def test_a_step_is_judged_against_the_cards_named_for_its_kind(self):
+        self.assertEqual(self.out["stepflags"],
+                         [False, True, True, False, False])
 
     # --- the switch, from the page source -------------------------------
     def test_the_switch_is_a_real_switch_and_defaults_off(self):
@@ -591,6 +645,23 @@ class TestTheCoachingComparison(unittest.TestCase):
                       coach_ui._HTML)
         self.assertIn(".tavern .cbox-b { margin-top:8px; }", coach_ui._HTML)
 
+    def test_the_strip_and_step_marks_are_gated_by_the_switch(self):
+        """Off must draw no mark anywhere, not just an empty box: the strip and
+        the step track read `_coachOn` before they decorate anything."""
+        strip = _function("renderTavernGame")
+        self.assertIn("if (_coachOn && phasesForTurn(turns, phases, r)"
+                      ".some(coachDiffers))", strip)
+        steps = _function("renderTavernSteps")
+        self.assertIn("_coachOn ? stepDiffFlags(steps, phases) : []", steps)
+        self.assertIn("'differs from the model'", steps)
+
+    def test_the_turn_mark_is_a_glyph_with_words_behind_it(self):
+        """A mark that is only a colour fails in greyscale and says nothing to a
+        screen reader; the `≠` is text and the hidden words name it."""
+        strip = _function("renderTavernGame")
+        self.assertIn("'≠'", strip)
+        self.assertIn("'vhidden', 'differs from the model'", strip)
+
 
 class TestTheCoachingBoxAssembles(unittest.TestCase):
     """`coachBox`'s DOM assembly, run under node against a minimal shim.
@@ -631,17 +702,20 @@ function cardMeta(c) { return {Dune: 'BG_A', Kooky: 'BG_B'}[c]
             self.skipTest("node is not installed, so the page's script cannot "
                           "be executed")
         names = ("el", "coachRows", "coachSummary", "coachName", "coachCell",
-                 "coachWhy", "coachEvidence", "coachBox")
+                 "coachWhy", "coachCount", "coachEvidence", "coachBox")
         sources = [_function(n) for n in names]
         for name, src in zip(names, sources):
             self.assertIsNotNone(src, name + " is missing")
         m = re.search(r"const COACH_KINDS = \{.*?\};", coach_ui._HTML, re.S)
         self.assertIsNotNone(m, "COACH_KINDS is missing")
+        plurals = _js_const("COACH_PLURALS")
+        self.assertIsNotNone(plurals, "COACH_PLURALS is missing")
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         driver = os.path.join(self.tmp.name, "box.js")
         with open(driver, "w", encoding="utf-8") as f:
-            f.write(self.SHIM + "\n" + m.group(0) + "\n" + "\n".join(sources)
+            f.write(self.SHIM + "\n" + plurals + "\n" + m.group(0) + "\n"
+                    + "\n".join(sources)
                     + "\n"
                     "const rows = [\n"
                     " {kind:'level', state:'differs', model:{asked:true,cards:[]},\n"
@@ -702,7 +776,8 @@ function cardMeta(c) { return {Dune: 'BG_A', Kooky: 'BG_B'}[c]
         self.assertEqual(self.out["why"],
                          "Why: its ranking gives 9.0 against 6.2")
         self.assertEqual(self.out["ev"],
-                         "we differed on 67 moves across your 18 saved games")
+                         "we differed on 29 level-ups and 38 buys across your "
+                         "18 saved games")
 
     def test_no_rows_in_a_new_save_draws_no_box(self):
         """A turn with no advised phase must not claim the save is old."""

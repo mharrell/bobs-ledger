@@ -921,7 +921,8 @@ _HTML = r"""<!doctype html>
                    border-radius:8px; border:1px solid var(--tline);
                    border-bottom:3px solid var(--tline); background:var(--tpanel);
                    color:var(--ttext); cursor:pointer; line-height:1.2;
-                   font:600 13px "Segoe UI", system-ui; text-align:center; }
+                   font:600 13px "Segoe UI", system-ui; text-align:center;
+                   position:relative; }
   .tavern .tbtn2 small { display:block; font-size:10px; font-weight:400;
                          color:var(--tmute); }
   .tavern .tbtn2.win { border-bottom-color:var(--twin); }
@@ -930,6 +931,18 @@ _HTML = r"""<!doctype html>
   .tavern .tbtn2.sel { background:var(--tsel); color:var(--tonsel);
                        border-color:var(--tsel); font-weight:700; }
   .tavern .tbtn2.sel small { color:var(--tonsel); }
+  /* THE "DIFFERS" MARK ON THE TURN STRIP (2026-10-20, pass 3). The glyph is
+     text, so the meaning survives greyscale; `--tdiff` only makes it easier to
+     spot, and it is never the only signal. Selected turns invert it, because a
+     `--tdiff` glyph on a `--tsel` fill would be invisible. */
+  .tavern .tbtn2 .tneq { position:absolute; top:2px; right:5px; font-size:11px;
+                         font-weight:700; color:var(--tdiff); line-height:1; }
+  .tavern .tbtn2.sel .tneq { color:var(--tonsel); }
+  /* Visually hidden, NOT display:none: this is the words a screen reader reads
+     for a mark whose glyph is punctuation. */
+  .vhidden { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+             overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
+             border:0; }
   .tavern .turn { background:var(--tpanel); border:1px solid var(--tline);
                   color:var(--ttext); }
   /* Summary rail + tray + net tags (design §4.3/§4.4, build step 3). The rail
@@ -1199,11 +1212,23 @@ _HTML = r"""<!doctype html>
                                 font-size:13px; }
   .tavern .stepcap .scap-triple { color:var(--tsel); font-weight:700;
                                   font-size:13px; }
+  /* The "differs from the model" chip beside the caption (2026-10-20, pass 3):
+     the same words the box uses, so a player learns one phrase, not two. */
+  .tavern .stepcap .scap-diff { margin-left:7px; padding:1px 8px;
+                                border:1px solid var(--tdiff);
+                                border-radius:10px; color:var(--tdiff);
+                                font:700 11px "Segoe UI", system-ui;
+                                white-space:nowrap; }
   .tavern .steptrack { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 4px; }
   .tavern .stick { width:38px; height:44px; border-radius:6px;
                    border:1px solid var(--tline); color:var(--tmute);
                    background:var(--tcard); cursor:pointer;
-                   font:700 14px "Segoe UI", system-ui; }
+                   font:700 14px "Segoe UI", system-ui; position:relative; }
+  /* A corner dot on the tick whose step the model differed on (the mockup's
+     mark). Shape plus tooltip; the tick's own letter still says the action. */
+  .tavern .stick .sdiff { position:absolute; top:2px; right:3px; width:6px;
+                          height:6px; border-radius:50%;
+                          background:var(--tdiff); }
   .tavern .stick.k-roll { background:var(--tk-roll); }
   .tavern .stick.k-buy { background:var(--tk-buy); color:var(--tk-buy-t); }
   .tavern .stick.k-sell { background:var(--tk-sell); color:var(--tk-sell-t); }
@@ -4519,15 +4544,94 @@ function coachWhy(rows) {
 // Decision 3's evidence line, in the page's words: a DIFFERENCE COUNT across
 // the player's own saved games, cached on the rep at build time. Never a claim
 // that the model was right.
-function coachEvidence(ev) {
+//
+// PER KIND, because the box's rows are per kind: "we differed on 9 level-ups and
+// 12 buys" speaks to the rows on screen, where a single total ("77 moves") did
+// not. The kinds counted are the ones THIS phase compared, so a turn with no
+// level row cannot be told about level-ups; with no rows at all (an old save)
+// the total is the fallback.
+const COACH_PLURALS = {level: 'level-ups', buy: 'buys', sell: 'sells',
+                       play: 'plays', cast: 'casts', roll: 'rolls',
+                       pick: 'picks'};
+function coachCount(n, kind) {
+  const w = COACH_PLURALS[kind] || kind;
+  return n + ' ' + (n === 1 && w.endsWith('s') ? w.slice(0, -1) : w);
+}
+function coachEvidence(ev, rows) {
   if (!ev || !ev.games) return null;
   const counts = ev.by_kind || {};
+  const kinds = [];
+  for (const r of rows || []) {
+    if (kinds.indexOf(r.kind) < 0) kinds.push(r.kind);
+  }
+  const present = kinds.filter(k => (counts[k] || 0) > 0);
+  const games = ' across your ' + ev.games
+    + (ev.games === 1 ? ' saved game' : ' saved games');
+  if (present.length) {
+    // At most two: a line that lists five kinds is a paragraph, not a figure.
+    const shown = present.slice(0, 2).map(k => coachCount(counts[k], k));
+    const rest = present.length - shown.length;
+    return 'we differed on ' + shown.join(' and ')
+      + (rest ? ' (and ' + rest + ' more kind' + (rest === 1 ? '' : 's') + ')' : '')
+      + games;
+  }
   let n = 0;
   for (const k in counts) n += counts[k] || 0;
   if (!n) return null;
-  return 'we differed on ' + n + (n === 1 ? ' move' : ' moves')
-    + ' across your ' + ev.games
-    + (ev.games === 1 ? ' saved game' : ' saved games');
+  return 'we differed on ' + (n === 1 ? '1 move' : n + ' moves') + games;
+}
+// Which KIND a phase's LEAD asked about, in the comparison's own vocabulary.
+// "hunt-roll" is a roll; pass/hold/discard/note have no comparison row at all
+// (settle_up's verdict cannot grade them either), so a phase led by one can
+// never carry a "differs" mark.
+const COACH_LEAD_KIND = {buy: 'buy', level: 'level', roll: 'roll',
+                         'hunt-roll': 'roll', cast: 'cast', play: 'play',
+                         pick: 'pick'};
+function coachLeadRow(phase) {
+  const kind = COACH_LEAD_KIND[(phase || {}).lead];
+  if (!kind) return null;
+  return ((phase || {}).coach_diff || []).find(r => r.kind === kind) || null;
+}
+// Does this phase's LEAD differ? The phase-level question, never "did anything
+// in it differ" — a turn that took the plan's card but also rolled is not a turn
+// where the plan differed (COACHING_PLAN §5.3).
+function coachDiffers(phase) {
+  const row = coachLeadRow(phase);
+  return !!row && row.state === 'differs';
+}
+// The phases that belong to one turn: its own, plus — on the LAST turn — any
+// phase whose turn is not in the timeline (the final-duel family the classic
+// reviewer used to attach to the last card). ONE function, because the strip's
+// mark, the rail's box and the step marks must agree about which phases a turn
+// owns; three copies of this filter would drift.
+function phasesForTurn(turns, phases, row) {
+  if (!row) return [];
+  const seen = new Set((turns || []).map(r => r.turn));
+  const isLast = row === (turns || [])[turns.length - 1];
+  return (phases || []).filter(p => p.turn === row.turn
+    || (isLast && !seen.has(p.turn)));
+}
+// Per-STEP marks for the Step-through's tick row. The stored plan is the
+// phase's, so a step can only be judged against what the plan named for its
+// KIND: a buy step is a difference when its card is not one of the cards the
+// plan named to buy, and a level/roll step when that row says the phase
+// differed. Sell steps carry no ids on the model's side (not_comparable) and are
+// never marked.
+function stepDiffFlags(steps, phases) {
+  const rows = coachRows(phases);
+  const by = {};
+  for (const r of rows) if (!by[r.kind]) by[r.kind] = r;
+  const named = kind => ((by[kind] || {}).model || {}).cards || [];
+  return (steps || []).map(s => {
+    if (s.k === 'buy' || s.k === 'cast' || s.k === 'play') {
+      if (!by[s.k]) return false;
+      return named(s.k).indexOf(s.card) < 0;
+    }
+    if (s.k === 'level' || s.k === 'roll') {
+      return !!(by[s.k] && by[s.k].state === 'differs');
+    }
+    return false;
+  });
 }
 // --- Battle face-off helpers (design §4.5). Pure, node-tested.
 function outcomeText(winner) {
@@ -4672,6 +4776,18 @@ function renderTavernGame(rep) {
     const m = stripMark(r.winner, r.damage_taken);
     if (m.cls) b.classList.add(m.cls);
     b.innerHTML = (r.turn ?? '?') + '<small>' + m.ch + '</small>';
+    // THE "DIFFERS" MARK (2026-10-20, pass 3). Only where the phase LEAD
+    // differed — a turn that took the plan's card but also rolled is not a turn
+    // where the plan differed. The mark is the `≠` GLYPH, not a dot: it is text,
+    // so it survives greyscale and reaches a screen reader, and the
+    // visually-hidden words say what it means without replacing the turn's own
+    // result in the accessible name.
+    if (_coachOn && phasesForTurn(turns, phases, r).some(coachDiffers)) {
+      b.classList.add('cdiff');
+      b.appendChild(el('span', 'tneq', '≠'));
+      b.appendChild(el('span', 'vhidden', 'differs from the model'));
+      b.title = 'Differs from the model';
+    }
     b.onclick = () => {
       stopTavernPlay();
       _tavernStep = 0;
@@ -4683,8 +4799,9 @@ function renderTavernGame(rep) {
   root.appendChild(strip);
   const row = turns.find(r => r.turn === _tavernTurn);
   let card = null;
+  const railPhases = phasesForTurn(turns, phases, row);
   if (row && effMode === 'step') {
-    root.appendChild(renderTavernSteps(row));
+    root.appendChild(renderTavernSteps(row, railPhases));
   } else if (row) {
     // Design §3: rail 330px left, the turn's card right. The face-off's HP line
     // needs the NEXT turn's effective-HP reading, which only the caller has.
@@ -4696,10 +4813,6 @@ function renderTavernGame(rep) {
     // card — lands in the rail's Plan section, once.
     const idx = turns.indexOf(row);
     const nextEff = idx >= 0 && turns[idx + 1] ? turns[idx + 1].eff : null;
-    const seen = new Set(turns.map(r => r.turn));
-    const isLast = row === turns[turns.length - 1];
-    const railPhases = phases.filter(p => p.turn === row.turn
-        || (isLast && !seen.has(p.turn)));
     const wrap = document.createElement('div');
     wrap.className = 'twrap';
     // The REP-level question the box needs: does this save carry the comparison
@@ -4788,7 +4901,7 @@ function coachBox(phases, hasCoach) {
     }
     const why = coachWhy(rows);
     if (why) body.appendChild(el('div', 'cd-why', 'Why: ' + why));
-    const ev = coachEvidence((_settleRep || {}).coach_evidence);
+    const ev = coachEvidence((_settleRep || {}).coach_evidence, rows);
     if (ev) body.appendChild(el('div', 'cd-ev', ev));
     if (rows.some(r => r.state !== 'same')) {
       body.appendChild(el('div', 'cd-legend',
@@ -4993,12 +5106,18 @@ function tavernTogglePlay() {
   }
   renderTavernGame(_settleRep);
 }
-function renderTavernSteps(row) {
+function renderTavernSteps(row, phases) {
   const steps = row.steps || [];
   if (_tavernStep > steps.length - 1) {
     _tavernStep = Math.max(0, steps.length - 1);
   }
   const st = steps[_tavernStep];
+  // Per-step comparison (2026-10-20, pass 3). `flags[i]` is true where the
+  // step's own choice was not what the plan named for that kind; the tick gets
+  // a mark and the caption a chip. Off when the switch is off: `_coachOn` gates
+  // the WHOLE comparison, never just the box.
+  const flags = _coachOn ? stepDiffFlags(steps, phases) : [];
+  const here = !!(flags[_tavernStep]);
   const col = document.createElement('div');
   col.className = 'tstep stepview';
   const nav = document.createElement('div');
@@ -5034,6 +5153,14 @@ function renderTavernSteps(row) {
     t.textContent = stepLetter(s.k);
     t.title = 'Step ' + (i + 1) + ': ' + stepWords(s)
               + (s.triple ? ' — completed a triple' : '');
+    if (flags[i]) {
+      // A corner dot PLUS the words in the tooltip and the accessible name: a
+      // shape is not colour alone, and the tooltip is what says what it means.
+      t.classList.add('cdiff');
+      t.appendChild(el('span', 'sdiff'));
+      t.title += ' — differs from the model';
+      t.setAttribute('aria-label', t.title);
+    }
     t.onclick = () => {
       stopTavernPlay();
       _tavernStep = i;
@@ -5063,6 +5190,11 @@ function renderTavernSteps(row) {
     }
     cap.title = 'Step ' + (_tavernStep + 1) + ' of ' + steps.length
                 + ' — ' + what + (st.triple ? ' — completed a triple' : '');
+    if (here) {
+      // The chip beside the caption, as the mockup draws it. Text, not colour:
+      // this is the sentence a player reads after stepping onto a difference.
+      cap.appendChild(el('span', 'scap-diff', 'differs from the model'));
+    }
   } else {
     cap.textContent = 'No step data for this turn';
   }

@@ -196,7 +196,7 @@ def _coached():
     rep["phases"] = [{
         "turn": 1, "acted": "bought Dune Dweller", "outcome": -4,
         "verdict": "taken", "plan": "1. Buy Dune Dweller",
-        "confidence": "medium",
+        "lead": "buy", "confidence": "medium",
         "coach_diff": [
             {"kind": "level", "state": "differs",
              "model": {"asked": True, "cards": []},
@@ -413,6 +413,13 @@ _DRIVER = r"""
     o.coachev = txt(one('.cd-ev'));
     o.coachlegend = txt(one('.cd-legend'));
     o.coachnote = txt(one('.cd-note'));
+    // The pass-3 marks: the turn strip's `≠`, and the step track's dot + chip.
+    o.cdmarks = q('.tbtn2.cdiff').length;
+    o.tneq = q('.tbtn2 .tneq').length;
+    o.marka11y = [...q('.tbtn2.cdiff')].map(b =>
+      b.getAttribute('aria-label') || b.textContent).join('|');
+    o.stepdots = q('.stick.cdiff').length;
+    o.scapdiff = txt(one('.scap-diff'));
     // The final-turn family: what the Opened row says, and whether an Ended
     // row exists at all.
     o.opened = (() => {
@@ -434,7 +441,7 @@ _DRIVER = r"""
                              'rebuildnotes', 'modehidden', 'capin', 'railw',
                              'capsize', 'ghostsub', 'legendfs', 'ended',
                              'vsegs', 'viewerflags', 'coachbox', 'coachrows',
-                             'coacheq']);
+                             'coacheq', 'cdmarks', 'tneq', 'stepdots']);
     for (const k of Object.keys(o)) {
       const v = o[k];
       rec(name + '.' + k, NUMERIC.has(k) ? '#' + Number(v)
@@ -1018,6 +1025,10 @@ class TestTheCoachingBoxInABrowser(_Rendered):
         return [_shot("off", _coached(), mode="summary", coach=False),
                 _shot("on", _coached(), mode="summary", coach=True),
                 _shot("open", _coached(), mode="summary", coach=True, open=True),
+                # Step mode, standing on the LEVEL step: the level row differs,
+                # so the tick carries the dot and the caption the chip, while
+                # the buy step before it (the card the plan named) does not.
+                _shot("step", _coached(), mode="step", coach=True, step=1),
                 # A save written before the comparison existed (SCHEMA 1).
                 _shot("old", _named(), mode="summary", coach=True, open=True)]
 
@@ -1049,17 +1060,38 @@ class TestTheCoachingBoxInABrowser(_Rendered):
         self.assertEqual(self.got["open.coachbar"], "rgb(224, 164, 58)")
         cells = self.got["open.coachcells"]
         self.assertIn("Yes · tier 2 → 3/No", cells)
-        self.assertIn("Dune Dweller/Kooky Chemist", cells)
+        # The named card resolves through the page's own id->name table; the
+        # second cell is whatever the table has (a name, or the raw id when the
+        # DB has no row — the review's documented fallback), so only the first
+        # is pinned to a NAME here.
+        self.assertTrue(cells.split("||")[1].strip().startswith("Dune Dweller/"),
+                        cells)
         self.assertEqual(self.got["open.coachwhy"],
                          "Why: its ranking gives 9.0 against 6.2")
         self.assertEqual(self.got["open.coachev"],
-                         "we differed on 67 moves across your 18 saved games")
+                         "we differed on 29 level-ups and 38 buys across your "
+                         "18 saved games")
         self.assertIn("≠", self.got["open.coachlegend"])
 
     def test_an_old_save_says_so_instead_of_drawing_an_empty_box(self):
         self.assertEqual(self.got["old.coachbox"], 1)
         self.assertIn("predates coaching", self.got["old.coachhead"])
         self.assertIn("Rebuild", self.got["old.coachnote"])
+
+    def test_off_draws_no_mark_either(self):
+        """The switch gates the WHOLE comparison, not just the box: no strip
+        glyph and no step dot when it is off."""
+        self.assertEqual(self.got["off.cdmarks"], 0)
+        self.assertEqual(self.got["off.tneq"], 0)
+
+    def test_the_strip_marks_the_turn_whose_lead_differed(self):
+        self.assertEqual(self.got["open.cdmarks"], 1)
+        self.assertEqual(self.got["open.tneq"], 1)
+        self.assertIn("differs from the model", self.got["open.marka11y"])
+
+    def test_the_step_track_marks_the_step_and_the_caption_says_it(self):
+        self.assertEqual(self.got["step.stepdots"], 1)
+        self.assertEqual(self.got["step.scapdiff"], "differs from the model")
 
     def test_the_switch_is_not_on_the_live_tab(self):
         self.assertEqual(self.got["tab.switchvisible"], "no")
