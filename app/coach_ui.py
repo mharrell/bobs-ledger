@@ -767,6 +767,36 @@ _HTML = r"""<!doctype html>
                              font:600 13px "Segoe UI", system-ui; }
   #tabs .smenu-body button:hover { color:var(--ttext); background:var(--tcard); }
   #tabs #share-toggle[hidden] { display:none; }
+  /* THE COACHING SWITCH (2026-10-20). Header row, right side, before the "…"
+     menu — the mockups' position. `aria-checked` carries the state and the
+     accessible name stays "Show coaching" (the visible "On"/"Off" is the state
+     word, not part of the name). DEFAULT OFF: the page's own localStorage key
+     (`bl-coaching`) is read once at startup and nothing turns it on for a
+     player. Off renders NONE of the comparison — the box is not built at all,
+     so there is no empty gap to close (COACHING_PLAN §5.5).
+     It is a real <button role="switch">, so Space/Enter toggle for free.
+     Amber here is the SWITCH's own on-state — "you have set this" — which is
+     the meaning amber already has; the comparison's own colour is `--tdiff`. */
+  #tabs #coach-switch { flex:none; display:flex; align-items:center; gap:7px;
+    margin-left:auto; background:var(--tpanel); color:var(--ttext);
+    border:1px solid var(--tline); border-radius:8px; padding:4px 10px 4px 8px;
+    cursor:pointer; font:600 12px "Segoe UI", system-ui; }
+  #tabs #coach-switch:hover { border-color:var(--tsel); }
+  #tabs #coach-switch .cs-track { position:relative; width:30px; height:16px;
+    flex:none; border-radius:9px; background:var(--tcard);
+    border:1px solid var(--tline); transition:background .12s; }
+  #tabs #coach-switch .cs-knob { position:absolute; top:1px; left:1px;
+    width:12px; height:12px; border-radius:50%; background:var(--tmute);
+    transition:left .12s, background .12s; }
+  #tabs #coach-switch[aria-checked="true"] .cs-track { background:var(--tsel);
+    border-color:var(--tsel); }
+  #tabs #coach-switch[aria-checked="true"] .cs-knob { left:15px;
+    background:var(--tonsel); }
+  #tabs #coach-switch .cs-wip { color:var(--tmute); font-weight:400; }
+  /* The switch only exists on the Settle Up tab, and while it is shown the "…"
+     menu sits beside it instead of taking the row's spare width itself. */
+  #tabs:not(.settle-on) #coach-switch { display:none; }
+  #tabs #coach-switch ~ .smenu { margin-left:0; }
   /* (The Live viewer flag's row lived here — `#live-viewer-row`, right-aligned
      on this nav row since round-3 item 7, and hidden by `showTab` while Settle
      Up was open because that page had its own. Both flags went on 2026-10-13
@@ -856,6 +886,16 @@ _HTML = r"""<!doctype html>
             --tonsel:#14110c;   /* text on a --tsel fill */
             --tatk:#f4c95d; --thp:#e8664f; --tbuff:#8fd06a;
             --twin:#7cc66b; --tloss:#e8664f; --ttie:#b09c84;
+            /* "DIFFERS FROM THE MODEL" — AMBER, BY REQUEST, FLAGGED FOR A
+               POSSIBLE REFACTOR (2026-10-20). The mockups draw a differing row
+               with an amber left edge, so this is `--tsel` under its own name
+               for now. It is the ONE exception to "amber is you have set this":
+               the selected turn chip, `Play` and `You bought` are amber too, and
+               two meanings under one colour is what the design forbade. Hence a
+               separate token — if it is reversed, only this line and the rules
+               that read `--tdiff` change. The `≠` glyph is NOT colour, so the
+               meaning never depends on this value (COACHING_PLAN §12.2). */
+            --tdiff:#e0a43a;
             --tk-roll:#3a2d22; --tk-buy:#35592f; --tk-sell:#7a3328;
             --tk-level:#7a6320; --tk-play:#2c4f7a; --tk-cast:#54397a;
             --tk-roll-t:#b09c84; --tk-buy-t:#e4f5da; --tk-sell-t:#ffe1db;
@@ -924,6 +964,53 @@ _HTML = r"""<!doctype html>
   .tavern .ishow { color:var(--tmute); background:none; border:none;
                    cursor:pointer; font-size:11px; padding:2px 0;
                    text-decoration:underline; }
+  /* THE COACHING BOX (2026-10-20; the maintainer's shape: "a new box, below the
+     actions box, that can be collapsed or opened ... a summary above the
+     collapsed section, with each item in the collapsible section"). It is a
+     SIBLING of the action groups, not part of them, so folding the actions
+     never hides the comparison. Collapsed by DEFAULT: the summary line is the
+     always-visible fact ("Model vs you · 2 differ" + the confidence chip), and
+     the rows are what a click reveals. The open/closed choice persists under
+     `bl-coach-open` — a view setting like `bl-settle-mode`, not the switch.
+     ONE meaning per colour is still the rule: a differing row's amber edge is
+     `--tdiff` (see the token's note) and the `≠` glyph carries the meaning. */
+  .tavern .cbox { border-top:1px solid var(--tline); margin-top:12px;
+                  padding-top:9px; }
+  .tavern .cbox-h { display:flex; align-items:center; gap:6px; width:100%;
+                    background:none; border:0; padding:0; cursor:pointer;
+                    color:var(--ttext); text-align:left;
+                    font:700 12px "Segoe UI", system-ui; user-select:none; }
+  .tavern .cbox-h .ccar { color:var(--tmute); font-size:10px; width:10px; }
+  .tavern .cbox-h .ccount { color:var(--tmute); font-weight:400; }
+  .tavern .cbox-h .cconf { margin-left:auto; flex:none; color:var(--tmute);
+                           font:700 10px "Segoe UI", system-ui;
+                           border:1px solid var(--tline); border-radius:10px;
+                           padding:1px 7px; text-transform:lowercase; }
+  .tavern .cbox-b { margin-top:8px; }
+  .tavern .cd-head { display:grid; grid-template-columns:88px minmax(0,1fr)
+                     minmax(0,1fr); gap:6px; padding-left:11px;
+                     color:var(--tmute); font:700 9px "Segoe UI", system-ui;
+                     letter-spacing:.12em; text-transform:uppercase; }
+  .tavern .cdrow { display:grid; grid-template-columns:88px minmax(0,1fr)
+                   minmax(0,1fr); gap:6px; align-items:baseline;
+                   padding:6px 0 6px 8px; font-size:12px; line-height:1.35;
+                   border-bottom:1px solid var(--tline);
+                   border-left:3px solid transparent; }
+  .tavern .cdrow:last-of-type { border-bottom:0; }
+  .tavern .cdrow.differs { border-left-color:var(--tdiff); }
+  .tavern .cdrow.differs .ckind { color:var(--ttext); }
+  .tavern .cdrow.muted { opacity:.55; }
+  .tavern .cdrow .ckind { color:var(--tmute); overflow-wrap:anywhere; }
+  .tavern .cdrow .cneq { color:var(--tdiff); font-weight:700; margin-right:3px; }
+  .tavern .cdrow .cval { color:var(--ttext); min-width:0;
+                         overflow-wrap:anywhere; }
+  .tavern .cdrow .cval.you { color:var(--tmute); }
+  .tavern .cd-why { margin-top:8px; font-size:12px; line-height:1.4;
+                    color:var(--ttext); }
+  .tavern .cd-ev { margin-top:4px; font-size:11px; color:var(--tmute); }
+  .tavern .cd-legend { margin-top:6px; font-size:10px; color:var(--tmute);
+                       opacity:.85; }
+  .tavern .cd-note { font-size:11px; line-height:1.4; color:var(--tmute); }
   /* Cards, ONE component everywhere (2026-10-09, player call). The tile is a
      portrait: the art fills the frame and scales with the window
      (--tcardw; the step board swaps in --tstepw), and the name, stats and
@@ -1894,6 +1981,14 @@ Step through replays the turn one action at a time">
      Classic/Tavern toggle does NOT belong in it — that control was removed on
      2026-10-13 with its key, and a one-option switch is a control that cannot
      act. -->
+<!-- SHOW COACHING (2026-10-20): the model-vs-player comparison, inside Settle
+     Up only, OFF by default. `aria-checked` is the state; the accessible name
+     stays "Show coaching", so the word after the colon cannot be mistaken for
+     the name. The "(work in progress)" is filled from ONE constant in the
+     script (`COACH_WIP`) rather than written here, so the two cannot drift. -->
+<button id="coach-switch" role="switch" aria-checked="false"
+        aria-label="Show coaching" title="Model suggestions for finished games.
+May be wrong; observational, not causal."><span class="cs-track"><span class="cs-knob"></span></span><span>Show coaching: <b id="coach-state">Off</b></span><span class="cs-wip" id="coach-wip"></span></button>
 <details id="settle-more" class="smenu">
 <summary title="Rebuild this saved game, or open the folder it lives in">⋯</summary>
 <div class="smenu-body">
@@ -4273,6 +4368,15 @@ let _tavernTurn = null;
 let _tavernMode = 'summary';
 let _tavernStep = 0;
 let _tavernPlayTimer = null;
+//: The coaching switch's state (2026-10-20). DISPLAY-ONLY: the comparison is
+//: already in the saved replay (`coach_diff` on every phase); this only decides
+//: whether the rail draws it, so flipping it never needs a Rebuild. OFF on a
+//: fresh profile. `_coachOpen` is the box's own fold — a view setting like the
+//: mode, not part of the switch's state.
+let _coachOn = false;
+let _coachOpen = false;
+try { _coachOn = localStorage.getItem('bl-coaching') === '1'; } catch (e) {}
+try { _coachOpen = localStorage.getItem('bl-coach-open') === '1'; } catch (e) {}
 try { _tavernMode = localStorage.getItem('bl-settle-mode') || 'summary'; }
 catch (e) { /* private mode */ }
 // One strip button's result marker (REPLAY_VIEWER_DESIGN.md §4.1), pure so
@@ -4354,6 +4458,76 @@ function boardDelta(opened, ended) {
       : {isNew: true, datk: 0, dhealth: 0};
   }
   return out;
+}
+// --- The coaching comparison (2026-10-20, COACHING_PLAN §12). The stored
+// `coach_diff` on each phase is the whole input: the page NEVER re-derives a
+// comparison (one build-time artifact, four surfaces, or they drift). The
+// helpers that decide what a row SAYS are pure and node-tested; `coachBox` is
+// the DOM assembly and is measured in a browser.
+const COACH_WIP = '(work in progress)';
+//: Display labels. "Play (hand)" is deliberate — a spell is `cast`, and merging
+//: the two vocabularies is the confusion this codebase already untangled
+//: (§3.5.7). The mockups' plain "Play" loses that distinction.
+const COACH_KINDS = {level: 'Level up', buy: 'Buy', sell: 'Sell',
+                     play: 'Play (hand)', cast: 'Cast', roll: 'Roll',
+                     pick: 'Pick'};
+function coachRows(phases) {
+  const out = [];
+  for (const p of phases || []) {
+    for (const r of p.coach_diff || []) out.push(r);
+  }
+  return out;
+}
+// The summary line above the fold: the NUMBER of things that differ, which is
+// what a collapsed box owes the reader. `not_reached` is not a difference of
+// choice and `not_comparable` is not a comparison — neither is counted here,
+// and the rows themselves say which is which.
+function coachSummary(rows) {
+  const n = (rows || []).filter(r => r.state === 'differs').length;
+  return n ? n + (n === 1 ? ' differs' : ' differ') : 'no differences';
+}
+function coachName(cid) {
+  const meta = cardMeta(cid) || {};
+  return meta.name || cid;
+}
+// One cell of the Model | You table. Yes/no kinds say yes/no (the maintainer's
+// mockup: "Yes · tier 4 → 5" / "No"); card kinds name their cards, and an empty
+// side is a dash rather than the word "no", because "no card" is not an answer
+// on a row that asked about cards.
+function coachCell(r, side) {
+  const v = (side === 'model' ? r.model : r.player) || {};
+  if (r.kind === 'level') {
+    if (side !== 'model') return v.did ? 'Yes' : 'No';
+    if (!v.asked) return '—';
+    return r.tier ? 'Yes · tier ' + r.tier.from + ' → ' + r.tier.to : 'Yes';
+  }
+  if (r.kind === 'roll') {
+    const yes = side === 'model' ? v.asked : v.did;
+    return yes ? 'Yes' : (side === 'model' ? '—' : 'No');
+  }
+  if (r.kind === 'sell' && side === 'model') return v.asked ? 'Yes' : '—';
+  const cards = (v.cards || []).map(coachName).join(', ');
+  return cards || '—';
+}
+// "Why" is only worth a line when a NUMBER backs it (§5.6): the step's prose
+// reason usually is not, and the margin is. The first differing row that has a
+// number wins; a phase with none shows no Why at all.
+function coachWhy(rows) {
+  for (const r of rows || []) if (r.why) return r.why;
+  return null;
+}
+// Decision 3's evidence line, in the page's words: a DIFFERENCE COUNT across
+// the player's own saved games, cached on the rep at build time. Never a claim
+// that the model was right.
+function coachEvidence(ev) {
+  if (!ev || !ev.games) return null;
+  const counts = ev.by_kind || {};
+  let n = 0;
+  for (const k in counts) n += counts[k] || 0;
+  if (!n) return null;
+  return 'we differed on ' + n + (n === 1 ? ' move' : ' moves')
+    + ' across your ' + ev.games
+    + (ev.games === 1 ? ' saved game' : ' saved games');
 }
 // --- Battle face-off helpers (design §4.5). Pure, node-tested.
 function outcomeText(winner) {
@@ -4528,13 +4702,101 @@ function renderTavernGame(rep) {
         || (isLast && !seen.has(p.turn)));
     const wrap = document.createElement('div');
     wrap.className = 'twrap';
-    wrap.appendChild(tavernRail(row, railPhases));
+    // The REP-level question the box needs: does this save carry the comparison
+    // anywhere? A save with no `coach_diff` key in any phase predates the
+    // feature; a turn with no rows in a NEW save simply has nothing to compare.
+    const hasCoach = phases.some(p => 'coach_diff' in p);
+    wrap.appendChild(tavernRail(row, railPhases, hasCoach));
     card = settleTurnCard(row, {hero: rep.hero, nextEff: nextEff});
     wrap.appendChild(card);
     root.appendChild(wrap);
   }
   if (caveat) root.appendChild(caveat);   // the footnote, last
   box.appendChild(root);
+}
+// THE COMPARISON BOX (2026-10-20). Its own box BELOW the action groups — the
+// maintainer's shape — so folding an action group can never hide it, and it is
+// not built at all when the switch is off (no header, no empty gap). Collapsed
+// by default: the summary line is the always-visible fact, the rows are one
+// click away. `_coachOpen` persists under `bl-coach-open`, a view setting like
+// `bl-settle-mode` rather than part of the switch's own state.
+// `hasCoach` is the REP-level answer: does this saved game carry the comparison
+// at all? A turn with no advised phase has no rows and must draw NO box, while
+// a save written before the feature has no keys anywhere — that one gets the
+// "Rebuild to add it" note instead of silence (an empty box reads as broken).
+function coachBox(phases, hasCoach) {
+  const rows = coachRows(phases);
+  if (!rows.length && hasCoach) return null;
+  const conf = (phases || []).map(p => p.confidence).filter(Boolean)[0] || null;
+  const box = el('div', 'cbox');
+  const h = el('button', 'cbox-h');
+  h.type = 'button';
+  h.setAttribute('aria-expanded', _coachOpen ? 'true' : 'false');
+  h.appendChild(el('span', 'ccar', _coachOpen ? '▾' : '▸'));
+  h.appendChild(el('span', null, 'Model vs you'));
+  h.appendChild(el('span', 'ccount', rows.length
+    ? '· ' + coachSummary(rows) : '· this save predates coaching'));
+  if (conf) {
+    const chip = el('span', 'cconf', 'confidence: ' + conf);
+    chip.title = 'How far apart the model\u2019s pick and yours sit on its own '
+      + 'ranking — a display figure, not a verdict';
+    h.appendChild(chip);
+  }
+  h.onclick = () => {
+    _coachOpen = !_coachOpen;
+    body.style.display = _coachOpen ? '' : 'none';
+    h.setAttribute('aria-expanded', _coachOpen ? 'true' : 'false');
+    h.querySelector('.ccar').textContent = _coachOpen ? '▾' : '▸';
+    try { localStorage.setItem('bl-coach-open', _coachOpen ? '1' : '0'); }
+    catch (e) { /* private mode */ }
+  };
+  const body = el('div', 'cbox-b');
+  body.style.display = _coachOpen ? '' : 'none';
+  box.appendChild(h);
+  if (!rows.length) {
+    // An old save has no rows at all (settle_up SCHEMA 1). Saying so is better
+    // than an empty box after the player turned the switch on, and Rebuild is
+    // the documented cure.
+    body.appendChild(el('div', 'cd-note',
+      'This saved game was recorded before the comparison existed. Press '
+      + 'Rebuild in \u22ef to derive it from the game log.'));
+  } else {
+    const head = el('div', 'cd-head');
+    head.appendChild(el('span', null, ''));
+    head.appendChild(el('span', null, 'Model'));
+    head.appendChild(el('span', null, 'You'));
+    body.appendChild(head);
+    for (const r of rows) {
+      const cls = r.state === 'differs' ? ' differs'
+        : (r.state === 'same' ? '' : ' muted');
+      const row = el('div', 'cdrow' + cls);
+      const kind = el('span', 'ckind');
+      if (r.state === 'differs') kind.appendChild(el('span', 'cneq', '≠'));
+      kind.appendChild(document.createTextNode(COACH_KINDS[r.kind] || r.kind));
+      row.appendChild(kind);
+      row.appendChild(el('span', 'cval', coachCell(r, 'model')));
+      row.appendChild(el('span', 'cval', coachCell(r, 'player')));
+      if (r.state === 'differs' && r.reason) {
+        row.title = r.reason;
+      } else if (r.state === 'not_reached') {
+        row.title = 'The plan\u2019s own order could not pay for this step, so '
+          + 'it is not a choice you passed on';
+      } else if (r.state === 'not_comparable') {
+        row.title = 'No comparison: this one cannot be matched to the game log';
+      }
+      body.appendChild(row);
+    }
+    const why = coachWhy(rows);
+    if (why) body.appendChild(el('div', 'cd-why', 'Why: ' + why));
+    const ev = coachEvidence((_settleRep || {}).coach_evidence);
+    if (ev) body.appendChild(el('div', 'cd-ev', ev));
+    if (rows.some(r => r.state !== 'same')) {
+      body.appendChild(el('div', 'cd-legend',
+        '≠ differs from the model · grey rows have no comparison'));
+    }
+  }
+  box.appendChild(body);
+  return box;
 }
 // The Summary rail (design §4.3): what the turn cost and did, grouped and
 // collapsed. A group opens by default while it is SHORT — five rows or fewer
@@ -4544,7 +4806,7 @@ function renderTavernGame(rep) {
 // too, folded under a neutral label (`phases`), because "coaching — not
 // taken" read as advice and the app is reference-only; the plan text itself
 // is a fact about the model, and the review is where it is allowed (PIVOT.md).
-function tavernRail(r, phases) {
+function tavernRail(r, phases, hasCoach) {
   const took = r.took || {}, sp = r.spend || {}, ev = r.shop_events || {};
   const stats = r.stats || {};
   const boardEnd = stats.buy_end;
@@ -4671,6 +4933,13 @@ function tavernRail(r, phases) {
       : ('? sold ' + (q.sold_name || 'a card') + ' (' + (q.role || '?')
          + ') while keeping ' + (q.kept_filler_names || []).join(', '));
     rail.appendChild(d);
+  }
+  // THE COACHING BOX (2026-10-20): below the actions, above the plan. Off
+  // builds NOTHING — not an empty header, not a spacer — so the rail is exactly
+  // what it was before this feature existed (the switch is display-only).
+  if (_coachOn) {
+    const cbox = coachBox(phases, hasCoach);
+    if (cbox) rail.appendChild(cbox);
   }
   // The model's plan, folded, under a neutral label — and its GRADING beside
   // it on the summary line (2026-10-13). The grading used to ride the classic
@@ -5195,6 +5464,28 @@ document.querySelectorAll('#settle-mode button').forEach(b => {
     if (_settleRep) renderTavernGame(_settleRep);
   };
 });
+// THE COACHING SWITCH (2026-10-20): a real <button role="switch">, so Space and
+// Enter toggle it for free. `aria-checked` is the state; the visible word
+// follows it and the accessible name stays "Show coaching". It writes its own
+// key and re-renders the open game from the rep already in hand — no refetch,
+// and the payload does not change (display-only, COACHING_PLAN §2 decision 1).
+function setCoachSwitch() {
+  const b = document.getElementById('coach-switch');
+  if (!b) return;
+  b.setAttribute('aria-checked', _coachOn ? 'true' : 'false');
+  const word = document.getElementById('coach-state');
+  if (word) word.textContent = _coachOn ? 'On' : 'Off';
+  const wip = document.getElementById('coach-wip');
+  if (wip) wip.textContent = COACH_WIP;    // ONE constant, not a second copy
+}
+document.getElementById('coach-switch').onclick = () => {
+  _coachOn = !_coachOn;
+  try { localStorage.setItem('bl-coaching', _coachOn ? '1' : '0'); }
+  catch (e) { /* private mode */ }
+  setCoachSwitch();
+  if (_settleRep) renderTavernGame(_settleRep);
+};
+setCoachSwitch();
 // Keyboard (design §5): Left and Right walk turns (Summary) or steps
 // (Step-through); Shift+Left/Right walks turns while stepping; Space
 // plays/pauses; Home and End jump to the ends. Ignored while typing, and only
@@ -5203,6 +5494,10 @@ document.addEventListener('keydown', e => {
   if (document.getElementById('settle').className !== 'on') return;
   const tag = (e.target.tagName || '').toUpperCase();
   if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  // A focused switch is not the page's transport: Space toggles the switch,
+  // which is what a role="switch" promises. (Without this, Space in Step
+  // through played the sequence instead of flipping the control.)
+  if (e.target.closest && e.target.closest('#coach-switch')) return;
   const turns = ((_settleRep || {}).timeline || {}).turns || [];
   if (!turns.length) return;
   const idx = turns.findIndex(r => r.turn === _tavernTurn);

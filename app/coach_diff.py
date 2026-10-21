@@ -443,5 +443,7 @@ def evidence_line(ev, kind=None):
     if not n:
         return None
     what = EVIDENCE_PLURALS.get(kind, kind) if kind else "moves"
+    if n == 1 and what.endswith("s"):
+        what = what[:-1]        # "1 buys" is not English; "1 buy" is.
     return (f"we differed on {n} {what} across your {ev['games']} saved "
             f"game{'s' if ev['games'] != 1 else ''}")

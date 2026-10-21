@@ -187,6 +187,42 @@ def _named_single():
     return coach_ui._name_timeline_boards(rep)
 
 
+#: The same game with the comparison the review now carries (2026-10-20): a
+#: differing level, a differing buy WITH a margin and a Why, a sell the model
+#: never asked for, and a roll both sides took. Turn 1 only — the rail renders
+#: the turn in view, and turn 2 must show nothing (the box belongs to a turn).
+def _coached():
+    rep = _named()
+    rep["phases"] = [{
+        "turn": 1, "acted": "bought Dune Dweller", "outcome": -4,
+        "verdict": "taken", "plan": "1. Buy Dune Dweller",
+        "confidence": "medium",
+        "coach_diff": [
+            {"kind": "level", "state": "differs",
+             "model": {"asked": True, "cards": []},
+             "player": {"did": False, "cards": []},
+             "tier": {"from": 2, "to": 3}, "margin": None, "why": None,
+             "reason": "standard curve"},
+            {"kind": "buy", "state": "differs",
+             "model": {"asked": True, "cards": ["BG31_815"]},
+             "player": {"did": True, "cards": ["BG31_820"]},
+             "margin": 2.8,
+             "why": "its ranking gives 9.0 against 6.2",
+             "reason": "surviving until we can commit"},
+            {"kind": "sell", "state": "differs",
+             "model": {"asked": False, "cards": []},
+             "player": {"did": True, "cards": ["BG31_90F"]},
+             "margin": None, "why": None, "reason": None},
+            {"kind": "roll", "state": "same",
+             "model": {"asked": True, "cards": []},
+             "player": {"did": True, "cards": []},
+             "margin": None, "why": None, "reason": None},
+        ],
+    }]
+    rep["coach_evidence"] = {"games": 18, "by_kind": {"buy": 38, "level": 29}}
+    return rep
+
+
 #: The driver. Everything it reports lands in `#out` as `name.key=value`
 #: records, which `browser.fields()` reads back. It is defensive on purpose:
 #: `renderTavernGame` missing, or one shot blowing up, must each come back as a
@@ -347,6 +383,36 @@ _DRIVER = r"""
     o.legendfs = one('.slegend')
       ? Math.round(parseFloat(getComputedStyle(one('.slegend')).fontSize)) : 0;
     o.legendcol = col('.slegend', 'color');
+    // THE COACHING COMPARISON (2026-10-20). The switch lives in the HEADER, so
+    // it is read from the document; the box is inside the rail. `coachbody` is
+    // the computed display of the fold, which is the measurement — a box that
+    // is "collapsed" only in a class name is still open on screen.
+    const sw = document.getElementById('coach-switch');
+    o.coachswitch = sw
+      ? (sw.getAttribute('aria-checked') + '|' + sw.textContent.replace(/\s+/g, ' ')
+         .trim()) : 'none';
+    o.coachbox = q('.cbox').length;
+    o.coachhead = txt(one('.cbox-h')).replace(/\s+/g, ' ').trim();
+    o.coachbody = one('.cbox-b')
+      ? getComputedStyle(one('.cbox-b')).display : 'none';
+    o.coacharia = one('.cbox-h')
+      ? one('.cbox-h').getAttribute('aria-expanded') : '';
+    o.coachrows = q('.cdrow').length;
+    o.coachclasses = [...q('.cdrow')]
+      .map(r => r.classList.contains('differs') ? 'differs'
+              : r.classList.contains('muted') ? 'muted' : 'same').join('|');
+    o.coacheq = q('.cdrow .cneq').length;
+    o.coachbar = (() => {
+      const r = one('.cdrow.differs');
+      return r ? getComputedStyle(r).borderLeftColor : 'none';
+    })();
+    o.coachcells = [...q('.cdrow')]
+      .map(r => [...r.querySelectorAll('.cval')].map(c => c.textContent)
+        .join('/')).join(' || ');
+    o.coachwhy = txt(one('.cd-why'));
+    o.coachev = txt(one('.cd-ev'));
+    o.coachlegend = txt(one('.cd-legend'));
+    o.coachnote = txt(one('.cd-note'));
     // The final-turn family: what the Opened row says, and whether an Ended
     // row exists at all.
     o.opened = (() => {
@@ -367,7 +433,8 @@ _DRIVER = r"""
                              'affected', 'labelabove', 'stackrows', 'theturn',
                              'rebuildnotes', 'modehidden', 'capin', 'railw',
                              'capsize', 'ghostsub', 'legendfs', 'ended',
-                             'vsegs', 'viewerflags']);
+                             'vsegs', 'viewerflags', 'coachbox', 'coachrows',
+                             'coacheq']);
     for (const k of Object.keys(o)) {
       const v = o[k];
       rec(name + '.' + k, NUMERIC.has(k) ? '#' + Number(v)
@@ -376,6 +443,11 @@ _DRIVER = r"""
   }
   function shot(s) {
     if (s.mode) _tavernMode = s.mode;
+    if (s.coach !== undefined) {
+      _coachOn = !!s.coach;
+      if (s.open !== undefined) _coachOpen = !!s.open;
+      setCoachSwitch();
+    }
     _tavernTurn = (s.turn === undefined ? null : s.turn);
     _tavernStep = s.step || 0;
     renderTavernGame(s.rep);
@@ -398,6 +470,17 @@ _DRIVER = r"""
         rec(s.name + '.error', (e && e.message) || String(e));
       }
     }
+    // The switch belongs to the Settle Up tab ONLY: flip the tab and measure
+    // whether the control is still laid out. `display:none` is what the CSS
+    // rule does, so offsetParent is the honest read.
+    try {
+      showTab('live');
+      const cs = document.getElementById('coach-switch');
+      rec('tab.switchvisible', cs && cs.offsetParent ? 'yes' : 'no');
+      showTab('settle');
+    } catch (e) {
+      rec('tab.error', (e && e.message) || String(e));
+    }
   }
   document.getElementById('out').textContent = recs.join(' ;; ');
 })();
@@ -411,11 +494,19 @@ def _page(shots):
     return coach_ui._page_html().replace("</body>", driver + "</body>")
 
 
-def _shot(name, rep, mode=None, turn=None, step=0):
+def _shot(name, rep, mode=None, turn=None, step=0, coach=None, open=None):
     # NO `viewer` (2026-10-13): it set `_viewer` before rendering, and the
     # `Classic | Tavern` flag it set is gone. A dead parameter is how a shot
     # silently stops testing what its name says.
-    return {"name": name, "rep": rep, "mode": mode, "turn": turn, "step": step}
+    shot = {"name": name, "rep": rep, "mode": mode, "turn": turn, "step": step}
+    # The coaching switch (2026-10-20): only sent when a shot MEANS to set it,
+    # so a shot that does not mention coaching inherits whatever state the
+    # previous shot left — and the test that cares says so explicitly.
+    if coach is not None:
+        shot["coach"] = coach
+    if open is not None:
+        shot["open"] = open
+    return shot
 
 
 def _render(shots, size=browser.WIDE):
@@ -910,6 +1001,68 @@ class TestTheNarrowViewport(_Rendered):
         self.assertEqual(self.got["n.tile"].split("x")[0], "88",
                          f"at 800px the summary card should sit on its 88px "
                          f"floor: {self.got['n.tile']}")
+
+
+class TestTheCoachingBoxInABrowser(_Rendered):
+    """The switch and the comparison box, measured in a real window (2026-10-20).
+
+    Two claims a source assertion cannot make: OFF leaves NO box (so there is no
+    empty gap where one would go), and the fold is a DISPLAY change rather than
+    a class name. The amber edge is read off the computed style — it is the one
+    colour exception in this page, so a rule that lost a specificity fight would
+    read as correct in the source and wrong on screen.
+    """
+
+    @classmethod
+    def shots(cls):
+        return [_shot("off", _coached(), mode="summary", coach=False),
+                _shot("on", _coached(), mode="summary", coach=True),
+                _shot("open", _coached(), mode="summary", coach=True, open=True),
+                # A save written before the comparison existed (SCHEMA 1).
+                _shot("old", _named(), mode="summary", coach=True, open=True)]
+
+    def test_off_builds_nothing_at_all(self):
+        self.assertEqual(self.got["off.coachbox"], 0)
+        self.assertEqual(self.got["off.coachrows"], 0)
+        self.assertEqual(self.got["off.coachswitch"].split("|")[0], "false")
+
+    def test_on_is_collapsed_with_a_summary_that_counts_the_differences(self):
+        self.assertEqual(self.got["on.coachbox"], 1)
+        self.assertEqual(self.got["on.coachbody"], "none")
+        self.assertEqual(self.got["on.coacharia"], "false")
+        head = self.got["on.coachhead"]
+        self.assertIn("Model vs you", head)
+        self.assertIn("3 differ", head)
+        self.assertIn("confidence: medium", head)
+        self.assertEqual(self.got["on.coachswitch"].split("|")[0], "true")
+        self.assertIn("Show coaching: On", self.got["on.coachswitch"])
+
+    def test_opening_reveals_one_row_per_kind_with_the_amber_edge(self):
+        self.assertNotEqual(self.got["open.coachbody"], "none")
+        self.assertEqual(self.got["open.coacharia"], "true")
+        self.assertEqual(self.got["open.coachrows"], 4)
+        self.assertEqual(self.got["open.coachclasses"],
+                         "differs|differs|differs|same")
+        self.assertEqual(self.got["open.coacheq"], 3,
+                         "the glyph is what carries 'differs'; amber is not "
+                         "the only signal")
+        self.assertEqual(self.got["open.coachbar"], "rgb(224, 164, 58)")
+        cells = self.got["open.coachcells"]
+        self.assertIn("Yes · tier 2 → 3/No", cells)
+        self.assertIn("Dune Dweller/Kooky Chemist", cells)
+        self.assertEqual(self.got["open.coachwhy"],
+                         "Why: its ranking gives 9.0 against 6.2")
+        self.assertEqual(self.got["open.coachev"],
+                         "we differed on 67 moves across your 18 saved games")
+        self.assertIn("≠", self.got["open.coachlegend"])
+
+    def test_an_old_save_says_so_instead_of_drawing_an_empty_box(self):
+        self.assertEqual(self.got["old.coachbox"], 1)
+        self.assertIn("predates coaching", self.got["old.coachhead"])
+        self.assertIn("Rebuild", self.got["old.coachnote"])
+
+    def test_the_switch_is_not_on_the_live_tab(self):
+        self.assertEqual(self.got["tab.switchvisible"], "no")
 
 
 class TestTheHarnessItself(unittest.TestCase):

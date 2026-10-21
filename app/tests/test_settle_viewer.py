@@ -110,7 +110,7 @@ class TestThereIsNoReviewerChoice(unittest.TestCase):
         src = _function("renderTavernGame")
         self.assertIsNotNone(src, "renderTavernGame is missing")
         self.assertIn("settleTurnCard(row, {hero: rep.hero,", src)
-        self.assertIn("tavernRail(row, railPhases)", src)
+        self.assertIn("tavernRail(row, railPhases, hasCoach)", src)
         self.assertIn("className = 'tavern'", src)
         self.assertIn("stripMark(r.winner, r.damage_taken)", src)
         card = _function("settleTurnCard")
@@ -447,6 +447,270 @@ class TestTheActionLabels(unittest.TestCase):
         out = self._named([{"k": "cast", "card": "BG31_HERO_100p2"}])
         st = out["timeline"]["turns"][0]["steps"][0]
         self.assertEqual(st["cardName"], "hero power")
+
+
+class TestTheCoachingComparison(unittest.TestCase):
+    """The comparison box's wording, run under node (skipped without it), plus
+    the switch's contract read off the page source.
+
+    Pass 2 (2026-10-20): the box is BELOW the action groups, folded, with a
+    summary line above the fold — and the switch is OFF by default and gates
+    rendering only, so the payload can never depend on it.
+    """
+
+    def setUp(self):
+        if shutil.which("node") is None:
+            self.skipTest("node is not installed, so the page's script cannot "
+                          "be executed")
+        names = ("coachRows", "coachSummary", "coachName", "coachCell",
+                 "coachWhy", "coachEvidence")
+        sources = [_function(n) for n in names]
+        for name, src in zip(names, sources):
+            self.assertIsNotNone(src, name + " is missing")
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        driver = os.path.join(self.tmp.name, "coach.js")
+        with open(driver, "w", encoding="utf-8") as f:
+            f.write("\n".join(sources) + "\n"
+                    "const NAMES = {BG_A: 'Dune Dweller', BG_B: 'Kooky Chemist'};\n"
+                    "function cardMeta(c) { return NAMES[c] ? {name: NAMES[c]} : {}; }\n"
+                    "const rows = [\n"
+                    " {kind:'level', state:'differs', model:{asked:true,cards:[]},\n"
+                    "  player:{did:false,cards:[]}, tier:{from:4,to:5}},\n"
+                    " {kind:'buy', state:'differs', model:{asked:true,cards:['BG_A']},\n"
+                    "  player:{did:true,cards:['BG_B']}, margin:2.8,\n"
+                    "  why:'its ranking gives 9.0 against 6.2'},\n"
+                    " {kind:'sell', state:'differs', model:{asked:false,cards:[]},\n"
+                    "  player:{did:true,cards:['BG_B']}},\n"
+                    " {kind:'roll', state:'same', model:{asked:true,cards:[]},\n"
+                    "  player:{did:true,cards:[]}},\n"
+                    " {kind:'play', state:'not_comparable',\n"
+                    "  model:{asked:true,cards:['BG_A']},\n"
+                    "  player:{did:true,cards:['BG_B']}}];\n"
+                    "const out = {\n"
+                    " rows: coachRows([{coach_diff: rows}, "
+                    "{coach_diff: [{kind: 'cast'}]}]),\n"
+                    " sum: [coachSummary(rows), coachSummary([{state:'same'},"
+                    "{state:'not_reached'}])],\n"
+                    " cells: rows.map(r => [coachCell(r, 'model'), "
+                    "coachCell(r, 'player')]),\n"
+                    " why: [coachWhy(rows), coachWhy([{why: null}])],\n"
+                    " ev: [coachEvidence({games:18, by_kind:{buy:38,level:29}}),"
+                    " coachEvidence({games:1, by_kind:{buy:1}}),"
+                    " coachEvidence({games:18, by_kind:{}}), coachEvidence(null)]"
+                    "};\n"
+                    "console.log(JSON.stringify(out));\n")
+        proc = subprocess.run(["node", driver], capture_output=True, timeout=30)
+        self.assertEqual(proc.returncode, 0,
+                         f"node could not run the coaching helpers: "
+                         f"{proc.stderr.decode('utf-8', 'replace')[:300]}")
+        self.out = json.loads(proc.stdout.decode("utf-8"))
+
+    def test_rows_flatten_across_the_turn_s_phases(self):
+        self.assertEqual(len(self.out["rows"]), 6)
+        self.assertEqual(self.out["rows"][-1]["kind"], "cast")
+
+    def test_the_summary_counts_only_real_differences(self):
+        """`not_reached` is not a choice and `not_comparable` is not a
+        comparison — neither inflates the collapsed line's number."""
+        self.assertEqual(self.out["sum"][0], "3 differ")
+        self.assertEqual(self.out["sum"][1], "no differences")
+
+    def test_the_cells_read_as_the_mockups_do(self):
+        cells = self.out["cells"]
+        self.assertEqual(cells[0], ["Yes · tier 4 → 5", "No"])
+        self.assertEqual(cells[1], ["Dune Dweller", "Kooky Chemist"])
+        self.assertEqual(cells[2], ["—", "Kooky Chemist"],
+                         "it asked for no sell, so the Model cell is a dash")
+        self.assertEqual(cells[3], ["Yes", "Yes"])
+
+    def test_why_needs_a_number(self):
+        self.assertEqual(self.out["why"][0],
+                         "its ranking gives 9.0 against 6.2")
+        self.assertIsNone(self.out["why"][1])
+
+    def test_the_evidence_line_is_a_difference_count(self):
+        self.assertEqual(self.out["ev"][0],
+                         "we differed on 67 moves across your 18 saved games")
+        self.assertEqual(self.out["ev"][1],
+                         "we differed on 1 move across your 1 saved game")
+        self.assertIsNone(self.out["ev"][2])   # no counts -> no claim
+        self.assertIsNone(self.out["ev"][3])
+
+    # --- the switch, from the page source -------------------------------
+    def test_the_switch_is_a_real_switch_and_defaults_off(self):
+        src = coach_ui._HTML
+        self.assertIn('id="coach-switch"', src)
+        self.assertIn('role="switch"', src)
+        self.assertIn('aria-checked="false"', src)
+        self.assertIn('aria-label="Show coaching"', src)
+        self.assertIn("let _coachOn = false;", src)
+
+    def test_the_state_word_is_not_the_accessible_name(self):
+        """`aria-checked` carries the state; folding "On"/"Off" into the name
+        would make a screen reader announce a switch whose name changes."""
+        src = coach_ui._HTML
+        self.assertIn('aria-label="Show coaching"', src)
+        self.assertNotIn('aria-label="Show coaching: ', src)
+
+    def test_the_work_in_progress_text_comes_from_one_constant(self):
+        src = coach_ui._HTML
+        self.assertIn("const COACH_WIP = '(work in progress)';", src)
+        # The visible span is EMPTY in the markup and filled from that constant
+        # at startup, so there is no second copy to drift.
+        self.assertIn('<span class="cs-wip" id="coach-wip"></span>', src)
+
+    def test_the_switch_gates_rendering_only(self):
+        """Decision 1: the payload shape never depends on the switch. The box
+        is appended under `_coachOn` and nothing else reads it in a payload."""
+        src = coach_ui._HTML
+        self.assertIn("if (_coachOn) {", _function("tavernRail"))
+        self.assertIn("localStorage.setItem('bl-coaching'", src)
+        self.assertIn("localStorage.getItem('bl-coaching')", src)
+
+    def test_the_box_sits_below_the_action_groups(self):
+        """The maintainer's shape (2026-10-20): a NEW box below the actions,
+        never inside them — folding a group must not hide the comparison."""
+        rail = _function("tavernRail")
+        self.assertIsNotNone(rail)
+        groups = rail.index("group('Plays'")
+        box = rail.index("coachBox(phases, hasCoach)")
+        plan = rail.index("rplan")
+        self.assertLess(groups, box)
+        self.assertLess(box, plan, "the plan stays the rail's last section")
+
+    def test_off_renders_nothing_and_leaves_no_gap(self):
+        """Off builds no node at all, so there is no header and no gap to
+        collapse — the rail is byte-for-byte what it was before the feature."""
+        rail = _function("tavernRail")
+        self.assertIn("if (_coachOn) {", rail)
+        self.assertIn("const cbox = coachBox(phases, hasCoach);", rail)
+        # The box's own CSS margin only exists on the box that is built: a
+        # spacer rule outside it would leave the gap the switch must not.
+        self.assertIn(".tavern .cbox { border-top:1px solid var(--tline);",
+                      coach_ui._HTML)
+        self.assertIn(".tavern .cbox-b { margin-top:8px; }", coach_ui._HTML)
+
+
+class TestTheCoachingBoxAssembles(unittest.TestCase):
+    """`coachBox`'s DOM assembly, run under node against a minimal shim.
+
+    The browser tests are the real measurement (sizes, colours, fold state), but
+    they SKIP wherever Chromium cannot start — and a skipped test cannot tell a
+    wiring bug from a passing check. This runs the assembly itself: how many
+    rows, which classes, and the two cases where the box must NOT appear empty
+    (no rows in a new save) or must explain itself (a save that predates it).
+    """
+
+    SHIM = r"""
+class N {
+  constructor(tag) { this.tag = tag; this.children = []; this.className = '';
+    this.style = {}; this.attrs = {}; this._text = ''; }
+  appendChild(c) { this.children.push(c); return c; }
+  setAttribute(k, v) { this.attrs[k] = v; }
+  getAttribute(k) { return this.attrs[k]; }
+  set textContent(v) { this._text = v; this.children = []; }
+  get textContent() {
+    return this._text + this.children.map(c => c.textContent).join('');
+  }
+}
+globalThis.document = {
+  createElement: t => new N(t),
+  createTextNode: t => ({tag: '#text', children: [], _text: t,
+                         get textContent() { return this._text; }}),
+};
+globalThis.localStorage = {setItem() {}, getItem() { return null; }};
+let _coachOpen = false;
+let _settleRep = {coach_evidence: {games: 18, by_kind: {buy: 38, level: 29}}};
+function cardMeta(c) { return {Dune: 'BG_A', Kooky: 'BG_B'}[c]
+  ? {name: 'Kooky Chemist'} : {name: 'Dune Dweller'}; }
+"""
+
+    def setUp(self):
+        if shutil.which("node") is None:
+            self.skipTest("node is not installed, so the page's script cannot "
+                          "be executed")
+        names = ("el", "coachRows", "coachSummary", "coachName", "coachCell",
+                 "coachWhy", "coachEvidence", "coachBox")
+        sources = [_function(n) for n in names]
+        for name, src in zip(names, sources):
+            self.assertIsNotNone(src, name + " is missing")
+        m = re.search(r"const COACH_KINDS = \{.*?\};", coach_ui._HTML, re.S)
+        self.assertIsNotNone(m, "COACH_KINDS is missing")
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        driver = os.path.join(self.tmp.name, "box.js")
+        with open(driver, "w", encoding="utf-8") as f:
+            f.write(self.SHIM + "\n" + m.group(0) + "\n" + "\n".join(sources)
+                    + "\n"
+                    "const rows = [\n"
+                    " {kind:'level', state:'differs', model:{asked:true,cards:[]},\n"
+                    "  player:{did:false,cards:[]}, tier:{from:2,to:3}},\n"
+                    " {kind:'buy', state:'differs', model:{asked:true,cards:['BG_A']},\n"
+                    "  player:{did:true,cards:['BG_B']}, margin:2.8,\n"
+                    "  why:'its ranking gives 9.0 against 6.2'},\n"
+                    " {kind:'sell', state:'differs', model:{asked:false,cards:[]},\n"
+                    "  player:{did:true,cards:['BG_B']}},\n"
+                    " {kind:'roll', state:'same', model:{asked:true,cards:[]},\n"
+                    "  player:{did:true,cards:[]}}];\n"
+                    "const walk = n => n.children || [];\n"
+                    "const box = coachBox([{coach_diff: rows, confidence: 'medium'}],"
+                    " true);\n"
+                    "const body = box.children[1];\n"
+                    "const rowsIn = body.children.filter(c => c.className"
+                    " .indexOf('cdrow') === 0);\n"
+                    "const out = {\n"
+                    " box: box.className,\n"
+                    " head: box.children[0].textContent,\n"
+                    " ariafold: box.children[0].getAttribute('aria-expanded'),\n"
+                    " bodydisplay: body.style.display,\n"
+                    " kids: body.children.map(c => c.className || c.tag),\n"
+                    " rows: rowsIn.length,\n"
+                    " cls: rowsIn.map(r => r.className.replace('cdrow', '').trim()),\n"
+                    " eq: body.children.filter(c => c.className === 'cdrow differs')\n"
+                    "   .length,\n"
+                    " why: (body.children.find(c => c.className === 'cd-why') || {})\n"
+                    "   .textContent || null,\n"
+                    " ev: (body.children.find(c => c.className === 'cd-ev') || {})\n"
+                    "   .textContent || null,\n"
+                    " noRowsNew: coachBox([], true),\n"
+                    " old: (() => { const b = coachBox([], false);\n"
+                    "   const n = b.children[1].children.find(c => c.className"
+                    " === 'cd-note'); return n ? n.textContent : null; })(),\n"
+                    "};\n"
+                    "console.log(JSON.stringify(out));\n")
+        proc = subprocess.run(["node", driver], capture_output=True, timeout=30)
+        self.assertEqual(proc.returncode, 0,
+                         f"node could not assemble the box: "
+                         f"{proc.stderr.decode('utf-8', 'replace')[:400]}")
+        self.out = json.loads(proc.stdout.decode("utf-8"))
+
+    def test_the_box_has_a_folded_header_and_a_body(self):
+        self.assertEqual(self.out["box"], "cbox")
+        self.assertEqual(self.out["bodydisplay"], "none")
+        self.assertEqual(self.out["ariafold"], "false")
+        self.assertIn("3 differ", self.out["head"])
+        self.assertIn("confidence: medium", self.out["head"])
+
+    def test_one_row_per_kind_and_the_glyph_on_the_differences(self):
+        self.assertEqual(self.out["rows"], 4)
+        self.assertEqual(self.out["cls"], ["differs", "differs", "differs", ""])
+        self.assertEqual(self.out["eq"], 3)
+        self.assertEqual(self.out["kids"][0], "cd-head")
+
+    def test_the_why_and_the_evidence_lines_are_built(self):
+        self.assertEqual(self.out["why"],
+                         "Why: its ranking gives 9.0 against 6.2")
+        self.assertEqual(self.out["ev"],
+                         "we differed on 67 moves across your 18 saved games")
+
+    def test_no_rows_in_a_new_save_draws_no_box(self):
+        """A turn with no advised phase must not claim the save is old."""
+        self.assertIsNone(self.out["noRowsNew"])
+
+    def test_a_save_that_predates_the_comparison_says_so(self):
+        self.assertIn("before the comparison existed", self.out["old"])
+        self.assertIn("Rebuild", self.out["old"])
 
 
 if __name__ == "__main__":

@@ -154,6 +154,11 @@ So the task is **carry + render**, not build an engine.
 
 ### 5.1 One derived artifact, computed on the server
 
+> **BUILT 2026-10-20 — see §12 for the shipped shape.** The schema below is the
+> first draft; the module follows it except that `model`/`player` are LISTS (the
+> mockups' Buy row) and `margin`/`why`/`reason`/`tier` replace the draft's
+> narrower fields. `model_pick`/`offers` were dropped as redundant (§12.3).
+
 `coach_diff`: for each phase, for each **kind present in that phase's plan**:
 
 ```python
@@ -257,6 +262,13 @@ Header row, right side, before the `...` menu (`#settle-more`, 1897).
 
 ## 6. Data model additions (additive, build-time)
 
+> **BUILT 2026-10-20 — see §12.3.** The keys that shipped are `coach_diff` and
+> `confidence` on each phase, and `coach_evidence` on the rep. `model_pick` /
+> `offers` / `gold_open` were NOT added: the first two are inside `coach_diff`
+> already (and a second copy is the drift trap §5.1 warns about), and the gold is
+> the phase's existing `gold`. `board_end` is not duplicated either — the
+> Summary's ended board is the turn's own board on screen.
+
 On each phase row in `settle_up.build` (`settle_up.py:381–395`), alongside the
 existing keys:
 
@@ -359,6 +371,10 @@ measured):
 
 ## 10. Left open for the next session
 
+> **ITEM 1 IS ANSWERED 2026-10-20 — the number is in §12.4** (1.5 clear / 3.0
+> strong), measured over the signed margin, because `disagreement_rows` turns out
+> to be structurally empty. Items 2-5 stand.
+
 1. The **margin threshold** that separates "clear preference" from "no clear
    preference" — needs a measured distribution over `disagreement_rows`' `delta`
    on the 18 saved games, not a guess. Do this in pass 1 and write the number
@@ -388,6 +404,201 @@ measured):
 * Suite baseline before this work: 2053 tests, OK, 109 skipped (Chromium
   available in some sandboxes and not others — a browser that cannot START is a
   SKIP, not a failure).
+
+---
+
+## 12. The mockups, the decisions they settled, and what pass 1 measured
+(2026-10-20, later the same day)
+
+### 12.1 Two mockups arrived
+
+The maintainer handed over two screenshots of the Settle Up page with coaching
+switched ON:
+
+* **Summary, turn 7** — header `Show coaching: On (work in progress)` as an amber
+  switch before `…`; round strip 1–15 with a corner dot on turns 5, 8 and a
+  `≠ differs from the model · Observational, not causal` legend; the rail's
+  existing `TURN 7 · 14 ACTIONS` header and chips, then a **Model vs you** card
+  (confidence chip in its header, `MODEL | YOU` columns, Level up `Yes · tier
+  4 → 5` / `No`, Buy `[A], [B]` / `[A], [C]`, Sell `—` / `[D]`, Play `[A]` /
+  `[A]`, a solid amber left bar on the three differing rows), then `Why: …`,
+  `[stat] · [n] games`, the CAVEAT, and `All 14 actions ▸ collapsed`.
+* **Step through, step 12** — `Bought [Minion C]` + a `differs from the model`
+  chip; the existing letter step track with the current tick amber and small
+  dots on two later ticks; in the Tavern row the bought offer solid-outlined +
+  `You bought`, the model's card **in its own offer slot**, dashed +
+  `Model preferred`; the callout `Model preferred [E] over [C]` / `Why: …` /
+  `confidence: medium · [stat] · [n] games · Observational, not causal`.
+
+The parts that already existed (and the mockups therefore only dressed): the
+rail header and its chips, the letter step track and its selected tick, the
+Tavern/Board/Hand panels, the `Summary | Step through` header toggle. The parts
+that are new are the table, the callout, the tags, the switch, and the dots.
+
+### 12.2 Three decisions the mockups settled, two the plan keeps
+
+1. **Default OFF** — confirmed. The mockups are drawn switched on to show the
+   feature.
+2. **Amber IS the "differs" colour** — a deliberate exception to §3.5.4, taken
+   as an experiment: the table's left bar, the turn-chip dots and the step-track
+   dots all ride ONE CSS token (`--tdiff`), so reversing it later is a variable
+   change, not a refactor. **Flagged for a potential refactor** in the CSS where
+   the token is declared: amber still means "you have set this" (the selected
+   turn chip, `Play`, `You bought`), and two meanings under one colour is the
+   thing §3.5.4 was protecting against.
+3. **Summary = lists, judged against the end-of-phase board; Step through =
+   per step.** The summary's Buy row is therefore every card the plan named
+   against every card the player bought, with the turn's ENDED board as the
+   yardstick beside it (not a re-derivation: that board is already on screen).
+   The Step-through callout compares one card to one card, at the step.
+4. **`Play (hand)` stays** (§3.5.7) — the mockups' plain `Play` would merge the
+   hand-minion and cast vocabularies again.
+5. **`CAVEAT` verbatim stays** (§3.5.11) — the callout's shortened
+   `… · Observational, not causal` is a second limits line; the callout gets the
+   one sentence, or points at the rail's.
+
+### 12.3 What pass 1 built (server artifact only, no page changes)
+
+* **`app/coach_diff.py`** (new): `for_phase(audit_row)` -> the rows;
+  `confidence(rows)` -> high/medium/None; `saved_evidence(root=None)` and
+  `evidence_line(ev, kind)` -> the difference counts.
+* **`settle_up.build`**: `SCHEMA` 2; each phase gains `coach_diff` (list) and
+  `confidence`; the rep gains `coach_evidence`. The console report prints one
+  `coaching:` line per phase, `same` rows omitted — that line is how pass 1's
+  numbers were eyeballed.
+* **The row** is
+  `{kind, state, model:{asked,cards}, player:{did,cards}, margin, why, reason, tier}`.
+  Kinds in display order (level, buy, sell, play, cast, roll, pick); a row exists
+  when either side has something to say.
+* **States.** `same` = the plan's ask is covered by the player's action (for a
+  buy: every named card was bought — the `taken` lesson, so an extra second buy
+  is NOT a difference). `differs` = not covered. `not_reached` = the plan's own
+  priority list could not pay for the step (a conservative walk: level costs
+  `level_cost`, a buy costs the flat 3 unless the cost map prices it at most
+  that, a roll 1, everything else 0 — never `shop_costs`' stale minion tags).
+  `not_comparable` = nothing to match: a sell step (no id), a pick, a buy/cast
+  step whose card did not resolve.
+* **The evidence** counts differences per kind across `saved_replays/`, cached on
+  the store's file count + mtime + byte size. Two vintages: a rebuilt save
+  contributes one count per differing kind; an old save contributes its
+  un-taken phase lead. So the figure is a FLOOR — it rises when old saves are
+  Rebuilt — and the wording says "differed", never that the model was right.
+  On this machine it reads **77 differing moves across 18 games** (buy 38,
+  level 29, cast 10), all from the old saves' lead rule until they are Rebuilt.
+* **A found trap, and the rule that closes it.** The first cut emitted a row for
+  every kind either side had something to say about, and a real game showed
+  `play differs` (model `[]`, player 2) on ALMOST EVERY PHASE: `plays` fires
+  when an entity moves HAND -> PLAY, which a BOUGHT minion does on its way to
+  the board, so the row double-counted the buy. `spells_cast` is broader still —
+  the parser counts any id that is not a known minion, so hero powers and triple
+  rewards ride it (`TB_BaconShop_HP_046`, `TB_BaconShop_Triples_01`). **A `play`
+  or `cast` row now exists only where the PLAN named one**; level/buy/sell/roll
+  keep their player-only rows, because those four action records are exact
+  (`upgrades`, `player_buys`, `sells`, `refreshes`).
+* **Tests**: 35 in `test_coach_diff.py` (states, margin/why, tier, order,
+  confidence, evidence caching, the player-only play/cast rule, and a source
+  guard that the three live-path modules never import the module), 3 added to
+  `test_settle_up.py` (the keys, the console line, an old save rendering
+  unchanged).
+
+### 12.4 The measurement (plan §10.1, answered)
+
+Ten of the 18 saved games still have their source log; 112 advised phases across
+them.
+
+* **`disagreement_rows` reports ZERO rows, and that is structural.** Its
+  `delta > 0` asks whether the player bought a card the coach ranked ABOVE the
+  card it recommended — and the plan's buy card is the top of that same ranking,
+  so the delta is never positive. §3.4's "the comparison engine already exists"
+  was wrong about which engine: the rule survives (a shared scale, skip when
+  either side is unpriced), but the *signal* had to be generalised to the signed
+  margin `score(model card) - score(best card bought)`.
+* **66 phases have a buy step; only 20 are scorable**, and the other 46 bought
+  after a roll, so the bought card is not on the ranking the coach settled with.
+  This is why the row's STATE comes from the lists (always available) and the
+  margin is an enrichment, not the arbiter.
+* On the 20: median **+2.8**, 55% at or above 1.5, 40% at or above 3.0, max
+  +10.5; the six 0.0s are the phases where the player bought the named card.
+* Thresholds: **`MARGIN_CLEAR = 1.5`** (the distribution has a gap between 1.0
+  and 2.5) and **`MARGIN_STRONG = 3.0`**. Negative margins are possible in
+  principle; only a positive one raises `confidence`, and the plan step's own
+  prose reason rides the row for exactly that case.
+
+### 12.5 Open for pass 2 and later
+
+* **Where the graded `Plan — taken` line goes.** It is the only place the
+  verdict is currently shown, and the mockup's rail has no verdict line. Do not
+  drop the grading to make room for the table: the ledger's point is whether the
+  plan was followed, and the table is a different question.
+* **`All 14 actions ▸ collapsed`** is a master collapse the current rail does
+  not have (groups collapse individually). Decide whether it also folds the
+  table (probably not) and whether it replaces the per-group headers.
+* **The confidence chip's word.** It is derived from the ranking gap, not from
+  any model confidence, so "confidence: medium" is a UI shorthand with a precise
+  meaning that the caveat has to survive.
+* **Step-through alignment** (pass 4): the k-th player buy step pairs with the
+  k-th card in the buy row's `model.cards` — in the plan's order, never re-sorted
+  (§9). When the plan's cards run out, the step has no comparison.
+* **Old saves**: no keys until Rebuilt; the page must render today's rail
+  unchanged (it already does, and `test_settle_up` now pins the report doing
+  the same).
+
+---
+
+## 13. Pass 2 as built: the box and the switch (2026-10-20)
+
+The maintainer's shape, verbatim: *"the coaching should probably be in a new box,
+below the actions box, that can be collapsed or opened ... a summary above the
+collapsed section, with each item in the collapsible section."* That is what the
+page does now.
+
+**Placement.** The switch is in the Settle Up header row, right side, before the
+`…` menu (`#coach-switch`). The box (`coachBox`) is the rail's **sibling of the
+action groups**, appended after them and before the `Plan` details — so folding
+an action group cannot hide it, and the plan's grading stays the rail's last
+section (the verdict did NOT move; the mockup's rail simply had no verdict line).
+
+**The fold.** Collapsed by default: the header button carries `▸ Model vs you ·
+3 differ` plus the confidence chip, and `aria-expanded` says which state it is
+in. Opening shows one row per kind and persists under `bl-coach-open` — a view
+setting like `bl-settle-mode`, separate from the switch's own `bl-coaching`
+key. `≠` and an amber left edge (`--tdiff`, the flagged exception) mark a
+differing row; `not_reached` and `not_comparable` are muted, carry no glyph, and
+explain themselves on hover; one legend line says what the greys mean.
+
+**Off builds nothing.** `if (_coachOn)` guards the append, so a player who never
+touches the switch gets exactly the rail they had — no header, no gap.
+
+**Two states that are easy to get wrong, both closed:**
+* a save that predates the comparison (no `coach_diff` anywhere) gets a one-line
+  note pointing at **Rebuild** — an empty box would read as broken;
+* a turn in a NEW save that has no advised phase draws **no box at all**
+  (`hasCoach` is the rep-level question, decided in `renderTavernGame`), rather
+  than reusing the old-save note.
+
+**The caveat is NOT repeated in the box.** The page already prints `CAVEAT`
+verbatim at the bottom (`ts-caveat`), and a second identical sentence on one
+screen is the duplication the rail exists to remove. The box carries the
+evidence count instead ("we differed on 77 moves across your 18 saved games"),
+which is a difference count and not a causal claim. If the maintainer wants the
+limits line inside the box too, it should MOVE from the footnote, not be copied.
+**OPEN, for the maintainer to call.**
+
+**Tests.** Node: the wording helpers (`coachRows`/`coachSummary`/`coachCell`/
+`coachWhy`/`coachEvidence`) and the DOM assembly against a minimal shim
+(`coachBox`: row count, classes, the glyph count, the no-rows and old-save
+branches). Source pins: the switch's role/aria/default, the one `COACH_WIP`
+constant, the append guard, the box's position between the groups and the plan.
+Browser (`test_settle_browser.TestTheCoachingBoxInABrowser`): off leaves zero
+nodes, the fold is a real `display:none`, the amber edge is read off the computed
+style, the old-save note, and the switch is absent from the live tab. **The
+browser class SKIPS in this sandbox** (Chromium cannot start — the documented
+case), so those five are UNVERIFIED here and must be run before release.
+
+**Not built, deliberately:** the mockup's master `All 14 actions ▸ collapsed`
+(the box is a sibling, so the actions can gain their own master fold later
+without touching it); the Step-through callout and the turn/step marks (passes
+3-4).
 
 ---
 
