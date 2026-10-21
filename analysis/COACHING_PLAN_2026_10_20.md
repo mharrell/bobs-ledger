@@ -651,6 +651,41 @@ preferred`. That is the pass that touches `tile()`, which Live shares.
 
 ---
 
+## 15. Pass 4 as built: the Step-through callout (2026-10-20, last)
+
+**Where.** In the Tavern panel, beside its cards where there is room and under
+them when there is not: the cards and the callout share a `tv-body` flex row that
+switches to a column at 1200px — the same break where the page's two-column
+layout gives up. The callout is `Model preferred <b>X</b> over <b>Y</b>`, then
+`Why: …` only when a number backs it (`row.why`, the score margin), then
+`confidence: …` from the phase. A gold left rule is the mockup's shape.
+
+**Which pick.** `coachStepPick` pairs the k-th step of a kind with the k-th card
+the plan named for that kind — plan order, never re-sorted. A kind the plan named
+no card for, or a step beyond the named cards, has NO pick: the callout is
+absent rather than guessed. `coachCallout` then requires the row's state to be
+`differs` and the two names to differ, so `same`, `not_comparable` and
+`not_reached` say nothing.
+
+**The cards.** Your bought offer gets a solid `--tsel` outline and a `You bought`
+tag; the model's gets a dashed `--tdiff` outline and a `Model preferred` tag.
+When the model's card is not among the offers the step printed (a roll happened
+between them) a GHOST tile carries it at the end of the row — art if the cache
+has it, the placeholder otherwise, never an invented offer.
+
+**The Live wall, by construction.** `tile()` was NOT touched: the decorations are
+applied by a `decorate` callback that only `renderTavernSteps` passes to its
+local `cardsRow`, and a source pin asserts `tile()`'s body contains none of
+`tag-bought` / `tag-pref` / `model-pref` / `you-bought` / `cd-call`. So no
+payload, old or new, can carry a coaching decoration to the live page.
+
+**Tests:** 3 node (the k-th pairing, the callout's three null cases and its
+names/why/conf), 2 source (the tile wall, the `_coachOn` gates on `pick`/`call`),
+4 browser (the callout's words and gold rule, the solid/dashed outlines read off
+the computed style, the ghost tile, and OFF leaving no callout or tag).
+
+---
+
 ## Appendix A — the original draft, verbatim
 
 Preserved as it was handed over, so the next session can check the spec againstwhat was actually asked rather than against a summary of it. **Where it
