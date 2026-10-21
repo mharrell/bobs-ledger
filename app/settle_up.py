@@ -90,14 +90,18 @@ import sys
 
 from config import HS_LOG_GLOB, HS_LOG_GLOBS
 from extract_game import split_game_chunks
+import coach_diff
 import outcome_audit
 import replay_store
 from value import _load_bg_names
 import value
 
 #: Bumped when the report's shape changes, so an HTML file or a JSON dump can
-#: be told apart from one this code did not write.
-SCHEMA = 1
+#: be told apart from one this code did not write. 2 = the coaching keys
+#: (`coach_diff` / `confidence` on a phase, `coach_evidence` on the rep,
+#: 2026-10-20). Additive, so an old replay still renders: every reader treats a
+#: missing key as "this save predates the comparison", never as a zero.
+SCHEMA = 2
 
 #: Said wherever a followed/ignored split is printed. It is not boilerplate:
 #: outcome_audit owns the same sentence for the same reason, and a review that
@@ -378,6 +382,12 @@ def build(log_path, game_index=1):
         steps = r.get("steps") or []
         plan = _plan_line(steps)
         outcome = r.get("hp_delta_next_fight")
+        # The comparison is DERIVED here and stored, never re-derived by a
+        # renderer: `coach_diff` is one artifact for four surfaces (the Summary
+        # rail, the turn strip, the step track, the Step-through callout), and
+        # four JS comparisons would drift (COACHING_PLAN §5.1). Old saves have
+        # no key at all, which every reader treats as "nothing to draw".
+        diff = coach_diff.for_phase(r)
         phases.append({
             "turn": r.get("turn"), "tier": r.get("tier"), "gold": r.get("gold"),
             "eff_hp": r.get("eff_hp"),
@@ -392,6 +402,8 @@ def build(log_path, game_index=1):
                              if outcome is None and i == len(rows) - 1 else
                              None if outcome is not None else
                              "health not readable at the next phase"),
+            "coach_diff": diff,
+            "confidence": coach_diff.confidence(diff),
         })
 
     head = rows[0] if rows else {}
@@ -420,6 +432,11 @@ def build(log_path, game_index=1):
         "placement": head.get("placement"),
         "phases": phases,
         "totals": _totals(phases, head),
+        # Decision 3 (2026-10-20): difference counts from the player's OWN
+        # saved games, computed here and cached on the store's signature. Not a
+        # claim the model was right — `CAVEAT` is the limits line, and this is
+        # only the "how often we differed" figure beside it.
+        "coach_evidence": coach_diff.saved_evidence(),
         "timeline": timeline,
         "timeline_error": timeline_error,
         "caveat": CAVEAT,
@@ -538,6 +555,25 @@ def _hp(n):
     return "?" if n is None else f"{n:+d}"
 
 
+def _diff_note(p):
+    """One line per phase: the kinds the player and the model did differently.
+
+    The console is where the comparison's NUMBERS get eyeballed before any page
+    draws them (the plan's build order, pass 1). `same` rows are omitted — a
+    phase where nothing differs says nothing here, and a list of "buy same" on
+    every line would bury the rows that matter.
+    """
+    bits = []
+    for r in p.get("coach_diff") or []:
+        if r.get("state") == "same":
+            continue
+        bit = r["kind"] + " " + str(r.get("state")).replace("_", " ")
+        if r.get("margin") is not None:
+            bit += f" (margin {r['margin']:+.1f})"
+        bits.append(bit)
+    return " · ".join(bits)
+
+
 def render_text(rep):
     """Bounded console output, in the house style: a few lines per phase."""
     out = []
@@ -602,6 +638,9 @@ def render_text(rep):
         out.append(head)
         out.append(f"   model: {p['plan']}")
         out.append(f"   you:   {p['acted']}   [{p['verdict']}]")
+        note = _diff_note(p)
+        if note:
+            out.append(f"   coaching: {note}")
         if p["outcome"] is not None:
             cost = ("bled " + str(-p["outcome"])) if p["outcome"] < 0 else (
                 "no damage" if p["outcome"] == 0 else

@@ -767,6 +767,36 @@ _HTML = r"""<!doctype html>
                              font:600 13px "Segoe UI", system-ui; }
   #tabs .smenu-body button:hover { color:var(--ttext); background:var(--tcard); }
   #tabs #share-toggle[hidden] { display:none; }
+  /* THE COACHING SWITCH (2026-10-20). Header row, right side, before the "…"
+     menu — the mockups' position. `aria-checked` carries the state and the
+     accessible name stays "Show coaching" (the visible "On"/"Off" is the state
+     word, not part of the name). DEFAULT OFF: the page's own localStorage key
+     (`bl-coaching`) is read once at startup and nothing turns it on for a
+     player. Off renders NONE of the comparison — the box is not built at all,
+     so there is no empty gap to close (COACHING_PLAN §5.5).
+     It is a real <button role="switch">, so Space/Enter toggle for free.
+     Amber here is the SWITCH's own on-state — "you have set this" — which is
+     the meaning amber already has; the comparison's own colour is `--tdiff`. */
+  #tabs #coach-switch { flex:none; display:flex; align-items:center; gap:7px;
+    margin-left:auto; background:var(--tpanel); color:var(--ttext);
+    border:1px solid var(--tline); border-radius:8px; padding:4px 10px 4px 8px;
+    cursor:pointer; font:600 12px "Segoe UI", system-ui; }
+  #tabs #coach-switch:hover { border-color:var(--tsel); }
+  #tabs #coach-switch .cs-track { position:relative; width:30px; height:16px;
+    flex:none; border-radius:9px; background:var(--tcard);
+    border:1px solid var(--tline); transition:background .12s; }
+  #tabs #coach-switch .cs-knob { position:absolute; top:1px; left:1px;
+    width:12px; height:12px; border-radius:50%; background:var(--tmute);
+    transition:left .12s, background .12s; }
+  #tabs #coach-switch[aria-checked="true"] .cs-track { background:var(--tsel);
+    border-color:var(--tsel); }
+  #tabs #coach-switch[aria-checked="true"] .cs-knob { left:15px;
+    background:var(--tonsel); }
+  #tabs #coach-switch .cs-wip { color:var(--tmute); font-weight:400; }
+  /* The switch only exists on the Settle Up tab, and while it is shown the "…"
+     menu sits beside it instead of taking the row's spare width itself. */
+  #tabs:not(.settle-on) #coach-switch { display:none; }
+  #tabs #coach-switch ~ .smenu { margin-left:0; }
   /* (The Live viewer flag's row lived here — `#live-viewer-row`, right-aligned
      on this nav row since round-3 item 7, and hidden by `showTab` while Settle
      Up was open because that page had its own. Both flags went on 2026-10-13
@@ -856,6 +886,16 @@ _HTML = r"""<!doctype html>
             --tonsel:#14110c;   /* text on a --tsel fill */
             --tatk:#f4c95d; --thp:#e8664f; --tbuff:#8fd06a;
             --twin:#7cc66b; --tloss:#e8664f; --ttie:#b09c84;
+            /* "DIFFERS FROM THE MODEL" — AMBER, BY REQUEST, FLAGGED FOR A
+               POSSIBLE REFACTOR (2026-10-20). The mockups draw a differing row
+               with an amber left edge, so this is `--tsel` under its own name
+               for now. It is the ONE exception to "amber is you have set this":
+               the selected turn chip, `Play` and `You bought` are amber too, and
+               two meanings under one colour is what the design forbade. Hence a
+               separate token — if it is reversed, only this line and the rules
+               that read `--tdiff` change. The `≠` glyph is NOT colour, so the
+               meaning never depends on this value (COACHING_PLAN §12.2). */
+            --tdiff:#e0a43a;
             --tk-roll:#3a2d22; --tk-buy:#35592f; --tk-sell:#7a3328;
             --tk-level:#7a6320; --tk-play:#2c4f7a; --tk-cast:#54397a;
             --tk-roll-t:#b09c84; --tk-buy-t:#e4f5da; --tk-sell-t:#ffe1db;
@@ -881,7 +921,8 @@ _HTML = r"""<!doctype html>
                    border-radius:8px; border:1px solid var(--tline);
                    border-bottom:3px solid var(--tline); background:var(--tpanel);
                    color:var(--ttext); cursor:pointer; line-height:1.2;
-                   font:600 13px "Segoe UI", system-ui; text-align:center; }
+                   font:600 13px "Segoe UI", system-ui; text-align:center;
+                   position:relative; }
   .tavern .tbtn2 small { display:block; font-size:10px; font-weight:400;
                          color:var(--tmute); }
   .tavern .tbtn2.win { border-bottom-color:var(--twin); }
@@ -890,6 +931,18 @@ _HTML = r"""<!doctype html>
   .tavern .tbtn2.sel { background:var(--tsel); color:var(--tonsel);
                        border-color:var(--tsel); font-weight:700; }
   .tavern .tbtn2.sel small { color:var(--tonsel); }
+  /* THE "DIFFERS" MARK ON THE TURN STRIP (2026-10-20, pass 3). The glyph is
+     text, so the meaning survives greyscale; `--tdiff` only makes it easier to
+     spot, and it is never the only signal. Selected turns invert it, because a
+     `--tdiff` glyph on a `--tsel` fill would be invisible. */
+  .tavern .tbtn2 .tneq { position:absolute; top:2px; right:5px; font-size:11px;
+                         font-weight:700; color:var(--tdiff); line-height:1; }
+  .tavern .tbtn2.sel .tneq { color:var(--tonsel); }
+  /* Visually hidden, NOT display:none: this is the words a screen reader reads
+     for a mark whose glyph is punctuation. */
+  .vhidden { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+             overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;
+             border:0; }
   .tavern .turn { background:var(--tpanel); border:1px solid var(--tline);
                   color:var(--ttext); }
   /* Summary rail + tray + net tags (design §4.3/§4.4, build step 3). The rail
@@ -924,6 +977,53 @@ _HTML = r"""<!doctype html>
   .tavern .ishow { color:var(--tmute); background:none; border:none;
                    cursor:pointer; font-size:11px; padding:2px 0;
                    text-decoration:underline; }
+  /* THE COACHING BOX (2026-10-20; the maintainer's shape: "a new box, below the
+     actions box, that can be collapsed or opened ... a summary above the
+     collapsed section, with each item in the collapsible section"). It is a
+     SIBLING of the action groups, not part of them, so folding the actions
+     never hides the comparison. Collapsed by DEFAULT: the summary line is the
+     always-visible fact ("Model vs you · 2 differ" + the confidence chip), and
+     the rows are what a click reveals. The open/closed choice persists under
+     `bl-coach-open` — a view setting like `bl-settle-mode`, not the switch.
+     ONE meaning per colour is still the rule: a differing row's amber edge is
+     `--tdiff` (see the token's note) and the `≠` glyph carries the meaning. */
+  .tavern .cbox { border-top:1px solid var(--tline); margin-top:12px;
+                  padding-top:9px; }
+  .tavern .cbox-h { display:flex; align-items:center; gap:6px; width:100%;
+                    background:none; border:0; padding:0; cursor:pointer;
+                    color:var(--ttext); text-align:left;
+                    font:700 12px "Segoe UI", system-ui; user-select:none; }
+  .tavern .cbox-h .ccar { color:var(--tmute); font-size:10px; width:10px; }
+  .tavern .cbox-h .ccount { color:var(--tmute); font-weight:400; }
+  .tavern .cbox-h .cconf { margin-left:auto; flex:none; color:var(--tmute);
+                           font:700 10px "Segoe UI", system-ui;
+                           border:1px solid var(--tline); border-radius:10px;
+                           padding:1px 7px; text-transform:lowercase; }
+  .tavern .cbox-b { margin-top:8px; }
+  .tavern .cd-head { display:grid; grid-template-columns:88px minmax(0,1fr)
+                     minmax(0,1fr); gap:6px; padding-left:11px;
+                     color:var(--tmute); font:700 9px "Segoe UI", system-ui;
+                     letter-spacing:.12em; text-transform:uppercase; }
+  .tavern .cdrow { display:grid; grid-template-columns:88px minmax(0,1fr)
+                   minmax(0,1fr); gap:6px; align-items:baseline;
+                   padding:6px 0 6px 8px; font-size:12px; line-height:1.35;
+                   border-bottom:1px solid var(--tline);
+                   border-left:3px solid transparent; }
+  .tavern .cdrow:last-of-type { border-bottom:0; }
+  .tavern .cdrow.differs { border-left-color:var(--tdiff); }
+  .tavern .cdrow.differs .ckind { color:var(--ttext); }
+  .tavern .cdrow.muted { opacity:.55; }
+  .tavern .cdrow .ckind { color:var(--tmute); overflow-wrap:anywhere; }
+  .tavern .cdrow .cneq { color:var(--tdiff); font-weight:700; margin-right:3px; }
+  .tavern .cdrow .cval { color:var(--ttext); min-width:0;
+                         overflow-wrap:anywhere; }
+  .tavern .cdrow .cval.you { color:var(--tmute); }
+  .tavern .cd-why { margin-top:8px; font-size:12px; line-height:1.4;
+                    color:var(--ttext); }
+  .tavern .cd-ev { margin-top:4px; font-size:11px; color:var(--tmute); }
+  .tavern .cd-legend { margin-top:6px; font-size:10px; color:var(--tmute);
+                       opacity:.85; }
+  .tavern .cd-note { font-size:11px; line-height:1.4; color:var(--tmute); }
   /* Cards, ONE component everywhere (2026-10-09, player call). The tile is a
      portrait: the art fills the frame and scales with the window
      (--tcardw; the step board swaps in --tstepw), and the name, stats and
@@ -1112,11 +1212,23 @@ _HTML = r"""<!doctype html>
                                 font-size:13px; }
   .tavern .stepcap .scap-triple { color:var(--tsel); font-weight:700;
                                   font-size:13px; }
+  /* The "differs from the model" chip beside the caption (2026-10-20, pass 3):
+     the same words the box uses, so a player learns one phrase, not two. */
+  .tavern .stepcap .scap-diff { margin-left:7px; padding:1px 8px;
+                                border:1px solid var(--tdiff);
+                                border-radius:10px; color:var(--tdiff);
+                                font:700 11px "Segoe UI", system-ui;
+                                white-space:nowrap; }
   .tavern .steptrack { display:flex; flex-wrap:wrap; gap:4px; margin:0 0 4px; }
   .tavern .stick { width:38px; height:44px; border-radius:6px;
                    border:1px solid var(--tline); color:var(--tmute);
                    background:var(--tcard); cursor:pointer;
-                   font:700 14px "Segoe UI", system-ui; }
+                   font:700 14px "Segoe UI", system-ui; position:relative; }
+  /* A corner dot on the tick whose step the model differed on (the mockup's
+     mark). Shape plus tooltip; the tick's own letter still says the action. */
+  .tavern .stick .sdiff { position:absolute; top:2px; right:3px; width:6px;
+                          height:6px; border-radius:50%;
+                          background:var(--tdiff); }
   .tavern .stick.k-roll { background:var(--tk-roll); }
   .tavern .stick.k-buy { background:var(--tk-buy); color:var(--tk-buy-t); }
   .tavern .stick.k-sell { background:var(--tk-sell); color:var(--tk-sell-t); }
@@ -1894,6 +2006,14 @@ Step through replays the turn one action at a time">
      Classic/Tavern toggle does NOT belong in it — that control was removed on
      2026-10-13 with its key, and a one-option switch is a control that cannot
      act. -->
+<!-- SHOW COACHING (2026-10-20): the model-vs-player comparison, inside Settle
+     Up only, OFF by default. `aria-checked` is the state; the accessible name
+     stays "Show coaching", so the word after the colon cannot be mistaken for
+     the name. The "(work in progress)" is filled from ONE constant in the
+     script (`COACH_WIP`) rather than written here, so the two cannot drift. -->
+<button id="coach-switch" role="switch" aria-checked="false"
+        aria-label="Show coaching" title="Model suggestions for finished games.
+May be wrong; observational, not causal."><span class="cs-track"><span class="cs-knob"></span></span><span>Show coaching: <b id="coach-state">Off</b></span><span class="cs-wip" id="coach-wip"></span></button>
 <details id="settle-more" class="smenu">
 <summary title="Rebuild this saved game, or open the folder it lives in">⋯</summary>
 <div class="smenu-body">
@@ -4273,6 +4393,15 @@ let _tavernTurn = null;
 let _tavernMode = 'summary';
 let _tavernStep = 0;
 let _tavernPlayTimer = null;
+//: The coaching switch's state (2026-10-20). DISPLAY-ONLY: the comparison is
+//: already in the saved replay (`coach_diff` on every phase); this only decides
+//: whether the rail draws it, so flipping it never needs a Rebuild. OFF on a
+//: fresh profile. `_coachOpen` is the box's own fold — a view setting like the
+//: mode, not part of the switch's state.
+let _coachOn = false;
+let _coachOpen = false;
+try { _coachOn = localStorage.getItem('bl-coaching') === '1'; } catch (e) {}
+try { _coachOpen = localStorage.getItem('bl-coach-open') === '1'; } catch (e) {}
 try { _tavernMode = localStorage.getItem('bl-settle-mode') || 'summary'; }
 catch (e) { /* private mode */ }
 // One strip button's result marker (REPLAY_VIEWER_DESIGN.md §4.1), pure so
@@ -4354,6 +4483,155 @@ function boardDelta(opened, ended) {
       : {isNew: true, datk: 0, dhealth: 0};
   }
   return out;
+}
+// --- The coaching comparison (2026-10-20, COACHING_PLAN §12). The stored
+// `coach_diff` on each phase is the whole input: the page NEVER re-derives a
+// comparison (one build-time artifact, four surfaces, or they drift). The
+// helpers that decide what a row SAYS are pure and node-tested; `coachBox` is
+// the DOM assembly and is measured in a browser.
+const COACH_WIP = '(work in progress)';
+//: Display labels. "Play (hand)" is deliberate — a spell is `cast`, and merging
+//: the two vocabularies is the confusion this codebase already untangled
+//: (§3.5.7). The mockups' plain "Play" loses that distinction.
+const COACH_KINDS = {level: 'Level up', buy: 'Buy', sell: 'Sell',
+                     play: 'Play (hand)', cast: 'Cast', roll: 'Roll',
+                     pick: 'Pick'};
+function coachRows(phases) {
+  const out = [];
+  for (const p of phases || []) {
+    for (const r of p.coach_diff || []) out.push(r);
+  }
+  return out;
+}
+// The summary line above the fold: the NUMBER of things that differ, which is
+// what a collapsed box owes the reader. `not_reached` is not a difference of
+// choice and `not_comparable` is not a comparison — neither is counted here,
+// and the rows themselves say which is which.
+function coachSummary(rows) {
+  const n = (rows || []).filter(r => r.state === 'differs').length;
+  return n ? n + (n === 1 ? ' differs' : ' differ') : 'no differences';
+}
+function coachName(cid) {
+  const meta = cardMeta(cid) || {};
+  return meta.name || cid;
+}
+// One cell of the Model | You table. Yes/no kinds say yes/no (the maintainer's
+// mockup: "Yes · tier 4 → 5" / "No"); card kinds name their cards, and an empty
+// side is a dash rather than the word "no", because "no card" is not an answer
+// on a row that asked about cards.
+function coachCell(r, side) {
+  const v = (side === 'model' ? r.model : r.player) || {};
+  if (r.kind === 'level') {
+    if (side !== 'model') return v.did ? 'Yes' : 'No';
+    if (!v.asked) return '—';
+    return r.tier ? 'Yes · tier ' + r.tier.from + ' → ' + r.tier.to : 'Yes';
+  }
+  if (r.kind === 'roll') {
+    const yes = side === 'model' ? v.asked : v.did;
+    return yes ? 'Yes' : (side === 'model' ? '—' : 'No');
+  }
+  if (r.kind === 'sell' && side === 'model') return v.asked ? 'Yes' : '—';
+  const cards = (v.cards || []).map(coachName).join(', ');
+  return cards || '—';
+}
+// "Why" is only worth a line when a NUMBER backs it (§5.6): the step's prose
+// reason usually is not, and the margin is. The first differing row that has a
+// number wins; a phase with none shows no Why at all.
+function coachWhy(rows) {
+  for (const r of rows || []) if (r.why) return r.why;
+  return null;
+}
+// Decision 3's evidence line, in the page's words: a DIFFERENCE COUNT across
+// the player's own saved games, cached on the rep at build time. Never a claim
+// that the model was right.
+//
+// PER KIND, because the box's rows are per kind: "we differed on 9 level-ups and
+// 12 buys" speaks to the rows on screen, where a single total ("77 moves") did
+// not. The kinds counted are the ones THIS phase compared, so a turn with no
+// level row cannot be told about level-ups; with no rows at all (an old save)
+// the total is the fallback.
+const COACH_PLURALS = {level: 'level-ups', buy: 'buys', sell: 'sells',
+                       play: 'plays', cast: 'casts', roll: 'rolls',
+                       pick: 'picks'};
+function coachCount(n, kind) {
+  const w = COACH_PLURALS[kind] || kind;
+  return n + ' ' + (n === 1 && w.endsWith('s') ? w.slice(0, -1) : w);
+}
+function coachEvidence(ev, rows) {
+  if (!ev || !ev.games) return null;
+  const counts = ev.by_kind || {};
+  const kinds = [];
+  for (const r of rows || []) {
+    if (kinds.indexOf(r.kind) < 0) kinds.push(r.kind);
+  }
+  const present = kinds.filter(k => (counts[k] || 0) > 0);
+  const games = ' across your ' + ev.games
+    + (ev.games === 1 ? ' saved game' : ' saved games');
+  if (present.length) {
+    // At most two: a line that lists five kinds is a paragraph, not a figure.
+    const shown = present.slice(0, 2).map(k => coachCount(counts[k], k));
+    const rest = present.length - shown.length;
+    return 'we differed on ' + shown.join(' and ')
+      + (rest ? ' (and ' + rest + ' more kind' + (rest === 1 ? '' : 's') + ')' : '')
+      + games;
+  }
+  let n = 0;
+  for (const k in counts) n += counts[k] || 0;
+  if (!n) return null;
+  return 'we differed on ' + (n === 1 ? '1 move' : n + ' moves') + games;
+}
+// Which KIND a phase's LEAD asked about, in the comparison's own vocabulary.
+// "hunt-roll" is a roll; pass/hold/discard/note have no comparison row at all
+// (settle_up's verdict cannot grade them either), so a phase led by one can
+// never carry a "differs" mark.
+const COACH_LEAD_KIND = {buy: 'buy', level: 'level', roll: 'roll',
+                         'hunt-roll': 'roll', cast: 'cast', play: 'play',
+                         pick: 'pick'};
+function coachLeadRow(phase) {
+  const kind = COACH_LEAD_KIND[(phase || {}).lead];
+  if (!kind) return null;
+  return ((phase || {}).coach_diff || []).find(r => r.kind === kind) || null;
+}
+// Does this phase's LEAD differ? The phase-level question, never "did anything
+// in it differ" — a turn that took the plan's card but also rolled is not a turn
+// where the plan differed (COACHING_PLAN §5.3).
+function coachDiffers(phase) {
+  const row = coachLeadRow(phase);
+  return !!row && row.state === 'differs';
+}
+// The phases that belong to one turn: its own, plus — on the LAST turn — any
+// phase whose turn is not in the timeline (the final-duel family the classic
+// reviewer used to attach to the last card). ONE function, because the strip's
+// mark, the rail's box and the step marks must agree about which phases a turn
+// owns; three copies of this filter would drift.
+function phasesForTurn(turns, phases, row) {
+  if (!row) return [];
+  const seen = new Set((turns || []).map(r => r.turn));
+  const isLast = row === (turns || [])[turns.length - 1];
+  return (phases || []).filter(p => p.turn === row.turn
+    || (isLast && !seen.has(p.turn)));
+}
+// Per-STEP marks for the Step-through's tick row. The stored plan is the
+// phase's, so a step can only be judged against what the plan named for its
+// KIND: a buy step is a difference when its card is not one of the cards the
+// plan named to buy, and a level/roll step when that row says the phase
+// differed. Sell steps carry no ids on the model's side (not_comparable) and are
+// never marked.
+function stepDiffFlags(steps, phases) {
+  const rows = coachRows(phases);
+  const by = {};
+  for (const r of rows) if (!by[r.kind]) by[r.kind] = r;
+  const named = kind => ((by[kind] || {}).model || {}).cards || [];
+  return (steps || []).map(s => {
+    if (s.k === 'buy' || s.k === 'cast' || s.k === 'play') {
+      if (!by[s.k]) return false;
+      return named(s.k).indexOf(s.card) < 0;
+    }
+    if (s.k === 'level' || s.k === 'roll') {
+      return !!(by[s.k] && by[s.k].state === 'differs');
+    }
+    return false;
+  });
 }
 // --- Battle face-off helpers (design §4.5). Pure, node-tested.
 function outcomeText(winner) {
@@ -4498,6 +4776,18 @@ function renderTavernGame(rep) {
     const m = stripMark(r.winner, r.damage_taken);
     if (m.cls) b.classList.add(m.cls);
     b.innerHTML = (r.turn ?? '?') + '<small>' + m.ch + '</small>';
+    // THE "DIFFERS" MARK (2026-10-20, pass 3). Only where the phase LEAD
+    // differed — a turn that took the plan's card but also rolled is not a turn
+    // where the plan differed. The mark is the `≠` GLYPH, not a dot: it is text,
+    // so it survives greyscale and reaches a screen reader, and the
+    // visually-hidden words say what it means without replacing the turn's own
+    // result in the accessible name.
+    if (_coachOn && phasesForTurn(turns, phases, r).some(coachDiffers)) {
+      b.classList.add('cdiff');
+      b.appendChild(el('span', 'tneq', '≠'));
+      b.appendChild(el('span', 'vhidden', 'differs from the model'));
+      b.title = 'Differs from the model';
+    }
     b.onclick = () => {
       stopTavernPlay();
       _tavernStep = 0;
@@ -4509,8 +4799,9 @@ function renderTavernGame(rep) {
   root.appendChild(strip);
   const row = turns.find(r => r.turn === _tavernTurn);
   let card = null;
+  const railPhases = phasesForTurn(turns, phases, row);
   if (row && effMode === 'step') {
-    root.appendChild(renderTavernSteps(row));
+    root.appendChild(renderTavernSteps(row, railPhases));
   } else if (row) {
     // Design §3: rail 330px left, the turn's card right. The face-off's HP line
     // needs the NEXT turn's effective-HP reading, which only the caller has.
@@ -4522,19 +4813,103 @@ function renderTavernGame(rep) {
     // card — lands in the rail's Plan section, once.
     const idx = turns.indexOf(row);
     const nextEff = idx >= 0 && turns[idx + 1] ? turns[idx + 1].eff : null;
-    const seen = new Set(turns.map(r => r.turn));
-    const isLast = row === turns[turns.length - 1];
-    const railPhases = phases.filter(p => p.turn === row.turn
-        || (isLast && !seen.has(p.turn)));
     const wrap = document.createElement('div');
     wrap.className = 'twrap';
-    wrap.appendChild(tavernRail(row, railPhases));
+    // The REP-level question the box needs: does this save carry the comparison
+    // anywhere? A save with no `coach_diff` key in any phase predates the
+    // feature; a turn with no rows in a NEW save simply has nothing to compare.
+    const hasCoach = phases.some(p => 'coach_diff' in p);
+    wrap.appendChild(tavernRail(row, railPhases, hasCoach));
     card = settleTurnCard(row, {hero: rep.hero, nextEff: nextEff});
     wrap.appendChild(card);
     root.appendChild(wrap);
   }
   if (caveat) root.appendChild(caveat);   // the footnote, last
   box.appendChild(root);
+}
+// THE COMPARISON BOX (2026-10-20). Its own box BELOW the action groups — the
+// maintainer's shape — so folding an action group can never hide it, and it is
+// not built at all when the switch is off (no header, no empty gap). Collapsed
+// by default: the summary line is the always-visible fact, the rows are one
+// click away. `_coachOpen` persists under `bl-coach-open`, a view setting like
+// `bl-settle-mode` rather than part of the switch's own state.
+// `hasCoach` is the REP-level answer: does this saved game carry the comparison
+// at all? A turn with no advised phase has no rows and must draw NO box, while
+// a save written before the feature has no keys anywhere — that one gets the
+// "Rebuild to add it" note instead of silence (an empty box reads as broken).
+function coachBox(phases, hasCoach) {
+  const rows = coachRows(phases);
+  if (!rows.length && hasCoach) return null;
+  const conf = (phases || []).map(p => p.confidence).filter(Boolean)[0] || null;
+  const box = el('div', 'cbox');
+  const h = el('button', 'cbox-h');
+  h.type = 'button';
+  h.setAttribute('aria-expanded', _coachOpen ? 'true' : 'false');
+  h.appendChild(el('span', 'ccar', _coachOpen ? '▾' : '▸'));
+  h.appendChild(el('span', null, 'Model vs you'));
+  h.appendChild(el('span', 'ccount', rows.length
+    ? '· ' + coachSummary(rows) : '· this save predates coaching'));
+  if (conf) {
+    const chip = el('span', 'cconf', 'confidence: ' + conf);
+    chip.title = 'How far apart the model\u2019s pick and yours sit on its own '
+      + 'ranking — a display figure, not a verdict';
+    h.appendChild(chip);
+  }
+  h.onclick = () => {
+    _coachOpen = !_coachOpen;
+    body.style.display = _coachOpen ? '' : 'none';
+    h.setAttribute('aria-expanded', _coachOpen ? 'true' : 'false');
+    h.querySelector('.ccar').textContent = _coachOpen ? '▾' : '▸';
+    try { localStorage.setItem('bl-coach-open', _coachOpen ? '1' : '0'); }
+    catch (e) { /* private mode */ }
+  };
+  const body = el('div', 'cbox-b');
+  body.style.display = _coachOpen ? '' : 'none';
+  box.appendChild(h);
+  if (!rows.length) {
+    // An old save has no rows at all (settle_up SCHEMA 1). Saying so is better
+    // than an empty box after the player turned the switch on, and Rebuild is
+    // the documented cure.
+    body.appendChild(el('div', 'cd-note',
+      'This saved game was recorded before the comparison existed. Press '
+      + 'Rebuild in \u22ef to derive it from the game log.'));
+  } else {
+    const head = el('div', 'cd-head');
+    head.appendChild(el('span', null, ''));
+    head.appendChild(el('span', null, 'Model'));
+    head.appendChild(el('span', null, 'You'));
+    body.appendChild(head);
+    for (const r of rows) {
+      const cls = r.state === 'differs' ? ' differs'
+        : (r.state === 'same' ? '' : ' muted');
+      const row = el('div', 'cdrow' + cls);
+      const kind = el('span', 'ckind');
+      if (r.state === 'differs') kind.appendChild(el('span', 'cneq', '≠'));
+      kind.appendChild(document.createTextNode(COACH_KINDS[r.kind] || r.kind));
+      row.appendChild(kind);
+      row.appendChild(el('span', 'cval', coachCell(r, 'model')));
+      row.appendChild(el('span', 'cval', coachCell(r, 'player')));
+      if (r.state === 'differs' && r.reason) {
+        row.title = r.reason;
+      } else if (r.state === 'not_reached') {
+        row.title = 'The plan\u2019s own order could not pay for this step, so '
+          + 'it is not a choice you passed on';
+      } else if (r.state === 'not_comparable') {
+        row.title = 'No comparison: this one cannot be matched to the game log';
+      }
+      body.appendChild(row);
+    }
+    const why = coachWhy(rows);
+    if (why) body.appendChild(el('div', 'cd-why', 'Why: ' + why));
+    const ev = coachEvidence((_settleRep || {}).coach_evidence, rows);
+    if (ev) body.appendChild(el('div', 'cd-ev', ev));
+    if (rows.some(r => r.state !== 'same')) {
+      body.appendChild(el('div', 'cd-legend',
+        '≠ differs from the model · grey rows have no comparison'));
+    }
+  }
+  box.appendChild(body);
+  return box;
 }
 // The Summary rail (design §4.3): what the turn cost and did, grouped and
 // collapsed. A group opens by default while it is SHORT — five rows or fewer
@@ -4544,7 +4919,7 @@ function renderTavernGame(rep) {
 // too, folded under a neutral label (`phases`), because "coaching — not
 // taken" read as advice and the app is reference-only; the plan text itself
 // is a fact about the model, and the review is where it is allowed (PIVOT.md).
-function tavernRail(r, phases) {
+function tavernRail(r, phases, hasCoach) {
   const took = r.took || {}, sp = r.spend || {}, ev = r.shop_events || {};
   const stats = r.stats || {};
   const boardEnd = stats.buy_end;
@@ -4672,6 +5047,13 @@ function tavernRail(r, phases) {
          + ') while keeping ' + (q.kept_filler_names || []).join(', '));
     rail.appendChild(d);
   }
+  // THE COACHING BOX (2026-10-20): below the actions, above the plan. Off
+  // builds NOTHING — not an empty header, not a spacer — so the rail is exactly
+  // what it was before this feature existed (the switch is display-only).
+  if (_coachOn) {
+    const cbox = coachBox(phases, hasCoach);
+    if (cbox) rail.appendChild(cbox);
+  }
   // The model's plan, folded, under a neutral label — and its GRADING beside
   // it on the summary line (2026-10-13). The grading used to ride the classic
   // reviewer's phase row ("coaching — taken"), which the classic reviewer took
@@ -4724,12 +5106,18 @@ function tavernTogglePlay() {
   }
   renderTavernGame(_settleRep);
 }
-function renderTavernSteps(row) {
+function renderTavernSteps(row, phases) {
   const steps = row.steps || [];
   if (_tavernStep > steps.length - 1) {
     _tavernStep = Math.max(0, steps.length - 1);
   }
   const st = steps[_tavernStep];
+  // Per-step comparison (2026-10-20, pass 3). `flags[i]` is true where the
+  // step's own choice was not what the plan named for that kind; the tick gets
+  // a mark and the caption a chip. Off when the switch is off: `_coachOn` gates
+  // the WHOLE comparison, never just the box.
+  const flags = _coachOn ? stepDiffFlags(steps, phases) : [];
+  const here = !!(flags[_tavernStep]);
   const col = document.createElement('div');
   col.className = 'tstep stepview';
   const nav = document.createElement('div');
@@ -4765,6 +5153,14 @@ function renderTavernSteps(row) {
     t.textContent = stepLetter(s.k);
     t.title = 'Step ' + (i + 1) + ': ' + stepWords(s)
               + (s.triple ? ' — completed a triple' : '');
+    if (flags[i]) {
+      // A corner dot PLUS the words in the tooltip and the accessible name: a
+      // shape is not colour alone, and the tooltip is what says what it means.
+      t.classList.add('cdiff');
+      t.appendChild(el('span', 'sdiff'));
+      t.title += ' — differs from the model';
+      t.setAttribute('aria-label', t.title);
+    }
     t.onclick = () => {
       stopTavernPlay();
       _tavernStep = i;
@@ -4794,6 +5190,11 @@ function renderTavernSteps(row) {
     }
     cap.title = 'Step ' + (_tavernStep + 1) + ' of ' + steps.length
                 + ' — ' + what + (st.triple ? ' — completed a triple' : '');
+    if (here) {
+      // The chip beside the caption, as the mockup draws it. Text, not colour:
+      // this is the sentence a player reads after stepping onto a difference.
+      cap.appendChild(el('span', 'scap-diff', 'differs from the model'));
+    }
   } else {
     cap.textContent = 'No step data for this turn';
   }
@@ -5195,6 +5596,28 @@ document.querySelectorAll('#settle-mode button').forEach(b => {
     if (_settleRep) renderTavernGame(_settleRep);
   };
 });
+// THE COACHING SWITCH (2026-10-20): a real <button role="switch">, so Space and
+// Enter toggle it for free. `aria-checked` is the state; the visible word
+// follows it and the accessible name stays "Show coaching". It writes its own
+// key and re-renders the open game from the rep already in hand — no refetch,
+// and the payload does not change (display-only, COACHING_PLAN §2 decision 1).
+function setCoachSwitch() {
+  const b = document.getElementById('coach-switch');
+  if (!b) return;
+  b.setAttribute('aria-checked', _coachOn ? 'true' : 'false');
+  const word = document.getElementById('coach-state');
+  if (word) word.textContent = _coachOn ? 'On' : 'Off';
+  const wip = document.getElementById('coach-wip');
+  if (wip) wip.textContent = COACH_WIP;    // ONE constant, not a second copy
+}
+document.getElementById('coach-switch').onclick = () => {
+  _coachOn = !_coachOn;
+  try { localStorage.setItem('bl-coaching', _coachOn ? '1' : '0'); }
+  catch (e) { /* private mode */ }
+  setCoachSwitch();
+  if (_settleRep) renderTavernGame(_settleRep);
+};
+setCoachSwitch();
 // Keyboard (design §5): Left and Right walk turns (Summary) or steps
 // (Step-through); Shift+Left/Right walks turns while stepping; Space
 // plays/pauses; Home and End jump to the ends. Ignored while typing, and only
@@ -5203,6 +5626,10 @@ document.addEventListener('keydown', e => {
   if (document.getElementById('settle').className !== 'on') return;
   const tag = (e.target.tagName || '').toUpperCase();
   if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  // A focused switch is not the page's transport: Space toggles the switch,
+  // which is what a role="switch" promises. (Without this, Space in Step
+  // through played the sequence instead of flipping the control.)
+  if (e.target.closest && e.target.closest('#coach-switch')) return;
   const turns = ((_settleRep || {}).timeline || {}).turns || [];
   if (!turns.length) return;
   const idx = turns.findIndex(r => r.turn === _tavernTurn);
