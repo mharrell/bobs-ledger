@@ -18,7 +18,10 @@ WHAT A ROW IS
 One row per phase per KIND of move, in a fixed display order (level, buy, sell,
 play, cast, roll, pick) — the mockups' order, and the order the plan's own
 vocabulary reads in. A kind appears when either side has something to say: the
-model's plan asked for it, or the player did it.
+model's plan asked for it, or the player did it. ONE EXCEPTION, measured: `play`
+and `cast` rows appear only where the PLAN asked for one, because their action
+records are too broad to compare (a bought minion also "plays", and a hero power
+also "casts" — `_cards_kind` carries the numbers).
 
   "model":  {"asked": bool, "cards": [id, ...]}   the plan's steps of that kind
   "player": {"did": bool, "cards": [id, ...]}     the log's own records
@@ -287,6 +290,18 @@ def _cards_kind(kind, row, steps):
         mine = []
     if not plan and not mine:
         return None
+    if kind in ("play", "cast") and not plan:
+        # PLAYER-ONLY play/cast rows are NOT emitted, and this is a measurement
+        # (2026-10-20, the Reno game): `player_actions.plays` fires when an
+        # entity moves HAND -> PLAY, which a BOUGHT minion does on its way to
+        # the board — so a "play" row read "it asked for nothing, you played 2"
+        # on almost every phase, double-counting the buy. `spells_cast` is
+        # broader still: the parser counts any id that is not a known minion, so
+        # hero powers and triple rewards ride it (`TB_BaconShop_HP_046`,
+        # `TB_BaconShop_Triples_01`). The player-only row would therefore be
+        # noise dressed as a comparison; a row appears only where the PLAN named
+        # a play/cast, which is also what §5.1 first said.
+        return None
     asked, did = bool(plan), bool(mine)
     reason = _first_reason(plan)
     if kind == "pick":
@@ -299,8 +314,6 @@ def _cards_kind(kind, row, steps):
         # name). "Something else" would be a guess.
         return _row(kind, "not_comparable", asked=True, did=did, player=mine,
                     reason=reason)
-    if not plan:
-        return _row(kind, "differs", asked=False, did=True, player=mine)
     if not did:
         return _row(kind, "differs", asked=True, did=False, model=model,
                     reason=reason)

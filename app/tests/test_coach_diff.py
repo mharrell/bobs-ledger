@@ -188,6 +188,20 @@ class TestSellPlayCast(unittest.TestCase):
         self.assertEqual(got["play"]["state"], "same")
         self.assertEqual(got["cast"]["state"], "differs")
 
+    def test_a_player_only_play_is_not_a_row(self):
+        """`player_actions.plays` also fires for a BOUGHT minion on its way to
+        the board, so a player-only "play" row read "it asked for nothing, you
+        played 2" on almost every phase of the measured game."""
+        rows = coach_diff.for_phase(_row(steps=[], plays=["BG_A"]))
+        self.assertNotIn("play", _by_kind(rows))
+
+    def test_a_player_only_cast_is_not_a_row(self):
+        """`spells_cast` also carries hero powers and triple rewards
+        (`TB_BaconShop_HP_046`), so a player-only row is noise."""
+        rows = coach_diff.for_phase(_row(
+            steps=[], spells_cast=["TB_BaconShop_Triples_01"]))
+        self.assertNotIn("cast", _by_kind(rows))
+
     def test_an_unresolved_cast_is_not_comparable(self):
         rows = coach_diff.for_phase(_row(
             steps=[_step("cast", None)], spells_cast=["BG_S"]))
