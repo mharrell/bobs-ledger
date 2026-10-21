@@ -1,7 +1,7 @@
 # Murlocs — Keyword
 
-> Our advice for the published A-tier build (hsreplay tier list, 2026-10-03;
-> demoted from S on that date).
+> Our advice for the published S-tier build (hsreplay tier list, 2026-10-21;
+> it was S when this was written, A from 2026-10-03, and is S again).
 > Written as original advice for this coach; card texts read from the DB.
 
 ## The engine

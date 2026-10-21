@@ -1,7 +1,8 @@
 # Aberrations — Deathrattle/Spells
 
-> Our advice for the published B-tier build (hsreplay tier list, 2026-10-04;
-> it was S when this was written on 2026-09-26, and has since dropped twice).
+> Our advice for the published A-tier build (hsreplay tier list, 2026-10-21;
+> it was S when this was written on 2026-09-26, dropped to B on 2026-10-04, and
+> is A again).
 > Written as original advice for this coach; card texts read from the DB.
 
 ## The engine
