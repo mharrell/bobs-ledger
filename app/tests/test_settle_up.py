@@ -23,6 +23,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, HERE)
@@ -536,6 +537,77 @@ class TestBuildWalksALog(unittest.TestCase):
         self.assertTrue(first["gid"])
         self.assertEqual(first["gid"], again["gid"])
         self.assertNotEqual(first["gid"], second["gid"])
+
+
+class TestTheCoachingKeysInTheReport(unittest.TestCase):
+    """The comparison is carried IN the saved review, not re-derived by a
+    renderer (COACHING_PLAN §5.1). These pin the additive keys and the fact that
+    a save without them renders exactly as it did before."""
+
+    def _build(self, rows, evidence=None):
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "Power.log")
+            with open(path, "w", encoding="utf-8") as fh:
+                # The splitter keys on the client's own line shape, not the
+                # bare word (see TestBuildWalksALog).
+                fh.write("D 10:00:00.0000000 GameState.DebugPrintPower() - "
+                         "CREATE_GAME\n")
+            with mock.patch.object(settle_up.outcome_audit, "audit_game",
+                                   return_value=rows), \
+                 mock.patch.object(settle_up, "_timeline",
+                                   return_value=(None, "no boards here")), \
+                 mock.patch.object(settle_up.coach_diff, "saved_evidence",
+                                   return_value=evidence or
+                                   {"games": 0, "by_kind": {}}):
+                return settle_up.build(path, 1)
+
+    def _row(self, **over):
+        r = {"turn": 5, "tier": 4, "gold": 10, "eff_hp": 30, "lead": "buy",
+             "card": "BG_A", "card_name": "A", "steps": [
+                 {"kind": "level", "reason": "curve"},
+                 {"kind": "buy", "card": "BG_A", "reason": "committing"}],
+             "player_buys": ["BG_B"], "player_actions": {"upgrades": 0},
+             "spells_cast": [], "plays": [], "shop_costs": {},
+             "level_cost": 7,
+             "shop_rank": [["BG_A", 9.0], ["BG_B", 7.0]],
+             "hp_delta_next_fight": -3}
+        r.update(over)
+        return r
+
+    def test_a_phase_carries_the_rows_its_confidence_and_its_evidence(self):
+        rep = self._build([self._row()], evidence={"games": 18,
+                                                   "by_kind": {"level": 9}})
+        p = rep["phases"][0]
+        self.assertEqual([r["kind"] for r in p["coach_diff"]],
+                         ["level", "buy"])
+        buy = [r for r in p["coach_diff"] if r["kind"] == "buy"][0]
+        self.assertEqual(buy["state"], "differs")
+        self.assertAlmostEqual(buy["margin"], 2.0)
+        self.assertEqual(p["confidence"], "medium")
+        self.assertEqual(rep["coach_evidence"]["games"], 18)
+
+    def test_the_console_says_what_differed_and_skips_the_same_rows(self):
+        rep = self._build([self._row(player_buys=["BG_A"],
+                                     player_actions={"upgrades": 1})])
+        text = settle_up.render_text(rep)
+        self.assertNotIn("coaching:", text,
+                         "a phase where both sides agreed says nothing")
+        rep = self._build([self._row()])
+        text = settle_up.render_text(rep)
+        self.assertIn("coaching: level differs · buy differs (margin +2.0)",
+                      text)
+
+    def test_an_old_save_without_the_keys_still_renders(self):
+        old = {"turn": 3, "tier": 2, "gold": 5, "eff_hp": 40, "plan": "p",
+               "lead": "buy", "kind": "ignored", "verdict": "not taken",
+               "named": "A", "reasons": [], "acted": "bought A", "buys": ["A"],
+               "outcome": -2, "outcome_note": None}
+        self.assertEqual(settle_up._diff_note(old), "")
+        rep = {"hero": "Reno", "placement": 2, "log": "Power.log", "game": 1,
+               "session": "s", "phases": [old],
+               "totals": settle_up._totals([old], {}),
+               "caveat": settle_up.CAVEAT}
+        self.assertIn("not taken", settle_up.render_text(rep))
 
 
 class TestRebuild(unittest.TestCase):
