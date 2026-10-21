@@ -223,6 +223,19 @@ def _coached():
     return rep
 
 
+#: The same game where the FIRST STEP is a buy the plan did not name — the
+#: callout's case. `tavern` is the offers that step printed, so a caller can
+#: leave the model's card out of them and get the ghost tile.
+def _coached_diff_buy(tavern=None):
+    rep = _coached()
+    step = rep["timeline"]["turns"][0]["steps"][0]
+    step["card"] = "BG31_820"
+    step["cardName"] = "Kooky Chemist"
+    if tavern is not None:
+        step["tavern"] = tavern
+    return rep
+
+
 #: The driver. Everything it reports lands in `#out` as `name.key=value`
 #: records, which `browser.fields()` reads back. It is defensive on purpose:
 #: `renderTavernGame` missing, or one shot blowing up, must each come back as a
@@ -420,6 +433,28 @@ _DRIVER = r"""
       b.getAttribute('aria-label') || b.textContent).join('|');
     o.stepdots = q('.stick.cdiff').length;
     o.scapdiff = txt(one('.scap-diff'));
+    // Pass 4: the Step-through callout, the two tags and their outlines, and a
+    // ghost for a model card the shop did not print. All read off the DOM or
+    // the computed style — the outlines are the one place a specificity fight
+    // would look correct in the source.
+    o.callout = txt(one('.cd-call')).replace(/\s+/g, ' ').trim();
+    o.calloutborder = one('.cd-call')
+      ? getComputedStyle(one('.cd-call')).borderLeftColor : 'none';
+    o.boughttags = q('.tag-bought').length;
+    o.preftags = q('.tag-pref').length;
+    o.ghostpick = q('.tile.model-ghost').length;
+    o.yououtline = (() => {
+      const t = one('.tile.you-bought');
+      if (!t) return 'none';
+      const cs = getComputedStyle(t);
+      return cs.outlineStyle + '/' + cs.outlineColor;
+    })();
+    o.prefoutline = (() => {
+      const t = one('.tile.model-pref');
+      if (!t) return 'none';
+      const cs = getComputedStyle(t);
+      return cs.outlineStyle + '/' + cs.outlineColor;
+    })();
     // The final-turn family: what the Opened row says, and whether an Ended
     // row exists at all.
     o.opened = (() => {
@@ -441,7 +476,8 @@ _DRIVER = r"""
                              'rebuildnotes', 'modehidden', 'capin', 'railw',
                              'capsize', 'ghostsub', 'legendfs', 'ended',
                              'vsegs', 'viewerflags', 'coachbox', 'coachrows',
-                             'coacheq', 'cdmarks', 'tneq', 'stepdots']);
+                             'coacheq', 'cdmarks', 'tneq', 'stepdots',
+                             'boughttags', 'preftags', 'ghostpick']);
     for (const k of Object.keys(o)) {
       const v = o[k];
       rec(name + '.' + k, NUMERIC.has(k) ? '#' + Number(v)
@@ -1029,6 +1065,14 @@ class TestTheCoachingBoxInABrowser(_Rendered):
                 # so the tick carries the dot and the caption the chip, while
                 # the buy step before it (the card the plan named) does not.
                 _shot("step", _coached(), mode="step", coach=True, step=1),
+                # A differing BUY step: the callout, the two tags and the two
+                # outlines. The model's card is one of the offers here.
+                _shot("buy", _coached_diff_buy(), mode="step", coach=True,
+                      step=0),
+                # ... and the same step with the model's card NOT among the
+                # offers the shop printed: a ghost tile carries it.
+                _shot("ghost", _coached_diff_buy(tavern=["BG31_820"]),
+                      mode="step", coach=True, step=0),
                 # A save written before the comparison existed (SCHEMA 1).
                 _shot("old", _named(), mode="summary", coach=True, open=True)]
 
@@ -1092,6 +1136,28 @@ class TestTheCoachingBoxInABrowser(_Rendered):
     def test_the_step_track_marks_the_step_and_the_caption_says_it(self):
         self.assertEqual(self.got["step.stepdots"], 1)
         self.assertEqual(self.got["step.scapdiff"], "differs from the model")
+
+    def test_the_callout_names_the_model_s_pick_and_ours(self):
+        call = self.got["buy.callout"]
+        self.assertIn("Model preferred Dune Dweller over Kooky Chemist", call)
+        self.assertIn("Why: its ranking gives 9.0 against 6.2", call)
+        self.assertIn("confidence: medium", call)
+        self.assertEqual(self.got["buy.calloutborder"], "rgb(224, 164, 58)")
+
+    def test_your_card_is_solid_and_the_model_s_is_dashed(self):
+        self.assertEqual(self.got["buy.boughttags"], 1)
+        self.assertEqual(self.got["buy.preftags"], 1)
+        self.assertEqual(self.got["buy.yououtline"], "solid/rgb(224, 164, 58)")
+        self.assertEqual(self.got["buy.prefoutline"], "dashed/rgb(224, 164, 58)")
+
+    def test_a_model_card_the_shop_did_not_show_is_a_ghost(self):
+        self.assertEqual(self.got["ghost.ghostpick"], 1)
+        self.assertEqual(self.got["ghost.preftags"], 1)
+
+    def test_off_leaves_no_callout_or_tag(self):
+        self.assertEqual(self.got["off.callout"], "")
+        self.assertEqual(self.got["off.boughttags"], 0)
+        self.assertEqual(self.got["off.preftags"], 0)
 
     def test_the_switch_is_not_on_the_live_tab(self):
         self.assertEqual(self.got["tab.switchvisible"], "no")

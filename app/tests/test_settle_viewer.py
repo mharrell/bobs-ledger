@@ -470,7 +470,8 @@ class TestTheCoachingComparison(unittest.TestCase):
                           "be executed")
         names = ("coachRows", "coachSummary", "coachName", "coachCell",
                  "coachWhy", "coachCount", "coachEvidence", "coachLeadRow",
-                 "coachDiffers", "phasesForTurn", "stepDiffFlags")
+                 "coachDiffers", "phasesForTurn", "stepDiffFlags",
+                 "coachStepPick", "coachCallout")
         sources = [_function(n) for n in names]
         for name, src in zip(names, sources):
             self.assertIsNotNone(src, name + " is missing")
@@ -482,7 +483,8 @@ class TestTheCoachingComparison(unittest.TestCase):
         driver = os.path.join(self.tmp.name, "coach.js")
         with open(driver, "w", encoding="utf-8") as f:
             f.write("\n".join(consts) + "\n" + "\n".join(sources) + "\n"
-                    "const NAMES = {BG_A: 'Dune Dweller', BG_B: 'Kooky Chemist'};\n"
+                    "const NAMES = {BG_A: 'Dune Dweller', BG_B: 'Kooky Chemist',\n"
+                    "               BG_C: 'Wolf Pup'};\n"
                     "function cardMeta(c) { return NAMES[c] ? {name: NAMES[c]} : {}; }\n"
                     "const rows = [\n"
                     " {kind:'level', state:'differs', model:{asked:true,cards:[]},\n"
@@ -530,7 +532,30 @@ class TestTheCoachingComparison(unittest.TestCase):
                     "  {kind:'buy', state:'differs', model:{asked:true,"
                     "cards:['BG_A']}},\n"
                     "  {kind:'level', state:'differs', model:{asked:true,cards:[]}},\n"
-                    "  {kind:'roll', state:'same', model:{asked:true,cards:[]}}]}])"
+                    "  {kind:'roll', state:'same', model:{asked:true,cards:[]}}]}]),\n"
+                    " pick: (() => {\n"
+                    "  const ph = [{coach_diff: rows}];\n"
+                    "  const two = [{coach_diff: [{kind:'buy', state:'differs',\n"
+                    "    model:{asked:true, cards:['BG_A','BG_C']}}]}];\n"
+                    "  return [\n"
+                    "    (coachStepPick(flipped, ph, 0) || {}).card || null,\n"
+                    "    (coachStepPick(flipped, two, 0) || {}).card || null,\n"
+                    "    (coachStepPick(flipped, two, 1) || {}).card || null,\n"
+                    "    (coachStepPick([{k:'level'}], two, 0) || {}).card || null];\n"
+                    " })(),\n"
+                    " calls: (() => {\n"
+                    "  const ph = [{coach_diff: rows}];\n"
+                    "  const you = {k:'buy', card:'BG_B', cardName:'Kooky Chemist'};\n"
+                    "  const same = {k:'buy', card:'BG_A', cardName:'Dune Dweller'};\n"
+                    "  const nc = [{coach_diff: [{kind:'buy', state:'not_comparable',\n"
+                    "    model:{asked:true, cards:['BG_A']}}]}];\n"
+                    "  const ok = [{coach_diff: [{kind:'buy', state:'same',\n"
+                    "    model:{asked:true, cards:['BG_A']}}]}];\n"
+                    "  return [coachCallout([you], ph, 0, 'medium'),\n"
+                    "          coachCallout([same], ph, 0, 'medium'),\n"
+                    "          coachCallout([you], nc, 0, null),\n"
+                    "          coachCallout([you], ok, 0, null)];\n"
+                    " })()"
                     "};\n"
                     "console.log(JSON.stringify(out));\n")
         proc = subprocess.run(["node", driver], capture_output=True, timeout=30)
@@ -590,6 +615,20 @@ class TestTheCoachingComparison(unittest.TestCase):
     def test_a_step_is_judged_against_the_cards_named_for_its_kind(self):
         self.assertEqual(self.out["stepflags"],
                          [False, True, True, False, False])
+
+    def test_the_model_s_pick_pairs_by_position_within_a_kind(self):
+        """Two buys pair with the plan's first and second named buys, in plan
+        order; a kind the plan named no card for has no pick at all."""
+        self.assertEqual(self.out["pick"], ["BG_A", "BG_A", "BG_C", None])
+
+    def test_the_callout_needs_a_differing_step_and_two_names(self):
+        calls = self.out["calls"]
+        self.assertEqual(calls[0]["model"], "Dune Dweller")
+        self.assertEqual(calls[0]["player"], "Kooky Chemist")
+        self.assertEqual(calls[0]["why"], "its ranking gives 9.0 against 6.2")
+        self.assertEqual(calls[0]["conf"], "medium")
+        # same card, not_comparable, and a `same` row all say nothing at all.
+        self.assertEqual(calls[1:], [None, None, None])
 
     # --- the switch, from the page source -------------------------------
     def test_the_switch_is_a_real_switch_and_defaults_off(self):
@@ -661,6 +700,21 @@ class TestTheCoachingComparison(unittest.TestCase):
         strip = _function("renderTavernGame")
         self.assertIn("'≠'", strip)
         self.assertIn("'vhidden', 'differs from the model'", strip)
+
+    def test_the_step_decorations_never_touch_the_shared_tile(self):
+        """`tile()` is what Live renders through. The pass-4 outlines and tags
+        are applied by the Step-through caller, so no payload can carry them to
+        the live page."""
+        tile = _function("tile")
+        for dead in ("tag-bought", "tag-pref", "model-pref", "you-bought",
+                     "cd-call"):
+            self.assertNotIn(dead, tile, f"{dead} leaked into tile()")
+        steps = _function("renderTavernSteps")
+        self.assertIn("'You bought'", steps)
+        self.assertIn("'Model preferred'", steps)
+        self.assertIn("coachCallout(steps, phases, _tavernStep, conf)", steps)
+        self.assertIn("const pick = _coachOn ?", steps)
+        self.assertIn("const call = _coachOn", steps)
 
 
 class TestTheCoachingBoxAssembles(unittest.TestCase):

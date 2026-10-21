@@ -1195,6 +1195,36 @@ _HTML = r"""<!doctype html>
      between a step that has offers and one that has none. */
   .tavern .stepview .spanel-tv, .tavern .stepview .spanel-hand {
     min-height: calc(var(--s) + 48px); }
+  /* THE STEP-THROUGH CALLOUT (2026-10-20, pass 4). Beside the Tavern row where
+     there is room, under it when there is not: `tv-body` wraps at 1200px, the
+     same break where the page's own two-column layout gives up (the round-1
+     lesson — the narrow branch is a layout of its own). A gold rule on the left
+     is the mockup's shape; the words carry the meaning. */
+  .spanel-tv .tv-body { display:flex; gap:14px; align-items:flex-start;
+                        flex-wrap:wrap; }
+  .spanel-tv .tv-body .spanel-cards { flex:0 1 auto; }
+  .tavern .cd-call { flex:1 1 250px; min-width:220px; padding:2px 0 2px 10px;
+                     border-left:3px solid var(--tdiff); font-size:12px;
+                     line-height:1.45; color:var(--ttext); }
+  .tavern .cd-call .cd-call-h { font-weight:600; }
+  .tavern .cd-call .cd-call-w { margin-top:3px; color:var(--ttext); }
+  .tavern .cd-call .cd-call-e { margin-top:3px; color:var(--tmute); }
+  /* YOUR card solid, the MODEL's dashed, each with a text tag (never colour
+     alone — the mockup's "You bought" / "Model preferred"). Amber is "you have
+     set this", so your outline takes `--tsel`; the model's takes `--tdiff`. */
+  .tavern .tile.you-bought { outline:2px solid var(--tsel); outline-offset:1px; }
+  .tavern .tile.model-pref { outline:2px dashed var(--tdiff);
+                             outline-offset:1px; }
+  .tavern .tile .tag-bought, .tavern .tile .tag-pref {
+    position:absolute; top:4px; left:4px; z-index:2; font-size:10px;
+    font-weight:700; padding:2px 6px; border-radius:9px; }
+  .tavern .tile .tag-bought { background:var(--tsel); color:var(--tonsel); }
+  .tavern .tile .tag-pref { background:var(--tpanel); color:var(--tdiff);
+                            border:1px dashed var(--tdiff); }
+  @media (max-width: 1199.98px) {
+    .spanel-tv .tv-body { flex-direction:column; }
+    .tavern .cd-call { flex:none; width:auto; min-width:0; }
+  }
   .tavern .stepnav { display:flex; gap:8px; align-items:center;
                      margin:0 0 8px; flex-wrap:wrap; }
   .tavern .snav { background:var(--tpanel); color:var(--ttext);
@@ -4633,6 +4663,40 @@ function stepDiffFlags(steps, phases) {
     return false;
   });
 }
+// The model's pick for ONE step: the k-th card the plan named for that kind,
+// where k counts the player's steps of that kind BEFORE this one. Plan order is
+// priority order and is never re-sorted (COACHING_PLAN §9), so pairing by
+// position is the only order-preserving reading of "what it wanted at this
+// step". Returns null when the plan named nothing for it, or named fewer cards
+// than the player took — then there is no pick to show, not a guess.
+function coachStepPick(steps, phases, i) {
+  const st = (steps || [])[i];
+  if (!st) return null;
+  const kind = st.k;
+  if (kind !== 'buy' && kind !== 'cast' && kind !== 'play') return null;
+  const row = coachRows(phases).find(r => r.kind === kind);
+  if (!row) return null;
+  const named = (row.model || {}).cards || [];
+  let k = 0;
+  for (let j = 0; j < i; j++) if ((steps[j] || {}).k === kind) k += 1;
+  if (!named[k]) return null;
+  return {kind: kind, card: named[k], row: row};
+}
+// The Step-through callout: what the model named for this step against what the
+// step did. Only where the comparison itself says they differ — a `same` step
+// has nothing to argue about, and `not_comparable` must not be dressed up as a
+// preference (COACHING_PLAN §5.4/§5.6).
+function coachCallout(steps, phases, i, conf) {
+  const st = (steps || [])[i];
+  const pick = coachStepPick(steps, phases, i);
+  if (!st || !pick) return null;
+  const row = pick.row;
+  if (!row || row.state !== 'differs') return null;
+  const model = coachName(pick.card);
+  const you = st.cardName || coachName(st.card);
+  if (!model || !you || model === you) return null;
+  return {model: model, player: you, why: row.why || null, conf: conf || null};
+}
 // --- Battle face-off helpers (design §4.5). Pure, node-tested.
 function outcomeText(winner) {
   return winner === 'us' ? 'You won the fight'
@@ -5219,24 +5283,71 @@ function renderTavernSteps(row, phases) {
     sec.appendChild(body);
     return sec;
   };
-  const cardsRow = (cards, subOf) => {
+  const cardsRow = (cards, subOf, decorate) => {
     const row = el('div', 'spanel-cards');
     for (const c of cards) {
       const cid = (c && c.card) || c;
       const meta = cardMeta(cid);
-      row.appendChild(tile(cid, (meta && meta.name) || cid,
-                           subOf ? subOf(c) : '', {cls: 'mini'}));
+      const t = tile(cid, (meta && meta.name) || cid,
+                     subOf ? subOf(c) : '', {cls: 'mini'});
+      // The comparison's decorations are applied HERE, by the caller, and never
+      // inside `tile()`: Live renders through the same tile function, and a tag
+      // added there would be one payload away from the live page.
+      if (decorate) decorate(c, t);
+      row.appendChild(t);
     }
     return row;
   };
   const emptyLine = what => el('div', 'spanel-empty', what);
   const plural = (n, one) => n + ' ' + one + (n === 1 ? '' : 's');
+  // THE STEP'S COMPARISON (2026-10-20, pass 4): the pick the plan named for
+  // this step, and the callout when the step differs. `pick` also drives the
+  // two tags/outlines; both are `_coachOn`-gated here, not in `tile()`.
+  const conf = (phases || []).map(p => p.confidence).filter(Boolean)[0] || null;
+  const pick = _coachOn ? coachStepPick(steps, phases, _tavernStep) : null;
+  const call = _coachOn
+    ? coachCallout(steps, phases, _tavernStep, conf) : null;
+  const calloutEl = c => {
+    const d = el('div', 'cd-call');
+    const h = el('div', 'cd-call-h');
+    h.appendChild(el('span', null, 'Model preferred '));
+    h.appendChild(el('b', null, c.model));
+    h.appendChild(el('span', null, ' over '));
+    h.appendChild(el('b', null, c.player));
+    d.appendChild(h);
+    if (c.why) d.appendChild(el('div', 'cd-call-w', 'Why: ' + c.why));
+    if (c.conf) d.appendChild(el('div', 'cd-call-e', 'confidence: ' + c.conf));
+    return d;
+  };
   const tavern = (st && st.tavern) || [];
+  const tvBody = el('div', 'tv-body');
+  if (tavern.length) {
+    const rowEl = cardsRow(tavern.map(c => ({card: c})), null, (c, t) => {
+      const id = (c && c.card) || c;
+      if (st && st.k === 'buy' && id === st.card) {
+        t.classList.add('you-bought');
+        t.appendChild(el('span', 'tag-bought', 'You bought'));
+      } else if (pick && id === pick.card) {
+        t.classList.add('model-pref');
+        t.appendChild(el('span', 'tag-pref', 'Model preferred'));
+      }
+    });
+    if (pick && pick.card && tavern.indexOf(pick.card) < 0) {
+      // The card the model named was not in the offers this step printed (a roll
+      // happened between them): a ghost keeps it visible without inventing an
+      // offer the shop did not have.
+      const g = tile(pick.card, coachName(pick.card), '',
+                     {cls: 'ghost model-ghost'});
+      g.appendChild(el('span', 'tag-pref', 'Model preferred'));
+      rowEl.appendChild(g);
+    }
+    tvBody.appendChild(rowEl);
+  } else {
+    tvBody.appendChild(emptyLine('No offers read at this step'));
+  }
+  if (call) tvBody.appendChild(calloutEl(call));
   col.appendChild(panel('Tavern', plural(tavern.length, 'offer'),
-                        'what the shop offered at this step',
-                        tavern.length
-                          ? cardsRow(tavern.map(c => ({card: c})))
-                          : emptyLine('No offers read at this step'),
+                        'what the shop offered at this step', tvBody,
                         'spanel-tv'));
   const boardWrap = document.createElement('div');
   boardWrap.className = 'stepboard spanel-cards';
