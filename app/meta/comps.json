@@ -706,6 +706,28 @@
   "tribe": "Quilboar",
   "how_to_play": "Blood Gems played from HAND: Hot-Air Surveyor makes every gem you play from hand cast an extra time, so the payoff is a hand full of gems rather than one gem a turn. Victorious Geomant's Activate (2) hands you 6 at once and casts the overflow onto your left-most minion - keep the carry there - and Mangled Bandit trades a discard for 3 more. Scale the gems themselves with Sanguine Refiner's Rally and Sanguine Champion's battlecry and deathrattle; both boosts are permanent. Balinda Stonehearth doubles each gem you cast, and Geomagus Roogug chains a second gem off itself whenever one lands on it."
  },
+ "quilboar-felboar-gems": {
+  "name": "Quilboar - Felboar Gems",
+  "difficulty": "Hard",
+  "meta_tier": "B",
+  "core": [
+   "BG28_633",
+   "BG33_885"
+  ],
+  "addons": [
+   "BG30_121",
+   "BG36_370",
+   "BG23_017",
+   "BG34_682"
+  ],
+  "summary": "Feed a Felboar with gem-buffed Tavern minions",
+  "when_to_commit": "Felboar plus Sanguine Refiner, with Blood Gems to cast",
+  "common_enablers": "Hot-Air Surveyor (Blood Gems cast an extra time) and Victorious Geomant (Activate: 6 Blood Gems)",
+  "representative_card": "BG28_633",
+  "source": "A 1st-place game of 2026-10-20 (Sylvanas Windrunner, 15 turns), recorded from its saved replay; card facts from meta/minions.json and meta/tavern_spells.json, wording our own.",
+  "tribe": "Quilboar",
+  "how_to_play": "A Demon/Quilboar engine where the Quilboar half feeds the Felboar. Felboar eats a minion in the Tavern and gains its stats after every third spell you cast, so the payoff is a Tavern whose minions are already enormous when the third cast lands — and Blood Gems are spells, so a hand full of them is the clock. Sanguine Refiner's Rally and Sanguine Champion's battlecry and deathrattle raise what your gems give for the rest of the game; Hot-Air Surveyor makes each gem cast an extra time; Victorious Geomant's Activate (2) refills the hand with six. Razorfen Flapper's deathrattle hands over a Blood Gem Barrage, which buffs the Tavern for the rest of the game and is exactly what the next Felboar meal is made of. Two Felboars are worth keeping if the Tavern allows it: the recorded game finished with a golden one at 15,628/19,658 and a second at 2,813/3,631."
+ },
  "murlocs-magicfin": {
   "name": "Murlocs - Magicfin",
   "difficulty": "Easy",
