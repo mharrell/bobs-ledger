@@ -529,6 +529,46 @@ tavern-owned) — shop_ranking just silently dropped them.
 Captured so they are not lost, not committed to. Each one names the constraint
 that will decide it, because in this repo that is usually the expensive part.
 
+### Coaching in Settle Up — SPECIFIED, not started (2026-10-20)
+
+> The maintainer's ask: bring the model-vs-player comparison back, **only in
+> Settle Up, never on Live**, behind a switch that is off by default.
+
+**The full spec is `analysis/COACHING_PLAN_2026_10_20.md`** — read it before
+writing a line. It carries the surface-by-surface design, the exact data-model
+keys, the build order, the test plan and the traps. Nothing is implemented.
+
+**Three decisions are already made** (2026-10-20), so they are not open:
+
+1. **The switch is display-only.** Coaching is computed at build and stored in
+   the replay as today; the switch gates rendering only. No payload shape may
+   depend on it.
+2. **Nothing is stripped from the share report.** `session_report.SPEC` already
+   ships the plan and its step reasons, and it keeps them: they are what lets a
+   collected corpus grade plans later.
+3. **The evidence line counts the player's own saved games**, as *difference*
+   counts — never as proof the model was right.
+
+**The constraint that will decide the design.** This is the pivot's own line:
+a verdict may only appear in a **finished** game, and only as a comparison the
+engine can actually back. Two states are therefore first-class rather than
+errors — **"not reached"** (the plan's step was never affordable) and **"not
+comparable"** (the player's card is not in the model's own ranking). Both come
+from rules the code already states: `outcome_audit.disagreement_rows`'s
+docstring ("a card the coach never priced is not evidence of anything") and the
+affordability data already carried on each row (`steps`, `level_cost`,
+`shop_costs`).
+
+**What already exists, so this is assembly rather than a new engine:**
+- `outcome_audit.disagreement_rows` IS the comparison, and already returns both
+  scores and the delta on one shared scale.
+- `settle_up.build` already writes one row per advised phase; the new keys are
+  additive on it.
+- `coach_ui.LIVE_VERDICT_KEYS` / `LIVE_UNREAD_KEYS` and their pins already keep
+  the plan off the Live page; extend those, add no third mechanism.
+- `replay_store.list()` already enumerates the saved games the evidence line
+  counts.
+
 ### Replay reviewer in the overlay (maintainer's ask, 2026-10-06)
 
 > "Toggle between Current game info and a replay reviewer. The reviewer has a
