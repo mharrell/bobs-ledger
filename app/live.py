@@ -11,7 +11,7 @@ re-read the tail and run the existing coach loop on each decision point.
 
 Usage:
     python live.py                     # auto-find the active session
-    python live.py <Power.log> [--once] [--poll N]
+    python live.py <Power.log> [--once] [--poll N] [--combat-hold S]
     python live.py --version           # print the running version
 """
 import glob
@@ -444,8 +444,28 @@ def _catch_up(f, coach):
 #: coach_ui before the fingerprint gate — and prints nothing.
 SHOP_REREAD_SECONDS = 5.0
 
+#: How long the FIRST push of a new turn's shop waits after the previous buy
+#: phase closed (2026-10-23, from the "the tavern view refreshes in the middle of
+#: the combat animation" report).
+#:
+#: MEASURED, because the obvious reading — "the log only reaches the next shop
+#: when the fight is over" — is wrong. On the 2026-10-22 12:45 game (64 MB, four
+#: games) the next turn's MAIN_ACTION is written 0.61 s / 0.59 s / 0.87 s after
+#: the buy phase's MAIN_END at turns 3, 7 and 9, and the same ~1 s on the late
+#: turns with full boards: the combat RESOLVES instantly in the log (MAIN_END,
+#: MAIN_CLEANUP, MAIN_NEXT all inside the same second) and the client then
+#: spends the next several seconds animating it. So pushing as soon as the shop
+#: table appears swaps the tavern out from under the fight.
+#:
+#: The log carries NO "animation finished" marker to wait for, which is why this
+#: is a delay and not a gate: 8 s covers an ordinary mid-game fight, and the
+#: player's first action in the new turn (gold spent or gained — a buy, a roll, a
+#: sell) releases it EARLY, because acting proves the animation is over. `0`
+#: keeps the old behaviour (`--combat-hold 0`).
+COMBAT_HOLD_SECONDS = 8.0
 
-def monitor(path, poll=1.0):
+
+def monitor(path, poll=1.0, combat_hold=None):
     """Tail the log; advise on every decision-state change during a buy phase.
 
     A new buy phase is the first MAIN_ACTION of a turn. MAIN_ACTION re-enters
@@ -492,6 +512,14 @@ def monitor(path, poll=1.0):
         pass
     in_action = False
     last_state = None
+    # The combat hold (see COMBAT_HOLD_SECONDS): armed when a buy phase whose
+    # frame is on screen ends, released by the deadline or by the player acting.
+    hold = COMBAT_HOLD_SECONDS if combat_hold is None else combat_hold
+    hold_until = 0.0
+    hold_gold = None
+    hold_board = None
+    hold_seen = False
+    hold_pending = False
     # When the frame on screen was last pushed, for the periodic re-read below.
     # 0.0, not `now`: attaching to a log mid-shop should re-read that shop once
     # rather than wait for the timer.
@@ -579,6 +607,11 @@ def monitor(path, poll=1.0):
                 in_action = False
                 last_state = None
                 last_push = 0.0   # a switched session is a new frame entirely
+                hold_until = 0.0  # ...and the combat hold with it
+                hold_gold = None
+                hold_board = None
+                hold_seen = False
+                hold_pending = False
                 meta_checked_lines = 0
                 pick_pending = False
                 last_err = None
@@ -635,11 +668,24 @@ def monitor(path, poll=1.0):
                                     in_action = True
                                 elif is_gs and "tag=STEP value=MAIN_END" in line:
                                     in_action = False  # combat ends the buy phase
+                                    # A frame on screen when the shop closes is
+                                    # the evidence that the NEXT shop will be a
+                                    # refresh the player watches land mid-fight.
+                                    had_frame = last_state is not None
                                     last_state = None  # force a fresh advisory next phase
                                     # ...and the re-read timer with it: the shop
                                     # this phase showed is closed, so the next
                                     # open one is a new frame to read.
                                     last_push = 0.0
+                                    if had_frame and hold > 0:
+                                        hold_until = time.monotonic() + hold
+                                        hold_gold = None
+                                        hold_board = None
+                                        hold_seen = False
+                                        hold_pending = False
+                                        print(f"  the fight is animating: holding "
+                                              f"the next shop {hold:g}s",
+                                              flush=True)
                             except Exception as e:  # noqa: BLE001
                                 if str(e) != last_err:
                                     print(f"  (line skipped: {e})", flush=True)
@@ -672,12 +718,35 @@ def monitor(path, poll=1.0):
                             # _advise (an exception during a transient parse)
                             # used to be marked advised and never retried —
                             # no advice for the rest of the buy phase.
-                            ok = _advise(coach, log_path=path,
-                                         log_offset=last_offset,
-                                         game_no=coach.game_no)
-                            if ok:
-                                last_state = state
-                                last_push = time.monotonic()
+                            now = time.monotonic()
+                            if hold_until and now < hold_until:
+                                if not hold_seen:
+                                    # The shop as it FIRST appeared: the turn's
+                                    # purse and board are written before the
+                                    # offers, and a shop that keeps printing
+                                    # options must not look like a player action.
+                                    hold_gold, hold_board = state[0], state[3]
+                                    hold_seen = True
+                                elif state[0] != hold_gold \
+                                        or state[3] != hold_board:
+                                    # Spent or gained, bought or played: the
+                                    # player is already shopping, so the
+                                    # animation is over.
+                                    hold_until = 0.0
+                            if hold_until and now < hold_until:
+                                hold_pending = True  # the fight is still animating
+                            else:
+                                ok = _advise(coach, log_path=path,
+                                             log_offset=last_offset,
+                                             game_no=coach.game_no)
+                                if ok:
+                                    hold_until = 0.0
+                                    hold_gold = None
+                                    hold_board = None
+                                    hold_seen = False
+                                    hold_pending = False
+                                    last_state = state
+                                    last_push = time.monotonic()
                         elif time.monotonic() - last_push >= SHOP_REREAD_SECONDS:
                             # The shop is open and NOTHING has changed for
                             # SHOP_REREAD_SECONDS: re-read it anyway, so the
@@ -691,6 +760,24 @@ def monitor(path, poll=1.0):
                                        log_offset=last_offset,
                                        game_no=coach.game_no, record=False):
                                 last_push = time.monotonic()
+                # The hold can expire during a QUIET stretch of the log (the
+                # shop writes arrive in one burst, then nothing until the
+                # player acts), and the frame still has to land then — waiting
+                # for the next unrelated line would leave the old shop on
+                # screen for as long as the player thinks.
+                if hold_pending and time.monotonic() >= hold_until:
+                    state = coach.state_fingerprint()
+                    if in_action and coach.tavern_offers() and state is not None:
+                        if _advise(coach, log_path=path,
+                                   log_offset=last_offset,
+                                   game_no=coach.game_no):
+                            hold_pending = False
+                            hold_until = 0.0
+                            hold_gold = None
+                            hold_board = None
+                            hold_seen = False
+                            last_state = state
+                            last_push = time.monotonic()
                 # A pending pick is advised on EVERY tick — quiet log included.
                 # While a pick screen waits, the friendly player's own log stops
                 # writing, so gating advice on new data left between-rounds picks
@@ -980,7 +1067,8 @@ def _share_finished(log_path, opts=(), last_game=None, placement=None):
 
 
 def _parse_argv(argv):
-    """(positional args, flags), with `--poll N` paired to its own value.
+    """(positional args, flags), with `--poll N` / `--combat-hold S` paired to
+    their own values.
 
     Splitting on the leading `--` alone put the VALUE in the positional list,
     which broke the form this module's usage line and the README both document:
@@ -996,8 +1084,9 @@ def _parse_argv(argv):
         token = rest.pop(0)
         if not token.startswith("--"):
             args.append(token)
-        elif token == "--poll" and rest and not rest[0].startswith("--"):
-            opts.append("--poll=" + rest.pop(0))
+        elif token in ("--poll", "--combat-hold") and rest \
+                and not rest[0].startswith("--"):
+            opts.append(token + "=" + rest.pop(0))
         else:
             opts.append(token)
     return args, opts
@@ -1020,6 +1109,28 @@ def _poll_seconds(opts, default=0.3):
             raise SystemExit(f"--poll needs a number of seconds, not {value!r}")
         if seconds <= 0:
             raise SystemExit("--poll needs a positive number of seconds")
+        return seconds
+    return default
+
+
+def _combat_hold(opts, default=COMBAT_HOLD_SECONDS):
+    """The new-shop hold from `--combat-hold`/`--combat-hold=N`, or `default`.
+
+    Same shape as `_poll_seconds`, and the same reason for the explicit
+    messages: this is parsed before the overlay exists, and `0` is a real
+    answer here (off), not a mistake.
+    """
+    for opt in opts:
+        if not opt.startswith("--combat-hold"):
+            continue
+        value = opt.split("=", 1)[1] if "=" in opt else ""
+        try:
+            seconds = float(value)
+        except ValueError:
+            raise SystemExit(
+                f"--combat-hold needs a number of seconds, not {value!r}")
+        if seconds < 0:
+            raise SystemExit("--combat-hold cannot be negative (0 turns it off)")
         return seconds
     return default
 
@@ -1063,6 +1174,7 @@ def main():
         except Exception:  # noqa: BLE001 - update checks never block play
             pass
     poll = _poll_seconds(opts)  # fast tail cadence — analysis is ~5ms
+    combat_hold = _combat_hold(opts)  # see COMBAT_HOLD_SECONDS
     ui_on = "--no-ui" not in opts
     # Start the overlay server (unless --no-ui) BEFORE the log check: the
     # welcome card names the log.config fix, and it must be on screen in
@@ -1136,7 +1248,7 @@ def main():
                 game_no=coach.game_no)
         return 0
     try:
-        monitor(path, poll)
+        monitor(path, poll, combat_hold=combat_hold)
     except KeyboardInterrupt:
         pass
     finally:

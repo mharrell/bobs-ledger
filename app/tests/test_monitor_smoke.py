@@ -204,6 +204,10 @@ class _MonitorHarness(unittest.TestCase):
         self._patch(live, "_shared_games", set())
         self._patch(live, "_LAST_SHARE_ATTEMPT", [0.0])
         self._patch(live, "_LAST_GAME", None)
+        # The combat hold is a real wall-clock wait by design (live.py's
+        # COMBAT_HOLD_SECONDS); no smoke test should pay it. Its own tests below
+        # pass the knob to monitor() explicitly.
+        self._patch(live, "COMBAT_HOLD_SECONDS", 0.0)
         # No flags: monitor() reads argv itself, and that lookup is exactly where
         # the shipped NameError was.
         self._patch(sys, "argv", ["live.py"])
@@ -823,6 +827,150 @@ class TestTheLogSizeCapIsNotSilent(_MonitorHarness):
         self._drive(log, growth=())
         self.assertIsNone(coach_ui.log_cap_notice(),
                           "the cap warning survived into an uncapped session")
+
+
+class TestTheCombatHold(_MonitorHarness):
+    """The next shop's frame waits out the fight, then lands (2026-10-23).
+
+    MEASURED on the 2026-10-22 12:45 game: the log hands over the next turn's
+    shop 0.61 / 0.59 / 0.87 s after the buy phase's MAIN_END (turns 3, 7 and 9,
+    and the same on late turns) because the combat RESOLVES instantly in the log
+    while the client animates it for seconds. Pushing then swapped the tavern out
+    from under the fight. The log carries no "animation finished" marker, so
+    this is a delay, not a gate: `live.COMBAT_HOLD_SECONDS`, released early by
+    the player's first action of the turn.
+    """
+
+    NEXT_SHOP = [("Kooky Chemist", "BG31_820", 15)]
+    TICKS = 24
+
+    def _drive_hold(self, schedule, hold):
+        """monitor() with a hand-driven clock; one batch of lines per tick.
+
+        Returns [(clock seconds, shop_offers)] for every push to the overlay.
+        """
+        log = self._session(_SESSION_DIR)
+        self._patch(live, "find_active_log", lambda: log)
+        clock = {"t": 0.0}
+        pushes = []
+        self._patch(live.coach_ui, "update_analysis",
+                    lambda a: pushes.append((clock["t"],
+                                             list(a.get("shop_offers") or []))))
+        seen = {"n": 0}
+
+        def fake_sleep(_seconds):
+            seen["n"] += 1
+            i = seen["n"] - 1
+            if i < len(schedule):
+                with open(log, "a", encoding="utf-8") as f:
+                    for line in schedule[i]:
+                        f.write(line + "\n")
+            clock["t"] += 0.5
+            if seen["n"] > self.TICKS:
+                raise KeyboardInterrupt
+
+        with mock.patch.object(live.time, "monotonic", lambda: clock["t"]), \
+                mock.patch.object(live.time, "sleep", fake_sleep), \
+                contextlib.redirect_stdout(self.out):
+            live.monitor(log, 0.01, combat_hold=hold)
+        return pushes
+
+    def _schedule(self, tail=()):
+        """Two turns: turn 2 is played and ends, then turn 3's shop appears.
+
+        The batches are appended one per tick by `fake_sleep`, so the shop of
+        turn 3 is read at t=2.5 s (`hold` is measured from the MAIN_END at
+        t=2.0 s).
+        """
+        return [
+            list(GROWTH[0]) + list(GROWTH[1]),   # turn 1 closes, turn 2 opens
+            list(GROWTH[2]),                      # the purse: turn 2 is advised
+            list(GROWTH[3]),
+            [f"{GS}Entity=GameEntity tag=STEP value=MAIN_END"],  # turn 2 ends
+            [f"{GS}Entity=GameEntity tag=STEP value=MAIN_ACTION"]
+            + opt_block(3, self.NEXT_SHOP),       # turn 3's shop, mid-fight
+        ] + list(tail)
+
+    def _turn3(self, pushes):
+        return [t for t, shop in pushes if "BG31_820" in shop]
+
+    def test_the_next_shop_waits_for_the_fight(self):
+        pushes = self._drive_hold(self._schedule(), hold=2.0)
+        turn2 = [t for t, shop in pushes if "BG33_140" in shop]
+        self.assertTrue(turn2, "turn 2's own shop was never advised")
+        self.assertTrue(self._turn3(pushes),
+                        "the next shop's advice never landed after the hold")
+        self.assertGreaterEqual(
+            self._turn3(pushes)[0], 4.0,
+            "the next shop was pushed before the hold expired — that is the "
+            "mid-combat refresh this exists to stop")
+
+    def test_the_player_acting_releases_it_early(self):
+        """A buy/roll proves the animation is over; advice must not wait 8 s."""
+        schedule = self._schedule(tail=(
+            [f"{GS}Entity={_LOCAL} tag=RESOURCES value=1"],  # the player acts
+        ))
+        pushes = self._drive_hold(schedule, hold=10.0)
+        turn3 = self._turn3(pushes)
+        self.assertTrue(turn3, "acting did not release the hold")
+        self.assertLess(turn3[0], 10.0,
+                        "the hold was not released by the player's own action")
+
+    def test_a_played_minion_releases_it_too(self):
+        """A card played from hand is free: gold alone would miss it."""
+        schedule = self._schedule(tail=(
+            [_named_tag(150, "BG33_140", 7, "ZONE", "PLAY")],
+        ))
+        pushes = self._drive_hold(schedule, hold=10.0)
+        turn3 = self._turn3(pushes)
+        self.assertTrue(turn3, "a play did not release the hold")
+        self.assertLess(turn3[0], 10.0,
+                        "the hold ignored a minion played from hand")
+
+    def test_zero_keeps_the_old_behaviour(self):
+        pushes = self._drive_hold(self._schedule(), hold=0.0)
+        turn3 = self._turn3(pushes)
+        self.assertTrue(turn3, "the next shop was never advised")
+        self.assertLess(turn3[0], 3.0,
+                        "hold=0 still deferred the shop")
+
+    def test_the_hold_is_armed_only_when_a_frame_was_on_screen(self):
+        """A phase the player never saw advised must not delay the next one.
+
+        Attaching to a log mid-game catches the current shop up WITHOUT advising
+        it (the pivot's rule), so there is no frame to protect there.
+        """
+        pushes = self._drive_hold(self._schedule(), hold=2.0)
+        # Turn 2's shop is advised before any MAIN_END (t=1.0/1.5), which is the
+        # arm the hold depends on.
+        self.assertTrue([t for t, shop in pushes
+                         if "BG33_140" in shop and t < 2.0],
+                        "turn 2 was not advised before its phase ended")
+
+
+class TestTheCombatHoldKnob(unittest.TestCase):
+    """`--combat-hold` parses both spellings and refuses nonsense."""
+
+    def test_the_value_may_be_separate_or_joined(self):
+        for argv, want in ((["--combat-hold", "3"], 3.0),
+                           (["--combat-hold=3.5"], 3.5)):
+            args, opts = live._parse_argv(argv)
+            self.assertEqual(args, [])
+            self.assertEqual(live._combat_hold(opts), want)
+
+    def test_no_flag_keeps_the_default(self):
+        self.assertEqual(live._combat_hold([]), live.COMBAT_HOLD_SECONDS)
+
+    def test_zero_is_off_and_negative_is_refused(self):
+        self.assertEqual(live._combat_hold(["--combat-hold=0"]), 0.0)
+        with self.assertRaises(SystemExit):
+            live._combat_hold(["--combat-hold=-1"])
+
+    def test_a_bad_value_says_what_it_wanted(self):
+        with self.assertRaises(SystemExit) as raised:
+            live._combat_hold(["--combat-hold=soon"])
+        self.assertIn("--combat-hold", str(raised.exception))
+        self.assertIn("soon", str(raised.exception))
 
 
 if __name__ == "__main__":
