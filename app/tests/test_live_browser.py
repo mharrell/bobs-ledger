@@ -687,11 +687,22 @@ _DRIVER = r"""
       return n ? getComputedStyle(n).whiteSpace : '';
     })();
     o.noart = q('.tile .thumb').length;
-    // 4. The tribe row: one chip per tribe, amber when set, dimmed when not.
+    // 4. The tribe row: one chip per tribe, amber when set, green when the pool
+    // says it is in play, struck red when banned (or rotated out), dim when the
+    // five are not settled yet.
     o.chipcls = all('.lv-tribes .lv-chip')
       .map(c => c.textContent + ':' + (c.classList.contains('active') ? 'active'
              : c.classList.contains('dim') ? 'dim'
-             : c.classList.contains('out') ? 'out' : '?')).join('|');
+             : c.classList.contains('ban') ? 'ban'
+             : c.classList.contains('out') ? 'out'
+             : c.classList.contains('avail') ? 'avail' : '?')).join('|');
+    o.chipstyle = (function () {
+      const c = all('.lv-tribes .lv-chip').find(
+        x => x.classList.contains('ban'));
+      if (!c) return '';
+      const s = getComputedStyle(c);
+      return s.textDecorationLine + '|' + s.borderTopColor;
+    })();
     o.nagacount = all('.lv-tribes .lv-chip')
       .filter(c => c.textContent === 'NAGA' || c.textContent === 'Naga').length;
     // (The pick screen's own numbers and layout — `picklbl`, `pickcolw`,
@@ -1023,8 +1034,8 @@ _DRIVER = r"""
                            'cardslotkids', 'tabh', 'tavernw', 'vpw', 'slotart',
                            'legendslots', 'cmpboxes', 'cmpchecked', 'cmpdisabled',
                            'missvals', 'bhhalf', 'renameless', 'tiletitles',
-                           'noart', 'nagacount', 'pickcolw', 'pickctlvp',
-                           'picknameh', 'cols', 'vw', 'vh',
+                           'noart', 'nagacount', 'pickcolw',
+                           'pickctlvp', 'picknameh', 'cols', 'vw', 'vh',
                            'avgcells', 'hasavg', 'crowrows', 'maindim', 'ctlrows',
                            'navviewer', 'inplaychips', 'shopcards',
                            'boardcards', 'passedcards', 'oppcards',
@@ -1419,15 +1430,15 @@ class TestTheTavernLiveInABrowser(_Rendered):
         """Fix list round 1 item 3. The roster is every tribe the game has, so
         Naga is in it AND in `out_of_pool`: iterating both printed it twice.
 
-        REVERSED 2026-10-13. This pinned "amber outline when the tribe is
-        banned, dimmed when it is in play" — the direction the payoff session
-        (2026-10-13_12_01_10) proved wrong: the five the player taps are the
-        tribes in the tavern, so the set the page seeds from is
-        `tribes_available` and `banned` is its complement. The read is the same
-        three states with the meanings swapped: the tapped five are `active`
-        (BEAST, PIRATE among them), the tribe this game cannot offer — and that
-        the player did not tap — is `dim` (DEMON), and the rotated one is `out`.
-        """
+        REVERSED 2026-10-13, EXTENDED 2026-10-23. This pinned "amber outline when
+        the tribe is banned, dimmed when it is in play" — the direction the payoff
+        session (2026-10-13_12_01_10) proved wrong: the five the player taps are
+        the tribes in the tavern, so the set the page seeds from is
+        `tribes_available` and `banned` is its complement. The states now read:
+        the tapped five are `active` (BEAST, PIRATE among them), a tribe the game
+        cannot offer is `ban` — struck red, because this shot is in manual mode so
+        the five ARE settled and the complement IS the ban list — and the rotated
+        one is `out`."""
         got = self.got
         self.assertEqual(got["t.nagacount"], 1,
                          "the out-of-play tribe is listed twice")
@@ -1435,11 +1446,43 @@ class TestTheTavernLiveInABrowser(_Rendered):
                       "a tribe the player set as in the tavern is not marked")
         self.assertIn("PIRATE:active", got["t.chipcls"],
                       "a tribe the player set as in the tavern is not marked")
-        self.assertIn("DEMON:dim", got["t.chipcls"],
-                      "the tribe this game cannot offer is not dimmed")
+        self.assertIn("DEMON:ban", got["t.chipcls"],
+                      "the tribe this game cannot offer is not marked banned")
         self.assertIn("NAGA:out", got["t.chipcls"])
         self.assertEqual(got["t.chipcls"].count(":?"), 0,
                          "a chip with no state class at all")
+
+    def test_a_banned_tribe_is_struck_red(self):
+        """The maintainer's ask (2026-10-23): once a tribe is DETERMINED banned,
+        the button carries the red/strikethrough look — measured off the computed
+        style, not the class name, because the class is the means and the strike
+        is the claim.
+
+        It is the same treatment as out-of-play (a rotated tribe is never
+        offerable either), but the two differ in one thing that matters: a banned
+        chip stays CLICKABLE, because the row is the correction."""
+        got = self.got
+        style = got["t.chipstyle"].split("|")
+        self.assertEqual(style[0], "line-through",
+                         "a banned tribe's name is not struck through")
+        self.assertNotEqual(style[1], "rgba(0, 0, 0, 0)",
+                            "a banned tribe has no border colour at all")
+
+    def test_nothing_is_struck_before_the_five_are_settled(self):
+        """A guess must not wear the ban's clothes: with the five unconfirmed the
+        rest of the roster is `dim`, and no chip is `ban`. Five confirmed flips
+        them, which is the pair that makes the state mean something."""
+        got = _render([_shot("u", _payload(bans_manual=False, tribes_seen=2)),
+                       _shot("f", _payload(bans_manual=False, tribes_seen=5))])
+        self.assertNotIn(":ban", got["u.chipcls"],
+                         "an unconfirmed lobby already shows bans")
+        self.assertIn("BEAST:avail", got["u.chipcls"],
+                      "the pool's five are not marked in play")
+        self.assertIn("DEMON:dim", got["u.chipcls"])
+        self.assertIn("DEMON:ban", got["f.chipcls"],
+                      "a confirmed lobby does not mark the complement banned")
+        self.assertIn("BEAST:avail", got["f.chipcls"],
+                      "settling the five turned their own mark off")
 
     def test_the_sections_are_the_whole_page_and_the_tabs_are_gone(self):
         """REVERSED 2026-10-13 (fix list round 4 item 5). This pinned §4.1's tab

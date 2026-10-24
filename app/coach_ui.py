@@ -1605,6 +1605,13 @@ _HTML = r"""<!doctype html>
      not clickable, so it can never read as one of the five. */
   .tavern.live .lv-chip.out { border-color:var(--tloss); color:var(--tmute);
                               text-decoration:line-through; cursor:default; }
+  /* BANNED THIS GAME (2026-10-23): once the five in-play tribes are settled —
+     five confirmed by the pool, or five tapped by hand — the complement is not
+     a guess about the lobby, it is the ban list, so it takes the same struck-red
+     treatment as out-of-play. Unlike `.out` it stays CLICKABLE: the row is the
+     correction, so a tap brings one back into the five. */
+  .tavern.live .lv-chip.ban { border-color:var(--tloss); color:var(--tmute);
+                              text-decoration:line-through; }
   .tavern.live .lv-chip.picked { border-color:var(--tsel); }
   /* The design's §6.1 four dashed skeleton cards went with fix list round 2 item
      2 (the player's call: they read as thick dash bars carrying nothing). The
@@ -2745,18 +2752,28 @@ function lvWaiting(a) {
 //: what makes every comp filter downstream exact.
 //: AVAILABILITY IS THE MARK (fix list round 4 item 1). A chip says what the
 //: game can still offer (`tribes_available`, computed with the bans).
-//: ONE MEANING PER COLOUR (2026-10-13): amber (`active`) is "you have set this
-//: one", green (`avail`) is "the pool says it is in play", struck (`out`) is
-//: "rotated out by a patch", dim is "not in your five". The tapped set is
-//: `tribes_available` — the five in the tavern — NOT `banned`: seeding `picked`
-//: from `banned` marked the complement amber, so the row read "these five are
-//: in" over the five this lobby cannot offer, which is the inverted reading the
-//: player reported (measured: every offer in session 2026-10-13_12_01_10 came
-//: from the amber chips).
+//: ONE MEANING PER COLOUR (2026-10-13; extended 2026-10-23): amber (`active`)
+//: is "you have set this one", green (`avail`) is "the pool says it is in
+//: play", struck red is "banned this game" (`ban`, once the five are settled)
+//: or "rotated out by a patch" (`out`, never offerable), and dim is "not
+//: confirmed yet". The tapped set is `tribes_available` — the five in the
+//: tavern — NOT `banned`: seeding `picked` from `banned` marked the complement
+//: amber, so the row read "these five are in" over the five this lobby cannot
+//: offer, which is the inverted reading the player reported (measured: every
+//: offer in session 2026-10-13_12_01_10 came from the amber chips).
 //: A tribe that is out of play appears ONCE — it is in the roster AND in
 //: `out_of_pool`, so iterating both printed Naga twice.
+//:
+//: BANNED IS A STATE OF ITS OWN ONCE THE FIVE ARE SETTLED (2026-10-23, the
+//: maintainer: "once we've determined that a tribe is banned, the button should
+//: have the red/strikethrough look"). Before the list is complete the rest of
+//: the roster is only "not in your five yet" (dim) — a guess. With five
+//: confirmed by the pool, or five tapped by hand, the complement IS the game's
+//: ban list, so those chips are struck through in the same red as out-of-play,
+//: and stay CLICKABLE: the row is the correction, so a tap has to bring one back.
 function lvTribes(a) {
   const row = el('div', 'lv-tribes');
+  const settled = a.bans_manual || (a.tribes_seen || 0) >= 5;
   row.appendChild(el('span', 'lv-lbl', a.bans_manual
     ? 'Lobby tribes · tap to correct'
     : 'Lobby tribes · ' + (a.tribes_seen || 0) + '/5 confirmed'));
@@ -2764,21 +2781,28 @@ function lvTribes(a) {
   const avail = new Set(a.tribes_available || []);
   const picked = new Set(a.bans_manual ? (a.tribes_available || []) : []);
   (a.tribe_roster || []).filter(t => !oop.has(t)).forEach(t => {
-    const on = picked.has(t);
-    // An absent `tribes_available` (an older payload) leaves every chip dim,
-    // which is exactly how this row looked before — no invented mark.
-    const can = avail.has(t);
-    const chip = el('span',
-                    'lv-chip ' + (on ? 'active' : (can ? 'avail' : 'dim')), t);
-    chip.title = on ? 'In the tavern — tap to clear'
-                    : (can ? 'In play — tap to say it is in the tavern'
-                           : 'Not in this game — tap if that is wrong');
+    const chip = el('span', 'lv-chip', t);
+    // One rule for the class, recomputed after every tap, so a chip can never
+    // hold two states at once (the old handler toggled `active` and `dim`
+    // independently and could leave a chip both).
+    const mark = () => {
+      const on = picked.has(t);
+      // In manual mode `avail` is the tap list, not the pool's read: a
+      // corrected row must not show the inference it is correcting.
+      const can = !a.bans_manual && avail.has(t);
+      chip.className = 'lv-chip ' + (on ? 'active' : can ? 'avail'
+        : (settled ? 'ban' : 'dim'));
+      chip.title = on ? 'In the tavern — tap to clear'
+        : can ? 'In play — tap to say it is in the tavern'
+        : settled ? 'Banned this game — tap if that is wrong'
+        : 'Not confirmed yet — tap if it is in the tavern';
+    };
+    mark();
     chip.onclick = () => {
       if (picked.has(t)) picked.delete(t);
       else picked.add(t);
       postInPlay([...picked]);
-      chip.classList.toggle('active');
-      chip.classList.toggle('dim');
+      mark();
     };
     row.appendChild(chip);
   });

@@ -1009,8 +1009,12 @@ class TestTheShippedCompsDb(unittest.TestCase):
         """
         src = _function("lvTribes")
         self.assertIn(".filter(t => !oop.has(t))", src)
-        self.assertIn("'lv-chip ' + (on ? 'active' : (can ? 'avail' : 'dim'))",
-                      src)
+        # The class rule (2026-10-23): set by you, in play by the pool, BANNED
+        # once the five are settled, and dim while they are not.
+        self.assertIn("'lv-chip ' + (on ? 'active' : can ? 'avail'", src)
+        self.assertIn(": (settled ? 'ban' : 'dim'));", src)
+        self.assertIn("const settled = a.bans_manual "
+                      "|| (a.tribes_seen || 0) >= 5;", src)
         self.assertIn("a.tribes_available", src)
         self.assertIn("const picked = new Set(a.bans_manual ? "
                       "(a.tribes_available || []) : []);", src)
@@ -1018,9 +1022,10 @@ class TestTheShippedCompsDb(unittest.TestCase):
                          "the row seeds its amber set from the banned list "
                          "again — the direction 2026-10-13 fixed")
         # The tooltips say the direction in words too: a tapped chip is in the
-        # tavern, a green one is what the pool can offer, and neither is a ban.
+        # tavern, a green one is what the pool can offer, a struck one is banned.
         self.assertIn("'In the tavern — tap to clear'", src)
         self.assertIn("'In play — tap to say it is in the tavern'", src)
+        self.assertIn("'Banned this game — tap if that is wrong'", src)
         self.assertNotIn("tap to ban", src)
 
     def test_the_comps_slots_carry_art_and_a_legend(self):
