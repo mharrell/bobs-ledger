@@ -596,6 +596,138 @@ class TestTwoFightsInOneTurn(unittest.TestCase):
                          ["T1"])
 
 
+class TestTheBoardWeWentInWith(unittest.TestCase):
+    """The Battle face-off shows the board the shop CLOSED on, not the board
+    left after the fight's first exchange.
+
+    Reported 2026-10-24 (Forest Lord Cenarius, 2nd, turn 16): the Shop tab's
+    "Ended with" held 7 minions and the Battle tab 6. MEASURED from that
+    game's log: the decisive fight's first snapshot was taken ON the line
+    where our golden Dead Bellringer left PLAY — the opponent's combat copies
+    had entered PLAY in `FULL_ENTITY ... tag=ZONE value=PLAY` CREATION blocks,
+    which `board_state` does not snapshot — so the fight's own bursts began
+    one minion short. The peak then picked a later burst in which the
+    Bellringer's REBORN copy stood where Sin'dorei Straight Shot had died
+    (the total count never dropped), and the face-off lost a card that was on
+    the board at the start.
+    """
+
+    @staticmethod
+    def _snaps(turn, *entries):
+        return {turn: [{"phase": ph, "minions": list(ms)} for ph, ms in entries]}
+
+    # The real shape, shortened: a golden Bellringer that dies before the
+    # first fight snapshot, a reborn copy with a NEW entity id, and one
+    # other minion (Sin'dorei) that dies before the peak's chosen burst.
+    def test_a_minion_that_died_before_the_first_fight_snapshot_stays_on_the_face_off(self):
+        snaps = self._snaps(
+            16,
+            ("buy", [(OURS, "SINDOREI", 14, 16, False, (), 1, 1),
+                     (OURS, "KNIGHT", 404, 166, False, (), 2, 3),
+                     (OURS, "BELLRINGER", 137, 56, True, (), 3, 4),
+                     (OURS, "BUTCHER", 91, 10, False, (), 4, 5),
+                     (OURS, "PHANTOM", 1246, 1163, False, (), 5, 7)]),
+            # the fight's first snapshot IS the Bellringer's death
+            ("combat", [(OURS, "SINDOREI", 14, 16, False, (), 1, 1),
+                        (OURS, "KNIGHT", 404, 166, False, (), 2, 3),
+                        (OURS, "BUTCHER", 91, 10, False, (), 4, 5),
+                        (OURS, "PHANTOM", 1426, 1343, False, (), 5, 6),
+                        (THEIRS, "ENEMY", 100, 100, False, (), 9, 1)]),
+            # the REBORN copy (new id) stands where Sin'dorei has just died
+            ("combat", [(OURS, "KNIGHT", 404, 166, False, (), 2, 3),
+                        (OURS, "BUTCHER", 91, 10, False, (), 4, 5),
+                        (OURS, "PHANTOM", 1426, 1343, False, (), 5, 6),
+                        (OURS, "BELLRINGER", 90, 12, True, (), 6, 4),
+                        (THEIRS, "ENEMY", 100, 100, False, (), 9, 1)]),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        want = ["SINDOREI", "KNIGHT", "BELLRINGER", "BUTCHER", "PHANTOM"]
+        self.assertEqual([m["card"] for m in row["combat_start"]["ours"]], want,
+                         "the fight's start lost the minion that died first")
+        self.assertEqual([m["card"] for m in row["combat_peak"]["ours"]], want,
+                         "the face-off lost a minion the shop closed on")
+        peak = {m["card"]: m for m in row["combat_peak"]["ours"]}
+        self.assertEqual(peak["BELLRINGER"]["atk"], 137,
+                         "the reborn copy's stats stood in for the minion's")
+        self.assertEqual(peak["PHANTOM"]["atk"], 1426,
+                         "the first staging's combat buff was thrown away")
+        self.assertEqual(len(row["combat_peak"]["ours"]),
+                         len(row["buy_end"]),
+                         "the face-off and the Shop tab disagree on the lineup")
+
+    def test_a_complete_post_proc_burst_still_wins(self):
+        """The fix must not freeze the face-off at the shop's numbers: when a
+        burst still holds every minion the fight opened with, its post-proc
+        stats are the honest read (the 2026-10-06 measurement: 31 stats
+        staged, 51 a burst later)."""
+        snaps = self._snaps(
+            7,
+            ("buy", [(OURS, "A", 10, 10, False, (), 1, 1),
+                     (OURS, "B", 10, 10, False, (), 2, 2)]),
+            ("combat", [(OURS, "A", 10, 10, False, (), 1, 1),
+                        (OURS, "B", 10, 10, False, (), 2, 2),
+                        (THEIRS, "T", 5, 5, False, (), 9, 1)]),
+            ("combat", [(OURS, "A", 20, 20, False, (), 1, 1),
+                        (OURS, "B", 20, 20, False, (), 2, 2),
+                        (THEIRS, "T", 8, 8, False, (), 9, 1)]),
+            # a death after the procs must not admit a late, partial board
+            ("combat", [(OURS, "A", 20, 20, False, (), 1, 1),
+                        (THEIRS, "T", 8, 8, False, (), 9, 1)]),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["atk"] for m in row["combat_peak"]["ours"]],
+                         [20, 20])
+        self.assertEqual([m["atk"] for m in row["combat_peak"]["theirs"]],
+                         [8])
+
+    def test_a_second_fight_starts_from_its_own_opening_not_the_shop_board(self):
+        """A turn can stage two fights (round fight, then the final duel).
+        The duel's opening is the round's survivors, not the board the shop
+        closed on — the fix must not resurrect the shop board there."""
+        snaps = self._snaps(
+            15,
+            ("buy", [(OURS, "SHOPBOARD", 99, 99, False, (), 1, 1)]),
+            ("combat", [(OURS, "ROUND", 5, 5, False, (), 2, 2),
+                        (THEIRS, "T1", 8, 8, False, (), 9, 1)]),
+            ("combat", []),   # the round fight's teardown
+            ("combat", [(OURS, "DUEL", 282, 119, False, (), 3, 1),
+                        (THEIRS, "T2", 341, 344, False, (), 9, 1)]),
+            ("combat", []),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["combat_start"]["ours"]],
+                         ["DUEL"])
+        self.assertEqual([m["card"] for m in row["combat_peak"]["ours"]],
+                         ["DUEL"])
+
+    def test_a_start_of_combat_summon_is_not_dropped(self):
+        """The opening merge ADDS what the fight staged that the shop board
+        did not have: a start-of-combat summon is on the board as the fight
+        begins, and the face-off must show it."""
+        snaps = self._snaps(
+            9,
+            ("buy", [(OURS, "A", 3, 3, False, (), 1, 1)]),
+            ("combat", [(OURS, "A", 3, 3, False, (), 1, 1),
+                        (OURS, "SUMMON", 2, 2, False, (), 2, 2)]),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual([m["card"] for m in row["combat_peak"]["ours"]],
+                         ["A", "SUMMON"])
+
+    def test_a_group_that_never_stages_our_side_keeps_an_empty_answer(self):
+        """The opening board is OUR side of the fight, not a licence to paint
+        the shop's board onto a group that never staged us — the lobby's
+        staging and a shop teardown look like a fight group too."""
+        snaps = self._snaps(
+            6,
+            ("buy", [(OURS, "SHOPBOARD", 9, 9, False, (), 1, 1)]),
+            ("combat", [(THEIRS, "LOBBY", 4, 4, False, (), 9, 1)]),
+        )
+        row = tr._turn_rows(snaps, {}, OURS)[0]
+        self.assertEqual(row["combat_start"]["ours"], [],
+                         "a group with no board of ours is not our fight")
+
+
 class TestShopBattleAftermath(unittest.TestCase):
     """The three-view turn card's data: what the shop opened with, the fight
     after beginning-of-combat effects, and what either side survived with."""
@@ -645,19 +777,26 @@ class TestShopBattleAftermath(unittest.TestCase):
         # The 2026-10-07 final, abstractly: our side snowballs AFTER the
         # opponent's board is dead. Plain max-combined picked that aftermath
         # burst (4730 vs 448) and showed the duel's ending as its beginning.
+        #
+        # The SAME CARD id across the bursts is the log's own shape — procs
+        # and deaths change stats, not the card. Distinct ids would be a
+        # different minion, and the face-off would rightly keep the one the
+        # fight opened with (see `_side_best_holding`).
         snaps = self._snaps(
             15,
-            ("combat", [(OURS, "O_STAGED", 100, 100, False, []),
-                        (THEIRS, "T_STAGED", 60, 60, False, [])]),
-            ("combat", [(OURS, "O_PROCS", 110, 110, False, []),
-                        (THEIRS, "T_PROCS", 70, 70, False, [])]),
-            ("combat", [(OURS, "O_SNOWBALL", 500, 500, False, [])]),
+            ("combat", [(OURS, "O", 100, 100, False, []),
+                        (THEIRS, "T", 60, 60, False, [])]),
+            ("combat", [(OURS, "O", 110, 110, False, []),
+                        (THEIRS, "T", 70, 70, False, [])]),
+            ("combat", [(OURS, "O", 500, 500, False, [])]),
         )
         row = tr._turn_rows(snaps, {}, OURS)[0]
         self.assertEqual([m["card"] for m in row["combat_peak"]["ours"]],
-                         ["O_PROCS"])
+                         ["O"])
+        self.assertEqual([m["atk"] for m in row["combat_peak"]["ours"]],
+                         [110], "the snowball's 500 is the duel's aftermath")
         self.assertEqual([m["card"] for m in row["combat_peak"]["theirs"]],
-                         ["T_PROCS"],
+                         ["T"],
                          "both rows read the same burst — the moment after "
                          "procs, before the first death")
 

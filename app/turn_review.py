@@ -11,9 +11,14 @@ Three states per turn, and exactly where each comes from (measured, not assumed
 
   * **end of buy phase** — the LAST `buy` snapshot of the turn. This is the board
     the player staged, and it is the only honest place to measure board growth.
-  * **as combat began** — the FIRST `combat` snapshot of the turn's fight. The
-    log stages BOTH boards there, with live stats and keywords, which makes it
-    the only view of the opponent's board the log ever gives.
+  * **as combat began** — the last board before the fight's first snapshot,
+    completed with that snapshot's rows for the minions it still shows. The
+    log stages the opponent's side by CREATING entities straight into PLAY
+    and no snapshot fires for that, so the fight's first snapshot is routinely
+    the first DEATH; reading the fight's own bursts alone drops whoever died
+    in the first exchange (see `_fight_opening`, measured 2026-10-24). The
+    staging does carry both boards' live stats and keywords, which is the only
+    view of the opponent's board the log ever gives.
   * **end of battle** — the NEXT turn's first `buy` snapshot, i.e. what
     actually persisted. Turn 5 of the 2026-10-06 game drains 5 → 4 → 3 → 2 → 1
     → 0 inside combat as deaths empty the board, so the tail of a combat burst
@@ -34,6 +39,7 @@ Cost: one full replay of the game (about 5 s for a 16-turn game here). It is a
 review-path cost, paid after the game is over, never during play.
 """
 import os
+from collections import Counter
 
 from extract_game import split_game_chunks
 from fight_table import _board as _struct_board
@@ -690,6 +696,117 @@ def _side_best(bursts, friendly, side):
     return board
 
 
+def _board_before(group, snaps, friendly):
+    """OUR side of the snapshot immediately before `group`'s first burst. PURE.
+
+    `snaps` is the turn's own snapshot stream (buy and combat interleaved in
+    log order), so the predecessor is the last state before the fight: the
+    shop's closing board for the turn's first fight, the previous fight's last
+    board for a later one. `[]` when the group opens the turn — nothing came
+    before it.
+    """
+    if not group:
+        return []
+    for i, s in enumerate(snaps or []):
+        if s is group[0]:
+            if not i:
+                return []
+            return _snap_board((snaps[i - 1].get("minions") or []),
+                               friendly, "ours")
+    return []
+
+
+def _fight_opening(pre, staged):
+    """The board that opened a fight: the last board before it, completed. PURE.
+
+    **The fight's first snapshot is not the opening board.** A BG combat
+    stages the opponent's side by CREATING entities straight into PLAY
+    (`FULL_ENTITY ... tag=ZONE value=PLAY`), and `board_state` only snapshots
+    a TAG_CHANGE of ZONE — so nothing is recorded while both full boards
+    stand, and the first snapshot of a fight is routinely the first DEATH. A
+    read that starts there is short every minion that died in the first
+    exchange. MEASURED on the 2026-10-24 Forest Lord Cenarius game, turn 16:
+    the shop closed on seven, the decisive fight's first snapshot was the line
+    where the golden Dead Bellringer left PLAY, and the Battle face-off drew
+    six.
+
+    `pre` is the last board before the fight (empty when the turn has no
+    earlier snapshot); `staged` is the side's first board INSIDE the fight.
+    The result keeps `pre`'s ORDER — it is the board the player closed the
+    shop on — takes `staged`'s rows for the entities it still shows (so a
+    start-of-combat buff is not lost), keeps the ones that died before that
+    first snapshot, and appends anything the fight staged that `pre` did not
+    have (a start-of-combat summon). Identity first; a row without an entity
+    id falls back to card+golden, which is all an old replay has.
+    """
+    if not pre:
+        return list(staged or [])
+    if not staged:
+        return list(pre)
+    key = lambda m: (m.get("card"), bool(m.get("golden")))
+    took = set()
+    by_eid = {m.get("eid"): m for m in staged if m.get("eid") is not None}
+    out = []
+    for m in pre:
+        eid = m.get("eid")
+        if eid is not None and eid in by_eid:
+            out.append(by_eid[eid])
+            took.add(id(by_eid[eid]))
+            continue
+        # A combat copy carries a NEW entity id for the same card. Matching by
+        # card keeps one row per minion instead of adding the copy beside the
+        # original.
+        twin = None
+        for n in staged:
+            if id(n) not in took and key(n) == key(m):
+                twin = n
+                break
+        if twin is not None:
+            out.append(twin)
+            took.add(id(twin))
+        else:
+            out.append(m)
+    for n in staged:
+        if id(n) not in took:
+            out.append(n)
+    return out
+
+
+def _side_best_holding(bursts, opening, friendly, side):
+    """The strongest board among `bursts` that still holds all of `opening`.
+
+    THE PEAK'S "BEFORE THE FIRST DEATH" RULE, BY IDENTITY. The count boundary
+    in `_turn_rows` cannot see a death that a summon or a REBORN immediately
+    replaces: on the 2026-10-24 final the golden Dead Bellringer died and its
+    reborn copy entered before the next snapshot, so the total stayed at 13
+    and the window admitted a burst in which Sin'dorei Straight Shot was
+    already gone. `_side_best` then picked that burst (4,218 stats against
+    3,786) and the face-off, which draws the peak, lost a card the shop had
+    shown.
+
+    Matched by CARD, not entity id, on purpose: a combat copy and a reborn
+    copy are new entities for the same minion, and the face-off is about the
+    minions that were brought. Counts matter, so two copies of a card still
+    need two on the burst. `[]` when no burst qualifies (the caller decides
+    what an absent opening owes) or when there is no opening board.
+    """
+    if not opening:
+        return []
+    need = Counter((m.get("card"), bool(m.get("golden"))) for m in opening)
+    best, board = None, []
+    for s in bursts:
+        b = _snap_board(s.get("minions") or [], friendly, side)
+        if not b:
+            continue
+        have = Counter((m.get("card"), bool(m.get("golden"))) for m in b)
+        if any(have[k] < n for k, n in need.items()):
+            continue
+        v = stats(b)
+        if best is None or v > best:
+            best, board = v, b
+    return board
+
+
 def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
                result=None, placement=None):
     """Assemble the per-turn rows from snapshots. PURE — no coach, no log.
@@ -745,23 +862,31 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
             if fallback:
                 buy_start, buy_start_removed = fallback, fallback_removed
                 buy_end = list(fallback)
-        # Combat START = the first snapshot of the turn's LAST fight. Several
-        # bursts share a turn (turn 4 has four — deaths and buffs re-stage
-        # continuously); the first burst of a FIGHT is where that fight
-        # begins, and it is the one that stages both boards. When the turn
-        # holds two fights (round fight, then the final duel), the decisive
-        # one is the last — see _fights.
+        # The turn's snapshots are grouped into FIGHTS (turn 4 has four bursts
+        # — deaths and buffs re-stage continuously; the 2026-10-07 final
+        # staged two fights). When a turn holds more than one, the decisive
+        # one is the one the game's result names — see _decisive_group.
         fights = _fights(fight, friendly)
         # The result is the final turn's own fact — no earlier turn ended a game.
         res_here = result if i + 1 == len(turns) else None
-        # Combat START = each side's own first staging inside the turn's LAST
-        # fight — the first BURST is not enough, because a fight does not
-        # stage both boards at once (see _side_first: the 2026-10-09 game's
-        # opening burst held only the opponent's minion, and the old read
-        # rendered "(no board read)" against a board the winner logic had
-        # just scored).
+        # Combat START = the board each side WENT IN with. The opponent's is
+        # its first staging inside the turn's decisive fight (the log never
+        # shows it anywhere else). OURS is the last board before that fight,
+        # completed with the fight's first staging: the first BURST is not
+        # enough (a fight does not stage both sides at once — see _side_first:
+        # the 2026-10-09 game's opening burst held only the opponent), and the
+        # fight's first snapshot is not the opening either, because staging
+        # creates the opponent's copies without a snapshot and the first
+        # snapshot is routinely the first death (see _fight_opening; measured
+        # 2026-10-24, turn 16: the shop closed on 7 and this read 6).
         group = _decisive_group(fights, friendly, res_here)
-        ours_at_combat = _side_first(group, friendly, "ours")
+        first_ours = _side_first(group, friendly, "ours")
+        # A group that never stages our side is not our fight (the lobby's
+        # staging and a shop teardown can both look like one). Keep the old
+        # empty answer there rather than dressing it in the shop's board.
+        ours_at_combat = (
+            _fight_opening(_board_before(group, snaps_t, friendly), first_ours)
+            if first_ours else first_ours)
         theirs_at_combat = _side_first(group, friendly, "theirs")
         # Battle PEAK = the fight's burst after beginning-of-combat effects
         # have landed and before the first death: the staging burst reads LOW
@@ -791,12 +916,26 @@ def _turn_rows(snaps, info, friendly, final_board=None, card_db=None,
                         upto = bi
                         break
             cands = group[:upto] or group[:1]
+            # The peak must still HOLD EVERY MINION THE FIGHT OPENED WITH.
+            # The count boundary above is blind to a death that a summon or a
+            # REBORN immediately replaces (2026-10-24: the total never dropped,
+            # and the strongest burst had already lost Sin'dorei Straight
+            # Shot). When no burst holds the opening board, the opening board
+            # itself is the honest peak — it is the board the shop closed on.
             # A side whose only staging landed after the drop still owes its
-            # board — the late read beats an empty one, and the row says
-            # where every board came from by being the fight's own bursts.
-            peak_ours = (_side_best(cands, friendly, "ours")
-                         or _side_best(group, friendly, "ours"))
-            peak_theirs = (_side_best(cands, friendly, "theirs")
+            # board: that fallback stays for the opponent, who has no pre-fight
+            # read of their own.
+            held = _side_best_holding(cands, ours_at_combat, friendly, "ours")
+            if held:
+                peak_ours = held
+            elif ours_at_combat:
+                peak_ours = ours_at_combat
+            else:
+                peak_ours = (_side_best(cands, friendly, "ours")
+                             or _side_best(group, friendly, "ours"))
+            peak_theirs = (_side_best_holding(cands, theirs_at_combat,
+                                              friendly, "theirs")
+                           or _side_best(cands, friendly, "theirs")
                            or _side_best(group, friendly, "theirs"))
         ours_at_peak = peak_ours
         theirs_at_peak = peak_theirs
