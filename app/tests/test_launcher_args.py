@@ -238,5 +238,56 @@ class TestCheckModeWritesNothing(unittest.TestCase):
                 "outside the install folder and is not its to change")
 
 
+@WIN_ONLY
+class TestThePassThroughArguments(unittest.TestCase):
+    """The launcher hands live.py the player's own flags, and nothing else.
+
+    Measured 2026-10-24, while checking that the overlay still opens: with no
+    arguments, `set "PASS=%PASS:--check=%"` yields the literal `--check=` (cmd
+    substitutes an EMPTY variable into the token instead of leaving it empty),
+    so every plain double-click handed live.py that debris. live.py ignores
+    unknown flags, which is why nothing ever failed - the stray flag was
+    invisible until the running process's command line was read.
+    """
+
+    @staticmethod
+    def _body():
+        """The shipped pass-through lines, from `set "PASS=%*"` to the moment
+        before live.py is started. Anchored on text the file really contains, so
+        a restructure fails loudly instead of testing nothing."""
+        with open(LAUNCHER, encoding="ascii") as f:
+            lines = f.read().splitlines()
+        start = next(i for i, ln in enumerate(lines)
+                     if ln.strip() == 'set "PASS=%*"')
+        stop = next(i for i in range(start, len(lines))
+                    if 'app\\live.py" --open' in lines[i])
+        return lines[start:stop] + ['echo FINAL=[--open %PASS%]', "goto :end"]
+
+    def _run(self, *args):
+        with tempfile.TemporaryDirectory() as td:
+            path = os.path.join(td, "pass.cmd")
+            with open(path, "w", encoding="ascii", newline="\r\n") as f:
+                f.write("@echo off\r\nsetlocal EnableExtensions\r\n"
+                        + "\r\n".join(self._body()) + "\r\n:end\r\nexit /b 0\r\n")
+            return subprocess.run(["cmd.exe", "/c", path] + list(args),
+                                  capture_output=True, text=True, timeout=60)
+
+    def test_a_plain_double_click_passes_no_debris(self):
+        r = self._run()
+        self.assertIn("FINAL=[--open ]", r.stdout)
+        self.assertNotIn("--check", r.stdout)
+
+    def test_a_players_own_flag_still_reaches_live_py(self):
+        r = self._run("--no-update")
+        self.assertIn("FINAL=[--open --no-update]", r.stdout)
+
+    def test_the_reporting_and_shortcut_flags_are_still_stripped(self):
+        for flag in ("--check", "--shortcut"):
+            with self.subTest(flag=flag):
+                r = self._run(flag)
+                self.assertIn("FINAL=[--open ]", r.stdout)
+                self.assertNotIn(flag, r.stdout.split("FINAL=")[-1])
+
+
 if __name__ == "__main__":
     unittest.main()

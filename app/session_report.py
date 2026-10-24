@@ -170,7 +170,9 @@ DROPPED_ON_PURPOSE = (
     "out_of_pool, tribes_available (the page's availability mark is derived "
     "from the bans and out-of-play the report already carries), "
     "reach_sources, sell_rank, target_cards, dark_gifts, engine_recipes, "
-    "lobby_opp, opp_pool, opp_trinkets, activations, baseline_opp",
+    "lobby_opp, opp_pool, opp_trinkets, activations, baseline_opp, "
+    "trinkets (the hero-and-trinkets strip is the PAGE's — the corpus's "
+    "comp_progress already carries `trinket_fit`)",
 )
 
 #: Analysis keys the report knowingly does NOT carry, as a machine-readable set.
@@ -195,6 +197,13 @@ DROPPED_FROM_ANALYSIS = frozenset({
     "target_cards",
     "target_comp_evidence", "target_state", "tier", "tribe_pressure",
     "tribe_roster", "tribes_available", "tribes_detecting", "turn",
+    # The hero-and-trinkets strip's list (2026-10-23). It rode the analysis in
+    # 3209e8f WITHOUT being named here, and `source_problems` then refused every
+    # share from that build — the whitelist has teeth in both directions, which
+    # is why this is a one-line omission with a 16-hour blast radius
+    # (2026-10-24). The page shows the player's trinkets; the corpus does not
+    # need them, and `comp_progress` already carries `trinket_fit`.
+    "trinkets",
 })
 
 #: The envelope around the rows. Verified separately, because SPEC above

@@ -115,6 +115,13 @@ class TestSourceProblems(unittest.TestCase):
 
         Measured against 641 real advisories: had any been unaccounted for, the
         sending path would refuse every report — which is why this test exists.
+
+        It is a HAND-WRITTEN shape, and that is how `trinkets` slipped through:
+        the 2026-10-23 strip added a payload key, this fixture did not grow one,
+        and every share from `3209e8f` was refused until the end-to-end test met
+        a session coached by that build (2026-10-24). A new payload key now has
+        to be added HERE as well, or the e2e test is the only thing that will
+        notice — a day late.
         """
         record = _advisory(
             board=[], hand=[], opp_comp={"name": _OPP, "hero_name": "Reno"},
@@ -122,6 +129,8 @@ class TestSourceProblems(unittest.TestCase):
                       "trinkets": ["Innkeeper's Stein"]},
             choice={"kind": "hero", "source": "hero", "ranked": [["A", "B", 1.0,
                                                                  "why"]]},
+            trinkets=[{"id": "BG_TRINKET", "name": "A Trinket",
+                       "text": "Get a random thing."}],
             comp_progress=[{"name": "Mechs", "tribe": "MECHANICAL",
                             "meta_tier": "A", "provisional": False,
                             "evidence": None, "hits": 3, "lean_hits": 1,
@@ -129,6 +138,17 @@ class TestSourceProblems(unittest.TestCase):
                             "needs": ["a", "b"], "trinket_fit": False,
                             "tribe_hits": 2}])
         self.assertEqual(session_report.source_problems([record]), [])
+
+    def test_the_trinket_strip_is_dropped_on_purpose(self):
+        """The 2026-10-24 incident, pinned from the other side: the strip's list
+        is in neither SPEC nor silence, so `source_problems` REFUSED every share
+        from the build that added it. Dropping it is the decision — the page
+        shows trinkets, the corpus keeps `comp_progress.trinket_fit`."""
+        self.assertIn("trinkets", session_report.DROPPED_FROM_ANALYSIS)
+        self.assertEqual(
+            session_report.source_problems(
+                [_advisory(trinkets=[{"id": "BG_X", "name": "X", "text": "y"}])]),
+            [])
 
 
 class TestIdentityFindings(unittest.TestCase):

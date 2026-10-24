@@ -79,6 +79,42 @@ def _human_age(seconds):
     return f"{int(seconds // 86400)} d"
 
 
+def _overlay_line(url, opening):
+    """What to say about the overlay address — and only what is TRUE.
+
+    It used to read "Opening the overlay in your browser: <url>" whether or not
+    anything was opened. Both launchers pass `--open`, so the lie was invisible
+    from a double-click; a direct `python app/live.py` printed the claim and
+    then sat there with no browser, which is exactly how the feature reads as
+    lost when someone runs the script by hand (reported 2026-10-24).
+
+    A pure function so a test can execute it, like `no_log_advice`.
+    """
+    if opening:
+        return f"Opening the overlay in your browser: {url}"
+    return (f"Overlay: {url}  (open this address yourself, or start the app "
+            f"with --open - the double-click launchers pass it)")
+
+
+def _open_overlay(url):
+    """Open the overlay in the default browser; say so if the OS refuses.
+
+    `webbrowser.open` answers False when it finds nothing to run, and raises on
+    a missing handler — and both were swallowed by the thread that calls it, so
+    a machine where the open failed looked exactly like one where it worked.
+    The address is printed either way: a player who can paste it into a browser
+    is not blocked (2026-10-24).
+    """
+    try:
+        import webbrowser
+        if webbrowser.open(url):
+            return True
+        print(f"Could not open a browser automatically. Overlay: {url}")
+    except Exception as exc:  # noqa: BLE001 - the thread must never raise
+        print(f"Could not open a browser ({exc}). Overlay: {url}")
+    return False
+
+
 def no_log_advice(root=None, source=None, python=None, config_py=None):
     """The lines to print when no Power.log was found, as a list of strings.
 
@@ -1191,16 +1227,16 @@ def main():
             # ran anything, so the one thing a first run needs to know - that
             # it checked for an update and found what it found - arrived after
             # the claim it belonged to (2026-10-03).
-            print(f"Opening the overlay in your browser: {url}")
-            if "--open" in opts:
+            opening = "--open" in opts
+            print(_overlay_line(url, opening))
+            if opening:
                 # The click-launcher's path. It must open the port we
                 # ACTUALLY bound — a busy 8747 steps to 8748, so the launcher
                 # cannot guess the URL, and neither can it guess the key.
                 # Off-thread so a slow browser launch
                 # never delays the first analysis.
                 import threading
-                import webbrowser
-                threading.Thread(target=webbrowser.open, args=(url,),
+                threading.Thread(target=_open_overlay, args=(url,),
                                  daemon=True).start()
         except OSError as e:
             print(f"Coach UI skipped ({e})")

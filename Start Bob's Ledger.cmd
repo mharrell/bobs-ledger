@@ -283,8 +283,15 @@ echo ^(Y/N^)? question that follows - this window then offers to start it
 echo again. Answer Y instead and the window closes, as it used to.
 echo.
 set "PASS=%*"
-set "PASS=%PASS:--check=%"
-set "PASS=%PASS:--shortcut=%"
+rem Each strip is guarded by `if defined`, because substituting into an EMPTY
+rem value makes cmd hand back the token plus "=" instead of nothing: measured
+rem 2026-10-24, `set "PASS=%PASS:--check=%"` with nothing in PASS yields
+rem "--check=", and stripping a second flag from an already-empty PASS yields
+rem "--shortcut=". Every plain double-click therefore handed live.py that
+rem debris. It is ignored there, which is why nothing ever failed - the stray
+rem flag was invisible until the running process's command line was read.
+if defined PASS set "PASS=%PASS:--check=%"
+if defined PASS set "PASS=%PASS:--shortcut=%"
 rem Stripping a substring leaves debris when the token was "--check=": a lone
 rem "=" would be handed to live.py, which ignores unknown flags - the same
 rem silent-start failure by another door.
