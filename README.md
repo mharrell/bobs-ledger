@@ -2,9 +2,9 @@
 
 Bob's Ledger is a tracker for **Hearthstone Battlegrounds** on Windows and macOS. It reads the game's own `Power.log` text file from your disk and shows you the state of your game in a local web page: your board and what each minion is worth, the tavern's offers, the next opponent, how close you are to dying, and which comps are available. A second page, **Settle Up**, reviews finished games. Everything runs on your own machine, and it asks for no account.
 
-![Bob's Ledger - Another Round, late in a game](docs/screenshots/another-round-banner.webp)
+![Bob's Ledger - Another Round, late in a game](docs/screenshots/another-round-banner.png)
 
-*Another Round, late in a game: the tavern, the lobby tribes, and the comps this lobby can build.*
+*Another Round, late in a game: your hero and your trinkets with their text, the facts, and the comps this lobby can build.*
 
 ## What you need
 
@@ -85,25 +85,25 @@ This is where you start, and it updates as you play. It opens as a page in your 
 
 ![Another Round at the first shop, before the five lobby tribes are confirmed](docs/screenshots/another-round-first-shop.png)
 
-*Another Round at the first shop, before the five lobby tribes are tapped: the tavern's offers and the facts are already read, and the comps are listed but dimmed until the tribe row is set.*
+*Another Round at the first shop, before the five lobby tribes are tapped: the hero and the facts are already read, there are no trinkets yet, and the comps are listed but dimmed until the tribe row is set.*
 
-![Another Round late in a game: six tavern offers, a full board and hand, and comps marking the core cards already owned](docs/screenshots/another-round-late-shop.webp)
+![Another Round late in a game: the hero and both trinkets with their text, and comps marking the core cards already owned](docs/screenshots/another-round-late-shop.png)
 
-*Later in the game: the tavern's six offers, a full board and hand, and the comps list marking the core cards you already own.*
+*Later in the game: your hero and both trinkets with their full text, and the comps list marking the core cards you already own.*
 
 - **On a shop screen, the status bar at the top** — the hero, then gold, tier, health (with armour when you have any), turn and place. A number that has not been read yet is a dash, never a guess. The page's one read-age line at the very top says how old the current frame is.
 - **One row of lobby tribes.** On a shop screen it sits under the status bar; on a hero pick it sits above the hero cards. Tap the five tribes the tavern is offering this game — the same five the game's own minion-types panel shows you at hero select — and every comp and count on the page is exact from turn 1.
+- **Your hero and your trinkets, always on screen.** Right under the tribe row is one panel carrying the hero's power text and every trinket you hold with its full card text, in the order you took them — the two choices a player cannot re-read anywhere else mid-game. It is on every shop frame and on the pick screen, it says `none yet` before your first trinket, and it never folds away.
 - **On a shop screen, the sections below** show where the game stands:
-  - **Tavern** — the tavern's offers, the mix of tribes on offer, and the offers rolled past during this turn.
-  - **Board and hand** — your board as cards with a one-line caption under each, and your hand as one line with its count and card names. The panel is not shown when both are empty.
   - **Facts** — effective health, what the last fight cost, what the last three fights cost, the per-combat damage cap, your board's stats against the last board seen (or the lobby average when no exact board was read), and what levelling up costs. The section is not shown until it has a value to print.
   - **Comps** — the comps this lobby offers, counted in the panel header, grouped by source tier. Each shows its name and tribe, its core cards, how much of the core you hold, and — where this project's game corpus has one — an average placement. Sort by tier, overlap or average placement; open a comp for its core and flex cards and its written guide; tick up to three to compare. Comps for rotated-out tribes sit in a collapsed **Out of play** section, and comps for tribes this lobby does not offer are not listed.
   - **Next opponent** — their hero, the board they last staged, what it was worth with how many rounds ago that was read, and their tribe mix.
-- **The page follows the moment.** A hero pick shows the tribe row and the hero cards, with no status bar or shop panels. A trinket or Discover pick puts the cards above the shop panels, with the shop panels reduced to their headers and one-line summaries. Between shops, the last snapshot is shown dimmed. Empty panels are left out, apart from Comps' named empty state.
+- **The hand, tavern and board panels are turned off in this build.** Their code is still in the app and still tested; they are simply not drawn on the page for now.
+- **The page follows the moment.** A hero pick shows the tribe row and the hero cards, with no status bar or shop panels. A trinket or Discover pick puts the cards first, with the hero and trinkets panel still on screen. Between shops, the last snapshot is shown dimmed. Empty panels are left out, apart from Comps' named empty state.
 - **When the game asks you to choose** (a hero, a trinket, a Discover), the panel shows what is known about each option, in the order the game offered them and never in an order that means "take this one". A hero card shows its power and how often the population picks it; a trinket shows how often it is picked, its average placement and how often it finishes top 4; a Discovered card shows its tier and tribe, or `No data` when there is none. Those population numbers come from a reference file bundled with the app, built from public statistics on hsreplay.net and read offline; the source line names the patch they were read against. Nothing there is a recommendation.
-- **The layout follows your window.** A big desktop window is two columns: the shop's panels on the left and Comps on the right. Every other window is one column of sections you open and close by clicking their headings, with the **Facts** table pinned above them; each heading carries a one-line summary of what is under it (Facts speaks in its rows), and which sections are open is remembered.
+- **The layout follows your window.** From 1180px wide it is two columns: **Facts** and **Next opponent** on the left, **Comps** on the right. Narrower windows get one column of sections you open and close by clicking their headings, with the **Facts** table pinned above them; each heading carries a one-line summary of what is under it (Facts speaks in its rows), and which sections are open is remembered.
 
-Board cards show their stats and their role caption, with the full card — including its tier and text — on hover. The tavern's offers keep the order the game shows them, not a ranking. When a game ends, the card on screen shows the placement and round large, an **Open in Settle Up** button, and the save-every-replay answer on one line.
+When a game ends, the card on screen shows the placement and round large, an **Open in Settle Up** button, and the save-every-replay answer on one line.
 
 ![Another Round game-over card: placement and round, Open in Settle Up, and the save-every-replay answer on one line](docs/screenshots/another-round-game-over.webp)
 
