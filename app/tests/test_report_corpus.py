@@ -137,9 +137,14 @@ class TestTheTables(_Inbox):
 
 class TestTheCorpusGate(_Inbox):
     def _bundle(self, log):
+        """The SHIPPED shape: the log is gzip+base64 (`log_gz_b64`), because a
+        1.6 MB log as a plain JSON string is what the format exists to avoid."""
+        import base64
+        blob = base64.b64encode(gzip.compress(log.encode("utf-8"))).decode()
         return gzip.compress(json.dumps(
-            {"log": log, "decisions": [], "manifest": {"created": "2026-10-24"}}
-        ).encode("utf-8"))
+            {"schema": 1, "log_gz_b64": blob, "decisions": [],
+             "manifest": {"created": "2026-10-24", "log_sha256": "abc",
+                          "decision_count": 0}}).encode("utf-8"))
 
     def test_a_surviving_handle_refuses_the_bundle(self):
         bundle, problems = report_corpus.check_bundle(
@@ -152,6 +157,16 @@ class TestTheCorpusGate(_Inbox):
             self._bundle("D 11:41:01 GameState.DebugPrintPower() - TAG_CHANGE"))
         self.assertEqual(problems, [])
         self.assertEqual(bundle["manifest"]["created"], "2026-10-24")
+        self.assertIn("TAG_CHANGE", report_corpus._log_text(bundle))
+
+    def test_a_plain_log_key_is_accepted_too(self):
+        """Hand-built bundles (a test, a note) carry `log` as a string; the
+        reader accepts both rather than insisting on the packer's own shape."""
+        raw = gzip.compress(json.dumps(
+            {"log": "plain text log", "manifest": {"created": "x"}}
+        ).encode("utf-8"))
+        _bundle, problems = report_corpus.check_bundle(raw)
+        self.assertEqual(problems, [])
 
     def test_a_bundle_with_no_log_or_manifest_is_refused(self):
         _b, problems = report_corpus.check_bundle(
@@ -173,9 +188,13 @@ class TestTheCorpusGate(_Inbox):
         names = sorted(os.listdir(root))
         self.assertEqual(names, ["corpus_20261024T101010.json",
                                  "corpus_20261024T101010.log"])
+        with open(os.path.join(root, "corpus_20261024T101010.log"),
+                  encoding="utf-8") as f:
+            self.assertIn("DebugPrintPower", f.read())
         index, _ = report_corpus.build_index(self.out)
         self.assertEqual(len(index["corpus"]), 1)
         self.assertEqual(index["corpus"][0]["created"], "2026-10-24")
+        self.assertEqual(index["corpus"][0]["log_sha256"], "abc")
 
         # A second run is idempotent: the bundle is already here.
         with mock.patch.object(report_corpus, "wrangler_keys", lambda prefix="corpus/": keys):

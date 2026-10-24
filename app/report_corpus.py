@@ -35,10 +35,13 @@ Maintainer tool. It needs no key of its own: reports use
 use whatever login `wrangler` already has.
 """
 import argparse
+import base64
+import binascii
 import collections
 import gzip
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -52,7 +55,6 @@ import session_report  # noqa: E402
 
 INDEX = ".index.json"
 KV_NAMESPACE = "abd7803c581b4470a2834e92ae0006a2"
-WRANGLER = ("npx", "--yes", "wrangler@4")
 
 
 # ---------------------------------------------------------------- reports
@@ -154,20 +156,35 @@ def _corpus_rows(out):
                 "file": os.path.relpath(path, out),
                 "created": m.get("created"),
                 "coach_version": m.get("coach_version"),
-                "log_sha256": (m.get("log") or {}).get("sha256")
-                if isinstance(m.get("log"), dict) else m.get("log_sha256"),
-                "decisions": (m.get("decisions") or {}).get("count")
-                if isinstance(m.get("decisions"), dict) else m.get("decisions"),
+                # `log_sha256`/`decision_count` are the shipped manifest's own
+                # names (`package_corpus.package`); the nested forms are what a
+                # hand-built bundle tends to look like.
+                "log_sha256": m.get("log_sha256")
+                if m.get("log_sha256") else (m.get("log") or {}).get("sha256"),
+                "decisions": m.get("decision_count")
+                if m.get("decision_count") is not None
+                else (m.get("decisions") or {}).get("count"),
             })
     return rows
 
 
 # ----------------------------------------------------------------- corpus
 
+def _wrangler_cmd():
+    """`npx wrangler@4`, with the Windows shim resolved.
+
+    A list-form `subprocess` call does NOT go through PATHEXT: "npx" finds
+    npx.exe but not the npx.cmd shim Node installs, so on Windows this failed
+    with `[WinError 2]` the first time --corpus ran (measured 2026-10-24).
+    """
+    npx = shutil.which("npx") or shutil.which("npx.cmd") or "npx.cmd"
+    return [npx, "--yes", "wrangler@4"]
+
+
 def _wrangler(*args, timeout=300):
     """Run wrangler and return stdout bytes. The OAuth login is wrangler's own;
     this module never reads a token."""
-    proc = subprocess.run([*WRANGLER, *args], capture_output=True,
+    proc = subprocess.run([*_wrangler_cmd(), *args], capture_output=True,
                           timeout=timeout)
     if proc.returncode != 0:
         tail = (proc.stderr or b"").decode("utf-8", "replace").strip().splitlines()
@@ -185,13 +202,30 @@ def wrangler_keys(prefix="corpus/"):
 def wrangler_get(key):
     # `kv key get` writes the VALUE to stdout; it must stay bytes (a decoded
     # read would corrupt gzip), which is why this does not go through _wrangler.
-    proc = subprocess.run([*WRANGLER, "kv", "key", "get", "--namespace-id",
-                           KV_NAMESPACE, "--remote", key], capture_output=True,
-                          timeout=600)
+    proc = subprocess.run([*_wrangler_cmd(), "kv", "key", "get",
+                           "--namespace-id", KV_NAMESPACE, "--remote", key],
+                          capture_output=True, timeout=600)
     if proc.returncode != 0:
         tail = (proc.stderr or b"").decode("utf-8", "replace").strip().splitlines()
         raise RuntimeError(tail[-1] if tail else f"wrangler exit {proc.returncode}")
     return proc.stdout
+
+
+def _log_text(bundle):
+    """The sanitized log as text. `log_gz_b64` is the SHIPPED shape
+    (`package_corpus.package` gzips then base64s it, because a 1.6 MB log does
+    not belong in JSON as a plain string); a plain `log` key is accepted too, so
+    a hand-built bundle from a test or a note still reads. Returns None when the
+    blob does not decode, which the caller treats as "no log"."""
+    blob = bundle.get("log_gz_b64")
+    if isinstance(blob, str) and blob:
+        try:
+            return gzip.decompress(base64.b64decode(blob)).decode(
+                "utf-8", "replace")
+        except (OSError, ValueError, binascii.Error):
+            return None
+    text = bundle.get("log")
+    return text if isinstance(text, str) else None
 
 
 def check_bundle(raw):
@@ -206,8 +240,8 @@ def check_bundle(raw):
         bundle = json.loads(gzip.decompress(raw).decode("utf-8"))
     except (OSError, ValueError) as exc:
         return None, [f"not a gz json: {exc}"]
-    log = bundle.get("log")
-    if not isinstance(log, str) or not log.strip():
+    log = _log_text(bundle)
+    if not log or not log.strip():
         problems.append("bundle has no log text")
     else:
         findings = privacy_scan.find(log)
@@ -235,9 +269,9 @@ def collect_corpus(out, force=False):
             continue
         with open(dest, "w", encoding="utf-8") as f:
             json.dump(bundle, f, sort_keys=True)
+        text = _log_text(bundle) or ""
         with open(log_dest, "w", encoding="utf-8", newline="\n") as f:
-            f.write(bundle["log"] if bundle["log"].endswith("\n")
-                    else bundle["log"] + "\n")
+            f.write(text if text.endswith("\n") else text + "\n")
         stored += 1
     return stored, refused, skipped
 
