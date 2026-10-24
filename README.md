@@ -1,177 +1,222 @@
 # Bob's Ledger
 
-Bob's Ledger is a tracker for **Hearthstone Battlegrounds** on Windows and macOS. It reads the game's own `Power.log` text file from your disk and shows you the state of your game in a local web page: your board and what each minion is worth, the tavern's offers, the next opponent, how close you are to dying, and which comps are available. A second page, **Settle Up**, reviews finished games. Everything runs on your own machine, and it asks for no account.
+A replay viewer and reference panel for **Hearthstone Battlegrounds**. It reads the
+log file the game writes on your own PC, shows reference information while you
+play, and after each game builds a turn-by-turn review of what you did and what
+happened.
 
-![Bob's Ledger - Another Round, late in a game](docs/screenshots/another-round-banner.png)
+**It does not tell you what to do during a game.** The live view shows state and
+reference data, never a move. See [Is this allowed?](#is-this-allowed).
 
-*Another Round, late in a game: your hero and your trinkets with their text, the facts, and the comps this lobby can build.*
+**Windows and macOS.** It asks for no account, does not touch the game's
+process or memory, and does not automate input.
 
-## What you need
+**[Install](#install)** · **[Turn on logging](#turn-on-hearthstones-logging)** · **[Is this allowed?](#is-this-allowed)** · **[Privacy](#privacy-and-the-optional-summary)** · **[Troubleshooting](#if-something-is-wrong)**
 
-- A Windows PC or a Mac with Hearthstone installed — on any drive or folder.
-- Python 3 — free. If it is missing, the launcher tells you and offers the download page.
-- Five minutes, most of it the download.
+## What it does
 
-## Set up on Windows
+The app opens as a page in your browser with two tabs.
 
-1. **Download it.** [Download the latest release](https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip) — it saves as `Bob's Ledger.zip`. No account needed.
-2. **Unzip it.** Right-click the file, choose **Extract All**, and pick a place you can write to, such as the Desktop or Documents. Not `C:\Program Files` — Windows will not let the app keep its card pictures there. You get a folder called `Bob's Ledger`.
-3. **Open that folder and double-click `Start Bob's Ledger.cmd`.** That is the whole setup: it finds Python, asks before adding the one small extra it needs, says where it will read Hearthstone's log from, offers a shortcut with its own icon for the folder and your Desktop, and offers to turn on logging.
-4. **If Windows asks** whether to run a file from an "unknown publisher" — the normal warning for anything you downloaded — click **Run**.
-5. **Say yes to the logging question**, and the page opens in your browser. Leave the window that opened open while you play.
+### Settle Up: the review
 
-## Set up on macOS
+Pick a finished game and step through it turn by turn. Each turn has three views:
 
-1. **Download it.** [Download the latest release](https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip) — it saves as `Bob's Ledger.zip`. No account needed.
-2. **Unzip it.** Double-click the file in Finder, and you get a folder called `Bob's Ledger`. Put it somewhere you can write to, such as Documents — not inside `/Applications`.
-3. **Open that folder and double-click `Start Bob's Ledger.command`.** It finds Python, asks before adding the one small extra it needs, says where it will read Hearthstone's log from, and offers to turn on logging.
-4. **If macOS refuses to open it** — a warning about an unidentified developer, or nothing happens at all — run it from Terminal instead. Open Terminal, type `cd ` (with a space after it), drag the `Bob's Ledger` folder onto the Terminal window, press Return, then run:
+- **Shop:** your board when you entered the shop, your board when you left it,
+  and every buy, sell, roll, level-up, cast, and play in between.
+- **Battle:** both boards after start-of-combat effects.
+- **Result:** what survived, who won, and the damage taken.
 
-   ```
-   bash "Start Bob's Ledger.command"
-   ```
+Two ways to read a game:
 
-5. **The first run may offer to build a private Python folder beside the app.** That folder is where the one Python package it needs goes, and it keeps that package out of the rest of your Mac. Say yes. If Python 3 is missing, the launcher offers the download page; `xcode-select --install` in Terminal installs it too.
-6. **Say yes to the logging question**, and the page opens in your browser. Leave the Terminal window open while you play.
+- **Summary:** one card per turn, with the actions collapsed to a short list.
+- **Step through:** one action at a time, with the tavern, your board, and your
+  hand laid out the way the game screen does it.
+
+Settle Up only opens after a game ends. It also has a post-game "what might have
+been better" layer. It is rough, it is often wrong, and it is off unless you
+switch it on. Everything in it is observational, not causal: following the
+model's plan is easier in games you were already winning, so read it as a reason
+to look at a turn, never as a score. Turns it cannot judge are marked **not
+graded** and counted, not guessed.
+
+### Another Round: live reference
+
+A reference panel that updates as you play:
+
+- Hero, trinket, and discover pick statistics (source: HSReplay population statistics)
+- A comp tracker: which comps your board is close to and which pieces you hold
+- Board and lobby reference
+- Tavern offers, shown only after combat animations finish
+
+Nothing on this tab names a move. A test in this repository checks that the live
+payload carries no plan, no named buy, and no pick.
+
+## Install
+
+You need a PC or a Mac with Hearthstone installed and Python 3 (free; the
+launcher tells you if it is missing and links to it).
+
+### Windows
+
+1. **Download:** [latest release](https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip).
+2. **Unzip** it somewhere you can write to, such as Documents or the Desktop. Not
+   `C:\Program Files`.
+3. **Double-click `Start Bob's Ledger.cmd`.** It finds Python, asks before
+   installing the one small extra package it needs, and opens the app in your
+   browser.
+
+Windows may warn about an "unknown publisher" for anything downloaded. Click
+**Run**.
+
+### macOS
+
+1. **Download:** [latest release](https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip).
+2. **Unzip** it in Finder, somewhere you can write to, such as Documents. Not
+   `/Applications`.
+3. **Double-click `Start Bob's Ledger.command`.** It finds Python 3, asks before
+   installing the one small extra package into a private folder beside the app,
+   and opens the app in your browser. Leave its Terminal window open while you
+   play; closing it stops the app.
+4. **If macOS refuses to open it** — a warning about an unidentified developer,
+   or nothing happens — run it from Terminal instead: type `bash ` with a space,
+   drag the file onto the window, and press Return.
+5. **If Python 3 is missing**, the launcher offers the download page; in
+   Terminal, `xcode-select --install` installs it too.
 
 ## Turn on Hearthstone's logging
 
-By default Hearthstone does not write the file Bob's Ledger reads.
+By default Hearthstone does not write the file this app reads. If logging is off
+when you start the app, it offers to turn it on: it adds two lines to the
+`log.config` file Hearthstone already uses, keeps a copy of the original, and
+changes nothing else. It will not do this while Hearthstone is running.
 
-**The app offers to do this for you.** If logging is off when you start it, it asks. Say yes and the step is done: it adds the lines it needs to the settings file Hearthstone already has, leaves the rest of that file exactly as it was, and keeps a copy of the original first. It will not do it while Hearthstone is running, because the game only reads that file when it starts.
-
-**It also lifts Hearthstone's 10 MB log cap, in the same step.** Hearthstone closes a log file once it reaches its size limit — 10 MB by default — and everything after that point is never written, which loses the end of a long session. The limit is one of the game's own settings (`Log.FileSizeLimit.Int`, default `10000`), so the app sets it to `-1`, the game's "no limit", in `client.config` beside the game. Same care as above: that one line, every other line kept, the original backed up, and only when you say yes. The page also says so on screen if a log ever does hit the cap.
-
-### By hand on Windows
+To do it by hand on Windows:
 
 1. Close Hearthstone.
-2. Hold **Win**, press **R**, paste `%LocalAppData%\Blizzard\Hearthstone` and press Enter to open that folder.
-3. Open `log.config` with Notepad — or create it there. Its full path is `%LocalAppData%\Blizzard\Hearthstone\log.config`. Make sure it contains at least this:
+2. Press **Win + R**, paste `%LocalAppData%\Blizzard\Hearthstone`, press Enter.
+3. Open (or create) `log.config` and make sure it contains:
 
-   ```
-   [Power]
-   LogLevel=1
-   FilePrinting=true
-   ConsolePrinting=false
-   Screenshots=false
-   ```
+```
+[Power]
+LogLevel=1
+FilePrinting=true
+ConsolePrinting=false
+Screenshots=false
+```
 
 4. Start Hearthstone.
 
-### By hand on macOS
+To do it by hand on macOS:
 
 1. Close Hearthstone.
-2. In Finder, press **Command-Shift-G**, paste `~/Library/Preferences/Blizzard/Hearthstone` and press Return to open that folder.
-3. Open `log.config` with TextEdit — or create it there; its full path is `~/Library/Preferences/Blizzard/Hearthstone/log.config`. Make sure it contains at least the same `[Power]` block shown above. In TextEdit, choose **Format > Make Plain Text** before saving.
+2. In Finder, press **Command-Shift-G**, paste
+   `~/Library/Preferences/Blizzard/Hearthstone`, press Return.
+3. Open `log.config` there in TextEdit — choose **Format > Make Plain Text**
+   before saving — or create it, and make sure it contains the same `[Power]`
+   block.
 4. Start Hearthstone.
 
-To lift the size cap by hand, put `Log.FileSizeLimit.Int=-1` in `client.config` in the Hearthstone install folder (`/Applications/Hearthstone` on macOS). If you use Hearthstone Deck Tracker or Firestone, `log.config` exists already, so only the cap line above is still needed.
+If you use Hearthstone Deck Tracker or Firestone, this is already done.
 
-## What it does to your machine
+## Is this allowed?
 
-Bob's Ledger reads a text file the game writes. It "does not touch the game's process or its memory", it "does not automate input", and it "reads the log file Hearthstone writes to your own disk".
+Not guaranteed, and this section does not pretend otherwise.
 
-The only files it can change are two of Hearthstone's own settings — the logging switch in `log.config` and the log-size cap in `client.config` — and only if you say yes to turning logging on. Each edit keeps a copy of the original. Everything else Bob's Ledger writes stays inside its own folder, except card art when that folder is read-only: art then goes to a per-user cache (`%LOCALAPPDATA%\bobs-ledger` on Windows, `~/Library/Caches/bobs-ledger` on macOS).
+- Blizzard's EULA ([Section 1.C](https://www.blizzard.com/en-us/legal/fba4d00f-c7e4-4883-b8b9-1b4500a402ea/blizzard-end-user-license-agreement))
+  prohibits software that "facilitates the gameplay" or grants "an advantage over
+  other players not using such methods." A statistics overlay can fall under that
+  wording. Read it yourself rather than relying on this summary.
+- What this app does not do: touch the game's process or memory, automate input,
+  or show hidden information. It reads the log file Hearthstone writes to your
+  own disk.
+- Tools that read the same log, such as Deck Tracker and Firestone, have been used
+  openly for years. That is a reason to think this is tolerated. It is not a
+  promise.
+- The live view shows state, not instructions. The model's plan is worked out and
+  saved on your disk, and you see it after the game, when it can no longer be
+  acted on.
+- **Do not use it in tournaments or organised events.** Their rules bar outside
+  help outright.
+- If you draw the line at raw data, the answer is not to run it.
 
-Nothing is sent anywhere to produce what the page shows. Every number is worked out on your machine from Hearthstone's log plus a reference file that ships with the app, and the page works with your internet off; only the card pictures need a connection.
+I am not a lawyer and this is not legal advice.
 
-## The two pages
+## Privacy and the optional summary
 
-The page has two tabs: **Another Round**, the live view, and **Settle Up**, the review of finished games. The tab you are on is remembered across a reload, and switching between them never interrupts the live view.
+Everything on screen is computed on your PC from the log file plus reference data
+that ships with the app. It works with your internet off. Only card images need a
+connection.
 
-### Another Round
+The first time you start it, the app asks whether it may send a short summary of
+each finished game. **Nothing is sent unless you say yes**, and saying no changes
+nothing else.
 
-This is where you start, and it updates as you play. It opens as a page in your browser, not a second game window, so put it on another monitor or leave it behind the game.
+- It covers only games you play after you say yes.
+- A summary holds decisions and outcomes: turn, gold, tavern tier, health, what
+  the model suggested, and what happened next. It does not hold your name, chat,
+  file paths, or the log file.
+- A copy of everything sent is kept in `session_reports/` in the app folder.
+- The exact fields allowed are listed in `session_report.py` (`SPEC`). A field not
+  listed there cannot be sent.
+- To change your mind, press **Clear** at the top right of the overlay.
 
-![Another Round at the first shop, before the five lobby tribes are confirmed](docs/screenshots/another-round-first-shop.png)
+Why it exists: the model's plan has not been measured against results, and these
+summaries are how it gets measured.
 
-*Another Round at the first shop, before the five lobby tribes are tapped: the hero and the facts are already read, there are no trinkets yet, and the comps are listed but dimmed until the tribe row is set.*
+## What it cannot do
 
-![Another Round late in a game: the hero and both trinkets with their text, and comps marking the core cards already owned](docs/screenshots/another-round-late-shop.png)
+The model behind the review is a second opinion, not an oracle. Its judgements
+have not been checked against outcomes, and some, especially about when to level
+up, may be wrong. After a Hearthstone patch the reference data can lag by a few
+days.
 
-*Later in the game: your hero and both trinkets with their full text, and the comps list marking the core cards you already own.*
+## If something is wrong
 
-- **On a shop screen, the status bar at the top** — the hero, then gold, tier, health (with armour when you have any), turn and place. A number that has not been read yet is a dash, never a guess. The page's one read-age line at the very top says how old the current frame is.
-- **One row of lobby tribes.** On a shop screen it sits under the status bar; on a hero pick it sits above the hero cards. Tap the five tribes the tavern is offering this game — the same five the game's own minion-types panel shows you at hero select — and every comp and count on the page is exact from turn 1. Until the five are settled the other tribes are dimmed; once they are (five confirmed, or five tapped), the rest are struck through in red, because at that point they are this game's bans. A rotated-out tribe is struck through too, but its tooltip says it is out of play rather than banned. Every chip stays clickable, so a wrong guess is one tap from fixed.
-- **Your hero and your trinkets, always on screen.** Right under the tribe row is one panel carrying the hero's power text and every trinket you hold with its full card text, in the order you took them — the two choices a player cannot re-read anywhere else mid-game. It is on every shop frame and on the pick screen, it says `none yet` before your first trinket, and it never folds away.
-- **On a shop screen, the sections below** show where the game stands:
-  - **Facts** — effective health, what the last fight cost, what the last three fights cost, the per-combat damage cap, your board's stats against the last board seen (or the lobby average when no exact board was read), and what levelling up costs. The section is not shown until it has a value to print.
-  - **Comps** — the comps this lobby offers, counted in the panel header, grouped by source tier. Each shows its name and tribe, its core cards, how much of the core you hold, and — where this project's game corpus has one — an average placement. Sort by tier, overlap or average placement; open a comp for its core and flex cards and its written guide; tick up to three to compare. Comps for rotated-out tribes sit in a collapsed **Out of play** section, and comps for tribes this lobby does not offer are not listed.
-  - **Next opponent** — their hero, the board they last staged, what it was worth with how many rounds ago that was read, and their tribe mix.
-- **The hand, tavern and board panels are turned off in this build.** Their code is still in the app and still tested; they are simply not drawn on the page for now.
-- **The page follows the moment.** A hero pick shows the tribe row and the hero cards, with no status bar or shop panels. A trinket or Discover pick puts the cards first, with the hero and trinkets panel still on screen. Between shops, the last snapshot is shown dimmed. Empty panels are left out, apart from Comps' named empty state.
-- **When the game asks you to choose** (a hero, a trinket, a Discover), the panel shows what is known about each option, in the order the game offered them and never in an order that means "take this one". A hero card shows its power and how often the population picks it; a trinket shows how often it is picked, its average placement and how often it finishes top 4; a Discovered card shows its tier and tribe, or `No data` when there is none. Those population numbers come from a reference file bundled with the app, built from public statistics on hsreplay.net and read offline; the source line names the patch they were read against. Nothing there is a recommendation.
-- **The layout follows your window.** From 1180px wide it is two columns: **Facts** and **Next opponent** on the left, **Comps** on the right. Narrower windows get one column of sections you open and close by clicking their headings, with the **Facts** table pinned above them; each heading carries a one-line summary of what is under it (Facts speaks in its rows), and which sections are open is remembered.
+- **A black window flashes and closes (Windows):** you ran the file from inside
+  the zip. Unzip first.
+- **macOS refuses to open the launcher:** run it from Terminal instead, as in
+  the macOS steps above: `bash "Start Bob's Ledger.command"`.
+- **Python was not found:** install it from python.org and tick **Add python.exe
+  to PATH**. On macOS, `xcode-select --install` installs it too.
+- **The app keeps waiting:** either Hearthstone's logging is still off, or the app
+  is looking in the wrong folder because your game is installed somewhere
+  unusual. The app says which, and the window you started it from prints the
+  fix.
+- **The folder cannot be written to:** move `Bob's Ledger` to Documents or the
+  Desktop.
 
-When a game ends, the card on screen shows the placement and round large, an **Open in Settle Up** button, and the save-every-replay answer on one line.
+Still stuck? [Open an issue](https://github.com/mharrell/bobs-ledger/issues) with
+what the window said.
 
-![Another Round game-over card: placement and round, Open in Settle Up, and the save-every-replay answer on one line](docs/screenshots/another-round-game-over.webp)
+## Uninstall
 
-*Another Round's game-over card: the placement and round, the way into Settle Up, and the save answer on one line.*
+Delete the `Bob's Ledger` folder, and the shortcut if you made one (Windows).
+Nothing else was installed. On macOS the private Python folder the launcher may
+have made (`.venv`) sits inside that folder, so it goes too.
 
-### Settle Up
+## Licence
 
-When a game ends, the card offers **Save replay** unless **Save every replay automatically** is already on. Saving keeps that game in the **Settle Up** tab: pick any saved game from the dropdown and the turn-by-turn view opens. The card also carries a **Save every replay automatically** checkbox — leave it ticked and each finished game is kept as its review builds. Saving is per game and yours alone; saved games stay on your machine.
+MIT, see `LICENSE`. Card names, text, and art are © Blizzard Entertainment. This
+is an unofficial fan tool, not affiliated with or endorsed by Blizzard. Card data
+comes from [HearthstoneJSON](https://hearthstonejson.com). Comp sources are
+credited in `meta/comps.json`.
 
-![Settle Up Summary view: the turn rail, the board you opened and closed with, and the plan read for the turn](docs/screenshots/settle-up-summary.webp)
+## For contributors
 
-*Settle Up's **Summary** view: the turn rail, the board you opened and closed with, and the plan read for the turn.*
+```
+git clone https://github.com/mharrell/bobs-ledger
+cd bobs-ledger
+python -m pip install -r app/requirements.txt
+python app/live.py
+```
 
-A strip of turn buttons runs along the top, each marked with the result and the HP the fight cost. In the **Summary** view, each turn has three tabs:
+Tests: `python -m unittest discover -s app/tests` (about 1,500, about a minute).
+Two are posture controls: one checks this README's claims about what the app does
+to your machine, and one checks that the live payload carries no verdict.
 
-- **Shop** — the board you opened with and the board you closed the shopping on, with each minion's net change marked on the card, and a *passed through* tray for anything you bought and sold again in the same phase.
-- **Battle** — the two boards facing each other, theirs on top, the way the game shows a fight, with the result beside them.
-- **Result** — who won, or a line saying the turn's fights ran together and the winner cannot be read; what each side kept; and what the fight cost you in effective HP.
+Nothing on the live path calls a language model. Everything on the page comes from
+the local value function and the meta database. The language-model tooling in the
+tree is for maintainer work and is not shipped in releases.
 
-In Summary, a rail down the side carries the turn's own numbers — gold at the open, cards played, gold spent, board value — and groups what the turn did: buys, sells, plays, rolls and levelling up, with repeats collapsed and a count of each.
-
-Each advised phase also gets a folded **Plan** entry in that rail, headed by the model's grade — for example **taken**, **cast as planned**, **not taken**, or **not graded**. Open one for the line itself, for example "1. LEVEL to tier 4 · 2. Buy Bronze Warden". A phase the review cannot grade — one that opens with a minion swap, or with a spell whose card it cannot read — is reported as **not graded** with the reason, not guessed.
-
-An optional **Show coaching** switch sits in that same header row, **off by default**. Turn it on and the rail gains a **Model vs you** box below the turn's action groups: folded, it reads as one line — how many moves differ, and a confidence figure — and opening it shows a row per kind of move (Level up, Buy, Sell, Play (hand)), the model's card beside the one you took, a **≠** on the ones that differ, the gap in its own scores behind a differing buy, and how often the two of you have differed across the games you have saved. The turn strip marks the turns where the plan differed, and **Step through** marks the step, shows the callout — *Model preferred X over Y*, with the reason and a confidence figure — and outlines your card solid and the model's dashed, each with its own tag. The comparison is always in the saved game; the switch only decides whether it is drawn, so turning it on needs no **Rebuild** — though a game saved before the comparison existed says so, and offers one.
-
-The page footnote says plainly that this is **observational, not causal**: following a line is easier in games you were already winning. Read it as a reason to look at a turn, never as a score.
-
-A fight's summoned copies linger in the log past the end of the fight, so the board you opened with is shown without them; a turn where that happened says so under the board. The header carries a **Summary | Step through** switch: Step through replays the turn one action at a time, with a tick per action, the board as it stood after that action, and a card you sold shown dimmed and tagged. Left and Right walk turns, or steps while stepping; Shift with them walks turns while stepping; Space plays and pauses while stepping; Home and End jump to the ends. The mode is remembered. The **⋯** menu has **Rebuild**, which re-derives any saved game from its own log; an older saved game opens Step through disabled, with a tooltip saying why.
-
-**Every card is named from the game's own log.** A minion the bundled reference tables have never heard of — a rotated minion discovered into a fight, a spell from another set, a summoned token — still shows its real name instead of a card id, in both views. Games saved before that naming existed pick it up when you **Rebuild** them.
-
-![Settle Up Step through view: the action tick row at Step 15, the board after the action, and the tavern and hand alongside](docs/screenshots/settle-up-step-through.webp)
-
-*Settle Up's **Step through** view: every action in the turn on one tick row, the board as it stood after Step 15, and the card just played highlighted.*
-
-## The one question it asks you
-
-The first time it starts, Bob's Ledger asks whether it may send a short summary of each finished game back to the project. **Nothing is sent unless you say yes**, and saying no changes nothing else about the app.
-
-Saying yes covers the games you play **from that point on**. Anything you played before you answered — while the answer was no, or before there was one — is never sent, not even after you say yes.
-
-If you say yes, a summary is a distilled record of the state the page had at each advisory. It includes turn, gold, tavern tier, health, the board's count and stats, the suggested line the page showed, the comp being targeted and its progress, the tribes seen and banned, the announced opponent's hero and board, **where you finished**, and what each fight cost you in effective HP. Not your name, not the chat, not your file paths, and not your log file. A copy of everything sent is kept in `session_reports/` in the app folder, so you can read it yourself.
-
-To change your mind, use the sharing control beside the tabs at the top of the page — a small greyed-out line. It is there once you have answered, including in the middle of a game, and it flips either way. The question itself is only asked once, when you have not answered yet.
-
-## If something's wrong
-
-- **A black window flashes and vanishes (Windows).** You ran the file from inside the .zip. Unzip it first, then run it from the folder you get.
-- **macOS refuses to open the launcher.** Run it from Terminal instead, as in the macOS steps above: `bash "Start Bob's Ledger.command"`.
-- **It says Python was not found.** On Windows, install Python from python.org, tick **Add python.exe to PATH**, and run the file again. On macOS, the launcher offers the download page, and `xcode-select --install` in Terminal installs it too.
-- **The page keeps waiting.** Two things cause that, and the page says which one you have. Either Hearthstone's file logging is still off — the page shows that same setting on screen — or Bob's Ledger is looking in the wrong place, because your game is installed somewhere other than the usual folder. The window you started it from prints the one-line command that fixes the second one for good.
-- **The page stops changing.** The page says how long ago the last read was written, so you can tell a stale read from a live one. If it instead says the log stopped, Hearthstone hit its own size cap and closed the file — that is the cap the launcher removes for you (see [turning on logging](#turn-on-hearthstones-logging)). Until you restart the game with it removed, the rest of that session is not recorded.
-- **It says the page needs its access key.** The page listens only on your own machine, and the address the launcher opens carries a key made fresh for that run — so a plain `http://127.0.0.1:8747/` you bookmarked yourself is refused until the launcher has opened the page once. From then on that browser remembers the key and the plain address works. Restarting mints a new one, so a bookmark made yesterday says so rather than showing you old state; opening it from the launcher once fixes that too.
-- **The app folder is read-only.** Card art falls back to a per-user cache, so the page still works. Saved replays and shared reports live in the app folder, so move it to Documents or the Desktop if you want those written.
-- **After a Hearthstone patch.** The reference data the page uses can lag a few days behind a patch, so its numbers can be less sharp until it catches up. It looks for a new version every time you start.
-
-Still stuck? [Open an issue](https://github.com/mharrell/bobs-ledger/issues) with what the window said, or a screenshot of it.
-
-## Uninstalling
-
-Delete the `Bob's Ledger` folder, and the shortcut if you made one. No registry entries, no services.
-
-On Windows, if you said yes to installing the one Python package, `requests` lives in the Python you chose and stays there; Python itself is unchanged. On macOS it lives in the app's private `.venv` and goes with the folder.
-
-On a read-only install, card art may live in the per-user cache named above; delete that folder too if you want it gone.
-
-If you said yes to turning on Hearthstone's logging, the two settings it changed in Hearthstone's own files stay as they are. Those are Hearthstone's files, and file logging on is what other trackers use too; deleting Bob's Ledger does not turn them back off.
-
-## Licence and credits
-
-MIT licensed — see `LICENSE`. Card names, card text and card art are © Blizzard Entertainment, and this is an unofficial fan tool: not affiliated with, or endorsed by, Blizzard. Card data comes from [HearthstoneJSON](https://hearthstonejson.com), and the sources behind the comp reference are credited inside `meta/comps.json`.
+Design notes, working rules, and the roadmap are in `DESIGN.md`, `CLAUDE.md`, and
+`ROADMAP.md`. History of the project's direction is in `PIVOT.md`.
