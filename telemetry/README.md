@@ -29,6 +29,39 @@ then `python app\fetch_sessions.py --stats` counts what is stored,
 account, no PAT. Fetch into a directory outside this repo, or check
 `.gitignore` first: what comes back is other people's data.
 
+### The inbox tool (`report_corpus.py`)
+
+`fetch_sessions.py` gets the files; `report_corpus.py` processes them, which is
+the half a raw download leaves open:
+
+```
+python app\report_corpus.py --out C:\bl-inbox --collect   # fetch + verify + index
+python app\report_corpus.py --out C:\bl-inbox --corpus    # log-bearing bundles
+python app\report_corpus.py --out C:\bl-inbox --tables    # what the inbox says
+```
+
+`--collect` fills in what is missing, runs every file through
+`session_report.REPORT_SPEC` (the same whitelist the client verifies before it
+sends), and writes `<out>/.index.json` with one row per report and a `refused`
+list naming anything an older build sent in a shape a current build would refuse.
+`--out` is REQUIRED and must be outside the checkout: `publish_release` walks the
+working tree.
+
+`--corpus` is the other artifact: the rare, log-bearing bundles. The collector
+has no listing route for them, so they come through `wrangler` (the login the
+CLI already has) — **`--remote` is the whole trick**, since without it wrangler
+reads the local dev store and reports an empty namespace. Each bundle is decoded,
+its sanitized log is re-scanned with `privacy_scan` (independent of the
+sanitizer), and a clean one is unpacked as `<name>.json` (manifest + decisions)
+plus `<name>.log`, which is what `replay_review.py` wants.
+
+`--tables` prints the three measurements the reports can actually support, by
+`coach_version`: fight cost by fragility band (reading the LAST advisory of each
+turn, because only that one is followed by a fight), plan composition, and comp
+commitment against placement. It cannot grade a card choice — the shop list and
+the alternatives are dropped on purpose — and it says so rather than implying
+otherwise.
+
 ## What a bundle is
 
 `package_corpus.py` produces one gzipped JSON file per session: the
