@@ -1859,6 +1859,14 @@ class LiveCoach:
             "level_cost": self.level_cost(),
             "dark_gifts": dark_gifts,
             "opp_trinkets": opp_trinkets,
+            # The trinkets the PLAYER holds, in the order they were taken, with
+            # the card text (2026-10-23): the live page's hero/trinkets strip
+            # prints them in full so a choice made ten turns ago cannot be
+            # forgotten. State, not a verdict - the text is the CARD's own,
+            # which is why the page's verdict scan exempts that strip.
+            "trinkets": [{"id": t.get("id"), "name": t.get("name"),
+                          "text": t.get("description")}
+                         for t in trinket_recs],
             "health": health,
             "armor": armor,
             # This season's per-combat damage cap (BACON_COMBAT_DAMAGE_CAP,

@@ -781,15 +781,22 @@ class TestTheFixListRounds(unittest.TestCase):
                          "override — the base rule is one column")
 
     def test_the_breakpoints_are_the_ones_asked_for(self):
-        """Round 2 item 9: main + 340px rail at >=1200px, stacked 700-1200, and a
-        single-column pick grid under 700."""
+        """The live page's two breakpoints, as the sheet states them.
+
+        The 340px rail rule is GONE (2026-10-23): the two-column arrangement now
+        starts at 1180px, so there is no width where the accordion has a rail to
+        give. The pick grid still collapses under 700px, and the stacked column
+        is still the base rule.
+        """
         html = coach_ui._HTML
-        self.assertIn("@media (min-width: 1200px) {", html)
-        self.assertIn(".tavern.live .lv-main { grid-template-columns:"
-                      "minmax(0,1fr) 340px; }", html)
+        self.assertIn("@media (min-width: 1180px) {", html)
+        self.assertIn(".tavern.live .lv-layout-cols { display:grid;", html)
+        self.assertNotIn("minmax(0,1fr) 340px", html,
+                         "the accordion's 340px rail rule is back — it died "
+                         "with the 1180px breakpoint")
         self.assertIn("@media (max-width: 699.98px) {", html)
         self.assertIn(".tavern.live .lv-opts { grid-template-columns:1fr; }", html)
-        # The stacked default is the base rule, not a media query: 700-1200 is
+        # The stacked default is the base rule, not a media query: 700-1180 is
         # the common laptop window.
         self.assertIn(".tavern.live .lv-main { display:grid; "
                       "grid-template-columns:minmax(0,1fr);", html)

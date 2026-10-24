@@ -1311,38 +1311,28 @@ _HTML = r"""<!doctype html>
   /* THE LAYOUT IS BY WINDOW WIDTH (fix list round 4 item 5, corrected
      2026-10-13 on the maintainer's own call: "if the window is ~1920 wide, then
      three columns. Otherwise collapse it"). Two modes:
-       * >=1650px of window: TWO COLUMNS — Tavern + board | Comps, with the
-         reference panels (Facts, opponent, lobby) under the board in column one
-         and no tabs, because every screen is visible. It was THREE (1fr 1fr
-         300px) until 2026-10-16, when the maintainer moved the reference column
-         under the board so Comps could take its width: the rule further down is
-         the one that counts, and this map said "three" for three days after;
+       * >=1180px of window: TWO COLUMNS — the reference panels (Facts, Next
+         opponent) in column one, Comps in column two, and no tabs, because every
+         screen is visible. It was THREE (1fr 1fr 300px) until 2026-10-16, when
+         the maintainer moved the reference column under the board so Comps could
+         take its width; and it was 1650px until 2026-10-23 (see below);
        * below that: one column of collapsible sections with a one-line summary
-         in each header, and the Facts table pinned above them (the section
-         headers and the facts strip are the same rules at 1600px as at 900px).
-     WHY 1650 AND NOT 1800 (lowered 2026-10-15, the maintainer's own MacBook):
-     on a 16" MacBook Pro a maximised window measures ~1728px of viewport, so the
-     1800 this rule asked for NEVER FIRED on the machine it was being read on.
-     1650 is the floor rather than a rounder smaller number: `#wrap` caps the PAGE
-     at 1600px, and MEASURED 2026-10-13 the tavern box reaches that cap at about
-     1640px of window. Below it the box is still growing, so firing earlier would
-     hand the columns less than the width they were measured at; at or above it
-     they get exactly 622|622|300.
+         in each header, and the Facts table pinned above them.
+     WHY 1180 AND NOT 1650 (2026-10-23, the maintainer's call): the hand, tavern
+     and board panels are hidden for now, so column one is only the two short
+     reference panels — 1650 would have stacked the comps under eight rows of
+     numbers on every window below a 16" MacBook's. MEASURED in the harness at
+     1100 / 1180 / 1500px of window: at 1180 the box gives 466px to the
+     reference column and 700px to Comps, which still draws its rows, headers and
+     slot art without overflow; `#wrap`'s 1600px cap means everything wider is
+     the split the 2026-10-16 entry measured (623 + 935).
      WHY A WINDOW RULE AND NOT THE BOX's, which is what this rule asked FIRST
      (at 1180px of box, i.e. a ~1250px window): the container's width cannot
      answer "is this a big desktop window". `#wrap` caps the PAGE at 1600px, so
      MEASURED 2026-10-13 at 1920x1080 the tavern box is 1572px — and a 1650px
      window gives it 1572px too, because the cap is reached before the window is.
      Past ~1640px of window the box stops growing, so a container query makes
-     "1920" indistinguishable from "1650" and puts the columns on for both.
-     1800 was chosen because a maximized window on a 1920x1080 screen measures
-     1904px of VIEWPORT (measured in the harness), so a literal 1920 would never
-     fire there. It turned out to be too high for a laptop: 1650 fires on a
-     maximised 16" MacBook Pro and still does not fire at 1600.
-     THE BOX IS STILL MEASURED, which is why 1650 is safe rather than assumed —
-     and the measurement corrects the first version's arithmetic, which claimed a
-     short window left the box only 1432px: MEASURED 2026-10-13 in the harness,
-     the box is 1572px at 1920x1080, at 1850x800, AND at 1700x1080 — every one of
+     "1920" indistinguishable from "1650" and puts the columns on for both. */
      them is the `#wrap` cap, so the columns are always 622|622|300 wide. The
      accordion's widest box is 1525px at a 1600x1080 window. Since the comps
      panel's two tier columns already fit in the 499px the old single-column
@@ -1355,13 +1345,11 @@ _HTML = r"""<!doctype html>
      applies to the hidden one — a hidden element is not laid out at all. */
   .tavern.live .lv-layout-cols { display:none; }
   .tavern.live .lv-layout-acc { display:grid; }
-  /* The rail keeps the facts table only while the box is too narrow for three
-     columns (fix list round 2 item 9's 340px rail). It used to drop out at
-     900px, which left a 1000px window with a rail that could have fitted. */
-  @media (min-width: 1200px) {
-    .tavern.live .lv-main { grid-template-columns:minmax(0,1fr) 340px; }
-  }
-  @media (min-width: 1650px) {
+  /* The rail rule that used to live here (a 340px Facts column inside the
+     accordion at >=1200px) went with the 2026-10-23 breakpoint: the two-column
+     arrangement now starts at 1180px, so there is no width left where the
+     accordion has a rail to give. */
+  @media (min-width: 1180px) {
     /* TWO COLUMNS, AND COMPS TAKES THE ROOM THE REFERENCE COLUMN USED TO HOLD
        (2026-10-16, the maintainer's call: "the COMPS section should take up as
        much space as the Comps and Facts do together"). It was 1fr 1fr 300px —
@@ -1404,8 +1392,9 @@ _HTML = r"""<!doctype html>
                              display:flex; align-items:baseline; flex-wrap:wrap;
                              gap:8px; }
   /* ---------------------------------------------------------------------
-     THE ACCORDION, EVERY WINDOW UNDER 1650px (fix list round 4 item 5,
-     2026-10-13). Every section is on the page at once, each header carries a
+     THE ACCORDION, EVERY WINDOW UNDER 1180px (fix list round 4 item 5,
+     2026-10-13; the threshold moved down from 1650px on 2026-10-23 with the
+     hidden panels). Every section is on the page at once, each header carries a
      ONE-LINE summary of what is under it, and the Facts table is a strip pinned
      above them.
 
@@ -1424,6 +1413,38 @@ _HTML = r"""<!doctype html>
      storage on every render (see `lvCollapsed`). */
   .tavern.live .lv-pn.shut > *:not(h3) { display:none; }
   .tavern.live .lv-pn.shut > h3 { margin-bottom:0; }
+  /* THE HERO AND TRINKETS STRIP (2026-10-23): the two things the page must not
+     let a player forget, in FULL text rather than a tooltip. It sits at the top
+     of the live view in both arrangements and on the pick screen too, and it is
+     rebuilt with every frame, so a trinket taken this turn appears the moment
+     the log has it. Two columns while there is room (hero fixed, trinkets take
+     the rest); one column under 820px, where the hairline dividers go too. */
+  .tavern.live .lv-keep { display:grid; grid-template-columns:300px 1fr;
+                          gap:8px 26px; background:var(--tpanel);
+                          border:1px solid var(--tline); border-radius:12px;
+                          padding:13px 16px; margin:12px 0; }
+  .tavern.live .lv-keep-k { font-size:11px; letter-spacing:.14em;
+                            text-transform:uppercase; color:var(--tmute);
+                            margin-bottom:3px; }
+  .tavern.live .lv-keep-name { font-size:15px; font-weight:600;
+                               color:var(--ttext); }
+  .tavern.live .lv-keep-lab { font-size:10.5px; letter-spacing:.10em;
+                              text-transform:uppercase; color:var(--tmute);
+                              opacity:.8; margin:7px 0 1px; }
+  .tavern.live .lv-keep-text { font-size:12.5px; line-height:1.45;
+                               color:var(--tmute); max-width:62ch; }
+  .tavern.live .lv-keep-row {
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));
+    gap:10px 24px; }
+  .tavern.live .lv-keep-t { min-width:0; }
+  .tavern.live .lv-keep-t + .lv-keep-t { border-left:1px solid var(--tline);
+                                         padding-left:24px; }
+  .tavern.live .lv-keep-tname { font-size:14px; font-weight:600;
+                                color:var(--ttext); margin-bottom:2px; }
+  @media (max-width: 820px) {
+    .tavern.live .lv-keep { grid-template-columns:1fr; gap:14px; }
+    .tavern.live .lv-keep-t + .lv-keep-t { border-left:0; padding-left:0; }
+  }
   .tavern.live .lv-acc > h3 { cursor:pointer; display:flex; align-items:baseline;
                               gap:10px; flex-wrap:wrap;
                               padding:12px 0; min-height:44px; }
@@ -2825,6 +2846,19 @@ let _liveCompare = new Set();      // up to three slugs, in the order picked
 const LIVE_COMP_ROWS = 6;          // round 3 item 3: "cap ~6 rows per tier"
 const LIVE_COMPARE_MAX = 3;        // §4.4: "Up to three comps"
 
+//: THE HAND, TAVERN AND BOARD SECTIONS ARE OFF THE LIVE PAGE FOR NOW
+//: (2026-10-23, the maintainer's call: "let's just not display those for now
+//: ... don't delete everything"). Nothing is deleted — every panel still builds,
+//: still has its content renderer and still ships — and this ONE flag is what
+//: `lvSectionVisible` reads, so restoring them is `true` -> `false` (or the
+//: reverse here). `lvKeep` carries what those panels were the only place to
+//: re-read: the hero power and the trinket texts.
+//:
+//: The browser suite measures both states: its shots render the shipped page by
+//: default, and the ones that pin those panels' internals set this to false
+//: (`panels=True` in `_shot`), so the code stays measured while it is hidden.
+let LIVE_PANELS_HIDDEN = true;
+
 //: A comp's `tribe` and the lobby's set are the same canonical vocabulary
 //: ("Murloc", "Mech"). A compound ("Demon/Quilboar") matches on any shared part
 //: — the rule `tribes.matches` applies on the server — and "All" (the
@@ -3923,9 +3957,10 @@ function renderTavernGameOver(a) {
 //: FIX LIST ROUND 4 ITEM 5, the layout half (2026-10-13). The view is built
 //: from SECTIONS, and the WINDOW decides how they are arranged — the maintainer's
 //: own call: "if the window is ~1920 wide, then three columns. Otherwise collapse
-//: it" (the rule asks for 1650px of viewport, see the CSS block):
+//: it" (the rule now asks for 1180px of viewport — 2026-10-23 — see the CSS
+//: block for why the threshold moved with the panels):
 //:
-//:   >=1650px of viewport  three columns, no tabs, every section on screen at once
+//:   >=1180px of viewport  two columns, no tabs, every section on screen at once
 //:   below that            one column, each section foldable, a one-line summary
 //:                         in every header, and the Facts table pinned above them
 //:
@@ -3979,7 +4014,15 @@ function lvFactsHasValue(a) {
 //: An EMPTY PANEL IS NOT RENDERED (2026-10-18). Comps is the exception that
 //: proves the rule: it carries a legitimate empty state (the bans have not
 //: resolved), so it renders that ONE line rather than disappearing.
+//:
+//: THE HAND, TAVERN AND BOARD ARE OFF THE PAGE FOR NOW (2026-10-23, the
+//: maintainer's call). Nothing is deleted: both panels still build in full, and
+//: this is the ONE gate every arrangement reads (columns, accordion and the
+//: collapsed pick summaries) — see `LIVE_PANELS_HIDDEN`. `lvKeep` carries what
+//: the player cannot re-read anywhere else: the hero power and the trinket texts.
 function lvSectionVisible(title, a) {
+  if (LIVE_PANELS_HIDDEN
+      && (title === 'Tavern' || title === 'Board and hand')) return false;
   if (title === 'Tavern') return lvHasShop(a);
   if (title === 'Board and hand') return lvHasBoardHand(a);
   if (title === 'Comps') return true;
@@ -4131,7 +4174,7 @@ function lvColumns(a) {
   if (lvSectionVisible('Comps', a)) two.appendChild(lvSection('Comps', a, false));
   return [one, two];
 }
-//: The accordion (every window under 1650px): one column, the facts strip pinned
+//: The accordion (every window under 1180px): one column, the facts strip pinned
 //: at the top of it, then the same five sections in the order the player needs
 //: them. The pick screen is above the whole arrangement (see `lvBody`), so it is
 //: not one of the titles here.
@@ -4152,7 +4195,7 @@ function lvAccordion(a) {
   return [col];
 }
 //: The body of the view, holding BOTH arrangements so exactly one can be shown.
-//: One of them is displayed by the `(min-width: 1650px)` media query — a WINDOW
+//: One of them is displayed by the `(min-width: 1180px)` media query — a WINDOW
 //: rule since 2026-10-13, on the maintainer's own call, because `#wrap` caps this
 //: page at 1600px and a box-width rule therefore cannot tell a 1920px window from
 //: a 1700px one (see the CSS block's comment). Building both and letting CSS
@@ -4209,6 +4252,47 @@ function lvEmptyMoment() {
   return p;
 }
 
+//: THE HERO AND THE TRINKETS, ALWAYS ON SCREEN (2026-10-23, with the hand,
+//: tavern and board panels hidden for now). These two are the choices the page
+//: cannot re-read anywhere else: the hero power and the trinket texts. Printed
+//: in full here, not behind a hover, because the point is that a choice made ten
+//: turns ago cannot be forgotten mid-game.
+//:
+//: The text comes from the meta DBs (`heroes.json`'s power text, the analysis's
+//: own `trinkets` rows) - the card's words, not the coach's. That is why the
+//: live page's verdict scan exempts this strip rather than censoring the text.
+function lvKeep(a) {
+  const hero = a.hero || '';
+  const power = a.hero_power || '';
+  const trs = a.trinkets || [];
+  if (!hero && !trs.length) return null;
+  const box = el('section', 'lv-keep');
+  const heroCol = el('div', 'lv-keep-hero');
+  heroCol.appendChild(el('div', 'lv-keep-k', 'Your hero'));
+  heroCol.appendChild(el('div', 'lv-keep-name', hero || '—'));
+  if (power) {
+    heroCol.appendChild(el('div', 'lv-keep-lab', 'Hero power'));
+    heroCol.appendChild(el('div', 'lv-keep-text', power));
+  }
+  box.appendChild(heroCol);
+  const trCol = el('div', 'lv-keep-tr');
+  trCol.appendChild(el('div', 'lv-keep-k', 'Your trinkets'));
+  if (!trs.length) {
+    trCol.appendChild(el('div', 'lv-keep-text', 'none yet'));
+  } else {
+    const row = el('div', 'lv-keep-row');
+    trs.forEach(t => {
+      const d = el('div', 'lv-keep-t');
+      d.appendChild(el('div', 'lv-keep-tname', t.name || 'trinket'));
+      if (t.text) d.appendChild(el('div', 'lv-keep-text', t.text));
+      row.appendChild(d);
+    });
+    trCol.appendChild(row);
+  }
+  box.appendChild(trCol);
+  return box;
+}
+
 function renderLiveTavern(a) {
   const app = document.getElementById('app');
   const box = document.getElementById('live-tavern');
@@ -4240,15 +4324,21 @@ function renderLiveTavern(a) {
     // then the shop panels as summaries, not a second reading of every panel.
     root.appendChild(lvPickPanel(a));
     root.appendChild(lvStatus(a));
+    const keep = lvKeep(a);
+    if (keep) root.appendChild(keep);
     root.appendChild(lvCollapsedSections(a));
   } else if (moment === 'shop') {
     root.appendChild(lvStatus(a));
     // The tribe row stays as page chrome (it is the ban correction control, not
     // one of the moment's panels); the brief's panel list is the set below it.
     root.appendChild(lvTribes(a));
+    const keep = lvKeep(a);
+    if (keep) root.appendChild(keep);
     root.appendChild(lvBody(a));
   } else if (moment === 'between') {
     root.appendChild(lvBetween(a));
+    const keep = lvKeep(a);
+    if (keep) root.appendChild(keep);
   } else {
     root.appendChild(lvEmptyMoment());
   }

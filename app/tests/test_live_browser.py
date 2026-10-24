@@ -445,13 +445,19 @@ _DRIVER = r"""
     // THE PIN, MEASURED (item 5): scroll the page and see which offsets move.
     // `window.scrollTo` needs a document taller than the window, which is why
     // the two ends of this are compared rather than any one of them asserted.
+    //
+    // THE DISTANCE IS THE STRIP'S OWN OFFSET, not a fixed 300px (2026-10-23):
+    // with the hand, tavern and board panels hidden the accordion is a much
+    // shorter page, so a 300px scroll ran past the document's end and stopped
+    // the strip 14px short of the top — the pin was fine, the scroll was not.
+    // Scrolling BY the strip's top asks the exact question the pin answers.
     o.scroll = (function () {
       const p = one('.lv-pin');
       const first = one('.lv-pn');
       if (!p || !first) return '';
       const before = [Math.round(first.getBoundingClientRect().top),
                       Math.round(p.getBoundingClientRect().top)];
-      window.scrollTo(0, 300);
+      window.scrollTo(0, Math.max(1, before[1]));
       const after = [Math.round(first.getBoundingClientRect().top),
                      Math.round(p.getBoundingClientRect().top)];
       window.scrollTo(0, 0);
@@ -939,7 +945,31 @@ _DRIVER = r"""
     })();
     // EVERY word the view puts on screen, for the §1 scan. The panel headers
     // and the status labels are in here too — a verdict can hide in a label.
-    o.alltext = root ? root.textContent.replace(/\s+/g, ' ').trim() : '';
+    //
+    // THE HERO/TRINKETS STRIP IS EXCLUDED (2026-10-23): it prints the CARD's own
+    // words, and trinket text legitimately contains the scan's vocabulary
+    // ("…worth…", "…strong…"). Quoted card text is a fact about the game, not the
+    // coach's verdict, so the scan reads the page WITHOUT it and `keeptext` is
+    // scanned separately (it must be the card text and nothing else).
+    o.alltext = (function () {
+      if (!root) return '';
+      const copy = root.cloneNode(true);
+      copy.querySelectorAll('.lv-keep').forEach(n => n.remove());
+      return copy.textContent.replace(/\s+/g, ' ').trim();
+    })();
+    o.keeptext = (function () {
+      const k = root ? root.querySelector('.lv-keep') : null;
+      return k ? k.textContent.replace(/\s+/g, ' ').trim() : '';
+    })();
+    // THE STRIP'S PLACE: above every section, and not a panel (no header, no
+    // way to shut it — being always there is the whole point).
+    o.keepabove = (function () {
+      const k = root ? root.querySelector('.lv-keep') : null;
+      const p = one('.lv-pn');
+      if (!k || !p) return '';
+      return k.getBoundingClientRect().top < p.getBoundingClientRect().top
+        ? 'above' : 'below';
+    })();
     // --- fix list round 4 items 3 and 4 -----------------------------------
     // A panel BY ITS HEADING, so "the next opponent's rows" cannot be answered
     // by some other panel's rows (the fixtures carry several .lv-kv tables).
@@ -1059,9 +1089,15 @@ _DRIVER = r"""
     // (a live payload, then the end-of-game one) — the only way to test that the
     // new card replaces it rather than leaving it behind.
     if (s.pre) {
+      LIVE_PANELS_HIDDEN = !s.panels;
       render(s.pre);
       (s.preclicks || []).forEach(c => clickCtl(c[0], c[1], c[2]));
     }
+    // A shot that pins a panel's internals asks for the panels the shipped page
+    // currently hides (2026-10-23). The default is the shipped page — set on
+    // EVERY shot, because the flag is a page global and a panels-on shot would
+    // otherwise hand the panels to every shot after it.
+    LIVE_PANELS_HIDDEN = !s.panels;
     render(s.rep);
     // `reveal` OPENS THE SECTION FIRST, THEN the shot's clicks land (2026-10-14).
     // It used to run last, which was fine while every control a shot clicked was
@@ -1142,7 +1178,8 @@ def _page(shots):
 
 
 def _shot(name, rep, reveal=None, click=None, clicks=None,
-          pre=None, preclicks=None, settle=False, open=None, toggle=None):
+          pre=None, preclicks=None, settle=False, open=None, toggle=None,
+          panels=False):
     """One shot.
 
     `reveal` is the SECTION the player is looking at (the successor of the old
@@ -1154,6 +1191,12 @@ def _shot(name, rep, reveal=None, click=None, clicks=None,
     which is the 5-second re-read in miniature (fix list round 4 item 5: the
     state has to survive it).
 
+    `panels=True` renders with the hand, tavern and board sections RESTORED
+    (`LIVE_PANELS_HIDDEN = false`). They are hidden on the shipped page for now
+    (2026-10-23), but their renderers still exist and still ship, so the shots
+    that pin their internals ask for them by name instead of the suite silently
+    losing every measurement of code that will be switched back on.
+
     NO `viewer` ARGUMENT (2026-10-13). Every shot used to pass one (default
     "tavern") so the driver could set `_liveViewer` before rendering; with the
     choice gone the parameter would set nothing, and a dead parameter is how a
@@ -1162,7 +1205,7 @@ def _shot(name, rep, reveal=None, click=None, clicks=None,
     return {"name": name, "rep": rep, "reveal": reveal,
             "click": click, "clicks": clicks or [], "pre": pre,
             "preclicks": preclicks or [], "settle": settle, "open": open,
-            "toggle": toggle}
+            "toggle": toggle, "panels": panels}
 
 
 #: Clicking a Browse row's control by the COMP it belongs to: every row carries
@@ -1298,22 +1341,30 @@ class _Rendered(unittest.TestCase):
 
 
 class TestTheTavernLiveInABrowser(_Rendered):
-    """The shop screen, the tribe row and the three rail tabs."""
+    """The shop screen, the tribe row and the three rail tabs.
+
+    Every shot here renders with the hand, tavern and board sections RESTORED
+    (`panels=True`): they are hidden on the shipped page for now (2026-10-23),
+    but they still build and still ship, so their cards, captions and rows are
+    measured rather than silently dropped from the suite. The hidden page itself
+    is measured in `TestTheLayoutByWidth` and `TestTheAccordionLayout`, which
+    render the shipped default.
+    """
 
     @classmethod
     def shots(cls):
-        return [_shot("t", _payload()),
-                _shot("comps", _comps_payload(), reveal="Comps"),
+        return [_shot("t", _payload(), panels=True),
+                _shot("comps", _comps_payload(), reveal="Comps", panels=True),
                 _shot("nocomps", _comps_payload(game_comps={}, tribe_pressure=[]),
-                      reveal="Comps"),
+                      reveal="Comps", panels=True),
                 _shot("notread", _payload(fragility=None, level_cost=None,
                                           board_stats=None, opp_stats=None,
-                                          opp_lobby=None)),
-                _shot("noshop", _payload(shop_rank=[])),
+                                          opp_lobby=None), panels=True),
+                _shot("noshop", _payload(shop_rank=[]), panels=True),
                 # A game number, so the tribe row's own state is a real one
                 # (the row marks the five the server says are in play, so the
                 # payload has to carry a game's worth of them).
-                _shot("g7", _payload(game_no=7))]
+                _shot("g7", _payload(game_no=7), panels=True)]
 
     def test_the_status_bar_is_the_hero_and_six_numbers(self):
         self.assertEqual(self.got["t.tavern"], 1)
@@ -1421,14 +1472,17 @@ class TestTheTavernLiveInABrowser(_Rendered):
                                     f"{shot} rendered almost no sections, so the "
                                     f"zero above is a selector that matches "
                                     f"nothing rather than a removed tab row")
+        # This class renders with the panels RESTORED (`panels=True`), so the
+        # panel ORDER is the columns' DOM order: at the harness's 1400x900 window
+        # the two-column arrangement is on screen since 2026-10-23.
         self.assertEqual(self.got["t.panels"],
-                         "Facts|Comps|Tavern|Board and hand|Next opponent")
+                         "Tavern|Board and hand|Facts|Next opponent|Comps")
         # The comps shot is the SAME page (round 4 item 5): every section is
         # rendered, and `reveal` only scrolled to one of them.
         self.assertEqual(self.got["comps.panels"], self.got["t.panels"])
-        # The same six in the three-column arrangement: Tavern+board | Comps |
-        # Facts+opponent+lobby, so the pinned strip is last in DOM order there.
-        wide = _render([_shot("t", _payload())], size=(1920, 1080))
+        # The same five in the two-column arrangement: Tavern+board+Facts+opponent
+        # | Comps, so the pinned strip is last in DOM order there.
+        wide = _render([_shot("t", _payload(), panels=True)], size=(1920, 1080))
         self.assertEqual(wide["t.arr"], "cols")
         self.assertEqual(wide["t.panels"],
                          "Tavern|Board and hand|Facts|Next opponent|Comps")
@@ -1467,7 +1521,7 @@ class TestTheTavernLiveInABrowser(_Rendered):
         # A pick page has no shop arrangement by design (2026-10-18): the
         # cards are the page, so `arr` is empty rather than a hidden dashboard.
         self.assertIn(narrow["n.arr"], ("", "card"))
-        bhn = _render([_shot("b", _payload())], size=(600, 900))
+        bhn = _render([_shot("b", _payload(), panels=True)], size=(600, 900))
         self.assertEqual(bhn["b.bhhalf"], 2)
         # The board and hand are STACKED at that width, not side by side: their
         # tops differ, which is what the old rail comparison was really asking
@@ -1613,7 +1667,7 @@ class TestTheTavernLiveInABrowser(_Rendered):
                                       {"eid": 103, "card": "BG31_831"}],
                        shop_offers=["BG31_820", "BG31_820", "BG31_831"])
         self.assertEqual([r["eid"] for r in rep["shop_rank"]], [101, 102, 103])
-        got = _render([_shot("dup", rep)])
+        got = _render([_shot("dup", rep, panels=True)])
         self.assertEqual(got["dup.taverncards"], 3,
                          "two identical offers did not render two cards")
         pools = got["dup.poolchips"].split("|")
@@ -1638,7 +1692,7 @@ class TestTheTavernLiveInABrowser(_Rendered):
         self.assertEqual([r["eid"] for r in rep["board_cards"]], [11, 12])
         self.assertEqual(rep["board_cards"][1]["atk"], 9,
                          "the second copy is not its own entity")
-        got = _render([_shot("dup", rep)])
+        got = _render([_shot("dup", rep, panels=True)])
         self.assertEqual(got["dup.boardcards"], 2)
 
     def test_no_viewer_control_is_on_either_tab(self):
@@ -1682,54 +1736,46 @@ class TestTheTavernLiveInABrowser(_Rendered):
 
 
 class TestTheLayoutByWidth(_Rendered):
-    """Fix list round 4 item 5: three columns at a big window, NO tabs anywhere.
+    """Fix list round 4 item 5: two columns at a desktop window, NO tabs anywhere.
 
     The threshold is the WINDOW's since 2026-10-13, on the maintainer's own call
     ("if the window is ~1920 wide, then three columns. Otherwise collapse it").
+    It was 1650px until 2026-10-23, when the hand, tavern and board panels came
+    off the page: column one is now only the two short reference panels, so the
+    split fits from 1180px and the 1400x900 harness window gets it too — which is
+    why `test_the_default_window_is_two_columns` replaces the accordion assertion
+    this class used to make about its own shot.
+
     This class first pinned a CONTAINER threshold of 1180px of box, which is a
     ~1250px window, and it was wrong for a reason worth keeping: `#wrap` caps the
     PAGE at 1600px, so past ~1640px of window the box stops growing and the box
     cannot tell a 1920px window from a 1700px one. The box is still MEASURED here,
-    because it is what has to fit the three columns.
+    because it is what has to fit both columns.
 
     Each claim names the window it is about and measures what the real sheet
-    produced in it. The class's own shot is the harness's 1400x900 window, whose
-    box is 1325px on the Windows box this was written on and 1356px on macOS —
-    an ACCORDION window at both, which is the maintainer's rule. The 31px is
-    chrome, not the page: see `test_the_default_window_is_an_accordion`.
+    produced in it. The 31px between the window and the box on macOS is chrome,
+    not the page.
     """
 
     @classmethod
     def shots(cls):
         return [_shot("w", _comps_payload())]
 
-    def test_the_default_window_is_an_accordion(self):
-        """REVERSED 2026-10-13: this asserted three columns at the harness's own
-        1400x900 window, which is what a 1180px-of-box threshold gave it. The
-        maintainer's rule is a window one and 1400 is not a big desktop window, so
-        the same window is now the accordion — and the box it produces (1325px) is
-        still measured here, because that number is exactly what used to decide
-        and no longer does.
+    def test_the_default_window_is_two_columns(self):
+        """The harness's own 1400x900 window is a TWO-COLUMN window now.
 
-        The box is asserted as `docw - 44` rather than as `1325`, because 1325 was
-        the HOST's number and this suite runs on more than one host since
-        2026-10-15. Measured on the first macOS checkout: the same window gives
-        1356px of box, and the 31px is entirely platform chrome —
-        `documentElement.clientWidth` (what the page's boxes can occupy) is
-        `window - 16 - 15` on Windows, a 16px window-chrome inset plus a classic
-        15px scrollbar, and `window - 0` on macOS, whose overlay scrollbars cost
-        nothing. The SHELL's own gutter, which is what this test is about, is 44px
-        on both: 1384-44 = 1325 there and 1400-44 = 1356 here, and the same holds
-        at 1100 (1069-44 = 1025 there, 1100-44 = 1056 here). Reading the box
-        against `vw` would still have been a claim about the host; `docw` cancels
-        the chrome and leaves the page."""
+        It was the accordion from 2026-10-13 (a window rule at 1650px) and it is
+        the columns from 2026-10-23, when the panels hidden above column one left
+        only Facts and Next opponent in it. The box measurement stays: it is the
+        number the old container rule used to read, and it is still what has to
+        fit (1325px here, 1356px on macOS — 31px of platform chrome that `docw`
+        cancels)."""
         got = self.got
         self.assertEqual(int(got["w.bodyw"]), int(got["w.docw"]) - 44)
-        self.assertEqual(got["w.arr"], "acc",
-                         f"a 1400x900 window is not in the accordion "
+        self.assertEqual(got["w.arr"], "cols",
+                         f"a 1400x900 window is not in the two-column layout "
                          f"(box {got['w.bodyw']}px of {got['w.docw']}px)")
-        self.assertEqual(got["w.panels"],
-                         "Facts|Comps|Tavern|Board and hand|Next opponent")
+        self.assertEqual(got["w.panels"], "Facts|Next opponent|Comps")
 
     def test_two_columns_at_a_1920_window(self):
         """MEASURED 2026-10-16 at 1920x1080: TWO columns at 623/935 inside the
@@ -1743,8 +1789,9 @@ class TestTheLayoutByWidth(_Rendered):
         The box is 1572 and not 1592 because `#wrap` caps the PAGE at 1600px, so
         this is as wide as the tavern view ever gets — which is why the numbers
         here and at a 3200px window are the same. A 1920x1080 window measures
-        1904px of VIEWPORT in this harness, which is why the threshold is 1650
-        and not 1920 itself."""
+        1904px of VIEWPORT in this harness. The threshold is 1180px since
+        2026-10-23 (see the class docstring), which is well under this window —
+        the 1920 window is here for the CAP, not for the threshold."""
         got = _render([_shot("w", _comps_payload())], size=(1920, 1080))
         self.assertEqual(got["w.arr"], "cols",
                          f"a 1920x1080 window is not in the three-column layout "
@@ -1755,10 +1802,11 @@ class TestTheLayoutByWidth(_Rendered):
         xs = [int(x) for x in got["w.colx"].split("|")]
         self.assertEqual(len(set(xs)), 2, "the two columns are not side by side")
         self.assertEqual(xs, sorted(xs), "the columns are out of order")
-        # WHAT IS IN EACH ONE, in order: the two screens the player reads the
-        # game through | Comps | the reference material.
-        self.assertEqual(got["w.colpanels"],
-                         "Tavern+Board and hand+Facts+Next opponent|Comps")
+        # WHAT IS IN EACH ONE, in order: the reference panels | Comps. The
+        # hand, tavern and board are hidden for now (2026-10-23), so column one
+        # is the two short reference panels and not the two shop screens plus
+        # them.
+        self.assertEqual(got["w.colpanels"], "Facts+Next opponent|Comps")
 
     def test_the_tab_row_is_gone_at_that_width(self):
         """§4.1's `Shop | Comps | Lobby` row selected between exclusive screens;
@@ -1768,11 +1816,10 @@ class TestTheLayoutByWidth(_Rendered):
         mistake commit 62fb33d fixed in this same file)."""
         got = _render([_shot("w", _comps_payload())], size=(1920, 1080))
         self.assertEqual(got["w.tabs"], 0, "the tab row is still rendered")
-        self.assertEqual(got["w.panelcount"], 5,
+        self.assertEqual(got["w.panelcount"], 3,
                          "the selector that counted the tabs found no SECTIONS "
                          "either, so the zero above is not a measurement")
-        self.assertEqual(got["w.panels"],
-                         "Tavern|Board and hand|Facts|Next opponent|Comps")
+        self.assertEqual(got["w.panels"], "Facts|Next opponent|Comps")
 
     def test_a_shorter_window_still_gets_two_columns(self):
         """The rule reads the WINDOW, so the shell's branch does not move it:
@@ -1801,80 +1848,46 @@ class TestTheLayoutByWidth(_Rendered):
         happens to fall on — which is exactly how this test failed its first run,
         asserting a 1800px window was three columns when its viewport was 1784.
 
-        THE BOX-HALF WENT TO ITS OWN TEST (2026-10-19). The pair that proves the
-        box stopped deciding — an accordion at the `#wrap` cap against the
-        columns at the same cap — cannot be built on Windows at all, because the
-        cap arrives ~15px later there (see
-        `test_the_capped_box_is_not_what_decides_the_layout`). What stays here is
-        the rule itself: the arrangement follows the VIEWPORT, on every platform.
+        THE BOX-HALF TEST IS GONE (2026-10-23). It proved the box was not what
+        decided by pairing an ACCORDION window at the `#wrap` 1600px cap with a
+        columns window at the same cap — a pair that only existed because the
+        threshold (1650) sat just above the cap. The threshold is 1180 now (the
+        hand, tavern and board panels are hidden), and no window under 1180 can
+        reach the 1600px cap, so the pair cannot be built on any platform. What
+        stays here is the rule itself: the arrangement follows the VIEWPORT.
         """
-        for size in ((1649, 900), ((1650, 900)), (1850, 900), (1920, 1080)):
+        for size in ((1190, 900), (1200, 900), (1850, 900), (1920, 1080)):
             got = _render([_shot("m", _comps_payload())], size=size)
             self.assertEqual(got["m.arr"],
-                             "cols" if int(got["m.vw"]) >= 1650 else "acc",
+                             "cols" if int(got["m.vw"]) >= 1180 else "acc",
                              f"at a {size} window (viewport {got['m.vw']}px) the "
                              f"layout did not follow the viewport")
-        # ...and every window that gets the columns is past the cap, so the two
-        # columns measure the same wherever they appear — including at the
-        # narrowest window a viewport rule can give them (1850 is the first
-        # harness size whose VIEWPORT clears 1650).
-        narrowest = _render([_shot("n", _comps_payload())], size=(1850, 800))
+        # The two columns are SIDE BY SIDE at the narrowest window that gets
+        # them, and the reference column is the narrower of the two at every
+        # width (1fr against 1.5fr). The absolute widths are the cap's, measured
+        # at 1920 above.
+        narrowest = _render([_shot("n", _comps_payload())], size=(1200, 800))
         self.assertEqual(narrowest["n.arr"], "cols",
-                         f"a 1850x800 window (viewport {narrowest['n.vw']}) is not "
-                         f"two columns, so this is not the narrowest one")
-        self.assertEqual([int(v) for v in narrowest["n.colw"].split("|")],
-                         [623, 935],
-                         f"the columns are not the full width at 1850x800: "
-                         f"{narrowest['n.colw']}")
-
-    @unittest.skipUnless(sys.platform == "darwin",
-                         "the 1600px cap and the 1650px threshold never "
-                         "coincide off macOS: a classic scrollbar costs 15px of "
-                         "client width, so the cap is reached ~15px later")
-    def test_the_capped_box_is_not_what_decides_the_layout(self):
-        """THE MEASUREMENT THAT SAYS THE THRESHOLD CANNOT BE THE BOX: two windows
-        far apart in size give this view the SAME box and the rule still puts them
-        in DIFFERENT arrangements. A container query answers "same box" with the
-        same layout, so the first version of item 5 could not have implemented the
-        maintainer's call at all; that is why this is a window rule now.
-
-        WHY THIS IS A macOS TEST (2026-10-19, measured on the Windows run). The
-        pair needs a window that is BOTH under the 1650 threshold (accordion) AND
-        at the `#wrap` 1600px cap, and on Windows there is no such window: at
-        1645x1080 the viewport is 1629, the scrollbar leaves 1614px of client
-        width, and `#wrap` lands at **1598** — the columns at 1920 give 1600. Two
-        pixels apart, and the assertion below is what caught it. macOS draws
-        overlay scrollbars, so the same window reaches the cap and the pair
-        exists. The rest of the rule (the arrangement follows the viewport) is
-        measured on every platform, one test up.
-        """
-        acc = _render([_shot("a", _comps_payload())], size=(1645, 1080))
-        cols = _render([_shot("c", _comps_payload())], size=(1920, 1080))
-        self.assertEqual(acc["a.arr"], "acc",
-                         f"a 1645x1080 window is not an accordion "
-                         f"(viewport {acc['a.vw']})")
-        self.assertLess(int(acc["a.vw"]), 1650)
-        self.assertEqual(cols["c.arr"], "cols",
-                         f"a 1920x1080 window is not two columns "
-                         f"(viewport {cols['c.vw']})")
-        self.assertEqual(int(acc["a.bodyw"]), int(cols["c.bodyw"]),
-                         f"these two windows do not share a box "
-                         f"({acc['a.bodyw']}px vs {cols['c.bodyw']}px), so this "
-                         f"pair does not show the box losing its say")
-        self.assertEqual(int(cols["c.bodyw"]), 1572)
+                         f"a 1200x800 window (viewport {narrowest['n.vw']}) is "
+                         f"not two columns")
+        widths = [int(v) for v in narrowest["n.colw"].split("|")]
+        self.assertEqual(len(widths), 2, f"columns: {narrowest['n.colw']}")
+        self.assertLess(widths[0], widths[1],
+                        f"the reference column is not the narrower one: {widths}")
 
 
 class TestTheAccordionLayout(_Rendered):
-    """Fix list round 4 item 5: every window under 1650px is the accordion.
+    """Fix list round 4 item 5: every window under 1180px is the accordion.
 
     One column of foldable sections, a one-line summary in every header, and the
     Facts table PINNED above them. The pin is measured by scrolling: a strip whose
     offset does not move while the section above it does is pinned, and one
     number on its own cannot tell the two apart.
 
-    The same arrangement is what a 1400px window gets (`TestTheLayoutByWidth`),
-    which the maintainer's rule made explicit: the columns are for a ~1920px
-    desktop window and everything else collapses.
+    The threshold moved from 1650px to 1180px on 2026-10-23 with the hand, tavern
+    and board panels hidden (see `TestTheLayoutByWidth`): column one is now only
+    the two short reference panels, so the stack no longer needs a big desktop
+    window to justify itself.
     """
 
     @classmethod
@@ -1891,15 +1904,20 @@ class TestTheAccordionLayout(_Rendered):
         big = _payload(board=[{"card": "BG31_815", "atk": 5, "health": 5,
                                "tribe": "Beast", "eid": i}
                               for i in range(20)])
-        return [_shot("a", big),
+        return [_shot("a", big, panels=True),
+                # The pin needs a page TALLER than the window, and the fixture's
+                # height came from the 20-card board — which lives in a panel the
+                # shipped page hides (2026-10-23). The shot restores the panels so
+                # the page is tall enough to scroll; a sticky box is a CSS
+                # property and does not care whether its neighbours are shown.
+                # The shipped page's own (shorter) layout is measured by `flat`.
                 _shot("flat", _payload()),
                 _shot("shut", _payload(), open="-Comps")]
 
     def test_one_column_with_a_summary_line_in_every_header(self):
         got = self.got
         self.assertEqual(got["flat.arr"], "acc")
-        self.assertEqual(got["flat.panels"],
-                         "Facts|Comps|Tavern|Board and hand|Next opponent")
+        self.assertEqual(got["flat.panels"], "Facts|Comps|Next opponent")
         # One line per section, and every one is a COUNT and a noun — the same
         # kind of fact the panels below already carry. §1 is about words on the
         # screen, and a header summary is exactly where a verdict would sneak in,
@@ -1909,9 +1927,7 @@ class TestTheAccordionLayout(_Rendered):
         # comps this game can build, so the header counts THAT list. This fixture
         # carries one comp, and it is the lobby's — the old wording was
         # "1 of 1 available", which counted a list that no longer exists.
-        self.assertEqual(
-            got["flat.sums"],
-            "|1 in this lobby|3 offers|2 on board · 1 in hand|Reno")
+        self.assertEqual(got["flat.sums"], "|1 in this lobby|Reno")
         # The strip carries no line of its own: it IS the facts, and its rows are
         # the summary.
         self.assertEqual(got["flat.sums"].split("|")[0], "")
@@ -1967,17 +1983,18 @@ class TestTheAccordionLayout(_Rendered):
         got = _render([_shot("n", _comps_payload())], size=(640, 900))
         self.assertLess(int(got["n.bodyw"]), 700)
         self.assertEqual(got["n.arr"], "acc")
-        self.assertEqual(got["n.panels"],
-                         "Facts|Comps|Tavern|Board and hand|Next opponent")
+        self.assertEqual(got["n.panels"], "Facts|Comps|Next opponent")
         self.assertEqual(got["n.colw"], "",
-                         "a 640px window rendered the three-column layout")
+                         "a 640px window rendered the two-column layout")
         lefts = {v.split(",")[0] for v in got["n.sectat"].split("|")}
         tops = [int(v.split(",")[1]) for v in got["n.sectat"].split("|")]
         self.assertEqual(len(lefts), 1, f"the sections are not one column: {lefts}")
         self.assertEqual(tops, sorted(tops), f"the sections are out of order: {tops}")
         # ...and it still says what each one holds, which is what the summary line
-        # is for: at this width a section can be off screen entirely.
-        self.assertIn("3 offers", got["n.sums"])
+        # is for: at this width a section can be off screen entirely. The shop's
+        # "3 offers" line is gone with the panel it summarised (2026-10-23), so
+        # the control is the lobby count — a fact no other line carries.
+        self.assertIn("9 in this lobby", got["n.sums"])
 
 
 class TestTheAccordionStateSurvivesARerender(_Rendered):
@@ -2019,9 +2036,10 @@ class TestTheAccordionStateSurvivesARerender(_Rendered):
                          "clicking the Comps header did not stick across a "
                          "re-render — the open/closed state is not re-applied "
                          "from storage")
-        self.assertEqual(got["persist.panelcount"], 5,
+        self.assertEqual(got["persist.panelcount"], 3,
                          "the zero-ish shut list above is a page that rendered "
-                         "nothing")
+                         "nothing (the shipped page has three sections: the hand, "
+                         "tavern and board are hidden for now)")
 
     def test_a_stored_state_is_what_renders(self):
         """The other direction, and the one that makes the test above mean
@@ -2059,6 +2077,75 @@ class TestTheAccordionStateSurvivesARerender(_Rendered):
             self.assertNotIn(word, text)
 
 
+class TestTheHeroAndTrinketsStrip(_Rendered):
+    """The always-on record of the two choices a player cannot re-read.
+
+    2026-10-23: the hand, tavern and board panels came off the live page for now,
+    and the hero power and the trinket texts — the only things those panels were
+    the place to check — moved into this strip. It is asserted from the SHIPPED
+    payload (the producer's own `trinkets` rows, `hero` and `hero_power`), not
+    from hand-written markup, so the shape the live loop sends is the shape that
+    is measured.
+    """
+
+    #: A trinket whose text carries the §1 vocabulary ON PURPOSE. Card text is
+    #: quoted material, not the coach's verdict, which is why the strip is
+    #: excluded from the scan — and this is the case that proves the exemption is
+    #: real rather than vacuous (`test_the_scan_still_covers_the_rest`).
+    TRINKETS = [
+        {"id": "BG30_MagicItem_301", "name": "Nomi Sticker",
+         "text": "After you play an Elemental, give Elementals in the Tavern "
+                 "+3/+2 this game."},
+        {"id": "BG30_MagicItem_303", "name": "Automaton Portrait",
+         "text": "Start of Combat: When you have space, summon a strong "
+                 "Ancestral Automaton worth the board slot."},
+    ]
+
+    @classmethod
+    def shots(cls):
+        pick = _choice_payload()
+        pick["trinkets"] = cls.TRINKETS
+        return [_shot("k", _payload(
+                    hero_power="After you play 3 Elementals, reduce the Cost "
+                               "of upgrading the Tavern by (3).",
+                    trinkets=cls.TRINKETS)),
+                # The early game: no trinkets yet, and the hero still says who
+                # you are.
+                _shot("early", _payload(trinkets=[])),
+                # "Always displayed" includes the pick screen.
+                _shot("pick", pick)]
+
+    def test_the_hero_power_and_every_trinket_text_are_in_full(self):
+        got = self.got
+        text = got["k.keeptext"]
+        self.assertIn("Chenvaala", text)
+        self.assertIn("reduce the Cost of upgrading the Tavern", text)
+        for t in self.TRINKETS:
+            self.assertIn(t["name"], text)
+            self.assertIn(t["text"], text,
+                          "a trinket's text is not on the page in full — the "
+                          "whole reason the strip exists")
+
+    def test_it_sits_above_every_section_and_cannot_be_shut(self):
+        got = self.got
+        self.assertEqual(got["k.keepabove"], "above",
+                         "the strip is below the sections, so a player scrolls "
+                         "past their trinkets to reach them")
+        self.assertEqual(got["k.panelcount"], 3,
+                         "the strip became a section (it has a header and can be "
+                         "shut), or the sections changed")
+
+    def test_the_pick_screen_carries_it_too(self):
+        got = self.got
+        self.assertIn("Nomi Sticker", got["pick.keeptext"])
+        self.assertIn("Automaton Portrait", got["pick.keeptext"])
+
+    def test_the_empty_state_says_who_you_are(self):
+        got = self.got
+        self.assertIn("Chenvaala", got["early.keeptext"])
+        self.assertIn("none yet", got["early.keeptext"])
+
+
 class TestTheViewCarriesNoVerdict(_Rendered):
     """§1, measured on the text that actually reaches the screen.
 
@@ -2075,22 +2162,44 @@ class TestTheViewCarriesNoVerdict(_Rendered):
 
     @classmethod
     def shots(cls):
-        return [_shot("t", _payload()),
-                _shot("comps", _comps_payload(), reveal="Comps"),
+        return [_shot("t", _payload(), panels=True),
+                _shot("comps", _comps_payload(), reveal="Comps", panels=True),
                 # §4.4's Detail and Compare are screens too, and the guide block
                 # is prose from the meta DB: if a verdict can reach this view,
                 # these are the two places it would.
                 _shot("detail", _comps_payload(), reveal="Comps",
-                      clicks=[_open("Elementals")]),
+                      clicks=[_open("Elementals")], panels=True),
                 _shot("compare", _comps_payload(), reveal="Comps",
                       clicks=[_compare("Elementals"), _compare("Beasts"),
-                              _compare("Menagerie")]),
+                              _compare("Menagerie")], panels=True),
                 # The pick screen too: it is the screen whose classic facts
                 # carry the banned phrasing, so it is the one worth scanning.
                 _shot("pick", _choice_payload()),
                 # §6.5's card carries the app's own sentences — the coach line
                 # and the sharing summary — so it is scanned too.
                 _shot("over", _game_over_payload())]
+
+    def test_the_strip_is_exempt_and_the_exemption_is_narrow(self):
+        """The hero/trinkets strip prints the CARD's words, and card text
+        legitimately says "strong" or "worth" — so the scan reads the page
+        WITHOUT it (2026-10-23). This is the control that the exemption is a
+        carve-out and not a hole: the same words are absent from `alltext`, which
+        is the text the scan sees, while everything else on the page is still in
+        it."""
+        got = _render([_shot("k", _payload(
+            hero_power="A power.",
+            trinkets=[{"id": "BG30_MagicItem_303",
+                       "name": "Automaton Portrait",
+                       "text": "summon a strong Ancestral Automaton worth the "
+                               "board slot."}]))])
+        self.assertIn("worth the board slot", got["k.keeptext"])
+        self.assertNotIn("worth the board slot", got["k.alltext"],
+                         "the strip's card text is being scanned as the coach's "
+                         "own words")
+        self.assertIn("Automaton Portrait", got["k.keeptext"])
+        # ...and the exemption did not swallow the page: the Facts panel's own
+        # words are still in the text the scan reads.
+        self.assertIn("Effective HP", got["k.alltext"])
 
     def test_no_verdict_vocabulary_reaches_the_screen(self):
         for name in ("t", "comps", "detail", "compare", "pick", "over"):
@@ -2840,7 +2949,7 @@ class TestTheCompsScreens(_Rendered):
                     "tribe": "BEAST"},
                    {"card": "BG31_820", "atk": 2, "health": 2,
                     "tribe": "ELEMENTAL"}],
-            banned=["Beast"], bans_manual=True))])
+            banned=["Beast"], bans_manual=True), panels=True)])
         self.assertIn("Beast — out of play", got["ban.caps"])
         self.assertNotIn("can't grow", got["ban.alltext"])
         self.assertNotIn("banned tribe", got["ban.alltext"])
@@ -2969,13 +3078,16 @@ class TestWhatTheShopKeepsSaying(_Rendered):
 
     @classmethod
     def shots(cls):
-        return [_shot("t", _payload()),
-                _shot("dup", _payload(**ROLLED)),
-                _shot("last", _payload(**ROLLED_LAST_TURN)),
-                _shot("none", _payload(shop_passed=[])),
+        # panels=True: every claim here is about the TAVERN panel, which the
+        # shipped page hides for now (2026-10-23). Its renderer still ships.
+        return [_shot("t", _payload(), panels=True),
+                _shot("dup", _payload(**ROLLED), panels=True),
+                _shot("last", _payload(**ROLLED_LAST_TURN), panels=True),
+                _shot("none", _payload(shop_passed=[]), panels=True),
                 _shot("noopp", _payload(opp_comp=None, opp_stats=None,
-                                        opp_age=None)),
-                _shot("noshop", _payload(shop_rank=[], shop_passed=[]))]
+                                        opp_age=None), panels=True),
+                _shot("noshop", _payload(shop_rank=[], shop_passed=[]),
+                      panels=True)]
 
     def test_a_minion_two_copies_were_rolled_past_render_as_two_cards(self):
         """The payload keeps both ENTITY ids and the page draws both cards.
@@ -3233,12 +3345,15 @@ class TestTheHarnessItself(unittest.TestCase):
         """The rehearsal, and it has to break something THIS view reads: a shop
         the renderer iterates. (Breaking `board` would prove nothing — the view
         reads `board_cards`, and a payload with no `board` at all is a shape
-        `live.py` never sends.)"""
+        `live.py` never sends.) The shot renders with the panels RESTORED
+        (`panels=True`): the tavern panel is hidden on the shipped page for now,
+        and a payload that used to throw inside it would otherwise be a page that
+        renders fine — which would make this rehearsal test nothing."""
         bad = _payload()
         bad["shop_rank"] = "not a list"
         browser.require_browser(self)
         try:
-            got = browser.fields(_page([_shot("bad", bad)]))
+            got = browser.fields(_page([_shot("bad", bad, panels=True)]))
         except browser.BrowserUnavailable as e:
             self.skipTest(str(e))
         self.assertIn("bad.error", got,

@@ -125,16 +125,24 @@ def _served():
 
 
 def _clockless(obj):
-    """The payload without its wall-clock stamp.
+    """The payload without its wall-clock stamp, through a JSON round trip.
 
     `render_json` sets `generated = time.time()` on every push, so two renders
     of the SAME analysis differ in exactly that key and nothing else — which is
     what the real-log measurement showed (phase 1: "identical but for
     `generated`"), and why the equality below is not weakened by dropping it.
+
+    The round trip is NOT cosmetic (2026-10-23): the LIVE side of the comparison
+    is a payload read back from JSON, so its tuples are lists, while
+    `render_json(ref)` is a Python dict that can still hold tuples (a `ranked`
+    option row is one). That mismatch is invisible on any frame whose choice is
+    empty — which is why it went unnoticed until a real game's last phase ended
+    on a pick — and it says nothing about the two analyses agreeing. Both sides
+    go through the same encoder so the comparison is about the DATA.
     """
     obj = copy.deepcopy(obj)
     obj.pop("generated", None)
-    return obj
+    return json.loads(json.dumps(obj))
 
 
 class _PayloadCase(unittest.TestCase):
