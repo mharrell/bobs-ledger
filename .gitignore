@@ -25,6 +25,11 @@ REPLAY_VIEWER_DESIGN.md
 LIVE_VIEW_DESIGN.md
 SETTLE_UP_FIXES.md
 
+# Research notes: local working papers, untracked from 2026-10-24 (the history
+# still carries them). publish_release.EXCLUDE_PATHS keeps them out of zips;
+# this line keeps `sync.py --new` from putting them back in a commit.
+analysis/
+
 # NOTE: python-hslog/ is TRACKED. It used to be gitignored, which meant a
 # clone lacked the parser while the release zip had it — the spin-out into
 # this repo made the repo and the release the same tree, so it is vendored

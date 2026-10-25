@@ -2137,7 +2137,7 @@
     "discard"
    ]
   },
-  "note": "After you discard your FIRST minion each turn, get a copy of it with double stats (Writhing Tentacles). A discard-ENGINE payoff: the aberration/discard builds discard bodies on purpose (Recruiter, Frostcaller, KThir-adjacent Activate outlets) - this turns the best one into a 2x body. Also noted as an unmodelled discard SOURCE in engines.json (analysis/discard_mechanic.md)."
+  "note": "After you discard your FIRST minion each turn, get a copy of it with double stats (Writhing Tentacles). A discard-ENGINE payoff: the aberration/discard builds discard bodies on purpose (Recruiter, Frostcaller, KThir-adjacent Activate outlets) - this turns the best one into a 2x body. Also noted as an unmodelled discard SOURCE in engines.json (maintainer notes (not shipped): discard mechanic)."
  },
  "BG32_MagicItem_283": {
   "base_value": 10,

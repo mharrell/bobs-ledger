@@ -5,13 +5,19 @@ log file the game writes on your own PC, shows reference information while you
 play, and after each game builds a turn-by-turn review of what you did and what
 happened.
 
+The planner is a hand-written, rule-based scoring and planning function that
+runs locally; there is no machine learning and no language model involved.
+
 **It does not tell you what to do during a game.** The live view shows state and
 reference data, never a move. See [Is this allowed?](#is-this-allowed).
 
 **Windows and macOS.** It asks for no account, does not touch the game's
-process or memory, and does not automate input.
+process or its memory, and does not automate input.
 
 **[Install](#install)** · **[Turn on logging](#turn-on-hearthstones-logging)** · **[Is this allowed?](#is-this-allowed)** · **[Privacy](#privacy-and-the-optional-summary)** · **[Troubleshooting](#if-something-is-wrong)**
+
+![Settle Up step-through: tavern, board, and hand at each action](docs/screenshots/settle-up-step-through.webp)
+![Settle Up summary: the shop view, with your opening and closing boards](docs/screenshots/settle-up-summary.webp)
 
 ## What it does
 
@@ -34,22 +40,33 @@ Two ways to read a game:
 
 Settle Up only opens after a game ends. It also has a post-game "what might have
 been better" layer. It is rough, it is often wrong, and it is off unless you
-switch it on. Everything in it is observational, not causal: following the
-model's plan is easier in games you were already winning, so read it as a reason
-to look at a turn, never as a score. Turns it cannot judge are marked **not
-graded** and counted, not guessed.
+switch it on. Everything in it is observational, not causal: following its plan
+is easier in games you were already winning, so read it as a reason to look at a
+turn, never as a score. Turns it cannot judge are marked **not graded** and
+counted, not guessed.
 
 ### Another Round: live reference
 
+![Another Round late in a game: the hero and trinkets with their text, the facts, and the comps this lobby can build](docs/screenshots/another-round-banner.png)
+
 A reference panel that updates as you play:
 
-- Hero, trinket, and discover pick statistics (source: HSReplay population statistics)
+- Hero and trinket pick statistics, plus tier and tribe on discover options (a
+  reference file bundled with the app, built from HSReplay population statistics
+  and labelled with the patch it was read against)
 - A comp tracker: which comps your board is close to and which pieces you hold
-- Board and lobby reference
-- Tavern offers, shown only after combat animations finish
+- Your standing in numbers: effective health, what the last fight cost, what
+  the last three cost, the damage cap, your board's stats against the next
+  opponent's last-known board (or the lobby average), and the price of the next
+  tier.
+
+![Another Round at the first shop, before the five lobby tribes are confirmed](docs/screenshots/another-round-first-shop.png)
+![Another Round late in a game: the hero and both trinkets with their text, and comps marking the core cards already owned](docs/screenshots/another-round-late-shop.png)
 
 Nothing on this tab names a move. A test in this repository checks that the live
 payload carries no plan, no named buy, and no pick.
+
+![Another Round's game-over card: the placement and round, Open in Settle Up, and the save answer on one line](docs/screenshots/another-round-game-over.webp)
 
 ## Install
 
@@ -58,7 +75,7 @@ launcher tells you if it is missing and links to it).
 
 ### Windows
 
-1. **Download:** [latest release](https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip).
+1. **Download:** [latest release](https://github.com/mharrell/bobs-ledger/releases/latest).
 2. **Unzip** it somewhere you can write to, such as Documents or the Desktop. Not
    `C:\Program Files`.
 3. **Double-click `Start Bob's Ledger.cmd`.** It finds Python, asks before
@@ -70,7 +87,7 @@ Windows may warn about an "unknown publisher" for anything downloaded. Click
 
 ### macOS
 
-1. **Download:** [latest release](https://hearth-telemetry-collector.bobs-ledger.workers.dev/release/latest.zip).
+1. **Download:** [latest release](https://github.com/mharrell/bobs-ledger/releases/latest).
 2. **Unzip** it in Finder, somewhere you can write to, such as Documents. Not
    `/Applications`.
 3. **Double-click `Start Bob's Ledger.command`.** It finds Python 3, asks before
@@ -86,9 +103,12 @@ Windows may warn about an "unknown publisher" for anything downloaded. Click
 ## Turn on Hearthstone's logging
 
 By default Hearthstone does not write the file this app reads. If logging is off
-when you start the app, it offers to turn it on: it adds two lines to the
-`log.config` file Hearthstone already uses, keeps a copy of the original, and
-changes nothing else. It will not do this while Hearthstone is running.
+when you start the app, it offers to set it up: it writes the two logging lines
+into the `log.config` file Hearthstone already uses and sets
+`Log.FileSizeLimit.Int=-1` in `client.config` beside the game, which lifts the
+10 MB cap the client puts on its log. Each file keeps a backup of its original,
+and nothing else in either is changed. It will not do this while Hearthstone is
+running.
 
 To do it by hand on Windows:
 
@@ -104,7 +124,11 @@ ConsolePrinting=false
 Screenshots=false
 ```
 
-4. Start Hearthstone.
+4. Open (or create) `client.config` in the Hearthstone install folder — the one
+   holding `Hearthstone.exe`, usually `C:\Program Files (x86)\Hearthstone` —
+   and add `Log.FileSizeLimit.Int=-1`, which lifts the 10 MB cap on the log.
+   Windows may need Notepad run as administrator to save a file there.
+5. Start Hearthstone.
 
 To do it by hand on macOS:
 
@@ -114,9 +138,12 @@ To do it by hand on macOS:
 3. Open `log.config` there in TextEdit — choose **Format > Make Plain Text**
    before saving — or create it, and make sure it contains the same `[Power]`
    block.
-4. Start Hearthstone.
+4. Open (or create) `client.config` in the folder holding `Hearthstone.app`
+   (`/Applications/Hearthstone`) and add `Log.FileSizeLimit.Int=-1`.
+5. Start Hearthstone.
 
-If you use Hearthstone Deck Tracker or Firestone, this is already done.
+If you use Hearthstone Deck Tracker or Firestone, `log.config` is already set
+up; the `client.config` line above is separate.
 
 ## Is this allowed?
 
@@ -129,10 +156,13 @@ Not guaranteed, and this section does not pretend otherwise.
 - What this app does not do: touch the game's process or memory, automate input,
   or show hidden information. It reads the log file Hearthstone writes to your
   own disk.
+- It writes two of Hearthstone's own config files — `log.config` and
+  `client.config` in the game's install folder — only when you say yes, and keeps
+  a backup of each one it changes.
 - Tools that read the same log, such as Deck Tracker and Firestone, have been used
   openly for years. That is a reason to think this is tolerated. It is not a
   promise.
-- The live view shows state, not instructions. The model's plan is worked out and
+- The live view shows state, not instructions. The plan is worked out and
   saved on your disk, and you see it after the game, when it can no longer be
   acted on.
 - **Do not use it in tournaments or organised events.** Their rules bar outside
@@ -153,19 +183,26 @@ nothing else.
 
 - It covers only games you play after you say yes.
 - A summary holds decisions and outcomes: turn, gold, tavern tier, health, what
-  the model suggested, and what happened next. It does not hold your name, chat,
+  the planner suggested, and what happened next. It does not hold your name, chat,
   file paths, or the log file.
 - A copy of everything sent is kept in `session_reports/` in the app folder.
 - The exact fields allowed are listed in `session_report.py` (`SPEC`). A field not
   listed there cannot be sent.
-- To change your mind, press **Clear** at the top right of the overlay.
+- To change your mind, click **Stop sharing** beside the tabs at the top of the
+  page; the control reads **Turn sharing on** while sharing is off.
 
-Why it exists: the model's plan has not been measured against results, and these
+With your yes, a summary is posted to the project's collector at
+`https://hearth-telemetry-collector.bobs-ledger.workers.dev` and stored in its
+Cloudflare KV namespace. The operator's notes are in
+[`telemetry/README.md`](telemetry/README.md), which does not state a retention
+period.
+
+Why it exists: the plan has not been measured against results, and these
 summaries are how it gets measured.
 
 ## What it cannot do
 
-The model behind the review is a second opinion, not an oracle. Its judgements
+The planner behind the review is a second opinion, not an oracle. Its judgements
 have not been checked against outcomes, and some, especially about when to level
 up, may be wrong. After a Hearthstone patch the reference data can lag by a few
 days.
@@ -210,13 +247,14 @@ python -m pip install -r app/requirements.txt
 python app/live.py
 ```
 
-Tests: `python -m unittest discover -s app/tests` (about 1,500, about a minute).
+Tests: `python -m unittest discover -s app/tests` (a large test suite).
 Two are posture controls: one checks this README's claims about what the app does
 to your machine, and one checks that the live payload carries no verdict.
 
 Nothing on the live path calls a language model. Everything on the page comes from
-the local value function and the meta database. The language-model tooling in the
-tree is for maintainer work and is not shipped in releases.
+the local value function and the meta database, apart from card art, which is
+fetched over HTTPS. The language-model tooling in the tree is for maintainer work
+and is not shipped in releases.
 
-Design notes, working rules, and the roadmap are in `DESIGN.md`, `CLAUDE.md`, and
-`ROADMAP.md`. History of the project's direction is in `PIVOT.md`.
+Design notes, working rules, and the roadmap are in `DESIGN.md` and `ROADMAP.md`.
+History of the project's direction is in `PIVOT.md`.

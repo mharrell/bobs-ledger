@@ -6,6 +6,8 @@ about it. What produces those numbers is a **deterministic value function plus a
 growth simulator over a curated meta database** — no model is called during play,
 no API key is needed, and nothing about the game leaves the machine.
 
+References to analysis/ in this document point to local working notes that are not part of the repository.
+
 **Why this document mentions LLMs at all.** The project began as an
 exploration of where a language model *would* help in a game coach, and that
 thinking is preserved below (sections 4, 7 and the strategy notes) because it
@@ -651,7 +653,7 @@ parts around the data to shrink a code-only window), and keeping the previous
 code on disk to switch to on failure (two copies of the coach, and a "which one
 am I running?" question at every start).
 
-### macOS: groundwork only (2026-10-03)
+### macOS: groundwork (2026-10-03), verified on a Mac (2026-10-24)
 
 The runtime needed nothing Windows-specific — no ctypes, no Tk, no window
 manipulation, and the overlay is a localhost page in a browser — so the port
@@ -689,6 +691,12 @@ unit tests inject the platform, which covers the logic and the exact command
 lines — not macOS. Nothing should be announced as Mac support until a Mac
 completes an install and a game.
 
+**2026-10-24:** verified on a Mac since: the launcher runs, the app starts, a real
+`Power.log` is read, `log.config` is honoured,
+`/Applications/Hearthstone/client.config` is the right path,
+`Log.FileSizeLimit.Int=-1` takes effect, and Gatekeeper's first-open behaviour on
+the downloaded `.command` has been observed.
+
 **First macOS install and game, 2026-10-15 — what it settled.** The `.command`
 parses under `/bin/bash` 3.2.57, is LF-only and pure ASCII, and `--check` runs
 end to end (Python found, `requests` present, the logging offer reported and
@@ -721,10 +729,11 @@ Power.log" at the menu is NOT evidence that logging is off, and a player
 following the README's first-run advice should be told to start a game before
 concluding anything; nothing on the page currently says that.
 
-**Still open on macOS:** the machine-dependent suite
+**Still open on macOS (2026-10-15):** the machine-dependent suite
 (`test_integration_real_log.py`) needs a FINISHED session log and skips while the
-game is running, so it has not yet parsed a real macOS log. That is the remaining
-check, and it needs only for the game to be closed.
+game is running, so at that point it had not parsed a real macOS log.
+**2026-10-24:** a Mac has since read real logs through the coach; whether the
+machine-dependent suite has run there is not recorded.
 
 ### Card names come from the log, not from a table (2026-10-19)
 

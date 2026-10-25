@@ -2,6 +2,8 @@
 
 Priorities and concrete next steps.
 
+References to analysis/ in this document point to local working notes that are not part of the repository.
+
 ## Phase 0 — Bootstrap (done)
 - [x] Create the project repo
 - [x] Clone official `python-hslog` parser
