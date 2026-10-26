@@ -661,6 +661,26 @@ Superseded options, recorded so they are not re-litigated: the review report
 alone (derived, harmless, but cannot be re-derived under newer code) and the
 decision-log records alone (no personal data by design, but plan-side only).
 
+### The Save button waits for the review build (2026-10-26)
+
+**The failure:** the end-of-game card's **Save replay** is live the moment the
+game ends, but the review behind it is built off-thread and, on a 16-turn game,
+`settle_up.build` replays ~380k log lines — 26 s even after the 2026-10-26
+single-pass change. A click in that window answers `409` and the card says
+"Still building — try again", which reads as a broken button.
+
+**The fix, not in the tree:** on `409`, keep the click, show "Building the
+review…", poll `/review/save` every 1.5 s for up to a minute, and land on
+"Saved ✓" when the build finishes; a real failure still shows its own error.
+It was written and then set aside because the browser suite does not run
+everywhere, so it would ship source-only until someone opens a page against
+it. Small, and shaped like the auto-save checkbox's revert path.
+
+**The bigger sibling:** the review appears *instantly* only if it stops being
+a replay — build it from the live coach's state (snapshots and the per-phase
+analyses captured while playing) with `build()` as the fallback for games the
+monitor did not watch. That is the change the timings point at.
+
 ---
 
 ## Key decisions locked so far
