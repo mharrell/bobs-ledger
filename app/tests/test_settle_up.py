@@ -552,10 +552,14 @@ class TestTheCoachingKeysInTheReport(unittest.TestCase):
                 # bare word (see TestBuildWalksALog).
                 fh.write("D 10:00:00.0000000 GameState.DebugPrintPower() - "
                          "CREATE_GAME\n")
-            with mock.patch.object(settle_up.outcome_audit, "audit_game",
+            # The seam moved in 2026-10-26: `build` drives the game ONCE and
+            # derives the rows from that pass, so the canned rows replace
+            # `rows_from_info` and the drive itself is stubbed.
+            import turn_review
+            with mock.patch.object(settle_up.outcome_audit, "rows_from_info",
                                    return_value=rows), \
-                 mock.patch.object(settle_up, "_timeline",
-                                   return_value=(None, "no boards here")), \
+                 mock.patch.object(turn_review, "drive",
+                                   return_value=(None, {}, None)), \
                  mock.patch.object(settle_up.coach_diff, "saved_evidence",
                                    return_value=evidence or
                                    {"games": 0, "by_kind": {}}):

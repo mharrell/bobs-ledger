@@ -303,7 +303,7 @@ def _steps_for(actual, markers, snapshots, friendly, offset, upper,
     return steps
 
 
-def _drive(chunk):
+def drive(chunk):
     """One pass over a game: (coach, info_by_turn, header_friendly).
 
     Walks the buy phases, settles inside each one (the shop has stopped
@@ -344,7 +344,7 @@ def _drive(chunk):
         if not markers or markers[-1][1] != count:
             markers.append((idx, count))
 
-    for lo, hi in _phases(chunk):
+    for pi, (lo, hi) in enumerate(_phases(chunk)):
         while j < lo and j < n:
             feed(j)
             j += 1
@@ -373,7 +373,7 @@ def _drive(chunk):
             acts = parse_actions(chunk[lo:hi], friendly=header_friendly,
                                  collect_events=True)
             actual = acts[0] if acts else {}
-        info[turn] = {"analysis": a, "actual": actual}
+        info[turn] = {"analysis": a, "actual": actual, "phase": pi}
         if header_friendly is not None:
             # The steps are built AFTER the whole chunk is fed: the settle
             # fires mid-shop, and the rest of the phase — often including
@@ -413,6 +413,11 @@ def _drive(chunk):
             step_hands=getattr(coach, "step_hands", None),
             step_offers=getattr(coach, "step_offers", None))
     return coach, info, header_friendly
+
+
+#: The name this pass had while it was private to `timeline`. Kept so any
+#: caller that reached in keeps working; new code calls `drive`.
+_drive = drive
 
 
 def _spend(actual, level_cost, prices=None):
@@ -1211,9 +1216,19 @@ def timeline(log_path, game_index=1, placement=None):
                          f"game(s); game {game_index} does not exist")
     lo, hi = bounds[game_index - 1]
     chunk = lines[lo:hi]
-    coach, info, header_friendly = _drive(chunk)
-    # The header player wins when the coach never resolved one (see _drive).
+    coach, info, header_friendly = drive(chunk)
+    # The header player wins when the coach never resolved one (see drive).
     friendly = header_friendly if header_friendly is not None else coach.friendly
+    return timeline_from_drive(coach, info, friendly, placement)
+
+
+def timeline_from_drive(coach, info, friendly, placement=None):
+    """Assemble the per-turn timeline from an ALREADY-DRIVEN coach.
+
+    Split out of `timeline` (2026-10-26) so a caller that needs both the graded
+    phase rows and the boards pays for ONE replay. `settle_up.build` drives the
+    game once and hands the same coach here; the assembly itself is unchanged.
+    """
     snaps = getattr(coach, "_snap_by_turn", {}) or {}
 
     # The last turn has no successor to read its survivors from. board_state's
@@ -1245,3 +1260,4 @@ def timeline(log_path, game_index=1, placement=None):
             # not kept forever, and a review served next week has only what the
             # rep carries.
             "log_names": _log_names(getattr(coach, "gs", None))}
+

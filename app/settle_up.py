@@ -316,20 +316,13 @@ def _removed_note(n):
             f"surviving board — a board holds 7")
 
 
-def _timeline(log_path, game_index, names, placement=None):
-    """The per-turn board timeline, formatted for the report.
+def _format_timeline(tl, names):
+    """Name a timeline built from an ALREADY-DRIVEN coach.
 
-    Wrapped rather than allowed to raise: this is a SECOND full replay of the
-    game (about 5 s on a 15-turn game) and the phase rows above are the part
-    that must survive its failure. A failure is recorded in the report as
-    `timeline_error` rather than swallowed — a review missing its boards should
-    say so, not look like a review of a game with no boards.
+    Split out of the old `_timeline` (2026-10-26): the replay now
+    happens once, in `build`, and this is the formatting half. A
+    timeline that could not be built is handled there.
     """
-    try:
-        import turn_review
-        tl = turn_review.timeline(log_path, game_index, placement=placement)
-    except Exception as exc:  # noqa: BLE001
-        return None, f"{type(exc).__name__}: {exc}"
     # THE LOG'S OWN NAMES for the ids no DB can name (2026-10-19), measured
     # while the game was replayed. Merged before any string below is built, so
     # the board text, the sell questions and the took lists all read it — and
@@ -352,7 +345,7 @@ def _timeline(log_path, game_index, names, placement=None):
             "bought": [names.get(c, c) for c in row["took"]["bought"]],
             "sold": [names.get(c, c) for c in row["took"]["sold"]],
         }
-    return tl, None
+    return tl
 
 
 def build(log_path, game_index=1):
@@ -373,7 +366,19 @@ def build(log_path, game_index=1):
         raise SystemExit(f"{os.path.basename(log_path)} has {len(bounds)} "
                          f"game(s); game {game_index} does not exist")
     lo, hi = bounds[game_index - 1]
-    rows = outcome_audit.audit_game(lines[lo:hi], game_index, session)
+    chunk = lines[lo:hi]
+    import turn_review
+    from extract_game import extract_game, _friendly_player
+    # ONE replay for both halves of the review (2026-10-26): the phase rows and
+    # the boards used to cost a pass each. `drive` is the superset pass — it
+    # settles the same way and also collects the snapshots and steps.
+    coach, info, header_friendly = turn_review.drive(chunk)
+    friendly = (header_friendly if header_friendly is not None
+                else getattr(coach, "friendly", None))
+    game = extract_game(chunk)
+    hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
+    rows = outcome_audit.rows_from_info(info, chunk, game_index, session,
+                                        friendly, hero)
     names = _load_bg_names()
 
     phases = []
@@ -407,8 +412,16 @@ def build(log_path, game_index=1):
         })
 
     head = rows[0] if rows else {}
-    timeline, timeline_error = _timeline(log_path, game_index, names,
-                                         placement=head.get("placement"))
+    # The boards come from the SAME drive as the rows. Wrapped because the
+    # phase rows are the part that must survive a timeline failure — a review
+    # missing its boards says so rather than looking like a game with none.
+    try:
+        timeline = _format_timeline(
+            turn_review.timeline_from_drive(
+                coach, info, friendly, placement=head.get("placement")), names)
+        timeline_error = None
+    except Exception as exc:  # noqa: BLE001
+        timeline, timeline_error = None, f"{type(exc).__name__}: {exc}"
     log_name = os.path.basename(log_path)
     # Did the log actually record how this game finished? If the client capped
     # the file AND stopped there, the final game has no recorded result — its

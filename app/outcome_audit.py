@@ -71,44 +71,21 @@ def _plan_shape(analysis):
     return kind or "note", None
 
 
-def audit_game(chunk, game_idx, session):
-    """Rows for one game: one per advised buy phase (single feed pass;
-    settle inside each phase like replay_review's _advise_point)."""
-    game = extract_game(chunk)
-    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
-    if friendly is None:
-        return []
-    hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
-    phases = _phases(chunk)
-    spell_names = _spell_names()
-    coach = live_coach.LiveCoach()
+def rows_from_info(info, chunk, game_idx, session, friendly, hero,
+                   spell_names=None):
+    """The audit rows for one game, from an ALREADY-DRIVEN pass.
+
+    `info` is `turn_review.drive`'s output — per turn, the analysis, the parsed
+    player actions and the phase index. Deriving the rows from it is what lets
+    `settle_up.build` pay for ONE replay instead of one for the rows and a
+    second for the boards (2026-10-26). The row shape is unchanged.
+    """
+    spell_names = spell_names if spell_names is not None else _spell_names()
     rows = []
-    j = 0
-    n = len(chunk)
-    for pi, (lo, hi) in enumerate(phases):
-        while j < lo and j < n:
-            coach.feed(chunk[j])
-            j += 1
-        prev_offers = None
-        last_change = j
-        a = None
-        stop = hi if hi is not None else n
-        while j < stop:
-            coach.feed(chunk[j])
-            offers = tuple(coach.tavern_offers())
-            if offers != prev_offers:
-                prev_offers = offers
-                last_change = j
-            elif offers and j - last_change >= SETTLE:
-                a = coach.analyze()
-                j += 1
-                break
-            j += 1
-        if a is None or not prev_offers:
-            continue  # unready coach or a no-shop transition phase
-        hi_eff = hi if hi is not None else n
-        acts = parse_actions(chunk[lo:hi_eff], friendly=friendly)
-        actual = acts[0] if acts else {}
+    for turn in sorted(info, key=lambda t: info[t].get("phase", 0)):
+        entry = info[turn]
+        a = entry.get("analysis") or {}
+        actual = entry.get("actual") or {}
         lead, card = _plan_shape(a)
         buys = actual.get("buys") or []
         steps = a.get("top_move_steps") or []
@@ -124,8 +101,9 @@ def audit_game(chunk, game_idx, session):
         if a.get("health") is not None:
             eff = a["health"] + (a.get("armor") or 0)
         rows.append({
-            "session": session, "game": game_idx, "phase": pi,
-            "turn": (a.get("scenario") or {}).get("turns"),
+            "session": session, "game": game_idx,
+            "phase": entry.get("phase", len(rows)),
+            "turn": turn,
             "hero": (hero or {}).get("hero_name"),
             "placement": (hero or {}).get("place"),
             "tier": a.get("tier"), "gold": a.get("gold"),
@@ -137,29 +115,31 @@ def audit_game(chunk, game_idx, session):
             "player_buys": buys, "player_actions": {
                 k: actual.get(k) for k in
                 ("upgrades", "refreshes", "sells", "freezes")},
-            # Which spells were cast and which hand minions were played, BY ID.
-            # A cast-led plan can only be graded against these (2026-10-06); the
-            # counts the row used to carry alone could not answer "did they cast
-            # the one it named".
             "spells_cast": list(actual.get("spell_ids") or []),
             "plays": list(actual.get("plays") or []),
-            # What the plan asked for and what it would have cost, so the
-            # affordability check can be made from the row alone (2026-10-03).
             "steps": steps, "level_cost": a.get("level_cost"),
             "shop_costs": a.get("shop_costs") or {},
-            # The coach's OWN ranking of the shop: what the disagreement signal
-            # compares the player's buy against, so it never needs a claim
-            # about who is right (see disagreement_rows).
             "shop_rank": a.get("shop_rank") or [],
         })
     # outcome join: the fight AFTER each advised phase moves eff HP by the
-    # delta to the next advised phase (buy-phase armor gains are rare and
-    # accepted as v1 noise; the last phase has no following fight)
+    # delta to the next advised phase (the last phase has no following fight)
     for k in range(len(rows) - 1):
         a_eff, b_eff = rows[k]["eff_hp"], rows[k + 1]["eff_hp"]
         if a_eff is not None and b_eff is not None:
             rows[k]["hp_delta_next_fight"] = b_eff - a_eff
     return rows
+
+
+def audit_game(chunk, game_idx, session):
+    """Rows for one game: one per advised buy phase, from ONE drive pass."""
+    game = extract_game(chunk)
+    friendly = _friendly_player(game["heroes"], game.get("choice_players"))
+    if friendly is None:
+        return []
+    hero = next((h for h in game["heroes"] if h["player"] == friendly), None)
+    import turn_review
+    _coach, info, _header = turn_review.drive(chunk)
+    return rows_from_info(info, chunk, game_idx, session, friendly, hero)
 
 
 def disagreement_rows(rows):

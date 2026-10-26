@@ -136,7 +136,7 @@ class TestTheLogsOwnNames(unittest.TestCase):
         what the rep carries."""
         import inspect
         import turn_review
-        src = inspect.getsource(turn_review.timeline)
+        src = inspect.getsource(turn_review.timeline_from_drive)
         self.assertIn('"log_names"', src,
                       "timeline() stopped recording the log's names")
         self.assertIn("_log_names(", inspect.getsource(turn_review))
