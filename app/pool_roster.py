@@ -42,6 +42,7 @@ Usage:
   python pool_roster.py                      # dry run: report the current epoch
   python pool_roster.py --apply              # write meta/pool_roster.json
   python pool_roster.py --apply --patch 36.6.1
+  python pool_roster.py --update-saved --apply --patch 37.0.2   # balance patch
   python pool_roster.py --all-sessions       # ignore epoch detection
   python pool_roster.py --diff               # show the diff against the saved roster
   python pool_roster.py --json               # dump the built roster
@@ -239,7 +240,15 @@ def current_epoch(sessions):
     no older session has; every older session holding a signature element joins
     the epoch. With an empty signature (a removal-only patch) the epoch is the
     newest session alone.
+
+    A session with NO pool data is not a patch boundary. Hearthstone writes a
+    fresh `Power.log` the moment the client launches, so the newest session on
+    disk is routinely empty (or holds only the hero-pick block); letting it
+    define the epoch reported every saved card as removed and `--apply` would
+    write an empty roster (2026-11-03, the 37.0.2 update). Empty sessions are
+    skipped for epoch selection; the display in `main` still shows them.
     """
+    sessions = [s for s in sessions if s["scan"]["cards"]]
     if not sessions:
         return [], (set(), set())
     newest, older = sessions[-1], sessions[:-1]
@@ -373,6 +382,71 @@ def load_roster(path=ROSTER):
         return None
 
 
+def update_saved_roster(sessions, patch=None, saved=None, out_of_play=None):
+    """Refresh an EXISTING roster from every session, newest observation wins.
+
+    `current_epoch` + `build_roster` is the right shape for a CONTENT patch:
+    the new cards/tribes are the signature, and the roster is rebuilt from the
+    sessions after the boundary. A BALANCE patch has no new cards, so the
+    signature is empty and the epoch collapses to the newest lobby — rebuilding
+    from it would throw away every card that lobby did not roll (37.0.2 added
+    one returning minion and removed one; a rebuild from two games lost ~130
+    in-play cards). That is the trade `--sessions N` only papers over.
+
+    This mode instead treats every session on disk as evidence and keeps the
+    NEWEST definition of each card (tier/stats are patch-dependent; the log's
+    first observation in a session is the unbuffed one). Cards that only older
+    sessions saw are carried from the saved roster, because a banned tribe is
+    untested, not absent. The out-of-play registry is then subtracted — it, not
+    a missing lobby, is what says a card is gone.
+
+    Returns the roster document (same shape as `build_roster`'s).
+    """
+    ordered = list(reversed(sessions))  # newest first: build_roster keeps first
+    roster = build_roster(ordered, patch)
+    roster["sessions"] = [s["name"] for s in reversed(ordered)]
+    saved = saved if saved is not None else load_roster()
+    if saved:
+        for cid, card in (saved.get("cards") or {}).items():
+            roster["cards"].setdefault(cid, dict(card))
+        for cid, card in (saved.get("created") or {}).items():
+            roster["created"].setdefault(cid, dict(card))
+        roster["carried_from"] = {
+            "patch": saved.get("patch"),
+            "built": saved.get("built"),
+            "cards": len(saved.get("cards") or {}),
+        }
+    dropped = drop_out_of_play(roster, out_of_play)
+    if dropped:
+        roster["dropped_out_of_play"] = dropped
+    roster["tribes_widened_from_meta"] += enrich_from_meta(roster["cards"])
+    roster["tribes_present"] = sorted(pure_tribes(roster["cards"]))
+    return roster
+
+
+def drop_out_of_play(roster, doc=None):
+    """Remove registry-removed cards from a roster; return the ids removed.
+
+    `doc` is injectable so the tests do not read the shipped registry (and so
+    a caller can preview a registry change). Fail-open when playable/registry
+    is unavailable: this is a cleanup, not a dependency.
+    """
+    if doc is None:
+        try:
+            import playable
+        except ImportError:  # pragma: no cover
+            return []
+        doc = playable.load_out_of_play()
+    ids = {e.get("id") for e in (doc.get("cards") or {}).values()
+           if e.get("id")}
+    dropped = sorted(ids & set(roster.get("cards") or {}))
+    for cid in dropped:
+        roster["cards"].pop(cid, None)
+    for cid in sorted(ids & set(roster.get("created") or {})):
+        roster["created"].pop(cid, None)
+    return dropped
+
+
 def _label(cid, roster):
     card = (roster.get("cards") or {}).get(cid) or {}
     return f"{cid} {card.get('name') or '?'} (tier {card.get('tier')})"
@@ -385,6 +459,12 @@ def main():
                     help="patch label to stamp on the roster (e.g. 36.6.1)")
     ap.add_argument("--all-sessions", action="store_true",
                     help="skip epoch detection; mine every session on disk")
+    ap.add_argument("--update-saved", action="store_true",
+                    help="refresh the saved roster from every session, keeping "
+                         "the NEWEST observation per card and carrying cards "
+                         "only older sessions saw (a balance patch adds no "
+                         "cards, so epoch detection cannot find its boundary); "
+                         "out-of-play cards are dropped")
     ap.add_argument("--sessions", type=int, default=None, metavar="N",
                     help="union the newest N sessions (widen tribe coverage); "
                          "refuses to write if the union pulls an out-of-play "
@@ -404,7 +484,9 @@ def main():
         print(f"no Power.log sessions under {args.logs}")
         return 1
 
-    if args.all_sessions:
+    if args.update_saved:
+        epoch, sig = sessions, (set(), set())
+    elif args.all_sessions:
         epoch, sig = sessions, (set(), set())
     elif args.sessions:
         epoch, sig = sessions[-args.sessions:], (set(), set())
@@ -416,7 +498,10 @@ def main():
         mark = "*" if s in epoch else " "
         print(f" {mark} {s['name']}  games={s['scan']['games']:2}  "
               f"pool_cards={len(s['scan']['cards']):3}")
-    if not args.all_sessions:
+    if args.update_saved:
+        print("\nupdate-saved: every session contributes, the newest "
+              "observation of a card wins; the saved roster fills the rest")
+    elif not args.all_sessions:
         sig_cards, sig_tribes = sig
         print(f"\ncurrent epoch: {len(epoch)} session(s), signature "
               f"{len(sig_cards)} card(s) + {sorted(sig_tribes)} tribe(s)")
@@ -432,7 +517,10 @@ def main():
             print("    (no signature — newest session only; a removal-only "
                   "patch shows up as roster removals, review the diff)")
 
-    roster = build_roster(epoch, args.patch)
+    if args.update_saved:
+        roster = update_saved_roster(sessions, args.patch)
+    else:
+        roster = build_roster(epoch, args.patch)
     print(f"\nroster: {len(roster['cards'])} pool minions, "
           f"{roster['games']} game(s)")
     tiers = {}
@@ -488,6 +576,10 @@ def main():
               "(an older session's pool dragged removed cards back in). Use the "
               "auto-detected epoch, or lower --sessions.")
 
+    if args.apply and not roster["cards"]:
+        print("\nrefusing to write an EMPTY roster — no session on disk "
+              "carries pool data yet (play one game on the new patch first)")
+        return 1
     if args.apply and stale and not args.force:
         print("\nrefusing to write — pass --force to write anyway")
         return 1

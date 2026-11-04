@@ -92,7 +92,7 @@
   "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
   "tribe": "Murloc",
   "guide": "guides/murlocs-venom-scam.md",
-  "how_to_play": "Scam board. Buy every poison/reborn piece and concentrate stats on few units so your trades stay lopsided; the rest of the board exists to trade evenly at worst. Golden [[Expert Aviator||126637]] with venom from [[Bile Spitter||122219]] floods the fight with scam from hand. [[Sky-hatch Runaway||132957]] can hand out permanent venom instead."
+  "how_to_play": "Scam board. Buy every poison/reborn piece and concentrate stats on few units so your trades stay lopsided; the rest of the board exists to trade evenly at worst. [[Bile Spitter||122219]] hands out Venomous and [[Sky-hatch Runaway||132957]] can make it permanent. The hand-flood line went with Expert Aviator's removal in 37.0.2, so the scam now trades rather than summons."
  },
  "pirates-apm-golden": {
   "name": "Pirates - APM Golden",
@@ -356,7 +356,7 @@
   "representative_card": "BG36_704",
   "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
   "tribe": "Murloc",
-  "how_to_play": "Tidecaller finisher. Build economy first: golden [[Brann Bronzebeard||96786]] or Brann + [[Magicfin Mycologist||122277]], keep the top-shelf economy spells - Cloning Conch, battlecry discovers. Then [[Shamanic Tidecaller||133026]] converts all of it: under [[Balinda Stonehearth||130298]], cast everything into it - bloodgems, [[Oozeling Gladiator||103670]] spells. Grow premium hand Murlocs ([[Bile Spitter||122219]], [[Expert Aviator||126637]]) for summon value; [[Choral Mrrrglr||98948]] duplicates the hand's stats."
+  "how_to_play": "Tidecaller finisher. Build economy first: golden [[Brann Bronzebeard||96786]] or Brann + [[Magicfin Mycologist||122277]], keep the top-shelf economy spells - Cloning Conch, battlecry discovers. Then [[Shamanic Tidecaller||133026]] converts all of it: under [[Balinda Stonehearth||130298]], cast everything into it - bloodgems, [[Oozeling Gladiator||103670]] spells. Grow premium hand Murlocs ([[Bile Spitter||122219]]) for summon value — Expert Aviator, the other summon source, was removed in 37.0.2; [[Choral Mrrrglr||98948]] duplicates the hand's stats."
  },
  "aberrations-deity-feed": {
   "name": "Aberrations - Deity Feed",
@@ -607,7 +607,7 @@
   "source": "hsreplay.net comp pages (scrape_comps.py)",
   "tribe": "Elemental",
   "guide": "guides/elementals-living-azerite.md",
-  "how_to_play": "Shop-buff scaler: every tavern spell you cast gives elementals in the TAVERN +3/+2 permanently (Living Azerite), so buy the buffed bodies before rolling. Balinda doubles targeted spells; Leyline Surfacer generates Absorptions on both battlecry and deathrattle."
+  "how_to_play": "Shop-buff scaler: every tavern spell you cast gives elementals in the TAVERN +3/+3 permanently (Living Azerite), so buy the buffed bodies before rolling. Balinda doubles targeted spells; Leyline Surfacer generates Absorptions on both battlecry and deathrattle."
  },
  "aberrations-sludge": {
   "name": "Aberrations - Sludge",
@@ -681,7 +681,7 @@
   "representative_card": "BG36_362",
   "source": "hsreplay.net comp pages (scrape_comps.py)",
   "tribe": "Demon",
-  "how_to_play": "Deathrattle shop-buff: press Sacrificial Wrathguard's Activate (1) every turn - its deathrattle gives minions in the Tavern +2/+2 for the rest of the game - and let Titus Rivendare trigger it twice. Imp-lusionist deaths feed you Methodical Madness (choose a Demon; it consumes 2 random Tavern minions to gain their stats and bonus keywords), which is how the buffed Tavern becomes board stats, and Balinda Stonehearth casts each one twice. Soulkeeping Jailer's Activate (2) is the bulk eater: every Demon consumes a random Tavern minion. Twisted Wrathguard refills the shop with Fodder after each sell, so keep buying and selling to keep the conversion running."
+  "how_to_play": "Deathrattle shop-buff: press Sacrificial Wrathguard's Activate (1) every turn - its deathrattle gives minions in the Tavern +2/+1 for the rest of the game - and let Titus Rivendare trigger it twice. Imp-lusionist deaths feed you Methodical Madness (choose a Demon; it consumes 2 random Tavern minions to gain their stats and bonus keywords), which is how the buffed Tavern becomes board stats, and Balinda Stonehearth casts each one twice. Soulkeeping Jailer's Activate (2) is the bulk eater: every Demon consumes a random Tavern minion. Twisted Wrathguard refills the shop with Fodder after each sell, so keep buying and selling to keep the conversion running."
  },
  "quilboar-gems-from-hand": {
   "name": "Quilboar - Gems from Hand",

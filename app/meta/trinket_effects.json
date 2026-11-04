@@ -2318,5 +2318,65 @@
   },
   "note": "a spell cast on a tavern minion is consumed by a friendly minion for its stats (Felsteel Cleaver)",
   "review": "priced from the card text 2026-10-07 - value scales with spells cast and targets the shop, so it feeds growth rather than the fight; 10 is a first pass."
+ },
+ "BG30_MagicItem_914t": {
+  "base_value": 14,
+  "synergy": {
+   "keywords": [
+    "hand"
+   ]
+  },
+  "note": "per minion played: left-most hand minion +10/+10 (Nerglish Phrasebook, Greater)"
+ },
+ "BG32_MagicItem_801t": {
+  "base_value": 12,
+  "synergy": {
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "Tavern spells give an extra +1/+1, improving every 5 casts (Heart of the Forest) - a spell-count scaler, so it wants the spell engine (Azerite/Elementals, Quilboar gems)"
+ },
+ "BG36_MagicItem_840": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Mechanical"
+   ],
+   "keywords": [
+    "spell"
+   ]
+  },
+  "note": "after you buy a Mech: a random Tavern spell costing 2+ (Secret Schematic)"
+ },
+ "BG35_MagicItem_713": {
+  "base_value": 14,
+  "synergy": {
+   "tribes": [
+    "Pirate"
+   ],
+   "keywords": [
+    "hand"
+   ]
+  },
+  "note": "every Pirate you get: +20/+20 to the left-most minion (Trusty Crowbar)"
+ },
+ "BG30_MagicItem_924t": {
+  "base_value": 18,
+  "synergy": {
+   "tribes": [
+    "Pirate"
+   ]
+  },
+  "note": "every gold spend: two Pirates +8/+8 (Booty Bay Brew, Greater)"
+ },
+ "BG35_MagicItem_741": {
+  "base_value": 8,
+  "synergy": {
+   "tribes": [
+    "Mechanical"
+   ]
+  },
+  "note": "a Polarizing Beatboxer (Beatboxer Portrait)"
  }
 }

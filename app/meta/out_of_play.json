@@ -1,10 +1,11 @@
 {
   "_comment": "Cards and tribes that are NOT in play, and must never be recommended. Sourced from the official patch notes and VALIDATED against the log-mined pool: every removed minion here is absent from the post-patch pool_roster and was present in a pre-patch pool. Enforced by playable.py. History is kept so a card that rotates back can be re-enabled with its reason on record — see `history`.",
-  "patch": "36.6.1",
-  "updated": "2026-09-22",
+  "patch": "37.0.2",
+  "updated": "2026-11-03",
   "sources": [
     "https://hearthstone.blizzard.com/en-us/news/24302091",
-    "meta/pool_roster.json (log-mined validation)"
+    "meta/pool_roster.json (log-mined validation)",
+    "https://hearthstone.blizzard.com/en-us/news/24307311/3702-patch-notes"
   ],
   "tribes": {
     "Naga": {
@@ -295,6 +296,14 @@
       "date": "2026-09-22",
       "id": "BG24_004"
     },
+    "BG34_140": {
+      "name": "Expert Aviator",
+      "kind": "minion",
+      "reason": "removed from the minion pool",
+      "patch": "37.0.2",
+      "date": "2026-11-03",
+      "id": "BG34_140"
+    },
     "BG33_899": {
       "name": "Mounting Avalanche",
       "kind": "tavern_spell",
@@ -355,6 +364,38 @@
       "reason": "removed from the trinket pool (no card id in meta/trinkets.json — the name is the only handle we have)",
       "patch": "36.6.1",
       "date": "2026-09-22"
+    },
+    "BG32_MagicItem_170": {
+      "name": "Spell-powered Wrench",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool",
+      "patch": "37.0.2",
+      "date": "2026-11-03",
+      "id": "BG32_MagicItem_170"
+    },
+    "BG30_MagicItem_410t2": {
+      "name": "Quilligraphy Set",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool",
+      "patch": "37.0.2",
+      "date": "2026-11-03",
+      "id": "BG30_MagicItem_410t2"
+    },
+    "BG30_MagicItem_545": {
+      "name": "Fridge Magnet",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool",
+      "patch": "37.0.2",
+      "date": "2026-11-03",
+      "id": "BG30_MagicItem_545"
+    },
+    "BG36_MagicItem_606": {
+      "name": "Writhing Tentacles",
+      "kind": "trinket",
+      "reason": "removed from the trinket pool",
+      "patch": "37.0.2",
+      "date": "2026-11-03",
+      "id": "BG36_MagicItem_606"
     }
   },
   "heroes": {},
@@ -452,6 +493,21 @@
         "Young Murk-Eye",
         "Seafood Stew",
         "Vibrant Bubble"
+      ]
+    },
+    {
+      "patch": "37.0.2",
+      "date": "2026-11-03",
+      "rotated_out_tribes": [],
+      "removed": [
+        "Expert Aviator",
+        "Spell-powered Wrench",
+        "Quilligraphy Set",
+        "Fridge Magnet",
+        "Writhing Tentacles"
+      ],
+      "returning": [
+        "Murcules"
       ]
     }
   ]

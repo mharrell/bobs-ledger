@@ -33,16 +33,17 @@ if not _DOCS:
         'no analysis/patch_*_changes.md in this install: maintainer docs '
         'are not shipped')
 
-#: What analysis/patch_3661_changes.md's headings claim (reviewed by hand).
+#: What analysis/patch_3702_changes.md's headings claim (reviewed by hand).
+#: 37.0.2 is a balance patch: no new minions or heroes, one return, one removal.
 EXPECTED_COUNTS = {
-    "new_minions": 38,
-    "changed_minions": 7,
-    "removed_minions": 35,
-    "returning_minions": 25,
-    "new_spells": 3,
-    "removed_spells": 2,
-    "returning_spells": 1,
-    "new_heroes": 2,
+    "new_minions": 0,
+    "changed_minions": 26,
+    "removed_minions": 1,
+    "returning_minions": 1,
+    "new_spells": 0,
+    "removed_spells": 0,
+    "returning_spells": 0,
+    "new_heroes": 0,
 }
 
 #: No accepted gaps remain: Sha of Fear (BG36_111, the last one) entered the
@@ -65,6 +66,36 @@ class TestPatchDbCoverage(unittest.TestCase):
     def test_no_unparsed_sections(self):
         """Every section must parse in full — a short list is a silent gap."""
         self.assertEqual(self.result["unparsed"], [])
+
+    def test_a_section_that_states_zero_is_not_a_blind_spot(self):
+        """Balance patches have empty sections; `(0)` + zero names is not a gap.
+
+        37.0.2 added no minions and no heroes. Reporting those as "the parser
+        could not see" made a clean audit look like a broken parser, which is
+        how a warning everyone sees every patch stops being read.
+        """
+        import tempfile
+        doc = (
+            "### 3.1 New heroes (0)\n\nNone.\n\n"
+            "### 3.2 Changed heroes (0)\n\nNone.\n\n"
+            "## 4. New minions (0)\n\nNone.\n\n"
+            "## 5. Changed minions\n\n### 5.2 Changed (0)\n\nNone.\n\n"
+            "## 6. Removed minions (0)\n\nNone.\n\n"
+            "## 7. Returning minions (0)\n\nNone.\n\n"
+            "## 8. Tavern spells\n\n### 8.1 New (0)\n\nNone.\n\n"
+            "### 8.2 Removed (0)\n\nNone.\n\n"
+            "### 8.3 Returning (0)\n\nNone.\n\n"
+            "## 9. Trinkets\n")
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False,
+                                         encoding="utf-8") as f:
+            f.write(doc)
+            path = f.name
+        try:
+            result = check_patch_db.audit(path)
+        finally:
+            os.unlink(path)
+        self.assertEqual(result["unparsed"], [])
+        self.assertEqual(result["problems"], [])
 
     def test_every_section_matches_its_stated_count(self):
         for key, want in EXPECTED_COUNTS.items():

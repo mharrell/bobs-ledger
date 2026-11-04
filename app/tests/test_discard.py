@@ -93,20 +93,20 @@ class TestDiscardEngineChain(unittest.TestCase):
         Hammer of Twilight  2/+1 x 2 discards x 5 minions   = +20/+10
           -> gain +58/+48 (the board's PERSISTENT stats)
         Deity pool: K'Thir 4/4 x2 = 8/8; Rotter min(1 copy, 2 discards) x2/2
-                    = 2/2; Aph'lass 1/1 x2 = 2/2; Sapper min(1, 2) x14/14
+                    = 2/2; Aph'lass 2/1 x2 = 4/2; Sapper min(1, 2) x14/14
                     = 14/14; Baton min(1 trinket, 2 discards) x4/4 = 4/4
-                    -> +30/+30 banked
+                    -> +32/+30 banked
         Awakening: 1 (an Aberration is on the board) x payoff_share 0.5
-                    -> realised +15/+15, which is NOT part of `gain`
+                    -> realised +16/+15, which is NOT part of `gain`
         """
         r = sim((GHURSHA, KTHIR, APHLASS, ROTTER, SAPPER),
                 {"discard": 2, "trinkets": ["Hammer of Twilight",
                                             "Corrupted Baton"]})
         self.assertEqual(r["gain"], {"atk": 58, "hp": 48})
-        self.assertEqual(r["deity"]["atk"], 30)
+        self.assertEqual(r["deity"]["atk"], 32)
         self.assertEqual(r["deity"]["hp"], 30)
         self.assertEqual(r["deity"]["awakenings"], 1)
-        self.assertEqual(r["deity"]["realised"], {"atk": 15.0, "hp": 15.0})
+        self.assertEqual(r["deity"]["realised"], {"atk": 16.0, "hp": 15.0})
         self.assertEqual(r["deity_breakdown"]["Brain Rotter"], (2, 2))
         self.assertEqual(r["deity_breakdown"]["N'raqi Sapper"], (14, 14))
 

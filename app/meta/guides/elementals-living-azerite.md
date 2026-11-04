@@ -10,7 +10,7 @@ A **shop-buff scaler**: spells you cast grow the elementals still sitting in
 the Tavern, so your next buys are pre-buffed.
 
 1. **Living Azerite** (t5) — whenever you cast a tavern spell, give
-   Elementals in the Tavern +3/+2 this game. Permanent spell-quality growth.
+   Elementals in the Tavern +3/+3 this game. Permanent spell-quality growth.
 2. **Leyline Surfacer** (t4) — battlecry AND deathrattle: get an Arcane
    Absorption. Spell generation on both ends.
 3. **Balinda Stonehearth** (t6) — friendly-targeted spells cast twice.

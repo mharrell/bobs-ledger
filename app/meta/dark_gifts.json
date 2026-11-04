@@ -44,6 +44,10 @@
     "description": "Rally: Add a Fodder to your next 3 Refreshes."
   },
   {
+    "name": "Desecration",
+    "description": "Has +3/+2 for each card you've discarded this game."
+  },
+  {
     "name": "Dexterity",
     "description": "Whenever you play a card, gain +2/+2."
   },
@@ -85,11 +89,11 @@
   },
   {
     "name": "Hostility",
-    "description": "Start of Combat: Double this minion's Attack."
+    "description": "+15 Attack. Start of Combat: Double this minion's Attack."
   },
   {
     "name": "Incubation",
-    "description": "+4/+4. In 2 turns, double this minion's stats."
+    "description": "+6/+6. In 2 turns, double this minion's stats."
   },
   {
     "name": "Invulnerability",
@@ -121,7 +125,7 @@
   },
   {
     "name": "Resistance",
-    "description": "Start of Combat: Double this minion's Health."
+    "description": "+15 Health. Start of Combat: Double this minion's Health."
   },
   {
     "name": "Sharpened Sword",
@@ -161,7 +165,7 @@
   },
   {
     "name": "Toughened Shield",
-    "description": "Whenever you play a card, gain +3 Health."
+    "description": "Whenever you play a card, gain +2 Health."
   },
   {
     "name": "Toxicity",

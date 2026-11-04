@@ -458,10 +458,10 @@
   "name": "Dark Paradox",
   "cost": 3,
   "tribe": "All",
-  "attack": 2,
-  "health": 4,
+  "attack": 6,
+  "health": 2,
   "mechanics": [],
-  "text": "Whenever you play a card, gain +2 Attack.",
+  "text": "Whenever you play a card, gain +2 Health.",
   "auto_added": "36.6.1 DB update (patch article + carddef id check)",
   "tribe_src": "log"
  },
@@ -673,6 +673,21 @@
   ],
   "text": "[x]Battlecry: Choose a friendly\nDemon. It consumes a\nminion in the Tavern\nto gain its stats.",
   "tribe_src": "log"
+ },
+ {
+  "tier": 2,
+  "id": "BG27_023",
+  "name": "Murcules",
+  "cost": 3,
+  "tribe": "Murloc",
+  "attack": 5,
+  "health": 3,
+  "mechanics": [
+   "TRIGGER_VISUAL"
+  ],
+  "text": "Whenever this kills a minion, give a minion in your hand +3/+3.",
+  "tribe_src": "log",
+  "auto_added": "37.0.2 DB update (log-mined pool + hearthstonejson)"
  },
  {
   "tier": 2,
@@ -1092,10 +1107,10 @@
   "name": "Dark Paradox",
   "cost": 3,
   "tribe": "All",
-  "attack": 2,
-  "health": 2,
+  "attack": 4,
+  "health": 4,
   "mechanics": [],
-  "text": "Has +2/+2 for each Battlecry you've triggered this game (wherever this is).",
+  "text": "[x]Has +4/+4 for each\nBattlecry you've triggered\nthis game (wherever\nthis is).",
   "auto_added": "36.6.1 DB update (patch article + carddef id check)",
   "tribe_src": "log"
  },
@@ -1779,12 +1794,12 @@
   "name": "Ashen Corruptor",
   "cost": 3,
   "tribe": "Demon",
-  "attack": 6,
-  "health": 6,
+  "attack": 4,
+  "health": 8,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "After your hero takes damage, rewind it and give minions in the Tavern +2/+2 this turn.",
+  "text": "[x]After your hero takes\ndamage, rewind it and\ngive minions in the Tavern\n+1/+2 this turn.",
   "tribe_src": "log"
  },
  {
@@ -2161,12 +2176,12 @@
   "name": "Glambot",
   "cost": 3,
   "tribe": "Mech",
-  "attack": 4,
-  "health": 4,
+  "attack": 5,
+  "health": 5,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "[x]Whenever you cast a spell\non a Mech, Magnetize a\n4/4 Satellite to it.",
+  "text": "[x]Whenever you cast a spell\non a Mech, Magnetize a\n5/5 Satellite to it.",
   "tribe_src": "log"
  },
  {
@@ -2260,7 +2275,7 @@
   "tribe_src": null
  },
  {
-  "tier": 4,
+  "tier": 5,
   "id": "BG30_121",
   "name": "Hot-Air Surveyor",
   "cost": 3,
@@ -2567,12 +2582,12 @@
   "name": "Sacrificial Wrathguard",
   "cost": 3,
   "tribe": "Demon",
-  "attack": 5,
+  "attack": 6,
   "health": 3,
   "mechanics": [
    "DEATHRATTLE"
   ],
-  "text": "Deathrattle: Give minions in the Tavern +2/+2 this game. Activate (1): Improve this.",
+  "text": "[x]Deathrattle: Give minions in\nthe Tavern +2/+1 this\ngame. Activate (1):\nImprove this.",
   "auto_added": "36.6.1 DB update (log-mined pool)",
   "tribe_src": "log"
  },
@@ -2702,12 +2717,12 @@
   "name": "Twilight Tidehunter",
   "cost": 3,
   "tribe": "Murloc",
-  "attack": 4,
-  "health": 6,
+  "attack": 3,
+  "health": 7,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "Whenever you cast a spell on this, give the left-most minion in your hand +8/+8.",
+  "text": "Whenever you cast a spell on this, give the left-most minion in your hand +9/+9.",
   "tribe_src": "log"
  },
  {
@@ -3005,8 +3020,8 @@
   "name": "Enterprising Escapee",
   "cost": 3,
   "tribe": "Pirate",
-  "attack": 6,
-  "health": 6,
+  "attack": 7,
+  "health": 5,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
@@ -3240,11 +3255,11 @@
   "cost": 3,
   "tribe": "Elemental",
   "attack": 6,
-  "health": 5,
+  "health": 6,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "Whenever you cast a Tavern spell, give Elementals in the Tavern +3/+2 this game.",
+  "text": "Whenever you cast a Tavern spell, give Elementals in the Tavern +3/+3 this game.",
   "auto_added": "36.6.1 DB update (hearthstonejson)",
   "tribe_src": "hearthstonejson"
  },
@@ -3428,12 +3443,12 @@
   "name": "Sanguine Refiner",
   "cost": 3,
   "tribe": "Quilboar",
-  "attack": 3,
-  "health": 8,
+  "attack": 4,
+  "health": 9,
   "mechanics": [
    "BACON_RALLY"
   ],
-  "text": "Rally: Your Blood Gems give an extra +1/+2 this game.",
+  "text": "[x]Rally: Your Blood Gems\ngive an extra +1/+1\nthis game.",
   "tribe_src": "log"
  },
  {
@@ -3470,12 +3485,12 @@
   "name": "Shamanic Tidecaller",
   "cost": 3,
   "tribe": "Murloc",
-  "attack": 5,
-  "health": 7,
+  "attack": 6,
+  "health": 9,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "Whenever you cast a spell on a Murloc, give Murlocs in your hand and board +3/+3.",
+  "text": "Whenever you cast a spell on a Murloc, give Murlocs in your hand and board +3/+4.",
   "tribe_src": "log"
  },
  {
@@ -3514,7 +3529,7 @@
   "name": "Spark Snapper",
   "cost": 3,
   "tribe": "Mech",
-  "attack": 6,
+  "attack": 8,
   "health": 8,
   "mechanics": [
    "TRIGGER_VISUAL"
@@ -3658,13 +3673,14 @@
   "name": "Crimson Vindicator",
   "cost": 3,
   "tribe": "Dragon",
-  "attack": 8,
-  "health": 9,
+  "attack": 9,
+  "health": 7,
   "mechanics": [
    "BACON_RALLY",
-   "DIVINE_SHIELD"
+   "DIVINE_SHIELD",
+   "WINDFURY"
   ],
-  "text": "Divine Shield\nRally: Cast Mighty Dragonbreath.",
+  "text": "Divine Shield. Windfury.\nRally: Cast Mighty Dragonbreath.",
   "tribe_src": "log"
  },
  {
@@ -3746,12 +3762,12 @@
   "name": "Eredar Escapist",
   "cost": 3,
   "tribe": "Demon",
-  "attack": 6,
-  "health": 8,
+  "attack": 5,
+  "health": 10,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "After your hero takes 4 damage, get a copy of Corrupted Cupcakes. (4 left!)",
+  "text": "[x]After your hero takes 5\ndamage, get a copy of\nCorrupted Cupcakes.\n(5 left!)",
   "tribe_src": "log"
  },
  {
@@ -3870,7 +3886,7 @@
   "tribe_src": "log"
  },
  {
-  "tier": 6,
+  "tier": 5,
   "id": "BGFYM_005",
   "name": "Harbinger Aph'lass",
   "cost": 3,
@@ -3880,7 +3896,7 @@
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "Whenever you discard a card, give your Deity +1/+1 and improve this.",
+  "text": "Whenever you discard a card, give your Deity +2/+1 and improve this.",
   "auto_added": "36.6.1 DB update (log-mined pool)",
   "tribe_src": "log"
  },
@@ -3907,12 +3923,12 @@
   "name": "Hooktusk, Master Marauder",
   "cost": 3,
   "tribe": "Pirate",
-  "attack": 4,
-  "health": 4,
+  "attack": 5,
+  "health": 5,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "[x]After you Discover a card, give\nyour other Pirates +1/+1.\n(Improved by Golden minions\n   you played this game!)",
+  "text": "[x]After you Discover a card,\ngive your Pirates +1/+1.\n(Improved by Golden minions\n   you played this game!)",
   "tribe_src": "log"
  },
  {
@@ -4133,13 +4149,13 @@
   "name": "Ultraviolet Ascendant",
   "cost": 3,
   "tribe": "Elemental",
-  "attack": 6,
-  "health": 3,
+  "attack": 8,
+  "health": 8,
   "mechanics": [
    "START_OF_COMBAT",
    "TRIGGER_VISUAL"
   ],
-  "text": "Start of Combat: Give your other Elementals +3/+2. (Improves after you play an Elemental!)",
+  "text": "Start of Combat: Give your other Elementals +4/+4. (Improves after you play an Elemental!)",
   "auto_added": "36.6.1 DB update (hearthstonejson)",
   "tribe_src": "hearthstonejson"
  },
@@ -4150,7 +4166,7 @@
   "cost": 3,
   "tribe": "Elemental",
   "attack": 3,
-  "health": 12,
+  "health": 9,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
@@ -4259,13 +4275,13 @@
   "name": "Champion of Sargeras",
   "cost": 3,
   "tribe": "Demon",
-  "attack": 8,
-  "health": 8,
+  "attack": 12,
+  "health": 12,
   "mechanics": [
    "BATTLECRY",
    "DEATHRATTLE"
   ],
-  "text": "[x]Battlecry and Deathrattle:\nGive minions in the Tavern\n+8/+8 this game.",
+  "text": "[x]Battlecry and Deathrattle:\nGive minions in the Tavern\n+12/+12 this game.",
   "tribe_src": "hearthstonejson"
  },
  {
@@ -4274,8 +4290,8 @@
   "name": "Futurefin",
   "cost": 3,
   "tribe": "Murloc",
-  "attack": 7,
-  "health": 13,
+  "attack": 17,
+  "health": 23,
   "mechanics": [
    "END_OF_TURN_TRIGGER"
   ],
@@ -4304,12 +4320,12 @@
   "name": "Jailbird Juggernaut",
   "cost": 3,
   "tribe": "Quilboar",
-  "attack": 6,
-  "health": 15,
+  "attack": 13,
+  "health": 17,
   "mechanics": [
    "BACON_RALLY"
   ],
-  "text": "Rally: Summon a Golem with this minion's stats to attack the target first.",
+  "text": "[x]Rally: Summon a Golem\nwith this minion's stats to\nattack the target first.",
   "tribe_src": "hearthstonejson"
  },
  {
@@ -4318,8 +4334,8 @@
   "name": "Obsidian Ravager",
   "cost": 3,
   "tribe": "Dragon",
-  "attack": 7,
-  "health": 7,
+  "attack": 11,
+  "health": 11,
   "mechanics": [
    "BACON_RALLY"
   ],
@@ -4361,12 +4377,12 @@
   "name": "Stalwart Kodo",
   "cost": 3,
   "tribe": "Beast",
-  "attack": 16,
-  "health": 32,
+  "attack": 15,
+  "health": 30,
   "mechanics": [
    "TRIGGER_VISUAL"
   ],
-  "text": "[x]After you summon a minion\nin combat, give it this\nminion's maximum stats.\n(3 times per combat.)",
+  "text": "[x]After you summon a different\nminion in combat, give it double\nthis minion's maximum stats.\n(3 times per combat.)",
   "tribe_src": "hearthstonejson"
  },
  {
@@ -4405,12 +4421,12 @@
   "name": "The Last One Standing",
   "cost": 3,
   "tribe": "All",
-  "attack": 15,
-  "health": 15,
+  "attack": 10,
+  "health": 10,
   "mechanics": [
    "BACON_RALLY"
   ],
-  "text": "Rally: Give a friendly minion of each type +15/+15 permanently.",
+  "text": "[x]Rally: Give a friendly\nminion of each type\n+10/+10 permanently\nand improve this.",
   "tribe_src": "hearthstonejson"
  },
  {
@@ -4803,12 +4819,12 @@
   "name": "Ship Master Eudora",
   "cost": 3,
   "tribe": "Pirate",
-  "attack": 8,
+  "attack": 10,
   "health": 3,
   "mechanics": [
    "DEATHRATTLE"
   ],
-  "text": "Deathrattle: Give your\nminions +6/+6.\nGolden ones keep it permanently.",
+  "text": "Deathrattle: Give your\nminions +8/+8.\nGolden ones keep it permanently.",
   "tribe_src": "hearthstonejson",
   "auto_added": "from session logs (extend_pool.py)"
  },

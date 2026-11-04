@@ -1,21 +1,64 @@
 {
-  "patch": "36.6.1",
-  "built": "2026-10-02",
+  "patch": "37.0.2",
+  "built": "2026-11-03",
   "sessions": [
-    "mined-session-1"
+    "Hearthstone_2026_11_02_11_32_30",
+    "Hearthstone_2026_11_02_21_36_30",
+    "Hearthstone_2026_11_03_09_59_40",
+    "Hearthstone_2026_11_03_11_19_32",
+    "Hearthstone_2026_11_03_21_10_37"
   ],
-  "games": 4,
+  "games": 7,
   "tribes_present": [
     "Aberration",
     "Beast",
     "Demon",
+    "Dragon",
     "Elemental",
     "Mech",
+    "Murloc",
     "Pirate",
+    "Quilboar",
     "Undead"
   ],
-  "tribes_widened_from_meta": 12,
+  "tribes_widened_from_meta": 13,
   "cards": {
+    "BG20_100": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 1,
+      "attack": 2,
+      "health": 1,
+      "name": "Razorfen Geomancer",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
+    "BG20_101": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 2,
+      "health": 4,
+      "name": "Roadboar",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
+    "BG20_104": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 2,
+      "health": 7,
+      "name": "Bonker",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
     "BG21_004": {
       "races": [
         "DEMON"
@@ -26,6 +69,54 @@
       "health": 6,
       "name": "Insatiable Ur'zul",
       "tribe": "Demon",
+      "tribe_src": "log"
+    },
+    "BG21_015": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 4,
+      "health": 4,
+      "name": "Tarecgosa",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG22_202": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 2,
+      "health": 2,
+      "name": "Tad",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG22_403": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 8,
+      "health": 5,
+      "name": "Young Murk-Eye",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG23_017": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 9,
+      "health": 4,
+      "name": "Sanguine Champion",
+      "tribe": "Quilboar",
       "tribe_src": "log"
     },
     "BG23_318": {
@@ -60,6 +151,18 @@
       "tribe": null,
       "tribe_src": null
     },
+    "BG24_500": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 3,
+      "health": 2,
+      "name": "Amber Guardian",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
     "BG24_715": {
       "races": [],
       "pool_src": "pool",
@@ -91,6 +194,18 @@
       "attack": 4,
       "health": 2,
       "name": "Eternal Knight",
+      "tribe": "Undead",
+      "tribe_src": "log"
+    },
+    "BG25_009": {
+      "races": [
+        "UNDEAD"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 8,
+      "health": 1,
+      "name": "Eternal Summoner",
       "tribe": "Undead",
       "tribe_src": "log"
     },
@@ -164,6 +279,18 @@
       "tribe": "Pirate",
       "tribe_src": "log"
     },
+    "BG26_137": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 6,
+      "health": 6,
+      "name": "Bream Counter",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
     "BG26_146": {
       "races": [
         "MECHANICAL"
@@ -188,6 +315,30 @@
       "tribe": "Mech",
       "tribe_src": "log"
     },
+    "BG26_149": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "pool",
+      "tier": 7,
+      "attack": 5,
+      "health": 10,
+      "name": "Polarizing Beatboxer",
+      "tribe": "Mech",
+      "tribe_src": "log"
+    },
+    "BG26_152": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 4,
+      "health": 5,
+      "name": "Utility Drone",
+      "tribe": "Mech",
+      "tribe_src": "log"
+    },
     "BG26_174": {
       "races": [
         "DEMON"
@@ -197,6 +348,42 @@
       "attack": 4,
       "health": 2,
       "name": "Soul Rewinder",
+      "tribe": "Demon",
+      "tribe_src": "log"
+    },
+    "BG26_175": {
+      "races": [
+        "ELEMENTAL"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 8,
+      "health": 8,
+      "name": "Elemental of Surprise",
+      "tribe": "Elemental",
+      "tribe_src": "log"
+    },
+    "BG26_354": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 6,
+      "health": 6,
+      "name": "Choral Mrrrglr",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG26_523": {
+      "races": [
+        "DEMON"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 4,
+      "health": 4,
+      "name": "Tichondrius",
       "tribe": "Demon",
       "tribe_src": "log"
     },
@@ -284,6 +471,18 @@
       "tribe": "Pirate",
       "tribe_src": "log"
     },
+    "BG26_963": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 3,
+      "health": 4,
+      "name": "Electric Synthesizer",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
     "BG26_ICC_901": {
       "races": [],
       "pool_src": "pool",
@@ -316,6 +515,18 @@
       "tribe": "Dragon/Pirate",
       "tribe_src": "log+meta"
     },
+    "BG27_023": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 5,
+      "health": 3,
+      "name": "Murcules",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
     "BG27_084": {
       "races": [
         "BEAST"
@@ -326,6 +537,18 @@
       "health": 1,
       "name": "Sprightly Scarab",
       "tribe": "Beast",
+      "tribe_src": "log"
+    },
+    "BG27_556": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 4,
+      "health": 5,
+      "name": "Diremuck Forager",
+      "tribe": "Murloc",
       "tribe_src": "log"
     },
     "BG28_300": {
@@ -372,6 +595,18 @@
       "tribe": null,
       "tribe_src": null
     },
+    "BG28_582": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 3,
+      "health": 3,
+      "name": "Mangled Bandit",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
     "BG28_633": {
       "races": [
         "QUILBOAR"
@@ -390,7 +625,7 @@
       ],
       "pool_src": "pool",
       "tier": 5,
-      "attack": 8,
+      "attack": 6,
       "health": 6,
       "name": "Living Azerite",
       "tribe": "Elemental",
@@ -408,6 +643,18 @@
       "tribe": "Mech",
       "tribe_src": "log"
     },
+    "BG29_300": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 2,
+      "health": 6,
+      "name": "Very Hungry Winterfinner",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
     "BG29_611": {
       "races": [
         "MECHANICAL"
@@ -418,6 +665,54 @@
       "health": 1,
       "name": "Cord Puller",
       "tribe": "Mech",
+      "tribe_src": "log"
+    },
+    "BG29_813": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 2,
+      "health": 3,
+      "name": "Persistent Poet",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG29_816": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 2,
+      "health": 8,
+      "name": "Roaring Recruiter",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG29_888": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 1,
+      "attack": 1,
+      "health": 4,
+      "name": "Glim Guardian",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG30_123": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 2,
+      "health": 4,
+      "name": "Fearless Foodie",
+      "tribe": "Quilboar",
       "tribe_src": "log"
     },
     "BG30_125": {
@@ -432,6 +727,30 @@
       "tribe": "Undead",
       "tribe_src": "log"
     },
+    "BG31_148": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 5,
+      "health": 3,
+      "name": "Hackerfin",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG31_149": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 1,
+      "attack": 2,
+      "health": 3,
+      "name": "Bubble Gunner",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
     "BG31_177": {
       "races": [
         "MECHANICAL"
@@ -442,6 +761,30 @@
       "health": 1,
       "name": "Mechagnome Interpreter",
       "tribe": "Mech",
+      "tribe_src": "log"
+    },
+    "BG31_320": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 2,
+      "health": 2,
+      "name": "Crater Miner",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
+    "BG31_327": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 4,
+      "health": 5,
+      "name": "Thorned Trailblazer",
+      "tribe": "Quilboar",
       "tribe_src": "log"
     },
     "BG31_330": {
@@ -480,14 +823,26 @@
       "tribe": "Beast",
       "tribe_src": "log"
     },
+    "BG31_809": {
+      "races": [
+        "BEAST"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 5,
+      "health": 5,
+      "name": "Turquoise Skitterer",
+      "tribe": "Beast",
+      "tribe_src": "log"
+    },
     "BG31_810": {
       "races": [
         "ELEMENTAL"
       ],
       "pool_src": "pool",
       "tier": 6,
-      "attack": 6,
-      "health": 6,
+      "attack": 8,
+      "health": 8,
       "name": "Ultraviolet Ascendant",
       "tribe": "Elemental",
       "tribe_src": "log"
@@ -576,6 +931,18 @@
       "tribe": "All",
       "tribe_src": "log+meta"
     },
+    "BG32_231": {
+      "races": [
+        "PIRATE"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 5,
+      "health": 5,
+      "name": "Elite Navigator",
+      "tribe": "Pirate",
+      "tribe_src": "log"
+    },
     "BG32_235": {
       "races": [
         "PIRATE"
@@ -622,6 +989,30 @@
       "tribe": "Undead",
       "tribe_src": "log"
     },
+    "BG32_330": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 1,
+      "attack": 3,
+      "health": 3,
+      "name": "Flighty Scout",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG32_336": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 4,
+      "health": 3,
+      "name": "Gormling Gourmet",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
     "BG32_340": {
       "races": [
         "UNDEAD"
@@ -644,6 +1035,18 @@
       "tribe": null,
       "tribe_src": null
     },
+    "BG32_820": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 5,
+      "health": 5,
+      "name": "Firescale Hoarder",
+      "tribe": "Dragon/Naga",
+      "tribe_src": "log+meta"
+    },
     "BG32_821": {
       "races": [
         "DRAGON"
@@ -656,14 +1059,26 @@
       "tribe": "Demon/Dragon",
       "tribe_src": "log+meta"
     },
+    "BG32_860": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 4,
+      "health": 4,
+      "name": "Shoalfin Mystic",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
     "BG32_873": {
       "races": [
         "DEMON"
       ],
       "pool_src": "pool",
       "tier": 4,
-      "attack": 6,
-      "health": 6,
+      "attack": 4,
+      "health": 8,
       "name": "Ashen Corruptor",
       "tribe": "Demon",
       "tribe_src": "log"
@@ -692,6 +1107,30 @@
       "tribe": "Demon",
       "tribe_src": "log"
     },
+    "BG33_318": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 1,
+      "health": 10,
+      "name": "Bile Spitter",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG33_430": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 2,
+      "health": 5,
+      "name": "Prodigious Tusker",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
     "BG33_821": {
       "races": [
         "PIRATE"
@@ -716,13 +1155,37 @@
       "tribe": "Pirate",
       "tribe_src": "log"
     },
-    "BG33_828": {
+    "BG33_823": {
+      "races": [
+        "PIRATE"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 4,
+      "health": 5,
+      "name": "Sky Admiral Rogers",
+      "tribe": "Pirate",
+      "tribe_src": "log"
+    },
+    "BG33_825": {
       "races": [
         "PIRATE"
       ],
       "pool_src": "pool",
       "tier": 5,
       "attack": 8,
+      "health": 8,
+      "name": "Proud Privateer",
+      "tribe": "Pirate",
+      "tribe_src": "log"
+    },
+    "BG33_828": {
+      "races": [
+        "PIRATE"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 10,
       "health": 3,
       "name": "Ship Master Eudora",
       "tribe": "Pirate",
@@ -738,6 +1201,66 @@
       "health": 4,
       "name": "Azsharan Cutlassier",
       "tribe": "Pirate",
+      "tribe_src": "log"
+    },
+    "BG33_885": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 4,
+      "health": 9,
+      "name": "Sanguine Refiner",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
+    "BG33_886": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 1,
+      "attack": 2,
+      "health": 3,
+      "name": "Tusked Camper",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
+    "BG33_891": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 4,
+      "health": 8,
+      "name": "Magicfin Mycologist",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG33_924": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 1,
+      "health": 5,
+      "name": "Blue Whelp",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG34_142": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 4,
+      "health": 5,
+      "name": "Costume Enthusiast",
+      "tribe": "Murloc",
       "tribe_src": "log"
     },
     "BG34_170": {
@@ -800,38 +1323,16 @@
       "tribe": "Mech",
       "tribe_src": "log"
     },
-    "BG34_319": {
-      "races": [],
-      "pool_src": "pool",
-      "tier": 7,
-      "attack": 6,
-      "health": 6,
-      "name": "Highkeeper Ra",
-      "tribe": null,
-      "tribe_src": null
-    },
-    "BG34_322": {
+    "BG34_403": {
       "races": [
-        "BEAST"
+        "UNDEAD"
       ],
       "pool_src": "pool",
-      "tier": 7,
-      "attack": 16,
-      "health": 32,
-      "name": "Stalwart Kodo",
-      "tribe": "Beast",
-      "tribe_src": "log"
-    },
-    "BG34_405": {
-      "races": [
-        "MECHANICAL"
-      ],
-      "pool_src": "pool",
-      "tier": 3,
-      "attack": 5,
-      "health": 4,
-      "name": "Relentless Deflector",
-      "tribe": "Mech",
+      "tier": 5,
+      "attack": 4,
+      "health": 8,
+      "name": "Eternal Tycoon",
+      "tribe": "Undead",
       "tribe_src": "log"
     },
     "BG34_500": {
@@ -845,6 +1346,52 @@
       "name": "Flaming Enforcer",
       "tribe": "Demon/Elemental",
       "tribe_src": "log+meta"
+    },
+    "BG34_604": {
+      "races": [],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 1,
+      "health": 10,
+      "name": "Heroic Underdog",
+      "tribe": null,
+      "tribe_src": null
+    },
+    "BG34_633": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 7,
+      "health": 4,
+      "name": "Draconic Warden",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG34_682": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 5,
+      "health": 3,
+      "name": "Razorfen Flapper",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
+    "BG34_684": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 3,
+      "health": 3,
+      "name": "Trench Fighter",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
     },
     "BG34_690": {
       "races": [
@@ -894,15 +1441,15 @@
       "tribe": "Elemental",
       "tribe_src": "log"
     },
-    "BG34_950": {
+    "BG34_865": {
       "races": [
         "ELEMENTAL"
       ],
       "pool_src": "pool",
-      "tier": 7,
-      "attack": 10,
-      "health": 10,
-      "name": "Stone Age Slab",
+      "tier": 4,
+      "attack": 5,
+      "health": 5,
+      "name": "En-Djinn Blazer",
       "tribe": "Elemental",
       "tribe_src": "log"
     },
@@ -974,6 +1521,30 @@
       "health": 9,
       "name": "Lurking Leviathan",
       "tribe": "Beast",
+      "tribe_src": "log"
+    },
+    "BG35_604": {
+      "races": [
+        "BEAST"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 4,
+      "health": 6,
+      "name": "Sewer Lord",
+      "tribe": "Beast",
+      "tribe_src": "log"
+    },
+    "BG35_814": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 1,
+      "attack": 3,
+      "health": 3,
+      "name": "Scarlet Survivor",
+      "tribe": "Dragon",
       "tribe_src": "log"
     },
     "BG35_881": {
@@ -1108,15 +1679,15 @@
       "tribe": "Aberration",
       "tribe_src": "log"
     },
-    "BG36_109": {
+    "BG36_108": {
       "races": [
         "ABERRATION"
       ],
       "pool_src": "pool",
-      "tier": 6,
-      "attack": 6,
-      "health": 8,
-      "name": "The Shadow of Doubt",
+      "tier": 3,
+      "attack": 1,
+      "health": 2,
+      "name": "Vicious Mindslasher",
       "tribe": "Aberration",
       "tribe_src": "log"
     },
@@ -1129,18 +1700,6 @@
       "attack": 2,
       "health": 3,
       "name": "Joyous",
-      "tribe": "Aberration",
-      "tribe_src": "log"
-    },
-    "BG36_112": {
-      "races": [
-        "ABERRATION"
-      ],
-      "pool_src": "pool",
-      "tier": 3,
-      "attack": 3,
-      "health": 3,
-      "name": "Fetid Corroder",
       "tribe": "Aberration",
       "tribe_src": "log"
     },
@@ -1252,6 +1811,18 @@
       "tribe": "Beast",
       "tribe_src": "log"
     },
+    "BG36_204": {
+      "races": [
+        "BEAST"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 3,
+      "health": 5,
+      "name": "Headhunter Gryphon",
+      "tribe": "Beast",
+      "tribe_src": "log"
+    },
     "BG36_206": {
       "races": [
         "BEAST"
@@ -1300,6 +1871,18 @@
       "tribe": "Beast",
       "tribe_src": "log"
     },
+    "BG36_210": {
+      "races": [
+        "BEAST"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 4,
+      "health": 6,
+      "name": "Hoarding Hyena",
+      "tribe": "Beast",
+      "tribe_src": "log"
+    },
     "BG36_211": {
       "races": [
         "BEAST"
@@ -1310,6 +1893,66 @@
       "health": 7,
       "name": "Cage Gnawer",
       "tribe": "Beast",
+      "tribe_src": "log"
+    },
+    "BG36_240": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 3,
+      "health": 5,
+      "name": "Hired Mount",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG36_241": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 8,
+      "health": 9,
+      "name": "Crimson Vindicator",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG36_242": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 4,
+      "health": 5,
+      "name": "Bronze Timewalker",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG36_243": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 4,
+      "health": 7,
+      "name": "Sky-hatch Runaway",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BG36_245": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 2,
+      "health": 4,
+      "name": "Runic Arcanist",
+      "tribe": "Dragon",
       "tribe_src": "log"
     },
     "BG36_300": {
@@ -1384,6 +2027,42 @@
       "tribe": "Aberration",
       "tribe_src": "log"
     },
+    "BG36_330": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 4,
+      "health": 5,
+      "name": "Sly Infiltrator",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
+    "BG36_332": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 4,
+      "health": 4,
+      "name": "Snare Trapper",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
+    "BG36_341": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 8,
+      "health": 8,
+      "name": "Veteran Brigand",
+      "tribe": "Quilboar",
+      "tribe_src": "log"
+    },
     "BG36_342": {
       "races": [
         "PIRATE"
@@ -1396,14 +2075,26 @@
       "tribe": "Pirate",
       "tribe_src": "log"
     },
+    "BG36_343": {
+      "races": [
+        "PIRATE"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 7,
+      "health": 7,
+      "name": "Silent Deliverer",
+      "tribe": "Pirate",
+      "tribe_src": "log"
+    },
     "BG36_344": {
       "races": [
         "PIRATE"
       ],
       "pool_src": "pool",
       "tier": 6,
-      "attack": 4,
-      "health": 4,
+      "attack": 5,
+      "health": 5,
       "name": "Hooktusk, Master Marauder",
       "tribe": "Pirate",
       "tribe_src": "log"
@@ -1435,7 +2126,7 @@
       "pool_src": "pool",
       "tier": 6,
       "attack": 3,
-      "health": 12,
+      "health": 9,
       "name": "Unbound Tempest",
       "tribe": "Elemental",
       "tribe_src": "log"
@@ -1466,10 +2157,22 @@
       ],
       "pool_src": "pool",
       "tier": 4,
-      "attack": 5,
+      "attack": 6,
       "health": 3,
       "name": "Sacrificial Wrathguard",
       "tribe": "Demon",
+      "tribe_src": "log"
+    },
+    "BG36_364": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 4,
+      "health": 3,
+      "name": "Hopebringer",
+      "tribe": "Dragon",
       "tribe_src": "log"
     },
     "BG36_366": {
@@ -1484,6 +2187,18 @@
       "tribe": "Mech",
       "tribe_src": "log"
     },
+    "BG36_367": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 4,
+      "health": 8,
+      "name": "Auto Reveille",
+      "tribe": "Mech",
+      "tribe_src": "log"
+    },
     "BG36_369": {
       "races": [
         "PIRATE"
@@ -1494,6 +2209,18 @@
       "health": 7,
       "name": "Greedy Conniver",
       "tribe": "Pirate",
+      "tribe_src": "log"
+    },
+    "BG36_370": {
+      "races": [
+        "QUILBOAR"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 10,
+      "health": 10,
+      "name": "Victorious Geomant",
+      "tribe": "Quilboar",
       "tribe_src": "log"
     },
     "BG36_372": {
@@ -1542,6 +2269,18 @@
       "tribe": "Undead",
       "tribe_src": "log"
     },
+    "BG36_514": {
+      "races": [
+        "UNDEAD"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 8,
+      "health": 8,
+      "name": "Barrier Banshee",
+      "tribe": "Undead",
+      "tribe_src": "log"
+    },
     "BG36_515": {
       "races": [
         "UNDEAD"
@@ -1584,8 +2323,8 @@
       ],
       "pool_src": "pool",
       "tier": 5,
-      "attack": 6,
-      "health": 6,
+      "attack": 7,
+      "health": 5,
       "name": "Enterprising Escapee",
       "tribe": "Pirate",
       "tribe_src": "log"
@@ -1612,6 +2351,18 @@
       "tribe": null,
       "tribe_src": null
     },
+    "BG36_621": {
+      "races": [
+        "DEMON"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 8,
+      "health": 8,
+      "name": "Deft Deserter",
+      "tribe": "Demon",
+      "tribe_src": "log"
+    },
     "BG36_640": {
       "races": [
         "ALL"
@@ -1623,6 +2374,54 @@
       "name": "Gatekeeper Amalgam",
       "tribe": "All",
       "tribe_src": "log+meta"
+    },
+    "BG36_700": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 7,
+      "health": 7,
+      "name": "Sewer Escapee",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG36_701": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 5,
+      "health": 5,
+      "name": "Kelp Keeper",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG36_703": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 4,
+      "attack": 3,
+      "health": 7,
+      "name": "Twilight Tidehunter",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BG36_704": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 6,
+      "health": 9,
+      "name": "Shamanic Tidecaller",
+      "tribe": "Murloc",
+      "tribe_src": "log"
     },
     "BG36_730": {
       "races": [
@@ -1660,6 +2459,18 @@
       "tribe": "Demon",
       "tribe_src": "log"
     },
+    "BG36_762": {
+      "races": [
+        "DEMON"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 4,
+      "health": 7,
+      "name": "Devilish Distractor",
+      "tribe": "Demon",
+      "tribe_src": "log"
+    },
     "BG36_763": {
       "races": [
         "PIRATE"
@@ -1694,6 +2505,18 @@
       "health": 9,
       "name": "Lichling Hoarder",
       "tribe": "Undead",
+      "tribe_src": "log"
+    },
+    "BG36_849": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 7,
+      "health": 7,
+      "name": "Heroic Broodmother",
+      "tribe": "Dragon",
       "tribe_src": "log"
     },
     "BG36_851": {
@@ -1778,6 +2601,52 @@
       "health": 7,
       "name": "Goldrinn, the Great Wolf",
       "tribe": "Beast",
+      "tribe_src": "log"
+    },
+    "BGS_020": {
+      "races": [
+        "MURLOC"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 3,
+      "health": 2,
+      "name": "Primalfin Lookout",
+      "tribe": "Murloc",
+      "tribe_src": "log"
+    },
+    "BGS_034": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 2,
+      "attack": 2,
+      "health": 1,
+      "name": "Bronze Warden",
+      "tribe": "Dragon",
+      "tribe_src": "log"
+    },
+    "BGS_040": {
+      "races": [],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 8,
+      "health": 4,
+      "name": "Nadina the Red",
+      "tribe": null,
+      "tribe_src": null
+    },
+    "BGS_041": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "pool",
+      "tier": 5,
+      "attack": 4,
+      "health": 12,
+      "name": "Kalecgos, Arcane Aspect",
+      "tribe": "Dragon",
       "tribe_src": "log"
     },
     "BGS_115": {
@@ -1883,9 +2752,139 @@
       "name": "Brann Bronzebeard",
       "tribe": null,
       "tribe_src": null
+    },
+    "BG34_319": {
+      "races": [],
+      "pool_src": "pool",
+      "tier": 7,
+      "attack": 6,
+      "health": 6,
+      "name": "Highkeeper Ra",
+      "tribe": null,
+      "tribe_src": null
+    },
+    "BG34_322": {
+      "races": [
+        "BEAST"
+      ],
+      "pool_src": "pool",
+      "tier": 7,
+      "attack": 16,
+      "health": 32,
+      "name": "Stalwart Kodo",
+      "tribe": "Beast",
+      "tribe_src": "log"
+    },
+    "BG34_405": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 5,
+      "health": 4,
+      "name": "Relentless Deflector",
+      "tribe": "Mech",
+      "tribe_src": "log"
+    },
+    "BG34_950": {
+      "races": [
+        "ELEMENTAL"
+      ],
+      "pool_src": "pool",
+      "tier": 7,
+      "attack": 10,
+      "health": 10,
+      "name": "Stone Age Slab",
+      "tribe": "Elemental",
+      "tribe_src": "log"
+    },
+    "BG36_109": {
+      "races": [
+        "ABERRATION"
+      ],
+      "pool_src": "pool",
+      "tier": 6,
+      "attack": 6,
+      "health": 8,
+      "name": "The Shadow of Doubt",
+      "tribe": "Aberration",
+      "tribe_src": "log"
+    },
+    "BG36_112": {
+      "races": [
+        "ABERRATION"
+      ],
+      "pool_src": "pool",
+      "tier": 3,
+      "attack": 3,
+      "health": 3,
+      "name": "Fetid Corroder",
+      "tribe": "Aberration",
+      "tribe_src": "log"
     }
   },
   "created": {
+    "BG21_HERO_030t": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 2,
+      "health": 1,
+      "name": "Sneed's New Shredder"
+    },
+    "BG22_HERO_305t": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 1,
+      "health": 1,
+      "name": "Onyxian Whelp"
+    },
+    "BG25_010t": {
+      "races": [
+        "UNDEAD"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 2,
+      "health": 1,
+      "name": "Helping Hand"
+    },
+    "BG25_807t": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 5,
+      "health": 5,
+      "name": "Rusted Reggie"
+    },
+    "BG25_807t2": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 1,
+      "health": 10,
+      "name": "Magtheridon Prime"
+    },
+    "BG25_807t3": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 10,
+      "health": 1,
+      "name": "Baltharak"
+    },
     "BG28_603t": {
       "races": [
         "BEAST"
@@ -1895,6 +2894,120 @@
       "attack": 2,
       "health": 2,
       "name": "Beetle"
+    },
+    "BG29_864t": {
+      "races": [],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 44,
+      "health": 23,
+      "name": "Deserted Golem"
+    },
+    "BG31_171t": {
+      "races": [
+        "MECHANICAL"
+      ],
+      "pool_src": "triple",
+      "tier": 1,
+      "attack": 6,
+      "health": 6,
+      "name": "Satellite"
+    },
+    "BG31_826": {
+      "races": [
+        "PIRATE"
+      ],
+      "pool_src": "triple",
+      "tier": 4,
+      "attack": 6,
+      "health": 6,
+      "name": "Doubloon Grifter"
+    },
+    "BG31_HERO_811t7": {
+      "races": [],
+      "pool_src": "triple",
+      "tier": 2,
+      "attack": 2,
+      "health": 2,
+      "name": "Lurker"
+    },
+    "BG34_634t": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "triple",
+      "tier": 3,
+      "attack": 4,
+      "health": 4,
+      "name": "Blue Chromadrake"
+    },
+    "BG34_635t": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "triple",
+      "tier": 3,
+      "attack": 4,
+      "health": 6,
+      "name": "Black Chromadrake"
+    },
+    "BG34_636t": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "triple",
+      "tier": 3,
+      "attack": 3,
+      "health": 5,
+      "name": "Green Chromadrake"
+    },
+    "BG34_637t": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "triple",
+      "tier": 3,
+      "attack": 5,
+      "health": 3,
+      "name": "Bronze Chromadrake"
+    },
+    "BG34_638t": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "triple",
+      "tier": 3,
+      "attack": 6,
+      "health": 4,
+      "name": "Red Chromadrake"
+    },
+    "BG34_Giant_032": {
+      "races": [],
+      "pool_src": "triple",
+      "tier": 5,
+      "attack": 10,
+      "health": 10,
+      "name": "Timewarped Nomi"
+    },
+    "BG34_PreMadeChamp_032": {
+      "races": [
+        "ELEMENTAL"
+      ],
+      "pool_src": "triple",
+      "tier": 5,
+      "attack": 8,
+      "health": 8,
+      "name": "Timewarped Substrate"
+    },
+    "BG34_PreMadeChamp_200": {
+      "races": [
+        "DRAGON"
+      ],
+      "pool_src": "triple",
+      "tier": 5,
+      "attack": 8,
+      "health": 8,
+      "name": "Timewarped Centurion"
     },
     "BG35_150t": {
       "races": [
@@ -1906,12 +3019,20 @@
       "health": 2,
       "name": "Demon Fodder"
     },
-    "BG36_360t6": {
+    "BG36_360t3": {
       "races": [],
       "pool_src": "triple",
-      "tier": 3,
-      "attack": 3,
-      "health": 3,
+      "tier": 2,
+      "attack": 6,
+      "health": 2,
+      "name": "Dark Paradox"
+    },
+    "BG36_360t5": {
+      "races": [],
+      "pool_src": "triple",
+      "tier": 4,
+      "attack": 2,
+      "health": 6,
       "name": "Dark Paradox"
     },
     "BGFYM_002t": {
@@ -1962,6 +3083,22 @@
       "attack": 1,
       "health": 1,
       "name": "Skeleton"
+    },
+    "BG36_360t6": {
+      "races": [],
+      "pool_src": "triple",
+      "tier": 3,
+      "attack": 3,
+      "health": 3,
+      "name": "Dark Paradox"
     }
-  }
+  },
+  "carried_from": {
+    "patch": "37.0.2",
+    "built": "2026-11-03",
+    "cards": 230
+  },
+  "dropped_out_of_play": [
+    "BG34_140"
+  ]
 }

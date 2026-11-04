@@ -42,13 +42,13 @@ def _pool_block(eid, cid, race=None, tier=1, atk=1, hp=1, cardtype="MINION",
 
 
 class TestOutOfPlayRegistry(unittest.TestCase):
-    """The shipped registry: Naga rotated out + the 35 removed minions."""
+    """The shipped registry: Naga rotated out + the removed cards."""
 
     def setUp(self):
         self.oop = playable.OutOfPlay()
 
     def test_shipped_patch_and_rotated_tribe(self):
-        self.assertEqual(self.oop.doc.get("patch"), "36.6.1")
+        self.assertEqual(self.oop.doc.get("patch"), "37.0.2")
         self.assertEqual(self.oop.tribes_out(), {"Naga"})
 
     def test_removed_minion_is_out_and_explains_itself(self):
@@ -141,7 +141,7 @@ class TestRegistryAgainstRoster(unittest.TestCase):
     def test_roster_is_the_new_epoch(self):
         roster = playable.load_roster()
         self.assertIsNotNone(roster, "run `python pool_roster.py --apply`")
-        self.assertEqual(roster.get("patch"), "36.6.1")
+        self.assertEqual(roster.get("patch"), "37.0.2")
         # Naga has no PURE pool card any more; Aberration has plenty.
         self.assertNotIn("Naga", roster["tribes_present"])
         self.assertIn("Aberration", roster["tribes_present"])
@@ -409,6 +409,60 @@ class TestRosterEnrichmentAndDiff(unittest.TestCase):
         self.assertEqual(len(changed), 1)
         self.assertEqual(changed[0][0], "B")
         self.assertEqual(changed[0][1], ["attack"])
+
+
+def _session(name, cards, games=1, names=None):
+    return {"name": name, "mtime": 0,
+            "scan": {"games": games, "names": names or {}, "cards": cards}}
+
+
+class TestUpdateSavedRoster(unittest.TestCase):
+    """A balance patch adds no cards, so the epoch signature is empty.
+
+    Rebuilding from the newest lobby then threw away every card that lobby did
+    not roll (37.0.2: ~130 in-play cards). `--update-saved` keeps the newest
+    observation per card and carries the rest from the saved roster; the
+    out-of-play registry, not a missing lobby, is what removes a card.
+    """
+
+    def test_an_empty_session_is_not_a_patch_boundary(self):
+        """Hearthstone writes a fresh Power.log on launch; it must not win."""
+        real = _session("real", {"TEST_1": {"races": ["BEAST"], "tier": 1}})
+        fresh = _session("fresh", {})
+        epoch, sig = pool_roster.current_epoch([real, fresh])
+        self.assertEqual([s["name"] for s in epoch], ["real"])
+        self.assertIn("TEST_1", sig[0])
+        self.assertEqual(pool_roster.current_epoch([fresh]), ([], (set(), set())))
+
+    def test_the_newest_observation_of_a_card_wins(self):
+        old = _session("old", {"TEST_1": {"races": ["BEAST"], "tier": 1,
+                                          "attack": 1, "health": 1}})
+        new = _session("new", {"TEST_1": {"races": ["BEAST"], "tier": 2,
+                                          "attack": 5, "health": 5}})
+        roster = pool_roster.update_saved_roster(
+            [old, new], "test", saved=None, out_of_play={"cards": {}})
+        self.assertEqual(roster["cards"]["TEST_1"]["tier"], 2)
+        self.assertEqual(roster["cards"]["TEST_1"]["attack"], 5)
+
+    def test_cards_only_older_sessions_saw_are_carried(self):
+        saved = {"patch": "old", "built": "2026-10-02",
+                 "cards": {"TEST_2": {"name": "Carried", "tier": 3,
+                                      "tribe": "Beast"}}}
+        new = _session("new", {"TEST_1": {"races": ["BEAST"], "tier": 1}})
+        roster = pool_roster.update_saved_roster(
+            [new], "test", saved=saved, out_of_play={"cards": {}})
+        self.assertIn("TEST_2", roster["cards"])
+        self.assertEqual(roster["carried_from"]["patch"], "old")
+
+    def test_out_of_play_cards_are_dropped(self):
+        new = _session("new", {"TEST_1": {"races": ["BEAST"], "tier": 1},
+                               "TEST_3": {"races": ["BEAST"], "tier": 1}})
+        doc = {"cards": {"TEST_1": {"id": "TEST_1", "name": "Gone"}}}
+        roster = pool_roster.update_saved_roster(
+            [new], "test", saved=None, out_of_play=doc)
+        self.assertNotIn("TEST_1", roster["cards"])
+        self.assertIn("TEST_3", roster["cards"])
+        self.assertEqual(roster["dropped_out_of_play"], ["TEST_1"])
 
 
 class TestAberrationTribeVocabulary(unittest.TestCase):

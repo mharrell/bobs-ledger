@@ -174,7 +174,7 @@ class TestDoctor(unittest.TestCase):
         """The latch stays on the last patch check_patch_notes reported."""
         got, source = doctor._db_patch()
         self.assertEqual(source, "roster")
-        self.assertEqual(got, "36.6.1")
+        self.assertEqual(got, "37.0.2")
 
     def test_every_check_returns_a_level_and_one_line(self):
         checks = {

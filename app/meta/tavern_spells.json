@@ -346,8 +346,8 @@
     "tier": 4,
     "id": "BG28_888",
     "name": "Misplaced Tea Set",
-    "cost": 3,
-    "text": "Give a friendly minion of each type +4/+4."
+    "cost": 2,
+    "text": "Give a friendly minion of each type +3/+3."
   },
   {
     "tier": 4,
@@ -361,7 +361,7 @@
     "id": "BG28_845",
     "name": "Natural Blessing",
     "cost": 2,
-    "text": "Choose a minion. Give all minions that share a type with it +2/+1."
+    "text": "Choose a minion. Give all minions that share a type with it +2/+2."
   },
   {
     "tier": 4,
@@ -424,7 +424,7 @@
     "id": "BG34_990",
     "name": "Wave of Gold",
     "cost": 2,
-    "text": "Give your minions +3/+2. Give Golden ones another +3/+2."
+    "text": "Give your minions +3/+3. Give Golden ones another +3/+3."
   },
   {
     "tier": 5,
@@ -514,7 +514,7 @@
     "tier": 6,
     "id": "BG28_838",
     "name": "Perfect Vision",
-    "cost": 2,
+    "cost": 1,
     "text": "Set a minion's stats to 20/20."
   },
   {

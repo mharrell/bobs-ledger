@@ -181,9 +181,14 @@ def audit(doc_path=None):
             unparsed.append(f"section not found: {start!r} (format changed?)")
             continue
         names = table_names(text) or bullet_names(text)
-        if not names:
-            unparsed.append(f"no names parsed from {start!r}")
         claimed = _heading_claim(text)
+        # A heading that SAYS zero and parses zero names has no blind spot —
+        # balance patches legitimately have empty sections (37.0.2 added no
+        # minions and no heroes). Reporting those as "the parser could not
+        # see" made a clean audit look like a broken parser, which is how a
+        # warning everyone sees every patch stops being read.
+        if not names and claimed != 0:
+            unparsed.append(f"no names parsed from {start!r}")
         if claimed and len(names) < claimed:
             unparsed.append(
                 f"{start!r}: the heading claims {claimed} but only "

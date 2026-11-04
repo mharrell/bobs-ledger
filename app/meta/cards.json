@@ -252,8 +252,8 @@
     "tribe": "Elemental"
   },
   "BG32_873": {
-    "atk": 5,
-    "health": 6,
+    "atk": 4,
+    "health": 8,
     "name": "Ashen Corruptor",
     "tier": 4,
     "tribe": "Demon"
@@ -287,8 +287,8 @@
     "tribe": "Pirate"
   },
   "BG33_885": {
-    "atk": 2,
-    "health": 8,
+    "atk": 4,
+    "health": 9,
     "name": "Sanguine Refiner",
     "tier": 5,
     "tribe": "Quilboar"
@@ -434,8 +434,8 @@
     "tribe": "Quilboar"
   },
   "BG36_344": {
-    "atk": 4,
-    "health": 4,
+    "atk": 5,
+    "health": 5,
     "name": "Hooktusk, Master Marauder",
     "tier": 6,
     "tribe": "Pirate"
@@ -449,7 +449,7 @@
   },
   "BG36_352": {
     "atk": 3,
-    "health": 12,
+    "health": 9,
     "name": "Unbound Tempest",
     "tier": 6,
     "tribe": "Elemental"
@@ -483,8 +483,8 @@
     "tribe": "Undead"
   },
   "BG36_523": {
-    "atk": 6,
-    "health": 6,
+    "atk": 7,
+    "health": 5,
     "name": "Enterprising Escapee",
     "tier": 5,
     "tribe": "Pirate"
@@ -511,8 +511,8 @@
     "tribe": "Murloc"
   },
   "BG36_704": {
-    "atk": 5,
-    "health": 7,
+    "atk": 6,
+    "health": 9,
     "name": "Shamanic Tidecaller",
     "tier": 5,
     "tribe": "Murloc"
@@ -539,15 +539,15 @@
     "tribe": "Demon"
   },
   "BG36_851": {
-    "atk": 5,
-    "health": 5,
+    "atk": 8,
+    "health": 8,
     "name": "Spark Snapper",
     "tier": 5,
     "tribe": "Mech"
   },
   "BG36_853": {
-    "atk": 4,
-    "health": 4,
+    "atk": 5,
+    "health": 5,
     "name": "Glambot",
     "tier": 4,
     "tribe": "Mech"

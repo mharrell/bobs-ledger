@@ -14,7 +14,7 @@ Canaries, each naming the failure it exists for:
   C1  BG section length      the h2/h3 truncation (92 chars instead of 1169)
   C2  fetch path is callable the missing `requests` import
   C3  the overview yields card-like names   parser drift on the article layout
-  C4  a new pool epoch is detected          a patch that changed the pool silently
+  C4  the saved roster matches the pool  a patch that changed the pool silently
   C5  art coverage did not DROP             extraction regressions
   C6  the gate tools still exit 0           a broken meta DB after an apply
 
@@ -101,14 +101,16 @@ def _db_patch():
 def _pool_epoch():
     """Run pool_roster.py and read its diff against the SAVED roster (C4).
 
-    The epoch signature ("44 new cards") is a comparison against OLDER SESSIONS —
-    it stays non-zero forever after a patch, so canarying on it is a permanent
-    false alarm. The signal that actually means "the roster is stale" is the
-    diff against `meta/pool_roster.json`: +N added / -M removed.
+    Asks the same question the apply step will act on: `--update-saved`, not a
+    bare epoch rebuild. A balance patch adds no cards, so the epoch signature
+    is empty and a rebuild compares a single lobby against a union roster —
+    every unrolled card reads as "removed" and the canary cries stale after a
+    correct update (37.0.2). With `--update-saved` the diff is real drift:
+    +N added / -M removed / ~C changed, against what is on disk.
     """
     import subprocess
-    p = subprocess.run([sys.executable, "pool_roster.py"], cwd=_HERE,
-                       capture_output=True, text=True, timeout=1800)
+    p = subprocess.run([sys.executable, "pool_roster.py", "--update-saved"],
+                       cwd=_HERE, capture_output=True, text=True, timeout=1800)
     out = p.stdout or ""
     m = re.search(r"vs saved roster[^:]*:\s*\+(\d+)\s*/\s*-(\d+)\s*/\s*~(\d+)", out)
     if m:
@@ -208,12 +210,14 @@ def main():
         epoch = _pool_epoch()
         result["epoch"] = epoch
         added, removed = epoch.get("added"), epoch.get("removed")
+        changed = epoch.get("changed")
         if added is None:
             lvl, detail = "WARN", "could not read the roster diff"
-        elif added or removed:
+        elif added or removed or changed:
             lvl = "WARN"
-            detail = (f"the saved roster is STALE: +{added} / -{removed} vs the "
-                      f"mined pool — run pool_roster.py --apply")
+            detail = (f"the saved roster is STALE: +{added} / -{removed} / "
+                      f"~{changed} vs the mined pool — run pool_roster.py "
+                      f"--update-saved --apply")
         else:
             lvl, detail = "ok", "saved roster matches the mined pool (no drift)"
         result["canaries"].append(_canary("C4 pool roster", lvl, detail))
@@ -273,7 +277,11 @@ def _apply(url, full):
     import subprocess
     done = []
     steps = [("patch_notes", [sys.executable, "patch_notes.py", url, "--apply"]),
-             ("pool_roster", [sys.executable, "pool_roster.py", "--apply"]),
+             # `--update-saved` and not a bare rebuild: a balance patch adds no
+             # cards, so epoch detection cannot see its boundary and a rebuild
+             # would shrink the roster to whatever the newest lobby rolled.
+             ("pool_roster", [sys.executable, "pool_roster.py",
+                              "--update-saved", "--apply"]),
              ("refresh_trinkets", [sys.executable, "refresh_trinkets.py"]),
              ("art", [sys.executable, "hearth_art_extract.py"])]
     if full:

@@ -374,11 +374,11 @@
     "source": "Harbinger Aph'lass",
     "type": "deity_pool",
     "per_trigger": {
-     "atk": 1,
+     "atk": 2,
      "hp": 1
     },
     "count_from": "primary",
-    "note": "CARD TEXT (BGFYM_005): 'Whenever you discard a card, give your Deity +1/+1 and improve this.' The +1/+1 is text. UNMODELED: 'and improve this' — the size of the self-improvement is not printed, so the compounding self-buff is left out; this step is a floor."
+    "note": "CARD TEXT (BGFYM_005): 'Whenever you discard a card, give your Deity +2/+1 and improve this.' The +2/+1 is text. UNMODELED: 'and improve this' — the size of the self-improvement is not printed, so the compounding self-buff is left out; this step is a floor."
    },
    {
     "source": "N'raqi Sapper",

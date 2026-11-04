@@ -564,7 +564,7 @@
  {
   "id": "BG30_MagicItem_546",
   "name": "Jar o' Gems",
-  "description": "After 2 friendly minions attack each combat, this plays a Blood Gem on all your Quilboar. (2 left!)",
+  "description": "After a friendly Quilboar attacks each combat, this plays a Blood Gem on all your Quilboar.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -917,7 +917,7 @@
  {
   "id": "BG30_MagicItem_914",
   "name": "Nerglish Phrasebook",
-  "description": "After you play a minion, give the left-most minion in your hand +3/+3.",
+  "description": "After you play a minion, give the left-most minion in your hand +5/+5.",
   "pick_rate": 26.6,
   "avg_placement": 3.91,
   "placement_distribution": {
@@ -931,6 +931,16 @@
    "8": 5.06
   },
   "guide": "Only pick with [[Flighty Scout||120677]]. Scale it using the trinket for the rest of the game."
+ },
+ {
+  "id": "BG30_MagicItem_914t",
+  "name": "Nerglish Phrasebook",
+  "description": "After you play a minion, give the left-most minion in your hand +10/+10.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG30_MagicItem_917",
@@ -970,9 +980,19 @@
   "cost": 0
  },
  {
+  "id": "BG30_MagicItem_924t",
+  "name": "Booty Bay Brew",
+  "description": "Whenever you spend Gold, give two friendly Pirates +8/+8.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
   "id": "BG30_MagicItem_931",
   "name": "Lucky Tabby",
-  "description": "After 7 friendly minions die, get a random Beast. (7 left!)",
+  "description": "After 6 friendly minions die, get a random Beast. (6 left!)",
   "pick_rate": 19.1,
   "avg_placement": 4.75,
   "placement_distribution": {
@@ -1171,7 +1191,7 @@
  {
   "id": "BG30_MagicItem_998",
   "name": "Bob-blehead",
-  "description": "Gain 2 Gold. The Tavern no longer offers cards from Tier 1 or Tier 2.",
+  "description": "Gain 3 Gold. The Tavern no longer offers cards from Tier 1 or Tier 2.",
   "pick_rate": 21.8,
   "avg_placement": 4.57,
   "placement_distribution": {
@@ -1238,7 +1258,7 @@
  {
   "id": "BG32_MagicItem_200",
   "name": "All-Purpose Kibble",
-  "description": "Whenever a friendly Beast attacks, give it +3 Attack and permanently improve this.",
+  "description": "Whenever a friendly Beast attacks, give it +4 Attack and permanently improve this.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -1248,7 +1268,7 @@
  {
   "id": "BG32_MagicItem_205",
   "name": "Maw Caster Portrait",
-  "description": "Get a Maw Caster. Whenever you destroy a minion outside combat, gain 2 Gold.",
+  "description": "Get a Maw Caster. Whenever you destroy a minion outside combat, gain 1 Gold.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -1303,7 +1323,7 @@
  {
   "id": "BG32_MagicItem_278",
   "name": "Reusable Batteries",
-  "description": "The first time you buy a minion each turn, get a Magnetic Satellite with its stats.",
+  "description": "After you buy a minion, get a Magnetic Satellite with its stats. (Twice per turn)",
   "pick_rate": 17.6,
   "avg_placement": 4.56,
   "placement_distribution": {
@@ -1435,7 +1455,7 @@
  {
   "id": "BG32_MagicItem_361t",
   "name": "Portable Factory",
-  "description": "Discover a Tier 5 minion with a type. At the start of each turn, get another copy of it.",
+  "description": "Discover a Tier 6 minion with a type. At the start of each turn, get another copy of it.",
   "pick_rate": 14.2,
   "avg_placement": 4.4,
   "placement_distribution": {
@@ -1555,6 +1575,16 @@
    "8": 12.03
   },
   "guide": "Always decent."
+ },
+ {
+  "id": "BG32_MagicItem_801t",
+  "name": "Heart of the Forest",
+  "description": "Your Tavern spells give an extra +1/+1. After you cast 5 Tavern spells from hand, improve this. (5 left!)",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
  },
  {
   "id": "BG32_MagicItem_807",
@@ -1716,7 +1746,7 @@
  {
   "id": "BG32_MagicItem_860t",
   "name": "Beetle Band",
-  "description": "Avenge (7): Summon two 2/2 Beetles. Give them Taunt.",
+  "description": "Avenge (8): Summon two 2/2 Beetles. Give them Taunt.",
   "pick_rate": 17.6,
   "avg_placement": 4.18,
   "placement_distribution": {
@@ -1905,7 +1935,7 @@
  {
   "id": "BG35_MagicItem_150",
   "name": "Cursed Crystal",
-  "description": "After the Tavern is Refreshed, give its minions +3/+3 this turn.",
+  "description": "After the Tavern is Refreshed, give its minions +2/+2 this turn.",
   "pick_rate": 17.5,
   "avg_placement": 4.33,
   "placement_distribution": {
@@ -1980,7 +2010,7 @@
  {
   "id": "BG35_MagicItem_302",
   "name": "Stormcoil Sticker",
-  "description": "After 6 friendly minions die, get a random Mech. (6 left!)",
+  "description": "After 5 friendly minions die, get a random Mech. (5 left!)",
   "pick_rate": 17.2,
   "avg_placement": 4.42,
   "placement_distribution": {
@@ -2084,7 +2114,7 @@
  {
   "id": "BG35_MagicItem_710",
   "name": "Miniature Ship",
-  "description": "After you cast a Tavern spell, give your Pirates +3/+3.",
+  "description": "After you cast a Tavern spell, give your Pirates +4/+4.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -2109,6 +2139,16 @@
   "avg_placement": null,
   "placement_distribution": null,
   "guide": "Commit APM Bounty Pirates.",
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_713",
+  "name": "Trusty Crowbar",
+  "description": "Whenever you get a Pirate, give your left-most minion +20/+20.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
   "type": "Greater"
  },
  {
@@ -2143,7 +2183,17 @@
  {
   "id": "BG35_MagicItem_740",
   "name": "Sky Golem Portrait",
-  "description": "Get a Falling Sky Golem. Start of Combat: Give your minions \"Deathrattle: Give your minions +2/+2 permanently.\"",
+  "description": "Get a Falling Sky Golem. Start of Combat: Give your minions \"Deathrattle: Give your minions +3/+3 permanently.\"",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG35_MagicItem_741",
+  "name": "Beatboxer Portrait",
+  "description": "Get a Polarizing Beatboxer.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -2241,7 +2291,7 @@
  {
   "id": "BG35_MagicItem_814",
   "name": "Stuffed Coin Purse",
-  "description": "When you reach Tier 6, gain 12 gold.",
+  "description": "When you reach Tier 6, gain 14 gold.",
   "pick_rate": 20.5,
   "avg_placement": 4.46,
   "placement_distribution": {
@@ -2530,7 +2580,7 @@
  {
   "id": "BG35_MagicItem_871",
   "name": "Mama Bear Sticker",
-  "description": "Whenever you summon a Beast, give it +6/+6.",
+  "description": "Whenever you summon a Beast, give it +7/+7.",
   "pick_rate": 13.4,
   "avg_placement": 4.39,
   "placement_distribution": {
@@ -2981,7 +3031,7 @@
  {
   "id": "BG36_MagicItem_302t",
   "name": "Gold Mallet",
-  "description": "At the end of your turn, give your minions +4/+2. (Improved by Golden minions you've played this game!)",
+  "description": "At the end of your turn, give your minions +4/+4. (Improved by Golden minions you've played this game!)",
   "pick_rate": 48.5,
   "avg_placement": 3.59,
   "placement_distribution": {
@@ -3036,7 +3086,7 @@
  {
   "id": "BG36_MagicItem_307",
   "name": "Wand of Divination",
-  "description": "After you cast 3 spells on minions, gain 1 Gold. (3 left!)",
+  "description": "After you cast 2 spells on minions, gain 1 Gold. (2 left!)",
   "pick_rate": 21.9,
   "avg_placement": 4.51,
   "placement_distribution": {
@@ -3214,7 +3264,7 @@
  {
   "id": "BG36_MagicItem_407",
   "name": "Dragonhead Staff",
-  "description": "After 13 friendly minions attack, replace this with a random Greater Dragon Trinket. (13 left!)",
+  "description": "After 11 friendly minions attack, replace this with a random Greater Dragon Trinket. (11 left!)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -3224,7 +3274,7 @@
  {
   "id": "BG36_MagicItem_408",
   "name": "Quartermaster's Hook",
-  "description": "After you spend 50 Gold, replace this with a random Greater Pirate Trinket. (50 Gold left!)",
+  "description": "After you spend 40 Gold, replace this with a random Greater Pirate Trinket. (40 Gold left!)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
@@ -3254,12 +3304,12 @@
  {
   "id": "BG36_MagicItem_414",
   "name": "Weighted Gauntlet",
-  "description": "At the end of your turn, give your minions +1/+1. (Doubles at the start of each turn!)",
+  "description": "At the end of your turn, give your minions +7/+7. (Doubles at the start of each turn!)",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,
   "guide": "Pair with [[Drakkari Enchanter||101314]]",
-  "type": "Lesser"
+  "type": "Greater"
  },
  {
   "id": "BG36_MagicItem_416",
@@ -3441,7 +3491,7 @@
  {
   "id": "BG36_MagicItem_810",
   "name": "Inductive Gyroblade",
-  "description": "At the end of your turn, get a 12/12 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)",
+  "description": "At the end of your turn, get a 6/6 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)",
   "pick_rate": 25.4,
   "avg_placement": 4.21,
   "placement_distribution": {
@@ -3459,7 +3509,7 @@
  {
   "id": "BG36_MagicItem_810t",
   "name": "Inductive Gyroblade",
-  "description": "At the end of your turn, get a 12/12 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)",
+  "description": "At the end of your turn, get a 20/20 Magnetic Satellite. (Improved by each Tavern spell you've cast this turn!)",
   "pick_rate": 25.4,
   "avg_placement": 4.21,
   "placement_distribution": {
@@ -3544,6 +3594,16 @@
   "id": "BG36_MagicItem_831",
   "name": "Felsteel Cleaver",
   "description": "After you cast a spell on a Tavern minion, a random friendly minion consumes it to gain its stats.",
+  "pick_rate": null,
+  "avg_placement": null,
+  "placement_distribution": null,
+  "guide": null,
+  "type": "Greater"
+ },
+ {
+  "id": "BG36_MagicItem_840",
+  "name": "Secret Schematic",
+  "description": "After you buy a Mech, get a random Tavern spell that costs (2) or more.",
   "pick_rate": null,
   "avg_placement": null,
   "placement_distribution": null,

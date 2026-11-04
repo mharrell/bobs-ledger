@@ -29,11 +29,10 @@ payoffs that count them.
   every battlecry that lands.
 - **Bile Spitter** (t5) is the protection: Rally — give another friendly
   murloc Venomous. One poison answer buys the scaling time.
-- **Expert Aviator** (t2) — Rally: summon the highest-Attack minion from your
-  hand for the combat — an early tempo bridge while the engine comes online.
-  The 2026-10-04 tier list dropped it from this comp's core (Hackerfin and
-  Kelp Keeper took its place), so it is a bridge to hold if it lands, not a
-  card to hunt.
+- **Expert Aviator** (t2) — **removed from the pool in 37.0.2.** It was already
+  demoted from this comp's core on 2026-10-04 (Hackerfin and Kelp Keeper took
+  its place); the early tempo bridge is now the Bubble Gunner / Sewer Escapee
+  bodies themselves, not a card to hunt.
 
 ## Traps / anti-patterns
 

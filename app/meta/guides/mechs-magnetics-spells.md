@@ -6,11 +6,11 @@
 ## The engine
 
 The comp is a **spell-casting Magnetize engine**: cast spells on a Mech →
-**Glambot** magnetizes a 4/4 Satellite → **Copper Coil** improves it →
+**Glambot** magnetizes a 5/5 Satellite → **Copper Coil** improves it →
 **Utility Drone** scales per magnetization. **Belinda** doubles the spells.
 
 1. **Glambot** — the core. "Whenever you cast a spell on a Mech, Magnetize a
-   4/4 Satellite to it."
+   5/5 Satellite to it."
 2. **Copper Coil** (trinket) — the key trinket. "Copper Coil is S tier because
    it works with Glamot." Magnetize → +1/+1 and improve.
 3. **Utility Drone** — +stats per magnetization.
@@ -21,14 +21,14 @@ The comp is a **spell-casting Magnetize engine**: cast spells on a Mech →
 
 | Card | Role |
 |------|------|
-| Glambot | The core — cast a spell on a Mech → Magnetize a 4/4 Satellite. |
+| Glambot | The core — cast a spell on a Mech → Magnetize a 5/5 Satellite. |
 | Copper Coil (trinket) | The key trinket — Magnetize → +1/+1 and improve. |
 | Utility Drone | +stats per magnetization. |
 | Belinda | Doubles spells. |
 
 ## The loop
 
-- Cast a spell on a Mech → Glambot magnetizes a 4/4 Satellite.
+- Cast a spell on a Mech → Glambot magnetizes a 5/5 Satellite.
 - Copper Coil improves the magnetics; Belinda doubles the spells.
 - Utility Drone scales per magnetization.
 - "When he plays a spell, he gets four satellites and then Belinda times three
