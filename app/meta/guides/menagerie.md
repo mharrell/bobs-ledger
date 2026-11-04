@@ -1,6 +1,7 @@
 # Menagerie
 
-> Our advice for the published S-tier build (hsreplay tier list, 2026-09-30).
+> Our advice for the published A-tier build (hsreplay tier list, 2026-11-04;
+> demoted from S, which it held from 2026-09-30).
 > Written as original advice for this coach; card texts read from the DB.
 > Enriched from Shadybunny's commentary on an Amalgam game (video
 > `pA9orWVU0FM`, transcript mined 2026-09-30).

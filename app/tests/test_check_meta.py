@@ -80,9 +80,9 @@ class TestGuideTierClaim(unittest.TestCase):
         """Warning, not error: stale provenance is not broken data — but it
         must be SAID, and the message has to name the comp and the guide."""
         def mutate(comps):
-            # the guide claims S; make the comp a B behind its back
+            # the guide claims A; make the comp a B behind its back
             comp = comps["mechs-apm-magnetic"]
-            self.assertEqual(comp["meta_tier"], "S", "fixture stale")
+            self.assertEqual(comp["meta_tier"], "A", "fixture stale")
             comp["meta_tier"] = "B"
         r = self._run_with_mutated_meta(mutate)
         self.assertEqual(r.returncode, 0, f"a stale guide must not gate:\n{r.stderr}")

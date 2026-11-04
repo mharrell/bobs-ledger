@@ -1,7 +1,7 @@
 # Mechs — APM Magnetic
 
-> Our advice for the published S-tier build (hsreplay tier list, 2026-10-04;
-> promoted from A on that date).
+> Our advice for the published A-tier build (hsreplay tier list, 2026-11-04;
+> demoted from S, which it held from 2026-10-04).
 > Written as original advice for this coach; card texts read from the DB.
 
 ## The engine

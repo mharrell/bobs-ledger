@@ -2,17 +2,17 @@
  "elementals-unbound-tempest": {
   "name": "Elementals - Unbound Tempest",
   "difficulty": "Easy",
-  "meta_tier": "B",
+  "meta_tier": "A",
   "core": [
+   "BG34_858",
    "BG36_352",
-   "BGS_123",
+   "BG36_701",
    "BG_LOE_077",
-   "BG36_701"
+   "BGS_123"
   ],
   "addons": [
-   "BG34_858",
-   "BG34_500",
-   "BG28_707"
+   "BG28_707",
+   "BG34_500"
   ],
   "summary": "Play elementals to scale from big shop",
   "when_to_commit": "Brann Bronzebeard + shop buff (Air Revenant) + Unbound Tempest",
@@ -49,7 +49,7 @@
  "beasts-tasty-lobstah": {
   "name": "Beasts - Tasty Lobstah",
   "difficulty": "Hard",
-  "meta_tier": "A",
+  "meta_tier": "S",
   "core": [
    "BG36_208",
    "BG25_354",
@@ -176,13 +176,12 @@
   "difficulty": "Hard",
   "meta_tier": "A",
   "core": [
-   "BG35_604",
-   "BG35_602",
    "BG26_802",
+   "BG35_602",
+   "BG35_604",
    "BG36_204"
   ],
   "addons": [
-   "BG23_008",
    "BG36_209"
   ],
   "summary": "Make huge attack summons",
@@ -210,7 +209,7 @@
    "BG23_017"
   ],
   "summary": "Play Choose One cards to scale",
-  "when_to_commit": "Gem rat/Bramble Tunneler + Turbo Hogrider",
+  "when_to_commit": "Gem Rat/Bramble Tunneler + Turbo Hogrider",
   "common_enablers": "gem scaling (Gem Rat)",
   "representative_card": "BG31_323",
   "source": "hsreplay.net comp pages via scrape_comps.py (last re-scrape 2026-09-23); guide text rewritten as original advice 2026-09-24",
@@ -268,7 +267,7 @@
  "demons-self-damage": {
   "name": "Demons - Self Damage",
   "difficulty": "Easy",
-  "meta_tier": "S",
+  "meta_tier": "A",
   "core": [
    "BG_LOE_077",
    "BG36_762",
@@ -510,7 +509,7 @@
  "menagerie": {
   "name": "Menagerie",
   "difficulty": "Medium",
-  "meta_tier": "S",
+  "meta_tier": "A",
   "core": [
    "BG_LOE_077",
    "BG35_883",
@@ -537,7 +536,7 @@
  "mechs-apm-magnetic": {
   "name": "Mechs - APM Magnetic",
   "difficulty": "Easy",
-  "meta_tier": "S",
+  "meta_tier": "A",
   "core": [
    "BG36_367",
    "BG33_825",
@@ -686,21 +685,21 @@
  "quilboar-gems-from-hand": {
   "name": "Quilboar - Gems from Hand",
   "difficulty": "Hard",
-  "meta_tier": "A",
+  "meta_tier": "B",
   "core": [
+   "BG28_583",
    "BG30_121",
-   "BG36_370",
-   "BG33_885"
+   "BG33_885",
+   "BG36_370"
   ],
   "addons": [
    "BG23_017",
-   "BG35_883",
    "BG26_817",
-   "BG28_583",
-   "BG28_582"
+   "BG28_582",
+   "BG35_883"
   ],
   "summary": "Add buffed gems to hand",
-  "when_to_commit": "Gem scaling (Sanguine Refiner) + Hot Air Surveyor",
+  "when_to_commit": "Gem scaling (Sanguine Refiner) + Hot-Air Surveyor",
   "common_enablers": "Gem scaling (Sanguine Refiner)",
   "representative_card": "BG30_121",
   "source": "hsreplay.net comp pages (scrape_comps.py)",
@@ -746,7 +745,7 @@
    "BG34_633"
   ],
   "summary": "Teach Murlocs spells and proc them",
-  "when_to_commit": "Brann Bronzebeard + Magicfin Mycologist + Young Murk-eye",
+  "when_to_commit": "Brann Bronzebeard + Magicfin Mycologist + Young Murk-Eye",
   "common_enablers": "Magicfin Mycologist\nBrann Bronzebeard",
   "representative_card": "BG33_890t",
   "source": "hsreplay.net comp pages (scrape_comps.py)",
@@ -883,5 +882,48 @@
   "source": "Community build, recorded from a posted screenshot of another player's 1st-place warband (2026-10-15); card and trinket facts only, wording our own.",
   "tribe": "Dragon",
   "how_to_play": "A deliberately TINY Dragon board: two Tarecgosas and nothing else. Tarecgosa keeps the enchantments it gains in combat, so stats added in one fight are still there in the next - the build is about compounding, not about a wide board. Training Certificate doubles the stats of your two lowest-Attack minions, and with only two minions that is the WHOLE board, so it doubles both Tarecgosas every start of combat. Karazhan Chessboard then summons a copy of your two rightmost minions at the start of the fight, which is more bodies wearing the same stats. Keep the count at two: a third minion steals a Training Certificate slot and halves the payoff. Needs Dragon in the lobby, and it is a commit rather than a pivot - the scaling is slow until the trinkets are in place."
+ },
+ "elementals-ultraviolet": {
+  "name": "Elementals - Ultraviolet",
+  "difficulty": "Medium",
+  "meta_tier": "A",
+  "core": [
+   "BG31_810",
+   "BG36_701",
+   "BG_LOE_077",
+   "BGS_123"
+  ],
+  "addons": [
+   "BG34_858",
+   "BG36_352",
+   "BGS_126"
+  ],
+  "summary": "Cycle elementals to scale",
+  "when_to_commit": "Brann Bronzebeard plus Ultraviolet Ascendant",
+  "common_enablers": "Brann Bronzebeard",
+  "representative_card": "BG31_810",
+  "source": "hsreplay.net comp pages (scrape_comps.py)",
+  "tribe": "Elemental",
+  "how_to_play": "Elemental cycle scaling. Ultraviolet Ascendant's Start-of-Combat buff improves permanently every time you play an Elemental, so buy and play cheap Elementals every turn instead of parking a board. Tavern Tempest's battlecry is another Elemental body (Brann double-triggers it, Kelp Keeper re-triggers it), Air Revenant turns Gold spent into Easterly Winds, and Unbound Tempest converts Elemental plays into stats. Wildfire Elemental is the tempo body that clears a trade while the buff compounds."
+ },
+ "mechs-divine-shield": {
+  "name": "Mechs - Divine Shield",
+  "difficulty": "Hard",
+  "meta_tier": "B",
+  "core": [
+   "BG28_741"
+  ],
+  "addons": [
+   "BG35_342",
+   "BG36_364",
+   "BG36_764"
+  ],
+  "summary": "Play spells to buff Mechs",
+  "when_to_commit": "2x Charging Czarina",
+  "common_enablers": "Divine Shields",
+  "representative_card": "BG28_741",
+  "source": "hsreplay.net comp pages (scrape_comps.py)",
+  "tribe": "Mech",
+  "how_to_play": "Mech Divine-Shield scaling. Charging Czarina is the payoff: every Tavern spell gives your Divine-Shield minions +4 Attack, so the build wants cheap spells and shields that stay up. Gearfin makes two 1-Cost spells every turn to feed it; Falling Sky Golem is the shielded body that grows with Deathrattles triggered this game; Hopebringer pays the whole board +3/+3 at Start of Combat and improves permanently whenever a friendly Divine Shield pops. Keep the shields coming back and the Czarina buff compounds."
  }
 }
