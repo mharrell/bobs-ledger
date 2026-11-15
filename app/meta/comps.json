@@ -886,7 +886,7 @@
  "elementals-ultraviolet": {
   "name": "Elementals - Ultraviolet",
   "difficulty": "Medium",
-  "meta_tier": "A",
+  "meta_tier": "B",
   "core": [
    "BG31_810",
    "BG36_701",
@@ -925,5 +925,26 @@
   "source": "hsreplay.net comp pages (scrape_comps.py)",
   "tribe": "Mech",
   "how_to_play": "Mech Divine-Shield scaling. Charging Czarina is the payoff: every Tavern spell gives your Divine-Shield minions +4 Attack, so the build wants cheap spells and shields that stay up. Gearfin makes two 1-Cost spells every turn to feed it; Falling Sky Golem is the shielded body that grows with Deathrattles triggered this game; Hopebringer pays the whole board +3/+3 at Start of Combat and improves permanently whenever a friendly Divine Shield pops. Keep the shields coming back and the Czarina buff compounds."
+ },
+ "last-one-standing": {
+  "name": "Last One Standing",
+  "difficulty": "Hard",
+  "meta_tier": "S",
+  "core": [
+   "BG34_320",
+   "BG36_201",
+   "BG36_243"
+  ],
+  "addons": [
+   "BG26_175",
+   "BG26_817"
+  ],
+  "summary": "Buff all minion types with Last One Standing",
+  "when_to_commit": "The Last One Standing",
+  "common_enablers": "Greedy Conniver (don't force this comp)",
+  "representative_card": "BG34_320",
+  "source": "hsreplay.net comp pages (scrape_comps.py)",
+  "tribe": null,
+  "how_to_play": "Menagerie Rally payoff. The Last One Standing gives a friendly minion of each type +10/+10 permanently on Rally, and the buff itself improves, so the board wants one body of every type rather than duplicates. Sky-hatch Runaway is the engine: its Activate (1) triggers a friendly minion's Rally again, re-firing The Last One Standing every turn. Lurking Lionfish covers the Beast slot and turns a Tavern card into a Fishbait body, Elemental of Surprise covers Elemental (and triples with any Elemental), Blade Collector covers Pirate. It needs tier 7 and one of each type; the source's own note says don't force it."
  }
 }

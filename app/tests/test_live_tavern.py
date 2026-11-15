@@ -972,13 +972,21 @@ class TestTheShippedCompsDb(unittest.TestCase):
         """`scrape_comps.py` never writes `tribe` — it is hand-added on every new
         comp, and a refresh that forgets it is a comp no tribe filter can find.
         `check_meta.py` enforces this too; this is the same rule where the suite
-        will see it fail."""
+        will see it fail.
+
+        An EXPLICIT null is the documented opt-out for a menagerie-class build
+        (`menagerie`, and `last-one-standing` since 2026-11-14): `check_meta`
+        warns on it and the family ban fails open. A MISSING key is still a
+        failure — that is the forgetful refresh this test exists for.
+        """
         import meta
         import tribes
         real = meta.comps()
         for slug, comp in real.items():
-            if comp.get("name") == "Menagerie":
-                continue          # mixed by definition, and check_meta says so
+            self.assertIn("tribe", comp,
+                          f"{slug} has no tribe key at all (hand-add it)")
+            if comp.get("tribe") is None:
+                continue          # deliberate menagerie-class opt-out
             self.assertIn(comp.get("tribe"), tribes.DISPLAY_TRIBES,
                           f"{slug} has tribe {comp.get('tribe')!r}")
 
