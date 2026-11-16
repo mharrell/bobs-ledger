@@ -904,6 +904,7 @@
   "representative_card": "BG31_810",
   "source": "hsreplay.net comp pages (scrape_comps.py)",
   "tribe": "Elemental",
+  "guide": "guides/elementals-ultraviolet.md",
   "how_to_play": "Elemental cycle scaling. Ultraviolet Ascendant's Start-of-Combat buff improves permanently every time you play an Elemental, so buy and play cheap Elementals every turn instead of parking a board. Tavern Tempest's battlecry is another Elemental body (Brann double-triggers it, Kelp Keeper re-triggers it), Air Revenant turns Gold spent into Easterly Winds, and Unbound Tempest converts Elemental plays into stats. Wildfire Elemental is the tempo body that clears a trade while the buff compounds."
  },
  "mechs-divine-shield": {
@@ -924,6 +925,7 @@
   "representative_card": "BG28_741",
   "source": "hsreplay.net comp pages (scrape_comps.py)",
   "tribe": "Mech",
+  "guide": "guides/mechs-divine-shield.md",
   "how_to_play": "Mech Divine-Shield scaling. Charging Czarina is the payoff: every Tavern spell gives your Divine-Shield minions +4 Attack, so the build wants cheap spells and shields that stay up. Gearfin makes two 1-Cost spells every turn to feed it; Falling Sky Golem is the shielded body that grows with Deathrattles triggered this game; Hopebringer pays the whole board +3/+3 at Start of Combat and improves permanently whenever a friendly Divine Shield pops. Keep the shields coming back and the Czarina buff compounds."
  },
  "last-one-standing": {
@@ -945,6 +947,7 @@
   "representative_card": "BG34_320",
   "source": "hsreplay.net comp pages (scrape_comps.py)",
   "tribe": null,
+  "guide": "guides/last-one-standing.md",
   "how_to_play": "Menagerie Rally payoff. The Last One Standing gives a friendly minion of each type +10/+10 permanently on Rally, and the buff itself improves, so the board wants one body of every type rather than duplicates. Sky-hatch Runaway is the engine: its Activate (1) triggers a friendly minion's Rally again, re-firing The Last One Standing every turn. Lurking Lionfish covers the Beast slot and turns a Tavern card into a Fishbait body, Elemental of Surprise covers Elemental (and triples with any Elemental), Blade Collector covers Pirate. It needs tier 7 and one of each type; the source's own note says don't force it."
  }
 }
