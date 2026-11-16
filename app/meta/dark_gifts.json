@@ -56,12 +56,20 @@
     "description": "Whenever you play a card, gain +4/+4."
   },
   {
+    "name": "Doppelganger",
+    "description": "Start of Combat: Summon a copy of this."
+  },
+  {
     "name": "Double Vision",
     "description": "Get an extra copy of this."
   },
   {
     "name": "Echoing Voice",
     "description": "At the end of your turn, trigger this minion's Battlecries."
+  },
+  {
+    "name": "Efficiency",
+    "description": "This minion's Activate triggers twice."
   },
   {
     "name": "Fortitude",
@@ -174,5 +182,9 @@
   {
     "name": "Transcendence",
     "description": "Start of Combat: Triple this minion's stats."
+  },
+  {
+    "name": "Worship",
+    "description": "Start of Combat: Gain the stats of your Deity."
   }
 ]
