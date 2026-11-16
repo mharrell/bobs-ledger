@@ -24,6 +24,7 @@ claude_code_zai_env.sh
 REPLAY_VIEWER_DESIGN.md
 LIVE_VIEW_DESIGN.md
 SETTLE_UP_FIXES.md
+RELEASE_RUNBOOK.md
 
 # Research notes: local working papers, untracked from 2026-10-24 (the history
 # still carries them). publish_release.EXCLUDE_PATHS keeps them out of zips;
