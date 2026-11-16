@@ -472,20 +472,25 @@ class TestRosterSessionLabels(unittest.TestCase):
     ("docs and meta data, not logs") and refused the 2026-11-16 release because
     `meta/pool_roster.json` carried five real names after an --update-saved.
     The shipped document must carry positions only.
+
+    Fixture names come from `privacy_scan.SYNTHETIC_SESSIONS` — a REAL session
+    name written into a shipped test is itself a gate finding (the 2026-10-06
+    `test_fight_table_archive.py` incident), so this test must not repeat it.
     """
 
-    REAL = "Hearthstone_2026_11_02_11_32_30"
+    SYNTHETIC = "Hearthstone_2026_01_01"
 
     def test_build_roster_labels_sessions_instead_of_names(self):
         roster = pool_roster.build_roster(
-            [_session(self.REAL, {"TEST_1": {"races": ["BEAST"], "tier": 1}})],
-            "test")
+            [_session(self.SYNTHETIC, {"TEST_1": {"races": ["BEAST"],
+                                                  "tier": 1}})], "test")
         self.assertEqual(roster["sessions"], ["mined-session-1"])
 
     def test_update_saved_labels_sessions_too(self):
         sessions = [
-            _session(self.REAL, {"TEST_1": {"races": ["BEAST"], "tier": 1}}),
-            _session("Hearthstone_2026_11_03_09_59_40",
+            _session(self.SYNTHETIC, {"TEST_1": {"races": ["BEAST"],
+                                                 "tier": 1}}),
+            _session("Hearthstone_2026_01_02",
                      {"TEST_1": {"races": ["BEAST"], "tier": 2}}),
         ]
         roster = pool_roster.update_saved_roster(
