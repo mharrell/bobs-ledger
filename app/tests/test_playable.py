@@ -465,6 +465,42 @@ class TestUpdateSavedRoster(unittest.TestCase):
         self.assertEqual(roster["dropped_out_of_play"], ["TEST_1"])
 
 
+class TestRosterSessionLabels(unittest.TestCase):
+    """The roster ships; a session directory name in it is personal data.
+
+    privacy_scan classes `Hearthstone_YYYY_MM_DD_HH_MM_SS` as `session_dir`
+    ("docs and meta data, not logs") and refused the 2026-11-16 release because
+    `meta/pool_roster.json` carried five real names after an --update-saved.
+    The shipped document must carry positions only.
+    """
+
+    REAL = "Hearthstone_2026_11_02_11_32_30"
+
+    def test_build_roster_labels_sessions_instead_of_names(self):
+        roster = pool_roster.build_roster(
+            [_session(self.REAL, {"TEST_1": {"races": ["BEAST"], "tier": 1}})],
+            "test")
+        self.assertEqual(roster["sessions"], ["mined-session-1"])
+
+    def test_update_saved_labels_sessions_too(self):
+        sessions = [
+            _session(self.REAL, {"TEST_1": {"races": ["BEAST"], "tier": 1}}),
+            _session("Hearthstone_2026_11_03_09_59_40",
+                     {"TEST_1": {"races": ["BEAST"], "tier": 2}}),
+        ]
+        roster = pool_roster.update_saved_roster(
+            sessions, "test", saved=None, out_of_play={"cards": {}})
+        self.assertEqual(roster["sessions"],
+                         ["mined-session-1", "mined-session-2"])
+
+    def test_the_shipped_roster_carries_no_directory_name(self):
+        roster = playable.load_roster()
+        self.assertTrue(roster, "run `python pool_roster.py --apply`")
+        for label in roster.get("sessions") or []:
+            self.assertRegex(label, r"^mined-session-\d+$")
+            self.assertNotIn("Hearthstone_", label)
+
+
 class TestAberrationTribeVocabulary(unittest.TestCase):
     """36.6.1 added the first new tribe ever; it must be first-class."""
 

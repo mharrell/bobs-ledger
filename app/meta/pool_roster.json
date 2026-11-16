@@ -2,11 +2,11 @@
   "patch": "37.0.2",
   "built": "2026-11-03",
   "sessions": [
-    "Hearthstone_2026_11_02_11_32_30",
-    "Hearthstone_2026_11_02_21_36_30",
-    "Hearthstone_2026_11_03_09_59_40",
-    "Hearthstone_2026_11_03_11_19_32",
-    "Hearthstone_2026_11_03_21_10_37"
+    "mined-session-1",
+    "mined-session-2",
+    "mined-session-3",
+    "mined-session-4",
+    "mined-session-5"
   ],
   "games": 7,
   "tribes_present": [

@@ -311,6 +311,19 @@ def enrich_from_meta(cards, meta_path=None):
     return widened
 
 
+def session_labels(count):
+    """Positional labels for the roster's `sessions` field.
+
+    A real session name is `Hearthstone_YYYY_MM_DD_HH_MM_SS`, and privacy_scan
+    classes that shape as `session_dir` personal data ("docs and meta data, not
+    logs"). `meta/pool_roster.json` SHIPS, so writing the names there leaks the
+    maintainer's session directories — the privacy gate refused the 2026-11-16
+    release over five of them. The shipped document therefore carries positions
+    only (`mined-session-1`, …); `main` still prints the real names when it runs.
+    """
+    return [f"mined-session-{i}" for i in range(1, count + 1)]
+
+
 def build_roster(epoch, patch=None):
     """Merge epoch sessions into the roster document.
 
@@ -350,7 +363,7 @@ def build_roster(epoch, patch=None):
     return {
         "patch": patch,
         "built": datetime.date.today().isoformat(),
-        "sessions": [s["name"] for s in epoch],
+        "sessions": session_labels(len(epoch)),
         "games": sum(s["scan"]["games"] for s in epoch),
         "tribes_present": sorted(pure_tribes(cards)),
         "tribes_widened_from_meta": widened,
@@ -404,7 +417,6 @@ def update_saved_roster(sessions, patch=None, saved=None, out_of_play=None):
     """
     ordered = list(reversed(sessions))  # newest first: build_roster keeps first
     roster = build_roster(ordered, patch)
-    roster["sessions"] = [s["name"] for s in reversed(ordered)]
     saved = saved if saved is not None else load_roster()
     if saved:
         for cid, card in (saved.get("cards") or {}).items():
